@@ -1,34 +1,34 @@
 # Ruby Standard Library
 
-The Ruby Standard Library is a vast collection of classes and modules that you
-can require in your code for additional features.
+The Ruby Standard Library is a large collection of classes and modules you can
+require in your code to gain additional features.
 
-Below is an overview of libraries and extensions followed by a brief
-description.
+Below is an overview of the libraries and extensions, followed by a brief description
+of each.
 
 ## Libraries
 
 - `MakeMakefile`: A module used to generate a Makefile for C extensions
-- `RbConfig`: Information of your configure and build of Ruby
-- `Gem`: Package management framework for Ruby
+- `RbConfig`: Information about your Ruby configuration and build
+- `Gem`: A package management framework for Ruby
 
 ## Extensions
 
-- `Coverage`: Provides coverage measurement for Ruby
-- `Monitor`: Provides an object or module to use safely by more than one thread
-- `objspace`: Extends ObjectSpace module to add methods for internal statistics
-- `PTY`: Creates and manages pseudo terminals
-- `Ripper`: Provides an interface for parsing Ruby programs into S-expressions
-- `Socket`: Access underlying OS socket implementations
+- `Coverage`: Provides coverage measurement for Ruby.
+- `Monitor`: Provides an object or module that can be safely used by more than one thread.
+- `objspace`: Extends the ObjectSpace module to add methods for internal statistics.
+- `PTY`: Creates and manages pseudo-terminals.
+- `Ripper`: Provides an interface for parsing Ruby programs into S-expressions.
+- `Socket`: Accesses underlying OS socket implementations.
 
 ## Default gems
 
 - Default gems are shipped with Ruby releases and also available as rubygems.
-- Default gems are not uninstallable from Ruby installation.
-- Default gems can be updated used by rubygems.
+- Default gems are not uninstallable from the Ruby installation.
+- Default gems can be updated using rubygems.
     - e.g. `gem update json`
-- Default gems can be used with bundler environment like `unbundled_env`.
-- Default gems can be used any version on Gemfile.
+- Default gems can be used with bundler environments like `unbundled_env`.
+- Default gems can be used at any version in a Gemfile.
     - e.g. `gem "json", ">= 2.6"`
 
 ### Libraries
@@ -39,30 +39,30 @@ description.
 - [delegate][delegate]: Provides three abilities to delegate method calls to an object
 - [did_you_mean][did_you_mean]: "Did you mean?" experience in Ruby
 - [English][English]: Provides references to special global variables with less cryptic names
-- [erb][erb]: An easy to use but powerful templating system for Ruby
-- [error_highlight][error_highlight]: Highlight error location in your code
-- [fileutils][fileutils]: Several file utility methods for copying, moving, removing, etc
+- [erb][erb]: An easy-to-use but powerful templating system for Ruby
+- [error_highlight][error_highlight]: Highlight error locations in your code
+- [fileutils][fileutils]: Several file utility methods for copying, moving, removing, etc.
 - [find][find]: This module supports top-down traversal of a set of file paths
 - [forwardable][forwardable]: Provides delegation of specified methods to a designated object
 - [ipaddr][ipaddr]: Provides methods to manipulate IPv4 and IPv6 IP addresses
 - [irb][irb]: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 - [optparse][optparse]: Ruby-oriented class for command-line option analysis
 - [logger][logger]: Provides a simple logging utility for outputting messages
-- [net-http][net-http]: HTTP client api for Ruby
-- [open3][open3]: Provides access to stdin, stdout and stderr when running other programs
+- [net-http][net-http]: HTTP client API for Ruby
+- [open3][open3]: Provides access to stdin, stdout, and stderr when running other programs
 - [ostruct][ostruct]: A class to build custom data structures, similar to a Hash
-- [open-uri][open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS and URI::FTP
+- [open-uri][open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
 - [pp][pp]: Provides a PrettyPrinter for Ruby objects
 - [prettyprint][prettyprint]: Implements a pretty printing algorithm for readable structure
 - [prism][prism]: A portable, error-tolerant Ruby parser
-- [pstore][pstore]: Implements a file based persistence mechanism based on a Hash
-- [readline][readline]: Wrapper for Readline extencion and Reline
-- [reline][reline]: GNU Readline and Editline by pure Ruby implementation
+- [pstore][pstore]: Implements a file-based persistence mechanism based on a Hash
+- [readline][readline]: Wrapper for the Readline extension and Reline
+- [reline][reline]: GNU Readline and Editline in a pure Ruby implementation
 - [resolv][resolv]: Thread-aware DNS resolver library in Ruby
 - [rdoc][rdoc]: Produces HTML and command-line documentation for Ruby
-- [securerandom][securerandom]: Interface for secure random number generator
+- [securerandom][securerandom]: Interface for a secure random number generator
 - [set][set]: Provides a class to deal with collections of unordered, unique values
-- [shellwords][shellwords]: Manipulates strings with word parsing rules of UNIX Bourne shell
+- [shellwords][shellwords]: Manipulates strings with the word parsing rules of the UNIX Bourne shell
 - [singleton][singleton]: Implementation of the Singleton pattern for Ruby
 - [tempfile][tempfile]: A utility class for managing temporary files
 - [time][time]: Extends the Time class with methods for parsing and conversion
@@ -71,23 +71,23 @@ description.
 - [tsort][tsort]: Topological sorting using Tarjan's algorithm
 - [un][un]: Utilities to replace common UNIX commands
 - [uri][uri]: A Ruby module providing support for Uniform Resource Identifiers
-- [yaml][yaml]: Ruby client library for the Psych YAML implementation
+- [yaml][yaml]: The Ruby client library for the Psych YAML implementation
 - [weakref][weakref]: Allows a referenced object to be garbage-collected
 
 ### Extensions
 
-- [date][date]: A subclass of Object includes Comparable module for handling dates
-- `DateTime`: Subclass of Date to handling dates, hours, minutes, seconds, offsets
+- [date][date]: A subclass of Object that includes the Comparable module for handling dates
+- `DateTime`: A subclass of Date for handling dates, hours, minutes, seconds, and offsets
 - [digest][digest]: Provides a framework for message digest libraries
-- [etc][etc]: Provides access to information typically stored in UNIX /etc directory
+- [etc][etc]: Provides access to information typically stored in the UNIX /etc directory
 - [fcntl][fcntl]: Loads constants defined in the OS fcntl.h C header file
 - [fiddle][fiddle]: A libffi wrapper for Ruby
-- [io-console][io-console]: Extensions for Ruby IO class, including `IO.console`, `IO.winsize`...etc.
-- [json][json]: Implements Javascript Object Notation for Ruby
-- [openssl][openssl]: Provides SSL, TLS and general purpose cryptography for Ruby
+- [io-console][io-console]: Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
+- [json][json]: Implements JavaScript Object Notation for Ruby
+- [openssl][openssl]: Provides SSL, TLS, and general-purpose cryptography for Ruby
 - [pathname][pathname]: Representation of the name of a file or directory on the filesystem
 - [psych][psych]: A YAML parser and emitter for Ruby
-- [stringio][stringio]: Pseudo I/O on String objects
+- [stringio][stringio]: Pseudo-I/O on String objects
 - [strscan][strscan]: Provides lexical scanning operations on a String
 - [win32ole][win32ole]: Provides an interface for OLE Automation in Ruby
 - [zlib][zlib]: Ruby interface for the zlib compression/decompression library
@@ -96,19 +96,19 @@ description.
 
 - Bundled gems are shipped with Ruby releases and also available as rubygems.
     - They are only bundled with Ruby releases.
-    - They can be uninstallable from Ruby installation.
-    - They are needed to declare in Gemfile when use with bundler.
+    - They can be uninstalled from the Ruby installation.
+    - They need to be declared in a Gemfile when used with bundler.
 
 ### Libraries
 
-- [minitest][minitest]: A test suite with TDD, BDD, mocking and benchmarking
+- [minitest][minitest]: A test suite with TDD, BDD, mocking, and benchmarking
 - [power_assert][power_assert]: Power Assert for Ruby.
 - [rake][rake]: Ruby build program with capabilities similar to make
 - [test-unit][test-unit]: A compatibility layer for MiniTest
 - [rexml][rexml]: An XML toolkit for Ruby
-- [rss][rss]: Family of libraries that support various formats of XML "feeds"
+- [rss][rss]: A family of libraries supporting various XML-based "feeds"
 - [net-ftp][net-ftp]: Support for the File Transfer Protocol
-- [net-imap][net-imap]: Ruby client api for Internet Message Access Protocol
+- [net-imap][net-imap]: Ruby client API for the Internet Message Access Protocol
 - [net-pop][net-pop]: Ruby client library for POP3
 - [net-smtp][net-smtp]: Simple Mail Transfer Protocol client library for Ruby
 - [matrix][matrix]: Represents a mathematical matrix.
