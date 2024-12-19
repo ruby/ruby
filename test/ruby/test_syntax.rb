@@ -1930,12 +1930,15 @@ eom
     1.times do
       [
         assert_equal(0, it),
-        assert_equal([:a], eval('[:a].map{it}')),
-        assert_raise(NameError) {eval('it')},
+        assert_equal([0], eval('[:a].map{it}')),
+        assert_equal(0, eval('it')),
       ]
     end
     assert_valid_syntax('proc {def foo(_);end;it}')
     assert_syntax_error('p { [it **2] }', /unexpected \*\*/)
+
+    b = proc {it; binding}.call
+    assert_include(b.local_variables, :it)
   end
 
   def test_value_expr_in_condition
