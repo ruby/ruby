@@ -1,5 +1,7 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
+  verbose, $VERBOSE = $VERBOSE, nil
+
   require_relative '../fixtures/classes'
 
   describe "WIN32OLE.const_load when passed Shell.Application OLE object" do
@@ -30,4 +32,6 @@ platform_is :windows do
     end
   end
 
+ensure
+  $VERBOSE = verbose
 end

@@ -1,6 +1,9 @@
 require 'win32ole'
 
 module WIN32OLESpecs
+  WIN32OLERuntimeError ||= WIN32OLE::RuntimeError
+  WIN32OLE_TYPELIB ||= WIN32OLE::TypeLib
+
   MSXML_AVAILABLE = WIN32OLE_TYPELIB.typelibs.any? { |t| t.name.start_with?('Microsoft XML') }
   SYSTEM_MONITOR_CONTROL_AVAILABLE = WIN32OLE_TYPELIB.typelibs.any? { |t| t.name.start_with?('System Monitor Control') }
 

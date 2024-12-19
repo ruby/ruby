@@ -1,5 +1,7 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
+  verbose, $VERBOSE = $VERBOSE, nil
+
   require_relative '../fixtures/classes'
   guard -> { WIN32OLESpecs::SYSTEM_MONITOR_CONTROL_AVAILABLE } do
 
@@ -26,4 +28,6 @@ platform_is :windows do
     end
   end
 
+ensure
+  $VERBOSE = verbose
 end

@@ -1,5 +1,7 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
+  verbose, $VERBOSE = $VERBOSE, nil
+
   require_relative '../fixtures/classes'
 
   describe "WIN32OLESpecs.new_ole" do
@@ -23,4 +25,6 @@ platform_is :windows do
 
   end
 
+ensure
+  $VERBOSE = verbose
 end
