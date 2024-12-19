@@ -4383,7 +4383,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
  *   Date._strptime('2001-02-03', '%Y-%m-%d') # => {:year=>2001, :mon=>2, :mday=>3}
  *
  * For other formats, see
- * {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc].
+ * {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc].
  * (Unlike Date.strftime, does not support flags and width.)
  *
  * See also {strptime(3)}[https://man7.org/linux/man-pages/man3/strptime.3.html].
@@ -4412,7 +4412,7 @@ date_s__strptime(int argc, VALUE *argv, VALUE klass)
  *   Date.strptime('sat3feb01', '%a%d%b%y')   # => #<Date: 2001-02-03>
  *
  * For other formats, see
- * {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc].
+ * {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc].
  * (Unlike Date.strftime, does not support flags and width.)
  *
  * See argument {start}[rdoc-ref:date/calendars.rdoc@Argument+start].
@@ -4505,7 +4505,7 @@ date_s__parse_internal(int argc, VALUE *argv, VALUE klass)
  * This method recognizes many forms in +string+,
  * but it is not a validator.
  * For formats, see
- * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc@Specialized+Format+Strings]
+ * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc@Specialized+Format+Strings]
  *
  * If +string+ does not specify a valid date,
  * the result is unpredictable;
@@ -4540,7 +4540,7 @@ date_s__parse(int argc, VALUE *argv, VALUE klass)
  * This method recognizes many forms in +string+,
  * but it is not a validator.
  * For formats, see
- * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc@Specialized+Format+Strings]
+ * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc@Specialized+Format+Strings]
  * If +string+ does not specify a valid date,
  * the result is unpredictable;
  * consider using Date._strptime instead.
@@ -4604,7 +4604,7 @@ VALUE date__jisx0301(VALUE);
  *   Date._iso8601(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should contain
- * an {ISO 8601 formatted date}[rdoc-ref:strftime_formatting.rdoc@ISO+8601+Format+Specifications]:
+ * an {ISO 8601 formatted date}[rdoc-ref:ruby/strftime_formatting.rdoc@ISO+8601+Format+Specifications]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.iso8601    # => "2001-02-03"
@@ -4631,7 +4631,7 @@ date_s__iso8601(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should contain
- * an {ISO 8601 formatted date}[rdoc-ref:strftime_formatting.rdoc@ISO+8601+Format+Specifications]:
+ * an {ISO 8601 formatted date}[rdoc-ref:ruby/strftime_formatting.rdoc@ISO+8601+Format+Specifications]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.iso8601   # => "2001-02-03"
@@ -4673,7 +4673,7 @@ date_s_iso8601(int argc, VALUE *argv, VALUE klass)
  *   Date._rfc3339(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {RFC 3339 format}[rdoc-ref:strftime_formatting.rdoc@RFC+3339+Format]:
+ * {RFC 3339 format}[rdoc-ref:ruby/strftime_formatting.rdoc@RFC+3339+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc3339     # => "2001-02-03T00:00:00+00:00"
@@ -4701,7 +4701,7 @@ date_s__rfc3339(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {RFC 3339 format}[rdoc-ref:strftime_formatting.rdoc@RFC+3339+Format]:
+ * {RFC 3339 format}[rdoc-ref:ruby/strftime_formatting.rdoc@RFC+3339+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc3339   # => "2001-02-03T00:00:00+00:00"
@@ -4811,7 +4811,7 @@ date_s_xmlschema(int argc, VALUE *argv, VALUE klass)
  *   Date._rfc2822(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {RFC 2822 date format}[rdoc-ref:strftime_formatting.rdoc@RFC+2822+Format]:
+ * {RFC 2822 date format}[rdoc-ref:ruby/strftime_formatting.rdoc@RFC+2822+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
@@ -4839,7 +4839,7 @@ date_s__rfc2822(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {RFC 2822 date format}[rdoc-ref:strftime_formatting.rdoc@RFC+2822+Format]:
+ * {RFC 2822 date format}[rdoc-ref:ruby/strftime_formatting.rdoc@RFC+2822+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.rfc2822   # => "Sat, 3 Feb 2001 00:00:00 +0000"
@@ -4881,7 +4881,7 @@ date_s_rfc2822(int argc, VALUE *argv, VALUE klass)
  *   Date._httpdate(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {HTTP date format}[rdoc-ref:strftime_formatting.rdoc@HTTP+Format]:
+ * {HTTP date format}[rdoc-ref:ruby/strftime_formatting.rdoc@HTTP+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
@@ -4907,7 +4907,7 @@ date_s__httpdate(int argc, VALUE *argv, VALUE klass)
  *
  * Returns a new \Date object with values parsed from +string+,
  * which should be a valid
- * {HTTP date format}[rdoc-ref:strftime_formatting.rdoc@HTTP+Format]:
+ * {HTTP date format}[rdoc-ref:ruby/strftime_formatting.rdoc@HTTP+Format]:
  *
  *   d = Date.new(2001, 2, 3)
      s = d.httpdate   # => "Sat, 03 Feb 2001 00:00:00 GMT"
@@ -4949,7 +4949,7 @@ date_s_httpdate(int argc, VALUE *argv, VALUE klass)
  *   Date._jisx0301(string, limit: 128) -> hash
  *
  * Returns a hash of values parsed from +string+, which should be a valid
- * {JIS X 0301 date format}[rdoc-ref:strftime_formatting.rdoc@JIS+X+0301+Format]:
+ * {JIS X 0301 date format}[rdoc-ref:ruby/strftime_formatting.rdoc@JIS+X+0301+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.jisx0301    # => "H13.02.03"
@@ -4975,7 +4975,7 @@ date_s__jisx0301(int argc, VALUE *argv, VALUE klass)
  *   Date.jisx0301(string = '-4712-01-01', start = Date::ITALY, limit: 128) -> date
  *
  * Returns a new \Date object with values parsed from +string+,
- * which should be a valid {JIS X 0301 format}[rdoc-ref:strftime_formatting.rdoc@JIS+X+0301+Format]:
+ * which should be a valid {JIS X 0301 format}[rdoc-ref:ruby/strftime_formatting.rdoc@JIS+X+0301+Format]:
  *
  *   d = Date.new(2001, 2, 3)
  *   s = d.jisx0301   # => "H13.02.03"
@@ -6957,7 +6957,7 @@ static VALUE strftimev(const char *, VALUE,
  *   to_s -> string
  *
  * Returns a string representation of the date in +self+
- * in {ISO 8601 extended date format}[rdoc-ref:strftime_formatting.rdoc@ISO+8601+Format+Specifications]
+ * in {ISO 8601 extended date format}[rdoc-ref:ruby/strftime_formatting.rdoc@ISO+8601+Format+Specifications]
  * (<tt>'%Y-%m-%d'</tt>):
  *
  *   Date.new(2001, 2, 3).to_s # => "2001-02-03"
@@ -7238,7 +7238,7 @@ date_strftime_internal(int argc, VALUE *argv, VALUE self,
  *   Date.new(2001, 2, 3).strftime # => "2001-02-03"
  *
  * For other formats, see
- * {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc].
+ * {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc].
  *
  */
 static VALUE
@@ -7270,7 +7270,7 @@ strftimev(const char *fmt, VALUE self,
  *   asctime -> string
  *
  * Equivalent to #strftime with argument <tt>'%a %b %e %T %Y'</tt>
- * (or its {shorthand form}[rdoc-ref:strftime_formatting.rdoc@Shorthand+Conversion+Specifiers]
+ * (or its {shorthand form}[rdoc-ref:ruby/strftime_formatting.rdoc@Shorthand+Conversion+Specifiers]
  * <tt>'%c'</tt>):
  *
  *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
@@ -7289,7 +7289,7 @@ d_lite_asctime(VALUE self)
  *   iso8601    ->  string
  *
  * Equivalent to #strftime with argument <tt>'%Y-%m-%d'</tt>
- * (or its {shorthand form}[rdoc-ref:strftime_formatting.rdoc@Shorthand+Conversion+Specifiers]
+ * (or its {shorthand form}[rdoc-ref:ruby/strftime_formatting.rdoc@Shorthand+Conversion+Specifiers]
  * <tt>'%F'</tt>);
  *
  *   Date.new(2001, 2, 3).iso8601 # => "2001-02-03"
@@ -7306,7 +7306,7 @@ d_lite_iso8601(VALUE self)
  *   rfc3339 -> string
  *
  * Equivalent to #strftime with argument <tt>'%FT%T%:z'</tt>;
- * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
+ * see {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc]:
  *
  *   Date.new(2001, 2, 3).rfc3339 # => "2001-02-03T00:00:00+00:00"
  *
@@ -7322,7 +7322,7 @@ d_lite_rfc3339(VALUE self)
  *   rfc2822 -> string
  *
  * Equivalent to #strftime with argument <tt>'%a, %-d %b %Y %T %z'</tt>;
- * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
+ * see {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc]:
  *
  *   Date.new(2001, 2, 3).rfc2822 # => "Sat, 3 Feb 2001 00:00:00 +0000"
  *
@@ -7338,7 +7338,7 @@ d_lite_rfc2822(VALUE self)
  *   httpdate -> string
  *
  * Equivalent to #strftime with argument <tt>'%a, %d %b %Y %T GMT'</tt>;
- * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
+ * see {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc]:
  *
  *   Date.new(2001, 2, 3).httpdate # => "Sat, 03 Feb 2001 00:00:00 GMT"
  *
@@ -8715,7 +8715,7 @@ dt_lite_to_s(VALUE self)
  *   DateTime.now.strftime # => "2022-07-01T11:03:19-05:00"
  *
  * For other formats,
- * see {Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc]:
+ * see {Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc]:
  *
  */
 static VALUE
@@ -9569,7 +9569,7 @@ Init_date_core(void)
      *     Date.strptime('fri31dec99', '%a%d%b%y')  # => #<Date: 1999-12-31>
      *
      * See also the specialized methods in
-     * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:strftime_formatting.rdoc@Specialized+Format+Strings]
+     * {"Specialized Format Strings" in Formats for Dates and Times}[rdoc-ref:ruby/strftime_formatting.rdoc@Specialized+Format+Strings]
      *
      * == Argument +limit+
      *
