@@ -5365,7 +5365,7 @@ env_aset(VALUE nm, VALUE val)
 static VALUE
 env_keys(int raw)
 {
-    rb_encoding *enc = raw ? 0 : rb_locale_encoding();
+    rb_encoding *enc = raw ? 0 : env_encoding();
     VALUE ary = rb_ary_new();
 
     ENV_LOCK();
