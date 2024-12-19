@@ -216,8 +216,8 @@ The following default gems are updated.
   * 1.11.0 to [v1.11.1][irb-v1.11.1], [v1.11.2][irb-v1.11.2], [v1.12.0][irb-v1.12.0], [v1.13.0][irb-v1.13.0], [v1.13.1][irb-v1.13.1], [v1.13.2][irb-v1.13.2], [v1.14.0][irb-v1.14.0], [v1.14.1][irb-v1.14.1], [v1.14.2][irb-v1.14.2], [v1.14.3][irb-v1.14.3]
 * json 2.9.1
   * 2.7.1 to [v2.7.2][json-v2.7.2], [v2.7.3.rc1][json-v2.7.3.rc1], [v2.7.3][json-v2.7.3], [v2.7.4][json-v2.7.4], [v2.7.5][json-v2.7.5], [v2.7.6][json-v2.7.6], [v2.8.0][json-v2.8.0], [v2.8.1][json-v2.8.1], [v2.8.2][json-v2.8.2], [v2.9.0][json-v2.9.0], [v2.9.1][json-v2.9.1]
-* logger 1.6.3
-  * 1.6.0 to [v1.6.1][logger-v1.6.1], [v1.6.2][logger-v1.6.2], [v1.6.3][logger-v1.6.3]
+* logger 1.6.4
+  * 1.6.0 to [v1.6.1][logger-v1.6.1], [v1.6.2][logger-v1.6.2], [v1.6.3][logger-v1.6.3], [v1.6.4][logger-v1.6.4]
 * net-http 0.6.0
   * 0.4.0 to [v0.4.1][net-http-v0.4.1], [v0.5.0][net-http-v0.5.0], [v0.6.0][net-http-v0.6.0]
 * open-uri 0.5.0
@@ -621,6 +621,7 @@ The following bundled gems are promoted from default gems.
 [logger-v1.6.1]: https://github.com/ruby/logger/releases/tag/v1.6.1
 [logger-v1.6.2]: https://github.com/ruby/logger/releases/tag/v1.6.2
 [logger-v1.6.3]: https://github.com/ruby/logger/releases/tag/v1.6.3
+[logger-v1.6.4]: https://github.com/ruby/logger/releases/tag/v1.6.4
 [net-http-v0.4.1]: https://github.com/ruby/net-http/releases/tag/v0.4.1
 [net-http-v0.5.0]: https://github.com/ruby/net-http/releases/tag/v0.5.0
 [net-http-v0.6.0]: https://github.com/ruby/net-http/releases/tag/v0.6.0
