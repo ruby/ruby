@@ -5242,6 +5242,27 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+/*
+ *  call-seq:
+ *    xmlschema(fraction_digits=0) -> string
+ *
+ *  Returns a string which represents the time as a dateTime defined by XML
+ *  Schema:
+ *
+ *    CCYY-MM-DDThh:mm:ssTZD
+ *    CCYY-MM-DDThh:mm:ss.sssTZD
+ *
+ *  where TZD is Z or [+-]hh:mm.
+ *
+ *  If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
+ *
+ *  +fraction_digits+ specifies a number of digits to use for fractional
+ *  seconds.  Its default value is 0.
+ *
+ *      t = Time.now
+ *      t.xmlschema  # => "2011-10-05T22:26:12-04:00"
+ */
+
 static VALUE
 time_xmlschema(int argc, VALUE *argv, VALUE time)
 {
