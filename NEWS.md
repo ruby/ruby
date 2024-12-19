@@ -186,7 +186,7 @@ The following default gems are updated.
 * [benchmark][benchmark] 0.4.0
     * 0.3.0 to [v0.4.0][benchmark-v0.4.0]
 * [bundler][bundler] 2.6.1
-    * 2.5.3 to [v2.5.4][bundler-v2.5.4], [v2.5.5][bundler-v2.5.5], [v2.5.6][bundler-v2.5.6], [v2.5.7][bundler-v2.5.7], [v2.5.8][bundler-v2.5.8], [v2.5.9][bundler-v2.5.9], [v2.5.10][bundler-v2.5.10], [v2.5.11][bundler-v2.5.11], [v2.5.12][bundler-v2.5.12], [v2.5.13][bundler-v2.5.13], [v2.5.14][bundler-v2.5.5.14], [v2.5.15][bundler-v2.5.15], [v2.5.16][bundler-v2.5.16], [v2.5.17][bundler-v2.5.17], [v2.5.18][bundler-v2.5.18], [v2.5.19][bundler-v2.5.19], [v2.5.20][bundler-v2.5.20], [v2.5.21][bundler-v2.5.21], [v2.5.22][bundler-v2.5.22], [v2.5.23][bundler-v2.5.23], [v2.6.0][bundler-v2.6.0], [v2.6.1][bundler-v2.6.1]
+    * 2.5.3 to [v2.5.4][bundler-v2.5.4], [v2.5.5][bundler-v2.5.5], [v2.5.6][bundler-v2.5.6], [v2.5.7][bundler-v2.5.7], [v2.5.8][bundler-v2.5.8], [v2.5.9][bundler-v2.5.9], [v2.5.10][bundler-v2.5.10], [v2.5.11][bundler-v2.5.11], [v2.5.12][bundler-v2.5.12], [v2.5.13][bundler-v2.5.13], [v2.5.14][bundler-v2.5.14], [v2.5.15][bundler-v2.5.15], [v2.5.16][bundler-v2.5.16], [v2.5.17][bundler-v2.5.17], [v2.5.18][bundler-v2.5.18], [v2.5.19][bundler-v2.5.19], [v2.5.20][bundler-v2.5.20], [v2.5.21][bundler-v2.5.21], [v2.5.22][bundler-v2.5.22], [v2.5.23][bundler-v2.5.23], [v2.6.0][bundler-v2.6.0], [v2.6.1][bundler-v2.6.1]
 * [date][date] 3.4.1
     * 3.3.4 to [v3.4.0][date-v3.4.0], [v3.4.1][date-v3.4.1]
 * [delegate][delegate] 0.4.0
