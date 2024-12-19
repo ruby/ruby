@@ -2605,7 +2605,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     rb_clear_method_cache(module, name);
                 }
                 else {
-                    rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
+                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
                 }
                 break;
               case VM_METHOD_TYPE_BMETHOD: {
@@ -2624,19 +2624,19 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                         rb_clear_method_cache(module, name);
                     }
                     else {
-                        rb_warn("Skipping set of ruby2_keywords flag for %s (method accepts keywords or method does not accept argument splat)", rb_id2name(name));
+                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
                     }
                     break;
                 }
               }
               /* fallthrough */
               default:
-                rb_warn("Skipping set of ruby2_keywords flag for %s (method not defined in Ruby)", rb_id2name(name));
+                rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method not defined in Ruby)", QUOTE_ID(name));
                 break;
             }
         }
         else {
-            rb_warn("Skipping set of ruby2_keywords flag for %s (can only set in method defining module)", rb_id2name(name));
+            rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (can only set in method defining module)", QUOTE_ID(name));
         }
     }
     return Qnil;
