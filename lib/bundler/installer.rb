@@ -91,6 +91,11 @@ module Bundler
     end
 
     def generate_bundler_executable_stubs(spec, options = {})
+      if spec.name == "bundler"
+        Bundler.ui.warn "Bundler itself does not use binstubs because its version is selected by RubyGems"
+        return
+      end
+
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
         spec.runtime_dependencies.each do |dep|
@@ -115,10 +120,6 @@ module Bundler
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
       template_path = File.expand_path("templates/Executable", __dir__)
-      if spec.name == "bundler"
-        template_path += ".bundler"
-        spec.executables = %(bundle)
-      end
       template = File.read(template_path)
 
       exists = []
