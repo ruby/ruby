@@ -1,5 +1,7 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
+  verbose, $VERBOSE = $VERBOSE, nil
+
   require_relative '../fixtures/classes'
 
   describe "WIN32OLE#ole_func_methods" do
@@ -19,4 +21,6 @@ platform_is :windows do
       @dict.ole_func_methods.map { |m| m.name }.include?('AddRef').should be_true
     end
   end
+ensure
+  $VERBOSE = verbose
 end

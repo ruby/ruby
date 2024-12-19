@@ -1,6 +1,8 @@
 require_relative "../../../spec_helper"
 
 platform_is :windows do
+  verbose, $VERBOSE = $VERBOSE, nil
+
   require_relative '../fixtures/classes'
 
   describe "WIN32OLE#ole_obj_help" do
@@ -16,4 +18,6 @@ platform_is :windows do
       @dict.ole_obj_help.kind_of?(WIN32OLE_TYPE).should be_true
     end
   end
+ensure
+  $VERBOSE = verbose
 end
