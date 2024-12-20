@@ -2526,6 +2526,7 @@ end
       assert_prism_eval("module Prism; @prism = 1; 1 in ^@prism; end")
       assert_prism_eval("$prism = 1; 1 in ^$prism")
       assert_prism_eval("prism = 1; 1 in ^prism")
+      assert_prism_eval("[1].each { 1 => ^it }")
     end
 
     ############################################################################
