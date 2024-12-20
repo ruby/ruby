@@ -1124,6 +1124,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         ftptr = RSTRING_PTR(lookup_name);
         if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
             *path = rb_filesystem_str_new_cstr(ftptr);
+            RB_GC_GUARD(lookup_name);
             return 's';
         }
     }
