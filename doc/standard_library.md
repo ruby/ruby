@@ -14,12 +14,12 @@ of each.
 
 ## Extensions
 
-- `Coverage`: Provides coverage measurement for Ruby.
-- `Monitor`: Provides a reentrant mutex.
-- `objspace`: Extends the ObjectSpace module to add methods for internal statistics.
-- `PTY`: Creates and manages pseudo-terminals.
-- `Ripper`: Provides an interface for parsing Ruby programs into S-expressions.
-- `Socket`: Accesses underlying OS socket implementations.
+- `Coverage`: Provides coverage measurement for Ruby
+- `Monitor`: Provides a reentrant mutex
+- `objspace`: Extends the ObjectSpace module to add methods for internal statistics
+- `PTY`: Creates and manages pseudo-terminals
+- `Ripper`: Provides an interface for parsing Ruby programs into S-expressions
+- `Socket`: Accesses underlying OS socket implementations
 
 # Default gems
 
@@ -104,7 +104,7 @@ of each.
 ## Libraries
 
 - [minitest]: A test library supporting TDD, BDD, mocking, and benchmarking
-- [power_assert]: Power Assert for Ruby.
+- [power_assert]: Power Assert for Ruby
 - [rake]: Ruby build program with capabilities similar to make
 - [test-unit]: A compatibility layer for MiniTest
 - [rexml]: An XML toolkit for Ruby
@@ -113,12 +113,12 @@ of each.
 - [net-imap]: Ruby client API for the Internet Message Access Protocol
 - [net-pop]: Ruby client library for POP3
 - [net-smtp]: Simple Mail Transfer Protocol client library for Ruby
-- [matrix]: Represents a mathematical matrix.
+- [matrix]: Represents a mathematical matrix
 - [prime]: Prime numbers and factorization library
 - [rbs]: RBS is a language to describe the structure of Ruby programs
 - [typeprof]: A type analysis tool for Ruby code based on abstract interpretation
 - [debug]: Debugging functionality for Ruby
-- [racc]: A LALR(1) parser generator written in Ruby.
+- [racc]: A LALR(1) parser generator written in Ruby
 - [mutex_m]: Mixin to extend objects to be handled like a Mutex
 - [getoptlong]: Parse command line options similar to the GNU C getopt_long()
 - [base64]: Support for encoding and decoding binary data using a Base64 representation
