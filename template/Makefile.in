@@ -353,10 +353,6 @@ modular-gc-precheck:
 	    echo "You must configure with --with-modular-gc to use modular GC"; \
 	    exit 1; \
 	fi
-	$(Q) if test -z $(MODULAR_GC); then \
-	    echo "You must specify MODULAR_GC with the GC to build"; \
-	    exit 1; \
-	fi
 
 pre-install-local:: pkgconfig-data
 
