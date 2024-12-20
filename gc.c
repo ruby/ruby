@@ -707,6 +707,7 @@ typedef struct gc_function_map {
 static rb_gc_function_map_t rb_gc_functions;
 
 # define RUBY_GC_LIBRARY "RUBY_GC_LIBRARY"
+# define MODULAR_GC_DIR STRINGIZE(modular_gc_dir)
 
 static void
 ruby_modular_gc_init(void)

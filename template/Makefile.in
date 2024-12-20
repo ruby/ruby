@@ -97,7 +97,7 @@ cppflags = @cppflags@
 incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
 _RUBY_DEVEL_enabled = $(RUBY_DEVEL:no=)
-XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1)
+XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1) -Dmodular_gc_dir="$(modular_gc_dir)"
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)

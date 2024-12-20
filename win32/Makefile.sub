@@ -156,6 +156,9 @@ DEBUGFLAGS = -Zi
 !if "$(RUBY_DEVEL)" == "yes"
 XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 !endif
+!if "$(modular_gc_dir)" != ""
+XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
+!endif
 !if !defined(OPTFLAGS)
 !if $(MSC_VER) < 1400
 OPTFLAGS = -O2b2xg-
