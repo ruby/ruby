@@ -280,7 +280,7 @@ module GC
   #
   # The <code>GC.config</code> hash can also contain keys that are global and
   # read-only. These keys are not specific to any one \GC library implementation
-  # and attempting to read them will raise +ArgumentError+.
+  # and attempting to write to them will raise +ArgumentError+.
   #
   # There is currently only one global, read-only key:
   #
