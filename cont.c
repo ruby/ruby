@@ -277,7 +277,12 @@ static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
 void
 rb_free_shared_fiber_pool(void)
 {
-    xfree(shared_fiber_pool.allocations);
+    struct fiber_pool_allocation *allocations = shared_fiber_pool.allocations;
+    while (allocations) {
+        struct fiber_pool_allocation *next = allocations->next;
+        xfree(allocations);
+        allocations = next;
+    }
 }
 
 static ID fiber_initialize_keywords[3] = {0};
