@@ -91,25 +91,22 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
   def self.uplevel
     frame_count = 0
-    frames_to_skip = 3
+    require_labels = ["replace_require", "require"]
     uplevel = 0
     require_found = false
     Thread.each_caller_location do |cl|
       frame_count += 1
-      if frames_to_skip >= 1
-        frames_to_skip -= 1
-        next
-      end
-      uplevel += 1
+
       if require_found
-        if cl.base_label != "require"
+        unless require_labels.include?(cl.base_label)
           return uplevel
         end
       else
-        if cl.base_label == "require"
+        if require_labels.include?(cl.base_label)
           require_found = true
         end
       end
+      uplevel += 1
       # Don't show script name when bundle exec and call ruby script directly.
       if cl.path.end_with?("bundle")
         frame_count = 0

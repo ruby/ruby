@@ -75,7 +75,9 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/csv was loaded from (.*) from Ruby 3.4.0/)
+    expect(err).to include(/-e:8/)
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/-e:11/)
   end
 
   it "Show warning when bundled gems called as dependency" do
@@ -95,8 +97,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
-    # TODO: We should assert caller location like below:
-    # $GEM_HOME/gems/activesupport-7.0.7.2/lib/active_support/core_ext/big_decimal.rb:3: warning: bigdecimal ...
+    expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
   it "Show warning dash gem like net/smtp" do
@@ -112,6 +113,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/net\/smtp was loaded from (.*) from Ruby 3.1.0/)
+    expect(err).to include(/-e:8/)
     expect(err).to include("You can add net-smtp")
   end
 
@@ -127,6 +129,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/fiddle\/import\.rb:2/) # brittle
   end
 
   it "Show warning when bundle exec with ruby and script" do
@@ -139,6 +142,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ruby script.rb"
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/script\.rb:1/)
   end
 
   it "Show warning when bundle exec with shebang's script" do
@@ -155,6 +159,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ./script.rb"
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/script\.rb:2/)
   end
 
   it "Show warning when bundle exec with -r option" do
@@ -185,6 +190,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/-e:12/)
   end
 
   it "Don't show warning when bundled gems called as dependency" do
@@ -295,8 +301,7 @@ RSpec.describe "bundled_gems.rb" do
     bundle "exec ruby script.rb"
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
-    # TODO: We should assert caller location like below:
-    # test_warn_zeitwerk.rb:15: warning: ...
+    expect(err).to include(/script\.rb:6/)
   end
 
   it "Don't show warning fiddle/import when fiddle on Gemfile" do
