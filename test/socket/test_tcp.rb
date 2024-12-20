@@ -142,7 +142,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
@@ -163,13 +162,13 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       test_mode_settings: { delay: { ipv4: 1000 } }
     )
     assert_true(socket.remote_address.ipv6?)
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+  ensure
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v4_hostname_resolved_earlier
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     server = TCPServer.new("127.0.0.1", 0)
@@ -182,15 +181,14 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       fast_fallback: true,
       test_mode_settings: { delay: { ipv6: 1000 } }
     )
-
     assert_true(socket.remote_address.ipv4?)
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+  ensure
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
@@ -212,21 +210,21 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       test_mode_settings: { delay: { ipv6: delay_time } }
     )
     assert_true(socket.remote_address.ipv6?)
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+  ensure
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     ipv4_address = "127.0.0.1"
-    ipv4_server = Socket.new(Socket::AF_INET, :STREAM)
-    ipv4_server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
-    port = ipv4_server.connect_address.ip_port
+    server = Socket.new(Socket::AF_INET, :STREAM)
+    server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
+    port = server.connect_address.ip_port
 
-    ipv4_server_thread = Thread.new { ipv4_server.listen(1); ipv4_server.accept }
+    server_thread = Thread.new { server.listen(1); server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -234,40 +232,36 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       test_mode_settings: { delay: { ipv4: 10 } }
     )
     assert_equal(ipv4_address, socket.remote_address.ip_address)
-    accepted, _ = ipv4_server_thread.value
-    accepted.close
-    ipv4_server.close
-    socket.close if socket && !socket.closed?
+  ensure
+    accepted, _ = server_thread&.value
+    accepted&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
-    ipv4_server = Socket.new(Socket::AF_INET, :STREAM)
-    ipv4_server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
-    port = ipv4_server.connect_address.ip_port
+    server = Socket.new(Socket::AF_INET, :STREAM)
+    server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
+    port = server.connect_address.ip_port
 
-    ipv4_server_thread = Thread.new { ipv4_server.listen(1); ipv4_server.accept }
+    server_thread = Thread.new { server.listen(1); server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
       fast_fallback: true,
       test_mode_settings: { delay: { ipv6: 25 } }
     )
-
-    assert_equal(
-      socket.remote_address.ipv4?,
-      true
-    )
-    accepted, _ = ipv4_server_thread.value
-    accepted.close
-    ipv4_server.close
-    socket.close if socket && !socket.closed?
+    assert_true(socket.remote_address.ipv4?)
+  ensure
+    accepted, _ = server_thread&.value
+    accepted&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     server = TCPServer.new("127.0.0.1", 0)
@@ -280,15 +274,14 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       fast_fallback: true,
       test_mode_settings: { delay: { ipv4: 10 }, error: { ipv6: Socket::EAI_FAIL } }
     )
-
     assert_true(socket.remote_address.ipv4?)
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+  ensure
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
@@ -312,7 +305,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     begin
@@ -335,7 +327,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
-    # pend "to suppress the output of test failure logs in CI temporarily"
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     server = TCPServer.new("127.0.0.1", 0)
@@ -367,11 +358,9 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket = TCPSocket.new("::1", port)
     assert_true(socket.remote_address.ipv6?)
   ensure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_v4_connected_socket_with_v4_address
@@ -384,11 +373,9 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket = TCPSocket.new("127.0.0.1", port)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 
   def test_initialize_fast_fallback_is_false
@@ -401,10 +388,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket = TCPSocket.new("127.0.0.1", port, fast_fallback: false)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
-    server_thread.value.close
-    server.close
-    socket.close if socket && !socket.closed?
+    server_thread&.value&.close
+    server&.close
+    socket&.close
   end
 end if defined?(TCPSocket)
