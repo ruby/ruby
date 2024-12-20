@@ -940,7 +940,9 @@ ruby_modular_gc_init(void)
 static void
 asan_death_callback(void)
 {
-    rb_bug_without_die("ASAN error");
+    if (GET_VM()) {
+        rb_bug_without_die("ASAN error");
+    }
 }
 #endif
 
