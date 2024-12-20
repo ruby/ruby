@@ -1993,6 +1993,10 @@ end
         end
         test_prism_call_node
       CODE
+
+      # Specialized instructions
+      assert_prism_eval(%{-"literal"})
+      assert_prism_eval(%{"literal".freeze})
     end
 
     def test_CallAndWriteNode
