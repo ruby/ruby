@@ -257,7 +257,8 @@ module GC
   # Configuration parameters are \GC implementation-specific and may change
   # without notice.
   #
-  # This method can be called without parameters to retrieve the current config.
+  # This method can be called without parameters to retrieve the current config
+  # as a +Hash+ with +Symbol+ keys.
   #
   # This method can also be called with a +Hash+ argument to assign values to
   # valid config keys. Config keys missing from the passed +Hash+ will be left
@@ -275,7 +276,23 @@ module GC
   #
   # This method is only expected to work on CRuby.
   #
-  # Valid config keys for Ruby's default \GC implementation are:
+  # === \GC Implementation independent values
+  #
+  # The <code>GC.config</code> hash can also contain keys that are global and
+  # read-only. These keys are not specific to any one \GC library implementation
+  # and attempting to read them will raise +ArgumentError+.
+  #
+  # There is currently only one global, read-only key:
+  #
+  # [implementation]
+  #    Returns a +String+ containing the name of the currently loaded \GC library,
+  #    if one has been loaded using +RUBY_GC_LIBRARY+, and "default" in all other
+  #    cases
+  #
+  # === \GC Implementation specific values
+  #
+  # \GC libraries are expected to document their own configuration. Valid keys
+  # for Ruby's default \GC implementation are:
   #
   # [rgengc_allow_full_mark]
   #   Controls whether the \GC is allowed to run a full mark (young & old objects).
