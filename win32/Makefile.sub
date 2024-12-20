@@ -1328,6 +1328,12 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
+modular-gc-precheck:
+!if "$(modular_gc_dir)" == ""
+	@echo You must configure with --with-modular-gc to use modular GC
+	@exit /b 1
+!endif
+
 {$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
