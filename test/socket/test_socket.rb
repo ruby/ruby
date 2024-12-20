@@ -783,8 +783,10 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, <<~RUBY
     begin
       begin
+        # Verify that "localhost" can be resolved to an IPv6 address
+        Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
         server = TCPServer.new("::1", 0)
-      rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
         return
       end
 
@@ -838,8 +840,10 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, <<~RUBY
     begin
       begin
+        # Verify that "localhost" can be resolved to an IPv6 address
+        Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
         server = TCPServer.new("::1", 0)
-      rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
         return
       end
 
@@ -938,8 +942,10 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, <<~RUBY
     begin
       begin
+        # Verify that "localhost" can be resolved to an IPv6 address
+        Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
         server = TCPServer.new("::1", 0)
-      rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
         return
       end
 
@@ -994,8 +1000,10 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, <<~RUBY
     begin
       begin
+        # Verify that "localhost" can be resolved to an IPv6 address
+        Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
         server = TCPServer.new("::1", 0)
-      rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+      rescue Socket::ResolutionError, Errno::EADDRNOTAVAIL # IPv6 is not supported
         return
       end
 
