@@ -56,4 +56,16 @@ describe "Range#last" do
   it "raises a RangeError when called on an endless range" do
     -> { eval("(1..)").last }.should raise_error(RangeError)
   end
+
+  ruby_version_is ""..."3.4" do
+    it "raises a TypeError when passed a Integer for beginless range" do
+      -> { (..5).last(3) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "returns the specified number of elements for beginless range with the Integer end" do
+      (..5).last(3).should == [3, 4, 5]
+    end
+  end
 end
