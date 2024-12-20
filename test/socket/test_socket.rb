@@ -784,7 +784,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     server_thread = Thread.new { server.accept }
@@ -833,7 +833,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     port = server.addr[1]
@@ -921,7 +921,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     port = server.addr[1]
@@ -969,7 +969,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
-      exit
+      return
     end
 
     _, port, = server.addr
