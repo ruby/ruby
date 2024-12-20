@@ -21,7 +21,7 @@ of each.
 - `Ripper`: Provides an interface for parsing Ruby programs into S-expressions.
 - `Socket`: Accesses underlying OS socket implementations.
 
-## Default gems
+# Default gems
 
 - Default gems are shipped with Ruby releases and also available as rubygems.
 - Default gems are not uninstallable from the Ruby installation.
@@ -31,104 +31,104 @@ of each.
 - Default gems can be used at any version in a Gemfile.
     - e.g. `gem "json", ">= 2.6"`
 
-### Libraries
+## Libraries
 
-- [benchmark][benchmark]: Provides methods to measure and report the time used to execute code
-- [bundler][bundler]: Manage your Ruby application's gem dependencies
-- [cgi][cgi]: Support for the Common Gateway Interface protocol
-- [delegate][delegate]: Provides three abilities to delegate method calls to an object
-- [did_you_mean][did_you_mean]: "Did you mean?" experience in Ruby
-- [English][English]: Provides references to special global variables with less cryptic names
-- [erb][erb]: An easy-to-use but powerful templating system for Ruby
-- [error_highlight][error_highlight]: Highlight error locations in your code
-- [fileutils][fileutils]: Several file utility methods for copying, moving, removing, etc.
-- [find][find]: This module supports top-down traversal of a set of file paths
-- [forwardable][forwardable]: Provides delegation of specified methods to a designated object
-- [ipaddr][ipaddr]: Provides methods to manipulate IPv4 and IPv6 IP addresses
-- [irb][irb]: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-- [optparse][optparse]: Ruby-oriented class for command-line option analysis
-- [logger][logger]: Provides a simple logging utility for outputting messages
-- [net-http][net-http]: HTTP client API for Ruby
-- [open3][open3]: Provides access to stdin, stdout, and stderr when running other programs
-- [ostruct][ostruct]: A class to build custom data structures, similar to a Hash
-- [open-uri][open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
-- [pp][pp]: Provides a PrettyPrinter for Ruby objects
-- [prettyprint][prettyprint]: Implements a pretty printing algorithm for readable structure
-- [prism][prism]: A portable, error-tolerant Ruby parser
-- [pstore][pstore]: Implements a file-based persistence mechanism based on a Hash
-- [readline][readline]: Wrapper for the Readline extension and Reline
-- [reline][reline]: GNU Readline and Editline in a pure Ruby implementation
-- [resolv][resolv]: Thread-aware DNS resolver library in Ruby
-- [rdoc][rdoc]: Produces HTML and command-line documentation for Ruby
-- [securerandom][securerandom]: Interface for a secure random number generator
-- [set][set]: Provides a class to deal with collections of unordered, unique values
-- [shellwords][shellwords]: Manipulates strings with the word parsing rules of the UNIX Bourne shell
-- [singleton][singleton]: Implementation of the Singleton pattern for Ruby
-- [tempfile][tempfile]: A utility class for managing temporary files
-- [time][time]: Extends the Time class with methods for parsing and conversion
-- [timeout][timeout]: Auto-terminate potentially long-running operations in Ruby
-- [tmpdir][tmpdir]: Extends the Dir class to manage the OS temporary file path
-- [tsort][tsort]: Topological sorting using Tarjan's algorithm
-- [un][un]: Utilities to replace common UNIX commands
-- [uri][uri]: A Ruby module providing support for Uniform Resource Identifiers
-- [yaml][yaml]: The Ruby client library for the Psych YAML implementation
-- [weakref][weakref]: Allows a referenced object to be garbage-collected
+- [benchmark]: Provides methods to measure and report the time used to execute code
+- [bundler]: Manage your Ruby application's gem dependencies
+- [cgi]: Support for the Common Gateway Interface protocol
+- [delegate]: Provides three abilities to delegate method calls to an object
+- [did_you_mean]: "Did you mean?" experience in Ruby
+- [English]: Provides references to special global variables with less cryptic names
+- [erb]: An easy-to-use but powerful templating system for Ruby
+- [error_highlight]: Highlight error locations in your code
+- [fileutils]: Several file utility methods for copying, moving, removing, etc.
+- [find]: This module supports top-down traversal of a set of file paths
+- [forwardable]: Provides delegation of specified methods to a designated object
+- [ipaddr]: Provides methods to manipulate IPv4 and IPv6 IP addresses
+- [irb]: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+- [optparse]: Ruby-oriented class for command-line option analysis
+- [logger]: Provides a simple logging utility for outputting messages
+- [net-http]: HTTP client API for Ruby
+- [open3]: Provides access to stdin, stdout, and stderr when running other programs
+- [ostruct]: A class to build custom data structures, similar to a Hash
+- [open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
+- [pp]: Provides a PrettyPrinter for Ruby objects
+- [prettyprint]: Implements a pretty printing algorithm for readable structure
+- [prism]: A portable, error-tolerant Ruby parser
+- [pstore]: Implements a file-based persistence mechanism based on a Hash
+- [readline]: Wrapper for the Readline extension and Reline
+- [reline]: GNU Readline and Editline in a pure Ruby implementation
+- [resolv]: Thread-aware DNS resolver library in Ruby
+- [rdoc]: Produces HTML and command-line documentation for Ruby
+- [securerandom]: Interface for a secure random number generator
+- [set]: Provides a class to deal with collections of unordered, unique values
+- [shellwords]: Manipulates strings with the word parsing rules of the UNIX Bourne shell
+- [singleton]: Implementation of the Singleton pattern for Ruby
+- [tempfile]: A utility class for managing temporary files
+- [time]: Extends the Time class with methods for parsing and conversion
+- [timeout]: Auto-terminate potentially long-running operations in Ruby
+- [tmpdir]: Extends the Dir class to manage the OS temporary file path
+- [tsort]: Topological sorting using Tarjan's algorithm
+- [un]: Utilities to replace common UNIX commands
+- [uri]: A Ruby module providing support for Uniform Resource Identifiers
+- [yaml]: The Ruby client library for the Psych YAML implementation
+- [weakref]: Allows a referenced object to be garbage-collected
 
-### Extensions
+## Extensions
 
-- [date][date]: A subclass of Object that includes the Comparable module for handling dates
+- [date]: A subclass of Object that includes the Comparable module for handling dates
 - `DateTime`: A subclass of Date for handling dates, hours, minutes, seconds, and offsets
-- [digest][digest]: Provides a framework for message digest libraries
-- [etc][etc]: Provides access to information typically stored in the UNIX /etc directory
-- [fcntl][fcntl]: Loads constants defined in the OS fcntl.h C header file
-- [fiddle][fiddle]: A libffi wrapper for Ruby
-- [io-console][io-console]: Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
-- [json][json]: Implements JavaScript Object Notation for Ruby
-- [openssl][openssl]: Provides SSL, TLS, and general-purpose cryptography for Ruby
-- [pathname][pathname]: Representation of the name of a file or directory on the filesystem
-- [psych][psych]: A YAML parser and emitter for Ruby
-- [stringio][stringio]: Pseudo-I/O on String objects
-- [strscan][strscan]: Provides lexical scanning operations on a String
-- [win32ole][win32ole]: Provides an interface for OLE Automation in Ruby
-- [zlib][zlib]: Ruby interface for the zlib compression/decompression library
+- [digest]: Provides a framework for message digest libraries
+- [etc]: Provides access to information typically stored in the UNIX /etc directory
+- [fcntl]: Loads constants defined in the OS fcntl.h C header file
+- [fiddle]: A libffi wrapper for Ruby
+- [io-console]: Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
+- [json]: Implements JavaScript Object Notation for Ruby
+- [openssl]: Provides SSL, TLS, and general-purpose cryptography for Ruby
+- [pathname]: Representation of the name of a file or directory on the filesystem
+- [psych]: A YAML parser and emitter for Ruby
+- [stringio]: Pseudo-I/O on String objects
+- [strscan]: Provides lexical scanning operations on a String
+- [win32ole]: Provides an interface for OLE Automation in Ruby
+- [zlib]: Ruby interface for the zlib compression/decompression library
 
-## Bundled gems
+# Bundled gems
 
 - Bundled gems are shipped with Ruby releases and also available as rubygems.
     - They are only bundled with Ruby releases.
     - They can be uninstalled from the Ruby installation.
     - They need to be declared in a Gemfile when used with bundler.
 
-### Libraries
+## Libraries
 
-- [minitest][minitest]: A test suite with TDD, BDD, mocking, and benchmarking
-- [power_assert][power_assert]: Power Assert for Ruby.
-- [rake][rake]: Ruby build program with capabilities similar to make
-- [test-unit][test-unit]: A compatibility layer for MiniTest
-- [rexml][rexml]: An XML toolkit for Ruby
-- [rss][rss]: A family of libraries supporting various XML-based "feeds"
-- [net-ftp][net-ftp]: Support for the File Transfer Protocol
-- [net-imap][net-imap]: Ruby client API for the Internet Message Access Protocol
-- [net-pop][net-pop]: Ruby client library for POP3
-- [net-smtp][net-smtp]: Simple Mail Transfer Protocol client library for Ruby
-- [matrix][matrix]: Represents a mathematical matrix.
-- [prime][prime]: Prime numbers and factorization library
-- [rbs][rbs]: RBS is a language to describe the structure of Ruby programs
-- [typeprof][typeprof]: A type analysis tool for Ruby code based on abstract interpretation
-- [debug][debug]: Debugging functionality for Ruby
-- [racc][racc]: A LALR(1) parser generator written in Ruby.
-- [mutex_m][mutex_m]: Mixin to extend objects to be handled like a Mutex
-- [getoptlong][getoptlong]: Parse command line options similar to the GNU C getopt_long()
-- [base64][base64]: Support for encoding and decoding binary data using a Base64 representation
-- [bigdecimal][bigdecimal]: Provides arbitrary-precision floating point decimal arithmetic
-- [observer][observer]: Provides a mechanism for the publish/subscribe pattern in Ruby
-- [abbrev][abbrev]: Calculates a set of unique abbreviations for a given set of strings
-- [resolv-replace][resolv-replace]: Replace Socket DNS with Resolv
-- [rinda][rinda]: The Linda distributed computing paradigm in Ruby
-- [drb][drb]: Distributed object system for Ruby
-- [nkf][nkf]: Ruby extension for the Network Kanji Filter
-- [syslog][syslog]: Ruby interface for the POSIX system logging facility
-- [csv][csv]: Provides an interface to read and write CSV files and data
+- [minitest]: A test suite with TDD, BDD, mocking, and benchmarking
+- [power_assert]: Power Assert for Ruby.
+- [rake]: Ruby build program with capabilities similar to make
+- [test-unit]: A compatibility layer for MiniTest
+- [rexml]: An XML toolkit for Ruby
+- [rss]: A family of libraries supporting various XML-based "feeds"
+- [net-ftp]: Support for the File Transfer Protocol
+- [net-imap]: Ruby client API for the Internet Message Access Protocol
+- [net-pop]: Ruby client library for POP3
+- [net-smtp]: Simple Mail Transfer Protocol client library for Ruby
+- [matrix]: Represents a mathematical matrix.
+- [prime]: Prime numbers and factorization library
+- [rbs]: RBS is a language to describe the structure of Ruby programs
+- [typeprof]: A type analysis tool for Ruby code based on abstract interpretation
+- [debug]: Debugging functionality for Ruby
+- [racc]: A LALR(1) parser generator written in Ruby.
+- [mutex_m]: Mixin to extend objects to be handled like a Mutex
+- [getoptlong]: Parse command line options similar to the GNU C getopt_long()
+- [base64]: Support for encoding and decoding binary data using a Base64 representation
+- [bigdecimal]: Provides arbitrary-precision floating point decimal arithmetic
+- [observer]: Provides a mechanism for the publish/subscribe pattern in Ruby
+- [abbrev]: Calculates a set of unique abbreviations for a given set of strings
+- [resolv-replace]: Replace Socket DNS with Resolv
+- [rinda]: The Linda distributed computing paradigm in Ruby
+- [drb]: Distributed object system for Ruby
+- [nkf]: Ruby extension for the Network Kanji Filter
+- [syslog]: Ruby interface for the POSIX system logging facility
+- [csv]: Provides an interface to read and write CSV files and data
 
 [abbrev]: https://github.com/ruby/abbrev
 [base64]: https://github.com/ruby/base64
