@@ -3029,6 +3029,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
       case PM_GLOBAL_VARIABLE_READ_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INSTANCE_VARIABLE_READ_NODE:
+      case PM_IT_LOCAL_VARIABLE_READ_NODE:
       case PM_INTEGER_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
       case PM_INTERPOLATED_STRING_NODE:
