@@ -13060,7 +13060,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
                 return 0;
             }
             if (!p->it_id) {
-                p->it_id = idIt;
+                p->it_id = internal_id(p);
                 vtable_add(p->lvtbl->args, p->it_id);
             }
             NODE *node = NEW_DVAR(p->it_id, loc);
