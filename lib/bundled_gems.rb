@@ -72,8 +72,9 @@ module Gem::BUNDLED_GEMS # :nodoc:
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
         if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names)
-          if ::Gem::BUNDLED_GEMS.uplevel > 0
-            Kernel.warn message, uplevel: ::Gem::BUNDLED_GEMS.uplevel
+          uplevel = ::Gem::BUNDLED_GEMS.uplevel
+          if uplevel > 0
+            Kernel.warn message, uplevel: uplevel
           else
             Kernel.warn message
           end
