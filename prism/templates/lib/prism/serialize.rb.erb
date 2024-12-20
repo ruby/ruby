@@ -241,14 +241,14 @@ module Prism
       end
 
       def load_embedded_string
-        io.read(load_varuint).force_encoding(encoding)
+        io.read(load_varuint).force_encoding(encoding).freeze
       end
 
       def load_string
         type = io.getbyte
         case type
         when 1
-          input.byteslice(load_varuint, load_varuint).force_encoding(encoding)
+          input.byteslice(load_varuint, load_varuint).force_encoding(encoding).freeze
         when 2
           load_embedded_string
         else

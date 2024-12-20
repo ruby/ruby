@@ -34,7 +34,7 @@ pm_token_new(const pm_parser_t *parser, const pm_token_t *token, rb_encoding *en
 
 static VALUE
 pm_string_new(const pm_string_t *string, rb_encoding *encoding) {
-    return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding);
+    return rb_obj_freeze(rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding));
 }
 
 VALUE

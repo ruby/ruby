@@ -2049,7 +2049,7 @@ module Prism
                 location = appendee.loc
                 location = location.with_expression(location.expression.join(child.loc.expression))
 
-                children[-1] = appendee.updated(:str, [appendee.children.first << child.children.first], location: location)
+                children[-1] = appendee.updated(:str, ["#{appendee.children.first}#{child.children.first}"], location: location)
               else
                 children << child
               end
