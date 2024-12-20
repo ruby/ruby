@@ -98,11 +98,7 @@ jobs:
 
       - name: Setup Ruby GC Directory
         run: |
-          if [ "${{ contains(matrix.os, 'macos') }}" == "true" ]; then
-            echo "MODULAR_GC_DIR=/Users/runner/ruby_gc" >> $GITHUB_ENV
-          else
-            echo "MODULAR_GC_DIR=/home/runner/ruby_gc" >> $GITHUB_ENV
-          fi
+          echo "MODULAR_GC_DIR=$HOME/ruby_gc" >> $GITHUB_ENV
 
       - name: Run configure
         env:
