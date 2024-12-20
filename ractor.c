@@ -3371,7 +3371,6 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_STRING:
         rb_str_make_independent(obj);
         break;
-
       case T_OBJECT:
         {
             if (rb_shape_obj_too_complex(obj)) {
@@ -3555,7 +3554,13 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        VALUE moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        VALUE moved;
+        if (RB_TYPE_P(obj, T_STRING) && STR_EMBED_P(obj)) {
+            moved = rb_str_dup(obj);
+        }
+        else {
+            moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        }
         rb_shape_set_shape(moved, rb_shape_get_shape(obj));
         data->replacement = moved;
         return traverse_cont;
@@ -3573,9 +3578,13 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
 
-    dst->v1 = src->v1;
-    dst->v2 = src->v2;
-    dst->v3 = src->v3;
+    if (RB_TYPE_P(v, T_STRING) && STR_EMBED_P(v)) {
+    }
+    else {
+        dst->v1 = src->v1;
+        dst->v2 = src->v2;
+        dst->v3 = src->v3;
+    }
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
