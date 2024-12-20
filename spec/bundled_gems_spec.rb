@@ -187,7 +187,7 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
   end
 
-  it "Show warning when bundled gems called as dependency" do
+  it "Don't show warning when bundled gems called as dependency" do
     build_lib "activesupport", "7.0.7.2" do |s|
       s.write "lib/active_support/all.rb", "require 'ostruct'"
     end
