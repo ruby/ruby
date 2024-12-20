@@ -1187,6 +1187,15 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   end
 end
 
+install?('modular-gc') do
+  if modular_gc_dir = CONFIG['modular_gc_dir'] and !modular_gc_dir.empty?
+    dlext = CONFIG['DLEXT', true]
+    modular_gc_dir = File.expand_path(modular_gc_dir, CONFIG['prefix'])
+    prepare "modular GC library", modular_gc_dir
+    install Dir.glob("gc/*/librubygc.*.#{dlext}"), modular_gc_dir
+  end
+end
+
 parse_args()
 
 include FileUtils
