@@ -1611,9 +1611,6 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_hash_with_keyword_splat
-    # Prism compiler does not support keyword splat in Ractor constant [Bug #20916]
-    omit if ParserSupport.prism_enabled?
-
     a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: experimental_everything

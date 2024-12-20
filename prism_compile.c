@@ -1357,13 +1357,15 @@ pm_compile_call_and_or_write_node(rb_iseq_t *iseq, bool and_node, const pm_node_
     if (lskip && !popped) PUSH_LABEL(ret, lskip);
 }
 
+static void pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_flags_t shareability, VALUE path, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, bool top);
+
 /**
  * This function compiles a hash onto the stack. It is used to compile hash
  * literals and keyword arguments. It is assumed that if we get here that the
  * contents of the hash are not popped.
  */
 static void
-pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *elements, bool argument, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
+pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list_t *elements, const pm_node_flags_t shareability, VALUE path, bool argument, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(scope_node->parser, node);
 
@@ -1406,11 +1408,11 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     for (size_t index = 0; index < elements->size; index++) {
         const pm_node_t *element = elements->nodes[index];
 
-
         switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
             // Pre-allocation check (this branch can be omitted).
             if (
+                (shareability == 0) &&
                 PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL) && (
                     (!static_literal && ((index + min_tmp_hash_length) < elements->size)) ||
                     (first_chunk && stack_length == 0)
@@ -1468,7 +1470,15 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
             // If this is a plain assoc node, then we can compile it directly
             // and then add the total number of values on the stack.
-            pm_compile_node(iseq, element, anchor, false, scope_node);
+            if (shareability == 0) {
+                pm_compile_node(iseq, element, anchor, false, scope_node);
+            }
+            else {
+                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
+                pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, ret, scope_node, false);
+                pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, ret, scope_node, false);
+            }
+
             if ((stack_length += 2) >= max_stack_length) FLUSH_CHUNK;
             break;
           }
@@ -1511,7 +1521,12 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     // only done for method calls and not for literal hashes,
                     // because literal hashes should always result in a new
                     // hash.
-                    PM_COMPILE_NOT_POPPED(element);
+                    if (shareability == 0) {
+                        PM_COMPILE_NOT_POPPED(element);
+                    }
+                    else {
+                        pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                    }
                 }
                 else {
                     // There is more than one keyword argument, or this is not a
@@ -1527,7 +1542,13 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                         PUSH_INSN(ret, location, swap);
                     }
 
-                    PM_COMPILE_NOT_POPPED(element);
+                    if (shareability == 0) {
+                        PM_COMPILE_NOT_POPPED(element);
+                    }
+                    else {
+                        pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                    }
+
                     PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
                 }
             }
@@ -1590,17 +1611,17 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         // in this case, so mark the method as passing mutable
                         // keyword splat.
                         *flags |= VM_CALL_KW_SPLAT_MUT;
-                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                        pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
                     }
                     else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
                         *flags |= VM_CALL_KW_SPLAT_MUT;
                         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                         PUSH_INSN1(ret, location, newhash, INT2FIX(0));
-                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                        pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
                         PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
                     }
                     else {
-                        pm_compile_hash_elements(iseq, argument, elements, true, ret, scope_node);
+                        pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
                     }
                 }
                 else {
@@ -5289,19 +5310,7 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
             PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         }
 
-        for (size_t index = 0; index < cast->elements.size; index++) {
-            const pm_node_t *element = cast->elements.nodes[index];
-
-            if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE)) {
-                COMPILE_ERROR(iseq, location.line, "Ractor constant writes do not support **");
-            }
-
-            const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
-            pm_compile_shareable_constant_value(iseq, assoc->key, shareability, path, ret, scope_node, false);
-            pm_compile_shareable_constant_value(iseq, assoc->value, shareability, path, ret, scope_node, false);
-        }
-
-        PUSH_INSN1(ret, location, newhash, INT2FIX(cast->elements.size * 2));
+        pm_compile_hash_elements(iseq, (const pm_node_t *) cast, &cast->elements, shareability, path, false, ret, scope_node);
 
         if (top) {
             ID method_id = (shareability & PM_SHAREABLE_CONSTANT_NODE_FLAGS_EXPERIMENTAL_COPY) ? rb_intern("make_shareable_copy") : rb_intern("make_shareable");
@@ -6752,7 +6761,7 @@ pm_compile_array_node(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_list
             //                ^^^^^
             //
             const pm_keyword_hash_node_t *keyword_hash = (const pm_keyword_hash_node_t *) element;
-            pm_compile_hash_elements(iseq, element, &keyword_hash->elements, false, ret, scope_node);
+            pm_compile_hash_elements(iseq, element, &keyword_hash->elements, 0, Qundef, false, ret, scope_node);
 
             // This boolean controls the manner in which we push the
             // hash onto the array. If it's all keyword splats, then we
@@ -8940,7 +8949,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             else {
-                pm_compile_hash_elements(iseq, node, elements, false, ret, scope_node);
+                pm_compile_hash_elements(iseq, node, elements, 0, Qundef, false, ret, scope_node);
             }
         }
 
