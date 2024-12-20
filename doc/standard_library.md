@@ -15,7 +15,7 @@ of each.
 ## Extensions
 
 - `Coverage`: Provides coverage measurement for Ruby.
-- `Monitor`: Provides an object or module that can be safely used by more than one thread.
+- `Monitor`: Provides a reentrant mutex.
 - `objspace`: Extends the ObjectSpace module to add methods for internal statistics.
 - `PTY`: Creates and manages pseudo-terminals.
 - `Ripper`: Provides an interface for parsing Ruby programs into S-expressions.
@@ -33,64 +33,66 @@ of each.
 
 ## Libraries
 
-- [benchmark]: Provides methods to measure and report the time used to execute code
-- [bundler]: Manage your Ruby application's gem dependencies
-- [cgi]: Support for the Common Gateway Interface protocol
-- [delegate]: Provides three abilities to delegate method calls to an object
-- [did_you_mean]: "Did you mean?" experience in Ruby
-- [English]: Provides references to special global variables with less cryptic names
-- [erb]: An easy-to-use but powerful templating system for Ruby
-- [error_highlight]: Highlight error locations in your code
-- [fileutils]: Several file utility methods for copying, moving, removing, etc.
-- [find]: This module supports top-down traversal of a set of file paths
-- [forwardable]: Provides delegation of specified methods to a designated object
-- [ipaddr]: Provides methods to manipulate IPv4 and IPv6 IP addresses
-- [irb]: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-- [optparse]: Ruby-oriented class for command-line option analysis
-- [logger]: Provides a simple logging utility for outputting messages
-- [net-http]: HTTP client API for Ruby
-- [open3]: Provides access to stdin, stdout, and stderr when running other programs
-- [ostruct]: A class to build custom data structures, similar to a Hash
-- [open-uri]: An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
-- [pp]: Provides a PrettyPrinter for Ruby objects
-- [prettyprint]: Implements a pretty printing algorithm for readable structure
-- [prism]: A portable, error-tolerant Ruby parser
-- [pstore]: Implements a file-based persistence mechanism based on a Hash
-- [readline]: Wrapper for the Readline extension and Reline
-- [reline]: GNU Readline and Editline in a pure Ruby implementation
-- [resolv]: Thread-aware DNS resolver library in Ruby
-- [rdoc]: Produces HTML and command-line documentation for Ruby
-- [securerandom]: Interface for a secure random number generator
-- [set]: Provides a class to deal with collections of unordered, unique values
-- [shellwords]: Manipulates strings with the word parsing rules of the UNIX Bourne shell
-- [singleton]: Implementation of the Singleton pattern for Ruby
-- [tempfile]: A utility class for managing temporary files
-- [time]: Extends the Time class with methods for parsing and conversion
-- [timeout]: Auto-terminate potentially long-running operations in Ruby
-- [tmpdir]: Extends the Dir class to manage the OS temporary file path
-- [tsort]: Topological sorting using Tarjan's algorithm
-- [un]: Utilities to replace common UNIX commands
-- [uri]: A Ruby module providing support for Uniform Resource Identifiers
-- [yaml]: The Ruby client library for the Psych YAML implementation
-- [weakref]: Allows a referenced object to be garbage-collected
+- Benchmark ([GitHub][benchmark]): Provides methods to measure and report the time used to execute code
+- Bundler ([GitHub][bundler]): Manage your Ruby application's gem dependencies
+- CGI ([GitHub][cgi]): Support for the Common Gateway Interface protocol
+- Delegator ([GitHub][delegate]): Provides three abilities to delegate method calls to an object
+- DidYouMean ([GitHub][did_you_mean]): "Did you mean?" experience in Ruby
+- English ([GitHub][English]): Provides references to special global variables with less cryptic names
+- ERB ([GitHub][erb]): An easy-to-use but powerful templating system for Ruby
+- ErrorHighlight ([GitHub][error_highlight]): Highlight error locations in your code
+- FileUtils ([GitHub][fileutils]): Several file utility methods for copying, moving, removing, etc.
+- Find ([GitHub][find]): This module supports top-down traversal of a set of file paths
+- Forwardable ([GitHub][forwardable]): Provides delegation of specified methods to a designated object
+- IPAddr ([GitHub][ipaddr]): Provides methods to manipulate IPv4 and IPv6 IP addresses
+- OptionParser ([GitHub][optparse]): Ruby-oriented class for command-line option analysis
+- Logger ([GitHub][logger]): Provides a simple logging utility for outputting messages
+- Net::HTTP ([GitHub][net-http]): HTTP client API for Ruby
+- Open3 ([GitHub][open3]): Provides access to stdin, stdout, and stderr when running other programs
+- OpenStruct ([GitHub][ostruct]): A class to build custom data structures, similar to a Hash
+- OpenURI ([GitHub][open-uri]): An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
+- PP ([GitHub][pp]): Provides a PrettyPrinter for Ruby objects
+- PrettyPrint ([GitHub][prettyprint]): Implements a pretty printing algorithm for readable structure
+- Prism ([GitHub][prism]): A portable, error-tolerant Ruby parser
+- PStore ([GitHub][pstore]): Implements a file-based persistence mechanism based on a Hash
+- Readline ([GitHub][readline]): Wrapper for the Readline extension and Reline
+- Reline ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
+- Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
+- SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
+- Set ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
+- Shellwords ([GitHub][shellwords]): Manipulates strings with the word parsing rules of the UNIX Bourne shell
+- Singleton ([GitHub][singleton]): Implementation of the Singleton pattern for Ruby
+- Tempfile ([GitHub][tempfile]): A utility class for managing temporary files
+- Time ([GitHub][time]): Extends the Time class with methods for parsing and conversion
+- Timeout ([GitHub][timeout]): Auto-terminate potentially long-running operations in Ruby
+- TSort ([GitHub][tsort]): Topological sorting using Tarjan's algorithm
+- UN ([GitHub][un]): Utilities to replace common UNIX commands
+- URI ([GitHub][uri]): A Ruby module providing support for Uniform Resource Identifiers
+- YAML ([GitHub][yaml]): The Ruby client library for the Psych YAML implementation
+- WeakRef ([GitHub][weakref]): Allows a referenced object to be garbage-collected
 
 ## Extensions
 
-- [date]: A subclass of Object that includes the Comparable module for handling dates
-- `DateTime`: A subclass of Date for handling dates, hours, minutes, seconds, and offsets
-- [digest]: Provides a framework for message digest libraries
-- [etc]: Provides access to information typically stored in the UNIX /etc directory
-- [fcntl]: Loads constants defined in the OS fcntl.h C header file
-- [fiddle]: A libffi wrapper for Ruby
-- [io-console]: Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
-- [json]: Implements JavaScript Object Notation for Ruby
-- [openssl]: Provides SSL, TLS, and general-purpose cryptography for Ruby
-- [pathname]: Representation of the name of a file or directory on the filesystem
-- [psych]: A YAML parser and emitter for Ruby
-- [stringio]: Pseudo-I/O on String objects
-- [strscan]: Provides lexical scanning operations on a String
-- [win32ole]: Provides an interface for OLE Automation in Ruby
-- [zlib]: Ruby interface for the zlib compression/decompression library
+- Date ([GitHub][date]): Represents dates, with a subclass for dates with time and timezones
+- Digest ([GitHub][digest]): Provides a framework for message digest libraries
+- Etc ([GitHub][etc]): Provides access to information typically stored in the UNIX /etc directory
+- Fcntl ([GitHub][fcntl]): Loads constants defined in the OS fcntl.h C header file
+- Fiddle ([GitHub][fiddle]): A libffi wrapper for Ruby
+- IO.console ([GitHub][io-console]): Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
+- JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
+- OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
+- Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
+- Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
+- StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
+- StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
+- TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
+- WIN32OLE ([GitHub][win32ole]): Provides an interface for OLE Automation in Ruby
+- Zlib ([GitHub][zlib]): Ruby interface for the zlib compression/decompression library
+
+## Tools
+
+- [IRB][irb-doc] ([GitHub][irb]): Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+- [RDoc][rdoc-doc] ([GitHub][rdoc]): Documentation generator for Ruby
 
 # Bundled gems
 
@@ -101,7 +103,7 @@ of each.
 
 ## Libraries
 
-- [minitest]: A test suite with TDD, BDD, mocking, and benchmarking
+- [minitest]: A test library supporting TDD, BDD, mocking, and benchmarking
 - [power_assert]: Power Assert for Ruby.
 - [rake]: Ruby build program with capabilities similar to make
 - [test-unit]: A compatibility layer for MiniTest
@@ -212,3 +214,6 @@ of each.
 [win32ole]: https://github.com/ruby/win32ole
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
+
+[irb-doc]: https://ruby.github.io/irb/
+[rdoc-doc]: https://ruby.github.io/rdoc/
