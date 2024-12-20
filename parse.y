@@ -1141,8 +1141,8 @@ static rb_node_undef_t *rb_node_undef_new(struct parser_params *p, NODE *nd_unde
 static rb_node_class_t *rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc);
 static rb_node_module_t *rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc);
-static rb_node_colon2_t *rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc);
-static rb_node_colon3_t *rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc);
+static rb_node_colon2_t *rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc);
+static rb_node_colon3_t *rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc);
 static rb_node_dot2_t *rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc);
 static rb_node_dot3_t *rb_node_dot3_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc);
 static rb_node_self_t *rb_node_self_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1249,8 +1249,8 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_CLASS(n,b,s,loc) (NODE *)rb_node_class_new(p,n,b,s,loc)
 #define NEW_MODULE(n,b,loc) (NODE *)rb_node_module_new(p,n,b,loc)
 #define NEW_SCLASS(r,b,loc) (NODE *)rb_node_sclass_new(p,r,b,loc)
-#define NEW_COLON2(c,i,loc) (NODE *)rb_node_colon2_new(p,c,i,loc)
-#define NEW_COLON3(i,loc) (NODE *)rb_node_colon3_new(p,i,loc)
+#define NEW_COLON2(c,i,loc,d_loc,n_loc) (NODE *)rb_node_colon2_new(p,c,i,loc,d_loc,n_loc)
+#define NEW_COLON3(i,loc,d_loc,n_loc) (NODE *)rb_node_colon3_new(p,i,loc,d_loc,n_loc)
 #define NEW_DOT2(b,e,loc) (NODE *)rb_node_dot2_new(p,b,e,loc)
 #define NEW_DOT3(b,e,loc) (NODE *)rb_node_dot3_new(p,b,e,loc)
 #define NEW_SELF(loc) (NODE *)rb_node_self_new(p,loc)
@@ -3263,7 +3263,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                 | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt command_rhs
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
-                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
+                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc, &@2, &@3), $4, $6, $5, &@$);
                     /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
                     }
                 | primary_value tCOLON2 tIDENTIFIER tOP_ASGN lex_ctxt command_rhs
@@ -3666,12 +3666,12 @@ mlhs_node	: user_or_keyword_variable
                 | primary_value tCOLON2 tCONSTANT
                     {
                     /*% ripper: const_path_field!($:1, $:3) %*/
-                        $$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
+                        $$ = const_decl(p, NEW_COLON2($1, $3, &@$, &@2, &@3), &@$);
                     }
                 | tCOLON3 tCONSTANT
                     {
                     /*% ripper: top_const_field!($:2) %*/
-                        $$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
+                        $$ = const_decl(p, NEW_COLON3($2, &@$, &@1, &@2), &@$);
                     }
                 | backref
                     {
@@ -3709,12 +3709,12 @@ lhs		: user_or_keyword_variable
                 | primary_value tCOLON2 tCONSTANT
                     {
                     /*% ripper: const_path_field!($:1, $:3) %*/
-                        $$ = const_decl(p, NEW_COLON2($1, $3, &@$), &@$);
+                        $$ = const_decl(p, NEW_COLON2($1, $3, &@$, &@2, &@3), &@$);
                     }
                 | tCOLON3 tCONSTANT
                     {
                     /*% ripper: top_const_field!($:2) %*/
-                        $$ = const_decl(p, NEW_COLON3($2, &@$), &@$);
+                        $$ = const_decl(p, NEW_COLON3($2, &@$, &@1, &@2), &@$);
                     }
                 | backref
                     {
@@ -3737,17 +3737,17 @@ cname		: tIDENTIFIER
 
 cpath		: tCOLON3 cname
                     {
-                        $$ = NEW_COLON3($2, &@$);
+                        $$ = NEW_COLON3($2, &@$, &@1, &@2);
                     /*% ripper: top_const_ref!($:2) %*/
                     }
                 | cname
                     {
-                        $$ = NEW_COLON2(0, $1, &@$);
+                        $$ = NEW_COLON2(0, $1, &@$, &NULL_LOC, &@1);
                     /*% ripper: const_ref!($:1) %*/
                     }
                 | primary_value tCOLON2 cname
                     {
-                        $$ = NEW_COLON2($1, $3, &@$);
+                        $$ = NEW_COLON2($1, $3, &@$, &@2, &@3);
                     /*% ripper: const_path_ref!($:1, $:3) %*/
                     }
                 ;
@@ -3862,13 +3862,13 @@ arg		: lhs '=' lex_ctxt arg_rhs
                 | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
-                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
+                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc, &@2, &@3), $4, $6, $5, &@$);
                     /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
                     }
                 | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@2);
-                        $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
+                        $$ = new_const_op_assign(p, NEW_COLON3($2, &loc, &@1, &@2), $3, $5, $4, &@$);
                     /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
                     }
                 | backref tOP_ASGN lex_ctxt arg_rhs
@@ -4416,12 +4416,12 @@ primary         : inline_primary
                     }
                 | primary_value tCOLON2 tCONSTANT
                     {
-                        $$ = NEW_COLON2($1, $3, &@$);
+                        $$ = NEW_COLON2($1, $3, &@$, &@2, &@3);
                     /*% ripper: const_path_ref!($:1, $:3) %*/
                     }
                 | tCOLON3 tCONSTANT
                     {
-                        $$ = NEW_COLON3($2, &@$);
+                        $$ = NEW_COLON3($2, &@$, &@1, &@2);
                     /*% ripper: top_const_ref!($:2) %*/
                     }
                 | tLBRACK aref_args ']'
@@ -5908,12 +5908,12 @@ p_expr_ref	: '^' tLPAREN expr_value rparen
 
 p_const 	: tCOLON3 cname
                     {
-                        $$ = NEW_COLON3($2, &@$);
+                        $$ = NEW_COLON3($2, &@$, &@1, &@2);
                     /*% ripper: top_const_ref!($:2) %*/
                     }
                 | p_const tCOLON2 cname
                     {
-                        $$ = NEW_COLON2($1, $3, &@$);
+                        $$ = NEW_COLON2($1, $3, &@$, &@2, &@3);
                     /*% ripper: const_path_ref!($:1, $:3) %*/
                     }
                 | tCONSTANT
@@ -11681,20 +11681,24 @@ rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd
 }
 
 static rb_node_colon2_t *
-rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc)
+rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc)
 {
     rb_node_colon2_t *n = NODE_NEWNODE(NODE_COLON2, rb_node_colon2_t, loc);
     n->nd_head = nd_head;
     n->nd_mid = nd_mid;
+    n->delimiter_loc = *delimiter_loc;
+    n->name_loc = *name_loc;
 
     return n;
 }
 
 static rb_node_colon3_t *
-rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc)
+rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc, const YYLTYPE *delimiter_loc, const YYLTYPE *name_loc)
 {
     rb_node_colon3_t *n = NODE_NEWNODE(NODE_COLON3, rb_node_colon3_t, loc);
     n->nd_mid = nd_mid;
+    n->delimiter_loc = *delimiter_loc;
+    n->name_loc = *name_loc;
 
     return n;
 }
