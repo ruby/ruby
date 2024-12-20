@@ -277,7 +277,11 @@ __EOS__
     omit "TLS 1.3 not supported" unless tls13_supported?
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
 
-    start_server do |port|
+    server_proc = lambda do |ctx, ssl|
+      readwrite_loop(ctx, ssl)
+    rescue SystemCallError, OpenSSL::SSL::SSLError
+    end
+    start_server(server_proc: server_proc) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.min_version = :TLS1_3
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
