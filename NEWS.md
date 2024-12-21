@@ -7,6 +7,8 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `it` is added to reference a block parameter. [[Feature #18980]]
+
 * String literals in files without a `frozen_string_literal` comment now emit a deprecation warning
   when they are mutated.
   These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
@@ -16,8 +18,6 @@ Note that each entry is kept to a minimum, see links for details.
     * String#+@ now duplicates when mutating the string would emit
       a deprecation warning, offered as a replacement for the
       `str.dup if str.frozen?` pattern.
-
-* `it` is added to reference a block parameter. [[Feature #18980]]
 
 * Keyword splatting `nil` when calling methods is now supported.
   `**nil` is treated similarly to `**{}`, passing no keywords,
