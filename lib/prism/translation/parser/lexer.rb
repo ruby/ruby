@@ -422,6 +422,7 @@ module Prism
                     value = trim_heredoc_whitespace(token.value, current_heredoc)
                   end
 
+<<<<<<< HEAD
                   current_string << unescape_string(value, quote_stack.last)
                   if (backslash_count = token.value[/(\\{1,})\n/, 1]&.length).nil? || backslash_count.even? || !interpolation?(quote_stack.last)
                     tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
@@ -466,6 +467,11 @@ module Prism
                     current_line = +""
                     adjustment = 0
                   end
+=======
+                  end_offset = start_offset + adjusted_line.bytesize + adjustment
+                  tokens << [:tSTRING_CONTENT, [adjusted_line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
+                  start_offset = end_offset
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
                 end
               end
               next

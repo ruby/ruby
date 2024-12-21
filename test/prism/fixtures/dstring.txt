@@ -29,10 +29,13 @@ foo\\\\\
 "
 
 "
+<<<<<<< HEAD
 foo\
 b\nar
 #{}
 "
 
 "
+=======
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
 ’"
