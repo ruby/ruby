@@ -1005,7 +1005,16 @@ newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v
         {
             memset((char *)obj + RVALUE_SIZE, 0, rb_gc_obj_slot_size(obj) - RVALUE_SIZE);
 
-            rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
+            /* We must disable GC here because the callback could call xmalloc
+             * which could potentially trigger a GC, and a lot of code is unsafe
+             * to trigger a GC right after an object has been allocated because
+             * they perform initialization for the object and assume that the
+             * GC does not trigger before then. */
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_NEWOBJ);
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
         }
         RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
     }
