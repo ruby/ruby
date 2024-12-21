@@ -542,37 +542,38 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_match (/BEGIN ENCRYPTED PRIVATE KEY/), encoded.lines[0]
     assert_same_rsa rsa, OpenSSL::PKey.read(encoded, "abcdef")
 
-    # certtool --load-privkey=test/openssl/fixtures/pkey/rsa2048.pem --to-p8 --password=abcdef
+    # Use openssl instead of certtool due to https://gitlab.com/gnutls/gnutls/-/issues/1632
+    # openssl pkcs8 -in test/openssl/fixtures/pkey/rsa2048.pem -topk8 -v2 aes-128-cbc -passout pass:abcdef
     pem = <<~EOF
     -----BEGIN ENCRYPTED PRIVATE KEY-----
-    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
+    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
     -----END ENCRYPTED PRIVATE KEY-----
     EOF
     assert_same_rsa rsa, OpenSSL::PKey.read(pem, "abcdef")
