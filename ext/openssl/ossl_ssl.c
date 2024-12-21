@@ -2054,28 +2054,32 @@ ossl_ssl_read_nonblock(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
+ossl_ssl_write_internal_safe(VALUE _args)
 {
+    VALUE *args = (VALUE*)_args;
+    VALUE self = args[0];
+    VALUE str = args[1];
+    VALUE opts = args[2];
+
     SSL *ssl;
     rb_io_t *fptr;
     int num, nonblock = opts != Qfalse;
-    VALUE tmp, cb_state;
+    VALUE cb_state;
 
     GetSSL(self, ssl);
     if (!ssl_started(ssl))
         rb_raise(eSSLError, "SSL session is not started yet");
 
-    tmp = rb_str_new_frozen(StringValue(str));
     VALUE io = rb_attr_get(self, id_i_io);
     GetOpenFile(io, fptr);
 
     /* SSL_write(3ssl) manpage states num == 0 is undefined */
-    num = RSTRING_LENINT(tmp);
+    num = RSTRING_LENINT(str);
     if (num == 0)
         return INT2FIX(0);
 
     for (;;) {
-        int nwritten = SSL_write(ssl, RSTRING_PTR(tmp), num);
+        int nwritten = SSL_write(ssl, RSTRING_PTR(str), num);
 
         cb_state = rb_attr_get(self, ID_callback_state);
         if (!NIL_P(cb_state)) {
@@ -2114,6 +2118,29 @@ ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
             ossl_raise(eSSLError, "SSL_write");
         }
     }
+}
+
+
+static VALUE
+ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
+{
+    VALUE args[3] = {self, str, opts};
+    int state;
+    str = StringValue(str);
+
+    int frozen = RB_OBJ_FROZEN(str);
+    if (!frozen) {
+        str = rb_str_locktmp(str);
+    }
+    VALUE result = rb_protect(ossl_ssl_write_internal_safe, (VALUE)args, &state);
+    if (!frozen) {
+        rb_str_unlocktmp(str);
+    }
+
+    if (state) {
+        rb_jump_tag(state);
+    }
+    return result;
 }
 
 /*
