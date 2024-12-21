@@ -38,6 +38,7 @@ module Prism
       "dos_endings.txt",
       "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
+      "leading_logical.txt",
       "method_calls.txt",
       "methods.txt",
       "multi_write.txt",

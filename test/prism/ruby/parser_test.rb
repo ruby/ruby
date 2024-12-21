@@ -64,6 +64,9 @@ module Prism
 
       # 1.. && 2
       "ranges.txt",
+
+      # Cannot yet handling leading logical operators.
+      "leading_logical.txt",
     ]
 
     # These files contain code that is being parsed incorrectly by the parser

@@ -8,6 +8,9 @@ module Prism
   class RipperTest < TestCase
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
+      # Not yet supported.
+      "leading_logical.txt",
+
       # Ripper incorrectly attributes the block to the keyword.
       "seattlerb/block_break.txt",
       "seattlerb/block_next.txt",
