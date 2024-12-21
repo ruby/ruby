@@ -190,7 +190,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/irb", "test")
       cp_r("#{upstream}/irb.gemspec", "lib/irb")
       cp_r("#{upstream}/man/irb.1", "man/irb.1")
-      cp_r("#{upstream}/doc/irb", "doc")
     when "json"
       rm_rf(%w[ext/json lib/json test/json])
       cp_r("#{upstream}/ext/json/ext", "ext/json")
