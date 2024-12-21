@@ -53,6 +53,14 @@ make_unique_str(st_table *tbl, const char *str, long len)
     }
 }
 
+static int
+delete_unique_str_dec(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    assert(existing);
+    *value = arg;
+    return ST_CONTINUE;
+}
+
 static void
 delete_unique_str(st_table *tbl, const char *str)
 {
@@ -66,7 +74,7 @@ delete_unique_str(st_table *tbl, const char *str)
             ruby_xfree((char *)n);
         }
         else {
-            st_insert(tbl, (st_data_t)str, n-1);
+            st_update(tbl, (st_data_t)str, delete_unique_str_dec, (st_data_t)(n-1));
         }
     }
 }
