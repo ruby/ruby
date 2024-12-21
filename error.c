@@ -1706,16 +1706,16 @@ check_order_keyword(VALUE opt)
  * Output:
  *
  *   "divided by 0"
- *   ["t.rb:3:in `/': divided by 0 (ZeroDivisionError)",
- *    "\tfrom t.rb:3:in `baz'",
- *    "\tfrom t.rb:10:in `bar'",
- *    "\tfrom t.rb:11:in `foo'",
- *    "\tfrom t.rb:12:in `<main>'"]
- *   ["t.rb:3:in `/': \e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m",
- *    "\tfrom t.rb:3:in `baz'",
- *    "\tfrom t.rb:10:in `bar'",
- *    "\tfrom t.rb:11:in `foo'",
- *    "\tfrom t.rb:12:in `<main>'"]
+ *   ["t.rb:3:in 'Integer#/': divided by 0 (ZeroDivisionError)",
+ *    "\tfrom t.rb:3:in 'Object#baz'",
+ *    "\tfrom t.rb:10:in 'Object#bar'",
+ *    "\tfrom t.rb:11:in 'Object#foo'",
+ *    "\tfrom t.rb:12:in '<main>'"]
+ *   ["t.rb:3:in 'Integer#/': \e[1mdivided by 0 (\e[1;4mZeroDivisionError\e[m\e[1m)\e[m",
+ *    "\tfrom t.rb:3:in 'Object#baz'",
+ *    "\tfrom t.rb:10:in 'Object#bar'",
+ *    "\tfrom t.rb:11:in 'Object#foo'",
+ *    "\tfrom t.rb:12:in '<main>'"]
  *
  * An overriding method should be careful with ANSI code enhancements;
  * see {Messages}[rdoc-ref:exceptions.md@Messages].
@@ -1864,26 +1864,31 @@ exc_inspect(VALUE exc)
  *  call-seq:
  *    backtrace -> array or nil
  *
- *  Returns a backtrace value for +self+;
- *  the returned value depends on the form of the stored backtrace value:
+ *  Returns the backtrace (the list of code locations that led to the exception),
+ *  as an array of strings.
  *
- *  - \Array of Thread::Backtrace::Location objects:
- *    returns the array of strings given by
- *    <tt>Exception#backtrace_locations.map {|loc| loc.to_s }</tt>.
- *    This is the normal case, where the backtrace value was stored by Kernel#raise.
- *  - \Array of strings: returns that array.
- *    This is the unusual case, where the backtrace value was explicitly
- *    stored as an array of strings.
- *  - +nil+: returns +nil+.
+ *  Example (assuming the code is stored in the file named <tt>t.rb</tt>):
  *
- *  Example:
+ *    def division(numerator, denominator)
+ *      numerator / denominator
+ *    end
  *
  *    begin
- *      1 / 0
- *    rescue => x
- *      x.backtrace.take(2)
+ *      division(1, 0)
+ *    rescue => ex
+ *      p ex.backtrace
+ *      # ["t.rb:2:in 'Integer#/'", "t.rb:2:in 'Object#division'", "t.rb:6:in '<main>'"]
+ *      loc = ex.backtrace.first
+ *      p loc.class
+ *      # String
  *    end
- *    # => ["(irb):132:in `/'", "(irb):132:in `<top (required)>'"]
+ *
+ *  The value returned by this method migth be adjusted when raising (see Kernel#raise),
+ *  or during intermediate handling by #set_backtrace.
+ *
+ *  See also #backtrace_locations that provide the same value, as structured objects.
+ *  (Note though that two values might not be consistent with each other when
+ *  backtraces are manually adjusted.)
  *
  *  see {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
@@ -1930,20 +1935,37 @@ rb_get_backtrace(VALUE exc)
  *  call-seq:
  *    backtrace_locations -> array or nil
  *
- *  Returns a backtrace value for +self+;
- *  the returned value depends on the form of the stored backtrace value:
+ *  Returns the backtrace (the list of code locations that led to the exception),
+ *  as an array of Thread::Backtrace::Location instances.
  *
- *  - \Array of Thread::Backtrace::Location objects: returns that array.
- *  - \Array of strings or +nil+: returns +nil+.
+ *  Example (assuming the code is stored in the file named <tt>t.rb</tt>):
  *
- *  Example:
+ *    def division(numerator, denominator)
+ *      numerator / denominator
+ *    end
  *
  *    begin
- *      1 / 0
- *    rescue => x
- *      x.backtrace_locations.take(2)
+ *      division(1, 0)
+ *    rescue => ex
+ *      p ex.backtrace_locations
+ *      # ["t.rb:2:in 'Integer#/'", "t.rb:2:in 'Object#division'", "t.rb:6:in '<main>'"]
+ *      loc = ex.backtrace_locations.first
+ *      p loc.class
+ *      # Thread::Backtrace::Location
+ *      p loc.path
+ *      # "t.rb"
+ *      p loc.lineno
+ *      # 2
+ *      p loc.label
+ *      # "Integer#/"
  *    end
- *    # => ["(irb):150:in `/'", "(irb):150:in `<top (required)>'"]
+ *
+ *  The value returned by this method might be adjusted when raising (see Kernel#raise),
+ *  or during intermediate handling by #set_backtrace.
+ *
+ *  See also #backtrace that provide the same value as an array of strings.
+ *  (Note though that two values might not be consistent with each other when
+ *  backtraces are manually adjusted.)
  *
  *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
@@ -1985,15 +2007,100 @@ rb_check_backtrace(VALUE bt)
  *  call-seq:
  *    set_backtrace(value) -> value
  *
- *  Sets the backtrace value for +self+; returns the given +value:
+ *  Sets the backtrace value for +self+; returns the given +value+.
  *
- *    x = RuntimeError.new('Boom')
- *    x.set_backtrace(%w[foo bar baz]) # => ["foo", "bar", "baz"]
- *    x.backtrace                      # => ["foo", "bar", "baz"]
+ *  The +value+ might be:
  *
- *  The given +value+ must be an array of strings, a single string, or +nil+.
+ *  - an array of Thread::Backtrace::Location;
+ *  - an array of String instances;
+ *  - a single String instance; or
+ *  - +nil+.
  *
- *  Does not affect the value returned by #backtrace_locations.
+ *  Using array of Thread::Backtrace::Location is the most consistent
+ *  option: it sets both #backtrace and #backtrace_locations. It should be
+ *  preferred when possible. The suitable array of locations can be obtained
+ *  from Kernel#caller_locations, copied from another error, or just set to
+ *  the adjusted result of the current error's #backtrace_locations:
+ *
+ *      require 'json'
+ *
+ *      def parse_payload(text)
+ *        JSON.parse(text)  # test.rb, line 4
+ *      rescue JSON::ParserError => ex
+ *        ex.set_backtrace(ex.backtrace_locations[2...])
+ *        raise
+ *      end
+ *
+ *      parse_payload('{"wrong: "json"')
+ *      # test.rb:4:in 'Object#parse_payload': unexpected token at '{"wrong: "json"' (JSON::ParserError)
+ *      #
+ *      # An error points to the body of parse_payload method,
+ *      # hiding the parts of the backtrace related to the internals
+ *      # of the "json" library
+ *
+ *      # The error has both #backtace and #backtrace_locations set
+ *      # consistently:
+ *      begin
+ *        parse_payload('{"wrong: "json"')
+ *      rescue => ex
+ *        p ex.backtrace
+ *        # ["test.rb:4:in 'Object#parse_payload'", "test.rb:20:in '<main>'"]
+ *        p ex.backtrace_locations
+ *        # ["test.rb:4:in 'Object#parse_payload'", "test.rb:20:in '<main>'"]
+ *      end
+ *
+ *  When the desired stack of locations is not available and should
+ *  be constructed from scratch, an array of strings or a singular
+ *  string can be used. In this case, only #backtrace is affected:
+ *
+ *      def parse_payload(text)
+ *        JSON.parse(text)
+ *      rescue JSON::ParserError => ex
+ *        ex.set_backtrace(["dsl.rb:34", "framework.rb:1"])
+ *        # The error have the new value in #backtrace:
+ *        p ex.backtrace
+ *        # ["dsl.rb:34", "framework.rb:1"]
+ *
+ *        # but the original one in #backtrace_locations
+ *        p ex.backtrace_locations
+ *        # [".../json/common.rb:221:in 'JSON::Ext::Parser.parse'", ...]
+ *      end
+ *
+ *      parse_payload('{"wrong: "json"')
+ *
+ *  Calling #set_backtrace with +nil+ clears up #backtrace but doesn't affect
+ *  #backtrace_locations:
+ *
+ *      def parse_payload(text)
+ *        JSON.parse(text)
+ *      rescue JSON::ParserError => ex
+ *        ex.set_backtrace(nil)
+ *        p ex.backtrace
+ *        # nil
+ *        p ex.backtrace_locations
+ *        # [".../json/common.rb:221:in 'JSON::Ext::Parser.parse'", ...]
+ *      end
+ *
+ *      parse_payload('{"wrong: "json"')
+ *
+ *  On reraising of such an exception, both #backtrace and #backtrace_locations
+ *  is set to the place of reraising:
+ *
+ *      def parse_payload(text)
+ *        JSON.parse(text)
+ *      rescue JSON::ParserError => ex
+ *        ex.set_backtrace(nil)
+ *        raise # test.rb, line 7
+ *      end
+ *
+ *      begin
+ *        parse_payload('{"wrong: "json"')
+ *      rescue => ex
+ *        p ex.backtrace
+ *        # ["test.rb:7:in 'Object#parse_payload'", "test.rb:11:in '<main>'"]
+ *        p ex.backtrace_locations
+ *        # ["test.rb:7:in 'Object#parse_payload'", "test.rb:11:in '<main>'"]
+ *      end
  *
  *  See {Backtraces}[rdoc-ref:exceptions.md@Backtraces].
  */
