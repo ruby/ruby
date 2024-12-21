@@ -4075,7 +4075,7 @@ rb_warn_unchilled_symbol_to_s(VALUE obj)
 {
     rb_category_warn(
         RB_WARN_CATEGORY_DEPRECATED,
-        "warning: string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
+        "string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
     );
 }
 
