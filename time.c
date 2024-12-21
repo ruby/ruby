@@ -957,10 +957,11 @@ zone_str(const char *zone)
     }
     else {
 #if defined(_WIN32)
-        str = rb_utf8_str_new(zone, len);
+        rb_encoding *enc = rb_utf8_encoding();
 #else
-        str = rb_enc_str_new(zone, len, rb_locale_encoding());
+        rb_encoding *enc = rb_locale_encoding();
 #endif
+        str = rb_external_str_new_with_enc(zone, strlen(zone), enc);
     }
     return rb_fstring(str);
 }
