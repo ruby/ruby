@@ -343,7 +343,7 @@ module Prism
                     adjustment = 0
                   end
 
-                  end_offset = start_offset + adjusted_line.length + adjustment
+                  end_offset = start_offset + adjusted_line.bytesize + adjustment
                   tokens << [:tSTRING_CONTENT, [adjusted_line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
                   start_offset = end_offset
                 end

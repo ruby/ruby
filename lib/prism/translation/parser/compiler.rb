@@ -1091,7 +1091,7 @@ module Prism
                 start_offset = node.content_loc.start_offset
 
                 node.unescaped.lines.map do |line|
-                  end_offset = start_offset + line.length
+                  end_offset = start_offset + line.bytesize
                   offsets = srange_offsets(start_offset, end_offset)
                   start_offset = end_offset
 
@@ -1692,7 +1692,7 @@ module Prism
                 start_offset = node.content_loc.start_offset
 
                 [content_lines, unescaped_lines].transpose.map do |content_line, unescaped_line|
-                  end_offset = start_offset + content_line.length
+                  end_offset = start_offset + content_line.bytesize
                   offsets = srange_offsets(start_offset, end_offset)
                   start_offset = end_offset
 
@@ -1747,7 +1747,7 @@ module Prism
               start_offset = node.value_loc.start_offset
 
               node.value.lines.map do |line|
-                end_offset = start_offset + line.length
+                end_offset = start_offset + line.bytesize
                 offsets = srange_offsets(start_offset, end_offset)
                 start_offset = end_offset
 
@@ -1890,7 +1890,7 @@ module Prism
               start_offset = node.content_loc.start_offset
 
               node.unescaped.lines.map do |line|
-                end_offset = start_offset + line.length
+                end_offset = start_offset + line.bytesize
                 offsets = srange_offsets(start_offset, end_offset)
                 start_offset = end_offset
 
