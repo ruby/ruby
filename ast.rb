@@ -283,7 +283,7 @@ module RubyVM::AbstractSyntaxTree
   end
 
   # RubyVM::AbstractSyntaxTree::Location instances are created by
-  # RubyVM::AbstractSyntaxTree#locations.
+  # RubyVM::AbstractSyntaxTree::Node#locations.
   #
   # This class is MRI specific.
   #
