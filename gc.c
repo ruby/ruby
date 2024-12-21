@@ -12318,18 +12318,23 @@ objspace_malloc_fixup(rb_objspace_t *objspace, void *mem, size_t size)
         }                                                    \
     } while (0)
 
+static void
+check_malloc_not_in_gc(rb_objspace_t *objspace, const char *msg)
+{
+    if (UNLIKELY(malloc_during_gc_p(objspace))) {
+        dont_gc_on();
+        during_gc = false;
+        rb_bug("Cannot %s during GC", msg);
+    }
+}
+
 /* these shouldn't be called directly.
  * objspace_* functions do not check allocation size.
  */
 static void *
 objspace_xmalloc0(rb_objspace_t *objspace, size_t size)
 {
-    if (UNLIKELY(malloc_during_gc_p(objspace))) {
-        rb_warn("malloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE || RUBY_DEBUG
-        rb_bug("Cannot malloc during GC");
-#endif
-    }
+    check_malloc_not_in_gc(objspace, "malloc");
 
     void *mem;
 
@@ -12348,12 +12353,7 @@ xmalloc2_size(const size_t count, const size_t elsize)
 static void *
 objspace_xrealloc(rb_objspace_t *objspace, void *ptr, size_t new_size, size_t old_size)
 {
-    if (UNLIKELY(malloc_during_gc_p(objspace))) {
-        rb_warn("realloc during GC detected, this could cause crashes if it triggers another GC");
-#if RGENGC_CHECK_MODE || RUBY_DEBUG
-        rb_bug("Cannot realloc during GC");
-#endif
-    }
+    check_malloc_not_in_gc(objspace, "realloc");
 
     void *mem;
 
