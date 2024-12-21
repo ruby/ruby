@@ -46,6 +46,7 @@ module Prism
     # https://github.com/seattlerb/ruby_parser/issues/344
     failures = [
       "alias.txt",
+      "dsym_str.txt",
       "dos_endings.txt",
       "heredocs_with_ignored_newlines.txt",
       "method_calls.txt",
