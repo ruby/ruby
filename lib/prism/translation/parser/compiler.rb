@@ -1117,6 +1117,29 @@ module Prism
             return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
+<<<<<<< HEAD
+=======
+          parts = if node.parts.one? { |part| part.type == :string_node }
+            node.parts.flat_map do |node|
+              if node.type == :string_node && node.unescaped.lines.count >= 2
+                start_offset = node.content_loc.start_offset
+
+                node.unescaped.lines.map do |line|
+                  end_offset = start_offset + line.bytesize
+                  offsets = srange_offsets(start_offset, end_offset)
+                  start_offset = end_offset
+
+                  builder.string_internal([line, offsets])
+                end
+              else
+                visit(node)
+              end
+            end
+          else
+            visit_all(node.parts)
+          end
+
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
           builder.string_compose(
             token(node.opening_loc),
             string_nodes_from_interpolation(node, node.opening),
@@ -1700,7 +1723,19 @@ module Prism
               if node.content.include?("\n")
                 string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
               else
+<<<<<<< HEAD
                 [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+=======
+                start_offset = node.content_loc.start_offset
+
+                [content_lines, unescaped_lines].transpose.map do |content_line, unescaped_line|
+                  end_offset = start_offset + content_line.bytesize
+                  offsets = srange_offsets(start_offset, end_offset)
+                  start_offset = end_offset
+
+                  builder.string_internal([unescaped_line, offsets])
+                end
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
               end
 
             builder.string_compose(
@@ -1744,6 +1779,7 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
+<<<<<<< HEAD
             parts =
               if node.value == ""
                 []
@@ -1751,6 +1787,19 @@ module Prism
                 string_nodes_from_line_continuations(node.unescaped, node.value, node.value_loc.start_offset, node.opening)
               else
                 [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+=======
+            parts = if node.value.lines.one?
+              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+            else
+              start_offset = node.value_loc.start_offset
+
+              node.value.lines.map do |line|
+                end_offset = start_offset + line.bytesize
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
               end
 
             builder.symbol_compose(
@@ -1889,7 +1938,19 @@ module Prism
             elsif node.content.include?("\n")
               string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
             else
+<<<<<<< HEAD
               [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+=======
+              start_offset = node.content_loc.start_offset
+
+              node.unescaped.lines.map do |line|
+                end_offset = start_offset + line.bytesize
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
+
+                builder.string_internal([line, offsets])
+              end
+>>>>>>> a651126458 (Fix an incompatibility with the parser translator)
             end
 
           builder.xstring_compose(
