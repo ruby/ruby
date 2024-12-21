@@ -116,6 +116,9 @@ module Prism
       assert Prism.parse_success?("1 + 1", version: "3.4.9")
       assert Prism.parse_success?("1 + 1", version: "3.4.10")
 
+      assert Prism.parse_success?("1 + 1", version: "3.5")
+      assert Prism.parse_success?("1 + 1", version: "3.5.0")
+
       assert Prism.parse_success?("1 + 1", version: "latest")
 
       # Test edge case
@@ -133,7 +136,7 @@ module Prism
 
       # Not supported version (too new)
       assert_raise ArgumentError do
-        Prism.parse("1 + 1", version: "3.5.0")
+        Prism.parse("1 + 1", version: "3.6.0")
       end
     end
 

@@ -84,6 +84,11 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
@@ -98,6 +103,11 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4.", 4) == 0 && is_number(version + 4, length - 4)) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5.", 4) == 0 && is_number(version + 4, length - 4)) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }

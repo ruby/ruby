@@ -431,6 +431,8 @@ module Prism
       when /\A3\.3(\.\d+)?\z/
         1
       when /\A3\.4(\.\d+)?\z/
+        2
+      when /\A3\.5(\.\d+)?\z/
         0
       else
         raise ArgumentError, "invalid version: #{version}"
