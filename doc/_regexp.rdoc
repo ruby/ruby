@@ -897,7 +897,7 @@ Numbers:
 - {Nl, Letter_Number}[https://www.compart.com/en/unicode/category/Nl].
 - {No, Other_Number}[https://www.compart.com/en/unicode/category/No].
 
-Punctation:
+Punctuation:
 
 - +P+, +Punctuation+: +Pc+, +Pd+, +Pe+, +Pf+, +Pi+, +Po+, or +Ps+.
 - {Pc, Connector_Punctuation}[https://www.compart.com/en/unicode/category/Pc].
