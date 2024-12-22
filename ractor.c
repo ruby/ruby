@@ -1740,7 +1740,7 @@ ractor_selector__wait(VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yiel
     }
     RACTOR_UNLOCK_SELF(cr);
 
-    // check the taken resutl
+    // check the taken result
     switch (taken_basket.type.e) {
       case basket_type_none:
         VM_ASSERT(do_receive || do_yield);
@@ -3898,7 +3898,7 @@ ractor_local_value_store_i(VALUE ptr)
     struct ractor_local_storage_store_data *data = (struct ractor_local_storage_store_data *)ptr;
 
     if (rb_id_table_lookup(data->tbl, data->id, &val)) {
-        // after synchronization, we found already registerred entry
+        // after synchronization, we found already registered entry
     }
     else {
         val = rb_yield(Qnil);
