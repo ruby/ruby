@@ -1188,7 +1188,7 @@ class Reline::LineEditor
     quote_characters = Reline.completer_quote_characters
     before = current_line.byteslice(0, @byte_pointer).grapheme_clusters
     quote = nil
-    # Calcualte closing quote when cursor is at the end of the line
+    # Calculate closing quote when cursor is at the end of the line
     if current_line.bytesize == @byte_pointer && !quote_characters.empty?
       escaped = false
       before.each do |c|
