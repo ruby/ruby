@@ -112,11 +112,11 @@ and a zero-based <i>character position</i>.
 
 Each of these methods explicitly sets positions:
 
-| Method                   | Effect                                                   |
-|--------------------------|----------------------------------------------------------|
-| #reset                   | Sets both positions to zero (begining of stored string). |
-| #terminate               | Sets both positions to the end of the stored string.     |
-| #pos=(new_byte_position) | Sets byte position; adjusts character position.          |
+| Method                   | Effect                                                    |
+|--------------------------|-----------------------------------------------------------|
+| #reset                   | Sets both positions to zero (beginning of stored string). |
+| #terminate               | Sets both positions to the end of the stored string.      |
+| #pos=(new_byte_position) | Sets byte position; adjusts character position.           |
 
 ### Byte Position (Position)
 
