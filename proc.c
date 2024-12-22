@@ -4300,7 +4300,7 @@ proc_ruby2_keywords(VALUE procval)
  *      [1, 2, 3].each { |x| p it }
  *      # syntax error found (SyntaxError)
  *      # [1, 2, 3].each { |x| p it }
- *      #                        ^~ `it` is not allowed when an ordinary parameter is defined
+ *      #                        ^~ 'it' is not allowed when an ordinary parameter is defined
  *
  * But if a local name (variable or method) is available, it would be used:
  *
@@ -4348,7 +4348,7 @@ proc_ruby2_keywords(VALUE procval)
  * Numbered parameters can't be mixed with +it+ either:
  *
  *     [10, 20, 30].map { _1 + it }
- *     # SyntaxError: `it` is not allowed when a numbered parameter is already used
+ *     # SyntaxError: 'it' is not allowed when a numbered parameter is already used
  *
  * To avoid conflicts, naming local variables or method
  * arguments +_1+, +_2+ and so on, causes an error.
