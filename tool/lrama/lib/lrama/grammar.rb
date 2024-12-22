@@ -30,7 +30,7 @@ module Lrama
                   :after_shift, :before_reduce, :after_reduce, :after_shift_error_token, :after_pop_stack,
                   :symbols_resolver, :types, :rules, :rule_builders, :sym_to_rules, :no_stdlib, :locations
 
-    def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term,
+    def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term, :find_term_by_s_value,
                                         :find_symbol_by_number!, :find_symbol_by_id!, :token_to_symbol,
                                         :find_symbol_by_s_value!, :fill_symbol_number, :fill_nterm_type,
                                         :fill_printer, :fill_destructor, :fill_error_token, :sort_by_number!
@@ -382,7 +382,7 @@ module Lrama
     end
 
     def validate_rule_lhs_is_nterm!
-      errors = []
+      errors = [] #: Array[String]
 
       rules.each do |rule|
         next if rule.lhs.nterm?

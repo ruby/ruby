@@ -16,7 +16,7 @@ module Lrama
 
         def _references
           scanner = StringScanner.new(s_value)
-          references = []
+          references = [] #: Array[Grammar::Reference]
 
           until scanner.eos? do
             case

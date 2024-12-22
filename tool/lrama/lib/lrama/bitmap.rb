@@ -13,7 +13,7 @@ module Lrama
     end
 
     def self.to_array(int)
-      a = []
+      a = [] #: Array[Integer]
       i = 0
 
       while int > 0 do
