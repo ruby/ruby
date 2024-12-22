@@ -513,7 +513,7 @@ The created string is the same as if you created it with single quotes:
   %q{foo{bar}baz}       # => "foo{bar}baz" # braces can be nested.
   %q<foo<bar>baz>       # => "foo<bar>baz" # angle brackets can be nested.
 
-This is similar to single-quoted string but only backslashs and
+This is similar to single-quoted string but only backslashes and
 the specified delimiters can be escaped with a backslash.
 
 === <tt>% and %Q</tt>: Interpolable String Literals
@@ -590,7 +590,7 @@ You can write a symbol with <tt>%s</tt>:
 
 This is non-interpolable.
 No interpolation allowed.
-Only backslashs and the specified delimiters can be escaped with a backslash.
+Only backslashes and the specified delimiters can be escaped with a backslash.
 
 === <tt>%r</tt>: Regexp Literals
 
