@@ -131,17 +131,7 @@ jobs:
           make install-modular-gc MODULAR_GC=${{ matrix.gc.name }} MMTK_BUILD=${{ matrix.gc.mmtk_build }}
           make distclean-modular-gc MODULAR_GC=${{ matrix.gc.name }}
 
-      - run: |
-          $SETARCH make golf
-          case "${{ matrix.configure }}" in
-          *'--enable-shared'*)
-            $SETARCH make runnable
-            ./bin/goruby -veh
-            ;;
-          *)
-            ./goruby -veh
-            ;;
-          esac
+      - run: $SETARCH make hello
 
       - name: Set test options for skipped tests
         run: |

@@ -105,17 +105,7 @@ jobs:
 
       - run: make
 
-      - run: |
-          make golf
-          case "${{ matrix.configure }}" in
-          *'--enable-shared'*)
-            make runnable
-            ./bin/goruby -veh
-            ;;
-          *)
-            ./goruby -veh
-            ;;
-          esac
+      - run: make hello
 
       - name: Set test options for skipped tests
         run: |

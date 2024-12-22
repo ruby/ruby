@@ -1019,9 +1019,17 @@ no-test-spec:
 check: $(DOT_WAIT) test-spec
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
-runnable: $(RUNNABLE) prog $(tooldir)/mkrunnable.rb PHONY
+runnable: $(RUNNABLE)
+runnable-golf: golf
+runnable $(enable_shared:yes=runnable-golf): prog $(tooldir)/mkrunnable.rb PHONY
 	$(Q) $(MINIRUBY) $(tooldir)/mkrunnable.rb -v $(EXTOUT)
 yes-runnable: PHONY
+
+hello: $(TEST_RUNNABLE)-hello
+yes-hello: runnable-golf
+	./$(enable_shared:yes=bin/)goruby -veh
+no-hello: runnable-golf
+	$(ECHO) Run ./$(enable_shared:yes=bin/)goruby -veh
 
 encs: enc trans
 libencs: libenc libtrans
