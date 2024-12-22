@@ -50,43 +50,6 @@ The supported dump items:
     #             (null node)
     ```
 
-- `parsetree_with_comment`: AST with comments:
-
-    ```console
-    $ ruby --dump=parsetree_with_comment t.rb
-    ###########################################################
-    ## Do NOT use this node dump for any purpose other than  ##
-    ## debug and research.  Compatibility is not guaranteed. ##
-    ###########################################################
-
-    # @ NODE_SCOPE (line: 1, location: (1,0)-(1,10))
-    # | # new scope
-    # | # format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body
-    # +- nd_tbl (local table): (empty)
-    # +- nd_args (arguments):
-    # |   (null node)
-    # +- nd_body (body):
-    #     @ NODE_FCALL (line: 1, location: (1,0)-(1,10))*
-    #     | # function call
-    #     | # format: [nd_mid]([nd_args])
-    #     | # example: foo(1)
-    #     +- nd_mid (method id): :puts
-    #     +- nd_args (arguments):
-    #         @ NODE_LIST (line: 1, location: (1,5)-(1,10))
-    #         | # list constructor
-    #         | # format: [ [nd_head], [nd_next].. ] (length: [nd_alen])
-    #         | # example: [1, 2, 3]
-    #         +- nd_alen (length): 1
-    #         +- nd_head (element):
-    #         |   @ NODE_STR (line: 1, location: (1,5)-(1,10))
-    #         |   | # string literal
-    #         |   | # format: [nd_lit]
-    #         |   | # example: 'foo'
-    #         |   +- nd_lit (literal): "Foo"
-    #         +- nd_next (next element):
-    #             (null node)
-    ```
-
 - `yydebug`: Debugging information from yacc parser generator:
 
     ```
@@ -295,3 +258,8 @@ The supported dump items:
     Cleanup: popping nterm program (1.0-1.10: )
     ```
 
+Additional flags can follow dump items.
+
+- `+comment`: Add comments to AST.
+- `+error-tolerant`: Parse in error-tolerant mode.
+- `-optimize`: Disable optimizations for instruction sequences.
