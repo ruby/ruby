@@ -61,7 +61,7 @@ class Reline::Unicode
 
     # This code is essentially doing the same thing as
     # `str.encode(utf8, **replace_options).encode(encoding, **replace_options)`
-    # but also avoids unneccesary irreversible encoding conversion.
+    # but also avoids unnecessary irreversible encoding conversion.
     converted.gsub(/\X/) do |c|
       c.encode(Encoding::UTF_8)
       c
