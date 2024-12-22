@@ -67,7 +67,7 @@ module Lrama
       end
 
       def resolve_inline_rules
-        resolved_builders = []
+        resolved_builders = [] #: Array[RuleBuilder]
         rhs.each_with_index do |token, i|
           if (inline_rule = @parameterizing_rule_resolver.find_inline(token))
             inline_rule.rhs_list.each do |inline_rhs|

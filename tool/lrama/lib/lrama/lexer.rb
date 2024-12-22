@@ -16,6 +16,7 @@ module Lrama
       %union
       %token
       %type
+      %nterm
       %left
       %right
       %nonassoc
