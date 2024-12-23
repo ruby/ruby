@@ -416,8 +416,7 @@ class ERB
 
   #
   # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.  (See ERB::new for details on how this process
-  # can be affected by _safe_level_.)
+  # the results of that code.
   #
   # _b_ accepts a Binding object which is used to set the context of
   # code evaluation.
