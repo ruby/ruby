@@ -287,7 +287,7 @@ The following bundled gems are updated.
 
 * [minitest][minitest] 5.25.4
 * [power_assert][power_assert] 2.0.5
-    * 2.0.3 to [v2.0.5][power_assert-v2.0.5]
+    * 2.0.3 to [v2.0.4][power_assert-v2.0.4], [v2.0.5][power_assert-v2.0.5]
 * [rake][rake] 13.2.1
     * 13.1.0 to [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
 * [test-unit][test-unit] 3.6.7
@@ -298,14 +298,14 @@ The following bundled gems are updated.
     * 0.3.0 to [0.3.1][rss-0.3.1]
 * [net-ftp][net-ftp] 0.3.8
     * 0.3.3 to [v0.3.4][net-ftp-v0.3.4], [v0.3.5][net-ftp-v0.3.5], [v0.3.6][net-ftp-v0.3.6], [v0.3.7][net-ftp-v0.3.7], [v0.3.8][net-ftp-v0.3.8]
-* [net-imap][net-imap] 0.5.2
-    * 0.4.9 to [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2]
+* [net-imap][net-imap] 0.5.4
+    * 0.4.9 to [v0.4.9.1][net-imap-v0.4.9.1], [v0.4.10][net-imap-v0.4.10], [v0.4.11][net-imap-v0.4.11], [v0.4.12][net-imap-v0.4.12], [v0.4.13][net-imap-v0.4.13], [v0.4.14][net-imap-v0.4.14], [v0.4.15][net-imap-v0.4.15], [v0.4.16][net-imap-v0.4.16], [v0.4.17][net-imap-v0.4.17], [v0.5.0][net-imap-v0.5.0], [v0.4.18][net-imap-v0.4.18], [v0.5.1][net-imap-v0.5.1], [v0.5.2][net-imap-v0.5.2], [v0.5.3][net-imap-v0.5.3], [v0.5.4][net-imap-v0.5.4]
 * [net-smtp][net-smtp] 0.5.0
     * 0.4.0 to [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
 * [prime][prime] 0.1.3
     * [v0.1.3][prime-v0.1.3]
-* [rbs][rbs] 3.7.0
-    * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0]
+* [rbs][rbs] 3.8.0.pre.1
+    * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0], [v3.8.0.pre.1][rbs-v3.8.0.pre.1]
 * [debug][debug] 1.10.0
     * 1.9.1 to [v1.9.2][debug-v1.9.2], [v1.10.0][debug-v1.10.0]
 * [racc][racc] 1.8.1
@@ -329,8 +329,8 @@ The following bundled gems are promoted from default gems.
     * 0.1.3 to [v0.2.0][nkf-v0.2.0]
 * [syslog][syslog] 0.2.0
     * 0.1.2 to [v0.2.0][syslog-v0.2.0]
-* [csv][csv] 3.3.1
-    * 3.2.8 to [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1]
+* [csv][csv] 3.3.2
+    * 3.2.8 to [v3.2.9][csv-v3.2.9], [v3.3.0][csv-v3.3.0], [v3.3.1][csv-v3.3.1], [v3.3.2][csv-v3.3.2]
 
 ## Supported platforms
 
@@ -728,6 +728,7 @@ The following bundled gems are promoted from default gems.
 [zlib-v3.1.1]: https://github.com/ruby/zlib/releases/tag/v3.1.1
 [zlib-v3.2.0]: https://github.com/ruby/zlib/releases/tag/v3.2.0
 [zlib-v3.2.1]: https://github.com/ruby/zlib/releases/tag/v3.2.1
+[power_assert-v2.0.4]:  https://github.com/ruby/power_assert/releases/tag/v2.0.4
 [power_assert-v2.0.5]:  https://github.com/ruby/power_assert/releases/tag/v2.0.5
 [rake-v13.2.0]: https://github.com/ruby/rake/releases/tag/v13.2.0
 [rake-v13.2.1]: https://github.com/ruby/rake/releases/tag/v13.2.1
@@ -770,6 +771,8 @@ The following bundled gems are promoted from default gems.
 [net-imap-v0.4.18]: https://github.com/ruby/net-imap/releases/tag/v0.4.18
 [net-imap-v0.5.1]: https://github.com/ruby/net-imap/releases/tag/v0.5.1
 [net-imap-v0.5.2]: https://github.com/ruby/net-imap/releases/tag/v0.5.2
+[net-imap-v0.5.3]: https://github.com/ruby/net-imap/releases/tag/v0.5.3
+[net-imap-v0.5.4]: https://github.com/ruby/net-imap/releases/tag/v0.5.4
 [net-smtp-v0.4.0.1]: https://github.com/ruby/net-smtp/releases/tag/v0.4.0.1
 [net-smtp-v0.5.0]: https://github.com/ruby/net-smtp/releases/tag/v0.5.0
 [prime-v0.1.3]: https://github.com/ruby/prime/releases/tag/v0.1.3
@@ -792,6 +795,7 @@ The following bundled gems are promoted from default gems.
 [rbs-v3.7.0.dev.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.dev.1
 [rbs-v3.7.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.pre.1
 [rbs-v3.7.0]: https://github.com/ruby/rbs/releases/tag/v3.7.0
+[rbs-v3.8.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.8.0.pre.1
 [debug-v1.9.2]: https://github.com/ruby/debug/releases/tag/v1.9.2
 [debug-v1.10.0]: https://github.com/ruby/debug/releases/tag/v1.10.0
 [racc-v1.8.0]: https://github.com/ruby/racc/releases/tag/v1.8.0
@@ -806,6 +810,7 @@ The following bundled gems are promoted from default gems.
 [csv-v3.2.9]: https://github.com/ruby/csv/releases/tag/v3.2.9
 [csv-v3.3.0]: https://github.com/ruby/csv/releases/tag/v3.3.0
 [csv-v3.3.1]: https://github.com/ruby/csv/releases/tag/v3.3.1
+[csv-v3.3.2]: https://github.com/ruby/csv/releases/tag/v3.3.1
 [ruby/net-http-sspi]: https://github.com/ruby/net-http-sspi
 
 [RubyGems]: https://github.com/rubygems/rubygems
