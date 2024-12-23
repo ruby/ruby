@@ -63,7 +63,6 @@ firstline, predefined = __LINE__+1, %[\
   pack
   buffer
   include?
-  it
 
   _                                                     UScore
 
