@@ -281,8 +281,8 @@ The following bundled gem is added.
 The following bundled gems are updated.
 
 * [minitest][minitest] 5.25.4
-* [power_assert][power_assert] 2.0.4
-    * 2.0.3 to [v2.0.4][power_assert-v2.0.4]
+* [power_assert][power_assert] 2.0.5
+    * 2.0.3 to [v2.0.5][power_assert-v2.0.5]
 * [rake][rake] 13.2.1
     * 13.1.0 to [v13.2.0][rake-v13.2.0], [v13.2.1][rake-v13.2.1]
 * [test-unit][test-unit] 3.6.7
@@ -723,7 +723,7 @@ The following bundled gems are promoted from default gems.
 [zlib-v3.1.1]: https://github.com/ruby/zlib/releases/tag/v3.1.1
 [zlib-v3.2.0]: https://github.com/ruby/zlib/releases/tag/v3.2.0
 [zlib-v3.2.1]: https://github.com/ruby/zlib/releases/tag/v3.2.1
-[power_assert-v2.0.4]:  https://github.com/ruby/power_assert/releases/tag/v2.0.4
+[power_assert-v2.0.5]:  https://github.com/ruby/power_assert/releases/tag/v2.0.5
 [rake-v13.2.0]: https://github.com/ruby/rake/releases/tag/v13.2.0
 [rake-v13.2.1]: https://github.com/ruby/rake/releases/tag/v13.2.1
 [test-unit-3.6.2]: https://github.com/test-unit/test-unit/releases/tag/3.6.2
