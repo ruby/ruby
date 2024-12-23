@@ -1691,6 +1691,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // leaf nodes.
     iseq = parent;
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
         pm_options_scope_init(options_scope, locals_count);
@@ -1723,6 +1724,11 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         }
 
         iseq = ISEQ_BODY(iseq)->parent_iseq;
+
+        /* We need to GC guard the iseq because the code above malloc memory
+         * which could trigger a GC. Since we only use ISEQ_BODY, the compiler
+         * may optimize out the iseq local variable so we need to GC guard it. */
+        RB_GC_GUARD(iseq_value);
     }
 
     // Add our empty local scope at the very end of the array for our eval
