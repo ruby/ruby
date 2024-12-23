@@ -15,7 +15,7 @@ Note that each entry is kept to a minimum, see links for details.
   To disable this change, you can run Ruby with the `--disable-frozen-string-literal`
   command line argument. [[Feature #20205]]
 
-    * String#+@ now duplicates when mutating the string would emit
+    * `String#+@` now duplicates when mutating the string would emit
       a deprecation warning, offered as a replacement for the
       `str.dup if str.frozen?` pattern.
 
@@ -77,7 +77,7 @@ Note: We're only listing outstanding class updates.
 
 * MatchData
 
-    * `MatchData#bytebegin` and MatchData#byteend have been added. [[Feature #20576]]
+    * `MatchData#bytebegin` and `MatchData#byteend` have been added. [[Feature #20576]]
 
 * Ractor
 
@@ -87,9 +87,9 @@ Note: We're only listing outstanding class updates.
       main Ractor.
       [[Feature #20627]]
 
-    * Ractor.main? is added. [[Feature #20627]]
+    * `Ractor.main?` is added. [[Feature #20627]]
 
-    * Ractor.[] and Ractor.[]= are added to access the ractor local storage
+    * `Ractor.[]` and `Ractor.[]=` are added to access the ractor local storage
       of the current Ractor. [[Feature #20715]]
 
     * `Ractor.store_if_absent(key){ init }` is added to initialize ractor local
@@ -154,7 +154,7 @@ We only list stdlib changes that are notable feature changes.
     * Add `--attestation` option to gem push. It enabled to store signature of build artifact to sigstore.dev.
 
 * Bundler
-    * Add a lockfile_checksums configuration to include checksums in fresh lockfiles.
+    * Add a `lockfile_checksums` configuration to include checksums in fresh lockfiles.
     * Add bundle lock `--add-checksums` to add checksums to an existing lockfile.
 
 * JSON
@@ -175,7 +175,7 @@ We only list stdlib changes that are notable feature changes.
 
 * Socket
 
-    * Socket::ResolutionError and Socket::ResolutionError#error_code was added.
+    * `Socket::ResolutionError` and `Socket::ResolutionError#error_code` was added.
       [[Feature #20018]]
 
 Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
@@ -341,7 +341,7 @@ The following bundled gems are promoted from default gems.
     * Use a single quote instead of a backtick as an opening quote. [[Feature #16495]]
     * Display a class name before a method name (only when the class has a permanent name). [[Feature #19117]]
     * Extra `rescue`/`ensure` frames are no longer available on the backtrace. [[Feature #20275]]
-    * Kernel#caller, Thread::Backtrace::Location’s methods, etc. are also changed accordingly.
+    * `Kernel#caller`, `Thread::Backtrace::Location`’s methods, etc. are also changed accordingly.
 
         Old:
         ```
@@ -430,7 +430,7 @@ The following bundled gems are promoted from default gems.
   [[Feature #20564]]
 
 * Happy Eyeballs version 2 (RFC8305), an algorithm that ensures faster and more reliable connections
-  by attempting IPv6 and IPv4 concurrently, is used in Socket.tcp and TCPSocket.new.
+  by attempting IPv6 and IPv4 concurrently, is used in `Socket.tcp` and `TCPSocket.new`.
   To disable it globally, set the environment variable `RUBY_TCP_NO_FAST_FALLBACK=1` or
   call `Socket.tcp_fast_fallback=false`.
   Or to disable it on a per-method basis, use the keyword argument `fast_fallback: false`.
@@ -507,6 +507,7 @@ The following bundled gems are promoted from default gems.
 [Bug #19266]:     https://bugs.ruby-lang.org/issues/19266
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Bug #19918]:     https://bugs.ruby-lang.org/issues/19918
+[Feature #20018]: https://bugs.ruby-lang.org/issues/20018
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
 [Feature #20108]: https://bugs.ruby-lang.org/issues/20108
 [Feature #20182]: https://bugs.ruby-lang.org/issues/20182
