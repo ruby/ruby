@@ -1920,6 +1920,7 @@ eom
     assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
     assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
     assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
+    assert_equal([7, 8], eval('a=[]; [7].each { a << it; [8].each { a << it } }; a'))
     assert_raise_with_message(NameError, /undefined local variable or method 'it'/) do
       eval('it')
     end
