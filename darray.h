@@ -58,7 +58,7 @@
     MEMMOVE( \
         rb_darray_ref(*(ptr_to_ary), idx + 1), \
         rb_darray_ref(*(ptr_to_ary), idx), \
-        sizeof((*(ptr_to_ary))->data[0]), \
+        (*(ptr_to_ary))->data[0], \
         rb_darray_size(*(ptr_to_ary)) - idx); \
     rb_darray_set(*(ptr_to_ary), idx, element); \
     (*(ptr_to_ary))->meta.size++; \
