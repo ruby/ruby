@@ -129,6 +129,9 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+    # We should assert caller location of sub-feature like below:
+    # expect(err).to include(/-e:7/)
+    # The current warning message is the location of fiddle itself on sub-feature.
     expect(err).to include(/fiddle\/import\.rb:2/) # brittle
   end
 
