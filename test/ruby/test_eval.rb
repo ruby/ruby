@@ -639,6 +639,7 @@ class TestEval < Test::Unit::TestCase
 
   def test_outer_local_variable_under_gc_compact_stress
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+    omit "compaction is not supported on s390x" if /s390x/ =~ RUBY_PLATFORM
 
     assert_separately([], <<~RUBY)
       o = Object.new
