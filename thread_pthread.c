@@ -2151,10 +2151,13 @@ native_thread_create_dedicated(rb_thread_t *th)
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
     th->sched.context_stack = vm_stack;
 
-    // setup
-    thread_sched_to_ready(TH_SCHED(th), th);
 
-    return native_thread_create0(th->nt);
+    int err = native_thread_create0(th->nt);
+    if (!err) {
+        // setup
+        thread_sched_to_ready(TH_SCHED(th), th);
+    }
+    return err;
 }
 
 static void
