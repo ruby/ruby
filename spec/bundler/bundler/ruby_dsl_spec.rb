@@ -172,6 +172,19 @@ RSpec.describe Bundler::RubyDsl do
         end
       end
 
+      context "with a mise.toml file format" do
+        let(:file) { "mise.toml" }
+        let(:ruby_version_arg) { nil }
+        let(:file_content) do
+          <<~TOML
+            [tools]
+            ruby = "#{version}"
+          TOML
+        end
+
+        it_behaves_like "it stores the ruby version"
+      end
+
       context "with a .tool-versions file format" do
         let(:file) { ".tool-versions" }
         let(:ruby_version_arg) { nil }

@@ -42,9 +42,9 @@ module Bundler
     # Loads the file relative to the dirname of the Gemfile itself.
     def normalize_ruby_file(filename)
       file_content = Bundler.read_file(gemfile.dirname.join(filename))
-      # match "ruby-3.2.2" or "ruby   3.2.2" capturing version string up to the first space or comment
-      if /^ruby(-|\s+)([^\s#]+)/.match(file_content)
-        $2
+      # match "ruby-3.2.2", ruby = "3.2.2" or "ruby   3.2.2" capturing version string up to the first space or comment
+      if /^ruby[\s-]*(?:=\s*)?"?([^\s#"]+)"?/.match(file_content)
+        $1
       else
         file_content.strip
       end
