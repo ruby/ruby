@@ -92,16 +92,7 @@ ruby_version_is "3.2" do
       end
     end
 
-    ruby_version_is "3.2.3"..."3.4" do
-      it "can't use invalid keys" do
-        invalid_keys = [Object.new, "Foo", 12]
-        invalid_keys.each do |key|
-          -> { Fiber[key] }.should raise_error(TypeError)
-        end
-      end
-    end
-
-    ruby_version_is "3.4" do
+    ruby_bug "#20978", "3.2.3"..."3.4" do
       it "can use keys as strings" do
         key = Object.new
         def key.to_str; "Foo"; end
