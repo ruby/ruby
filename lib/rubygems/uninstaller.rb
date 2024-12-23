@@ -10,7 +10,6 @@ require "fileutils"
 require_relative "../rubygems"
 require_relative "installer_uninstaller_utils"
 require_relative "dependency_list"
-require_relative "rdoc"
 require_relative "user_interaction"
 
 ##
