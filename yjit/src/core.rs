@@ -3366,8 +3366,9 @@ fn entry_stub_hit_body(
         get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
     }
 
-    // Let the stub jump to the entry to load entry registers
-    Some(next_entry.raw_ptr(cb))
+    // Return a code pointer if the block is successfully compiled. The entry stub needs
+    // to jump to the entry preceding the block to load the registers in reg_mapping.
+    blockref.map(|_block| next_entry.raw_ptr(cb))
 }
 
 /// Generate a stub that calls entry_stub_hit
