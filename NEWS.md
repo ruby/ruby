@@ -39,21 +39,21 @@ Note: We're only listing outstanding class updates.
 
 * Array
 
-    * Array#fetch_values was added. [[Feature #20702]]
+    * `Array#fetch_values` was added. [[Feature #20702]]
 
 * Exception
 
-    * Exception#set_backtrace now accepts arrays of Thread::Backtrace::Location.
-      Kernel#raise, Thread#raise and Fiber#raise also accept this new format. [[Feature #13557]]
+    * `Exception#set_backtrace` now accepts arrays of `Thread::Backtrace::Location`.
+      `Kernel#raise`, `Thread#raise` and `Fiber#raise` also accept this new format. [[Feature #13557]]
 
 * Fiber::Scheduler
 
-    * An optional Fiber::Scheduler#blocking_operation_wait hook allows blocking operations to be moved out of the
+    * An optional `Fiber::Scheduler#blocking_operation_wait` hook allows blocking operations to be moved out of the
       event loop in order to reduce latency and improve multi-core processor utilization. [[Feature #20876]]
 
 * GC
 
-    * GC.config added to allow setting configuration variables on the Garbage
+    * `GC.config` added to allow setting configuration variables on the Garbage
       Collector. [[Feature #20443]]
 
     * GC configuration parameter `rgengc_allow_full_mark` introduced.  When `false`
@@ -61,23 +61,23 @@ Note: We're only listing outstanding class updates.
 
 * Hash
 
-    * Hash.new now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
+    * `Hash.new` now accepts an optional `capacity:` argument, to preallocate the hash with a given capacity.
       This can improve performance when building large hashes incrementally by saving on reallocation and
       rehashing of keys. [[Feature #19236]]
 
 * IO::Buffer
 
-    * IO::Buffer#copy can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
+    * `IO::Buffer#copy` can release the GVL, allowing other threads to run while copying data. [[Feature #20902]]
 
 * Integer
 
-    * Integer#** used to return `Float::INFINITY` when the return value is large, but now returns an Integer.
+    * `Integer#**` used to return `Float::INFINITY` when the return value is large, but now returns an `Integer`.
       If the return value is extremely large, it raises an exception.
       [[Feature #20811]]
 
 * MatchData
 
-    * MatchData#bytebegin and MatchData#byteend have been added. [[Feature #20576]]
+    * `MatchData#bytebegin` and MatchData#byteend have been added. [[Feature #20576]]
 
 * Ractor
 
@@ -97,8 +97,8 @@ Note: We're only listing outstanding class updates.
 
 * Range
 
-    * Range#size now raises TypeError if the range is not iterable. [[Misc #18984]]
-    * Range#step now consistently has a semantics of iterating by using `+` operator
+    * `Range#size` now raises `TypeError` if the range is not iterable. [[Misc #18984]]
+    * `Range#step` now consistently has a semantics of iterating by using `+` operator
       for all types, not only numerics. [[Feature #18368]]
 
         ```ruby
@@ -108,42 +108,42 @@ Note: We're only listing outstanding class updates.
 
 * Rational
 
-    * Rational#** used to return `Float::INFINITY` or `Float::NAN`
-      when the numerator of the return value is large, but now returns an Integer.
+    * `Rational#**` used to return `Float::INFINITY` or `Float::NAN`
+      when the numerator of the return value is large, but now returns an `Rational`.
       If it is extremely large, it raises an exception. [[Feature #20811]]
 
 * RubyVM::AbstractSyntaxTree
 
-    * Add RubyVM::AbstractSyntaxTree::Node#locations method which returns location objects
+    * Add `RubyVM::AbstractSyntaxTree::Node#locations` method which returns location objects
       associated with the AST node. [[Feature #20624]]
-    * Add RubyVM::AbstractSyntaxTree::Location class which holds location information. [[Feature #20624]]
+    * Add `RubyVM::AbstractSyntaxTree::Location` class which holds location information. [[Feature #20624]]
 
 
 * String
 
-    * String#append_as_bytes was added to more easily and efficiently work with binary buffers and protocols.
+    * `String#append_as_bytes` was added to more easily and efficiently work with binary buffers and protocols.
       It directly concatenate the arguments into the string without any encoding validation or conversion.
       [[Feature #20594]]
 
 * Symbol
 
-    * The string returned by Symbol#to_s now emits a deprecation warning when mutated, and will be
+    * The string returned by `Symbol#to_s` now emits a deprecation warning when mutated, and will be
       frozen in a future version of Ruby.
       These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
       [[Feature #20350]]
 
 * Time
 
-    * On Windows, now Time#zone encodes the system timezone name in UTF-8
+    * On Windows, now `Time#zone` encodes the system timezone name in UTF-8
       instead of the active code page, if it contains non-ASCII characters.
       [[Bug #20929]]
 
-    * Time#xmlschema, and its Time#iso8601 alias have been moved into the core Time
+    * `Time#xmlschema`, and its `Time#iso8601` alias have been moved into the core Time
       class while previously it was an extension provided by the `time` gem. [[Feature #20707]]
 
 * Warning
 
-    * Add Warning.categories method which returns a list of possible warning categories.
+    * Add `Warning.categories` method which returns a list of possible warning categories.
       [[Feature #20293]]
 
 ## Stdlib updates
@@ -151,11 +151,11 @@ Note: We're only listing outstanding class updates.
 We only list stdlib changes that are notable feature changes.
 
 * RubyGems
-    * Add --attestation option to gem push. It enabled to store signature of build artifact to sigstore.dev.
+    * Add `--attestation` option to gem push. It enabled to store signature of build artifact to sigstore.dev.
 
 * Bundler
     * Add a lockfile_checksums configuration to include checksums in fresh lockfiles.
-    * Add bundle lock --add-checksums to add checksums to an existing lockfile.
+    * Add bundle lock `--add-checksums` to add checksums to an existing lockfile.
 
 * JSON
 
@@ -350,19 +350,19 @@ The following bundled gems are promoted from default gems.
                 from test.rb:2:in '<main>'
         ```
 
-* Hash#inspect rendering have been changed. [[Bug #20433]]
+* `Hash#inspect` rendering have been changed. [[Bug #20433]]
 
     * Symbol keys are displayed using the modern symbol key syntax: `"{user: 1}"`
     * Other keys now have spaces around `=>`: `'{"user" => 1}'`, while previously they didn't: `'{"user"=>1}'`
 
-* Kernel#Float() now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* `Kernel#Float()` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
 
   ```rb
   Float("1.")    #=> 1.0 (previously, an ArgumentError was raised)
   Float("1.E-1") #=> 0.1 (previously, an ArgumentError was raised)
   ```
 
-* String#to_f now accepts a decimal string with decimal part omitted. [[Feature #20705]]
+* `String#to_f` now accepts a decimal string with decimal part omitted. [[Feature #20705]]
   Note that the result changes when an exponent is specified.
 
   ```rb
@@ -370,7 +370,7 @@ The following bundled gems are promoted from default gems.
   "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
   ```
 
-* Object#singleton_method now returns methods in modules prepended to or included in the
+* `Object#singleton_method` now returns methods in modules prepended to or included in the
   receiver's singleton class. [[Bug #20620]]
 
   ```rb
@@ -379,7 +379,7 @@ The following bundled gems are promoted from default gems.
   o.singleton_method(:a).call #=> 1
   ```
 
-* Refinement#refined_class has been removed. [[Feature #19714]]
+* `Refinement#refined_class` has been removed. [[Feature #19714]]
 
 ## Stdlib compatibility issues
 
@@ -406,7 +406,7 @@ The following bundled gems are promoted from default gems.
 
 * Timeout
 
-    * Reject negative values for Timeout.timeout. [[Bug #20795]]
+    * Reject negative values for `Timeout.timeout`. [[Bug #20795]]
 
 * URI
 
@@ -486,7 +486,7 @@ The following bundled gems are promoted from default gems.
   [[Feature #15554]]
 
 * Redefining some core methods that are specially optimized by the interpreter
-  and JIT like String#freeze or Integer#+ now emits a performance class
+  and JIT like `String#freeze` or `Integer#+` now emits a performance class
   warning (`-W:performance` or `Warning[:performance] = true`).
   [[Feature #20429]]
 
