@@ -252,6 +252,18 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(nil, Thread.current[:v]);
   end
 
+  def test_fiber_variables
+    assert_equal "bar", Fiber.new {Fiber[:foo] = "bar"; Fiber[:foo]}.resume
+
+    key = :"#{self.class.name}#.#{self.object_id}"
+    Fiber[key] = 42
+    assert_equal 42, Fiber[key]
+
+    key = Object.new
+    def key.to_str; "foo"; end
+    assert_equal "Bar", Fiber.new {Fiber[key] = "Bar"; Fiber[key]}.resume
+  end
+
   def test_alive
     fib = Fiber.new{Fiber.yield}
     assert_equal(true, fib.alive?)

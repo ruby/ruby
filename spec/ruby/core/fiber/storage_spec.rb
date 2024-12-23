@@ -90,12 +90,23 @@ ruby_version_is "3.2" do
         key = :"#{self.class.name}#.#{self.object_id}"
         Fiber.new { Fiber[key] = 42; Fiber[key] }.resume.should == 42
       end
+    end
 
+    ruby_version_is "3.2.3"..."3.4" do
       it "can't use invalid keys" do
         invalid_keys = [Object.new, "Foo", 12]
         invalid_keys.each do |key|
           -> { Fiber[key] }.should raise_error(TypeError)
         end
+      end
+    end
+
+    ruby_version_is "3.4" do
+      it "can use keys as strings" do
+        key = Object.new
+        def key.to_str; "Foo"; end
+        Fiber[key] = 42
+        Fiber["Foo"].should == 42
       end
     end
 
