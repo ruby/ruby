@@ -1259,6 +1259,56 @@ eom
     assert_valid_syntax("a #\n#\n&.foo\n")
   end
 
+  def test_fluent_and
+    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+
+    assert_valid_syntax("a\n" "&& foo")
+    assert_valid_syntax("a\n" "and foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      && (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = true
+      if a
+      and (a = :ok; true)
+        a
+      end
+    end;
+  end
+
+  def test_fluent_or
+    omit if /\+PRISM\b/ =~ RUBY_DESCRIPTION
+
+    assert_valid_syntax("a\n" "|| foo")
+    assert_valid_syntax("a\n" "or foo")
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      || (a = :ok; true)
+        a
+      end
+    end;
+
+    assert_equal(:ok, eval("#{<<~"begin;"}\n#{<<~'end;'}"))
+    begin;
+      a = false
+      if a
+      or (a = :ok; true)
+        a
+      end
+    end;
+  end
+
   def test_safe_call_in_massign_lhs
     assert_syntax_error("*a&.x=0", /multiple assignment destination/)
     assert_syntax_error("a&.x,=0", /multiple assignment destination/)

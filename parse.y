@@ -6985,6 +6985,16 @@ is_identchar(struct parser_params *p, const char *ptr, const char *MAYBE_UNUSED(
     return rb_enc_isalnum((unsigned char)*ptr, enc) || *ptr == '_' || !ISASCII(*ptr);
 }
 
+static inline bool
+peek_word_at(struct parser_params *p, const char *str, size_t len, int at)
+{
+    const char *ptr = p->lex.pcur + at;
+    if (lex_eol_ptr_n_p(p, ptr, len-1)) return false;
+    if (memcmp(ptr, str, len)) return false;
+    if (lex_eol_ptr_n_p(p, ptr, len)) return true;
+    return !is_identchar(p, ptr+len, p->lex.pend, p->enc);
+}
+
 static inline int
 parser_is_identchar(struct parser_params *p)
 {
@@ -10556,7 +10566,24 @@ parser_yylex(struct parser_params *p)
                     token_flush(p);
                 }
                 goto retry;
+              case 'a':
+                if (peek_word_at(p, "nd", 2, 0)) goto leading_logical;
+                goto bol;
+              case 'o':
+                if (peek_word_at(p, "r", 1, 0)) goto leading_logical;
+                goto bol;
+              case '|':
+                if (peek(p, '|')) goto leading_logical;
+                goto bol;
               case '&':
+                if (peek(p, '&')) {
+                  leading_logical:
+                    pushback(p, c);
+                    dispatch_delayed_token(p, tIGNORED_NL);
+                    cmd_state = FALSE;
+                    goto retry;
+                }
+                /* fall through */
               case '.': {
                 dispatch_delayed_token(p, tIGNORED_NL);
                 if (peek(p, '.') == (c == '&')) {
@@ -10565,6 +10592,7 @@ parser_yylex(struct parser_params *p)
                     goto retry;
                 }
               }
+              bol:
               default:
                 p->ruby_sourceline--;
                 p->lex.nextline = p->lex.lastline;
