@@ -142,29 +142,24 @@ module Gem::BUNDLED_GEMS # :nodoc:
     # are costly (see [Bug #20641]), so we first do a much cheaper check
     # to exclude the vast majority of candidates.
     if feature.include?("/")
-      # If requiring $LIBDIR/mutex_m.rb, we check SINCE_FAST_PATH["mutex_m"]
-      # We'll fail to warn requires for files that are not the entry point
-      # of the gem, e.g. require "logger/formatter.rb" won't warn.
-      # But that's acceptable because this warning is best effort,
-      # and in the overwhelming majority of cases logger.rb will end
-      # up required.
-      return unless SINCE_FAST_PATH[File.basename(feature, ".*")]
+      # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
+      # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
+      name = feature.delete_prefix(ARCHDIR).delete_prefix(LIBDIR).sub(LIBEXT, "")
+      segments = name.split("/")
+      name = segments.first
+      if !SINCE[name]
+        name = segments[0..1].join("-")
+        return unless SINCE[name]
+      end
     else
-      return unless SINCE_FAST_PATH[feature]
+      name = feature.sub(LIBEXT, "")
+      return unless SINCE_FAST_PATH[name]
     end
 
-    # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
-    # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
-    name = feature.delete_prefix(ARCHDIR)
-    name.delete_prefix!(LIBDIR)
-    name.tr!("/", "-")
-    name.sub!(LIBEXT, "")
     return if specs.include?(name)
     _t, path = $:.resolve_feature_path(feature)
     if gem = find_gem(path)
       return if specs.include?(gem)
-      caller = caller_locations(3, 3)&.find {|c| c&.absolute_path}
-      return if find_gem(caller&.absolute_path)
     elsif SINCE[name] && !path
       gem = true
     else
@@ -177,8 +172,6 @@ module Gem::BUNDLED_GEMS # :nodoc:
       gem = name
       "#{feature} was loaded from the standard library, but"
     elsif gem
-      return if WARNED[gem]
-      WARNED[gem] = true
       "#{feature} is found in #{gem}, which"
     else
       return
