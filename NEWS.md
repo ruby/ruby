@@ -718,7 +718,7 @@ The following bundled gems are promoted from default gems.
 [uri-v1.0.1]: https://github.com/ruby/uri/releases/tag/v1.0.1
 [uri-v1.0.2]: https://github.com/ruby/uri/releases/tag/v1.0.2
 [win32ole-v1.9.0]: https://github.com/ruby/win32ole/releases/tag/v1.9.0
-[win32ole-v1.9.1]: https://github.com/ruby/win32ole/releases/tag/v1.9.1[]
+[win32ole-v1.9.1]: https://github.com/ruby/win32ole/releases/tag/v1.9.1
 [yaml-v0.4.0]: https://github.com/ruby/yaml/releases/tag/v0.4.0
 [zlib-v3.1.1]: https://github.com/ruby/zlib/releases/tag/v3.1.1
 [zlib-v3.2.0]: https://github.com/ruby/zlib/releases/tag/v3.2.0
