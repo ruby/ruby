@@ -10,7 +10,7 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
               [--lockfile=PATH]
               [--full-index]
               [--gemfile=GEMFILE]
-              [--add-checkums]
+              [--add-checksums]
               [--add-platform]
               [--remove-platform]
               [--normalize-platforms]

@@ -194,7 +194,7 @@ RSpec.describe "Self management" do
       expect(out).to include("Using bundler #{Bundler::VERSION}")
     end
 
-    it "uses the right original script when re-execing, even if `$0` has been changed", :ruby_repo do
+    it "uses the right original script when re-execing, if `$0` has been changed to something that's not a script", :ruby_repo do
       bundle "config path vendor/bundle"
 
       system_gems "bundler-9.9.9", path: vendored_gems
@@ -211,6 +211,29 @@ RSpec.describe "Self management" do
       sys_exec "#{Gem.ruby} #{test}", artifice: nil, raise_on_error: false
       expect(err).to include("Could not find myrack-1.0.0")
       expect(err).not_to include("this is the program name")
+    end
+
+    it "uses modified $0 when re-execing, if `$0` has been changed to a script", :ruby_repo do
+      bundle "config path vendor/bundle"
+
+      system_gems "bundler-9.9.9", path: vendored_gems
+
+      runner = bundled_app("runner.rb")
+
+      create_file runner, <<~RUBY
+        $0 = ARGV.shift
+        load $0
+      RUBY
+
+      script = bundled_app("script.rb")
+      create_file script, <<~RUBY
+        require "bundler/setup"
+      RUBY
+
+      lockfile_bundled_with("9.9.9")
+
+      sys_exec "#{Gem.ruby} #{runner} #{script}", artifice: nil, raise_on_error: false
+      expect(err).to include("Could not find myrack-1.0.0")
     end
 
     private

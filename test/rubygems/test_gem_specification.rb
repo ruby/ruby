@@ -2492,7 +2492,31 @@ end
     assert_equal @a1, same_spec
   end
 
-  def test_to_yaml_platform_empty_string
+  def test_to_yaml_platform
+    yaml_str = @a1.to_yaml
+
+    assert_match(/^platform: ruby$/, yaml_str)
+    refute_match(/^original_platform: /, yaml_str)
+  end
+
+  def test_to_yaml_platform_no_specific_platform
+    a = Gem::Specification.new do |s|
+      s.name        = "a"
+      s.version     = "1.0"
+      s.author      = "A User"
+      s.email       = "example@example.com"
+      s.homepage    = "http://example.com"
+      s.summary     = "this is a summary"
+      s.description = "This is a test description"
+    end
+
+    yaml_str = a.to_yaml
+
+    assert_match(/^platform: ruby$/, yaml_str)
+    refute_match(/^original_platform: /, yaml_str)
+  end
+
+  def test_to_yaml_platform_original_platform_empty_string
     @a1.instance_variable_set :@original_platform, ""
 
     assert_match(/^platform: ruby$/, @a1.to_yaml)
@@ -2510,7 +2534,7 @@ end
     assert_equal "powerpc-darwin7.9.0", same_spec.original_platform
   end
 
-  def test_to_yaml_platform_nil
+  def test_to_yaml_platform_original_platform_nil
     @a1.instance_variable_set :@original_platform, nil
 
     assert_match(/^platform: ruby$/, @a1.to_yaml)
@@ -3630,6 +3654,8 @@ Did you mean 'Ruby'?
   end
 
   def test__load_fixes_Date_objects
+    pend "Marshal.load of links and floats is broken on truffleruby, see https://github.com/oracle/truffleruby/issues/3747" if RUBY_ENGINE == "truffleruby"
+
     spec = util_spec "a", 1
     spec.instance_variable_set :@date, Date.today
 

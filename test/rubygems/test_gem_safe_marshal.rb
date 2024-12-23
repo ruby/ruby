@@ -233,6 +233,14 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_link_after_float
+    pend "Marshal.load of links and floats is broken on truffleruby, see https://github.com/oracle/truffleruby/issues/3747" if RUBY_ENGINE == "truffleruby"
+
+    a = []
+    a << a
+    assert_safe_load_as [0.0, a, 1.0, a]
+  end
+
   def test_hash_with_ivar
     h = { runtime: :development }
     h.instance_variable_set :@type, []
@@ -255,6 +263,31 @@ class TestGemSafeMarshal < Gem::TestCase
                             h[+"a"] = 1
                             h[+"a"] = 2 }, additional_methods: [:compare_by_identity?, :default], equality: false
     end
+  end
+
+  class UserMarshal
+    def marshal_load(*)
+      throw "#{self.class}#marshal_load called"
+    end
+
+    def marshal_dump
+    end
+  end
+
+  def test_time_user_marshal
+    payload = [
+      Marshal::MAJOR_VERSION.chr, Marshal::MINOR_VERSION.chr,
+      "I", # TYPE_IVAR
+      "u", # TYPE_USERDEF
+      Marshal.dump(:Time)[2..-1],
+      Marshal.dump(0xfb - 5)[3..-1],
+      Marshal.dump(1)[3..-1],
+      Marshal.dump(:zone)[2..-1],
+      Marshal.dump(UserMarshal.new)[2..-1],
+      ("\x00" * (236 - UserMarshal.name.bytesize))
+    ].join
+
+    assert_raise(Gem::SafeMarshal::Visitors::ToRuby::TimeTooLargeError, TypeError) { Gem::SafeMarshal.safe_load(payload) }
   end
 
   class StringSubclass < ::String
@@ -323,6 +356,22 @@ class TestGemSafeMarshal < Gem::TestCase
     assert_equal ["MIT"], unmarshalled_spec.license
   end
 
+  def test_gem_spec_unmarshall_required_ruby_rubygems_version
+    spec = Gem::Specification.new do |s|
+      s.name = "hi"
+      s.version = "1.2.3"
+      s.license = "MIT"
+    end
+
+    assert_safe_load_marshal spec._dump(0), inspect: false, to_s: false
+    assert_safe_load_marshal Marshal.dump(spec), inspect: false, additional_methods: [:to_ruby, :required_ruby_version, :required_rubygems_version]
+
+    unmarshalled_spec = Gem::SafeMarshal.safe_load(Marshal.dump(spec))
+
+    assert_equal Gem::Requirement.new(">= 0"), unmarshalled_spec.required_ruby_version
+    assert_equal Gem::Requirement.new(">= 0"), unmarshalled_spec.required_rubygems_version
+  end
+
   def test_gem_spec_disallowed_symbol
     e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnpermittedSymbolError) do
       spec = Gem::Specification.new do |s|
@@ -366,17 +415,52 @@ class TestGemSafeMarshal < Gem::TestCase
       Gem::SafeMarshal.safe_load("\x04\x08[\x06")
     end
     assert_equal e.message, "Unexpected EOF"
+
+    e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+      Gem::SafeMarshal.safe_load("\004\010:\012")
+    end
+    assert_equal e.message, "expected 5 bytes, got EOF"
+
+    e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+      Gem::SafeMarshal.safe_load("\x04\x08i\x01")
+    end
+    assert_equal e.message, "Unexpected EOF"
+    e = assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+      Gem::SafeMarshal.safe_load("\x04\x08\"\x06")
+    end
+    assert_equal e.message, "expected 1 bytes, got EOF"
   end
 
-  def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true)
+  def test_negative_length
+    assert_raise(Gem::SafeMarshal::Reader::NegativeLengthError) do
+      Gem::SafeMarshal.safe_load("\004\010}\325")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::NegativeLengthError) do
+      Gem::SafeMarshal.safe_load("\004\010:\325")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::NegativeLengthError) do
+      Gem::SafeMarshal.safe_load("\004\010\"\325")
+    end
+    assert_raise(IndexError) do
+      Gem::SafeMarshal.safe_load("\004\010;\325")
+    end
+    assert_raise(Gem::SafeMarshal::Reader::EOFError) do
+      Gem::SafeMarshal.safe_load("\004\010@\377")
+    end
+  end
+
+  def assert_safe_load_marshal(dumped, additional_methods: [], permitted_ivars: nil, equality: true, marshal_dump_equality: true,
+    inspect: true, to_s: true)
     loaded = Marshal.load(dumped)
     safe_loaded =
-      if permitted_ivars
-        with_const(Gem::SafeMarshal, :PERMITTED_IVARS, permitted_ivars) do
+      assert_nothing_raised("dumped: #{dumped.b.inspect} loaded: #{loaded.inspect}") do
+        if permitted_ivars
+          with_const(Gem::SafeMarshal, :PERMITTED_IVARS, permitted_ivars) do
+            Gem::SafeMarshal.safe_load(dumped)
+          end
+        else
           Gem::SafeMarshal.safe_load(dumped)
         end
-      else
-        Gem::SafeMarshal.safe_load(dumped)
       end
 
     # NaN != NaN, for example
@@ -384,8 +468,8 @@ class TestGemSafeMarshal < Gem::TestCase
       assert_equal loaded, safe_loaded, "should equal what Marshal.load returns"
     end
 
-    assert_equal loaded.to_s, safe_loaded.to_s, "should have equal to_s"
-    assert_equal loaded.inspect, safe_loaded.inspect, "should have equal inspect"
+    assert_equal loaded.to_s, safe_loaded.to_s, "should have equal to_s" if to_s
+    assert_equal loaded.inspect, safe_loaded.inspect, "should have equal inspect" if inspect
     additional_methods.each do |m|
       if m.is_a?(Proc)
         call = m

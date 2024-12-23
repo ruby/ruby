@@ -288,7 +288,10 @@ class Gem::Version
   # 1.3.5 and earlier) compatibility.
 
   def marshal_load(array)
-    initialize array[0]
+    string = array[0]
+    raise TypeError, "wrong version string" unless string.is_a?(String)
+
+    initialize string
   end
 
   def yaml_initialize(tag, map) # :nodoc:

@@ -45,7 +45,7 @@ module Gem::SafeMarshal
         idx = 0
         # not idiomatic, but there's a huge number of IMEMOs allocated here, so we avoid the block
         # because this is such a hot path when doing a bundle install with the full index
-        until idx == size
+        while idx < size
           push_stack idx
           array << visit(elements[idx])
           idx += 1
@@ -98,16 +98,21 @@ module Gem::SafeMarshal
             end
 
             s = e.object.binary_string
+            # 122 is the largest integer that can be represented in marshal in a single byte
+            raise TimeTooLargeError.new("binary string too large", stack: formatted_stack) if s.bytesize > 122
 
             marshal_string = "\x04\bIu:\tTime".b
-            marshal_string.concat(s.size + 5)
+            marshal_string.concat(s.bytesize + 5)
             marshal_string << s
+            # internal is limited to 5, so no overflow is possible
             marshal_string.concat(internal.size + 5)
 
             internal.each do |k, v|
+              k = k.name
+              # ivar name can't be too large because only known ivars are in the internal ivars list
               marshal_string.concat(":")
-              marshal_string.concat(k.size + 5)
-              marshal_string.concat(k.to_s)
+              marshal_string.concat(k.bytesize + 5)
+              marshal_string.concat(k)
               dumped = Marshal.dump(v)
               dumped[0, 2] = ""
               marshal_string.concat(dumped)
@@ -171,11 +176,11 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_ObjectLink(o)
-        @objects[o.offset]
+        @objects.fetch(o.offset)
       end
 
       def visit_Gem_SafeMarshal_Elements_SymbolLink(o)
-        @symbols[o.offset]
+        @symbols.fetch(o.offset)
       end
 
       def visit_Gem_SafeMarshal_Elements_UserDefined(o)
@@ -219,16 +224,18 @@ module Gem::SafeMarshal
       end
 
       def visit_Gem_SafeMarshal_Elements_Float(f)
-        case f.string
-        when "inf"
-          ::Float::INFINITY
-        when "-inf"
-          -::Float::INFINITY
-        when "nan"
-          ::Float::NAN
-        else
-          f.string.to_f
-        end
+        register_object(
+          case f.string
+          when "inf"
+            ::Float::INFINITY
+          when "-inf"
+            -::Float::INFINITY
+          when "nan"
+            ::Float::NAN
+          else
+            f.string.to_f
+          end
+        )
       end
 
       def visit_Gem_SafeMarshal_Elements_Bignum(b)
@@ -372,6 +379,12 @@ module Gem::SafeMarshal
       end
 
       class Error < StandardError
+      end
+
+      class TimeTooLargeError < Error
+        def initialize(message, stack:)
+          super "#{message} @ #{stack.join "."}"
+        end
       end
 
       class UnpermittedSymbolError < Error

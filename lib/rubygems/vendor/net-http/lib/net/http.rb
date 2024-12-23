@@ -460,7 +460,7 @@ module Gem::Net   #:nodoc:
   #
   # First, what's elsewhere. Class Gem::Net::HTTP:
   #
-  # - Inherits from {class Object}[https://docs.ruby-lang.org/en/master/Object.html#class-Object-label-What-27s+Here].
+  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
   #
   # This is a categorized summary of methods and attributes.
   #
