@@ -854,7 +854,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
             delay = tv_to_timeout(ends_at, now);
             delay_p = &delay;
         } else {
-            delay_p = NULL;
+            if (((resolution_store.v6.finished && !resolution_store.v4.finished) ||
+                (resolution_store.v4.finished && !resolution_store.v6.finished)) &&
+                !any_addrinfos(&resolution_store) &&
+                !in_progress_fds(arg->connection_attempt_fds_size)) {
+                /* A limited timeout is introduced to prevent select(2) from hanging when it is exclusively
+                 * waiting for name resolution and write(2) failure occurs in a child thread. */
+                delay.tv_sec = 0;
+                delay.tv_usec = 50000;
+                delay_p = &delay;
+            } else {
+                delay_p = NULL;
+            }
         }
 
         nfds = 0;
@@ -1040,6 +1051,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             status = 0;
         }
 
+        /* For cases where write(2) fails in child threads */
         if (!resolution_store.is_all_finised) {
             if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
                 resolution_store.v6.finished = true;
