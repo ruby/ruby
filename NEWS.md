@@ -189,6 +189,11 @@ We only list stdlib changes that are notable feature changes.
     * `Socket::ResolutionError` and `Socket::ResolutionError#error_code` was added.
       [[Feature #20018]]
 
+* IRB
+
+    * Use type based method completion as default.
+      [[Feature #20778]]
+
 Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
 
 The following default gem is added.
