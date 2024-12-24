@@ -752,6 +752,18 @@ assert_equal '[0, 1]', %q{
   end
 }
 
+# move embedded string
+assert_equal '12345678'*3, %q{
+  r = Ractor.new do
+    str_in = receive
+    str_in # copy it back to main ractor
+  end
+
+  str_out = "12345678"*3 # is embedded
+  r.send(str_out, move: true)
+  r.take
+}
+
 # move with yield
 assert_equal 'hello', %q{
   r = Ractor.new do
