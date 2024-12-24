@@ -275,7 +275,14 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 	if (enc &&
 	    (rb_is_usascii_enc(enc) ||
 	     rb_is_ascii8bit_enc(enc) ||
-	     rb_is_locale_enc(enc))) {
+	     (rb_default_internal_encoding()
+	      ? rb_default_internal_encoding() == enc :
+#if defined(_WIN32)
+                rb_utf8_encoding() == enc
+#else
+                rb_is_locale_enc(enc)
+#endif
+	    ))) {
 		enc = NULL;
 	}
 
@@ -638,9 +645,15 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 			    }
 			    tp = RSTRING_PTR(zone);
 			    if (enc) {
+                                rb_encoding *tzenc = rb_default_internal_encoding();;
+#if defined(_WIN32)
+                                if (!tzenc) tzenc = rb_utf8_encoding();
+#else
+                                if (!tzenc) tzenc = rb_locale_encoding();
+#endif
 				for (i = 0; i < TBUFSIZE && tp[i]; i++) {
 				    if ((unsigned char)tp[i] > 0x7F) {
-					VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), rb_locale_encoding(), enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
+					VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), tzenc, enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
 					i = strlcpy(tbuf, RSTRING_PTR(str), TBUFSIZE);
 					tp = tbuf;
 					break;
