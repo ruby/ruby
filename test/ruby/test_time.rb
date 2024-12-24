@@ -717,15 +717,13 @@ class TestTime < Test::Unit::TestCase
     assert_equal("2000-01-01 09:12:34 +091234", t2000.localtime(9*3600+12*60+34).inspect)
   end
 
-  FIXED_ZONE_ENCODING = (Encoding::UTF_8 if /mswin|mingw/.match?(RUBY_PLATFORM))
-
   def assert_zone_encoding(time)
     zone = time.zone
     assert_predicate(zone, :valid_encoding?)
     if zone.ascii_only?
       assert_equal(Encoding::US_ASCII, zone.encoding)
     else
-      enc = FIXED_ZONE_ENCODING || Encoding.find('locale')
+      enc = Encoding.default_internal || Encoding.find('locale')
       assert_equal(enc, zone.encoding)
     end
   end
