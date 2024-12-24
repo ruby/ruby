@@ -163,12 +163,11 @@ rb_darray_free_without_gc(void *ary)
     free(ary);
 }
 
-/* Internal function. Like rb_xcalloc_mul_add but does not trigger GC and does
- * not check for overflow in arithmetic. */
+/* Internal function. Like rb_xcalloc_mul_add but does not trigger GC. */
 static inline void *
 rb_darray_calloc_mul_add_without_gc(size_t x, size_t y, size_t z)
 {
-    size_t size = (x * y) + z;
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
 
     void *ptr = calloc(1, size);
     if (ptr == NULL) rb_bug("rb_darray_calloc_mul_add_without_gc: failed");
