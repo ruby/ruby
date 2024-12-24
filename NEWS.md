@@ -79,6 +79,17 @@ Note: We're only listing outstanding class updates.
 
     * `MatchData#bytebegin` and `MatchData#byteend` have been added. [[Feature #20576]]
 
+* Object
+
+    * `Object#singleton_method` now returns methods in modules prepended to or included in the
+      receiver's singleton class. [[Bug #20620]]
+
+        ```rb
+        o = Object.new
+        o.extend(Module.new{def a = 1})
+        o.singleton_method(:a).call #=> 1
+        ```
+
 * Ractor
 
     * `require` in Ractor is allowed. The requiring process will be run on
@@ -373,15 +384,6 @@ The following bundled gems are promoted from default gems.
     ```rb
     "1.".to_f    #=> 1.0
     "1.E-1".to_f #=> 0.1 (previously, 1.0 was returned)
-    ```
-
-* `Object#singleton_method` now returns methods in modules prepended to or included in the
-  receiver's singleton class. [[Bug #20620]]
-
-    ```rb
-    o = Object.new
-    o.extend(Module.new{def a = 1})
-    o.singleton_method(:a).call #=> 1
     ```
 
 * `Refinement#refined_class` has been removed. [[Feature #19714]]
