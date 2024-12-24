@@ -91,7 +91,7 @@
  */
 #define rb_darray_make(ptr_to_ary, size) \
     rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
-                         sizeof((*(ptr_to_ary))->data[0]), rb_xcalloc_mul_add)
+                         sizeof((*(ptr_to_ary))->data[0]), rb_darray_calloc_mul_add)
 
 #define rb_darray_make_without_gc(ptr_to_ary, size) \
     rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
@@ -161,6 +161,18 @@ static inline void
 rb_darray_free_without_gc(void *ary)
 {
     free(ary);
+}
+
+/* Internal function. Like rb_xcalloc_mul_add. */
+static inline void *
+rb_darray_calloc_mul_add(size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = xcalloc(1, size);
+    RUBY_ASSERT(ptr != NULL);
+
+    return ptr;
 }
 
 /* Internal function. Like rb_xcalloc_mul_add but does not trigger GC. */
