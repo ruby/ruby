@@ -101,7 +101,8 @@ setup_launchable() {
         --flavor optflags="${INPUT_OPTFLAGS}" \
         --flavor cppflags="${INPUT_CPPFLAGS}" \
         --test-suite btest \
-        > "${builddir}"/${btest_session_file}
+        > "${builddir}"/${btest_session_file} \
+        || true
     if [ "$INPUT_CHECK" = "true" ]; then
         tests+=--launchable-test-reports="${test_report_path}"
         launchable record session \
@@ -114,7 +115,8 @@ setup_launchable() {
             --flavor optflags="${INPUT_OPTFLAGS}" \
             --flavor cppflags="${INPUT_CPPFLAGS}" \
             --test-suite test-all \
-            > "${builddir}"/${test_all_session_file}
+            > "${builddir}"/${test_all_session_file} \
+            || true
         mkdir "${builddir}"/"${test_spec_report_path}"
         spec_opts+=--launchable-test-reports="${test_spec_report_path}"
         launchable record session \
@@ -127,7 +129,8 @@ setup_launchable() {
             --flavor optflags="${INPUT_OPTFLAGS}" \
             --flavor cppflags="${INPUT_CPPFLAGS}" \
             --test-suite test-spec \
-            > "${builddir}"/${test_spec_session_file}
+            > "${builddir}"/${test_spec_session_file} \
+            || true
     fi
     echo "::endgroup::"
     trap launchable_record_test EXIT
