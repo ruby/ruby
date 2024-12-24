@@ -481,38 +481,10 @@ rb_malloc_grow_capa(size_t current, size_t type_size)
 }
 
 static inline struct rbimpl_size_mul_overflow_tag
-size_add_overflow(size_t x, size_t y)
-{
-    size_t z;
-    bool p;
-#if 0
-
-#elif defined(ckd_add)
-    p = ckd_add(&z, x, y);
-
-#elif __has_builtin(__builtin_add_overflow)
-    p = __builtin_add_overflow(x, y, &z);
-
-#elif defined(DSIZE_T)
-    RB_GNUC_EXTENSION DSIZE_T dx = x;
-    RB_GNUC_EXTENSION DSIZE_T dy = y;
-    RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
-    p = dz > SIZE_MAX;
-    z = (size_t)dz;
-
-#else
-    z = x + y;
-    p = z < y;
-
-#endif
-    return (struct rbimpl_size_mul_overflow_tag) { p, z, };
-}
-
-static inline struct rbimpl_size_mul_overflow_tag
 size_mul_add_overflow(size_t x, size_t y, size_t z) /* x * y + z */
 {
     struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
-    struct rbimpl_size_mul_overflow_tag u = size_add_overflow(t.right, z);
+    struct rbimpl_size_mul_overflow_tag u = rbimpl_size_add_overflow(t.right, z);
     return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left, u.right };
 }
 
@@ -521,7 +493,7 @@ size_mul_add_mul_overflow(size_t x, size_t y, size_t z, size_t w) /* x * y + z *
 {
     struct rbimpl_size_mul_overflow_tag t = rbimpl_size_mul_overflow(x, y);
     struct rbimpl_size_mul_overflow_tag u = rbimpl_size_mul_overflow(z, w);
-    struct rbimpl_size_mul_overflow_tag v = size_add_overflow(t.right, u.right);
+    struct rbimpl_size_mul_overflow_tag v = rbimpl_size_add_overflow(t.right, u.right);
     return (struct rbimpl_size_mul_overflow_tag) { t.left || u.left || v.left, v.right };
 }
 
@@ -4588,6 +4560,14 @@ ruby_malloc_size_overflow(size_t count, size_t elsize)
     rb_raise(rb_eArgError,
              "malloc: possible integer overflow (%"PRIuSIZE"*%"PRIuSIZE")",
              count, elsize);
+}
+
+void
+ruby_malloc_add_size_overflow(size_t x, size_t y)
+{
+    rb_raise(rb_eArgError,
+             "malloc: possible integer overflow (%"PRIuSIZE"+%"PRIuSIZE")",
+             x, y);
 }
 
 static void *ruby_xmalloc2_body(size_t n, size_t size);
