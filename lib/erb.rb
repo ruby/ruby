@@ -294,7 +294,7 @@ class ERB
   #  # build data class
   #  class Listings
   #    PRODUCT = { :name => "Chicken Fried Steak",
-  #                :desc => "A well messages pattie, breaded and fried.",
+  #                :desc => "A well messaged pattie, breaded and fried.",
   #                :cost => 9.95 }
   #
   #    attr_reader :product, :price
@@ -327,10 +327,10 @@ class ERB
   # _Generates_
   #
   #  Chicken Fried Steak
-  #  A well messages pattie, breaded and fried.
+  #  A well massaged pattie, breaded and fried.
   #
   #  Chicken Fried Steak -- 9.95
-  #  A well messages pattie, breaded and fried.
+  #  A well massaged pattie, breaded and fried.
   #
   def initialize(str, safe_level=NOT_GIVEN, legacy_trim_mode=NOT_GIVEN, legacy_eoutvar=NOT_GIVEN, trim_mode: nil, eoutvar: '_erbout')
     # Complex initializer for $SAFE deprecation at [Feature #14256]. Use keyword arguments to pass trim_mode or eoutvar.
@@ -416,8 +416,7 @@ class ERB
 
   #
   # Executes the generated ERB code to produce a completed template, returning
-  # the results of that code.  (See ERB::new for details on how this process
-  # can be affected by _safe_level_.)
+  # the results of that code.
   #
   # _b_ accepts a Binding object which is used to set the context of
   # code evaluation.
