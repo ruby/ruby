@@ -1024,7 +1024,6 @@ rb_shape_memsize(rb_shape_t *shape)
  * Exposing Shape to Ruby via RubyVM.debug_shape
  */
 
-/* :nodoc: */
 static VALUE
 rb_shape_too_complex(VALUE self)
 {
@@ -1073,7 +1072,6 @@ rb_edges_to_hash(ID key, VALUE value, void *ref)
     return ID_TABLE_CONTINUE;
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_edges(VALUE self)
 {
@@ -1108,7 +1106,6 @@ rb_shape_edge_name(rb_shape_t * shape)
     return Qnil;
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_export_depth(VALUE self)
 {
@@ -1117,7 +1114,6 @@ rb_shape_export_depth(VALUE self)
     return SIZET2NUM(rb_shape_depth(shape));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_parent(VALUE self)
 {
@@ -1131,28 +1127,24 @@ rb_shape_parent(VALUE self)
     }
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape(obj));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_root_shape(VALUE self)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_root_shape());
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_shapes_available(VALUE self)
 {
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {
@@ -1183,7 +1175,6 @@ static VALUE edges(struct rb_id_table* edges)
     return hash;
 }
 
-/* :nodoc: */
 VALUE
 rb_obj_shape(rb_shape_t* shape)
 {
@@ -1203,14 +1194,12 @@ rb_obj_shape(rb_shape_t* shape)
     return rb_shape;
 }
 
-/* :nodoc: */
 static VALUE
 shape_transition_tree(VALUE self)
 {
     return rb_obj_shape(rb_shape_get_root_shape());
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
@@ -1311,6 +1300,8 @@ void
 Init_shape(void)
 {
 #if SHAPE_DEBUG
+    /* Document-class: RubyVM::Shape
+     * :nodoc: */
     VALUE rb_cShape = rb_struct_define_under(rb_cRubyVM, "Shape",
             "id",
             "parent_id",
