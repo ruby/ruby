@@ -836,8 +836,9 @@ Some commonly-used properties correspond to POSIX bracket expressions:
 These are also commonly used:
 
 - <tt>/\p{Emoji}/</tt>: Unicode emoji.
-- <tt>/\p{Graph}/</tt>: Non-blank character
-  (excludes spaces, control characters, and similar).
+- <tt>/\p{Graph}/</tt>: Characters excluding <tt>/\p{Cntrl}/</tt> and <tt>/\p{Space}/</tt>.
+  Note that invisible characters under the Unicode
+  {"Format"}[https://www.compart.com/en/unicode/category/Cf] category are included.
 - <tt>/\p{Word}/</tt>: A member in one of these Unicode character
   categories (see below) or having one of these Unicode properties:
 
