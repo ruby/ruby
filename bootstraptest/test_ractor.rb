@@ -1122,6 +1122,18 @@ values = r.take
 values.join
 }
 
+# send embedded struct with move: true
+assert_equal 'true', %q{
+Foo = Struct.new(:a,:b,:c,:d,:e,:f)
+r = Ractor.new {
+  foo = receive
+  { equal: (foo == Foo.new(1,2,3,4,5,6)) }
+}
+obj = Foo.new(1,2,3,4,5,6)
+r.send(obj, move: true)
+r.take[:equal]
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
