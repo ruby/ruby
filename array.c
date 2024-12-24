@@ -1115,7 +1115,7 @@ rb_ary_s_new(int argc, VALUE *argv, VALUE klass)
  *    array # => [{a: 1}, {}], as array[0] and array[1] are different objects
  *
  *  Raises TypeError if the first argument is not either an array
- *  or an {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]).
+ *  or an {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects]).
  *  Raises ArgumentError if the first argument is a negative integer.
  *
  *  Related: see {Methods for Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array].
@@ -1935,7 +1935,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
  *  Returns the element of +self+ specified by the given +index+
  *  or +nil+ if there is no such element;
  *  +index+ must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  For non-negative +index+, returns the element of +self+ at offset +index+:
  *
@@ -2003,7 +2003,7 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
  *    fetch(index) {|index| ... } -> element or block_return_value
  *
  *  Returns the element of +self+ at offset +index+ if +index+ is in range; +index+ must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  With the single argument +index+ and no block,
  *  returns the element at offset +index+:
@@ -3495,7 +3495,7 @@ static VALUE rb_ary_bsearch_index(VALUE ary);
  *  Returns the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:ruby/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
@@ -3519,7 +3519,7 @@ rb_ary_bsearch(VALUE ary)
  *  Returns the integer index of the element from +self+ found by a binary search,
  *  or +nil+ if the search found no suitable element.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:ruby/bsearch.rdoc].
  *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
@@ -4125,7 +4125,7 @@ rb_ary_delete_at(VALUE ary, long pos)
  *    delete_at(index) -> removed_object or nil
  *
  *  Removes the element of +self+ at the given +index+, which must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  When +index+ is non-negative, deletes the element at offset +index+:
  *
@@ -4661,7 +4661,7 @@ rb_ary_transpose(VALUE ary)
  *    replace(other_array) -> self
  *
  *  Replaces the elements of +self+ with the elements of +other_array+, which must be an
- *  {array-convertible object}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects];
+ *  {array-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Array-Convertible+Objects];
  *  returns +self+:
  *
  *    a = ['a', 'b', 'c']   # => ["a", "b", "c"]
@@ -4780,7 +4780,7 @@ rb_ary_clear(VALUE ary)
  *  When arguments +start+ and +count+ are given,
  *  they select the elements of +self+ to be replaced;
  *  each must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  (or +nil+):
  *
  *  - +start+ specifies the zero-based offset of the first element to be replaced;
@@ -6586,7 +6586,7 @@ flatten(VALUE ary, int level)
  *
  *  Returns +self+ as a recursively flattening of +self+ to +depth+ levels of recursion;
  *  +depth+ must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects],
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects],
  *  or +nil+.
  *  At each level of recursion:
  *
@@ -6644,7 +6644,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
  *  Returns a new array that is a recursive flattening of +self+
  *  to +depth+ levels of recursion;
  *  +depth+ must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  or +nil+.
  *  At each level of recursion:
  *
@@ -6895,7 +6895,7 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  With a block given, may call the block, depending on the value of argument +count+;
  *  +count+ must be an
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects],
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects],
  *  or +nil+.
  *
  *  When +count+ is positive,
@@ -7177,7 +7177,7 @@ rb_ary_combination_size(VALUE ary, VALUE args, VALUE eobj)
  *    combination(count) -> new_enumerator
  *
  *  When a block and a positive
- *  {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]
+ *  {integer-convertible object}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects]
  *  argument +count+ (<tt>0 < count <= self.size</tt>)
  *  are given, calls the block with each combination of +self+ of size +count+;
  *  returns +self+:
@@ -8017,7 +8017,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
  *  Finds and returns the object in nested object
  *  specified by +index+ and +identifiers+;
  *  the nested objects may be instances of various classes.
- *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
+ *  See {Dig Methods}[rdoc-ref:ruby/dig_methods.rdoc].
  *
  *  Examples:
  *
@@ -8282,7 +8282,7 @@ rb_ary_deconstruct(VALUE ary)
  *  Although the effective index into an array is always an integer,
  *  some methods (both within class \Array and elsewhere)
  *  accept one or more non-integer arguments that are
- *  {integer-convertible objects}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects].
+ *  {integer-convertible objects}[rdoc-ref:ruby/implicit_conversion.rdoc@Integer-Convertible+Objects].
  *
  *  == Creating Arrays
  *
