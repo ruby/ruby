@@ -58,10 +58,11 @@
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
-#define rb_darray_insert(ptr_to_ary, idx, element) do { \
+#define rb_darray_insert_without_gc(ptr_to_ary, idx, element) do { \
     rb_darray_ensure_space((ptr_to_ary), \
                            sizeof(**(ptr_to_ary)), \
-                           sizeof((*(ptr_to_ary))->data[0])); \
+                           sizeof((*(ptr_to_ary))->data[0]), \
+                           rb_darray_realloc_mul_add_without_gc); \
     MEMMOVE( \
         rb_darray_ref(*(ptr_to_ary), idx + 1), \
         rb_darray_ref(*(ptr_to_ary), idx), \

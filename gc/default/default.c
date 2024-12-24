@@ -1961,7 +1961,7 @@ heap_page_allocate(rb_objspace_t *objspace)
         }
     }
 
-    rb_darray_insert(&objspace->heap_pages.sorted, hi, page);
+    rb_darray_insert_without_gc(&objspace->heap_pages.sorted, hi, page);
 
     if (heap_pages_lomem == 0 || heap_pages_lomem > start) heap_pages_lomem = start;
     if (heap_pages_himem < end) heap_pages_himem = end;
