@@ -280,4 +280,13 @@ class TestData < Test::Unit::TestCase
     assert_not_same(test, loaded)
     assert_predicate(loaded, :frozen?)
   end
+
+  KlassWithConst = Data.define do
+    ConstUnderData = 1
+  end
+
+  def test_cbase
+    assert_operator(KlassWithConst, :const_defined?, :ConstUnderData)
+    assert_not_operator(self.class, :const_defined?, :ConstUnderData)
+  end
 end
