@@ -782,16 +782,37 @@ rb_f_raise(int argc, VALUE *argv)
  *
  *  See {Messages}[rdoc-ref:exceptions.md@Messages].
  *
- *  Argument +backtrace+ sets the stored backtrace in the new exception,
- *  which may be retrieved by method Exception#backtrace;
- *  the backtrace must be an array of strings or +nil+:
+ *  Argument +backtrace+ might be used to modify the backtrace of the new exception,
+ *  as reported by Exception#backtrace and Exception#backtrace_locations;
+ *  the backtrace must be an array of Thread::Backtrace::Location, an array of
+ *  strings, a single string, or +nil+.
+ *
+ *  Using the array of Thread::Backtrace::Location instances is the most consistent option
+ *  and should be preferred when possible. The necessary value might be obtained
+ *  from #caller_locations, or copied from Exception#backtrace_locations of another
+ *  error:
  *
  *    begin
- *      raise(StandardError, 'Boom', %w[foo bar baz])
- *    rescue => x
- *      p x.backtrace
+ *      do_some_work()
+ *    rescue ZeroDivisionError => ex
+ *      raise(LogicalError, "You have an error in your math", ex.backtrace_locations)
  *    end
- *    # => ["foo", "bar", "baz"]
+ *
+ *  The ways, both Exception#backtrace and Exception#backtrace_locations of the
+ *  raised error are set to the same backtrace.
+ *
+ *  When the desired stack of locations is not available and should
+ *  be constructed from scratch, an array of strings or a singular
+ *  string can be used. In this case, only Exception#backtrace is set:
+ *
+ *    begin
+ *      raise(StandardError, 'Boom', %w[dsl.rb:3 framework.rb:1])
+ *    rescue => ex
+ *      p ex.backtrace
+ *      # => ["dsl.rb:3", "framework.rb:1"]
+ *      p ex.backtrace_locations
+ *      # => nil
+ *    end
  *
  *  If argument +backtrace+ is not given,
  *  the backtrace is set according to an array of Thread::Backtrace::Location objects,

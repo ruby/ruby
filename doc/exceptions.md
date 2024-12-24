@@ -26,7 +26,7 @@ that prints a message and exits the program (or thread):
 
 ```console
 $ ruby -e "raise"
--e:1:in `<main>': unhandled exception
+-e:1:in '<main>': unhandled exception
 ```
 
 ### Rescued Exceptions
@@ -201,7 +201,7 @@ Output:
 
 ```
 #<ZeroDivisionError: divided by 0>
-["t.rb:2:in `/'", "t.rb:2:in `<main>'"]
+["t.rb:2:in 'Integer#/'", "t.rb:2:in '<main>'"]
 ```
 
 ##### Cause
@@ -362,8 +362,8 @@ Output:
 
 ```
 ruby t.rb
-t.rb:2:in `/': divided by 0 (ZeroDivisionError)
-        from t.rb:2:in `<main>'
+t.rb:2:in 'Integer#/': divided by 0 (ZeroDivisionError)
+    from t.rb:2:in '<main>'
 ```
 
 #### Retrying
@@ -501,28 +501,21 @@ These methods return backtrace information:
   of Thread::Backtrace::Location objects or `nil`.
   Each Thread::Backtrace::Location object gives detailed information about a called method.
 
-An `Exception` object stores its backtrace value as one of:
+By default, Ruby sets the backtrace of the exception to the location where it
+was raised.
 
-- An array of Thread::Backtrace::Location objects;
-  this is the common case: the exception was raised by the Ruby core or the Ruby standard library.
-  In this case:
+The developer might adjust this by either providing +backtrace+ argument
+to Kernel#raise, or using Exception#set_backtrace.
 
-    - Exception#backtrace_locations returns the array of Thread::Backtrace::Location objects.
-    - Exception#backtrace returns the array of their string values
-      (`Exception#backtrace_locations.map {|loc| loc.to_s }`).
+Note that:
 
-- An array of strings;
-  this is an uncommon case: the user manually set the backtrace to an array of strings;
-  In this case:
-
-    - Exception#backtrace returns the array of strings.
-    - Exception#backtrace_locations returns `nil`.
-
-- `nil`, in which case both methods return `nil`.
-
-These methods set the backtrace value:
-
-- Exception#set_backtrace: sets the backtrace value to an array of strings, or to `nil`.
-- Kernel#raise: sets the backtrace value to an array of Thread::Backtrace::Location objects,
-  or to an array of strings.
-
+- by default, both +backtrace+ and +backtrace_locations+ represent the same backtrace;
+- if the developer sets the backtrace by one of the above methods to an array of
+  Thread::Backtrace::Location, they still represent the same backtrace;
+- if the developer sets the backtrace to a string or an array of strings:
+  - by Kernel#raise: +backtrace_locations+ become +nil+;
+  - by Exception#set_backtrace: +backtrace_locations+ preserve the original
+    value;
+- if the developer sets the backtrace to +nil+ by Exception#set_backtrace,
+  +backtrace_locations+ preserve the original value; but if the exception is then
+  reraised, both +backtrace+ and +backtrace_locations+ become the location of reraise.

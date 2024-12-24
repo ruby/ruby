@@ -302,7 +302,7 @@ The following bundled gem is added.
 The following bundled gems are updated.
 
 * [minitest][minitest] 5.25.4
-    * 5.20.0 to v5.25.4
+    * 5.20.0 to [v5.25.4][minitest-v5.25.4]
 * [power_assert][power_assert] 2.0.5
     * 2.0.3 to [v2.0.4][power_assert-v2.0.4], [v2.0.5][power_assert-v2.0.5]
 * [rake][rake] 13.2.1
@@ -324,7 +324,7 @@ The following bundled gems are updated.
 * [rbs][rbs] 3.8.0
     * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0], [v3.8.0.pre.1][rbs-v3.8.0.pre.1] [v3.8.0][rbs-v3.8.0]
 * [typeprof][typeprof] 0.30.1
-    * 0.21.9 to v0.30.1
+    * 0.21.9 to [v0.30.1][typeprof-v0.30.1]
 * [debug][debug] 1.10.0
     * 1.9.1 to [v1.9.2][debug-v1.9.2], [v1.10.0][debug-v1.10.0]
 * [racc][racc] 1.8.1
@@ -741,6 +741,7 @@ The following bundled gems are promoted from default gems.
 [zlib-v3.1.1]: https://github.com/ruby/zlib/releases/tag/v3.1.1
 [zlib-v3.2.0]: https://github.com/ruby/zlib/releases/tag/v3.2.0
 [zlib-v3.2.1]: https://github.com/ruby/zlib/releases/tag/v3.2.1
+[minitest-v5.25.4]: https://github.com/seattlerb/minitest/releases/tag/v5.25.4
 [power_assert-v2.0.4]:  https://github.com/ruby/power_assert/releases/tag/v2.0.4
 [power_assert-v2.0.5]:  https://github.com/ruby/power_assert/releases/tag/v2.0.5
 [rake-v13.2.0]: https://github.com/ruby/rake/releases/tag/v13.2.0
@@ -824,8 +825,9 @@ The following bundled gems are promoted from default gems.
 [csv-v3.2.9]: https://github.com/ruby/csv/releases/tag/v3.2.9
 [csv-v3.3.0]: https://github.com/ruby/csv/releases/tag/v3.3.0
 [csv-v3.3.1]: https://github.com/ruby/csv/releases/tag/v3.3.1
-[csv-v3.3.2]: https://github.com/ruby/csv/releases/tag/v3.3.1
+[csv-v3.3.2]: https://github.com/ruby/csv/releases/tag/v3.3.2
 [ruby/net-http-sspi]: https://github.com/ruby/net-http-sspi
+[typeprof-v0.30.1]: https://github.com/ruby/typeprof/releases/tag/v0.30.1
 
 [RubyGems]: https://github.com/rubygems/rubygems
 [benchmark]: https://github.com/ruby/benchmark
@@ -886,6 +888,7 @@ The following bundled gems are promoted from default gems.
 [net-smtp]: https://github.com/ruby/net-smtp
 [prime]: https://github.com/ruby/prime
 [rbs]: https://github.com/ruby/rbs
+[typeprof]: https://github.com/ruby/typeprof
 [debug]: https://github.com/ruby/debug
 [racc]: https://github.com/ruby/racc
 [mutex_m]: https://github.com/ruby/mutex_m
