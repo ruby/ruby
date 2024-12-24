@@ -316,8 +316,8 @@ The following bundled gems are updated.
     * 0.4.0 to [v0.4.0.1][net-smtp-v0.4.0.1], [v0.5.0][net-smtp-v0.5.0]
 * [prime][prime] 0.1.3
     * 0.1.2 to [v0.1.3][prime-v0.1.3]
-* [rbs][rbs] 3.8.0.pre.1
-    * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0], [v3.8.0.pre.1][rbs-v3.8.0.pre.1]
+* [rbs][rbs] 3.8.0
+    * 3.4.0 to [v3.4.1][rbs-v3.4.1], [v3.4.2][rbs-v3.4.2], [v3.4.3][rbs-v3.4.3], [v3.4.4][rbs-v3.4.4], [v3.5.0.pre.1][rbs-v3.5.0.pre.1], [v3.5.0.pre.2][rbs-v3.5.0.pre.2], [v3.5.0][rbs-v3.5.0], [v3.5.1][rbs-v3.5.1], [v3.5.2][rbs-v3.5.2], [v3.5.3][rbs-v3.5.3], [v3.6.0.dev.1][rbs-v3.6.0.dev.1], [v3.6.0.pre.1][rbs-v3.6.0.pre.1], [v3.6.0.pre.2][rbs-v3.6.0.pre.2], [v3.6.0.pre.3][rbs-v3.6.0.pre.3], [v3.6.0][rbs-v3.6.0], [v3.6.1][rbs-v3.6.1], [v3.7.0.dev.1][rbs-v3.7.0.dev.1], [v3.7.0.pre.1][rbs-v3.7.0.pre.1], [v3.7.0][rbs-v3.7.0], [v3.8.0.pre.1][rbs-v3.8.0.pre.1] [v3.8.0][rbs-v3.8.0]
 * [typeprof][typeprof] 0.30.1
     * 0.21.9 to v0.30.1
 * [debug][debug] 1.10.0
@@ -804,6 +804,7 @@ The following bundled gems are promoted from default gems.
 [rbs-v3.7.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.7.0.pre.1
 [rbs-v3.7.0]: https://github.com/ruby/rbs/releases/tag/v3.7.0
 [rbs-v3.8.0.pre.1]: https://github.com/ruby/rbs/releases/tag/v3.8.0.pre.1
+[rbs-v3.8.0]: https://github.com/ruby/rbs/releases/tag/v3.8.0
 [debug-v1.9.2]: https://github.com/ruby/debug/releases/tag/v1.9.2
 [debug-v1.10.0]: https://github.com/ruby/debug/releases/tag/v1.10.0
 [racc-v1.8.0]: https://github.com/ruby/racc/releases/tag/v1.8.0
