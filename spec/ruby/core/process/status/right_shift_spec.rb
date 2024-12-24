@@ -16,7 +16,7 @@ ruby_version_is ""..."3.5" do
       end
     end
 
-    ruby_version_is "3.3" do
+    ruby_version_is "3.3"..."3.5" do
       it "raises an ArgumentError if shift value is negative" do
         suppress_warning do
           ruby_exe("exit(0)")
