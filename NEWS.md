@@ -191,7 +191,7 @@ We only list stdlib changes that are notable feature changes.
 
 * IRB
 
-    * Use type based method completion as default.
+    * Interactive method completion is now improved with type information by default.
       [[Feature #20778]]
 
 Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
@@ -552,6 +552,7 @@ The following bundled gems are promoted from default gems.
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
+[Feature #20778]: https://bugs.ruby-lang.org/issues/20778
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
 [RubyGems-v3.5.4]: https://github.com/rubygems/rubygems/releases/tag/v3.5.4
 [RubyGems-v3.5.5]: https://github.com/rubygems/rubygems/releases/tag/v3.5.5
