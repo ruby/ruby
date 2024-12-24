@@ -19,7 +19,7 @@ data_dir = ARGV.shift&.tap { |d| Dir.exist?(d) } ||
 # Map group names, given as last argument to #make_const in enc-unicode.rb,
 # to sections in the doc. The order in this hash controls the order in the doc.
 map = {
-  /\[\[:/            => 'POSIX brackets',
+  /POSIX/            => 'POSIX brackets',
   '-'                => 'Special',
   /.+ Category/      => 'Major and General Categories',
   'Binary Property'  => 'Prop List',

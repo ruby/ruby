@@ -35,13 +35,13 @@
 
 
 
-/* 'NEWLINE': [[:NEWLINE:]] */
+/* 'NEWLINE': POSIX class */
 static const OnigCodePoint CR_NEWLINE[] = {
 	1,
 	0x000a, 0x000a,
 }; /* CR_NEWLINE */
 
-/* 'Alpha': [[:Alpha:]] */
+/* 'Alpha': POSIX class */
 static const OnigCodePoint CR_Alpha[] = {
 	732,
 	0x0041, 0x005a,
@@ -778,7 +778,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x31350, 0x323af,
 }; /* CR_Alpha */
 
-/* 'Blank': [[:Blank:]] */
+/* 'Blank': POSIX class */
 static const OnigCodePoint CR_Blank[] = {
 	8,
 	0x0009, 0x0009,
@@ -791,14 +791,14 @@ static const OnigCodePoint CR_Blank[] = {
 	0x3000, 0x3000,
 }; /* CR_Blank */
 
-/* 'Cntrl': [[:Cntrl:]] */
+/* 'Cntrl': POSIX class */
 static const OnigCodePoint CR_Cntrl[] = {
 	2,
 	0x0000, 0x001f,
 	0x007f, 0x009f,
 }; /* CR_Cntrl */
 
-/* 'Digit': [[:Digit:]] */
+/* 'Digit': POSIX class */
 static const OnigCodePoint CR_Digit[] = {
 	64,
 	0x0030, 0x0039,
@@ -867,7 +867,7 @@ static const OnigCodePoint CR_Digit[] = {
 	0x1fbf0, 0x1fbf9,
 }; /* CR_Digit */
 
-/* 'Graph': [[:Graph:]] */
+/* 'Graph': POSIX class */
 static const OnigCodePoint CR_Graph[] = {
 	712,
 	0x0021, 0x007e,
@@ -1584,7 +1584,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x100000, 0x10fffd,
 }; /* CR_Graph */
 
-/* 'Lower': [[:Lower:]] */
+/* 'Lower': POSIX class */
 static const OnigCodePoint CR_Lower[] = {
 	671,
 	0x0061, 0x007a,
@@ -2260,7 +2260,7 @@ static const OnigCodePoint CR_Lower[] = {
 	0x1e922, 0x1e943,
 }; /* CR_Lower */
 
-/* 'Print': [[:Print:]] */
+/* 'Print': POSIX class */
 static const OnigCodePoint CR_Print[] = {
 	709,
 	0x0020, 0x007e,
@@ -2974,7 +2974,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x100000, 0x10fffd,
 }; /* CR_Print */
 
-/* 'XPosixPunct': [[:Punct:]] */
+/* 'XPosixPunct': POSIX class */
 static const OnigCodePoint CR_XPosixPunct[] = {
 	186,
 	0x0021, 0x002f,
@@ -3165,7 +3165,7 @@ static const OnigCodePoint CR_XPosixPunct[] = {
 	0x1e95e, 0x1e95f,
 }; /* CR_XPosixPunct */
 
-/* 'Space': [[:Space:]] */
+/* 'Space': POSIX class */
 static const OnigCodePoint CR_Space[] = {
 	10,
 	0x0009, 0x000d,
@@ -3180,7 +3180,7 @@ static const OnigCodePoint CR_Space[] = {
 	0x3000, 0x3000,
 }; /* CR_Space */
 
-/* 'Upper': [[:Upper:]] */
+/* 'Upper': POSIX class */
 static const OnigCodePoint CR_Upper[] = {
 	651,
 	0x0041, 0x005a,
@@ -3836,7 +3836,7 @@ static const OnigCodePoint CR_Upper[] = {
 	0x1f170, 0x1f189,
 }; /* CR_Upper */
 
-/* 'XDigit': [[:XDigit:]] */
+/* 'XDigit': POSIX class */
 static const OnigCodePoint CR_XDigit[] = {
 	3,
 	0x0030, 0x0039,
@@ -3844,7 +3844,7 @@ static const OnigCodePoint CR_XDigit[] = {
 	0x0061, 0x0066,
 }; /* CR_XDigit */
 
-/* 'Word': [[:Word:]] */
+/* 'Word': POSIX class */
 static const OnigCodePoint CR_Word[] = {
 	770,
 	0x0030, 0x0039,
@@ -4619,7 +4619,7 @@ static const OnigCodePoint CR_Word[] = {
 	0xe0100, 0xe01ef,
 }; /* CR_Word */
 
-/* 'Alnum': [[:Alnum:]] */
+/* 'Alnum': POSIX class */
 static const OnigCodePoint CR_Alnum[] = {
 	772,
 	0x0030, 0x0039,
@@ -5396,13 +5396,13 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x31350, 0x323af,
 }; /* CR_Alnum */
 
-/* 'ASCII': [[:ASCII:]] */
+/* 'ASCII': POSIX class */
 static const OnigCodePoint CR_ASCII[] = {
 	1,
 	0x0000, 0x007f,
 }; /* CR_ASCII */
 
-/* 'Punct': [[:Punct:]] */
+/* 'Punct': POSIX class */
 static const OnigCodePoint CR_Punct[] = {
 	191,
 	0x0021, 0x0023,
@@ -24371,7 +24371,7 @@ static const OnigCodePoint CR_Unknown[] = {
 }; /* CR_Unknown */
 
 #ifdef USE_UNICODE_AGE_PROPERTIES
-/* 'Age_1_1': Derived Age 1.1 */
+/* 'Age=1.1': Derived Age */
 static const OnigCodePoint CR_Age_1_1[] = {
 	288,
 	0x0000, 0x01f5,
@@ -24664,7 +24664,7 @@ static const OnigCodePoint CR_Age_1_1[] = {
 	0xfffd, 0xffff,
 }; /* CR_Age_1_1 */
 
-/* 'Age_2_0': Derived Age 2.0 */
+/* 'Age=2.0': Derived Age */
 static const OnigCodePoint CR_Age_2_0[] = {
 	312,
 	0x0000, 0x01f5,
@@ -24981,7 +24981,7 @@ static const OnigCodePoint CR_Age_2_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_2_0 */
 
-/* 'Age_2_1': Derived Age 2.1 */
+/* 'Age=2.1': Derived Age */
 static const OnigCodePoint CR_Age_2_1[] = {
 	312,
 	0x0000, 0x01f5,
@@ -25298,7 +25298,7 @@ static const OnigCodePoint CR_Age_2_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_2_1 */
 
-/* 'Age_3_0': Derived Age 3.0 */
+/* 'Age=3.0': Derived Age */
 static const OnigCodePoint CR_Age_3_0[] = {
 	369,
 	0x0000, 0x021f,
@@ -25672,7 +25672,7 @@ static const OnigCodePoint CR_Age_3_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_3_0 */
 
-/* 'Age_3_1': Derived Age 3.1 */
+/* 'Age=3.1': Derived Age */
 static const OnigCodePoint CR_Age_3_1[] = {
 	402,
 	0x0000, 0x021f,
@@ -26079,7 +26079,7 @@ static const OnigCodePoint CR_Age_3_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_3_1 */
 
-/* 'Age_3_2': Derived Age 3.2 */
+/* 'Age=3.2': Derived Age */
 static const OnigCodePoint CR_Age_3_2[] = {
 	397,
 	0x0000, 0x0220,
@@ -26481,7 +26481,7 @@ static const OnigCodePoint CR_Age_3_2[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_3_2 */
 
-/* 'Age_4_0': Derived Age 4.0 */
+/* 'Age=4.0': Derived Age */
 static const OnigCodePoint CR_Age_4_0[] = {
 	412,
 	0x0000, 0x0236,
@@ -26898,7 +26898,7 @@ static const OnigCodePoint CR_Age_4_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_4_0 */
 
-/* 'Age_4_1': Derived Age 4.1 */
+/* 'Age=4.1': Derived Age */
 static const OnigCodePoint CR_Age_4_1[] = {
 	430,
 	0x0000, 0x0241,
@@ -27333,7 +27333,7 @@ static const OnigCodePoint CR_Age_4_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_4_1 */
 
-/* 'Age_5_0': Derived Age 5.0 */
+/* 'Age=5.0': Derived Age */
 static const OnigCodePoint CR_Age_5_0[] = {
 	440,
 	0x0000, 0x036f,
@@ -27778,7 +27778,7 @@ static const OnigCodePoint CR_Age_5_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_5_0 */
 
-/* 'Age_5_1': Derived Age 5.1 */
+/* 'Age=5.1': Derived Age */
 static const OnigCodePoint CR_Age_5_1[] = {
 	455,
 	0x0000, 0x0377,
@@ -28238,7 +28238,7 @@ static const OnigCodePoint CR_Age_5_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_5_1 */
 
-/* 'Age_5_2': Derived Age 5.2 */
+/* 'Age=5.2': Derived Age */
 static const OnigCodePoint CR_Age_5_2[] = {
 	495,
 	0x0000, 0x0377,
@@ -28738,7 +28738,7 @@ static const OnigCodePoint CR_Age_5_2[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_5_2 */
 
-/* 'Age_6_0': Derived Age 6.0 */
+/* 'Age=6.0': Derived Age */
 static const OnigCodePoint CR_Age_6_0[] = {
 	511,
 	0x0000, 0x0377,
@@ -29254,7 +29254,7 @@ static const OnigCodePoint CR_Age_6_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_6_0 */
 
-/* 'Age_6_1': Derived Age 6.1 */
+/* 'Age=6.1': Derived Age */
 static const OnigCodePoint CR_Age_6_1[] = {
 	549,
 	0x0000, 0x0377,
@@ -29808,7 +29808,7 @@ static const OnigCodePoint CR_Age_6_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_6_1 */
 
-/* 'Age_6_2': Derived Age 6.2 */
+/* 'Age=6.2': Derived Age */
 static const OnigCodePoint CR_Age_6_2[] = {
 	549,
 	0x0000, 0x0377,
@@ -30362,7 +30362,7 @@ static const OnigCodePoint CR_Age_6_2[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_6_2 */
 
-/* 'Age_6_3': Derived Age 6.3 */
+/* 'Age=6.3': Derived Age */
 static const OnigCodePoint CR_Age_6_3[] = {
 	549,
 	0x0000, 0x0377,
@@ -30916,7 +30916,7 @@ static const OnigCodePoint CR_Age_6_3[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_6_3 */
 
-/* 'Age_7_0': Derived Age 7.0 */
+/* 'Age=7.0': Derived Age */
 static const OnigCodePoint CR_Age_7_0[] = {
 	610,
 	0x0000, 0x0377,
@@ -31531,7 +31531,7 @@ static const OnigCodePoint CR_Age_7_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_7_0 */
 
-/* 'Age_8_0': Derived Age 8.0 */
+/* 'Age=8.0': Derived Age */
 static const OnigCodePoint CR_Age_8_0[] = {
 	623,
 	0x0000, 0x0377,
@@ -32159,7 +32159,7 @@ static const OnigCodePoint CR_Age_8_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_8_0 */
 
-/* 'Age_9_0': Derived Age 9.0 */
+/* 'Age=9.0': Derived Age */
 static const OnigCodePoint CR_Age_9_0[] = {
 	648,
 	0x0000, 0x0377,
@@ -32812,7 +32812,7 @@ static const OnigCodePoint CR_Age_9_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_9_0 */
 
-/* 'Age_10_0': Derived Age 10.0 */
+/* 'Age=10.0': Derived Age */
 static const OnigCodePoint CR_Age_10_0[] = {
 	659,
 	0x0000, 0x0377,
@@ -33476,7 +33476,7 @@ static const OnigCodePoint CR_Age_10_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_10_0 */
 
-/* 'Age_11_0': Derived Age 11.0 */
+/* 'Age=11.0': Derived Age */
 static const OnigCodePoint CR_Age_11_0[] = {
 	668,
 	0x0000, 0x0377,
@@ -34149,7 +34149,7 @@ static const OnigCodePoint CR_Age_11_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_11_0 */
 
-/* 'Age_12_0': Derived Age 12.0 */
+/* 'Age=12.0': Derived Age */
 static const OnigCodePoint CR_Age_12_0[] = {
 	677,
 	0x0000, 0x0377,
@@ -34831,7 +34831,7 @@ static const OnigCodePoint CR_Age_12_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_12_0 */
 
-/* 'Age_12_1': Derived Age 12.1 */
+/* 'Age=12.1': Derived Age */
 static const OnigCodePoint CR_Age_12_1[] = {
 	676,
 	0x0000, 0x0377,
@@ -35512,7 +35512,7 @@ static const OnigCodePoint CR_Age_12_1[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_12_1 */
 
-/* 'Age_13_0': Derived Age 13.0 */
+/* 'Age=13.0': Derived Age */
 static const OnigCodePoint CR_Age_13_0[] = {
 	686,
 	0x0000, 0x0377,
@@ -36203,7 +36203,7 @@ static const OnigCodePoint CR_Age_13_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_13_0 */
 
-/* 'Age_14_0': Derived Age 14.0 */
+/* 'Age=14.0': Derived Age */
 static const OnigCodePoint CR_Age_14_0[] = {
 	706,
 	0x0000, 0x0377,
@@ -36914,7 +36914,7 @@ static const OnigCodePoint CR_Age_14_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_14_0 */
 
-/* 'Age_15_0': Derived Age 15.0 */
+/* 'Age=15.0': Derived Age */
 static const OnigCodePoint CR_Age_15_0[] = {
 	715,
 	0x0000, 0x0377,
@@ -37635,7 +37635,7 @@ static const OnigCodePoint CR_Age_15_0[] = {
 }; /* CR_Age_15_0 */
 
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-/* 'Grapheme_Cluster_Break_Prepend': Grapheme_Cluster_Break=Prepend */
+/* 'Grapheme_Cluster_Break=Prepend': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Prepend[] = {
 	15,
 	0x0600, 0x0605,
@@ -37655,16 +37655,16 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Prepend[] = {
 	0x11f02, 0x11f02,
 }; /* CR_Grapheme_Cluster_Break_Prepend */
 
-/* 'Grapheme_Cluster_Break_CR': Grapheme_Cluster_Break=CR */
+/* 'Grapheme_Cluster_Break=CR': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_CR[] = {
 	1,
 	0x000d, 0x000d,
 }; /* CR_Grapheme_Cluster_Break_CR */
 
-/* 'Grapheme_Cluster_Break_LF': Grapheme_Cluster_Break=LF */
+/* 'Grapheme_Cluster_Break=LF': Grapheme property */
 #define CR_Grapheme_Cluster_Break_LF CR_NEWLINE
 
-/* 'Grapheme_Cluster_Break_Control': Grapheme_Cluster_Break=Control */
+/* 'Grapheme_Cluster_Break=Control': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Control[] = {
 	19,
 	0x0000, 0x0009,
@@ -37688,7 +37688,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Control[] = {
 	0xe01f0, 0xe0fff,
 }; /* CR_Grapheme_Cluster_Break_Control */
 
-/* 'Grapheme_Cluster_Break_Extend': Grapheme_Cluster_Break=Extend */
+/* 'Grapheme_Cluster_Break=Extend': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	364,
 	0x0300, 0x036f,
@@ -38057,10 +38057,10 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_Extend[] = {
 	0xe0100, 0xe01ef,
 }; /* CR_Grapheme_Cluster_Break_Extend */
 
-/* 'Grapheme_Cluster_Break_Regional_Indicator': Grapheme_Cluster_Break=Regional_Indicator */
+/* 'Grapheme_Cluster_Break=Regional_Indicator': Grapheme property */
 #define CR_Grapheme_Cluster_Break_Regional_Indicator CR_Regional_Indicator
 
-/* 'Grapheme_Cluster_Break_SpacingMark': Grapheme_Cluster_Break=SpacingMark */
+/* 'Grapheme_Cluster_Break=SpacingMark': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	165,
 	0x0903, 0x0903,
@@ -38230,28 +38230,28 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_SpacingMark[] = {
 	0x1d16d, 0x1d16d,
 }; /* CR_Grapheme_Cluster_Break_SpacingMark */
 
-/* 'Grapheme_Cluster_Break_L': Grapheme_Cluster_Break=L */
+/* 'Grapheme_Cluster_Break=L': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_L[] = {
 	2,
 	0x1100, 0x115f,
 	0xa960, 0xa97c,
 }; /* CR_Grapheme_Cluster_Break_L */
 
-/* 'Grapheme_Cluster_Break_V': Grapheme_Cluster_Break=V */
+/* 'Grapheme_Cluster_Break=V': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_V[] = {
 	2,
 	0x1160, 0x11a7,
 	0xd7b0, 0xd7c6,
 }; /* CR_Grapheme_Cluster_Break_V */
 
-/* 'Grapheme_Cluster_Break_T': Grapheme_Cluster_Break=T */
+/* 'Grapheme_Cluster_Break=T': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_T[] = {
 	2,
 	0x11a8, 0x11ff,
 	0xd7cb, 0xd7fb,
 }; /* CR_Grapheme_Cluster_Break_T */
 
-/* 'Grapheme_Cluster_Break_LV': Grapheme_Cluster_Break=LV */
+/* 'Grapheme_Cluster_Break=LV': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_LV[] = {
 	399,
 	0xac00, 0xac00,
@@ -38655,7 +38655,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_LV[] = {
 	0xd788, 0xd788,
 }; /* CR_Grapheme_Cluster_Break_LV */
 
-/* 'Grapheme_Cluster_Break_LVT': Grapheme_Cluster_Break=LVT */
+/* 'Grapheme_Cluster_Break=LVT': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_LVT[] = {
 	399,
 	0xac01, 0xac1b,
@@ -39059,7 +39059,7 @@ static const OnigCodePoint CR_Grapheme_Cluster_Break_LVT[] = {
 	0xd789, 0xd7a3,
 }; /* CR_Grapheme_Cluster_Break_LVT */
 
-/* 'Grapheme_Cluster_Break_ZWJ': Grapheme_Cluster_Break=ZWJ */
+/* 'Grapheme_Cluster_Break=ZWJ': Grapheme property */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_ZWJ[] = {
 	1,
 	0x200d, 0x200d,
