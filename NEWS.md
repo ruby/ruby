@@ -544,6 +544,7 @@ The following bundled gems are promoted from default gems.
 [Feature #20707]: https://bugs.ruby-lang.org/issues/20707
 [Feature #20715]: https://bugs.ruby-lang.org/issues/20715
 [Feature #20775]: https://bugs.ruby-lang.org/issues/20775
+[Feature #20778]: https://bugs.ruby-lang.org/issues/20778
 [Feature #20782]: https://bugs.ruby-lang.org/issues/20782
 [Bug #20795]:     https://bugs.ruby-lang.org/issues/20795
 [Feature #20811]: https://bugs.ruby-lang.org/issues/20811
@@ -552,7 +553,6 @@ The following bundled gems are promoted from default gems.
 [Feature #20876]: https://bugs.ruby-lang.org/issues/20876
 [Feature #20884]: https://bugs.ruby-lang.org/issues/20884
 [Feature #20902]: https://bugs.ruby-lang.org/issues/20902
-[Feature #20778]: https://bugs.ruby-lang.org/issues/20778
 [Bug #20929]:     https://bugs.ruby-lang.org/issues/20929
 [RubyGems-v3.5.4]: https://github.com/rubygems/rubygems/releases/tag/v3.5.4
 [RubyGems-v3.5.5]: https://github.com/rubygems/rubygems/releases/tag/v3.5.5
