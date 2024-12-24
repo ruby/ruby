@@ -42,7 +42,7 @@
  * void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
  */
 #define rb_darray_append(ptr_to_ary, element) \
-    rb_darray_append_impl(ptr_to_ary, element, rb_xrealloc_mul_add)
+    rb_darray_append_impl(ptr_to_ary, element, rb_darray_realloc_mul_add)
 
 #define rb_darray_append_without_gc(ptr_to_ary, element) \
     rb_darray_append_impl(ptr_to_ary, element, rb_darray_realloc_mul_add_without_gc)
@@ -187,13 +187,25 @@ rb_darray_calloc_mul_add_without_gc(size_t x, size_t y, size_t z)
     return ptr;
 }
 
-/* Internal function. Like rb_xrealloc_mul_add but does not trigger GC. */
+/* Internal function. Like rb_xrealloc_mul_add. */
 static inline void *
-rb_darray_realloc_mul_add_without_gc(const void *orig_ptr, size_t x, size_t y, size_t z)
+rb_darray_realloc_mul_add(void *orig_ptr, size_t x, size_t y, size_t z)
 {
     size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
 
-    void *ptr = realloc((void *)orig_ptr, size);
+    void *ptr = xrealloc(orig_ptr, size);
+    RUBY_ASSERT(ptr != NULL);
+
+    return ptr;
+}
+
+/* Internal function. Like rb_xrealloc_mul_add but does not trigger GC. */
+static inline void *
+rb_darray_realloc_mul_add_without_gc(void *orig_ptr, size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = realloc(orig_ptr, size);
     if (ptr == NULL) rb_bug("rb_darray_realloc_mul_add_without_gc: failed");
 
     return ptr;
@@ -203,7 +215,7 @@ rb_darray_realloc_mul_add_without_gc(const void *orig_ptr, size_t x, size_t y, s
  * be greater than or equal to the size of the darray. */
 static inline void
 rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size, size_t element_size,
-                           void *(*realloc_mul_add_impl)(const void *, size_t, size_t, size_t))
+                           void *(*realloc_mul_add_impl)(void *, size_t, size_t, size_t))
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
@@ -230,7 +242,7 @@ rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size
 // Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
 static inline void
 rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size,
-                       void *(*realloc_mul_add_impl)(const void *, size_t, size_t, size_t))
+                       void *(*realloc_mul_add_impl)(void *, size_t, size_t, size_t))
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
