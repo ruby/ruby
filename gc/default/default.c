@@ -4562,11 +4562,7 @@ rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 
     rgengc_check_relation(objspace, obj);
 
-    DURING_GC_COULD_MALLOC_REGION_START();
-    {
-        rb_darray_append(&objspace->weak_references, ptr);
-    }
-    DURING_GC_COULD_MALLOC_REGION_END();
+    rb_darray_append_without_gc(&objspace->weak_references, ptr);
 
     objspace->profile.weak_references_count++;
 }
@@ -5381,11 +5377,7 @@ gc_update_weak_references(rb_objspace_t *objspace)
     objspace->profile.retained_weak_references_count = retained_weak_references_count;
 
     rb_darray_clear(objspace->weak_references);
-    DURING_GC_COULD_MALLOC_REGION_START();
-    {
-        rb_darray_resize_capa(&objspace->weak_references, retained_weak_references_count);
-    }
-    DURING_GC_COULD_MALLOC_REGION_END();
+    rb_darray_resize_capa_without_gc(&objspace->weak_references, retained_weak_references_count);
 }
 
 static void
@@ -9245,7 +9237,7 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     for (size_t i = 0; i < rb_darray_size(objspace->heap_pages.sorted); i++) {
         heap_page_free(objspace, rb_darray_get(objspace->heap_pages.sorted, i));
     }
-    rb_darray_free(objspace->heap_pages.sorted);
+    rb_darray_free_without_gc(objspace->heap_pages.sorted);
     heap_pages_lomem = 0;
     heap_pages_himem = 0;
 
@@ -9261,7 +9253,7 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
     free_stack_chunks(&objspace->mark_stack);
     mark_stack_free_cache(&objspace->mark_stack);
 
-    rb_darray_free(objspace->weak_references);
+    rb_darray_free_without_gc(objspace->weak_references);
 
     free(objspace);
 }
@@ -9333,8 +9325,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         ccan_list_head_init(&heap->pages);
     }
 
-    rb_darray_make(&objspace->heap_pages.sorted, 0);
-    rb_darray_make(&objspace->weak_references, 0);
+    rb_darray_make_without_gc(&objspace->heap_pages.sorted, 0);
+    rb_darray_make_without_gc(&objspace->weak_references, 0);
 
     // TODO: debug why on Windows Ruby crashes on boot when GC is on.
 #ifdef _WIN32
