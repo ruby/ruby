@@ -378,7 +378,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("parsetree",          "", "Abstract syntax tree (AST)."),
         M("-optimize",          "", "Disable optimization (affects insns)."),
         M("+error-tolerant",    "", "Error-tolerant parsing (affects yydebug, parsetree)."),
-        M("+comment",           "", "Add comments to AST (affects parsetree)."),
+        M("+comment",           "", "Add comments to AST (affects parsetree with --parser=parse.y)."),
     };
     static const struct ruby_opt_message features[] = {
         M("gems",                  "", "Rubygems (only for debugging, default: "DEFAULT_RUBYGEMS_ENABLED")."),
