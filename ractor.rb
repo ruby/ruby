@@ -731,6 +731,7 @@ class Ractor
   end
 
   class RemoteError
+    # The Ractor an uncaught exception is raised in.
     attr_reader :ractor
   end
 
