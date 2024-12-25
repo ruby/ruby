@@ -238,6 +238,8 @@ module MonitorMixin
     @mon_data_owner_object_id = self.object_id
   end
 
+  # Ensures that the MonitorMixin is owned by the current thread,
+  # otherwise raises an exception.
   def mon_check_owner
     @mon_data.mon_check_owner
   end
