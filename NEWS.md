@@ -467,14 +467,16 @@ The following bundled gems are promoted from default gems.
 
 #### New features
 
-* Add unified memory limit via `--yjit-mem-size` command-line option (default 128MiB)
-  which tracks total YJIT memory usage and is more intuitive than the
-  old `--yjit-exec-mem-size`.
-* More statistics now always available via `RubyVM::YJIT.runtime_stats`
-* Add compilation log to track what gets compiled via `--yjit-log`
-  * Tail of the log also available at run-time via `RubyVM::YJIT.log`
-* Add support for shareable consts in multi-ractor mode
-* Can now trace counted exits with `--yjit-trace-exits=COUNTER`
+* Command-line options
+   * `--yjit-mem-size` introduces a unified memory limit (default 128MiB) to track total YJIT memory usage,
+     providing a more intuitive alternative to the old `--yjit-exec-mem-size` option.
+   * `--yjit-trace-exits=COUNTER` allows tracing of counted exits and fallbacks.
+   * `--yjit-log` enables a compilation log to track what gets compiled.
+* Ruby API
+   * `RubyVM::YJIT.enable(log: true)` also enables a compilation log.
+   * `RubyVM::YJIT.log` provides access to the tail of the compilation log at run-time.
+* YJIT stats
+  * More statistics now always available via `RubyVM::YJIT.runtime_stats`
 
 #### New optimizations
 
@@ -490,6 +492,7 @@ The following bundled gems are promoted from default gems.
 * Specialized codegen for many more runtime methods
 * Optimize `String#getbyte`, `String#setbyte` and other string methods
 * Optimize bitwise operations to speed up low-level bit/byte manipulation
+* Support shareable constants in multi-ractor mode
 * Various other incremental optimizations
 
 ## Miscellaneous changes
