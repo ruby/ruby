@@ -56,6 +56,12 @@ mc_owner_p(struct rb_monitor *mc)
     return mc->owner == rb_fiber_current();
 }
 
+/*
+ * call-seq:
+ *   try_enter -> true or false
+ *
+ * Attempts to enter exclusive section.  Returns +false+ if lock fails.
+ */
 static VALUE
 monitor_try_enter(VALUE monitor)
 {
@@ -72,6 +78,12 @@ monitor_try_enter(VALUE monitor)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *   enter -> nil
+ *
+ * Enters exclusive section.
+ */
 static VALUE
 monitor_enter(VALUE monitor)
 {
@@ -85,6 +97,7 @@ monitor_enter(VALUE monitor)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 monitor_check_owner(VALUE monitor)
 {
@@ -95,6 +108,12 @@ monitor_check_owner(VALUE monitor)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   exit -> nil
+ *
+ * Leaves exclusive section.
+ */
 static VALUE
 monitor_exit(VALUE monitor)
 {
@@ -112,6 +131,7 @@ monitor_exit(VALUE monitor)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 monitor_locked_p(VALUE monitor)
 {
@@ -119,6 +139,7 @@ monitor_locked_p(VALUE monitor)
     return rb_mutex_locked_p(mc->mutex);
 }
 
+/* :nodoc: */
 static VALUE
 monitor_owned_p(VALUE monitor)
 {
@@ -166,6 +187,7 @@ monitor_enter_for_cond(VALUE v)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 monitor_wait_for_cond(VALUE monitor, VALUE cond, VALUE timeout)
 {
@@ -193,6 +215,14 @@ monitor_sync_ensure(VALUE monitor)
     return monitor_exit(monitor);
 }
 
+/*
+ * call-seq:
+ *   synchronize { } -> result of the block
+ *
+ * Enters exclusive section and executes the block.  Leaves the exclusive
+ * section automatically when the block exits.  See example under
+ * +MonitorMixin+.
+ */
 static VALUE
 monitor_synchronize(VALUE monitor)
 {
