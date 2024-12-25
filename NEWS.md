@@ -485,7 +485,7 @@ The following bundled gems are promoted from default gems.
 #### New optimizations
 
 * Compressed context reduces memory needed to store YJIT metadata
-* Improved allocator with ability to allocate registers for local variables
+* Allocate registers for local variables and Ruby method arguments
 * When YJIT is enabled, use more Core primitives written in Ruby:
   * `Array#each`, `Array#select`, `Array#map` rewritten in Ruby for better performance [[Feature #20182]].
 * Ability to inline small/trivial methods such as:
