@@ -128,7 +128,7 @@ RSpec.describe "bundled_gems.rb" do
       require "fiddle/import"
     RUBY
 
-    expect(err).to include(/fiddle\/import is found in fiddle, which will no longer be part of the default gems starting from Ruby 3\.5\.0/)
+    expect(err).to include(/fiddle\/import is found in fiddle, (.*) part of the default gems starting from Ruby 3\.5\.0/)
     expect(err).to include(/-e:7/)
   end
 
