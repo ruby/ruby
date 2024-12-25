@@ -18,6 +18,7 @@
     solo = top.one? {|klass| klass.display?}
     traverse = proc do |klasses| -%>
   <ul class="link-list">
+      <%- klasses.uniq!(&:full_name) -%>
       <%- klasses.each do |index_klass| -%>
         <%- if children = all_classes[index_klass.full_name] -%>
   <li><details<% if solo; solo = false %> open<% end %>><summary><% link.call(index_klass) %></summary>
