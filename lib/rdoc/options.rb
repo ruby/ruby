@@ -355,18 +355,24 @@ class RDoc::Options
   # +--[no-]embed-mixins+ (Default is +false+.)
   attr_accessor :embed_mixins
 
+  ##
+  # Exclude the default patterns as well if true.
+  attr_reader :apply_default_exclude
+
   def initialize loaded_options = nil # :nodoc:
     init_ivars
     override loaded_options if loaded_options
   end
 
+  DEFAULT_EXCLUDE = %w[
+    ~\z \.orig\z \.rej\z \.bak\z
+    \.gemspec\z
+  ]
+
   def init_ivars # :nodoc:
     @dry_run = false
     @embed_mixins = false
-    @exclude = %w[
-      ~\z \.orig\z \.rej\z \.bak\z
-      \.gemspec\z
-    ]
+    @exclude = []
     @files = nil
     @force_output = false
     @force_update = true
@@ -405,6 +411,7 @@ class RDoc::Options
     @encoding = Encoding::UTF_8
     @charset = @encoding.name
     @skip_tests = true
+    @apply_default_exclude = true
   end
 
   def init_with map # :nodoc:
@@ -430,6 +437,7 @@ class RDoc::Options
     @title          = map['title']
     @visibility     = map['visibility']
     @webcvs         = map['webcvs']
+    @apply_default_exclude = map['apply_default_exclude']
 
     @rdoc_include = sanitize_path map['rdoc_include']
     @static_path  = sanitize_path map['static_path']
@@ -463,6 +471,7 @@ class RDoc::Options
     @title          = map['title']          if map.has_key?('title')
     @visibility     = map['visibility']     if map.has_key?('visibility')
     @webcvs         = map['webcvs']         if map.has_key?('webcvs')
+    @apply_default_exclude = map['apply_default_exclude'] if map.has_key?('apply_default_exclude')
 
     @warn_missing_rdoc_ref = map['warn_missing_rdoc_ref'] if map.has_key?('warn_missing_rdoc_ref')
 
@@ -493,7 +502,8 @@ class RDoc::Options
       @template       == other.template       and
       @title          == other.title          and
       @visibility     == other.visibility     and
-      @webcvs         == other.webcvs
+      @webcvs         == other.webcvs         and
+      @apply_default_exclude == other.apply_default_exclude
   end
 
   ##
@@ -564,10 +574,12 @@ class RDoc::Options
     if @exclude.nil? or Regexp === @exclude then
       # done, #finish is being re-run
       @exclude
-    elsif @exclude.empty? then
+    elsif !@apply_default_exclude and @exclude.empty? then
       nil
     else
-      Regexp.new(@exclude.join("|"))
+      exclude = @exclude
+      exclude |= DEFAULT_EXCLUDE if @apply_default_exclude
+      Regexp.new(exclude.join("|"))
     end
   end
 
@@ -799,6 +811,11 @@ Usage: #{opt.program_name} [options] [names...]
              "Do not process files or directories",
              "matching PATTERN.") do |value|
         @exclude << value
+      end
+
+      opt.on("--[no-]apply-default-exclude",
+             "Use default PATTERN to exclude.") do |value|
+        @apply_default_exclude = value
       end
 
       opt.separator nil

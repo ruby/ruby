@@ -66,7 +66,7 @@ class TestRDocOptions < RDoc::TestCase
       'charset'               => 'UTF-8',
       'encoding'              => encoding,
       'embed_mixins'          => false,
-      'exclude'               => %w[~\z \.orig\z \.rej\z \.bak\z \.gemspec\z],
+      'exclude'               => [],
       'hyperlink_all'         => false,
       'line_numbers'          => false,
       'locale_dir'            => 'locale',
@@ -85,6 +85,7 @@ class TestRDocOptions < RDoc::TestCase
       'warn_missing_rdoc_ref' => false,
       'webcvs'                => nil,
       'skip_tests'            => true,
+      'apply_default_exclude' => true,
     }
 
     assert_equal expected, coder
@@ -937,6 +938,29 @@ rdoc_include:
   def test_no_skip_test_value
     @options.parse %w[--no-skipping-tests]
     assert_equal false, @options.skip_tests
+  end
+
+  def test_apply_default_exclude_option
+    @options.parse %w[]
+    exclude = @options.exclude
+    assert_kind_of Regexp, exclude
+    assert_match exclude, "foo~"
+    assert_match exclude, "foo.orig"
+    assert_match exclude, "foo.rej"
+    assert_match exclude, "foo.bak"
+    assert_match exclude, "foo.gemspec"
+  end
+
+  def test_no_apply_default_exclude_option
+    @options.parse %w[--no-apply-default-exclude]
+    assert_nil @options.exclude
+  end
+
+  def test_exclude_option_without_default
+    @options.parse %w[--no-apply-default-exclude --exclude=\.old\z]
+    exclude = @options.exclude
+    assert_match exclude, "foo.old"
+    assert_not_match exclude, "foo~"
   end
 
   class DummyCoder < Hash
