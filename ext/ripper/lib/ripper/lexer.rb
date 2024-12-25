@@ -53,6 +53,7 @@ class Ripper
   end
 
   class Lexer < ::Ripper   #:nodoc: internal use only
+    # :stopdoc:
     class State
       attr_reader :to_int, :to_s
 
@@ -258,6 +259,7 @@ class Ripper
     (SCANNER_EVENTS.map {|event|:"on_#{event}"} - private_instance_methods(false)).each do |event|
       alias_method event, :_push_token
     end
+    # :startdoc:
   end
 
   # [EXPERIMENTAL]
