@@ -87,10 +87,33 @@ const char ruby_engine[] = "ruby";
 // Might change after initialization
 const char *rb_dynamic_description = ruby_description;
 
+static inline void
+define_ruby_const(VALUE mod, const char *name, VALUE value, bool toplevel)
+{
+    if (toplevel) {
+        rb_define_global_const(name, value);
+        name += rb_strlen_lit("RUBY_");
+    }
+    rb_define_const(mod, name, value);
+}
+
+/* RDoc needs rb_define_const */
+#define rb_define_const(mod, name, value) \
+    define_ruby_const(mod, (mod == mRuby ? "RUBY_" name : name), value, (mod == mRuby))
+
 /*! Defines platform-depended Ruby-level constants */
 void
 Init_version(void)
 {
+    /*
+     * The Ruby module that contains portable information among
+     * implementations.
+     *
+     * The constants defined here are aliased in the toplevel with
+     * +RUBY_+ prefix.
+     */
+    VALUE mRuby = rb_define_module("Ruby");
+
     enum {ruby_patchlevel = RUBY_PATCHLEVEL};
     VALUE version = MKSTR(version);
     VALUE ruby_engine_name = MKSTR(engine);
@@ -99,37 +122,37 @@ Init_version(void)
     /*
      * The running version of ruby
      */
-    rb_define_global_const("RUBY_VERSION", /* MKSTR(version) */ version);
+    rb_define_const(mRuby, "VERSION", /* MKSTR(version) */ version);
     /*
      * The date this ruby was released
      */
-    rb_define_global_const("RUBY_RELEASE_DATE", MKSTR(release_date));
+    rb_define_const(mRuby, "RELEASE_DATE", MKSTR(release_date));
     /*
      * The platform for this ruby
      */
-    rb_define_global_const("RUBY_PLATFORM", MKSTR(platform));
+    rb_define_const(mRuby, "PLATFORM", MKSTR(platform));
     /*
      * The patchlevel for this ruby.  If this is a development build of ruby
      * the patchlevel will be -1
      */
-    rb_define_global_const("RUBY_PATCHLEVEL", MKINT(patchlevel));
+    rb_define_const(mRuby, "PATCHLEVEL", MKINT(patchlevel));
     /*
      * The GIT commit hash for this ruby.
      */
-    rb_define_global_const("RUBY_REVISION", MKSTR(revision));
+    rb_define_const(mRuby, "REVISION", MKSTR(revision));
     /*
      * The copyright string for ruby
      */
-    rb_define_global_const("RUBY_COPYRIGHT", MKSTR(copyright));
+    rb_define_const(mRuby, "COPYRIGHT", MKSTR(copyright));
     /*
      * The engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE", /* MKSTR(engine) */ ruby_engine_name);
+    rb_define_const(mRuby, "ENGINE", /* MKSTR(engine) */ ruby_engine_name);
     ruby_set_script_name(ruby_engine_name);
     /*
      * The version of the engine or interpreter this ruby uses.
      */
-    rb_define_global_const("RUBY_ENGINE_VERSION", /* MKSTR(version) */ version);
+    rb_define_const(mRuby, "ENGINE_VERSION", /* MKSTR(version) */ version);
 
     rb_provide("ruby2_keywords.rb");
 }
@@ -201,13 +224,14 @@ define_ruby_description(const char *const jit_opt)
     append(ruby_description + ruby_description_opt_point);
 # undef append
 
+    VALUE mRuby = rb_path2class("Ruby");
     VALUE description = rb_obj_freeze(rb_usascii_str_new_static(desc, n));
     rb_dynamic_description = desc;
 
     /*
      * The full ruby version string, like <tt>ruby -v</tt> prints
      */
-    rb_define_global_const("RUBY_DESCRIPTION", /* MKSTR(description) */ description);
+    rb_define_const(mRuby, "DESCRIPTION", /* MKSTR(description) */ description);
 }
 
 void
@@ -223,7 +247,9 @@ Init_ruby_description(ruby_cmdline_options_t *opt)
 void
 ruby_set_yjit_description(void)
 {
+    VALUE mRuby = rb_path2class("Ruby");
     rb_const_remove(rb_cObject, rb_intern("RUBY_DESCRIPTION"));
+    rb_const_remove(mRuby, rb_intern("DESCRIPTION"));
     define_ruby_description(YJIT_DESCRIPTION);
 }
 

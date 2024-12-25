@@ -1328,17 +1328,6 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_toplevel_ruby
-    reserved = ["", [], /::Ruby is reserved/]
-    env = {"RUBYOPT"=>""}
-    args = %w[-e Ruby=1]
-    assert_in_out_err([env, *args])
-    assert_in_out_err([env, "-w", *args], *reserved)
-    assert_in_out_err([env, "-W:deprecated", *args], *reserved)
-    assert_in_out_err([env, "-w", "-W:no-deprecated", *args])
-
-    args = ["-e", "class A; Ruby=1; end"]
-    assert_in_out_err([env, *args])
-    assert_in_out_err([env, "-w", *args])
-    assert_in_out_err([env, "-W:deprecated", *args])
+    assert_instance_of Module, ::Ruby
   end
 end
