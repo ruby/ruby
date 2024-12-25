@@ -104,7 +104,7 @@ Note: We're only listing outstanding class updates.
       of the current Ractor. [[Feature #20715]]
 
     * `Ractor.store_if_absent(key){ init }` is added to initialize ractor local
-      variables in thread-safty. [[Feature #20875]]
+      variables in thread-safety. [[Feature #20875]]
 
 * Range
 
