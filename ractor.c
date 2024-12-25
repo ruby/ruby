@@ -1499,6 +1499,13 @@ ractor_selector_create(VALUE klass)
 
 // Ractor::Selector#add(r)
 
+/*
+ * call-seq:
+ *   add(ractor) -> ractor
+ *
+ * Adds _ractor_ to +self+.  Raises an exception if _ractor_ is already added.
+ * Returns _ractor_.
+ */
 static VALUE
 ractor_selector_add(VALUE selv, VALUE rv)
 {
@@ -1527,6 +1534,12 @@ ractor_selector_add(VALUE selv, VALUE rv)
 
 // Ractor::Selector#remove(r)
 
+/* call-seq:
+ *   remove(ractor) -> ractor
+ *
+ * Removes _ractor_ from +self+.  Raises an exception if _ractor_ is not added.
+ * Returns the removed _ractor_.
+ */
 static VALUE
 ractor_selector_remove(VALUE selv, VALUE rv)
 {
@@ -1567,6 +1580,12 @@ ractor_selector_clear_i(st_data_t key, st_data_t val, st_data_t data)
     return ST_CONTINUE;
 }
 
+/*
+ * call-seq:
+ *   clear -> self
+ *
+ * Removes all ractors from +self+.  Raises +self+.
+ */
 static VALUE
 ractor_selector_clear(VALUE selv)
 {
@@ -1577,6 +1596,12 @@ ractor_selector_clear(VALUE selv)
     return selv;
 }
 
+/*
+ * call-seq:
+ *  empty? -> true or false
+ *
+ * Returns +true+ if no ractor is added.
+ */
 static VALUE
 ractor_selector_empty_p(VALUE selv)
 {
@@ -1649,6 +1674,7 @@ ractor_selector_wait_cleaup(rb_ractor_t *cr, void *ptr)
     RACTOR_UNLOCK_SELF(cr);
 }
 
+/* :nodoc: */
 static VALUE
 ractor_selector__wait(VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yield_value, VALUE move)
 {
@@ -1778,6 +1804,12 @@ ractor_selector__wait(VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yiel
     return rb_ary_new_from_args(2, ret_r, ret_v);
 }
 
+/*
+ * call-seq:
+ *  wait(receive: false, yield_value: undef, move: false) -> [ractor, value]
+ *
+ * Waits until any ractor in _selector_ can be active.
+ */
 static VALUE
 ractor_selector_wait(int argc, VALUE *argv, VALUE selector)
 {
@@ -2540,6 +2572,12 @@ RUBY_SYMBOL_EXPORT_BEGIN
 void rb_init_ractor_selector(void);
 RUBY_SYMBOL_EXPORT_END
 
+/*
+ * Document-class: Ractor::Selector
+ * :nodoc: currently
+ *
+ * Selects multiple Ractors to be activated.
+ */
 void
 rb_init_ractor_selector(void)
 {
