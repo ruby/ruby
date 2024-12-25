@@ -468,30 +468,30 @@ The following bundled gems are promoted from default gems.
 #### New features
 
 * Command-line options
-    * `--yjit-mem-size` introduces a unified memory limit (default 128MiB) to track total YJIT memory usage,
-      providing a more intuitive alternative to the old `--yjit-exec-mem-size` option.
-    * `--yjit-trace-exits=COUNTER` allows tracing of counted exits and fallbacks.
-    * `--yjit-log` enables a compilation log to track what gets compiled.
+  * `--yjit-mem-size` introduces a unified memory limit (default 128MiB) to track total YJIT memory usage,
+    providing a more intuitive alternative to the old `--yjit-exec-mem-size` option.
+  * `--yjit-trace-exits=COUNTER` allows tracing of counted exits and fallbacks.
+  * `--yjit-log` enables a compilation log to track what gets compiled.
 * Ruby API
-    * `RubyVM::YJIT.enable(log: true)` also enables a compilation log.
-    * `RubyVM::YJIT.log` provides access to the tail of the compilation log at run-time.
+  * `RubyVM::YJIT.enable(log: true)` also enables a compilation log.
+  * `RubyVM::YJIT.log` provides access to the tail of the compilation log at run-time.
 * YJIT stats
-    * `RubyVM::YJIT.runtime_stats` now always provides additional statistics on
-      invalidation, inlining, and metadata encoding.
-    * `RubyVM::YJIT.runtime_stats[:iseq_calls]` is added to profile non-inlined Ruby method calls.
-    * `RubyVM::YJIT.runtime_stats[:cfunc_calls]` is truncated to the top 20 entries for better performance.
+  * `RubyVM::YJIT.runtime_stats` now always provides additional statistics on
+    invalidation, inlining, and metadata encoding.
+  * `RubyVM::YJIT.runtime_stats[:iseq_calls]` is added to profile non-inlined Ruby method calls.
+  * `RubyVM::YJIT.runtime_stats[:cfunc_calls]` is truncated to the top 20 entries for better performance.
 
 #### New optimizations
 
 * Compressed context reduces memory needed to store YJIT metadata
 * Improved allocator with ability to allocate registers for local variables
 * When YJIT is enabled, use more Core primitives written in Ruby:
-    * `Array#each`, `Array#select`, `Array#map` rewritten in Ruby for better performance [[Feature #20182]].
+  * `Array#each`, `Array#select`, `Array#map` rewritten in Ruby for better performance [[Feature #20182]].
 * Ability to inline small/trivial methods such as:
-    * Empty methods
-    * Methods returning a constant
-    * Methods returning `self`
-    * Methods directly returning an argument
+  * Empty methods
+  * Methods returning a constant
+  * Methods returning `self`
+  * Methods directly returning an argument
 * Specialized codegen for many more runtime methods
 * Optimize `String#getbyte`, `String#setbyte` and other string methods
 * Optimize bitwise operations to speed up low-level bit/byte manipulation
