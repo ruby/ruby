@@ -446,7 +446,7 @@ class Reline::Test < Reline::TestCase
     RUBY
     ruby_file.close
     lib = File.expand_path('../../lib', __dir__)
-    cmd = [{ 'TERM' => 'xterm' }, 'ruby', '-I', lib, ruby_file.to_path]
+    cmd = [{ 'TERM' => 'xterm' }, Reline.test_rubybin, '-I', lib, ruby_file.to_path]
 
     # Calculate ambiguous width from cursor position
     [1, 2].each do |ambiguous_width|
