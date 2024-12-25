@@ -476,7 +476,10 @@ The following bundled gems are promoted from default gems.
    * `RubyVM::YJIT.enable(log: true)` also enables a compilation log.
    * `RubyVM::YJIT.log` provides access to the tail of the compilation log at run-time.
 * YJIT stats
-  * More statistics now always available via `RubyVM::YJIT.runtime_stats`
+   * `RubyVM::YJIT.runtime_stats` now always provides additional statistics on
+     invalidation, inlining, and metadata encoding.
+   * `RubyVM::YJIT.runtime_stats[:iseq_calls]` is added to profile non-inlined Ruby method calls.
+   * `RubyVM::YJIT.runtime_stats[:cfunc_calls]` is truncated to the top 20 entries for better performance.
 
 #### New optimizations
 
