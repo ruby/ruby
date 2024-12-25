@@ -471,6 +471,7 @@ The following bundled gems are promoted from default gems.
   * `--yjit-mem-size` introduces a unified memory limit (default 128MiB) to track total YJIT memory usage,
     providing a more intuitive alternative to the old `--yjit-exec-mem-size` option.
   * `--yjit-trace-exits=COUNTER` allows tracing of counted exits and fallbacks.
+  * `--yjit-perf=codegen` allows profiling of JIT code based on YJIT's codegen functions.
   * `--yjit-log` enables a compilation log to track what gets compiled.
 * Ruby API
   * `RubyVM::YJIT.enable(log: true)` also enables a compilation log.
