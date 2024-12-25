@@ -41,20 +41,28 @@
  *
  * void rb_darray_append(rb_darray(T) *ptr_to_ary, T element);
  */
-#define rb_darray_append(ptr_to_ary, element) do {  \
+#define rb_darray_append(ptr_to_ary, element) \
+    rb_darray_append_impl(ptr_to_ary, element, rb_darray_realloc_mul_add)
+
+#define rb_darray_append_without_gc(ptr_to_ary, element) \
+    rb_darray_append_impl(ptr_to_ary, element, rb_darray_realloc_mul_add_without_gc)
+
+#define rb_darray_append_impl(ptr_to_ary, element, realloc_func) do {  \
     rb_darray_ensure_space((ptr_to_ary), \
                            sizeof(**(ptr_to_ary)), \
-                           sizeof((*(ptr_to_ary))->data[0])); \
+                           sizeof((*(ptr_to_ary))->data[0]), \
+                           realloc_func); \
     rb_darray_set(*(ptr_to_ary), \
                   (*(ptr_to_ary))->meta.size, \
                   (element)); \
     (*(ptr_to_ary))->meta.size++; \
 } while (0)
 
-#define rb_darray_insert(ptr_to_ary, idx, element) do { \
+#define rb_darray_insert_without_gc(ptr_to_ary, idx, element) do { \
     rb_darray_ensure_space((ptr_to_ary), \
                            sizeof(**(ptr_to_ary)), \
-                           sizeof((*(ptr_to_ary))->data[0])); \
+                           sizeof((*(ptr_to_ary))->data[0]), \
+                           rb_darray_realloc_mul_add_without_gc); \
     MEMMOVE( \
         rb_darray_ref(*(ptr_to_ary), idx + 1), \
         rb_darray_ref(*(ptr_to_ary), idx), \
@@ -82,15 +90,21 @@
  * void rb_darray_make(rb_darray(T) *ptr_to_ary, size_t size);
  */
 #define rb_darray_make(ptr_to_ary, size) \
-    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
+    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
+                         sizeof((*(ptr_to_ary))->data[0]), rb_darray_calloc_mul_add)
+
+#define rb_darray_make_without_gc(ptr_to_ary, size) \
+    rb_darray_make_impl((ptr_to_ary), size, sizeof(**(ptr_to_ary)), \
+                        sizeof((*(ptr_to_ary))->data[0]), rb_darray_calloc_mul_add_without_gc)
 
 /* Resize the darray to a new capacity. The new capacity must be greater than
  * or equal to the size of the darray.
  *
  * void rb_darray_resize_capa(rb_darray(T) *ptr_to_ary, size_t capa);
  */
-#define rb_darray_resize_capa(ptr_to_ary, capa) \
-    rb_darray_resize_capa_impl((ptr_to_ary), capa, sizeof(**(ptr_to_ary)), sizeof((*(ptr_to_ary))->data[0]))
+#define rb_darray_resize_capa_without_gc(ptr_to_ary, capa) \
+    rb_darray_resize_capa_impl((ptr_to_ary), capa, sizeof(**(ptr_to_ary)), \
+                               sizeof((*(ptr_to_ary))->data[0]), rb_darray_realloc_mul_add_without_gc)
 
 #define rb_darray_data_ptr(ary) ((ary)->data)
 
@@ -143,15 +157,70 @@ rb_darray_free(void *ary)
     xfree(ary);
 }
 
+static inline void
+rb_darray_free_without_gc(void *ary)
+{
+    free(ary);
+}
+
+/* Internal function. Like rb_xcalloc_mul_add. */
+static inline void *
+rb_darray_calloc_mul_add(size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = xcalloc(1, size);
+    RUBY_ASSERT(ptr != NULL);
+
+    return ptr;
+}
+
+/* Internal function. Like rb_xcalloc_mul_add but does not trigger GC. */
+static inline void *
+rb_darray_calloc_mul_add_without_gc(size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = calloc(1, size);
+    if (ptr == NULL) rb_bug("rb_darray_calloc_mul_add_without_gc: failed");
+
+    return ptr;
+}
+
+/* Internal function. Like rb_xrealloc_mul_add. */
+static inline void *
+rb_darray_realloc_mul_add(void *orig_ptr, size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = xrealloc(orig_ptr, size);
+    RUBY_ASSERT(ptr != NULL);
+
+    return ptr;
+}
+
+/* Internal function. Like rb_xrealloc_mul_add but does not trigger GC. */
+static inline void *
+rb_darray_realloc_mul_add_without_gc(void *orig_ptr, size_t x, size_t y, size_t z)
+{
+    size_t size = rbimpl_size_add_or_raise(rbimpl_size_mul_or_raise(x, y), z);
+
+    void *ptr = realloc(orig_ptr, size);
+    if (ptr == NULL) rb_bug("rb_darray_realloc_mul_add_without_gc: failed");
+
+    return ptr;
+}
+
 /* Internal function. Resizes the capacity of a darray. The new capacity must
  * be greater than or equal to the size of the darray. */
 static inline void
-rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size, size_t element_size)
+rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size, size_t element_size,
+                           void *(*realloc_mul_add_impl)(void *, size_t, size_t, size_t))
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
 
-    rb_darray_meta_t *new_ary = xrealloc(meta, new_capa * element_size + header_size);
+    rb_darray_meta_t *new_ary = realloc_mul_add_impl(meta, new_capa, element_size, header_size);
 
     if (meta == NULL) {
         /* First allocation. Initialize size. On subsequence allocations
@@ -172,7 +241,8 @@ rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size
 // Ensure there is space for one more element.
 // Note: header_size can be bigger than sizeof(rb_darray_meta_t) when T is __int128_t, for example.
 static inline void
-rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size)
+rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size,
+                       void *(*realloc_mul_add_impl)(void *, size_t, size_t, size_t))
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     rb_darray_meta_t *meta = *ptr_to_ptr_to_meta;
@@ -182,11 +252,12 @@ rb_darray_ensure_space(void *ptr_to_ary, size_t header_size, size_t element_size
     // Double the capacity
     size_t new_capa = current_capa == 0 ? 1 : current_capa * 2;
 
-    rb_darray_resize_capa_impl(ptr_to_ary, new_capa, header_size, element_size);
+    rb_darray_resize_capa_impl(ptr_to_ary, new_capa, header_size, element_size, realloc_mul_add_impl);
 }
 
 static inline void
-rb_darray_make_impl(void *ptr_to_ary, size_t array_size, size_t header_size, size_t element_size)
+rb_darray_make_impl(void *ptr_to_ary, size_t array_size, size_t header_size, size_t element_size,
+                    void *(*calloc_mul_add_impl)(size_t, size_t, size_t))
 {
     rb_darray_meta_t **ptr_to_ptr_to_meta = ptr_to_ary;
     if (array_size == 0) {
@@ -194,7 +265,7 @@ rb_darray_make_impl(void *ptr_to_ary, size_t array_size, size_t header_size, siz
         return;
     }
 
-    rb_darray_meta_t *meta = xcalloc(array_size * element_size + header_size, 1);
+    rb_darray_meta_t *meta = calloc_mul_add_impl(array_size, element_size, header_size);
 
     meta->size = array_size;
     meta->capa = array_size;
