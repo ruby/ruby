@@ -162,9 +162,11 @@ Note: We're only listing outstanding class updates.
 We only list stdlib changes that are notable feature changes.
 
 * RubyGems
+
     * Add `--attestation` option to gem push. It enabled to store signature of build artifact to sigstore.dev.
 
 * Bundler
+
     * Add a `lockfile_checksums` configuration to include checksums in fresh lockfiles.
     * Add bundle lock `--add-checksums` to add checksums to an existing lockfile.
 
