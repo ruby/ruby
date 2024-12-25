@@ -292,6 +292,8 @@ module Prism
           "3.3.1"
         when 34
           "3.4.0"
+        when 35
+          "3.5.0"
         else
           "latest"
         end
