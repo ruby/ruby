@@ -1454,15 +1454,6 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_deprecated_warn(/\buse .*Process::Status/) do
-        assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      end
-      assert_deprecated_warn(/\buse .*Process::Status/) do
-        assert_equal(s.to_i >> 1, s >> 1)
-      end
-      assert_raise(ArgumentError) do
-        s >> -1
-      end
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
 
