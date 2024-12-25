@@ -36,15 +36,14 @@ module RubyVM::YJIT
   # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
   # whether to enable \YJIT compilation logging or not.
   #
-  # `stats`:
-  # * `false`: Don't enable stats.
-  # * `true`: Enable stats. Print stats at exit.
-  # * `:quiet`: Enable stats. Do not print stats at exit.
-  #
-  # `log`:
-  # * `false`: Don't enable the log.
-  # * `true`: Enable the log. Print log at exit.
-  # * `:quiet`: Enable the log. Do not print log at exit.
+  # * `stats`:
+  #     * `false`: Don't enable stats.
+  #     * `true`: Enable stats. Print stats at exit.
+  #     * `:quiet`: Enable stats. Do not print stats at exit.
+  # * `log`:
+  #     * `false`: Don't enable the log.
+  #     * `true`: Enable the log. Print log at exit.
+  #     * `:quiet`: Enable the log. Do not print log at exit.
   def self.enable(stats: false, log: false)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
