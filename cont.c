@@ -3436,6 +3436,10 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
+    /*
+     * Document-class: Fiber::Pool
+     * :nodoc: experimental
+     */
     rb_cFiberPool = rb_define_class_under(rb_cFiber, "Pool", rb_cObject);
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
     rb_define_method(rb_cFiberPool, "initialize", rb_fiber_pool_initialize, -1);
