@@ -345,7 +345,7 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
     s = ENV.inspect
-    expected = [%("foo"=>"bar"), %("baz"=>"qux")]
+    expected = [%("foo" => "bar"), %("baz" => "qux")]
     unless s.start_with?(/\{"foo"/i)
       expected.reverse!
     end
@@ -361,7 +361,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
     ENV[key] = "foo"
-    assert_equal(%{{"VAR\u{e5 e1 e2 e4 e3 101 3042}"=>"foo"}}, ENV.inspect)
+    assert_equal(%{{"VAR\u{e5 e1 e2 e4 e3 101 3042}" => "foo"}}, ENV.inspect)
   end
 
   def test_to_a
@@ -1096,7 +1096,7 @@ class TestEnv < Test::Unit::TestCase
         Ractor.yield s
       end
       s = r.take
-      expected = ['"foo"=>"bar"', '"baz"=>"qux"']
+      expected = ['"foo" => "bar"', '"baz" => "qux"']
       unless s.start_with?(/\{"foo"/i)
         expected.reverse!
       end
