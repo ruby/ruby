@@ -9581,28 +9581,6 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t byte
 }
 
 /**
- * Write each byte of the given escaped character into the buffer.
- */
-static inline void
-escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer) {
-    size_t width;
-    if (parser->encoding_changed) {
-        width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
-    } else {
-        width = pm_encoding_utf_8_char_width(parser->current.end, parser->end - parser->current.end);
-    }
-
-    // TODO: If the character is invalid in the given encoding, then we'll just
-    // push one byte into the buffer. This should actually be an error.
-    width = (width == 0) ? 1 : width;
-
-    for (size_t index = 0; index < width; index++) {
-        escape_write_byte_encoded(parser, buffer, *parser->current.end);
-        parser->current.end++;
-    }
-}
-
-/**
  * The regular expression engine doesn't support the same escape sequences as
  * Ruby does. So first we have to read the escape sequence, and then we have to
  * format it like the regular expression engine expects it. For example, in Ruby
@@ -9624,6 +9602,28 @@ escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular
     }
 
     escape_write_byte_encoded(parser, buffer, byte);
+}
+
+/**
+ * Write each byte of the given escaped character into the buffer.
+ */
+static inline void
+escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags) {
+    size_t width;
+    if (parser->encoding_changed) {
+        width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+    } else {
+        width = pm_encoding_utf_8_char_width(parser->current.end, parser->end - parser->current.end);
+    }
+
+    if (width == 1) {
+        escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(*parser->current.end++, flags));
+    } else {
+        // Assume the next character wasn't meant to be part of this escape
+        // sequence since it is invalid. Add an error and move on.
+        parser->current.end += width;
+        pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
+    }
 }
 
 /**
@@ -10050,7 +10050,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         /* fallthrough */
         default: {
             if (parser->current.end < parser->end) {
-                escape_write_escape_encoded(parser, buffer);
+                escape_write_escape_encoded(parser, buffer, regular_expression_buffer, flags);
             } else {
                 pm_parser_err_current(parser, PM_ERR_INVALID_ESCAPE_CHARACTER);
             }

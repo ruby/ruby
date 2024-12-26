@@ -204,6 +204,9 @@ module Prism
         # \C-a \C-b \C-c ...
         assert_unescape(context, "C-#{chr}")
 
+        # \C-\a \C-\b \C-\c ...
+        assert_unescape(context, "C-\\#{chr}")
+
         # \ca \cb \cc ...
         assert_unescape(context, "c#{chr}")
 
