@@ -345,12 +345,16 @@ class TestEnv < Test::Unit::TestCase
     ENV["foo"] = "bar"
     ENV["baz"] = "qux"
     s = ENV.inspect
+    expected = [%("foo"=>"bar"), %("baz"=>"qux")]
+    unless s.start_with?(/\{"foo"/i)
+      expected.reverse!
+    end
+    expected = '{' + expected.join(', ') + '}'
     if IGNORE_CASE
       s = s.upcase
-      assert(s == '{"FOO"=>"BAR", "BAZ"=>"QUX"}' || s == '{"BAZ"=>"QUX", "FOO"=>"BAR"}')
-    else
-      assert(s == '{"foo"=>"bar", "baz"=>"qux"}' || s == '{"baz"=>"qux", "foo"=>"bar"}')
+      expected = expected.upcase
     end
+    assert_equal(expected, s)
   end
 
   def test_to_a
@@ -359,12 +363,7 @@ class TestEnv < Test::Unit::TestCase
     ENV["baz"] = "qux"
     a = ENV.to_a
     assert_equal(2, a.size)
-    if IGNORE_CASE
-      a = a.map {|x| x.map {|y| y.upcase } }
-      assert(a == [%w(FOO BAR), %w(BAZ QUX)] || a == [%w(BAZ QUX), %w(FOO BAR)])
-    else
-      assert(a == [%w(foo bar), %w(baz qux)] || a == [%w(baz qux), %w(foo bar)])
-    end
+    check([%w(baz qux), %w(foo bar)], a)
   end
 
   def test_rehash
@@ -450,13 +449,14 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(h1, h2)
   end
 
-  def check(as, bs)
+  def assert_equal_env(as, bs)
     if IGNORE_CASE
       as = as.map {|k, v| [k.upcase, v] }
       bs = bs.map {|k, v| [k.upcase, v] }
     end
     assert_equal(as.sort, bs.sort)
   end
+  alias check assert_equal_env
 
   def test_shift
     ENV.clear
@@ -1089,12 +1089,16 @@ class TestEnv < Test::Unit::TestCase
         Ractor.yield s
       end
       s = r.take
+      expected = ['"foo"=>"bar"', '"baz"=>"qux"']
+      unless s.start_with?(/\{"foo"/i)
+        expected.reverse!
+      end
+      expected = "{" + expected.join(', ') + "}"
       if #{ignore_case_str}
         s = s.upcase
-        assert(s == '{"FOO"=>"BAR", "BAZ"=>"QUX"}' || s == '{"BAZ"=>"QUX", "FOO"=>"BAR"}')
-      else
-        assert(s == '{"foo"=>"bar", "baz"=>"qux"}' || s == '{"baz"=>"qux", "foo"=>"bar"}')
+        expected = expected.upcase
       end
+      assert_equal(expected, s)
     end;
   end
 
@@ -1109,12 +1113,13 @@ class TestEnv < Test::Unit::TestCase
       end
       a = r.take
       assert_equal(2, a.size)
+      expected = [%w(baz qux), %w(foo bar)]
       if #{ignore_case_str}
-        a = a.map {|x| x.map {|y| y.upcase } }
-        assert(a == [%w(FOO BAR), %w(BAZ QUX)] || a == [%w(BAZ QUX), %w(FOO BAR)])
-      else
-        assert(a == [%w(foo bar), %w(baz qux)] || a == [%w(baz qux), %w(foo bar)])
+        a = a.map {|x, y| [x.upcase, y]}
+        expected.map! {|x, y| [x.upcase, y]}
       end
+      a.sort!
+      assert_equal(expected, a)
     end;
   end
 
