@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.6.2"
+  VERSION = "3.7.0.dev"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
