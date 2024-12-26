@@ -3994,9 +3994,11 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         return;
       }
       case PM_CALL_NODE: {
+#define BLOCK_P(cast) ((cast)->block != NULL && PM_NODE_TYPE_P((cast)->block, PM_BLOCK_NODE))
+
         const pm_call_node_t *cast = ((const pm_call_node_t *) node);
 
-        if (cast->block != NULL && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)) {
+        if (BLOCK_P(cast)) {
             dtype = DEFINED_EXPR;
             break;
         }
@@ -4016,7 +4018,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         if (cast->receiver) {
             pm_compile_defined_expr0(iseq, cast->receiver, node_location, ret, popped, scope_node, true, lfinish, true);
 
-            if (PM_NODE_TYPE_P(cast->receiver, PM_CALL_NODE)) {
+            if (PM_NODE_TYPE_P(cast->receiver, PM_CALL_NODE) && !BLOCK_P((const pm_call_node_t *) cast->receiver)) {
                 PUSH_INSNL(ret, location, branchunless, lfinish[2]);
 
                 const pm_call_node_t *receiver = (const pm_call_node_t *) cast->receiver;
@@ -4038,6 +4040,8 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         }
 
         return;
+
+#undef BLOCK_P
       }
       case PM_YIELD_NODE:
         PUSH_INSN(ret, location, putnil);
