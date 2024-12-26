@@ -1008,7 +1008,6 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
         dump_machine_register(mctx->__gregs[LARCH_REG_A5], "a5");
         dump_machine_register(mctx->__gregs[LARCH_REG_A6], "a6");
         dump_machine_register(mctx->__gregs[LARCH_REG_A7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_FP], "fp");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
         dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
         dump_machine_register(mctx->__gregs[LARCH_REG_S2], "s2");
