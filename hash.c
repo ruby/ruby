@@ -5923,7 +5923,7 @@ env_inspect(VALUE _)
             }
             if (s) {
                 rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(*env, s-*env, enc)));
-                rb_str_buf_cat2(str, "=>");
+                rb_str_buf_cat2(str, " => ");
                 s++;
                 rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
             }
