@@ -1479,11 +1479,8 @@ class TestEnv < Test::Unit::TestCase
 
     def test_utf8
       text = "testing \u{e5 e1 e2 e4 e3 101 3042}"
-      test = ENV["test"]
       ENV["test"] = text
       assert_equal text, ENV["test"]
-    ensure
-      ENV["test"] = test
     end
 
     def test_utf8_empty
