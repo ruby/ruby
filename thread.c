@@ -5512,7 +5512,7 @@ Init_Thread(void)
 
     if (ptr) {
         long quantum = strtol(ptr, NULL, 0);
-        if (quantum > 0 && quantum <= UINT32_MAX) {
+        if (quantum > 0 && !(SIZEOF_LONG > 4 && quantum > UINT32_MAX)) {
             thread_default_quantum_ms = (uint32_t)quantum;
         }
         else if (0) {
