@@ -817,9 +817,9 @@ begin
     if $gnumake == "yes"
       submake = "$(MAKE) -C $(@D)"
     else
-      submake = "cd $(@D) && "
-      config_string("exec") {|str| submake << str << " "}
-      submake << "$(MAKE)"
+      submake = ["cd", (sep ? "$(@D:/=#{sep})" : "$(@D)"), "&&"]
+      config_string("exec") {|str| submake << str}
+      submake = (submake << "$(MAKE)").join(" ")
     end
     targets.each do |tgt|
       exts.each do |d|
