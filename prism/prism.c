@@ -9618,10 +9618,15 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_
 
     if (width == 1) {
         escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(*parser->current.end++, flags));
+    } else if (width > 1) {
+        // Valid multibyte character.  Just ignore escape.
+        pm_buffer_t *b = (flags & PM_ESCAPE_FLAG_REGEXP) ? regular_expression_buffer : buffer;
+        pm_buffer_append_bytes(b, parser->current.end, width);
+        parser->current.end += width;
     } else {
         // Assume the next character wasn't meant to be part of this escape
         // sequence since it is invalid. Add an error and move on.
-        parser->current.end += width;
+        parser->current.end++;
         pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_CONTROL);
     }
 }
