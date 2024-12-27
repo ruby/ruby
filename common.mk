@@ -1027,9 +1027,9 @@ yes-runnable: PHONY
 
 hello: $(TEST_RUNNABLE)-hello
 yes-hello: runnable-golf
-	./$(enable_shared:yes=bin/)goruby -veh
+	./$(enable_shared:yes=bin/)$(GORUBY) -veh
 no-hello: runnable-golf
-	$(ECHO) Run ./$(enable_shared:yes=bin/)goruby -veh
+	$(ECHO) Run ./$(enable_shared:yes=bin/)$(GORUBY) -veh
 
 encs: enc trans
 libencs: libenc libtrans
