@@ -412,7 +412,7 @@ module Launchable
           }
         )
         @@duration = 0
-        @@failure_log.clear
+        @@failure_log = ''
       end
       @@last_test_name = relative_path
       @@duration += t
