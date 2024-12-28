@@ -239,7 +239,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
     rdoc_dir = File.join(@tmpdir, 'rdoc')
-    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    system("bundle exec rdoc lib -r -o #{rdoc_dir}")
     write_irbrc <<~LINES
       IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
@@ -273,7 +273,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_left
     rdoc_dir = File.join(@tmpdir, 'rdoc')
-    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    system("bundle exec rdoc lib -r -o #{rdoc_dir}")
     write_irbrc <<~LINES
       IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
