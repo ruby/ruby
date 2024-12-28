@@ -25,6 +25,9 @@ The following bundled gem is added.
 
 The following bundled gems are updated.
 
+* rbs 3.8.1
+* bigdecimal 3.1.9
+
 ## Supported platforms
 
 ## Compatibility issues
