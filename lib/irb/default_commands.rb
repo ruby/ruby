@@ -218,7 +218,8 @@ module IRB
     )
 
     _register_with_aliases(:irb_show_doc, Command::ShowDoc,
-      [:show_doc, NO_OVERRIDE]
+      [:show_doc, NO_OVERRIDE],
+      [:ri, NO_OVERRIDE]
     )
 
     _register_with_aliases(:irb_info, Command::IrbInfo)
