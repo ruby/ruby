@@ -67,6 +67,8 @@ describe 'Socket#connect' do
           client.connect(address)
         rescue Errno::ECONNREFUSED
           skip "Outgoing packets may be filtered"
+        rescue Errno::ENETUNREACH
+          skip "Off line"
         end
       }.should raise_error(IO::TimeoutError)
     end
