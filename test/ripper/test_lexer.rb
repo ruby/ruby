@@ -390,6 +390,30 @@ world"
     assert_lexer(expected, code)
   end
 
+  def test_invalid_escape_ctrl_backslash_mbchar
+    code = %["\\C-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\C-\\", state(:EXPR_BEG)],
+      [[1, 5], :on_tstring_content, "\u{3042}", state(:EXPR_BEG)],
+      [[1, 8], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
+  def test_invalid_escape_meta_backslash_mbchar
+    code = %["\\M-\\\u{3042}"]
+    expected = [
+      [[1, 0], :on_tstring_beg, '"', state(:EXPR_BEG)],
+      [[1, 1], :on_tstring_content, "\\M-\\", state(:EXPR_BEG)],
+      [[1, 5], :on_tstring_content, "\u{3042}", state(:EXPR_BEG)],
+      [[1, 8], :on_tstring_end, '"', state(:EXPR_END)],
+    ]
+
+    assert_lexer(expected, code)
+  end
+
   def test_invalid_escape_string
     code = "\"hello\\x world"
     expected = [

@@ -8152,9 +8152,13 @@ read_escape(struct parser_params *p, int flags, const char *begin)
             goto eof;
         }
         if ((c = nextc(p)) == '\\') {
-            switch (peekc(p)) {
+            switch (c = peekc(p)) {
               case 'u': case 'U':
                 nextc(p);
+                goto eof;
+            }
+            if (!ISASCII(c) && c != -1) {
+                tokskip_mbchar(p);
                 goto eof;
             }
             return read_escape(p, flags|ESCAPE_META, begin) | 0x80;
@@ -8185,9 +8189,13 @@ read_escape(struct parser_params *p, int flags, const char *begin)
       case 'c':
         if (flags & ESCAPE_CONTROL) goto eof;
         if ((c = nextc(p))== '\\') {
-            switch (peekc(p)) {
+            switch (c = peekc(p)) {
               case 'u': case 'U':
                 nextc(p);
+                goto eof;
+            }
+            if (!ISASCII(c) && c != -1) {
+                tokskip_mbchar(p);
                 goto eof;
             }
             c = read_escape(p, flags|ESCAPE_CONTROL, begin);
