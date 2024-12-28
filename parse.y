@@ -13186,7 +13186,13 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         rb_node_dregx_t *const dreg = RNODE_DREGX(node);
         dreg->as.nd_cflag = options & RE_OPTION_MASK;
-        if (dreg->string) reg_fragment_check(p, dreg->string, options);
+        if (!dreg->nd_next) {
+            /* Check string is valid regex */
+            reg_compile(p, dreg->string, options);
+        }
+        else if (dreg->string) {
+            reg_fragment_check(p, dreg->string, options);
+        }
         prev = node;
         for (list = dreg->nd_next; list; list = RNODE_LIST(list->nd_next)) {
             NODE *frag = list->nd_head;
@@ -13211,10 +13217,6 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
             else {
                 prev = 0;
             }
-        }
-        if (!dreg->nd_next) {
-            /* Check string is valid regex */
-            reg_compile(p, dreg->string, options);
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);

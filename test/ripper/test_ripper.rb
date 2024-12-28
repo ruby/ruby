@@ -156,7 +156,7 @@ end
   end
 
   def test_invalid_multibyte_character_in_regexp
-    lex = Ripper.lex(%q[/#{"\xcd"}/])
+    lex = Ripper::Lexer.new(%q[/#{"\xcd"}/]).scan.map(&:to_a)
     assert_equal([[1, 0], :on_regexp_beg, "/", state(:EXPR_BEG)], lex.shift)
     assert_equal([[1, 1], :on_embexpr_beg, "\#{", state(:EXPR_BEG)], lex.shift)
     assert_equal([[1, 3], :on_tstring_beg, "\"", state(:EXPR_BEG)], lex.shift)
@@ -164,6 +164,7 @@ end
     assert_equal([[1, 8], :on_tstring_end, "\"", state(:EXPR_END)], lex.shift)
     assert_equal([[1, 9], :on_embexpr_end, "}", state(:EXPR_END)], lex.shift)
     assert_equal([[1, 10], :on_regexp_end, "/", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 11], :compile_error, "", state(:EXPR_END), "invalid multibyte character: /\\xCD/"], lex.shift)
     assert_empty(lex)
   end
 
