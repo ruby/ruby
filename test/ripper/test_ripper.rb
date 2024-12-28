@@ -155,6 +155,18 @@ end
     end;
   end
 
+  def test_invalid_multibyte_character_in_regexp
+    lex = Ripper.lex(%q[/#{"\xcd"}/])
+    assert_equal([[1, 0], :on_regexp_beg, "/", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 1], :on_embexpr_beg, "\#{", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 3], :on_tstring_beg, "\"", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 4], :on_tstring_content, "\\xcd", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 8], :on_tstring_end, "\"", state(:EXPR_END)], lex.shift)
+    assert_equal([[1, 9], :on_embexpr_end, "}", state(:EXPR_END)], lex.shift)
+    assert_equal([[1, 10], :on_regexp_end, "/", state(:EXPR_BEG)], lex.shift)
+    assert_empty(lex)
+  end
+
   def test_no_memory_leak
     assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
       2_000_000.times do
@@ -202,4 +214,7 @@ end
     end
   end
 
+  def state(name)
+    Ripper::Lexer::State.new(Ripper.const_get(name))
+  end
 end if ripper_test
