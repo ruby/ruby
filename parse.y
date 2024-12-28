@@ -8231,6 +8231,10 @@ read_escape(struct parser_params *p, int flags, const char *begin)
         return '\0';
 
       default:
+        if (!ISASCII(c)) {
+            tokskip_mbchar(p);
+            goto eof;
+        }
         return c;
     }
 }
