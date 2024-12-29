@@ -9728,6 +9728,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                 }
             }
 
+            value = escape_byte(value, flags);
             escape_write_byte(parser, buffer, regular_expression_buffer, flags, value);
             return;
         }

@@ -101,6 +101,8 @@ class TestRubyLiteral < Test::Unit::TestCase
     assert_raise(SyntaxError) {eval('"\C-\\' "\u3042" '"')}
     assert_raise(SyntaxError) {eval('"\M-' "\u3042" '"')}
     assert_raise(SyntaxError) {eval('"\M-\\' "\u3042" '"')}
+
+    assert_equal "\x09 \xC9 \x89", eval('"\C-\111 \M-\111 \M-\C-\111"')
   ensure
     $VERBOSE = verbose_bak
   end
