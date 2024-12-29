@@ -967,7 +967,6 @@ parser_token2char(struct parser_params *p, enum yytokentype tok)
       TOKEN2CHAR(tASSOC);
       TOKEN2CHAR(tLPAREN);
       TOKEN2CHAR(tLPAREN_ARG);
-      TOKEN2CHAR(tRPAREN);
       TOKEN2CHAR(tLBRACK);
       TOKEN2CHAR(tLBRACE);
       TOKEN2CHAR(tLBRACE_ARG);
@@ -2845,7 +2844,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token tASSOC		"=>"
 %token tLPAREN		"("
 %token tLPAREN_ARG	"( arg"
-%token tRPAREN		")"
 %token tLBRACK		"["
 %token tLBRACE		"{"
 %token tLBRACE_ARG	"{ arg"
