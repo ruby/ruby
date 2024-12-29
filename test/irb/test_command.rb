@@ -972,6 +972,12 @@ module TestIRB
              puts x
            ...
       EOF
+      assert_not_include(out, <<~EOF)
+        foo
+      EOF
+      assert_not_include(out, <<~EOF)
+        bar
+      EOF
       assert_empty err
     end
 

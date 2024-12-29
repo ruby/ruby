@@ -14,7 +14,7 @@ module IRB
 
       def execute(arg)
 
-        if (match = arg&.match(/(-g|-G)\s+(?<grep>.+)\s*\n\z/))
+        if (match = arg&.match(/(-g|-G)\s+(?<grep>.+)\s*\z/))
           grep = Regexp.new(match[:grep])
         end
 
