@@ -859,6 +859,15 @@ require 'rdoc'
 #   - On-page: <tt>DummyClass</tt> links to DummyClass.
 #   - Off-page: <tt>RDoc::Alias</tt> links to RDoc::Alias.
 #
+#   Note: For poeple want to mark up code (such as class, module,
+#   constant, and method) as "<tt>+code+</tt>" (for interoperability
+#   with other MarkDown parsers mainly), such word that refers a known
+#   code object and is marked up entirely and separately as "monofont"
+#   is also converted to a link.
+#
+#   - <tt>+DummyClass+</tt> links to DummyClass
+#   - <tt>+DummyClass-object+</tt> is not a link.
+#
 # [Module]
 #
 #   - On-page: <tt>DummyModule</tt> links to DummyModule.
