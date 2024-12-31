@@ -71,6 +71,8 @@ describe 'Socket#connect' do
           skip "Off line"
         end
       }.should raise_error(IO::TimeoutError)
+    ensure
+      client.close
     end
   end
 end
