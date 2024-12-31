@@ -3,10 +3,12 @@ name: Rubyspec Version Guards Check
 on:
   push:
     paths:
+      - '.github/workflows/spec_guards.yml'
       - 'spec/**'
       - '!spec/*.md'
   pull_request:
     paths:
+      - '.github/workflows/spec_guards.yml'
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
