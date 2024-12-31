@@ -21,4 +21,6 @@ Gem::Specification.new do |spec|
 
   spec.files         = [".gitignore", "Gemfile", "COPYING", "BSDL", "README.md", "Rakefile", "bin/console", "bin/setup", "lib/ostruct.rb", "ostruct.gemspec"]
   spec.require_paths = ["lib"]
+
+  spec.metadata["changelog_uri"] = spec.homepage + "/releases"
 end
