@@ -23,6 +23,9 @@
  * some platforms they aren't included unless this is already defined.
  */
 #define __STDC_FORMAT_MACROS
+// Include sys/types.h before inttypes.h to work around issue with
+// certain versions of GCC and newlib which causes omission of PRIx64
+#include <sys/types.h>
 #include <inttypes.h>
 
 /**
