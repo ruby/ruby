@@ -83,6 +83,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   def handle_regexp_CROSSREF(target)
     name = target.text
 
+    return name if @options.autolink_excluded_words&.include?(name)
+
     return name if name =~ /@[\w-]+\.[\w-]/ # labels that look like emails
 
     unless @hyperlink_all then

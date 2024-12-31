@@ -86,6 +86,7 @@ class TestRDocOptions < RDoc::TestCase
       'webcvs'                => nil,
       'skip_tests'            => true,
       'apply_default_exclude' => true,
+      'autolink_excluded_words' => [],
     }
 
     assert_equal expected, coder

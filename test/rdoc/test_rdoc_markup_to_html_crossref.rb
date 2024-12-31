@@ -20,6 +20,9 @@ class RDocMarkupToHtmlCrossrefTest < XrefTestCase
     result = @to.convert '+C1+'
     assert_equal para("<a href=\"C1.html\"><code>C1</code></a>"), result
 
+    result = @to.convert 'Constant[rdoc-ref:C1]'
+    assert_equal para("<a href=\"C1.html\">Constant</a>"), result
+
     result = @to.convert 'FOO'
     assert_equal para("FOO"), result
 
@@ -28,6 +31,20 @@ class RDocMarkupToHtmlCrossrefTest < XrefTestCase
 
     result = @to.convert '<tt># :stopdoc:</tt>:'
     assert_equal para("<code># :stopdoc:</code>:"), result
+  end
+
+  def test_convert_CROSSREF_ignored_excluded_words
+    @options.autolink_excluded_words = ['C1']
+
+    result = @to.convert 'C1'
+    assert_equal para("C1"), result
+
+    result = @to.convert '+C1+'
+    assert_equal para("<a href=\"C1.html\"><code>C1</code></a>"), result
+
+    # Explicit linking with rdoc-ref is not ignored
+    result = @to.convert 'Constant[rdoc-ref:C1]'
+    assert_equal para("<a href=\"C1.html\">Constant</a>"), result
   end
 
   def test_convert_CROSSREF_method
