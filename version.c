@@ -106,7 +106,7 @@ void
 Init_version(void)
 {
     /*
-     * The Ruby module that contains portable information among
+     * The Ruby[rdoc-ref:Ruby] module that contains portable information among
      * implementations.
      *
      * The constants defined here are aliased in the toplevel with
