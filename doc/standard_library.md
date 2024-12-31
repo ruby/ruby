@@ -59,7 +59,7 @@ of each.
 - Reline ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
 - SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
-- Set ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
+- [Set](rdoc-ref:Set) ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
 - Shellwords ([GitHub][shellwords]): Manipulates strings with the word parsing rules of the UNIX Bourne shell
 - Singleton ([GitHub][singleton]): Implementation of the Singleton pattern for Ruby
 - Tempfile ([GitHub][tempfile]): A utility class for managing temporary files
