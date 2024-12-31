@@ -11,3 +11,7 @@ rdoc_include:
 exclude:
 - lib/irb
 - .gemspec
+
+autolink_excluded_words:
+- Ruby
+- Set
