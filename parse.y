@@ -2935,6 +2935,31 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
+%rule def_endless_method(bodystmt) <node>
+                : defn_head[head] f_opt_paren_args[args] '=' bodystmt
+                    {
+                        endless_method_name(p, $head->nd_mid, &@head);
+                        restore_defun(p, $head);
+                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFN($$)->nd_defn = $bodystmt;
+                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: def!($:head, $:args, $:$) %*/
+                        local_pop(p);
+                    }
+                | defs_head[head] f_opt_paren_args[args] '=' bodystmt
+                    {
+                        endless_method_name(p, $head->nd_mid, &@head);
+                        restore_defun(p, $head);
+                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
+                        ($$ = $head->nd_def)->nd_loc = @$;
+                        RNODE_DEFS($$)->nd_defn = $bodystmt;
+                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
+                    /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
+                        local_pop(p);
+                    }
+                ;
+
 %rule f_opt(value) <node_opt_arg>
                 : f_arg_asgn f_eq value
                     {
@@ -3305,28 +3330,7 @@ command_asgn	: asgn(lhs, command_rhs)
                         $$ = new_attr_op_assign(p, $1, idCOLON2, $3, $4, $6, &@$, &@2, &@3, &@4);
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
-                | defn_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
-                    {
-                        endless_method_name(p, $head->nd_mid, &@head);
-                        restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        ($$ = $head->nd_def)->nd_loc = @$;
-                        RNODE_DEFN($$)->nd_defn = $bodystmt;
-                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: def!($:head, $:args, $:$) %*/
-                        local_pop(p);
-                    }
-                | defs_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
-                    {
-                        endless_method_name(p, $head->nd_mid, &@head);
-                        restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        ($$ = $head->nd_def)->nd_loc = @$;
-                        RNODE_DEFS($$)->nd_defn = $bodystmt;
-                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
-                        local_pop(p);
-                    }
+                | def_endless_method(endless_command)
                 | backref_with(command_rhs)
                 ;
 
@@ -4056,28 +4060,7 @@ arg		: asgn(lhs, arg_rhs)
                         fixpos($$, $1);
                     /*% ripper: ifop!($:1, $:3, $:6) %*/
                     }
-                | defn_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
-                    {
-                        endless_method_name(p, $head->nd_mid, &@head);
-                        restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        ($$ = $head->nd_def)->nd_loc = @$;
-                        RNODE_DEFN($$)->nd_defn = $bodystmt;
-                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: def!($:head, $:args, $:$) %*/
-                        local_pop(p);
-                    }
-                | defs_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
-                    {
-                        endless_method_name(p, $head->nd_mid, &@head);
-                        restore_defun(p, $head);
-                        $bodystmt = new_scope_body(p, $args, $bodystmt, &@$);
-                        ($$ = $head->nd_def)->nd_loc = @$;
-                        RNODE_DEFS($$)->nd_defn = $bodystmt;
-                    /*% ripper: bodystmt!($:bodystmt, Qnil, Qnil, Qnil) %*/
-                    /*% ripper: defs!(*$:head[0..2], $:args, $:$) %*/
-                        local_pop(p);
-                    }
+                | def_endless_method(endless_arg)
                 | primary
                     {
                         $$ = $1;
