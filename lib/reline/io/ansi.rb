@@ -309,6 +309,13 @@ class Reline::ANSI < Reline::IO
     # Signal.trap may raise an ArgumentError if the platform doesn't support the signal.
   end
 
+  def read_single_char(keyseq_timeout)
+    # Disable intr to read `C-c` `C-z` `C-\` for quoted insert
+    @input.raw(intr: false) do
+      super
+    end
+  end
+
   def prep
     # Enable bracketed paste
     write "\e[?2004h" if Reline.core.config.enable_bracketed_paste && both_tty?

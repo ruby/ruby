@@ -1724,6 +1724,26 @@ begin
       close
     end
 
+    def test_quoted_insert_intr_keys
+      omit if Reline.core.io_gate.win?
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write '"'
+      write "\C-v"
+      write "\C-c"
+      write "\C-v"
+      write "\C-z"
+      write "\C-v"
+      write "\C-\\"
+      write "\".bytes\n"
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> "^C^Z^\\\".bytes
+        => [3, 26, 28]
+        prompt>
+      EOC
+      close
+    end
+
     def test_print_before_readline
       code = <<~RUBY
         puts 'Multiline REPL.'
