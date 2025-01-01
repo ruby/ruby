@@ -2918,6 +2918,14 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	parameterizing rules
  */
+%rule asgn(lhs, rhs) <node>
+                : lhs '=' lex_ctxt rhs
+                    {
+                        $$ = node_assign(p, (NODE *)$lhs, $rhs, $lex_ctxt, &@$);
+                    /*% ripper: assign!($:1, $:4) %*/
+                    }
+                ;
+
 %rule backref_with(value) <node>
                 : backref tOP_ASGN lex_ctxt value
                     {
@@ -3244,11 +3252,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% ripper: massign!($:1, $:4) %*/
                     }
-                | lhs '=' lex_ctxt mrhs
-                    {
-                        $$ = node_assign(p, $1, $4, $3, &@$);
-                    /*% ripper: assign!($:1, $:4) %*/
-                    }
+                | asgn(lhs, mrhs)
                 | mlhs '=' lex_ctxt mrhs_arg modifier_rescue
                   after_rescue stmt[resbody]
                     {
@@ -3273,11 +3277,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     }
                 ;
 
-command_asgn	: lhs '=' lex_ctxt command_rhs
-                    {
-                        $$ = node_assign(p, $1, $4, $3, &@$);
-                    /*% ripper: assign!($:1, $:4) %*/
-                    }
+command_asgn	: asgn(lhs, command_rhs)
                 | var_lhs tOP_ASGN lex_ctxt command_rhs
                     {
                         $$ = new_op_assign(p, $1, $2, $4, $3, &@$);
@@ -3850,11 +3850,7 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
                 | keyword_while | keyword_until
                 ;
 
-arg		: lhs '=' lex_ctxt arg_rhs
-                    {
-                        $$ = node_assign(p, $1, $4, $3, &@$);
-                    /*% ripper: assign!($:1, $:4) %*/
-                    }
+arg		: asgn(lhs, arg_rhs)
                 | var_lhs tOP_ASGN lex_ctxt arg_rhs
                     {
                         $$ = new_op_assign(p, $1, $2, $4, $3, &@$);
