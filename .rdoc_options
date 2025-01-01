@@ -17,5 +17,6 @@ autolink_excluded_words:
 - Method
 - Module
 - Process
+- RDoc
 - Ruby
 - Set
