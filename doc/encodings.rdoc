@@ -30,7 +30,7 @@ Other characters, such as the Euro symbol, are multi-byte:
   s = "\u20ac" # => "€"
   s.bytes      # => [226, 130, 172]
 
-== The \Encoding \Class
+== The \Encoding Class
 
 === \Encoding Objects
 

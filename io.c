@@ -15006,9 +15006,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 /*
  *  An instance of class \IO (commonly called a _stream_)
  *  represents an input/output stream in the underlying operating system.
- *  \Class \IO is the basis for input and output in Ruby.
+ *  Class \IO is the basis for input and output in Ruby.
  *
- *  \Class File is the only class in the Ruby core that is a subclass of \IO.
+ *  Class File is the only class in the Ruby core that is a subclass of \IO.
  *  Some classes in the Ruby standard library are also subclasses of \IO;
  *  these include TCPSocket and UDPSocket.
  *
@@ -15017,7 +15017,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  found in ARGV (or found in STDIN if ARGV is empty).
  *  ARGF is not itself a subclass of \IO.
  *
- *  \Class StringIO provides an IO-like stream that handles a String.
+ *  Class StringIO provides an IO-like stream that handles a String.
  *  StringIO is not itself a subclass of \IO.
  *
  *  Important objects based on \IO include:
@@ -15155,12 +15155,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == Line \IO
  *
- *  \Class \IO supports line-oriented
+ *  Class \IO supports line-oriented
  *  {input}[rdoc-ref:IO@Line+Input] and {output}[rdoc-ref:IO@Line+Output]
  *
  *  === Line Input
  *
- *  \Class \IO supports line-oriented input for
+ *  Class \IO supports line-oriented input for
  *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input]
  *
  *  ==== \File Line Input
@@ -15433,7 +15433,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \IO:
+ *  First, what's elsewhere. Class \IO:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

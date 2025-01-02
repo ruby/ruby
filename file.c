@@ -6652,7 +6652,7 @@ const char ruby_null_device[] =
 /*
  *  A \File object is a representation of a file in the underlying platform.
  *
- *  \Class \File extends module FileTest, supporting such singleton methods
+ *  Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
  *  == About the Examples
@@ -7309,7 +7309,7 @@ const char ruby_null_device[] =
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \File:
+ *  First, what's elsewhere. Class \File:
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
@@ -7555,7 +7555,7 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * \Module +File::Constants+ defines file-related constants.
+     * Module +File::Constants+ defines file-related constants.
      *
      * There are two families of constants here:
      *

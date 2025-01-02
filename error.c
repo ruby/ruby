@@ -3486,7 +3486,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: Exception
  *
- *  \Class +Exception+ and its subclasses are used to indicate that an error
+ *  Class +Exception+ and its subclasses are used to indicate that an error
  *  or other problem has occurred,
  *  and may need to be handled.
  *  See {Exceptions}[rdoc-ref:exceptions.md].
@@ -3503,7 +3503,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *  - An optional cause;
  *    see method #cause.
  *
- *  == Built-In \Exception \Class Hierarchy
+ *  == Built-In \Exception Class Hierarchy
  *
  *  The hierarchy of built-in subclasses of class +Exception+:
  *

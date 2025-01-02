@@ -6969,7 +6969,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  === What's Here
  *
- *  First, what's elsewhere. \Class +Hash+:
+ *  First, what's elsewhere. Class +Hash+:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
@@ -6989,7 +6989,7 @@ static const rb_data_type_t env_data_type = {
  *  - {Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values]
  *  - {And more....}[rdoc-ref:Hash@Other+Methods]
  *
- *  \Class +Hash+ also includes methods from module Enumerable.
+ *  Class +Hash+ also includes methods from module Enumerable.
  *
  *  ==== Methods for Creating a +Hash+
  *
@@ -7283,7 +7283,7 @@ Init_Hash(void)
      *
      * === What's Here
      *
-     * First, what's elsewhere. \Class +ENV+:
+     * First, what's elsewhere. Class +ENV+:
      *
      * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
      * - Extends {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

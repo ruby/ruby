@@ -202,7 +202,7 @@ However, _do_ suppress auto-linking when the word in question
 does not refer to a Ruby entity (e.g., some uses of _Class_ or _English_):
 
 ```rdoc
-\Class variables can be tricky.
+Class variables can be tricky.
 ```
 
 renders as:

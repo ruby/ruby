@@ -2704,7 +2704,7 @@ range_overlap(VALUE range, VALUE other)
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Range:
+ * First, what's elsewhere. Class \Range:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

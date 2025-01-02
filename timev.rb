@@ -162,7 +162,7 @@
 #
 # == What's Here
 #
-# First, what's elsewhere. \Class +Time+:
+# First, what's elsewhere. Class +Time+:
 #
 # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 # - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].

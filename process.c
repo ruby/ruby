@@ -8762,7 +8762,7 @@ proc_warmup(VALUE _)
 /*
  * Document-module: Process
  *
- * \Module +Process+ represents a process in the underlying operating system.
+ * Module +Process+ represents a process in the underlying operating system.
  * Its methods support management of the current process and its child processes.
  *
  * == Process Creation
@@ -8782,7 +8782,7 @@ proc_warmup(VALUE _)
  *   returns +true+, +false+, or +nil+.
  * - Method Kernel#` executes a given command-line (string) in a subshell;
  *   returns its $stdout string.
- * - \Module Open3 supports creating child processes
+ * - Module Open3 supports creating child processes
  *   with access to their $stdin, $stdout, and $stderr streams.
  *
  * === Execution Environment

@@ -83,7 +83,7 @@
 #
 # == What's Here
 #
-# First, what's elsewhere. \Class \Dir:
+# First, what's elsewhere. Class \Dir:
 #
 # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 # - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

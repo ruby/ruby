@@ -9,7 +9,7 @@ and publishing Ruby patch releases.
 
 [The list of current branch maintainers is available in the wiki](https://github.com/ruby/ruby/wiki/Release-Engineering).
 
-## \Module Maintainers
+## Module Maintainers
 
 A module maintainer is responsible for a certain part of Ruby.
 

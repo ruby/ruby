@@ -4939,7 +4939,7 @@ enum_compact(VALUE obj)
 /*
  * == What's Here
  *
- * \Module \Enumerable provides methods that are useful to a collection class for:
+ * Module \Enumerable provides methods that are useful to a collection class for:
  *
  * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
  * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]

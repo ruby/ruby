@@ -13,7 +13,9 @@ exclude:
 - .gemspec
 
 autolink_excluded_words:
+- Class
 - Method
+- Module
 - Process
 - Ruby
 - Set

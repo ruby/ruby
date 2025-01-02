@@ -8557,7 +8557,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class +Array+:
+ *  First, what's elsewhere. Class +Array+:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],

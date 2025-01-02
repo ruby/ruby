@@ -930,7 +930,7 @@ num_negative_p(VALUE num)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Float:
+ *  First, what's elsewhere. Class \Float:
  *
  *  - Inherits from
  *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
@@ -3546,7 +3546,7 @@ rb_num2ull(VALUE val)
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Integer:
+ * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
  *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
@@ -6190,7 +6190,7 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Numeric:
+ * First, what's elsewhere. Class \Numeric:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].

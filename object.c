@@ -4091,7 +4091,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *    BasicObject.superclass # => nil
  *
- *  \Class +BasicObject+ can be used to create an object hierarchy
+ *  Class +BasicObject+ can be used to create an object hierarchy
  *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
  *  Such objects:
  *
@@ -4162,7 +4162,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Object:
+ *  First, what's elsewhere. Class \Object:
  *
  *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
  *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
@@ -4282,7 +4282,7 @@ InitVM_Object(void)
      *
      * == What's Here
      *
-     * \Module \Kernel provides methods that are useful for:
+     * Module \Kernel provides methods that are useful for:
      *
      * - {Converting}[rdoc-ref:Kernel@Converting]
      * - {Querying}[rdoc-ref:Kernel@Querying]
