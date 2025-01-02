@@ -8778,9 +8778,9 @@ proc_warmup(VALUE _)
  *
  * In addition:
  *
- * - \Method Kernel#system executes a given command-line (string) in a subshell;
+ * - Method Kernel#system executes a given command-line (string) in a subshell;
  *   returns +true+, +false+, or +nil+.
- * - \Method Kernel#` executes a given command-line (string) in a subshell;
+ * - Method Kernel#` executes a given command-line (string) in a subshell;
  *   returns its $stdout string.
  * - \Module Open3 supports creating child processes
  *   with access to their $stdin, $stdout, and $stderr streams.

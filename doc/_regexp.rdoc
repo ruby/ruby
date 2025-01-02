@@ -78,9 +78,9 @@ A regular expression may be created with:
     %r(foo) # => /foo/
     %r<foo> # => /foo/
 
-- \Method Regexp.new.
+- Method Regexp.new.
 
-== \Method <tt>match</tt>
+== Method <tt>match</tt>
 
 Each of the methods Regexp#match, String#match, and Symbol#match
 returns a MatchData object if a match was found, +nil+ otherwise;
@@ -99,7 +99,7 @@ each also sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
   'foo bar' =~ /bar/ # => 4
   /baz/ =~ 'foo bar' # => nil
 
-== \Method <tt>match?</tt>
+== Method <tt>match?</tt>
 
 Each of the methods Regexp#match?, String#match?, and Symbol#match?
 returns +true+ if a match was found, +false+ otherwise;
@@ -477,7 +477,7 @@ Each alternative is a subexpression, and may be composed of other subexpressions
   re.match('bar') # => #<MatchData "b" 1:"b">
   re.match('ooz') # => #<MatchData "z" 1:"z">
 
-\Method Regexp.union provides a convenient way to construct
+Method Regexp.union provides a convenient way to construct
 a regexp with alternatives.
 
 === Quantifiers
@@ -682,7 +682,7 @@ the captured substrings are assigned to local variables with corresponding names
   dollars # => "3"
   cents   # => "67"
 
-\Method Regexp#named_captures returns a hash of the capture names and substrings;
+Method Regexp#named_captures returns a hash of the capture names and substrings;
 method Regexp#names returns an array of the capture names.
 
 ==== Atomic Grouping
@@ -1057,7 +1057,7 @@ Example:
   re.match('tEst') # => #<MatchData "tEst">
   re.match('tEST') # => nil
 
-\Method Regexp#options returns an integer whose value showing
+Method Regexp#options returns an integer whose value showing
 the settings for case-insensitivity mode, multiline mode, and extended mode.
 
 === Case-Insensitive Mode
@@ -1071,7 +1071,7 @@ Modifier +i+ enables case-insensitive mode:
   /foo/i.match('FOO')
   # => #<MatchData "FOO">
 
-\Method Regexp#casefold? returns whether the mode is case-insensitive.
+Method Regexp#casefold? returns whether the mode is case-insensitive.
 
 === Multiline Mode
 

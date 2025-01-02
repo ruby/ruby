@@ -46,14 +46,14 @@
 # The stream has a _position_, which is the index of an entry in the directory:
 #
 # - The initial position is zero (before the first entry).
-# - \Method #tell (aliased as #pos) returns the position.
-# - \Method #pos= sets the position (but ignores a value outside the stream),
+# - Method #tell (aliased as #pos) returns the position.
+# - Method #pos= sets the position (but ignores a value outside the stream),
 #   and returns the position.
-# - \Method #seek is like #pos=, but returns +self+ (convenient for chaining).
-# - \Method #read, if not at end-of-stream, reads the next entry and increments
+# - Method #seek is like #pos=, but returns +self+ (convenient for chaining).
+# - Method #read, if not at end-of-stream, reads the next entry and increments
 #   the position;
 #   if at end-of-stream, does not increment the position.
-# - \Method #rewind sets the position to zero.
+# - Method #rewind sets the position to zero.
 #
 # Examples (using the {simple file tree}[rdoc-ref:Dir@About+the+Examples]):
 #

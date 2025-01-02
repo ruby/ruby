@@ -3097,10 +3097,10 @@ iseqw_s_of(VALUE klass, VALUE body)
  *     InstructionSequence.disasm(body) -> str
  *     InstructionSequence.disassemble(body) -> str
  *
- *  Takes +body+, a Method or Proc object, and returns a String with the
- *  human readable instructions for +body+.
+ *  Takes +body+, a +Method+ or +Proc+ object, and returns a +String+
+ *  with the human readable instructions for +body+.
  *
- *  For a Method object:
+ *  For a +Method+ object:
  *
  *    # /tmp/method.rb
  *    def hello
@@ -3120,7 +3120,7 @@ iseqw_s_of(VALUE klass, VALUE body)
  *    0013 trace            16                                              (   3)
  *    0015 leave                                                            (   2)
  *
- *  For a Proc:
+ *  For a +Proc+ object:
  *
  *    # /tmp/proc.rb
  *    p = proc { num = 1 + 2 }

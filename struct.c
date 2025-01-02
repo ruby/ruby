@@ -587,7 +587,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  A subclass returned by Struct.new has these singleton methods:
  *
- *  - \Method <tt>::new </tt> creates an instance of the subclass:
+ *  - Method <tt>::new </tt> creates an instance of the subclass:
  *
  *      Foo.new          # => #<struct Struct::Foo foo=nil, bar=nil>
  *      Foo.new(0)       # => #<struct Struct::Foo foo=0, bar=nil>
@@ -600,12 +600,12 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(foo: 0, bar: 1, baz: 2)
  *      # Raises ArgumentError: unknown keywords: baz
  *
- *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
+ *  - Method <tt>:inspect</tt> returns a string representation of the subclass:
  *
  *      Foo.inspect
  *      # => "Struct::Foo"
  *
- *  - \Method <tt>::members</tt> returns an array of the member names:
+ *  - Method <tt>::members</tt> returns an array of the member names:
  *
  *      Foo.members # => [:foo, :bar]
  *

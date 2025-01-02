@@ -409,7 +409,7 @@ not just the part after the point of failure.
 
 ## Raising an \Exception
 
-\Method Kernel#raise raises an exception.
+Method Kernel#raise raises an exception.
 
 ## Custom Exceptions
 

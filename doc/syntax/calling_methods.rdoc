@@ -30,7 +30,7 @@ NoMethodError.
 You may also use <code>::</code> to designate a receiver, but this is rarely
 used due to the potential for confusion with <code>::</code> for namespaces.
 
-=== Chaining \Method Calls
+=== Chaining Method Calls
 
 You can "chain" method calls by immediately following one method call with another.
 

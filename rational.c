@@ -2715,7 +2715,7 @@ nurat_s_convert(int argc, VALUE *argv, VALUE klass)
  *
  * You can convert certain objects to Rationals with:
  *
- * - \Method #Rational.
+ * - Method #Rational.
  *
  * Examples
  *

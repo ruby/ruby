@@ -36,7 +36,7 @@ Other characters, such as the Euro symbol, are multi-byte:
 
 Ruby encodings are defined by constants in class \Encoding.
 There can be only one instance of \Encoding for each of these constants.
-\Method Encoding.list returns an array of \Encoding objects (one for each constant):
+Method Encoding.list returns an array of \Encoding objects (one for each constant):
 
   Encoding.list.size        # => 103
   Encoding.list.first.class # => Encoding
@@ -45,7 +45,7 @@ There can be only one instance of \Encoding for each of these constants.
 
 === Names and Aliases
 
-\Method Encoding#name returns the name of an \Encoding:
+Method Encoding#name returns the name of an \Encoding:
 
   Encoding::ASCII_8BIT.name  # => "ASCII-8BIT"
   Encoding::WINDOWS_31J.name # => "Windows-31J"
@@ -58,29 +58,29 @@ method Encoding#names returns an array containing the name and all aliases:
   Encoding::WINDOWS_31J.names
   #=> ["Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK"]
 
-\Method Encoding.aliases returns a hash of all alias/name pairs:
+Method Encoding.aliases returns a hash of all alias/name pairs:
 
   Encoding.aliases.size # => 71
   Encoding.aliases.take(3)
   # => [["BINARY", "ASCII-8BIT"], ["CP437", "IBM437"], ["CP720", "IBM720"]]
 
-\Method Encoding.name_list returns an array of all the encoding names and aliases:
+Method Encoding.name_list returns an array of all the encoding names and aliases:
 
   Encoding.name_list.size # => 175
   Encoding.name_list.take(3)
   # => ["ASCII-8BIT", "UTF-8", "US-ASCII"]
 
-\Method +name_list+ returns more entries than method +list+
+Method +name_list+ returns more entries than method +list+
 because it includes both the names and their aliases.
 
-\Method Encoding.find returns the \Encoding for a given name or alias, if it exists:
+Method Encoding.find returns the \Encoding for a given name or alias, if it exists:
 
   Encoding.find("US-ASCII")       # => #<Encoding:US-ASCII>
   Encoding.find("US-ASCII").class # => Encoding
 
 === Default Encodings
 
-\Method Encoding.find, above, also returns a default \Encoding
+Method Encoding.find, above, also returns a default \Encoding
 for each of these special names:
 
 - +external+: the default external \Encoding:
@@ -100,27 +100,27 @@ for each of these special names:
 
     Encoding.find("filesystem") # => #<Encoding:UTF-8>
 
-\Method Encoding.default_external returns the default external \Encoding:
+Method Encoding.default_external returns the default external \Encoding:
 
   Encoding.default_external # => #<Encoding:UTF-8>
 
-\Method Encoding.default_external= sets that value:
+Method Encoding.default_external= sets that value:
 
   Encoding.default_external = 'US-ASCII' # => "US-ASCII"
   Encoding.default_external              # => #<Encoding:US-ASCII>
 
-\Method Encoding.default_internal returns the default internal \Encoding:
+Method Encoding.default_internal returns the default internal \Encoding:
 
   Encoding.default_internal # => nil
 
-\Method Encoding.default_internal= sets the default internal \Encoding:
+Method Encoding.default_internal= sets the default internal \Encoding:
 
   Encoding.default_internal = 'US-ASCII' # => "US-ASCII"
   Encoding.default_internal              # => #<Encoding:US-ASCII>
 
 === Compatible Encodings
 
-\Method Encoding.compatible? returns whether two given objects are encoding-compatible
+Method Encoding.compatible? returns whether two given objects are encoding-compatible
 (that is, whether they can be concatenated);
 returns the \Encoding of the concatenated string, or +nil+ if incompatible:
 
@@ -248,7 +248,7 @@ For an \IO or \File object, the external encoding may be set by:
 
 For an \IO, \File, \ARGF, or \StringIO object, the external encoding may be set by:
 
-- \Methods +set_encoding+ or (except for \ARGF) +set_encoding_by_bom+.
+- Methods +set_encoding+ or (except for \ARGF) +set_encoding_by_bom+.
 
 === Internal \Encoding
 
@@ -274,7 +274,7 @@ For an \IO or \File object, the internal encoding may be set by:
 
 For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set by:
 
-- \Method +set_encoding+.
+- Method +set_encoding+.
 
 == Script \Encoding
 

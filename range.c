@@ -2582,7 +2582,7 @@ range_overlap(VALUE range, VALUE other)
  *  r = (...2) # => nil...2
  *  a[r]       # => [1, 2]
  *
- * \Method +each+ for a beginless range raises an exception.
+ * Method +each+ for a beginless range raises an exception.
  *
  * == Endless Ranges
  *
@@ -2612,7 +2612,7 @@ range_overlap(VALUE range, VALUE other)
  *   r = (2..) # => 2..
  *   a[r]      # => [3, 4]
  *
- * \Method +each+ for an endless range calls the given block indefinitely:
+ * Method +each+ for an endless range calls the given block indefinitely:
  *
  *   a = []
  *   r = (1..)

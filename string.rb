@@ -12,7 +12,7 @@
 #
 # You can convert certain objects to Strings with:
 #
-# - \Method #String.
+# - Method #String.
 #
 # Some +String+ methods modify +self+.
 # Typically, a method whose name ends with <tt>!</tt> modifies +self+

@@ -13,6 +13,7 @@ exclude:
 - .gemspec
 
 autolink_excluded_words:
+- Method
 - Process
 - Ruby
 - Set

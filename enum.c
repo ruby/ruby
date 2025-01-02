@@ -3912,7 +3912,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    e.next # => [2, [6, 7, 8]]
  *    e.next # => [3, [9, 10]]
  *
- *  \Method +chunk+ is especially useful for an enumerable that is already sorted.
+ *  Method +chunk+ is especially useful for an enumerable that is already sorted.
  *  This example counts words for each initial letter in a large array of words:
  *
  *    # Get sorted words from a web page.

@@ -926,7 +926,7 @@ num_negative_p(VALUE num)
  *
  *  You can convert certain objects to Floats with:
  *
- *  - \Method #Float.
+ *  - Method #Float.
  *
  *  == What's Here
  *
@@ -1521,7 +1521,7 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *  \Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
+ *  Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
  *  while <tt>==</tt> does not.
  *
  */
@@ -3539,7 +3539,7 @@ rb_num2ull(VALUE val)
  *
  * You can convert certain objects to Integers with:
  *
- * - \Method #Integer.
+ * - Method #Integer.
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.

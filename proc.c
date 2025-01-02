@@ -1787,7 +1787,7 @@ method_entry_defined_class(const rb_method_entry_t *me)
  *
  * Document-class: Method
  *
- *  Method objects are created by Object#method, and are associated
+ *  +Method+ objects are created by Object#method, and are associated
  *  with a particular object (not just with a class).  They may be
  *  used to invoke the method within the object, and as a block
  *  associated with an iterator.  They may also be unbound from one
@@ -2046,7 +2046,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     obj.method(sym)    -> method
  *
  *  Looks up the named method as a receiver in <i>obj</i>, returning a
- *  Method object (or raising NameError). The Method object acts as a
+ *  +Method+ object (or raising NameError). The +Method+ object acts as a
  *  closure in <i>obj</i>'s object instance, so instance variables and
  *  the value of <code>self</code> remain available.
  *
@@ -2067,7 +2067,7 @@ obj_method(VALUE obj, VALUE vid, int scope)
  *     m = l.method("hello")
  *     m.call   #=> "Hello, @iv = Fred"
  *
- *  Note that Method implements <code>to_proc</code> method, which
+ *  Note that +Method+ implements <code>to_proc</code> method, which
  *  means it can be used with iterators.
  *
  *     [ 1, 2, 3 ].each(&method(:puts)) # => prints 3 lines to stdout
@@ -2566,7 +2566,7 @@ rb_method_call_with_block(int argc, const VALUE *argv, VALUE method, VALUE passe
  *
  * Document-class: UnboundMethod
  *
- *  Ruby supports two forms of objectified methods. Class Method is
+ *  Ruby supports two forms of objectified methods. Class +Method+ is
  *  used to represent methods that are associated with a particular
  *  object: these method objects are bound to that object. Bound
  *  method objects for an object can be created using Object#method.
@@ -3407,7 +3407,7 @@ extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_ow
  * call-seq:
  *   meth.super_method  -> method
  *
- * Returns a Method of superclass which would be called when super is used
+ * Returns a +Method+ of superclass which would be called when super is used
  * or nil if there is no method on superclass.
  */
 
@@ -4201,7 +4201,6 @@ proc_ruby2_keywords(VALUE procval)
  * a proc by the <code>&</code> operator, and therefore can be
  * consumed by iterators.
  *
-
  *      class Greeter
  *        def initialize(greeting)
  *          @greeting = greeting
@@ -4217,8 +4216,8 @@ proc_ruby2_keywords(VALUE procval)
  *      ["Bob", "Jane"].map(&hi)    #=> ["Hi, Bob!", "Hi, Jane!"]
  *      ["Bob", "Jane"].map(&hey)   #=> ["Hey, Bob!", "Hey, Jane!"]
  *
- * Of the Ruby core classes, this method is implemented by Symbol,
- * Method, and Hash.
+ * Of the Ruby core classes, this method is implemented by +Symbol+,
+ * +Method+, and +Hash+.
  *
  *      :to_s.to_proc.call(1)           #=> "1"
  *      [1, 2].map(&:to_s)              #=> ["1", "2"]
@@ -4374,7 +4373,6 @@ proc_ruby2_keywords(VALUE procval)
  *     #                    ^~
  *
  */
-
 
 void
 Init_Proc(void)

@@ -6703,7 +6703,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  You can convert certain objects to Hashes with:
  *
- *  - \Method #Hash.
+ *  - Method #Hash.
  *
  *  You can create a +Hash+ by calling method Hash.new.
  *
