@@ -37,14 +37,18 @@ assert_equal "ok", %q{
 }
 
 # test discarding extra yield arguments
-assert_equal "2210150001501015", %q{
+assert_equal "22131300500015901015", %q{
   def splat_kw(ary) = yield *ary, a: 1
 
   def splat(ary) = yield *ary
 
-  def kw = yield 1, 2, a: 0
+  def kw = yield 1, 2, a: 3
+
+  def kw_only = yield a: 0
 
   def simple = yield 0, 1
+
+  def none = yield
 
   def calls
     [
@@ -52,12 +56,16 @@ assert_equal "2210150001501015", %q{
       splat([1, 1, 2]) { |y, opt = raise| opt + y},
       splat_kw([0, 1]) { |a:| a },
       kw { |a:| a },
-      kw { |a| a },
+      kw { |one| one },
+      kw { |one, a:| a },
+      kw_only { |a:| a },
+      kw_only { |a: 1| a },
       simple { 5.itself },
       simple { |a| a },
       simple { |opt = raise| opt },
       simple { |*rest| rest },
       simple { |opt_kw: 5| opt_kw },
+      none { |a: 9| a },
       # autosplat ineractions
       [0, 1, 2].yield_self { |a, b| [a, b] },
       [0, 1, 2].yield_self { |a, opt = raise| [a, opt] },
