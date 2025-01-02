@@ -7862,7 +7862,7 @@ static VALUE popen_finish(VALUE port, VALUE klass);
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
  *  - Options for Kernel#spawn.
  *
- *  <b>Forked \Process</b>
+ *  <b>Forked Process</b>
  *
  *  When argument +cmd+ is the 1-character string <tt>'-'</tt>, causes the process to fork:
  *    IO.popen('-') do |pipe|

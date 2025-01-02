@@ -5914,7 +5914,7 @@ rb_getpwdiruid(void)
  *  The Process::Sys module contains UID and GID
  *  functions which provide direct bindings to the system calls of the
  *  same names instead of the more-portable versions of the same
- *  functionality found in the Process,
+ *  functionality found in the +Process+,
  *  Process::UID, and Process::GID modules.
  */
 
@@ -8765,7 +8765,7 @@ proc_warmup(VALUE _)
  * \Module +Process+ represents a process in the underlying operating system.
  * Its methods support management of the current process and its child processes.
  *
- * == \Process Creation
+ * == Process Creation
  *
  * Each of the following methods executes a given command in a new process or subshell,
  * or multiple commands in new processes and/or subshells.
@@ -9012,7 +9012,7 @@ proc_warmup(VALUE _)
  *
  *   0644
  *
- * ==== \Process Groups (+:pgroup+ and +:new_pgroup+)
+ * ==== Process Groups (+:pgroup+ and +:new_pgroup+)
  *
  * By default, the new process belongs to the same
  * {process group}[https://en.wikipedia.org/wiki/Process_group]
@@ -9146,7 +9146,7 @@ proc_warmup(VALUE _)
  * - ::waitall: Waits for all child processes to exit;
  *   returns their process IDs and statuses.
  *
- * === \Process Groups
+ * === Process Groups
  *
  * - ::getpgid: Returns the process group ID for a process.
  * - ::getpriority: Returns the scheduling priority
