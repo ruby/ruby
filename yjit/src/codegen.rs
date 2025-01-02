@@ -7561,7 +7561,7 @@ fn gen_send_iseq(
     let block_arg_type = exit_if_unsupported_block_arg_type(jit, asm, block_arg)?;
 
     // Bail if we can't drop extra arguments for a yield by just popping them
-    if supplying_kws && arg_setup_block && argc > (kw_arg_num + required_num + opt_num) {
+    if supplying_kws && arg_setup_block && argc > (required_num + opt_num) {
         gen_counter_incr(jit, asm, Counter::send_iseq_complex_discard_extras);
         return None;
     }
