@@ -16,5 +16,5 @@ gem "uri", "~> 0.13.0"
 gem "logger", "~> 1.6.5"
 
 group :doc do
-  gem "nronn", "~> 0.11.1", platform: :ruby
+  gem "ronn-ng", "~> 0.10.1", platform: :ruby
 end
