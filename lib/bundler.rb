@@ -547,15 +547,7 @@ module Bundler
     def load_gemspec_uncached(file, validate = false)
       path = Pathname.new(file)
       contents = read_file(file)
-      spec = if contents.start_with?("---") # YAML header
-        eval_yaml_gemspec(path, contents)
-      else
-        # Eval the gemspec from its parent directory, because some gemspecs
-        # depend on "./" relative paths.
-        SharedHelpers.chdir(path.dirname.to_s) do
-          eval_gemspec(path, contents)
-        end
-      end
+      spec = eval_gemspec(path, contents)
       return unless spec
       spec.loaded_from = path.expand_path.to_s
       Bundler.rubygems.validate(spec) if validate
@@ -657,12 +649,18 @@ module Bundler
       Kernel.require "psych"
 
       Gem::Specification.from_yaml(contents)
-    rescue ::Psych::SyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
-      eval_gemspec(path, contents)
     end
 
     def eval_gemspec(path, contents)
-      eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
+      if contents.start_with?("---") # YAML header
+        eval_yaml_gemspec(path, contents)
+      else
+        # Eval the gemspec from its parent directory, because some gemspecs
+        # depend on "./" relative paths.
+        SharedHelpers.chdir(path.dirname.to_s) do
+          eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
+        end
+      end
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 
