@@ -1376,6 +1376,14 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_for_locations
+      node = ast_parse("for a in b; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 3], [1, 6, 1, 8], nil, [1, 12, 1, 15]])
+
+      node = ast_parse("for a in b do; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 3], [1, 6, 1, 8], [1, 11, 1, 13], [1, 15, 1, 18]])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
