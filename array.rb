@@ -71,7 +71,7 @@ class Array
   #
   # The order of the result array is unrelated to the order of +self+.
   #
-  # Returns a new empty +Array+ if +self+ is empty:
+  # Returns a new empty array if +self+ is empty:
   #
   #   [].sample(4) # => []
   #
