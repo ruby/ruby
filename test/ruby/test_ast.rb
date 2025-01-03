@@ -1384,6 +1384,14 @@ dummy
       assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 5], [1, 1, 1, 2], nil])
     end
 
+    def test_lambda_locations
+      node = ast_parse("-> (a, b) { foo }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 2], [1, 10, 1, 11], [1, 16, 1, 17]])
+
+      node = ast_parse("-> (a, b) do foo end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
+    end
+
     def test_if_locations
       node = ast_parse("if cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 25], [1, 0, 1, 2], [1, 8, 1, 12], [1, 22, 1, 25]])
