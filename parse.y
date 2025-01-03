@@ -2774,7 +2774,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
 %type <node_args> block_param opt_block_param block_param_def
-%type <node_kw_arg> f_kw f_block_kw
 %type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
@@ -2939,15 +2938,29 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
-%rule f_kwarg(kw) <node_kw_arg>
-                : kw
+%rule f_kw(value) <node_kw_arg>: f_label value
+                                    {
+                                        p->ctxt.in_argdef = 1;
+                                        $$ = new_kw_arg(p, assignable(p, $f_label, $value, &@$), &@$);
+                                    /*% ripper: [$:$, $:value] %*/
+                                    }
+                                | f_label
+                                    {
+                                        p->ctxt.in_argdef = 1;
+                                        $$ = new_kw_arg(p, assignable(p, $f_label, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
+                                    /*% ripper: [$:$, 0] %*/
+                                    }
+                                ;
+
+%rule f_kwarg(value) <node_kw_arg>
+                : f_kw(value)
                     {
-                        $$ = $kw;
+                        $$ = $f_kw;
                     /*% ripper: rb_ary_new3(1, $:1) %*/
                     }
-                | f_kwarg(kw) ',' kw
+                | f_kwarg(value) ',' f_kw(value)
                     {
-                        $$ = kwd_append($f_kwarg, $kw);
+                        $$ = kwd_append($f_kwarg, $f_kw);
                     /*% ripper: rb_ary_push($:1, $:3) %*/
                     }
                 ;
@@ -4983,12 +4996,12 @@ f_any_kwrest	: f_kwrest
 
 f_eq		: {p->ctxt.in_argdef = 0;} '=';
 
-block_args_tail	: f_kwarg(f_block_kw) ',' f_kwrest opt_f_block_arg
+block_args_tail	: f_kwarg(primary_value) ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: [$:1, $:3, $:4] %*/
                     }
-                | f_kwarg(f_block_kw) opt_f_block_arg
+                | f_kwarg(primary_value) opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: [$:1, Qnil, $:2] %*/
@@ -6363,12 +6376,12 @@ f_arglist	: f_paren_args
                     }
                 ;
 
-args_tail	: f_kwarg(f_kw) ',' f_kwrest opt_f_block_arg
+args_tail	: f_kwarg(arg_value) ',' f_kwrest opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, $3, $4, &@3);
                     /*% ripper: [$:1, $:3, $:4] %*/
                     }
-                | f_kwarg(f_kw) opt_f_block_arg
+                | f_kwarg(arg_value) opt_f_block_arg
                     {
                         $$ = new_args_tail(p, $1, 0, $2, &@1);
                     /*% ripper: [$:1, Qnil, $:2] %*/
@@ -6600,34 +6613,6 @@ f_label 	: tLABEL
                         /*% ripper: $:1 %*/
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
-                    }
-                ;
-
-f_kw		: f_label arg_value
-                    {
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
-                    /*% ripper: [$:$, $:2] %*/
-                    }
-                | f_label
-                    {
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: [$:$, 0] %*/
-                    }
-                ;
-
-f_block_kw	: f_label primary_value
-                    {
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, $2, &@$), &@$);
-                    /*% ripper: [$:$, $:2] %*/
-                    }
-                | f_label
-                    {
-                        p->ctxt.in_argdef = 1;
-                        $$ = new_kw_arg(p, assignable(p, $1, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                    /*% ripper: [$:$, 0] %*/
                     }
                 ;
 
