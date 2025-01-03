@@ -1,39 +1,39 @@
+# :markup: markdown
+
 class Hash
   # call-seq:
-  #    Hash.new(default_value = nil) -> new_hash
-  #    Hash.new(default_value = nil, capacity: size) -> new_hash
-  #    Hash.new {|hash, key| ... } -> new_hash
-  #    Hash.new(capacity: size) {|hash, key| ... } -> new_hash
+  #   Hash.new(default_value = nil, capacity: 0) {|self, key| ... } -> new_hash
   #
-  # Returns a new empty +Hash+ object.
+  # Returns a new empty \Hash object;
+  # initializes `self.default` to `default_value`,
+  # which is the value to be returned by method `#[key]` if the entry does not exist:
   #
-  # The initial default value and initial default proc for the new hash
-  # depend on which form above was used. See {Default Values}[rdoc-ref:Hash@Default+Values].
+  # ```
+  # h = Hash.new # => {}
+  # h.default    # => nil
+  # h[:nosuch]   # => nil
+  # ```
   #
-  # If neither an argument nor a block is given,
-  # initializes both the default value and the default proc to <tt>nil</tt>:
-  #   h = Hash.new
-  #   h.default # => nil
-  #   h.default_proc # => nil
+  # With no block given, initializes `self.default_proc` to `nil`:
   #
-  # If argument <tt>default_value</tt> is given but no block is given,
-  # initializes the default value to the given <tt>default_value</tt>
-  # and the default proc to <tt>nil</tt>:
-  #   h = Hash.new(false)
-  #   h.default # => false
-  #   h.default_proc # => nil
+  # ```
+  # Hash.new.default_proc # => nil
+  # ```
   #
-  # If a block is given but no <tt>default_value</tt>, stores the block as the default proc
-  # and sets the default value to <tt>nil</tt>:
-  #   h = Hash.new {|hash, key| "Default value for #{key}" }
-  #   h.default # => nil
-  #   h.default_proc.class # => Proc
-  #   h[:nosuch] # => "Default value for nosuch"
+  # With a block given, initializes `self.default_proc` to a new Proc containing the block's code:
   #
-  # If both a block and a <tt>default_value</tt> are given, raises an +ArgumentError+
+  # ```
+  # h = Hash.new {|hash, key| "Hash #{hash}: Default value for #{key}" }
+  # h.default_proc.class # => Proc
+  # h[:nosuch]           # => "Hash {}: Default value for nosuch"
+  # ```
   #
-  # If the optional keyword argument +capacity+ is given, the hash will be allocated
-  # with enough capacity to accommodate this many keys without having to be resized.
+  # If optional keyword argument `capacity` is given with a positive integer value `n`,
+  # initializes the hash with enough capacity to accommodate `n` keys without having to be resized.
+  #
+  # Raises ArgumentError if both `default_value` and a block are given.
+  #
+  # See also [Methods for Creating a Hash](rdoc-ref:Hash@Methods+for+Creating+a+Hash).
   def initialize(ifnone = (ifnone_unset = true), capacity: 0, &block)
     Primitive.rb_hash_init(capacity, ifnone_unset, ifnone, block)
   end
