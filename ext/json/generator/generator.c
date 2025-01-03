@@ -96,6 +96,73 @@ static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
     raise_generator_error_str(invalid_object, str);
 }
 
+// 0 - single byte char that don't need to be escaped.
+// (x | 8) - char that needs to be escaped.
+static const unsigned char CHAR_LENGTH_MASK = 7;
+
+static const unsigned char escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static const unsigned char ascii_only_escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Continuation byte
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    // First byte of a  2-byte code point
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    // First byte of a 3-byte code point
+     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    //First byte of a 4+ byte code point
+     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
+};
+
+static const unsigned char script_safe_escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, // '"' and '/'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Continuation byte
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    // First byte of a 2-byte code point
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    // First byte of a 3-byte code point
+     3, 3,11, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xE2 is the start of \u2028 and \u2029
+    //First byte of a 4+ byte code point
+     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
+};
+
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
  *
@@ -106,13 +173,13 @@ static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
  *
  * - If out_ascii_only: non-ASCII characters (>0x7F)
  *
- * - If out_script_safe: forwardslash, line separator (U+2028), and
+ * - If script_safe: forwardslash (/), line separator (U+2028), and
  *   paragraph separator (U+2029)
  *
  * Everything else (should be UTF-8) is just passed through and
  * appended to the result.
  */
-static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char escape_table[256], bool out_script_safe)
+static inline void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
 {
     const char *hexdig = "0123456789abcdef";
     char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
@@ -131,7 +198,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
 
         if (RB_UNLIKELY(ch_len)) {
             switch (ch_len) {
-                case 1: {
+                case 9: {
                     FLUSH_POS(1);
                     switch (ch) {
                         case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
@@ -153,9 +220,9 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
                     }
                     break;
                 }
-                case 3: {
+                case 11: {
                     unsigned char b2 = ptr[pos + 1];
-                    if (RB_UNLIKELY(out_script_safe && ch == 0xE2 && b2 == 0x80)) {
+                    if (RB_UNLIKELY(b2 == 0x80)) {
                         unsigned char b3 = ptr[pos + 2];
                         if (b3 == 0xA8) {
                             FLUSH_POS(3);
@@ -167,6 +234,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
                             break;
                         }
                     }
+                    ch_len = 3;
                     // fallthrough
                 }
                 default:
@@ -186,104 +254,7 @@ static void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const char esca
     RB_GC_GUARD(str);
 }
 
-static const char escape_table[256] = {
-    // ASCII Control Characters
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    // ASCII Characters
-    0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0, // '"'
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0, // '\\'
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    // Continuation byte
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    // First byte of a 2-byte code point
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-    // First byte of a 4-byte code point
-    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-    //First byte of a 4+byte code point
-    4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1,
-};
-
-static const char script_safe_escape_table[256] = {
-    // ASCII Control Characters
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    // ASCII Characters
-    0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1, // '"' and '/'
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0, // '\\'
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    // Continuation byte
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-    // First byte of a 2-byte code point
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
-    // First byte of a 4-byte code point
-    3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
-    //First byte of a 4+byte code point
-    4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1,
-};
-
-static void convert_ASCII_to_JSON(FBuffer *out_buffer, VALUE str, const char escape_table[256])
-{
-    const char *hexdig = "0123456789abcdef";
-    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
-
-    const char *ptr = RSTRING_PTR(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    unsigned long beg = 0, pos;
-
-    for (pos = 0; pos < len;) {
-        unsigned char ch = ptr[pos];
-        /* JSON encoding */
-        if (escape_table[ch]) {
-            if (pos > beg) {
-                fbuffer_append(out_buffer, &ptr[beg], pos - beg);
-            }
-
-            beg = pos + 1;
-            switch (ch) {
-                case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                default:
-                    scratch[2] = '0';
-                    scratch[3] = '0';
-                    scratch[4] = hexdig[(ch >> 4) & 0xf];
-                    scratch[5] = hexdig[ch & 0xf];
-                    fbuffer_append(out_buffer, scratch, 6);
-            }
-        }
-
-        pos++;
-    }
-
-    if (beg < len) {
-        fbuffer_append(out_buffer, &ptr[beg], len - beg);
-    }
-
-    RB_GC_GUARD(str);
-}
-
-static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, const char escape_table[256], bool out_script_safe)
+static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
 {
     const char *hexdig = "0123456789abcdef";
     char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
@@ -301,7 +272,7 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
 
         if (RB_UNLIKELY(ch_len)) {
             switch (ch_len) {
-                case 1: {
+                case 9: {
                     FLUSH_POS(1);
                     switch (ch) {
                         case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
@@ -325,6 +296,8 @@ static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, cons
                 }
                 default: {
                     uint32_t wchar = 0;
+                    ch_len = ch_len & CHAR_LENGTH_MASK;
+
                     switch(ch_len) {
                         case 2:
                             wchar = ptr[pos] & 0x1F;
@@ -935,13 +908,11 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
 
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
-            convert_ASCII_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table);
-            break;
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table, state->script_safe);
+                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
             } else {
-                convert_UTF8_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table, state->script_safe);
+                convert_UTF8_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table);
             }
             break;
         default:
