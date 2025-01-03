@@ -1376,6 +1376,24 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_if_locations
+      node = ast_parse("if cond then 1 else 2 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 25], [1, 0, 1, 2], [1, 8, 1, 12], [1, 22, 1, 25]])
+
+      node = ast_parse("1 if 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4], nil, nil])
+
+      node = ast_parse("if 1; elsif 2; else end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 23], [1, 0, 1, 2], [1, 4, 1, 5], [1, 20, 1, 23]])
+      assert_locations(node.children[-1].children[-1].locations, [[1, 6, 1, 19], [1, 6, 1, 11], [1, 13, 1, 14], [1, 20, 1, 23]])
+
+      node = ast_parse("true ? 1 : 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 12], nil, [1, 9, 1, 10], nil])
+
+      node = ast_parse("case a; in b if c; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 17], [1, 13, 1, 15], nil, nil])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])

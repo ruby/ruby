@@ -239,8 +239,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: if x == 1 then foo else bar end");
         F_NODE(nd_cond, RNODE_IF, "condition expr");
         F_NODE(nd_body, RNODE_IF, "then clause");
-        LAST_NODE;
         F_NODE(nd_else, RNODE_IF, "else clause");
+        F_LOC(if_keyword_loc, RNODE_IF);
+        F_LOC(then_keyword_loc, RNODE_IF);
+        LAST_NODE;
+        F_LOC(end_keyword_loc, RNODE_IF);
         return;
 
       case NODE_UNLESS:
