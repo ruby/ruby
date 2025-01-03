@@ -911,28 +911,36 @@ class Reline::LineEditor
     )
   end
 
-  private def run_for_operators(key, method_symbol, &block)
+  private def run_for_operators(key, method_symbol)
+    # Reject multibyte input (converted to ed_insert) in vi_command mode
+    return if method_symbol == :ed_insert && @config.editing_mode_is?(:vi_command) && !@waiting_proc
+
+    if ARGUMENT_DIGIT_METHODS.include?(method_symbol) && !@waiting_proc
+      wrap_method_call(method_symbol, key, false)
+      return
+    end
+
     if @vi_waiting_operator
-      if VI_MOTIONS.include?(method_symbol)
+      if @waiting_proc || VI_MOTIONS.include?(method_symbol)
         old_byte_pointer = @byte_pointer
         @vi_arg = (@vi_arg || 1) * @vi_waiting_operator_arg
-        block.(true)
+        wrap_method_call(method_symbol, key, true)
         unless @waiting_proc
           byte_pointer_diff = @byte_pointer - old_byte_pointer
           @byte_pointer = old_byte_pointer
-          method_obj = method(@vi_waiting_operator)
-          wrap_method_call(@vi_waiting_operator, method_obj, byte_pointer_diff)
+          __send__(@vi_waiting_operator, byte_pointer_diff)
           cleanup_waiting
         end
       else
         # Ignores operator when not motion is given.
-        block.(false)
+        wrap_method_call(method_symbol, key, false)
         cleanup_waiting
       end
-      @vi_arg = nil
     else
-      block.(false)
+      wrap_method_call(method_symbol, key, false)
     end
+    @vi_arg = nil
+    @kill_ring.process
   end
 
   private def argumentable?(method_obj)
@@ -945,20 +953,23 @@ class Reline::LineEditor
     method_obj and method_obj.parameters.any? { |param| param[0] == :key and param[1] == :inclusive }
   end
 
-  def wrap_method_call(method_symbol, method_obj, key, with_operator = false)
-    if @config.editing_mode_is?(:emacs, :vi_insert) and @vi_waiting_operator.nil?
-      not_insertion = method_symbol != :ed_insert
-      process_insert(force: not_insertion)
+  def wrap_method_call(method_symbol, key, with_operator)
+    if @waiting_proc
+      @waiting_proc.call(key)
+      return
     end
+
+    return unless respond_to?(method_symbol, true)
+    method_obj = method(method_symbol)
     if @vi_arg and argumentable?(method_obj)
-      if with_operator and inclusive?(method_obj)
-        method_obj.(key, arg: @vi_arg, inclusive: true)
+      if inclusive?(method_obj)
+        method_obj.(key, arg: @vi_arg, inclusive: with_operator)
       else
         method_obj.(key, arg: @vi_arg)
       end
     else
-      if with_operator and inclusive?(method_obj)
-        method_obj.(key, inclusive: true)
+      if inclusive?(method_obj)
+        method_obj.(key, inclusive: with_operator)
       else
         method_obj.(key)
       end
@@ -984,50 +995,9 @@ class Reline::LineEditor
       cleanup_waiting unless VI_WAITING_ACCEPT_METHODS.include?(method_symbol) || VI_MOTIONS.include?(method_symbol)
     end
 
-    if @waiting_proc
-      old_byte_pointer = @byte_pointer
-      @waiting_proc.call(key)
-      if @vi_waiting_operator
-        byte_pointer_diff = @byte_pointer - old_byte_pointer
-        @byte_pointer = old_byte_pointer
-        method_obj = method(@vi_waiting_operator)
-        wrap_method_call(@vi_waiting_operator, method_obj, byte_pointer_diff)
-        cleanup_waiting
-      end
-      @kill_ring.process
-      return
-    end
+    process_insert(force: method_symbol != :ed_insert)
 
-    # Reject multibyte input (converted to ed_insert) in vi_command mode
-    return if method_symbol == :ed_insert && @config.editing_mode_is?(:vi_command)
-
-    if method_symbol and respond_to?(method_symbol, true)
-      method_obj = method(method_symbol)
-    end
-    if @vi_arg
-      if ARGUMENT_DIGIT_METHODS.include?(method_symbol)
-        ed_argument_digit(key)
-      else
-        if argumentable?(method_obj)
-          run_for_operators(key, method_symbol) do |with_operator|
-            wrap_method_call(method_symbol, method_obj, key, with_operator)
-          end
-        elsif method_obj
-          wrap_method_call(method_symbol, method_obj, key)
-        end
-        @kill_ring.process
-        @vi_arg = nil
-      end
-    elsif method_obj
-      if method_symbol == :ed_argument_digit
-        wrap_method_call(method_symbol, method_obj, key)
-      else
-        run_for_operators(key, method_symbol) do |with_operator|
-          wrap_method_call(method_symbol, method_obj, key, with_operator)
-        end
-      end
-      @kill_ring.process
-    end
+    run_for_operators(key, method_symbol)
   end
 
   def update(key)
@@ -1049,11 +1019,8 @@ class Reline::LineEditor
       finish
       return
     end
-    @dialogs.each do |dialog|
-      if key.method_symbol == dialog.name
-        return
-      end
-    end
+    return if @dialogs.any? { |dialog| dialog.name == key.method_symbol }
+
     @completion_occurs = false
 
     process_key(key.char, key.method_symbol)
@@ -1413,8 +1380,15 @@ class Reline::LineEditor
 
     insert_text(str)
   end
-  alias_method :ed_digit, :ed_insert
   alias_method :self_insert, :ed_insert
+
+  private def ed_digit(key)
+    if @vi_arg
+      ed_argument_digit(key)
+    else
+      ed_insert(key)
+    end
+  end
 
   private def insert_raw_char(str, arg: 1)
     arg.times do
@@ -1461,7 +1435,14 @@ class Reline::LineEditor
     @byte_pointer = 0
   end
   alias_method :beginning_of_line, :ed_move_to_beg
-  alias_method :vi_zero, :ed_move_to_beg
+
+  private def vi_zero(key)
+    if @vi_arg
+      ed_argument_digit(key)
+    else
+      ed_move_to_beg(key)
+    end
+  end
 
   private def ed_move_to_end(key)
     @byte_pointer = current_line.bytesize

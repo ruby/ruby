@@ -1502,6 +1502,16 @@ class Reline::KeyActor::EmacsTest < Reline::TestCase
     assert_line_around_cursor('abcd', '')
   end
 
+  def test_ed_digit_with_ed_argument_digit
+    input_keys('1' * 30)
+    assert_line_around_cursor('1' * 30, '')
+    input_keys("\M-2", false)
+    input_keys('3')
+    input_keys("\C-h", false)
+    input_keys('4')
+    assert_line_around_cursor('1' * 7 + '4', '')
+  end
+
   def test_halfwidth_kana_width_dakuten
     omit "This test is for UTF-8 but the locale is #{Reline.core.encoding}" if Reline.core.encoding != Encoding::UTF_8
     input_raw_keys('ｶﾞｷﾞｹﾞｺﾞ')
