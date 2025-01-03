@@ -2079,27 +2079,49 @@ module Prism
 
                 escaped_lengths = []
                 normalized_lengths = []
+                # Keeps track of where an unescaped line should start a new token. An unescaped
+                # \n would otherwise be indistinguishable from the actual newline at the end of
+                # of the line. The parser gem only emits a new string node at "real" newlines,
+                # line continuations don't start a new node as well.
+                do_next_tokens = []
 
                 if node.opening.end_with?("'")
                   escaped.each do |line|
                     escaped_lengths << line.bytesize
                     normalized_lengths << chomped_bytesize(line)
+                    do_next_tokens << true
                   end
                 else
                   escaped
-                    .chunk_while { |before, after| before.match?(/(?<!\\)\\\r?\n$/) }
+                    .chunk_while { |before, after| before[/(\\*)\r?\n$/, 1]&.length&.odd? || false }
                     .each do |lines|
                       escaped_lengths << lines.sum(&:bytesize)
                       normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
+                      unescaped_lines_count = lines.sum do |line|
+                        line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? || false }
+                      end
+                      do_next_tokens.concat(Array.new(unescaped_lines_count + 1, false))
+                      do_next_tokens[-1] = true
                     end
                 end
 
                 start_offset = part.location.start_offset
+                current_line = +""
+                current_normalized_length = 0
 
-                unescaped.map.with_index do |unescaped_line, index|
-                  inner_part = builder.string_internal([unescaped_line, srange_offsets(start_offset, start_offset + normalized_lengths.fetch(index, 0))])
-                  start_offset += escaped_lengths.fetch(index, 0)
-                  inner_part
+                unescaped.filter_map.with_index do |unescaped_line, index|
+                  current_line << unescaped_line
+                  current_normalized_length += normalized_lengths.fetch(index, 0)
+
+                  if do_next_tokens[index]
+                    inner_part = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_normalized_length)])
+                    start_offset += escaped_lengths.fetch(index, 0)
+                    current_line = +""
+                    current_normalized_length = 0
+                    inner_part
+                  else
+                    nil
+                  end
                 end
               else
                 [visit(part)]
