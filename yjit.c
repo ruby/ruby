@@ -1252,8 +1252,8 @@ VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log);
-VALUE rb_yjit_parse_custom_config(rb_execution_context_t *ec, VALUE self, VALUE mem_size, VALUE call_threshold);
-VALUE rb_yjit_set_custom_config(rb_execution_context_t *ec, VALUE self, VALUE mem_size, VALUE call_threshold);
+VALUE rb_yjit_parse_custom_config(rb_execution_context_t *ec, VALUE self, VALUE exec_mem_size, VALUE call_threshold);
+VALUE rb_yjit_set_custom_config(rb_execution_context_t *ec, VALUE self, VALUE exec_mem_size, VALUE call_threshold);
 VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self);
 
 // Allow YJIT_C_BUILTIN macro to force --yjit-c-builtin
@@ -1265,11 +1265,12 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 
 // Convert config input from Ruby values to C values
-VALUE rb_yjit_parse_custom_config(rb_execution_context_t *ec, VALUE self, VALUE mem_size, VALUE call_threshold) {
-    VALUE mem_size_val = NIL_P(mem_size) ? Qnil : NUM2LONG(mem_size);
+VALUE rb_yjit_parse_custom_config(rb_execution_context_t *ec, VALUE self, VALUE exec_mem_size, VALUE call_threshold) {
+    VALUE exec_mem_size_val = NIL_P(exec_mem_size) ? Qnil : NUM2LONG(exec_mem_size);
     VALUE call_threshold_val = NIL_P(call_threshold) ? Qnil : NUM2LONG(call_threshold);
 
-    rb_yjit_set_custom_config(ec, self, mem_size_val, call_threshold_val);
+    rb_yjit_set_custom_config(ec, self, exec_mem_size_val, call_threshold_val);
+    return Qtrue;
 }
 
 // Preprocessed yjit.rb generated during build

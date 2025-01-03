@@ -221,12 +221,12 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
 
 /// Returning true if YJIT config has been set
 #[no_mangle]
-pub extern "C" fn rb_yjit_set_custom_config(_ec: EcPtr, _ruby_self: VALUE, mem_size: VALUE, call_threshold: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_set_custom_config(_ec: EcPtr, _ruby_self: VALUE, exec_mem_size: VALUE, call_threshold: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
-        let mem_size_option = if mem_size.nil_p() { None } else { Some(mem_size.as_usize()) };
+        let exec_mem_size_option = if exec_mem_size.nil_p() { None } else { Some(exec_mem_size.as_usize()) };
         let call_threshold_option = if call_threshold.nil_p() { None } else {Some(call_threshold.as_u64()) };
 
-        set_config(mem_size_option, call_threshold_option);
+        set_config(exec_mem_size_option, call_threshold_option);
         Qtrue
     })
 }

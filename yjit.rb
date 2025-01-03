@@ -44,17 +44,17 @@ module RubyVM::YJIT
   #     * `false`: Don't enable the log.
   #     * `true`: Enable the log. Print log at exit.
   #     * `:quiet`: Enable the log. Do not print log at exit.
-  def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
+  def self.enable(stats: false, log: false, exec_mem_size: nil, call_threshold: nil)
     return false if enabled?
 
-    if mem_size.nil? && call_threshold.nil?
+    if exec_mem_size.nil? && call_threshold.nil?
       # Proceed with original enable process
       at_exit { print_and_dump_stats } if stats
       call_yjit_hooks
       Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
     else
       # Call helper function for custom configuration
-      enable_with_custom_config(stats, log, mem_size, call_threshold)
+      enable_with_custom_config(stats, log, exec_mem_size, call_threshold)
     end
   end
 
@@ -261,9 +261,9 @@ module RubyVM::YJIT
     # :stopdoc:
     private
 
-    def enable_with_custom_config(stats, log, mem_size, call_threshold)
-      validate_config_params(mem_size, call_threshold)
-      config_success = Primitive.rb_yjit_parse_custom_config(mem_size, call_threshold)
+    def enable_with_custom_config(stats, log, exec_mem_size, call_threshold)
+      validate_config_params(exec_mem_size, call_threshold)
+      config_success = Primitive.rb_yjit_parse_custom_config(exec_mem_size, call_threshold)
 
       unless config_success
         warn 'YJIT custom configuration failed to get set. YJIT will not be enabled.'
@@ -277,9 +277,9 @@ module RubyVM::YJIT
       false
     end
 
-    def validate_config_params(mem_size, call_threshold)
-      if mem_size && !(mem_size.is_a?(Integer) && mem_size.between?(1, 2048))
-        raise ArgumentError, 'Invalid mem_size: must be an integer between 1 and 2048'
+    def validate_config_params(exec_mem_size, call_threshold)
+      if exec_mem_size && !(exec_mem_size.is_a?(Integer) && exec_mem_size.between?(1, 2048))
+        raise ArgumentError, 'Invalid exec_mem_size: must be an integer between 1 and 2048'
       end
 
       return unless call_threshold

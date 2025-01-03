@@ -190,10 +190,10 @@ macro_rules! get_option_ref {
 pub(crate) use get_option_ref;
 use crate::log::Log;
 
-pub fn set_config(mem_size: Option<usize>, call_threshold: Option<u64>) -> bool {
+pub fn set_config(exec_mem_size: Option<usize>, call_threshold: Option<u64>) -> bool {
     eprintln!("Entering set_config function");
 
-    mem_size.map(|size| {
+    exec_mem_size.map(|size| {
         unsafe { OPTIONS.exec_mem_size = Some(size * 1024 * 1024); }
         eprintln!("Set exec_mem_size to {} bytes ({} MiB)", size * 1024 * 1024, size);
     });
