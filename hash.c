@@ -1795,32 +1795,34 @@ static VALUE rb_hash_to_a(VALUE hash);
  *    Hash[ [*2_element_arrays] ] -> new_hash
  *    Hash[*objects] -> new_hash
  *
- *  Returns a new +Hash+ object populated with the given objects, if any.
+ *  Returns a new \Hash object populated with the given objects, if any.
  *  See Hash::new.
  *
- *  With no argument, returns a new empty +Hash+.
+ *  With no argument given, returns a new empty hash.
  *
- *  When the single given argument is a +Hash+, returns a new +Hash+
- *  populated with the entries from the given +Hash+, excluding the
- *  default value or proc.
+ *  With a single argument given that is a hash,
+ *  returns a new hash initialized with the entries from +hash+
+ *  (but not with its +default+ or +default_proc+):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    Hash[h] # => {:foo=>0, :bar=>1, :baz=>2}
  *
- *  When the single given argument is an Array of 2-element Arrays,
- *  returns a new +Hash+ object wherein each 2-element array forms a
+ *  With a single argument given that is an array of 2-element arrays,
+ *  returns a new hash wherein each given 2-element array forms a
  *  key-value entry:
  *
  *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
  *
- *  When the argument count is an even number;
- *  returns a new +Hash+ object wherein each successive pair of arguments
- *  has become a key-value entry:
+ *  With an even number of arguments given,
+ *  returns a new hash wherein each successive pair of arguments
+ *  is a key-value entry:
  *
  *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
  *
- *  Raises an exception if the argument list does not conform to any
+ *  Raises ArgumentError if the argument list does not conform to any
  *  of the above.
+ *
+ *  See also {Methods for Creating a Hash}[rdoc-ref:Hash@Methods+for+Creating+a+Hash].
  */
 
 static VALUE
