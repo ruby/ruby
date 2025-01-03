@@ -265,6 +265,9 @@ typedef struct RNode_IF {
     struct RNode *nd_cond;
     struct RNode *nd_body;
     struct RNode *nd_else;
+    rb_code_location_t if_keyword_loc;
+    rb_code_location_t then_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_if_t;
 
 typedef struct RNode_UNLESS {
