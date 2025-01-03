@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 # :markup: markdown
 
 # This module allows for introspection of \YJIT, CRuby's just-in-time compiler.
@@ -44,11 +45,18 @@ module RubyVM::YJIT
   #     * `false`: Don't enable the log.
   #     * `true`: Enable the log. Print log at exit.
   #     * `:quiet`: Enable the log. Do not print log at exit.
-  def self.enable(stats: false, log: false)
+  def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
     return false if enabled?
-    at_exit { print_and_dump_stats } if stats
-    call_yjit_hooks
-    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
+
+    if mem_size.nil? && call_threshold.nil?
+      # Proceed with original enable process
+      at_exit { print_and_dump_stats } if stats
+      call_yjit_hooks
+      Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
+    else
+      # Call helper function for custom configuration
+      enable_with_custom_config(stats, log, mem_size, call_threshold)
+    end
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -68,7 +76,8 @@ module RubyVM::YJIT
     # We use nonexistent.def for the file name, otherwise insns.def will be displayed
     # and that information isn't useful in this context.
     RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frame_hash = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
+      frame_hash = { samples: 0, total_samples: 0, edges: {}, name:, file: 'nonexistent.def', line: nil,
+                     lines: {} }
       results[:frames][frame_id] = frame_hash
       frames[frame_id] = frame_hash
     end
@@ -159,7 +168,7 @@ module RubyVM::YJIT
   # See Stackprof documentation for options.
   def self.dump_exit_locations(filename)
     unless trace_exit_locations_enabled?
-      raise ArgumentError, "--yjit-trace-exits must be enabled to use dump_exit_locations."
+      raise ArgumentError, '--yjit-trace-exits must be enabled to use dump_exit_locations.'
     end
 
     File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
@@ -170,7 +179,7 @@ module RubyVM::YJIT
   # If a symbol argument is provided, return only the value for the named stat.
   # If any other type is provided, raises TypeError.
   def self.runtime_stats(key = nil)
-    raise TypeError, "non-symbol given" unless key.nil? || Symbol === key
+    raise TypeError, 'non-symbol given' unless key.nil? || key.is_a?(Symbol)
 
     Primitive.rb_yjit_get_stats(key)
   end
@@ -200,17 +209,17 @@ module RubyVM::YJIT
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
 
-    if !self.enabled?
+    unless enabled?
       warn(
         "YJIT needs to be enabled to produce disasm output, e.g.\n" +
-        "ruby --yjit-call-threshold=1 my_script.rb (see doc/yjit/yjit.md)"
+        'ruby --yjit-call-threshold=1 my_script.rb (see doc/yjit/yjit.md)'
       )
       return nil
     end
 
     disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
 
-    if !disasm_str
+    unless disasm_str
       warn(
         "YJIT disasm is only available when YJIT is built in dev mode, i.e.\n" +
         "./configure --enable-yjit=dev (see doc/yjit/yjit.md)\n"
@@ -225,7 +234,7 @@ module RubyVM::YJIT
 
   # Produce a list of instructions compiled by YJIT for an iseq
   def self.insns_compiled(iseq) # :nodoc:
-    return nil unless self.enabled?
+    return nil unless enabled?
 
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
@@ -243,16 +252,42 @@ module RubyVM::YJIT
   end
 
   # Avoid calling a Ruby method here to not interfere with compilation tests
-  if Primitive.rb_yjit_stats_enabled_p
-    at_exit { print_and_dump_stats }
-  end
+  at_exit { print_and_dump_stats } if Primitive.rb_yjit_stats_enabled_p
 
   # Blocks that are called when YJIT is enabled
   @yjit_hooks = []
 
   class << self
     # :stopdoc:
+
     private
+
+    def enable_with_custom_config(stats, log, mem_size, call_threshold)
+      validate_config_params(mem_size, call_threshold)
+      config_success = Primitive.rb_yjit_parse_custom_config(mem_size, call_threshold)
+
+      unless config_success
+        warn 'YJIT custom configuration failed to get set. YJIT will not be enabled.'
+        return false
+      end
+
+      at_exit { print_and_dump_stats } if stats
+      Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
+    rescue ArgumentError => e
+      warn "YJIT configuration error: #{e.message}. YJIT will not be enabled."
+      false
+    end
+
+    def validate_config_params(mem_size, call_threshold)
+      if mem_size && !(mem_size.is_a?(Integer) && mem_size.between?(1, 2048))
+        raise ArgumentError, 'Invalid mem_size: must be an integer between 1 and 2048'
+      end
+
+      return unless call_threshold
+      return if call_threshold.is_a?(Integer) && call_threshold >= 1
+
+      raise ArgumentError, 'Invalid call_threshold: must be an integer >= 1'
+    end
 
     # Register a block to be called when YJIT is enabled
     def add_yjit_hook(hook)
@@ -263,38 +298,37 @@ module RubyVM::YJIT
     def call_yjit_hooks
       # Skip using builtin methods in Ruby if --yjit-c-builtin is given
       return if Primitive.yjit_c_builtin_p
+
       @yjit_hooks.each(&:call)
       @yjit_hooks.clear
     end
 
     # Print stats and dump exit locations
     def print_and_dump_stats # :nodoc:
-      if Primitive.rb_yjit_print_stats_p
-        _print_stats
-      end
+      _print_stats if Primitive.rb_yjit_print_stats_p
       _dump_locations
     end
 
     def _dump_locations # :nodoc:
       return unless trace_exit_locations_enabled?
 
-      filename = "yjit_exit_locations.dump"
+      filename = 'yjit_exit_locations.dump'
       dump_exit_locations(filename)
 
-      $stderr.puts("YJIT exit locations dumped to `#{filename}`.")
+      warn("YJIT exit locations dumped to `#{filename}`.")
     end
 
     # Print a summary of reasons for adverse performance events (e.g. exits)
     def _print_stats_reasons(stats, out) # :nodoc:
-      print_counters(stats, out: out, prefix: 'send_', prompt: 'method call fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
-      print_counters(stats, out: out, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
-      print_counters(stats, out: out, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
-      print_counters(stats, out: out, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
-      print_counters(stats, out: out, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
+      print_counters(stats, out:, prefix: 'send_', prompt: 'method call fallback reasons: ')
+      print_counters(stats, out:, prefix: 'invokeblock_', prompt: 'invokeblock fallback reasons: ')
+      print_counters(stats, out:, prefix: 'invokesuper_', prompt: 'invokesuper fallback reasons: ')
+      print_counters(stats, out:, prefix: 'guard_send_', prompt: 'method call exit reasons: ')
+      print_counters(stats, out:, prefix: 'guard_invokeblock_', prompt: 'invokeblock exit reasons: ')
+      print_counters(stats, out:, prefix: 'guard_invokesuper_', prompt: 'invokesuper exit reasons: ')
+      print_counters(stats, out:, prefix: 'gbpp_', prompt: 'getblockparamproxy exit reasons: ')
+      print_counters(stats, out:, prefix: 'getivar_', prompt: 'getinstancevariable exit reasons:')
+      print_counters(stats, out:, prefix: 'setivar_', prompt: 'setinstancevariable exit reasons:')
       %w[
         branchif
         branchnil
@@ -319,19 +353,19 @@ module RubyVM::YJIT
         setlocal
         splatkw
       ].each do |insn|
-        print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
+        print_counters(stats, out:, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
       end
-      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (opt_ltlt) exit reasons: ')
-      print_counters(stats, out: out, prefix: 'rshift_', prompt: 'right shift (>>) exit reasons: ')
-      print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
+      print_counters(stats, out:, prefix: 'lshift_', prompt: 'left shift (opt_ltlt) exit reasons: ')
+      print_counters(stats, out:, prefix: 'rshift_', prompt: 'right shift (>>) exit reasons: ')
+      print_counters(stats, out:, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
     end
 
     # Format and print out counters
     def _print_stats(out: $stderr) # :nodoc:
-      stats = runtime_stats()
+      stats = runtime_stats
       return unless Primitive.rb_yjit_stats_enabled_p
 
-      out.puts("***YJIT: Printing YJIT statistics on exit***")
+      out.puts('***YJIT: Printing YJIT statistics on exit***')
 
       _print_stats_reasons(stats, out)
 
@@ -340,112 +374,120 @@ module RubyVM::YJIT
 
       code_region_overhead = stats[:code_region_size] - (stats[:inline_code_size] + stats[:outlined_code_size])
 
-      out.puts "num_send:              " + format_number(13, stats[:num_send])
-      out.puts "num_send_known_class:  " + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
-      out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
-      out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])
-      out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
-      out.puts "num_send_cfunc:        " + format_number_pct(13, stats[:num_send_cfunc], stats[:num_send])
-      out.puts "num_send_cfunc_inline: " + format_number_pct(13, stats[:num_send_cfunc_inline], stats[:num_send_cfunc])
-      out.puts "num_send_iseq:         " + format_number_pct(13, stats[:num_send_iseq], stats[:num_send])
-      out.puts "num_send_iseq_leaf:    " + format_number_pct(13, stats[:num_send_iseq_leaf], stats[:num_send_iseq])
-      out.puts "num_send_iseq_inline:  " + format_number_pct(13, stats[:num_send_iseq_inline], stats[:num_send_iseq])
+      out.puts 'num_send:              ' + format_number(13, stats[:num_send])
+      out.puts 'num_send_known_class:  ' + format_number_pct(13, stats[:num_send_known_class], stats[:num_send])
+      out.puts 'num_send_polymorphic:  ' + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
+      out.puts 'num_send_megamorphic:  ' + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])
+      out.puts 'num_send_dynamic:      ' + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
+      out.puts 'num_send_cfunc:        ' + format_number_pct(13, stats[:num_send_cfunc], stats[:num_send])
+      out.puts 'num_send_cfunc_inline: ' + format_number_pct(13, stats[:num_send_cfunc_inline], stats[:num_send_cfunc])
+      out.puts 'num_send_iseq:         ' + format_number_pct(13, stats[:num_send_iseq], stats[:num_send])
+      out.puts 'num_send_iseq_leaf:    ' + format_number_pct(13, stats[:num_send_iseq_leaf], stats[:num_send_iseq])
+      out.puts 'num_send_iseq_inline:  ' + format_number_pct(13, stats[:num_send_iseq_inline], stats[:num_send_iseq])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
-        out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
-        out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
+        out.puts 'num_send_x86_rel32:    ' + format_number(13, stats[:num_send_x86_rel32])
+        out.puts 'num_send_x86_reg:      ' + format_number(13, stats[:num_send_x86_reg])
       end
-      out.puts "num_getivar_megamorphic: " + format_number(11, stats[:num_getivar_megamorphic])
-      out.puts "num_setivar_megamorphic: " + format_number(11, stats[:num_setivar_megamorphic])
-      out.puts "num_opt_case_megamorphic: " + format_number(10, stats[:num_opt_case_dispatch_megamorphic])
-      out.puts "num_throw:             " + format_number(13, stats[:num_throw])
-      out.puts "num_throw_break:       " + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])
-      out.puts "num_throw_retry:       " + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])
-      out.puts "num_throw_return:      " + format_number_pct(13, stats[:num_throw_return], stats[:num_throw])
-      out.puts "num_lazy_frame_check:  " + format_number(13, stats[:num_lazy_frame_check])
-      out.puts "num_lazy_frame_push:   " + format_number_pct(13, stats[:num_lazy_frame_push], stats[:num_lazy_frame_check])
-      out.puts "lazy_frame_count:      " + format_number(13, stats[:lazy_frame_count])
-      out.puts "lazy_frame_failure:    " + format_number(13, stats[:lazy_frame_failure])
+      out.puts 'num_getivar_megamorphic: ' + format_number(11, stats[:num_getivar_megamorphic])
+      out.puts 'num_setivar_megamorphic: ' + format_number(11, stats[:num_setivar_megamorphic])
+      out.puts 'num_opt_case_megamorphic: ' + format_number(10, stats[:num_opt_case_dispatch_megamorphic])
+      out.puts 'num_throw:             ' + format_number(13, stats[:num_throw])
+      out.puts 'num_throw_break:       ' + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])
+      out.puts 'num_throw_retry:       ' + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])
+      out.puts 'num_throw_return:      ' + format_number_pct(13, stats[:num_throw_return], stats[:num_throw])
+      out.puts 'num_lazy_frame_check:  ' + format_number(13, stats[:num_lazy_frame_check])
+      out.puts 'num_lazy_frame_push:   ' + format_number_pct(13, stats[:num_lazy_frame_push],
+                                                             stats[:num_lazy_frame_check])
+      out.puts 'lazy_frame_count:      ' + format_number(13, stats[:lazy_frame_count])
+      out.puts 'lazy_frame_failure:    ' + format_number(13, stats[:lazy_frame_failure])
 
-      out.puts "iseq_stack_too_large:  " + format_number(13, stats[:iseq_stack_too_large])
-      out.puts "iseq_too_long:         " + format_number(13, stats[:iseq_too_long])
-      out.puts "temp_reg_opnd:         " + format_number(13, stats[:temp_reg_opnd])
-      out.puts "temp_mem_opnd:         " + format_number(13, stats[:temp_mem_opnd])
-      out.puts "temp_spill:            " + format_number(13, stats[:temp_spill])
-      out.puts "bindings_allocations:  " + format_number(13, stats[:binding_allocations])
-      out.puts "bindings_set:          " + format_number(13, stats[:binding_set])
-      out.puts "compilation_failure:   " + format_number(13, compilation_failure) if compilation_failure != 0
-      out.puts "live_iseq_count:       " + format_number(13, stats[:live_iseq_count])
-      out.puts "iseq_alloc_count:      " + format_number(13, stats[:iseq_alloc_count])
-      out.puts "compiled_iseq_entry:   " + format_number(13, stats[:compiled_iseq_entry])
-      out.puts "cold_iseq_entry:       " + format_number_pct(13, stats[:cold_iseq_entry], stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])
-      out.puts "compiled_iseq_count:   " + format_number(13, stats[:compiled_iseq_count])
-      out.puts "compiled_blockid_count:" + format_number(13, stats[:compiled_blockid_count])
-      out.puts "compiled_block_count:  " + format_number(13, stats[:compiled_block_count])
-      out.puts "inline_block_count:    " + format_number_pct(13, stats[:inline_block_count], stats[:compiled_block_count])
-      out.puts "deleted_defer_block_count:" + format_number_pct(10, stats[:deleted_defer_block_count], stats[:compiled_block_count])
+      out.puts 'iseq_stack_too_large:  ' + format_number(13, stats[:iseq_stack_too_large])
+      out.puts 'iseq_too_long:         ' + format_number(13, stats[:iseq_too_long])
+      out.puts 'temp_reg_opnd:         ' + format_number(13, stats[:temp_reg_opnd])
+      out.puts 'temp_mem_opnd:         ' + format_number(13, stats[:temp_mem_opnd])
+      out.puts 'temp_spill:            ' + format_number(13, stats[:temp_spill])
+      out.puts 'bindings_allocations:  ' + format_number(13, stats[:binding_allocations])
+      out.puts 'bindings_set:          ' + format_number(13, stats[:binding_set])
+      out.puts 'compilation_failure:   ' + format_number(13, compilation_failure) if compilation_failure != 0
+      out.puts 'live_iseq_count:       ' + format_number(13, stats[:live_iseq_count])
+      out.puts 'iseq_alloc_count:      ' + format_number(13, stats[:iseq_alloc_count])
+      out.puts 'compiled_iseq_entry:   ' + format_number(13, stats[:compiled_iseq_entry])
+      out.puts 'cold_iseq_entry:       ' + format_number_pct(13, stats[:cold_iseq_entry],
+                                                             stats[:compiled_iseq_entry] + stats[:cold_iseq_entry])
+      out.puts 'compiled_iseq_count:   ' + format_number(13, stats[:compiled_iseq_count])
+      out.puts 'compiled_blockid_count:' + format_number(13, stats[:compiled_blockid_count])
+      out.puts 'compiled_block_count:  ' + format_number(13, stats[:compiled_block_count])
+      out.puts 'inline_block_count:    ' + format_number_pct(13, stats[:inline_block_count],
+                                                             stats[:compiled_block_count])
+      out.puts 'deleted_defer_block_count:' + format_number_pct(10, stats[:deleted_defer_block_count],
+                                                                stats[:compiled_block_count])
       if stats[:compiled_blockid_count] != 0
-        out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
+        out.puts 'versions_per_block:    ' + format_number(13,
+                                                           format('%4.3f',
+                                                                  stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
-      out.puts "max_inline_versions:   " + format_number(13, stats[:max_inline_versions])
-      out.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
+      out.puts 'max_inline_versions:   ' + format_number(13, stats[:max_inline_versions])
+      out.puts 'compiled_branch_count: ' + format_number(13, stats[:compiled_branch_count])
 
-      out.puts "yjit_active_ms:        " + format_number(13, stats[:yjit_active_ns] / 10**6)
-      out.puts "compile_time_ms:       " + format_number_pct(13, stats[:compile_time_ns] / 10**6 , stats[:yjit_active_ns] / 10**6)
-      out.puts "block_next_count:      " + format_number(13, stats[:block_next_count])
-      out.puts "defer_count:           " + format_number(13, stats[:defer_count])
-      out.puts "defer_empty_count:     " + format_number(13, stats[:defer_empty_count])
+      out.puts 'yjit_active_ms:        ' + format_number(13, stats[:yjit_active_ns] / 10**6)
+      out.puts 'compile_time_ms:       ' + format_number_pct(13, stats[:compile_time_ns] / 10**6,
+                                                             stats[:yjit_active_ns] / 10**6)
+      out.puts 'block_next_count:      ' + format_number(13, stats[:block_next_count])
+      out.puts 'defer_count:           ' + format_number(13, stats[:defer_count])
+      out.puts 'defer_empty_count:     ' + format_number(13, stats[:defer_empty_count])
 
-      out.puts "branch_insn_count:     " + format_number(13, stats[:branch_insn_count])
-      out.puts "branch_known_count:    " + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
+      out.puts 'branch_insn_count:     ' + format_number(13, stats[:branch_insn_count])
+      out.puts 'branch_known_count:    ' + format_number_pct(13, stats[:branch_known_count], stats[:branch_insn_count])
 
-      out.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
-      out.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
-      out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
-      out.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
-      out.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
-      out.puts "code_region_overhead:  " + format_number_pct(13, code_region_overhead, stats[:code_region_size])
+      out.puts 'freed_iseq_count:      ' + format_number(13, stats[:freed_iseq_count])
+      out.puts 'invalidation_count:    ' + format_number(13, stats[:invalidation_count])
+      out.puts 'inline_code_size:      ' + format_number(13, stats[:inline_code_size])
+      out.puts 'outlined_code_size:    ' + format_number(13, stats[:outlined_code_size])
+      out.puts 'code_region_size:      ' + format_number(13, stats[:code_region_size])
+      out.puts 'code_region_overhead:  ' + format_number_pct(13, code_region_overhead, stats[:code_region_size])
 
-      out.puts "freed_code_size:       " + format_number(13, stats[:freed_code_size])
-      out.puts "yjit_alloc_size:       " + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
+      out.puts 'freed_code_size:       ' + format_number(13, stats[:freed_code_size])
+      out.puts 'yjit_alloc_size:       ' + format_number(13, stats[:yjit_alloc_size]) if stats.key?(:yjit_alloc_size)
 
       bytes_per_context = stats[:context_data_bytes].fdiv(stats[:num_contexts_encoded])
-      out.puts "context_data_bytes:    " + format_number(13, stats[:context_data_bytes])
-      out.puts "context_cache_bytes:   " + format_number(13, stats[:context_cache_bytes])
-      out.puts "num_contexts_encoded:  " + format_number(13, stats[:num_contexts_encoded])
-      out.puts "bytes_per_context:     " + ("%13.2f" % bytes_per_context)
-      out.puts "context_cache_hit_rate:" + format_number_pct(13, stats[:context_cache_hits], stats[:num_contexts_encoded])
+      out.puts 'context_data_bytes:    ' + format_number(13, stats[:context_data_bytes])
+      out.puts 'context_cache_bytes:   ' + format_number(13, stats[:context_cache_bytes])
+      out.puts 'num_contexts_encoded:  ' + format_number(13, stats[:num_contexts_encoded])
+      out.puts 'bytes_per_context:     ' + ('%13.2f' % bytes_per_context)
+      out.puts 'context_cache_hit_rate:' + format_number_pct(13, stats[:context_cache_hits],
+                                                             stats[:num_contexts_encoded])
 
-      out.puts "live_page_count:       " + format_number(13, stats[:live_page_count])
-      out.puts "freed_page_count:      " + format_number(13, stats[:freed_page_count])
-      out.puts "code_gc_count:         " + format_number(13, stats[:code_gc_count])
-      out.puts "num_gc_obj_refs:       " + format_number(13, stats[:num_gc_obj_refs])
-      out.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
-      out.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
-      out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
-      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count])
-      out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
-      out.puts "yjit_insns_count:      " + format_number(13, stats[:yjit_insns_count])
-      out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
-      out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
+      out.puts 'live_page_count:       ' + format_number(13, stats[:live_page_count])
+      out.puts 'freed_page_count:      ' + format_number(13, stats[:freed_page_count])
+      out.puts 'code_gc_count:         ' + format_number(13, stats[:code_gc_count])
+      out.puts 'num_gc_obj_refs:       ' + format_number(13, stats[:num_gc_obj_refs])
+      out.puts 'object_shape_count:    ' + format_number(13, stats[:object_shape_count])
+      out.puts 'side_exit_count:       ' + format_number(13, stats[:side_exit_count])
+      out.puts 'total_exit_count:      ' + format_number(13, stats[:total_exit_count])
+      out.puts 'total_insns_count:     ' + format_number(13, stats[:total_insns_count])
+      out.puts 'vm_insns_count:        ' + format_number(13, stats[:vm_insns_count])
+      out.puts 'yjit_insns_count:      ' + format_number(13, stats[:yjit_insns_count])
+      out.puts 'ratio_in_yjit:         ' + ('%12.1f' % stats[:ratio_in_yjit]) + '%'
+      out.puts 'avg_len_in_yjit:       ' + ('%13.1f' % stats[:avg_len_in_yjit])
 
-      print_sorted_exit_counts(stats, out: out, prefix: "exit_")
+      print_sorted_exit_counts(stats, out:, prefix: 'exit_')
 
-      print_sorted_method_calls(stats[:cfunc_calls], stats[:num_send_cfunc], out: out, type: 'C')
-      print_sorted_method_calls(stats[:iseq_calls], stats[:num_send_iseq], out: out, type: 'ISEQ')
+      print_sorted_method_calls(stats[:cfunc_calls], stats[:num_send_cfunc], out:, type: 'C')
+      print_sorted_method_calls(stats[:iseq_calls], stats[:num_send_iseq], out:, type: 'ISEQ')
     end
 
     def print_sorted_method_calls(calls, num_calls, out:, type:, how_many: 20, left_pad: 4) # :nodoc:
       return if calls.empty?
 
       # Sort calls by decreasing frequency and keep the top N
-      pairs = calls.map { |k,v| [k, v] }
-      pairs.sort_by! {|pair| -pair[1] }
+      pairs = calls.map { |k, v| [k, v] }
+      pairs.sort_by! { |pair| -pair[1] }
       pairs = pairs[0...how_many]
 
-      top_n_total = pairs.sum { |name, count| count }
+      top_n_total = pairs.sum { |_name, count| count }
       top_n_pct = 100.0 * top_n_total / num_calls
 
-      out.puts "Top-#{pairs.size} most frequent #{type} calls (#{"%.1f" % top_n_pct}% of #{type} calls):"
+      out.puts "Top-#{pairs.size} most frequent #{type} calls (#{'%.1f' % top_n_pct}% of #{type} calls):"
 
       count_width = format_number(0, pairs[0][1]).length
       pairs.each do |name, count|
@@ -460,17 +502,15 @@ module RubyVM::YJIT
       if total_exits > 0
         exits = []
         stats.each do |k, v|
-          if k.start_with?(prefix)
-            exits.push [k.to_s.delete_prefix(prefix), v]
-          end
+          exits.push [k.to_s.delete_prefix(prefix), v] if k.start_with?(prefix)
         end
 
         exits = exits.select { |_name, count| count > 0 }.max_by(how_many) { |_name, count| count }
 
-        top_n_total = exits.sum { |name, count| count }
+        top_n_total = exits.sum { |_name, count| count }
         top_n_exit_pct = 100.0 * top_n_total / total_exits
 
-        out.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
+        out.puts "Top-#{exits.size} most frequent exit ops (#{'%.1f' % top_n_exit_pct}% of exits):"
 
         count_width = format_number(0, exits[0][1]).length
         exits.each do |name, count|
@@ -478,7 +518,7 @@ module RubyVM::YJIT
           out.puts("  #{padded_count}: #{name}")
         end
       else
-        out.puts "total_exits:           " + format_number(13, total_exits)
+        out.puts 'total_exits:           ' + format_number(13, total_exits)
       end
     end
 
@@ -490,7 +530,7 @@ module RubyVM::YJIT
       if counters.empty?
         unless optional
           out.puts(prompt)
-          out.puts("    (all relevant counters are zero)")
+          out.puts('    (all relevant counters are zero)')
         end
         return
       else
@@ -523,7 +563,7 @@ module RubyVM::YJIT
 
       if total != 0
         percentage = number.fdiv(total) * 100
-        formatted_pct = "%4.1f%%" % percentage
+        formatted_pct = '%4.1f%%' % percentage
         "#{padded_count} (#{formatted_pct})"
       else
         "#{padded_count}"
