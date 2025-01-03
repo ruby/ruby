@@ -22,7 +22,6 @@ Gem::Specification.new do |spec|
   spec.metadata["changelog_uri"] = "#{spec.homepage}/releases"
 
   spec.files         = [
-    ".document",
     "Gemfile",
     "LICENSE.txt",
     "README.md",
