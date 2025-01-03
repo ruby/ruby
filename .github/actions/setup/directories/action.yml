@@ -168,7 +168,7 @@ runs:
         echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
 
     - name: clean
-      uses: gacts/run-and-post-run@4683764dd706df847f57b9bed39d08164bcd2690 # v1.4.1
+      uses: gacts/run-and-post-run@d803f6920adc9a47eeac4cb6c93dbc2e2890c684 # v1.4.2
       with:
         working-directory:
         post: |
