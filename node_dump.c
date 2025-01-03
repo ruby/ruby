@@ -835,8 +835,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("regexp literal");
         ANN("format: [string]");
         ANN("example: /foo/");
-        LAST_NODE;
         F_VALUE(string, rb_node_regx_string_val(node), "string");
+        F_LOC(opening_loc, RNODE_REGX);
+        F_LOC(content_loc, RNODE_REGX);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_REGX);
         return;
 
       case NODE_ONCE:

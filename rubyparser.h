@@ -737,6 +737,9 @@ typedef struct RNode_REGX {     /* also RNode_MATCH */
 
     struct rb_parser_string *string;
     int options;
+    rb_code_location_t opening_loc;
+    rb_code_location_t content_loc;
+    rb_code_location_t closing_loc;
 } rb_node_regx_t, rb_node_match_t;
 
 typedef rb_node_dstr_t rb_node_dregx_t;
