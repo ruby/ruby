@@ -7936,10 +7936,11 @@ static inline size_t
 objspace_malloc_size(rb_objspace_t *objspace, void *ptr, size_t hint)
 {
 #ifdef HAVE_MALLOC_USABLE_SIZE
-    return malloc_usable_size(ptr);
-#else
-    return hint;
+    if (!hint) {
+        hint = malloc_usable_size(ptr);
+    }
 #endif
+    return hint;
 }
 
 enum memop_type {
