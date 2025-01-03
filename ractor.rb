@@ -713,6 +713,22 @@ class Ractor
     }
   end
 
+  # Returns ractor's queue size
+  #
+  #    ractor = Ractor.new do
+  #      loop { sleep(1) }
+  #    end
+  #    ractor.queue_size #=> 0
+  #    ractor << "message"
+  #    ractor.queue_size #=> 1
+  #    ractor << "message"
+  #    ractor.queue_size #=> 2
+  def queue_size
+    __builtin_cexpr! %q{
+      ractor_queue_size(RACTOR_PTR(self))
+    }
+  end
+
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
