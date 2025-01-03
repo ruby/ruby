@@ -59,7 +59,6 @@ struct RStruct {
 VALUE rb_struct_init_copy(VALUE copy, VALUE s);
 VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
-static inline const VALUE *rb_struct_const_heap_ptr(VALUE st);
 static inline long RSTRUCT_EMBED_LEN(VALUE st);
 static inline long RSTRUCT_LEN(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
@@ -115,13 +114,6 @@ static inline VALUE
 RSTRUCT_GET(VALUE st, long k)
 {
     return RSTRUCT_CONST_PTR(st)[k];
-}
-
-static inline const VALUE *
-rb_struct_const_heap_ptr(VALUE st)
-{
-    assert(!FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK));
-    return RSTRUCT(st)->as.heap.ptr;
 }
 
 #endif /* INTERNAL_STRUCT_H */
