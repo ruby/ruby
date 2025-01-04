@@ -1233,7 +1233,6 @@ typedef struct rb_parser_config_struct {
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
-    ID (*sym2id)(VALUE sym);
 
     /* String */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
