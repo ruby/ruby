@@ -2795,7 +2795,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> p_case_body p_cases p_top_expr p_top_expr_body
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
-%type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
+%type <node> p_value p_primitive p_primitive_value p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
 %type <id>   keyword_variable user_variable sym operation operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
@@ -5832,44 +5832,36 @@ p_any_kwrest	: p_kwrest
                 ;
 
 p_value 	: p_primitive
-                | p_primitive tDOT2 p_primitive
+                | p_primitive_value tDOT2 p_primitive_value
                     {
-                        value_expr($1);
-                        value_expr($3);
                         $$ = NEW_DOT2($1, $3, &@$);
                     /*% ripper: dot2!($:1, $:3) %*/
                     }
-                | p_primitive tDOT3 p_primitive
+                | p_primitive_value tDOT3 p_primitive_value
                     {
-                        value_expr($1);
-                        value_expr($3);
                         $$ = NEW_DOT3($1, $3, &@$);
                     /*% ripper: dot3!($:1, $:3) %*/
                     }
-                | p_primitive tDOT2
+                | p_primitive_value tDOT2
                     {
-                        value_expr($1);
                         $$ = NEW_DOT2($1, new_nil_at(p, &@2.end_pos), &@$);
                     /*% ripper: dot2!($:1, Qnil) %*/
                     }
-                | p_primitive tDOT3
+                | p_primitive_value tDOT3
                     {
-                        value_expr($1);
                         $$ = NEW_DOT3($1, new_nil_at(p, &@2.end_pos), &@$);
                     /*% ripper: dot3!($:1, Qnil) %*/
                     }
                 | p_var_ref
                 | p_expr_ref
                 | p_const
-                | tBDOT2 p_primitive
+                | tBDOT2 p_primitive_value
                     {
-                        value_expr($2);
                         $$ = NEW_DOT2(new_nil_at(p, &@1.beg_pos), $2, &@$);
                     /*% ripper: dot2!(Qnil, $:2) %*/
                     }
-                | tBDOT3 p_primitive
+                | tBDOT3 p_primitive_value
                     {
-                        value_expr($2);
                         $$ = NEW_DOT3(new_nil_at(p, &@1.beg_pos), $2, &@$);
                     /*% ripper: dot3!(Qnil, $:2) %*/
                     }
@@ -5883,6 +5875,9 @@ p_primitive     : inline_primary
                     }
                 | lambda
                 ;
+
+p_primitive_value	: value_expr(p_primitive)
+                    ;
 
 p_variable	: tIDENTIFIER
                     {
