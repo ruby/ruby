@@ -107,8 +107,6 @@
 #define rb_id2str                p->config->id2str
 #undef ID2SYM
 #define ID2SYM                   p->config->id2sym
-#undef SYM2ID
-#define SYM2ID                   p->config->sym2id
 
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
