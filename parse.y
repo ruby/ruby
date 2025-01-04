@@ -439,7 +439,6 @@ struct local_vars {
 
 typedef struct rb_locations_lambda_body_t {
     NODE *node;
-    YYLTYPE loc;
     YYLTYPE opening_loc;
     YYLTYPE closing_loc;
 } rb_locations_lambda_body_t;
@@ -12843,7 +12842,6 @@ new_locations_lambda_body(struct parser_params* p, NODE *node, const YYLTYPE *lo
 {
     rb_locations_lambda_body_t *body = xcalloc(1, sizeof(rb_locations_lambda_body_t));
     body->node = node;
-    body->loc = *loc;
     body->opening_loc = *opening_loc;
     body->closing_loc = *closing_loc;
     return body;
