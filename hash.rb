@@ -3,8 +3,8 @@ class Hash
   #   Hash.new(default_value = nil, capacity: 0) -> new_hash
   #   Hash.new(capacity: 0) {|self, key| ... } -> new_hash
   #
-  # Returns a new empty \Hash object;
-  # initializes the values of Hash#default and Hash#default_proc,
+  # Returns a new empty \Hash object.
+  # Initializes the values of Hash#default and Hash#default_proc,
   # which determine the value to be returned by method Hash#[] when the entry does not exist.
   #
   # With no block given, initializes Hash#default to the given +default_value+,
