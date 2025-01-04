@@ -1742,6 +1742,14 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yield_kwargs
+    assert_compiles(<<~RUBY, result: 3, no_send_fallbacks: true)
+      def req2kws = yield a: 1, b: 2
+
+      req2kws { |a:, b:| a + b }
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
