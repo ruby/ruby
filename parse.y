@@ -5155,6 +5155,7 @@ lambda		: tLAMBDA[lpar]
                             nd_set_line(RNODE_LAMBDA($$)->nd_body, @body.end_pos.lineno);
                             nd_set_line($$, @args.end_pos.lineno);
                             nd_set_first_loc($$, @1.beg_pos);
+                            xfree($body);
                         }
                     /*% ripper: lambda!($:args, $:body) %*/
                         numparam_pop(p, $numparam);
