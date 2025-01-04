@@ -1,6 +1,6 @@
 class Hash
   # call-seq:
-  #   Hash.new(default_value = nil, capacity: 0)
+  #   Hash.new(default_value = nil, capacity: 0) -> new_hash
   #   Hash.new(capacity: 0) {|self, key| ... } -> new_hash
   #
   # Returns a new empty \Hash object;
