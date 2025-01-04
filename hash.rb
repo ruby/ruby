@@ -16,8 +16,7 @@ class Hash
   #   h = Hash.new(false) # => {}
   #   h.default           # => false
   #
-  # With a block given, initializes Hash#default to +nil+,
-  # and Hash#default_proc to a new Proc containing the block's code:
+  # If a block is given, it sets the +default_proc+ value:
   #
   #   h = Hash.new {|hash, key| "Hash #{hash}: Default value for #{key}" }
   #   h.default      # => nil
