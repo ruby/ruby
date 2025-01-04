@@ -29,7 +29,7 @@ class Hash
   #
   # Raises ArgumentError if both +default_value+ and a block are given.
   #
-  # See also [Methods for Creating a Hash](rdoc-ref:Hash@Methods+for+Creating+a+Hash).
+  # See also {Methods for Creating a Hash}[rdoc-ref:Hash@Methods+for+Creating+a+Hash].
   def initialize(ifnone = (ifnone_unset = true), capacity: 0, &block)
     Primitive.rb_hash_init(capacity, ifnone_unset, ifnone, block)
   end
