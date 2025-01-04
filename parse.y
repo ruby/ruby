@@ -2926,15 +2926,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
-%rule backref_with(value) <node>
-                : backref tOP_ASGN lex_ctxt value
-                    {
-                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $1);
-                        $$ = NEW_ERROR(&@$);
-                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
-                    }
-                ;
-
 %rule def_endless_method(bodystmt) <node>
                 : defn_head[head] f_opt_paren_args[args] '=' bodystmt
                     {
@@ -3006,6 +2997,46 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     {
                         $$ = kwd_append($f_kwarg, $f_kw);
                     /*% ripper: rb_ary_push($:1, $:3) %*/
+                    }
+                ;
+
+%rule op_asgn(rhs) <node>
+                : var_lhs tOP_ASGN lex_ctxt rhs
+                    {
+                        $$ = new_op_assign(p, $var_lhs, $tOP_ASGN, $rhs, $lex_ctxt, &@$);
+                    /*% ripper: opassign!($:1, $:2, $:4) %*/
+                    }
+                | primary_value '['[lbracket] opt_call_args rbracket tOP_ASGN lex_ctxt rhs
+                    {
+                        $$ = new_ary_op_assign(p, $primary_value, $opt_call_args, $tOP_ASGN, $rhs, &@opt_call_args, &@$, &NULL_LOC, &@lbracket, &@rbracket, &@tOP_ASGN);
+                    /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
+                    }
+                | primary_value call_op tIDENTIFIER tOP_ASGN lex_ctxt rhs
+                    {
+                        $$ = new_attr_op_assign(p, $primary_value, $call_op, $tIDENTIFIER, $tOP_ASGN, $rhs, &@$, &@call_op, &@tIDENTIFIER, &@tOP_ASGN);
+                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
+                    }
+                | primary_value call_op tCONSTANT tOP_ASGN lex_ctxt rhs
+                    {
+                        $$ = new_attr_op_assign(p, $primary_value, $call_op, $tCONSTANT, $tOP_ASGN, $rhs, &@$, &@call_op, &@tCONSTANT, &@tOP_ASGN);
+                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
+                    }
+                | primary_value tCOLON2 tIDENTIFIER tOP_ASGN lex_ctxt rhs
+                    {
+                        $$ = new_attr_op_assign(p, $primary_value, idCOLON2, $tIDENTIFIER, $tOP_ASGN, $rhs, &@$, &@tCOLON2, &@tIDENTIFIER, &@tOP_ASGN);
+                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
+                    }
+                | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt rhs
+                    {
+                        YYLTYPE loc = code_loc_gen(&@primary_value, &@tCONSTANT);
+                        $$ = new_const_op_assign(p, NEW_COLON2($primary_value, $tCONSTANT, &loc), $tOP_ASGN, $rhs, $lex_ctxt, &@$);
+                    /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
+                    }
+                | backref tOP_ASGN lex_ctxt rhs
+                    {
+                        VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $backref);
+                        $$ = NEW_ERROR(&@$);
+                    /*% ripper[error]: assign_error!(?e, opassign!(var_field!($:1), $:2, $:4)) %*/
                     }
                 ;
 
@@ -3303,35 +3334,8 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                 ;
 
 command_asgn	: asgn(lhs, command_rhs)
-                | var_lhs tOP_ASGN lex_ctxt command_rhs
-                    {
-                        $$ = new_op_assign(p, $1, $2, $4, $3, &@$);
-                    /*% ripper: opassign!($:1, $:2, $:4) %*/
-                    }
-                | primary_value '[' opt_call_args rbracket tOP_ASGN lex_ctxt command_rhs
-                    {
-                        $$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$, &NULL_LOC, &@2, &@4, &@5);
-                    /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
-
-                    }
-                | primary_value call_op ident_or_const tOP_ASGN lex_ctxt command_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$, &@2, &@3, &@4);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
-                | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt command_rhs
-                    {
-                        YYLTYPE loc = code_loc_gen(&@1, &@3);
-                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
-                    /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
-                    }
-                | primary_value tCOLON2 tIDENTIFIER tOP_ASGN lex_ctxt command_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, idCOLON2, $3, $4, $6, &@$, &@2, &@3, &@4);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
+                | op_asgn(command_rhs)
                 | def_endless_method(endless_command)
-                | backref_with(command_rhs)
                 ;
 
 endless_command : command
@@ -3855,39 +3859,13 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
                 ;
 
 arg		: asgn(lhs, arg_rhs)
-                | var_lhs tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        $$ = new_op_assign(p, $1, $2, $4, $3, &@$);
-                    /*% ripper: opassign!($:1, $:2, $:4) %*/
-                    }
-                | primary_value '[' opt_call_args rbracket tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        $$ = new_ary_op_assign(p, $1, $3, $5, $7, &@3, &@$, &NULL_LOC, &@2, &@4, &@5);
-                    /*% ripper: opassign!(aref_field!($:1, $:3), $:5, $:7) %*/
-                    }
-                | primary_value call_op ident_or_const tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, $2, $3, $4, $6, &@$, &@2, &@3, &@4);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
-                | primary_value tCOLON2 tIDENTIFIER tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        $$ = new_attr_op_assign(p, $1, idCOLON2, $3, $4, $6, &@$, &@2, &@3, &@4);
-                    /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
-                    }
-                | primary_value tCOLON2 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        YYLTYPE loc = code_loc_gen(&@1, &@3);
-                        $$ = new_const_op_assign(p, NEW_COLON2($1, $3, &loc), $4, $6, $5, &@$);
-                    /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
-                    }
+                | op_asgn(arg_rhs)
                 | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
                     {
                         YYLTYPE loc = code_loc_gen(&@1, &@2);
                         $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
                     /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
                     }
-                | backref_with(arg_rhs)
                 | arg tDOT2 arg
                     {
                         value_expr($1);
