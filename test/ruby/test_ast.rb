@@ -1594,7 +1594,7 @@ dummy
     private
     def ast_parse(src, **options)
       begin
-        verbose_bak, $VERBOSE = $VERBOSE, false
+        verbose_bak, $VERBOSE = $VERBOSE, nil
         RubyVM::AbstractSyntaxTree.parse(src, **options)
       ensure
         $VERBOSE = verbose_bak
