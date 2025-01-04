@@ -25,7 +25,7 @@ class Hash
   #   h[:nosuch]     # => "Hash {}: Default value for nosuch"
   #
   # If optional keyword argument +capacity+ is given with a positive integer value +n+,
-  # initializes the hash with enough capacity to accommodate +n+ keys without resizing.
+  # initializes the hash with enough capacity to accommodate +n+ entries without resizing.
   #
   # Raises ArgumentError if both +default_value+ and a block are given.
   #
