@@ -27,8 +27,6 @@ class Hash
   # If optional keyword argument +capacity+ is given with a positive integer value +n+,
   # initializes the hash with enough capacity to accommodate +n+ entries without resizing.
   #
-  # Raises ArgumentError if both +default_value+ and a block are given.
-  #
   # See also {Methods for Creating a Hash}[rdoc-ref:Hash@Methods+for+Creating+a+Hash].
   def initialize(ifnone = (ifnone_unset = true), capacity: 0, &block)
     Primitive.rb_hash_init(capacity, ifnone_unset, ifnone, block)
