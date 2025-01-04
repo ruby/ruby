@@ -730,7 +730,11 @@ RSpec.describe "bundle exec" do
       puts "EXEC: \#{caller.grep(/load/).empty? ? 'exec' : 'load'}"
       puts "ARGS: \#{$0} \#{ARGV.join(' ')}"
       puts "MYRACK: \#{MYRACK}"
-      process_title = `ps -o args -p \#{Process.pid}`.split("\n", 2).last.strip
+      if Gem.win_platform?
+        process_title = "ruby"
+      else
+        process_title = `ps -o args -p \#{Process.pid}`.split("\n", 2).last.strip
+      end
       puts "PROCESS: \#{process_title}"
     RUBY
 
@@ -748,9 +752,11 @@ RSpec.describe "bundle exec" do
     let(:args) { "ARGS: #{path} arg1 arg2" }
     let(:myrack) { "MYRACK: 1.0.0" }
     let(:process) do
-      title = "PROCESS: #{path}"
-      title += " arg1 arg2"
-      title
+      if Gem.win_platform?
+        "PROCESS: ruby"
+      else
+        "PROCESS: #{path} arg1 arg2"
+      end
     end
     let(:exit_code) { 0 }
     let(:expected) { [exec, args, myrack, process].join("\n") }
@@ -952,7 +958,13 @@ RSpec.describe "bundle exec" do
 
     context "when disable_exec_load is set" do
       let(:exec) { "EXEC: exec" }
-      let(:process) { "PROCESS: ruby #{path} arg1 arg2" }
+      let(:process) do
+        if Gem.win_platform?
+          "PROCESS: ruby"
+        else
+          "PROCESS: ruby #{path} arg1 arg2"
+        end
+      end
 
       before do
         bundle "config set disable_exec_load true"
