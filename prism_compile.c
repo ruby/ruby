@@ -1756,6 +1756,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                 break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: { // not counted in argc return value
+                iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+
                 if (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->param.flags.forwardable) {
                     *flags |= VM_CALL_FORWARDING;
 

@@ -1776,5 +1776,13 @@ class TestMethod < Test::Unit::TestCase
     RUBY
       assert_equal 0, err.size, err.join("\n")
     end
+
+    assert_in_out_err '-w', <<-'RUBY' do |_out, err, _status|
+      def foo(*, &block) = block
+      def bar(buz, ...) = foo(buz, ...)
+      bar(:test) {} # do not warn because of forwarding
+    RUBY
+      assert_equal 0, err.size, err.join("\n")
+    end
   end
 end
