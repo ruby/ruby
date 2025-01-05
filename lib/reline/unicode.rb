@@ -34,7 +34,6 @@ class Reline::Unicode
     0x1F => '^_', # C-_ C-7
     0x7F => '^?', # C-? C-8
   }
-  EscapedChars = EscapedPairs.keys.map(&:chr)
 
   NON_PRINTING_START = "\1"
   NON_PRINTING_END = "\2"

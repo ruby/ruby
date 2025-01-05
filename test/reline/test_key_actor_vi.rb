@@ -103,11 +103,13 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_ed_insert_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099")
     assert_line_around_cursor("か\u3099", '')
   end
 
   def test_ed_insert_for_plural_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099き\u3099")
     assert_line_around_cursor("か\u3099き\u3099", '')
   end
@@ -208,6 +210,7 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_vi_paste_prev_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099き\u3099く\u3099け\u3099こ\u3099\C-[3h")
     assert_line_around_cursor("か\u3099", "き\u3099く\u3099け\u3099こ\u3099")
     input_keys('P')
@@ -221,6 +224,7 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_vi_paste_next_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099き\u3099く\u3099け\u3099こ\u3099\C-[3h")
     assert_line_around_cursor("か\u3099", "き\u3099く\u3099け\u3099こ\u3099")
     input_keys('p')
@@ -438,6 +442,7 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_vi_delete_next_char_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099き\u3099く\u3099\C-[h")
     assert_line_around_cursor("か\u3099", "き\u3099く\u3099")
     input_keys('x')
@@ -465,6 +470,7 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_vi_delete_prev_char_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("か\u3099き\u3099")
     assert_line_around_cursor("か\u3099き\u3099", '')
     input_keys("\C-h")
@@ -509,6 +515,7 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_ed_delete_prev_word_for_mbchar_by_plural_code_points
+    omit_unless_utf8
     input_keys("あいう か\u3099き\u3099く\u3099{さしす}たちつ")
     assert_line_around_cursor("あいう か\u3099き\u3099く\u3099{さしす}たちつ", '')
     input_keys("\C-w")
@@ -659,9 +666,9 @@ class Reline::ViInsertTest < Reline::TestCase
     }
     input_keys('Re')
     assert_line_around_cursor('Re', '')
-    input_keys("\C-i", false)
+    input_keys("\C-i")
     assert_line_around_cursor('Readline', '')
-    input_keys("\C-i", false)
+    input_keys("\C-i")
     assert_line_around_cursor('Regexp', '')
     input_key_by_symbol(:completion_journey_up)
     assert_line_around_cursor('Readline', '')
@@ -682,9 +689,9 @@ class Reline::ViInsertTest < Reline::TestCase
     }
     input_keys('Re')
     assert_line_around_cursor('Re', '')
-    input_keys("\C-i", false)
+    input_keys("\C-i")
     assert_line_around_cursor('Readline', '')
-    input_keys("\C-i", false)
+    input_keys("\C-i")
     assert_line_around_cursor('Regexp', '')
     input_key_by_symbol(:menu_complete_backward)
     assert_line_around_cursor('Readline', '')
@@ -924,16 +931,16 @@ class Reline::ViInsertTest < Reline::TestCase
   end
 
   def test_vi_kill_line_prev
-    input_keys("\C-u", false)
+    input_keys("\C-u")
     assert_line_around_cursor('', '')
     input_keys('abc')
     assert_line_around_cursor('abc', '')
-    input_keys("\C-u", false)
+    input_keys("\C-u")
     assert_line_around_cursor('', '')
     input_keys('abc')
-    input_keys("\C-[\C-u", false)
+    input_keys("\C-[\C-u")
     assert_line_around_cursor('', 'c')
-    input_keys("\C-u", false)
+    input_keys("\C-u")
     assert_line_around_cursor('', 'c')
   end
 

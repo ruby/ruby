@@ -86,26 +86,12 @@ module Reline
 end
 
 class Reline::TestCase < Test::Unit::TestCase
-  private def convert_str(input, options = {}, normalized = nil)
-    return nil if input.nil?
-    input = input.chars.map { |c|
-      if Reline::Unicode::EscapedChars.include?(c.ord)
-        c
-      else
-        c.encode(@line_editor.encoding, Encoding::UTF_8, **options)
-      end
-    }.join
-  rescue Encoding::UndefinedConversionError, Encoding::InvalidByteSequenceError
-    if unicode?(input.encoding)
-      input = input.unicode_normalize(:nfc)
-      if normalized
-        options[:undef] = :replace
-        options[:replace] = '?'
-      end
-      normalized = true
-      retry
-    end
-    input
+  private def convert_str(input)
+    input.encode(@line_editor.encoding, Encoding::UTF_8)
+  end
+
+  def omit_unless_utf8
+    omit "This test is for UTF-8 but the locale is #{Reline.core.encoding}" if Reline.core.encoding != Encoding::UTF_8
   end
 
   def input_key_by_symbol(method_symbol, char: nil, csi: false)
@@ -113,17 +99,9 @@ class Reline::TestCase < Test::Unit::TestCase
     @line_editor.input_key(Reline::Key.new(char, method_symbol, false))
   end
 
-  def input_keys(input, convert = true)
-    # Reline does not support convert-meta, but test data includes \M-char. It should be converted to ESC+char.
-    # Note that mixing unicode chars and \M-char is not recommended. "\M-C\M-\C-A" is a single unicode character.
-    input = input.chars.map do |c|
-      c.valid_encoding? ? c : "\e#{(c.bytes[0] & 0x7f).chr}"
-    end.join
-    input_raw_keys(input, convert)
-  end
+  def input_keys(input)
+    input = convert_str(input)
 
-  def input_raw_keys(input, convert = true)
-    input = convert_str(input) if convert
     key_stroke = Reline::KeyStroke.new(@config, @encoding)
     input_bytes = input.bytes
     until input_bytes.empty?
@@ -176,9 +154,5 @@ class Reline::TestCase < Test::Unit::TestCase
       @config.editing_mode = editing_mode
       assert_equal(method_symbol, @config.editing_mode.get(input.bytes))
     end
-  end
-
-  private def unicode?(encoding)
-    [Encoding::UTF_8, Encoding::UTF_16BE, Encoding::UTF_16LE, Encoding::UTF_32BE, Encoding::UTF_32LE].include?(encoding)
   end
 end
