@@ -996,8 +996,7 @@ require 'rdoc'
 #   and entire <tt>rdoc-ref:</tt> square-bracketed clause is removed
 #   from the resulting text.
 #
-#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> generates
-#     Nosuch[rdoc-ref:RDoc::Nosuch].
+#   - <tt>Nosuch[rdoc-ref:RDoc::Nosuch]</tt> generates Nosuch.
 #
 #
 # [<tt>rdoc-label</tt> Scheme]
