@@ -20,3 +20,5 @@ autolink_excluded_words:
 - RDoc
 - Ruby
 - Set
+
+warn_missing_rdoc_ref: true
