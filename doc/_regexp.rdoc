@@ -971,12 +971,12 @@ The POSIX bracket expressions:
 
 - <tt>/[[:alnum:]]/</tt>: Matches <tt>/[[:alpha:]]/</tt> or <tt>/[[:digit:]]/</tt>.
 
-- <tt>/[[:space:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs]:
+- <tt>/[[:space:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs], newline, carriage return, etc:
 
     /[[:space:]]/.match(' ')      # => #<MatchData " ">
     /[[:space:]]/.match("\u2005") # => #<MatchData " ">
 
-- <tt>/[[:blank:]]/</tt>: Matches <tt>/[[:space:]]/</tt> or tab character:
+- <tt>/[[:blank:]]/</tt>: Matches {Unicode space character}[https://www.compart.com/en/unicode/category/Zs] (except No-Break Space) or tab character:
 
     /[[:blank:]]/.match(' ')      # => #<MatchData " ">
     /[[:blank:]]/.match("\u2005") # => #<MatchData " ">
