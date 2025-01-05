@@ -109,6 +109,8 @@ def foo = 123
 
 def a(*); b(*); end
 
+def a(*, **); b { c(*, **) }; end
+
 def a(...); b(...); end
 
 def a(...); b(1, 2, ...); end
