@@ -1187,7 +1187,7 @@ module Prism
                 false
               )
             end,
-            node.body&.accept(copy_compiler(forwarding: implicit_parameters ? [] : find_forwarding(parameters&.parameters))),
+            visit(node.body),
             [node.closing, srange(node.closing_loc)]
           )
         end
@@ -2042,7 +2042,7 @@ module Prism
                   false
                 )
               end,
-              block.body&.accept(copy_compiler(forwarding: implicit_parameters ? [] : find_forwarding(parameters&.parameters))),
+              visit(block.body),
               token(block.closing_loc)
             )
           else
