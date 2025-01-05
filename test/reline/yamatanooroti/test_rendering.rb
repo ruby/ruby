@@ -550,6 +550,14 @@ begin
         prompt>   3
         prompt> end
       EOC
+      write("\e[200~.tap do\r\t4\r\t5\rend\e[201~")
+      assert_screen(<<~EOC)
+        prompt>   3
+        prompt> end.tap do
+        prompt>   4
+        prompt>   5
+        prompt> end
+      EOC
       close
     end
 

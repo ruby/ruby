@@ -542,6 +542,7 @@ class Reline::LineEditor
       Reline::IOGate.show_cursor
     end
     Reline::IOGate.move_cursor_column new_cursor_x
+    new_cursor_y = new_cursor_y.clamp(0, screen_height - 1)
     Reline::IOGate.move_cursor_down new_cursor_y - cursor_y
     @rendered_screen.cursor_y = new_cursor_y
   ensure

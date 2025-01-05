@@ -341,7 +341,6 @@ module Reline
         line_editor.set_signal_handlers
         loop do
           read_io(config.keyseq_timeout) { |inputs|
-            line_editor.set_pasting_state(io_gate.in_pasting?)
             inputs.each do |key|
               case key.method_symbol
               when :bracketed_paste_start
@@ -350,6 +349,7 @@ module Reline
               when :quoted_insert, :ed_quoted_insert
                 key = Reline::Key.new(io_gate.read_single_char(config.keyseq_timeout), :insert_raw_char)
               end
+              line_editor.set_pasting_state(io_gate.in_pasting?)
               line_editor.update(key)
             end
           }
@@ -357,7 +357,6 @@ module Reline
             line_editor.render_finished
             break
           else
-            line_editor.set_pasting_state(io_gate.in_pasting?)
             line_editor.rerender
           end
         end
