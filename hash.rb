@@ -13,11 +13,11 @@ class Hash
   #   h.default           # => nil
   #   h.default_proc      # => nil
   #
-  #   h = Hash.new        # => {}
-  #   h.default           # => nil
-  #   h.default_proc      # => nil
+  # If the +default_value+ argument is provided, it sets the +default+ value for the hash:
+  #
   #   h = Hash.new(false) # => {}
   #   h.default           # => false
+  #   h.default_proc      # => nil
   #
   # If a block is given, it sets the +default_proc+ value:
   #
