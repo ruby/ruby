@@ -1512,7 +1512,9 @@ module Prism
         # ^^^^^
         def visit_regular_expression_node(node)
           parts =
-            if node.content.include?("\n")
+            if node.content == ""
+              []
+            elsif node.content.include?("\n")
               string_nodes_from_line_continuations(node, node.content_loc.start_offset, node.opening)
             else
               [builder.string_internal(token(node.content_loc))]
