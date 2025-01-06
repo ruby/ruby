@@ -1690,6 +1690,8 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
+    rb_encoding *encoding = rb_enc_get(src);
+
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
@@ -1708,6 +1710,14 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 // Explicitly skip numbered parameters. These should not be sent
                 // into the eval.
                 if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
+                    continue;
+                }
+
+                // Check here if this local can be represented validly in the
+                // encoding of the source string. If it _cannot_, then it should
+                // not be added to the constant pool as it would not be able to
+                // be referenced anyway.
+                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
                     continue;
                 }
 
