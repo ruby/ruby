@@ -449,11 +449,7 @@ ossl_x509crl_get_extensions(VALUE self)
 
     GetX509CRL(self, crl);
     count = X509_CRL_get_ext_count(crl);
-    if (count < 0) {
-	OSSL_Debug("count < 0???");
-	return rb_ary_new();
-    }
-    ary = rb_ary_new2(count);
+    ary = rb_ary_new_capa(count);
     for (i=0; i<count; i++) {
 	ext = X509_CRL_get_ext(crl, i); /* NO DUP - don't free! */
 	rb_ary_push(ary, ossl_x509ext_new(ext));
