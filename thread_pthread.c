@@ -1177,6 +1177,7 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
 
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
+    next_th->running_time_us = 0;
 
     coroutine_transfer0(current_cont, next_th->sched.context, to_dead);
 }
