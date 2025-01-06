@@ -6630,7 +6630,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  === +Hash+ \Data Syntax
  *
- *  The older syntax for +Hash+ data uses the "hash rocket," <tt>=></tt>:
+ *  The older syntax for +Hash+ data uses the "hash rocket" <tt>=></tt>:
  *
  *    h = {:foo => 0, :bar => 1, :baz => 2}
  *    h # => {:foo=>0, :bar=>1, :baz=>2}
