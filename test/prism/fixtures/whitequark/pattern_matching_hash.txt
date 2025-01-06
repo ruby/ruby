@@ -1,0 +1,48 @@
+case foo; 
+        in a: {b:}, c:
+          p c
+      ; end
+
+case foo; 
+        in {Foo: 42
+        }
+          false
+      ; end
+
+case foo; 
+        in {a:
+              2}
+          false
+      ; end
+
+case foo; 
+        in {a:
+        }
+          true
+      ; end
+
+case foo; 
+        in {a: 1
+        }
+          false
+      ; end
+
+case foo; in ** then true; end
+
+case foo; in **a then true; end
+
+case foo; in a: 1 then true; end
+
+case foo; in a: 1, _a:, ** then true; end
+
+case foo; in a: 1, b: 2 then true; end
+
+case foo; in a: then true; end
+
+case foo; in a:, b: then true; end
+
+case foo; in { a: 1 } then true; end
+
+case foo; in { a: 1, } then true; end
+
+case foo; in {} then true; end

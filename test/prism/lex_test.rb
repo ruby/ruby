@@ -28,6 +28,14 @@ module Prism
       # Example: <<~'   EOF' or <<-'  EOF'
       # https://bugs.ruby-lang.org/issues/19539
       except << "heredocs_leading_whitespace.txt"
+      except << "whitequark/ruby_bug_19539.txt"
+
+      # https://bugs.ruby-lang.org/issues/19025
+      except << "whitequark/numparam_ruby_bug_19025.txt"
+      # https://bugs.ruby-lang.org/issues/18878
+      except << "whitequark/ruby_bug_18878.txt"
+      # https://bugs.ruby-lang.org/issues/19281
+      except << "whitequark/ruby_bug_19281.txt"
     end
 
     Fixture.each(except: except) do |fixture|
