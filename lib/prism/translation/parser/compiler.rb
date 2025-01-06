@@ -1511,13 +1511,9 @@ module Prism
         # /foo/
         # ^^^^^
         def visit_regular_expression_node(node)
-          content = node.content
           parts =
-            if content.include?("\n")
-              offset = node.content_loc.start_offset
-              content.lines.map do |line|
-                builder.string_internal([line, srange_offsets(offset, offset += line.bytesize)])
-              end
+            if node.content.include?("\n")
+              string_nodes_from_line_continuations(node, node.content_loc.start_offset, node.opening)
             else
               [builder.string_internal(token(node.content_loc))]
             end
@@ -2074,55 +2070,7 @@ module Prism
           node.parts.each do |part|
             pushing =
               if part.is_a?(StringNode) && part.unescaped.include?("\n")
-                unescaped = part.unescaped.lines
-                escaped = part.content.lines
-
-                escaped_lengths = []
-                normalized_lengths = []
-                # Keeps track of where an unescaped line should start a new token. An unescaped
-                # \n would otherwise be indistinguishable from the actual newline at the end of
-                # of the line. The parser gem only emits a new string node at "real" newlines,
-                # line continuations don't start a new node as well.
-                do_next_tokens = []
-
-                if node.opening.end_with?("'")
-                  escaped.each do |line|
-                    escaped_lengths << line.bytesize
-                    normalized_lengths << chomped_bytesize(line)
-                    do_next_tokens << true
-                  end
-                else
-                  escaped
-                    .chunk_while { |before, after| before[/(\\*)\r?\n$/, 1]&.length&.odd? || false }
-                    .each do |lines|
-                      escaped_lengths << lines.sum(&:bytesize)
-                      normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
-                      unescaped_lines_count = lines.sum do |line|
-                        line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? || false }
-                      end
-                      do_next_tokens.concat(Array.new(unescaped_lines_count + 1, false))
-                      do_next_tokens[-1] = true
-                    end
-                end
-
-                start_offset = part.location.start_offset
-                current_line = +""
-                current_normalized_length = 0
-
-                unescaped.filter_map.with_index do |unescaped_line, index|
-                  current_line << unescaped_line
-                  current_normalized_length += normalized_lengths.fetch(index, 0)
-
-                  if do_next_tokens[index]
-                    inner_part = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_normalized_length)])
-                    start_offset += escaped_lengths.fetch(index, 0)
-                    current_line = +""
-                    current_normalized_length = 0
-                    inner_part
-                  else
-                    nil
-                  end
-                end
+                string_nodes_from_line_continuations(part, part.location.start_offset, node.opening)
               else
                 [visit(part)]
               end
@@ -2170,6 +2118,59 @@ module Prism
             yield copy_compiler(in_pattern: true)
           ensure
             parser.pattern_variables.pop
+          end
+        end
+
+        # Create parser string nodes from a single prism node. The parser gem
+        # "glues" strings together when a line continuation is encountered.
+        def string_nodes_from_line_continuations(node, start_offset, opening)
+          unescaped = node.unescaped.lines
+          escaped = node.content.lines
+
+          escaped_lengths = []
+          normalized_lengths = []
+          # Keeps track of where an unescaped line should start a new token. An unescaped
+          # \n would otherwise be indistinguishable from the actual newline at the end of
+          # of the line. The parser gem only emits a new string node at "real" newlines,
+          # line continuations don't start a new node as well.
+          do_next_tokens = []
+
+          if opening.end_with?("'")
+            escaped.each do |line|
+              escaped_lengths << line.bytesize
+              normalized_lengths << chomped_bytesize(line)
+              do_next_tokens << true
+            end
+          else
+            escaped
+              .chunk_while { |before, after| before[/(\\*)\r?\n$/, 1]&.length&.odd? || false }
+              .each do |lines|
+                escaped_lengths << lines.sum(&:bytesize)
+                normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
+                unescaped_lines_count = lines.sum do |line|
+                  line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? || false }
+                end
+                do_next_tokens.concat(Array.new(unescaped_lines_count + 1, false))
+                do_next_tokens[-1] = true
+              end
+          end
+
+          current_line = +""
+          current_normalized_length = 0
+
+          unescaped.filter_map.with_index do |unescaped_line, index|
+            current_line << unescaped_line
+            current_normalized_length += normalized_lengths.fetch(index, 0)
+
+            if do_next_tokens[index]
+              inner_part = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_normalized_length)])
+              start_offset += escaped_lengths.fetch(index, 0)
+              current_line = +""
+              current_normalized_length = 0
+              inner_part
+            else
+              nil
+            end
           end
         end
       end
