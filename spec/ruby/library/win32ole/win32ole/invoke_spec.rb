@@ -1,7 +1,5 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
-  verbose, $VERBOSE = $VERBOSE, nil
-
   require_relative '../fixtures/classes'
 
   describe "WIN32OLE#invoke" do
@@ -14,6 +12,4 @@ platform_is :windows do
       @dict.invoke('Item', 'key').should == 'value'
     end
   end
-ensure
-  $VERBOSE = verbose
 end

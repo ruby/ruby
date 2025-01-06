@@ -1,6 +1,14 @@
 require_relative "../../spec_helper"
-require_relative '../../shared/rational/denominator'
 
 describe "Rational#denominator" do
-  it_behaves_like :rational_denominator, :denominator
+  it "returns the denominator" do
+    Rational(3, 4).denominator.should equal(4)
+    Rational(3, -4).denominator.should equal(4)
+
+    Rational(1, bignum_value).denominator.should == bignum_value
+  end
+
+  it "returns 1 if no denominator was given" do
+    Rational(80).denominator.should == 1
+  end
 end

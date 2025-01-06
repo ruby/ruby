@@ -32,7 +32,21 @@ module ProcSpecs
       @second = b
     end
 
-    attr_reader :first, :second
+    attr_reader :first, :second, :initializer
+
+    def initialize_copy(other)
+      super
+      @initializer = :copy
+      @first = other.first
+      @second = other.second
+    end
+
+    def initialize_dup(other)
+      super
+      @initializer = :dup
+      @first = other.first
+      @second = other.second
+    end
   end
 
   class Arity

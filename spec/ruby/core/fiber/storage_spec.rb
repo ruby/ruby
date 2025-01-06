@@ -92,7 +92,7 @@ ruby_version_is "3.2" do
       end
     end
 
-    ruby_bug "#20978", "3.2.3"..."3.4" do
+    ruby_bug "#20978", "3.2"..."3.4" do
       it "can use keys as strings" do
         key = Object.new
         def key.to_str; "Foo"; end

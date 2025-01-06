@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-require_relative '../../shared/enumerator/with_index'
+require_relative 'shared/with_index'
 require_relative '../enumerable/shared/enumeratorized'
 
 describe "Enumerator#each_with_index" do

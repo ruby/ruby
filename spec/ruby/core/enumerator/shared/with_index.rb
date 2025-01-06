@@ -1,8 +1,8 @@
-require_relative '../../spec_helper'
+require_relative '../../../spec_helper'
 
 describe :enum_with_index, shared: true do
 
-  require_relative '../../fixtures/enumerator/classes'
+  require_relative '../fixtures/classes'
 
   before :each do
     @origin = [1, 2, 3, 4]
