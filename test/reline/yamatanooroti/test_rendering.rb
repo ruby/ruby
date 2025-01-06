@@ -813,13 +813,30 @@ begin
       close
     end
 
-    def test_terminate_in_the_middle_of_lines
+    def test_newline_in_the_middle_of_lines
       start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
       write("def hoge\n  1\n  2\n  3\n  4\nend\n")
       write("\C-p\C-p\C-p\C-e\n")
       assert_screen(<<~EOC)
+        prompt> def hoge
+        prompt>   1
+        prompt>   2
         prompt>   3
-        prompt>   4
+        prompt>
+      EOC
+      close
+    end
+
+    def test_ed_force_submit_in_the_middle_of_lines
+      write_inputrc <<~LINES
+        "\\C-a": ed_force_submit
+      LINES
+      start_terminal(5, 20, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl}, startup_message: 'Multiline REPL.')
+      write("def hoge\nend")
+      write("\C-p\C-a")
+      assert_screen(<<~EOC)
+        Multiline REPL.
+        prompt> def hoge
         prompt> end
         => :hoge
         prompt>
