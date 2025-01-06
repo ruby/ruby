@@ -19,7 +19,14 @@ Other changes are listed in the following sections. we also listed release histo
 
 The following default gem is added.
 
+* win32-registry 0.1.0
+
 The following default gems are updated.
+
+* RubyGems 3.7.0.dev
+* bundler 2.7.0.dev
+* fiddle 1.1.7.dev
+* stringio 3.1.3.dev
 
 The following bundled gem is added.
 
