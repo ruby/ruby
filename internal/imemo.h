@@ -14,10 +14,6 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#ifndef IMEMO_DEBUG
-# define IMEMO_DEBUG 0
-#endif
-
 #define IMEMO_MASK   0x0f
 
 /* FL_USER0 to FL_USER3 is for type */
@@ -156,12 +152,7 @@ void rb_cc_table_free(VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-#if IMEMO_DEBUG
-VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line);
-#define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
-#else
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0);
-#endif
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
 

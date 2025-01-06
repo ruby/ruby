@@ -110,16 +110,6 @@ rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
     return tmpbuf;
 }
 
-#if IMEMO_DEBUG
-VALUE
-rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line)
-{
-    VALUE memo = rb_imemo_new(type, v0);
-    fprintf(stderr, "memo %p (type: %d) @ %s:%d\n", (void *)memo, imemo_type(memo), file, line);
-    return memo;
-}
-#endif
-
 /* =========================================================================
  * memsize
  * ========================================================================= */
