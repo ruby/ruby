@@ -2450,7 +2450,7 @@ ossl_ssl_get_peer_finished(VALUE self)
 
 /*
  * call-seq:
- *    ssl.client_ca => [x509name, ...]
+ *    ssl.client_ca => [x509name, ...] or nil
  *
  * Returns the list of client CAs. Please note that in contrast to
  * SSLContext#client_ca= no array of X509::Certificate is returned but
@@ -2468,6 +2468,8 @@ ossl_ssl_get_client_ca_list(VALUE self)
     GetSSL(self, ssl);
 
     ca = SSL_get_client_CA_list(ssl);
+    if (!ca)
+        return Qnil;
     return ossl_x509name_sk2ary(ca);
 }
 

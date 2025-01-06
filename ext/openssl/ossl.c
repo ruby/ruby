@@ -69,16 +69,9 @@ ossl_##name##_sk2ary(const STACK_OF(type) *sk)	\
     int i, num;					\
     VALUE ary;					\
 						\
-    if (!sk) {					\
-	OSSL_Debug("empty sk!");		\
-	return Qnil;				\
-    }						\
+    RUBY_ASSERT(sk != NULL);			\
     num = sk_##type##_num(sk);			\
-    if (num < 0) {				\
-	OSSL_Debug("items in sk < -1???");	\
-	return rb_ary_new();			\
-    }						\
-    ary = rb_ary_new2(num);			\
+    ary = rb_ary_new_capa(num);			\
 						\
     for (i=0; i<num; i++) {			\
 	t = sk_##type##_value(sk, i);		\
