@@ -8720,16 +8720,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_ensure_node_t *cast = (const pm_ensure_node_t *) node;
 
         if (cast->statements != NULL) {
-            LABEL *start = NEW_LABEL(location.line);
-            LABEL *end = NEW_LABEL(location.line);
-            PUSH_LABEL(ret, start);
-
-            LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
-            ISEQ_COMPILE_DATA(iseq)->end_label = end;
-
             PM_COMPILE((const pm_node_t *) cast->statements);
-            ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
-            PUSH_LABEL(ret, end);
         }
 
         return;
