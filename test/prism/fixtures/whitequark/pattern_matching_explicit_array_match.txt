@@ -1,0 +1,19 @@
+case foo; in [*, x] then true; end
+
+case foo; in [*x, y] then true; end
+
+case foo; in [x, *, y] then true; end
+
+case foo; in [x, *y, z] then true; end
+
+case foo; in [x, y, *] then true; end
+
+case foo; in [x, y, *z] then true; end
+
+case foo; in [x, y,] then true; end
+
+case foo; in [x, y] then true; end
+
+case foo; in [x,] then nil; end
+
+case foo; in [x] then nil; end

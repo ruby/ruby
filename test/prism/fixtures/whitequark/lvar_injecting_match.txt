@@ -1,1 +1,3 @@
+/(?<a>a)/ =~ 'a'; /#{}(?<b>b)/ =~ 'b'; a; b
+
 /(?<match>bar)/ =~ 'bar'; match
