@@ -210,6 +210,9 @@ module Prism
       # method chain with a block on the inside
       assert_prism_eval("defined?(itself { 1 }.itself)")
 
+      # method chain with parenthesized receiver
+      assert_prism_eval("defined?((itself).itself)")
+
       # Method chain on a constant
       assert_prism_eval(<<~RUBY)
         class PrismDefinedNode
