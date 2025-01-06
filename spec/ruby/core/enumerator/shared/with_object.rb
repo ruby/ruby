@@ -1,4 +1,4 @@
-require_relative '../../spec_helper'
+require_relative '../../../spec_helper'
 
 describe :enum_with_object, shared: true do
   before :each do

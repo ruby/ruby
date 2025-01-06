@@ -124,3 +124,96 @@ describe "Dir.chdir" do
     Dir.pwd.should == @original
   end
 end
+
+ruby_version_is '3.3' do
+  describe "Dir#chdir" do
+    before :all do
+      DirSpecs.create_mock_dirs
+    end
+
+    after :all do
+      DirSpecs.delete_mock_dirs
+    end
+
+    before :each do
+      @original = Dir.pwd
+    end
+
+    after :each do
+      Dir.chdir(@original)
+    end
+
+    it "changes the current working directory to self" do
+      dir = Dir.new(DirSpecs.mock_dir)
+      dir.chdir
+      Dir.pwd.should == DirSpecs.mock_dir
+    ensure
+      dir.close
+    end
+
+    it "changes the current working directory to self for duration of the block when a block is given" do
+      dir = Dir.new(DirSpecs.mock_dir)
+      pwd_in_block = nil
+
+      dir.chdir { pwd_in_block = Dir.pwd }
+
+      pwd_in_block.should == DirSpecs.mock_dir
+      Dir.pwd.should == @original
+    ensure
+      dir.close
+    end
+
+    it "returns 0 when successfully changing directory" do
+      dir = Dir.new(DirSpecs.mock_dir)
+      dir.chdir.should == 0
+    ensure
+      dir.close
+    end
+
+    it "returns the value of the block when a block is given" do
+      dir = Dir.new(DirSpecs.mock_dir)
+      dir.chdir { :block_value }.should == :block_value
+    ensure
+      dir.close
+    end
+
+    it "raises an Errno::ENOENT if the original directory no longer exists" do
+      dir_name1 = tmp('/testdir1')
+      dir_name2 = tmp('/testdir2')
+      File.should_not.exist?(dir_name1)
+      File.should_not.exist?(dir_name2)
+      Dir.mkdir dir_name1
+      Dir.mkdir dir_name2
+
+      dir1 = Dir.new(dir_name1)
+
+      begin
+        -> {
+          dir1.chdir do
+            Dir.chdir(dir_name2) { Dir.unlink dir_name1 }
+          end
+        }.should raise_error(Errno::ENOENT)
+      ensure
+        Dir.unlink dir_name1 if File.exist?(dir_name1)
+        Dir.unlink dir_name2 if File.exist?(dir_name2)
+      end
+    ensure
+      dir1.close
+    end
+
+    it "always returns to the original directory when given a block" do
+      dir = Dir.new(DirSpecs.mock_dir)
+
+      begin
+        dir.chdir do
+          raise StandardError, "something bad happened"
+        end
+      rescue StandardError
+      end
+
+      Dir.pwd.should == @original
+    ensure
+      dir.close
+    end
+  end
+end

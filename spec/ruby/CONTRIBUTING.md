@@ -113,9 +113,9 @@ Also `have_constant`, `have_private_instance_method`, `have_singleton_method`, e
 }
 ```
 
-##### should_not raise_error
+##### `should_not raise_error`
 
-**To avoid!** Instead, use an expectation testing what the code in the lambda does.
+**Avoid this!** Instead, use an expectation testing what the code in the lambda does.
 If an exception is raised, it will fail the example anyway.
 
 ```ruby

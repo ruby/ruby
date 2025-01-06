@@ -1,4 +1,4 @@
-require_relative '../../fixtures/rational'
+require_relative '../fixtures/rational'
 
 describe :rational_arithmetic_exception_in_coerce, shared: true do
   it "does not rescue exception raised in other#coerce" do

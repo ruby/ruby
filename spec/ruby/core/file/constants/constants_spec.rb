@@ -4,7 +4,7 @@ require_relative '../../../spec_helper'
   "FNM_DOTMATCH", "FNM_EXTGLOB", "FNM_NOESCAPE", "FNM_PATHNAME",
   "FNM_SYSCASE", "LOCK_EX", "LOCK_NB", "LOCK_SH",
   "LOCK_UN", "NONBLOCK", "RDONLY",
-  "RDWR", "TRUNC", "WRONLY"].each do |const|
+  "RDWR", "TRUNC", "WRONLY", "SHARE_DELETE"].each do |const|
   describe "File::Constants::#{const}" do
     it "is defined" do
       File::Constants.const_defined?(const).should be_true
