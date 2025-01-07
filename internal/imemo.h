@@ -115,7 +115,7 @@ struct MEMO {
     } u3;
 };
 
-#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0)))
+#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0), sizeof(T)))
 
 /* ment is in method.h */
 
@@ -152,7 +152,7 @@ void rb_cc_table_free(VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_imemo_new(enum imemo_type type, VALUE v0);
+VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size);
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
 
@@ -205,7 +205,7 @@ rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer(void)
 {
-    return rb_imemo_new(imemo_tmpbuf, 0);
+    return rb_imemo_new(imemo_tmpbuf, 0, sizeof(rb_imemo_tmpbuf_t));
 }
 
 static inline void *

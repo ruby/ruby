@@ -40,9 +40,8 @@ rb_imemo_name(enum imemo_type type)
  * ========================================================================= */
 
 VALUE
-rb_imemo_new(enum imemo_type type, VALUE v0)
+rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
 {
-    size_t size = RVALUE_SIZE;
     VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT);
     NEWOBJ_OF(obj, void, v0, flags, size, 0);
 
