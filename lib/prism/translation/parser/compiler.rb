@@ -1085,24 +1085,22 @@ module Prism
             return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
-          parts = if node.parts.one? { |part| part.type == :string_node }
-            node.parts.flat_map do |node|
-              if node.type == :string_node && node.unescaped.lines.count >= 2
-                start_offset = node.content_loc.start_offset
+          parts = node.parts.flat_map do |node|
+            # When the content of a string node is split across multiple lines, the
+            # parser gem creates individual string nodes for each line the content is part of.
+            if node.type == :string_node && node.content.include?("\n") && node.opening_loc.nil?
+              start_offset = node.content_loc.start_offset
 
-                node.unescaped.lines.map do |line|
-                  end_offset = start_offset + line.bytesize
-                  offsets = srange_offsets(start_offset, end_offset)
-                  start_offset = end_offset
+              node.unescaped.lines.map do |line|
+                end_offset = start_offset + line.bytesize
+                offsets = srange_offsets(start_offset, end_offset)
+                start_offset = end_offset
 
-                  builder.string_internal([line, offsets])
-                end
-              else
-                visit(node)
+                builder.string_internal([line, offsets])
               end
+            else
+              visit(node)
             end
-          else
-            visit_all(node.parts)
           end
 
           builder.string_compose(
