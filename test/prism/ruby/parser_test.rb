@@ -70,7 +70,6 @@ module Prism
       "seattlerb/pctW_lineno.txt",
       "seattlerb/regexp_esc_C_slash.txt",
       "unparser/corpus/literal/literal.txt",
-      "unparser/corpus/semantic/dstr.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
     ]
 
