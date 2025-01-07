@@ -53,7 +53,10 @@ module Prism
       "seattlerb/heredoc_nested.txt",
 
       # https://github.com/whitequark/parser/issues/1016
-      "whitequark/unary_num_pow_precedence.txt"
+      "whitequark/unary_num_pow_precedence.txt",
+
+      # https://github.com/whitequark/parser/issues/950
+      "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
@@ -69,7 +72,6 @@ module Prism
       "seattlerb/regexp_esc_C_slash.txt",
       "unparser/corpus/literal/literal.txt",
       "unparser/corpus/semantic/dstr.txt",
-      "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
     ]
 
