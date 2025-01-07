@@ -213,6 +213,9 @@ const ID rb_iseq_shared_exc_local_tbl[] = {idERROR_INFO};
 #define NEW_CHILD_ISEQ(node, name, type, line_no) \
   new_child_iseq(iseq, (node), rb_fstring(name), iseq, (type), (line_no))
 
+#define NEW_CHILD_ISEQ_WITH_CALLBACK(callback_func, name, type, line_no) \
+  new_child_iseq_with_callback(iseq, (callback_func), (name), iseq, (type), (line_no))
+
 /* add instructions */
 #define ADD_SEQ(seq1, seq2) \
   APPEND_LIST((seq1), (seq2))
@@ -6256,10 +6259,10 @@ defined_expr(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         const rb_iseq_t *rescue;
         struct rb_iseq_new_with_callback_callback_func *ifunc =
             rb_iseq_new_with_callback_new_callback(build_defined_rescue_iseq, NULL);
-        rescue = new_child_iseq_with_callback(iseq, ifunc,
+        rescue = NEW_CHILD_ISEQ_WITH_CALLBACK(ifunc,
                                               rb_str_concat(rb_str_new2("defined guard in "),
                                                             ISEQ_BODY(iseq)->location.label),
-                                              iseq, ISEQ_TYPE_RESCUE, 0);
+                                              ISEQ_TYPE_RESCUE, 0);
         lstart->rescued = LABEL_RESCUE_BEG;
         lend->rescued = LABEL_RESCUE_END;
         APPEND_LABEL(ret, lcur, lstart);
@@ -11403,8 +11406,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         struct rb_iseq_new_with_callback_callback_func *ifunc =
             rb_iseq_new_with_callback_new_callback(build_postexe_iseq, RNODE_POSTEXE(node)->nd_body);
         const rb_iseq_t *once_iseq =
-            new_child_iseq_with_callback(iseq, ifunc,
-                                 rb_fstring(make_name_for_block(iseq)), iseq, ISEQ_TYPE_BLOCK, line);
+            NEW_CHILD_ISEQ_WITH_CALLBACK(ifunc, rb_fstring(make_name_for_block(iseq)), ISEQ_TYPE_BLOCK, line);
 
         ADD_INSN2(ret, node, once, once_iseq, INT2FIX(is_index));
         RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)once_iseq);
