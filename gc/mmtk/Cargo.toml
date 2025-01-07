@@ -4,11 +4,6 @@ version = "0.1.0"
 authors = []
 edition = "2021"
 
-# Metadata for the Ruby repository
-[package.metadata.ci-repos.ruby]
-repo = "ruby/ruby"
-rev = "c9ff790aa7692fc941757cd9ca1d2e64e63cb9b6"
-
 [lib]
 name = "mmtk_ruby"
 crate-type = ["cdylib", "staticlib"]
