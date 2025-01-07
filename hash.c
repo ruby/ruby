@@ -2899,10 +2899,39 @@ hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existi
 NOINSERT_UPDATE_CALLBACK(hash_aset)
 NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
+static int
+hash_store_yield(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    VALUE current_value;
+    if(existing) {
+        current_value = *val;
+    } else {
+        if (FL_TEST(arg->hash, RHASH_PROC_DEFAULT)) {
+            current_value = Qnil;
+        } else {
+            current_value = RHASH_IFNONE(arg->hash);
+        }
+    }
+
+    *val = rb_yield(current_value);
+    return ST_CONTINUE;
+}
+
+static int
+hash_store_yield_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
+{
+    if (!existing && !RB_OBJ_FROZEN(*key)) {
+        *key = rb_hash_key_str(*key);
+    }
+    return hash_store_yield(key, val, arg, existing);
+}
+
+NOINSERT_UPDATE_CALLBACK(hash_store_yield)
+NOINSERT_UPDATE_CALLBACK(hash_store_yield_str)
+
 /*
  *  call-seq:
  *    hash[key] = value -> value
- *    hash.store(key, value)
  *
  *  Associates the given +value+ with the given +key+; returns +value+.
  *
@@ -2911,16 +2940,14 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 1}
  *    h[:foo] = 2 # => 2
- *    h.store(:bar, 3) # => 3
- *    h # => {:foo=>2, :bar=>3}
+ *    h # => {:foo=>2, :bar=>1}
  *
  *  If +key+ does not exist, adds the +key+ and +value+;
  *  the new entry is last in the order
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
- *    h.store(:bat, 3) # => 3
- *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    h # => {:foo=>0, :bar=>1, :baz=>2}
  */
 
 VALUE
@@ -2938,6 +2965,80 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
     }
     return val;
 }
+
+
+/*
+ *  call-seq:
+ *    hash.store(key, value)
+ *    hash.store(key) {|value| ... }
+ *
+ *  Associates the given +value+ with the given +key+; returns +value+.
+ *
+ *  If the given +key+ exists, replaces its value with the given +value+;
+ *  the ordering is not affected
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *    h = {foo: 0, bar: 1}
+ *    h.store(:bar, 3) # => 3
+ *    h # => {:foo=>2, :bar=>3}
+ *
+ *  If +key+ does not exist, adds the +key+ and +value+;
+ *  the new entry is last in the order
+ *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *    h = {foo: 0, bar: 1}
+ *    h.store(:baz, 3) # => 3
+ *    h # => {:foo=>0, :bar=>1, :baz=>3}
+ *
+ *  If a block is given, yields the value currently associated with +key+ or,
+ *  if +key+ is not found, the hash's default value (see {Default Values}[rdoc-ref:Hash@Default+Values]),
+ *  and associates +key+ with the value returned by the block:
+ *    h = {foo: 0}
+ *    h.store(:foo) { |v| v + 1 } # => 1
+ *    h.store(:bar) { |v| v || 100  } # => 100
+ *    h.default = 1000
+ *    h.store(:baz) { |v| v + 1 } # => 1001
+ *    h # => {:foo=>1, :bar=>100, :baz=>1001}
+ *
+ *  Note that if you set a default proc via #default_proc=, the block will yield +nil+.
+ */
+
+VALUE
+rb_hash_store(int argc, VALUE *argv, VALUE hash)
+{
+    bool block_given = rb_block_given_p();
+    VALUE val;
+    VALUE key;
+
+    if(block_given) {
+        argc = rb_check_arity(argc, 1, 1);
+        key = argv[0];
+        val = Qnil;
+    } else {
+        argc = rb_check_arity(argc, 2, 2);
+        key = argv[0];
+        val = argv[1];
+    }
+
+    bool iter_p = hash_iterating_p(hash);
+    rb_hash_modify(hash);
+
+    if(block_given) {
+        if (!RHASH_STRING_KEY_P(hash, key)) {
+            RHASH_UPDATE_ITER(hash, iter_p, key, hash_store_yield, val);
+        }
+        else {
+            RHASH_UPDATE_ITER(hash, iter_p, key, hash_store_yield_str, val);
+        }
+    } else {
+        if (!RHASH_STRING_KEY_P(hash, key)) {
+            RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
+        }
+        else {
+            RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset_str, val);
+        }
+    }
+    return val;
+}
+
 
 /*
  *  call-seq:
@@ -7129,7 +7230,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "eql?", rb_hash_eql, 1);
     rb_define_method(rb_cHash, "fetch", rb_hash_fetch_m, -1);
     rb_define_method(rb_cHash, "[]=", rb_hash_aset, 2);
-    rb_define_method(rb_cHash, "store", rb_hash_aset, 2);
+    rb_define_method(rb_cHash, "store", rb_hash_store, -1);
     rb_define_method(rb_cHash, "default", rb_hash_default, -1);
     rb_define_method(rb_cHash, "default=", rb_hash_set_default, 1);
     rb_define_method(rb_cHash, "default_proc", rb_hash_default_proc, 0);
