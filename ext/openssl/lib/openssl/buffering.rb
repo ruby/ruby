@@ -37,8 +37,8 @@ module OpenSSL::Buffering
       end
     end
 
-    alias_method :concat, :append_as_bytes
-    alias_method :<<, :append_as_bytes
+    undef_method :concat
+    undef_method :<<
   end
 
   ##
@@ -73,7 +73,7 @@ module OpenSSL::Buffering
 
   def fill_rbuff
     begin
-      @rbuffer << self.sysread(BLOCK_SIZE)
+      @rbuffer.append_as_bytes(self.sysread(BLOCK_SIZE))
     rescue Errno::EAGAIN
       retry
     rescue EOFError
@@ -450,10 +450,10 @@ module OpenSSL::Buffering
   def puts(*args)
     s = Buffer.new
     if args.empty?
-      s << "\n"
+      s.append_as_bytes("\n")
     end
     args.each{|arg|
-      s << arg.to_s
+      s.append_as_bytes(arg.to_s)
       s.sub!(/(?<!\n)\z/, "\n")
     }
     do_write(s)
@@ -467,7 +467,7 @@ module OpenSSL::Buffering
 
   def print(*args)
     s = Buffer.new
-    args.each{ |arg| s << arg.to_s }
+    args.each{ |arg| s.append_as_bytes(arg.to_s) }
     do_write(s)
     nil
   end
