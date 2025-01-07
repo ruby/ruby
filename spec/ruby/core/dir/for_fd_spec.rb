@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
+quarantine! do # leads to "Errno::EBADF: Bad file descriptor - closedir" in DirSpecs.delete_mock_dirs
 ruby_version_is '3.3' do
   guard -> { Dir.respond_to? :for_fd } do
     describe "Dir.for_fd" do
@@ -74,4 +75,5 @@ ruby_version_is '3.3' do
       end
     end
   end
+end
 end
