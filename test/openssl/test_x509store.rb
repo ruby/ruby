@@ -331,7 +331,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   def test_add_cert_duplicate
     # Up until OpenSSL 1.1.0, X509_STORE_add_{cert,crl}() returned an error
     # if the given certificate is already in the X509_STORE
-    return if openssl?(1, 1, 0) || libressl?
+    return unless openssl? && !openssl?(1, 1, 0)
     ca1 = OpenSSL::X509::Name.parse_rfc2253("CN=Root CA")
     ca1_key = Fixtures.pkey("rsa-1")
     ca1_cert = issue_cert(ca1, ca1_key, 1, [], nil, nil)

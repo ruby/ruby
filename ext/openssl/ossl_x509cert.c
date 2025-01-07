@@ -711,7 +711,6 @@ ossl_x509_eq(VALUE self, VALUE other)
     return !X509_cmp(a, b) ? Qtrue : Qfalse;
 }
 
-#ifdef HAVE_I2D_RE_X509_TBS
 /*
  * call-seq:
  *    cert.tbs_bytes => string
@@ -741,7 +740,6 @@ ossl_x509_tbs_bytes(VALUE self)
 
     return str;
 }
-#endif
 
 struct load_chained_certificates_arguments {
     VALUE certificates;
@@ -1035,7 +1033,5 @@ Init_ossl_x509cert(void)
     rb_define_method(cX509Cert, "add_extension", ossl_x509_add_extension, 1);
     rb_define_method(cX509Cert, "inspect", ossl_x509_inspect, 0);
     rb_define_method(cX509Cert, "==", ossl_x509_eq, 1);
-#ifdef HAVE_I2D_RE_X509_TBS
     rb_define_method(cX509Cert, "tbs_bytes", ossl_x509_tbs_bytes, 0);
-#endif
 }

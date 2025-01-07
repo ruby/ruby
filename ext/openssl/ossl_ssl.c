@@ -18,11 +18,6 @@
 # define OSSL_USE_NEXTPROTONEG
 #endif
 
-#if !defined(TLS1_3_VERSION) && \
-    OSSL_LIBRESSL_PREREQ(3, 2, 0) && !OSSL_LIBRESSL_PREREQ(3, 4, 0)
-#  define TLS1_3_VERSION 0x0304
-#endif
-
 #ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else

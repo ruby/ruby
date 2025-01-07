@@ -135,8 +135,7 @@ class OpenSSL::TestX509Request < OpenSSL::TestCase
   def test_sign_and_verify_ed25519
     # Ed25519 is not FIPS-approved.
     omit_on_fips
-    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
-    omit "Ed25519 not supported" unless openssl?(1, 1, 1) || libressl?(3, 8, 1)
+    omit "Ed25519 not supported" if openssl? && !openssl?(1, 1, 1)
     ed25519 = OpenSSL::PKey::generate_key("ED25519")
     req = issue_csr(0, @dn, ed25519, nil)
     assert_equal(false, request_error_returns_false { req.verify(@rsa1024) })
