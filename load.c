@@ -1531,7 +1531,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
         return rb_ractor_require(fname);
     }
     else {
-        int result = require_internal_in_current_namespace(ec, fname, 1, RTEST(ruby_verbose));
+        int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
         if (result > TAG_RETURN) {
             EC_JUMP_TAG(ec, result);
