@@ -204,7 +204,7 @@ Any combination of adjacent single-quote, double-quote, percent strings will
 be concatenated as long as a percent-string is not last.
 
   %q{a} 'b' "c" #=> "abc"
-  "a" 'b' %q{c} #=> NameError: uninitialized constant q
+  "a" 'b' %q{c} #=> NoMethodError: undefined method 'q' for main
 
 === Character Literal
 
