@@ -266,6 +266,17 @@ module Prism
       assert_prism_eval("defined?(while a != 1; end)")
       assert_prism_eval("defined?(until a == 1; end)")
       assert_prism_eval("defined?(unless true; 1; end)")
+      assert_prism_eval("defined?((alias a b))")
+      assert_prism_eval("defined?((alias $a $b))")
+      assert_prism_eval("defined?(!(a..b))")
+      assert_prism_eval("def f(...); defined?(p(...)); end")
+      assert_prism_eval("defined?(!/foo/)")
+      assert_prism_eval('defined?(!/#{1}/)')
+      assert_prism_eval("defined?((END{}))")
+      assert_prism_eval("defined?((a rescue b))")
+      assert_prism_eval("# shareable-constant-value: experimental_everything\ndefined?(A=1)")
+      assert_prism_eval("defined?((undef a))")
+      assert_prism_eval("tap { defined?(it) }")
     end
 
     def test_GlobalVariableReadNode

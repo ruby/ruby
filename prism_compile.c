@@ -3877,6 +3877,8 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, in_condition, lfinish, false);
         return;
       }
+      case PM_ALIAS_GLOBAL_VARIABLE_NODE:
+      case PM_ALIAS_METHOD_NODE:
       case PM_AND_NODE:
       case PM_BEGIN_NODE:
       case PM_BREAK_NODE:
@@ -3885,26 +3887,32 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_CLASS_NODE:
       case PM_DEF_NODE:
       case PM_DEFINED_NODE:
+      case PM_FLIP_FLOP_NODE:
       case PM_FLOAT_NODE:
       case PM_FOR_NODE:
+      case PM_FORWARDING_ARGUMENTS_NODE:
       case PM_IF_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
+      case PM_INTERPOLATED_MATCH_LAST_LINE_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
       case PM_INTERPOLATED_STRING_NODE:
       case PM_INTERPOLATED_SYMBOL_NODE:
       case PM_INTERPOLATED_X_STRING_NODE:
       case PM_LAMBDA_NODE:
+      case PM_MATCH_LAST_LINE_NODE:
       case PM_MATCH_PREDICATE_NODE:
       case PM_MATCH_REQUIRED_NODE:
       case PM_MATCH_WRITE_NODE:
       case PM_MODULE_NODE:
       case PM_NEXT_NODE:
       case PM_OR_NODE:
+      case PM_POST_EXECUTION_NODE:
       case PM_RANGE_NODE:
       case PM_RATIONAL_NODE:
       case PM_REDO_NODE:
       case PM_REGULAR_EXPRESSION_NODE:
+      case PM_RESCUE_MODIFIER_NODE:
       case PM_RETRY_NODE:
       case PM_RETURN_NODE:
       case PM_SINGLETON_CLASS_NODE:
@@ -3913,12 +3921,14 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_SOURCE_LINE_NODE:
       case PM_STRING_NODE:
       case PM_SYMBOL_NODE:
+      case PM_UNDEF_NODE:
       case PM_UNLESS_NODE:
       case PM_UNTIL_NODE:
       case PM_WHILE_NODE:
       case PM_X_STRING_NODE:
         dtype = DEFINED_EXPR;
         break;
+      case PM_IT_LOCAL_VARIABLE_READ_NODE:
       case PM_LOCAL_VARIABLE_READ_NODE:
         dtype = DEFINED_LVAR;
         break;
@@ -4068,6 +4078,8 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE:
       case PM_CONSTANT_PATH_OR_WRITE_NODE:
       case PM_CONSTANT_PATH_WRITE_NODE:
+
+      case PM_SHAREABLE_CONSTANT_NODE:
 
       case PM_GLOBAL_VARIABLE_WRITE_NODE:
       case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
