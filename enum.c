@@ -4704,7 +4704,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     }
     else switch (TYPE(memo->v)) {
       default:      sum_iter_some_value(i, memo);    return;
-      case T_FLOAT: sum_iter_Kahan_Babuska(i, memo); return;
+      case T_FLOAT:
       case T_FIXNUM:
       case T_BIGNUM:
       case T_RATIONAL:
