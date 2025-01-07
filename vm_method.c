@@ -542,7 +542,6 @@ rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, co
         table_owner = RBASIC(table_owner)->klass;
     }
     VM_ASSERT_TYPE3(table_owner, T_CLASS, T_ICLASS, T_MODULE);
-    VM_ASSERT(table == RCLASS_M_TBL(table_owner));
     rb_id_table_insert(table, method_id, (VALUE)me);
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
 }
