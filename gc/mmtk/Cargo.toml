@@ -31,7 +31,7 @@ features = ["is_mmtk_object", "object_pinning", "sticky_immix_non_moving_nursery
 
 # Uncomment the following lines to use mmtk-core from the official repository.
 git = "https://github.com/mmtk/mmtk-core.git"
-rev = "0883898514d482d9027c845e8d7f6976a49a39ac"
+rev = "ec745353a8de72b645613e0fef3ab7f5f1ad9bd1"
 
 # Uncomment the following line to use mmtk-core from a local repository.
 # path = "../../../mmtk-core"
