@@ -3845,9 +3845,10 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
               }
               case PM_ASSOC_SPLAT_NODE: {
                 const pm_assoc_splat_node_t *assoc_splat = (const pm_assoc_splat_node_t *) element;
-
-                pm_compile_defined_expr0(iseq, assoc_splat->value, node_location, ret, popped, scope_node, true, lfinish, false);
-                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+                if (assoc_splat->value != NULL) {
+                    pm_compile_defined_expr0(iseq, assoc_splat->value, node_location, ret, popped, scope_node, true, lfinish, false);
+                    PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+                }
 
                 break;
               }
@@ -3862,13 +3863,15 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       }
       case PM_SPLAT_NODE: {
         const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
-        pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
+        if (cast->expression != NULL) {
+            pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
 
-        if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(location.line);
+            if (!lfinish[1]) {
+                lfinish[1] = NEW_LABEL(location.line);
+            }
+
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
-
-        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         dtype = DEFINED_EXPR;
         break;
       }

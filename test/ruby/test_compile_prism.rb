@@ -270,6 +270,8 @@ module Prism
       assert_prism_eval("defined?((alias $a $b))")
       assert_prism_eval("defined?(!(a..b))")
       assert_prism_eval("def f(...); defined?(p(...)); end")
+      assert_prism_eval("def f(*, **, &); defined?(p(*, **, &)); end")
+      assert_prism_eval("def f(*, **, &); defined?([*, **]); end")
       assert_prism_eval("defined?(!/foo/)")
       assert_prism_eval('defined?(!/#{1}/)')
       assert_prism_eval("defined?((END{}))")
