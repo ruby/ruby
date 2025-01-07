@@ -310,5 +310,21 @@ module RDoc
       # Generate document for compatibility if this is a default gem.
       RubyGemsHook.generate(installer, specs)
     end
+
+    def self.load_rdoc
+      RubyGemsHook.load_rdoc
+    end
+
+    def self.rdoc_version
+      RubyGemsHook.rdoc_version
+    end
+
+    def rdoc_installed?
+      RubyGemsHook.new(@spec).rdoc_installed?
+    end
+
+    def ri_installed?
+      RubyGemsHook.new(@spec).ri_installed?
+    end
   end
 end
