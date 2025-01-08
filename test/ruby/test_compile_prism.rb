@@ -3,6 +3,12 @@
 # This file is organized to match itemization in https://github.com/ruby/prism/issues/1335
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
+    def test_iseq_has_node_id
+      code = "proc { <<END }\n hello\nEND"
+      iseq = RubyVM::InstructionSequence.compile_prism(code)
+      assert_operator iseq.to_a[4][:node_id], :>, -1
+    end
+
     # Subclass is used for tests which need it
     class Subclass; end
     ############################################################################
