@@ -1721,6 +1721,15 @@ x = __ENCODING__
     end;
   end
 
+  def test_shareable_constant_value_massign
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A, = 1
+    end;
+    assert_equal(1, a)
+  end
+
   def test_if_after_class
     assert_valid_syntax('module if true; Object end::Kernel; end')
     assert_valid_syntax('module while true; break Object end::Kernel; end')

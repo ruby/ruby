@@ -10417,7 +10417,7 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
     VALUE lit = Qnil;
     DECL_ANCHOR(anchor);
 
-    enum node_type type = nd_type(node);
+    enum node_type type = node ? nd_type(node) : NODE_NIL;
     switch (type) {
       case NODE_TRUE:
         *value_p = Qtrue;
