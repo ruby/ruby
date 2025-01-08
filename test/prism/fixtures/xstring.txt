@@ -14,11 +14,17 @@
 
 `
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
 foo\
 b\nar
 `
 
 `
+<<<<<<< HEAD
 =======
 >>>>>>> a651126458 (Fix an incompatibility with the parser translator)
+=======
+>>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
 ’`
