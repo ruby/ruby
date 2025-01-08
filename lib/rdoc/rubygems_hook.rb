@@ -181,9 +181,9 @@ class RDoc::RubyGemsHook
       options = ::RDoc::Options.new
       options.default_title = "#{@spec.full_name} Documentation"
       options.parse args
+      options.quiet = !Gem.configuration.really_verbose
+      options.finish
     end
-
-    options.quiet = !Gem.configuration.really_verbose
 
     @rdoc = new_rdoc
     @rdoc.options = options

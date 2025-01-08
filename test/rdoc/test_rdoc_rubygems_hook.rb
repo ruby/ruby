@@ -37,8 +37,15 @@ class TestRDocRubyGemsHook < Test::Unit::TestCase
     @a.loaded_from = File.join(@tempdir, 'a-2', 'a-2.gemspec')
 
     FileUtils.mkdir_p File.join(@tempdir, 'a-2', 'lib')
-    FileUtils.touch   File.join(@tempdir, 'a-2', 'lib', 'a.rb')
     FileUtils.touch   File.join(@tempdir, 'a-2', 'README')
+    File.open(File.join(@tempdir, 'a-2', 'lib', 'a.rb'), 'w') do |f|
+      f.puts '# comment'
+      f.puts '# :include: include.txt'
+      f.puts 'class A; end'
+    end
+    File.open(File.join(@tempdir, 'a-2', 'include.txt'), 'w') do |f|
+      f.puts 'included content'
+    end
 
     @hook = RDoc::RubyGemsHook.new @a
 
@@ -112,6 +119,10 @@ class TestRDocRubyGemsHook < Test::Unit::TestCase
     assert_equal %w[README lib], rdoc.options.files.sort
 
     assert_equal 'MyTitle', rdoc.store.main
+
+    klass = rdoc.store.find_class_named('A')
+    refute_nil klass
+    assert_includes klass.comment.text, 'included content'
   end
 
   def test_generate_all
