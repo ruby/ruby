@@ -73,6 +73,8 @@ jobs:
 
       - run: make
 
+      - run: make TESTRUN_SCRIPT='-e "exit !RUBY_DESCRIPTION.include?(%[+PRISM])"' run
+
       - name: make ${{ matrix.test_task }}
         run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
         env:
