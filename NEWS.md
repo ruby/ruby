@@ -13,6 +13,10 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
+The following bundled gem is promoted from default gems.
+
+* ostruct 0.6.1
+
 We only list stdlib changes that are notable feature changes.
 
 Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
@@ -28,7 +32,8 @@ The following default gems are updated.
 * fiddle 1.1.7.dev
 * stringio 3.1.3.dev
 
-The following bundled gem is added.
+The following bundled gems are added.
+
 
 The following bundled gems are updated.
 
