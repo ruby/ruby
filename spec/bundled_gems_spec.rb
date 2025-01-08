@@ -20,7 +20,6 @@ RSpec.configure do |config|
 
   config.before(:suite) do
     Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
-    ENV["TEST_BUNDLED_GEMS_FAKE_RBCONFIG"] = "true"
 
     require_relative "bundler/support/rubygems_ext"
     Spec::Rubygems.test_setup
@@ -59,6 +58,11 @@ RSpec.describe "bundled_gems.rb" do
   def script(code, options = {})
     options[:artifice] ||= "compact_index"
     code = <<~RUBY
+      Gem::BUNDLED_GEMS.send(:remove_const, :LIBDIR)
+      Gem::BUNDLED_GEMS.send(:remove_const, :ARCHDIR)
+      Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
+      Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
+
       require 'bundler/inline'
 
       #{code}
@@ -80,9 +84,9 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/csv was loaded from (.*) from Ruby 3.4.0/)
-    expect(err).to include(/-e:8/)
+    expect(err).to include(/-e:13/)
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/-e:11/)
+    expect(err).to include(/-e:16/)
   end
 
   it "Show warning when bundled gems called as dependency" do
@@ -118,7 +122,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/net\/smtp was loaded from (.*) from Ruby 3.1.0/)
-    expect(err).to include(/-e:8/)
+    expect(err).to include(/-e:13/)
     expect(err).to include("You can add net-smtp")
   end
 
@@ -134,7 +138,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/fiddle\/import is found in fiddle, (.*) part of the default gems starting from Ruby 3\.5\.0/)
-    expect(err).to include(/-e:7/)
+    expect(err).to include(/-e:12/)
   end
 
   it "Show warning when bundle exec with ruby and script" do
@@ -195,7 +199,7 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to include(/ostruct was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/-e:12/)
+    expect(err).to include(/-e:17/)
   end
 
   it "Don't show warning when bundled gems called as dependency" do
