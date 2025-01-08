@@ -40,6 +40,11 @@
 #
 "bar"
 
+"
+foo\
+b\nar
+"
+
 %q{abc}
 
 %s[abc]
