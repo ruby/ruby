@@ -49,7 +49,6 @@ of each.
 - Logger ([GitHub][logger]): Provides a simple logging utility for outputting messages
 - Net::HTTP ([GitHub][net-http]): HTTP client API for Ruby
 - Open3 ([GitHub][open3]): Provides access to stdin, stdout, and stderr when running other programs
-- OpenStruct ([GitHub][ostruct]): A class to build custom data structures, similar to a Hash
 - OpenURI ([GitHub][open-uri]): An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
 - PP ([GitHub][pp]): Provides a PrettyPrinter for Ruby objects
 - PrettyPrint ([GitHub][prettyprint]): Implements a pretty printing algorithm for readable structure
@@ -131,6 +130,7 @@ of each.
 - [nkf]: Ruby extension for the Network Kanji Filter
 - [syslog]: Ruby interface for the POSIX system logging facility
 - [csv]: Provides an interface to read and write CSV files and data
+- [ostruct]: A class to build custom data structures, similar to a Hash
 
 [abbrev]: https://github.com/ruby/abbrev
 [base64]: https://github.com/ruby/base64

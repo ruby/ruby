@@ -223,12 +223,6 @@ have commit right, others don't.
 * Tanaka Akira ([akr])
 * https://github.com/ruby/open-uri
 
-#### lib/ostruct.rb
-
-* Marc-André Lafortune ([marcandre])
-* https://github.com/ruby/ostruct
-* https://rubygems.org/gems/ostruct
-
 #### lib/pp.rb
 
 * Tanaka Akira ([akr])
@@ -584,6 +578,10 @@ have commit right, others don't.
 #### csv
 
 * https://github.com/ruby/csv
+
+#### ostruct
+
+* https://github.com/ruby/ostruct
 
 ## Platform Maintainers
 
