@@ -123,6 +123,7 @@ version_ok = if have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
   checking_for("LibreSSL version >= 3.9.0") {
     try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x30900000L", "openssl/opensslv.h") }
 else
+  is_openssl = true
   checking_for("OpenSSL version >= 1.0.2") {
     try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10002000L", "openssl/opensslv.h") }
 end
@@ -143,11 +144,13 @@ ssl_h = "openssl/ssl.h".freeze
 
 # compile options
 have_func("RAND_egd()", "openssl/rand.h")
-engines = %w{dynamic 4758cca aep atalla chil
-             cswift nuron sureware ubsec padlock capi gmp gost cryptodev}
-engines.each { |name|
-  have_func("ENGINE_load_#{name}()", "openssl/engine.h")
-}
+if is_openssl
+  engines = %w{dynamic 4758cca aep atalla chil
+               cswift nuron sureware ubsec padlock capi gmp gost cryptodev}
+  engines.each { |name|
+    have_func("ENGINE_load_#{name}()", "openssl/engine.h")
+  }
+end
 
 # added in 1.1.0
 if !have_struct_member("SSL", "ctx", "openssl/ssl.h") || is_libressl
