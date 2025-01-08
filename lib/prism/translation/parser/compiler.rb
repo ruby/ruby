@@ -1085,21 +1085,13 @@ module Prism
             return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
-          parts = node.parts.flat_map do |node|
+          parts = node.parts.flat_map do |part|
             # When the content of a string node is split across multiple lines, the
             # parser gem creates individual string nodes for each line the content is part of.
-            if node.type == :string_node && node.content.include?("\n") && node.opening_loc.nil?
-              start_offset = node.content_loc.start_offset
-
-              node.unescaped.lines.map do |line|
-                end_offset = start_offset + line.bytesize
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
-
-                builder.string_internal([line, offsets])
-              end
+            if part.type == :string_node && part.content.include?("\n") && part.opening_loc.nil?
+              string_nodes_from_line_continuations(part.unescaped, part.content, part.content_loc.start_offset, node.opening)
             else
-              visit(node)
+              visit(part)
             end
           end
 
@@ -1513,7 +1505,7 @@ module Prism
             if node.content == ""
               []
             elsif node.content.include?("\n")
-              string_nodes_from_line_continuations(node, node.content_loc.start_offset, node.opening)
+              string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
             else
               [builder.string_internal(token(node.content_loc))]
             end
@@ -1672,28 +1664,11 @@ module Prism
           elsif node.opening&.start_with?("%") && node.unescaped.empty?
             builder.string_compose(token(node.opening_loc), [], token(node.closing_loc))
           else
-            content_lines = node.content.lines
-            unescaped_lines = node.unescaped.lines
-
             parts =
-              if content_lines.length <= 1 || unescaped_lines.length <= 1
-                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
-              elsif content_lines.length != unescaped_lines.length
-                # This occurs when we have line continuations in the string. We
-                # need to come back and fix this, but for now this stops the
-                # code from breaking when we encounter it because of trying to
-                # transpose arrays of different lengths.
-                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+              if node.content.include?("\n")
+                string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
               else
-                start_offset = node.content_loc.start_offset
-
-                [content_lines, unescaped_lines].transpose.map do |content_line, unescaped_line|
-                  end_offset = start_offset + content_line.bytesize
-                  offsets = srange_offsets(start_offset, end_offset)
-                  start_offset = end_offset
-
-                  builder.string_internal([unescaped_line, offsets])
-                end
+                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
               end
 
             builder.string_compose(
@@ -1737,19 +1712,14 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
-            parts = if node.value.lines.one?
-              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
-            else
-              start_offset = node.value_loc.start_offset
-
-              node.value.lines.map do |line|
-                end_offset = start_offset + line.bytesize
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
-
-                builder.string_internal([line, offsets])
+            parts =
+              if node.value == ""
+                []
+              elsif node.value.include?("\n")
+                string_nodes_from_line_continuations(node.unescaped, node.value, node.value_loc.start_offset, node.opening)
+              else
+                [builder.string_internal([node.unescaped, srange(node.value_loc)])]
               end
-            end
 
             builder.symbol_compose(
               token(node.opening_loc),
@@ -1878,28 +1848,23 @@ module Prism
         # ^^^^^
         def visit_x_string_node(node)
           if node.heredoc?
-            visit_heredoc(node.to_interpolated) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
-          else
-            parts = if node.unescaped.lines.one?
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
+            return visit_heredoc(node.to_interpolated) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
+          end
+
+          parts =
+            if node.content == ""
+              []
+            elsif node.content.include?("\n")
+              string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
             else
-              start_offset = node.content_loc.start_offset
-
-              node.unescaped.lines.map do |line|
-                end_offset = start_offset + line.bytesize
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
-
-                builder.string_internal([line, offsets])
-              end
+              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
             end
 
-            builder.xstring_compose(
-              token(node.opening_loc),
-              parts,
-              token(node.closing_loc)
-            )
-          end
+          builder.xstring_compose(
+            token(node.opening_loc),
+            parts,
+            token(node.closing_loc)
+          )
         end
 
         # yield
@@ -2069,8 +2034,8 @@ module Prism
 
           node.parts.each do |part|
             pushing =
-              if part.is_a?(StringNode) && part.unescaped.include?("\n")
-                string_nodes_from_line_continuations(part, part.location.start_offset, node.opening)
+              if part.is_a?(StringNode) && part.content.include?("\n")
+                string_nodes_from_line_continuations(part.unescaped, part.content, part.location.start_offset, node.opening)
               else
                 [visit(part)]
               end
@@ -2123,9 +2088,9 @@ module Prism
 
         # Create parser string nodes from a single prism node. The parser gem
         # "glues" strings together when a line continuation is encountered.
-        def string_nodes_from_line_continuations(node, start_offset, opening)
-          unescaped = node.unescaped.lines
-          escaped = node.content.lines
+        def string_nodes_from_line_continuations(unescaped, escaped, start_offset, opening)
+          unescaped = unescaped.lines
+          escaped = escaped.lines
 
           escaped_lengths = []
           normalized_lengths = []
@@ -2135,7 +2100,7 @@ module Prism
           # line continuations don't start a new node as well.
           do_next_tokens = []
 
-          if opening.end_with?("'")
+          if opening&.end_with?("'")
             escaped.each do |line|
               escaped_lengths << line.bytesize
               normalized_lengths << chomped_bytesize(line)
