@@ -249,14 +249,13 @@ class TestAssignment < Test::Unit::TestCase
   end
 
   def test_massign_optimized_literal_bug_21012
-    singleton_class.attr_reader :a
-    @a = []
-    def (@a).[]=(*args)
+    a = []
+    def a.[]=(*args)
       push args
     end
     a["a", "b"], = 1
     a["a", 10], = 2
-    assert_equal [["a", "b", 1], ["a", 10, 2]], @a
+    assert_equal [["a", "b", 1], ["a", 10, 2]], a
   end
 
   def test_assign_rescue
