@@ -51,14 +51,8 @@ module Gem::BUNDLED_GEMS # :nodoc:
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
-  if ENV["TEST_BUNDLED_GEMS_FAKE_RBCONFIG"]
-    LIBDIR = (File.expand_path(File.join(__dir__, "..", "lib")) + "/").freeze
-    rubyarchdir = $LOAD_PATH.find{|path| path.include?(".ext/common") }
-    ARCHDIR = (File.expand_path(rubyarchdir) + "/").freeze
-  else
-    LIBDIR = (conf["rubylibdir"] + "/").freeze
-    ARCHDIR = (conf["rubyarchdir"] + "/").freeze
-  end
+  LIBDIR = (conf["rubylibdir"] + "/").freeze
+  ARCHDIR = (conf["rubyarchdir"] + "/").freeze
   dlext = [conf["DLEXT"], "so"].uniq
   DLEXT = /\.#{Regexp.union(dlext)}\z/
   LIBEXT = /\.#{Regexp.union("rb", *dlext)}\z/
@@ -229,8 +223,6 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
     msg
   end
-
-  freeze
 end
 
 # for RubyGems without Bundler environment.
