@@ -63,7 +63,7 @@ RSpec.describe "bundled_gems.rb" do
       Gem::BUNDLED_GEMS.send(:remove_const, :SINCE_FAST_PATH)
       Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
-      Gem::BUNDLED_GEMS.const_set(:SINCE, { "fiddle" => "3.5.0", "irb" => "3.5.0", "logger" => "3.5.0", "csv" => "3.4.0", "net-smtp" => "3.1.0", "erb" => RUBY_VERSION })
+      Gem::BUNDLED_GEMS.const_set(:SINCE, { "fiddle" => "3.5.0", "irb" => "3.5.0", "csv" => "3.4.0", "net-smtp" => "3.1.0", "erb" => RUBY_VERSION })
       Gem::BUNDLED_GEMS.const_set(:SINCE_FAST_PATH, Gem::BUNDLED_GEMS::SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") } )
     STUB
   }
@@ -278,11 +278,11 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   it "Show warning with bootsnap and some gem in Gemfile" do
-    build_lib "childprocess", "5.0.0" do |s|
+    # Original issue is childprocess 5.0.0 and logger.
+    build_lib "erb2", "5.0.0" do |s|
       # bootsnap expand required feature to full path
-      # require 'logger'
       rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
-      s.write "lib/childprocess.rb", "require '#{rubylibpath}/logger'"
+      s.write "lib/erb2.rb", "require '#{rubylibpath}/erb'"
     end
 
     script <<-RUBY
@@ -290,7 +290,7 @@ RSpec.describe "bundled_gems.rb" do
         source "https://rubygems.org"
         # gem "bootsnap", require: false
         path "#{lib_path}" do
-          gem "childprocess", "5.0.0"
+          gem "erb2", "5.0.0"
         end
       end
 
@@ -298,11 +298,10 @@ RSpec.describe "bundled_gems.rb" do
       # Bootsnap.setup(cache_dir: 'tmp/cache')
 
       # bootsnap expand required feature to full path
-      # require 'childprocess'
-      require Gem.loaded_specs["childprocess"].full_gem_path + '/lib/childprocess'
+      require Gem.loaded_specs["erb2"].full_gem_path + '/lib/erb2'
     RUBY
 
-    expect(err).to include(/logger was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/erb was loaded from (.*) from Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
