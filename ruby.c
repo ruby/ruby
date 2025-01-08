@@ -339,7 +339,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-n",		   "",			   "Run program in gets loop."),
         M("-p",		   "",			   "Like -n, with printing added."),
         M("-rlibrary",	   "",			   "Require the given library."),
-        M("-s",		   "",			   "Define global variables using switches following program path."),
+        M("-s, -g",	   "",			   "Define global variables using switches following program path.\n"
+            "-g supports posix shorthands and integers"),
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
@@ -807,6 +808,17 @@ toplevel_context(rb_binding_t *bind)
     return &bind->block;
 }
 
+static VALUE
+parse_gflag_equals(const char *src)
+{
+    if (!strcmp(src, "true")) return Qtrue;
+    if (!strcmp(src, "false")) return Qfalse;
+    if (!strcmp(src, "nil")) return Qnil;
+
+    VALUE v = rb_int_parse_cstr(src, -1, NULL, NULL, 10, RB_INT_PARSE_DEFAULT);
+    return NIL_P(v) ? rb_str_new2(src) : v;
+}
+
 static int
 process_sflag(int sflag)
 {
@@ -814,6 +826,7 @@ process_sflag(int sflag)
         long n;
         const VALUE *args;
         VALUE argv = rb_argv;
+        int gflag = sflag == 2;
 
         n = RARRAY_LEN(argv);
         args = RARRAY_CONST_PTR(argv);
@@ -829,12 +842,45 @@ process_sflag(int sflag)
             if (s[1] == '-' && s[2] == '\0')
                 break;
 
+            // Handle `-abc` in extended switch mode. Also, removes the leading `-` for long-form
+            // `--foo`s in extended mode so they end up as `$foo`, not `$_foo`.
+            if (gflag && *++s != '-') {
+                while (*s != '\0') {
+                    char name = *s++;
+                    if (name != '_' && !ISALPHA(name)) {
+                        VALUE name_error[2];
+                        name_error[0] = rb_str_new2("invalid name for global variable - ");
+                        char error_flag[3] = { '-', name, '\0' };
+                        rb_str_cat2(name_error[0], error_flag);
+                        name_error[1] = args[-1];
+                        rb_exc_raise(rb_class_new_instance(2, name_error, rb_eNameError));
+                    }
+
+
+                    if (*s == '=') { // handle `-f=xyz`
+                        *s = '\0'; // Finish parsing after this.
+                        v = parse_gflag_equals(s + 1);
+                    } else if (ISDIGIT(*s) || ((*s == '+' || *s == '-') && ISDIGIT(s[1]))) {  // handle `-a12b` as `-a=12 -b`; also supports signs
+                        v = rb_int_parse_cstr(s, strlen(s), &s, NULL, 10, RB_INT_PARSE_SIGN);
+                    } else { // Count consecutive occurrences for the value
+                        long counts = 1;
+                        while (*s == name)
+                            ++counts, ++s;
+                        v = LONG2FIX(counts);
+                    }
+
+                    char gvar[3] = { '$', name, '\0' };
+                    rb_gv_set(gvar, v);
+                }
+                continue;
+            }
+
             v = Qtrue;
             /* check if valid name before replacing - with _ */
             for (p = s + 1; *p; p++) {
                 if (*p == '=') {
                     *p++ = '\0';
-                    v = rb_str_new2(p);
+                    v = gflag ? parse_gflag_equals(p) : rb_str_new2(p);
                     break;
                 }
                 if (*p == '-') {
@@ -1598,6 +1644,13 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             if (envopt) goto noenvopt;
             forbid_setid("-s");
             if (!opt->sflag) opt->sflag = 1;
+            s++;
+            goto reswitch;
+
+          case 'g':
+            if (envopt) goto noenvopt;
+            forbid_setid("-g");
+            if (!opt->sflag || opt->sflag == 1) opt->sflag = 2;
             s++;
             goto reswitch;
 
