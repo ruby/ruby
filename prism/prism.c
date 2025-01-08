@@ -9551,21 +9551,7 @@ escape_write_unicode(pm_parser_t *parser, pm_buffer_t *buffer, const uint8_t fla
         parser->explicit_encoding = PM_ENCODING_UTF_8_ENTRY;
     }
 
-    if (value <= 0x7F) { // 0xxxxxxx
-        pm_buffer_append_byte(buffer, (uint8_t) value);
-    } else if (value <= 0x7FF) { // 110xxxxx 10xxxxxx
-        pm_buffer_append_byte(buffer, (uint8_t) (0xC0 | (value >> 6)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
-    } else if (value <= 0xFFFF) { // 1110xxxx 10xxxxxx 10xxxxxx
-        pm_buffer_append_byte(buffer, (uint8_t) (0xE0 | (value >> 12)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
-    } else if (value <= 0x10FFFF) { // 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-        pm_buffer_append_byte(buffer, (uint8_t) (0xF0 | (value >> 18)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 12) & 0x3F)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | ((value >> 6) & 0x3F)));
-        pm_buffer_append_byte(buffer, (uint8_t) (0x80 | (value & 0x3F)));
-    } else {
+    if (!pm_buffer_append_unicode_codepoint(buffer, value)) {
         pm_parser_err(parser, start, end, PM_ERR_ESCAPE_INVALID_UNICODE);
         pm_buffer_append_byte(buffer, 0xEF);
         pm_buffer_append_byte(buffer, 0xBF);
@@ -20873,6 +20859,123 @@ typedef struct {
     bool shared;
 } parse_regular_expression_named_capture_data_t;
 
+static inline const uint8_t *
+pm_named_capture_escape_hex(pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
+    cursor++;
+
+    if (cursor < end && pm_char_is_hexadecimal_digit(*cursor)) {
+        uint8_t value = escape_hexadecimal_digit(*cursor);
+        cursor++;
+
+        if (cursor < end && pm_char_is_hexadecimal_digit(*cursor)) {
+            value = (uint8_t) ((value << 4) | escape_hexadecimal_digit(*cursor));
+            cursor++;
+        }
+
+        pm_buffer_append_byte(unescaped, value);
+    } else {
+        pm_buffer_append_string(unescaped, "\\x", 2);
+    }
+
+    return cursor;
+}
+
+static inline const uint8_t *
+pm_named_capture_escape_octal(pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
+    uint8_t value = (uint8_t) (*cursor - '0');
+    cursor++;
+
+    if (cursor < end && pm_char_is_octal_digit(*cursor)) {
+        value = ((uint8_t) (value << 3)) | ((uint8_t) (*cursor - '0'));
+        cursor++;
+
+        if (cursor < end && pm_char_is_octal_digit(*cursor)) {
+            value = ((uint8_t) (value << 3)) | ((uint8_t) (*cursor - '0'));
+            cursor++;
+        }
+    }
+
+    pm_buffer_append_byte(unescaped, value);
+    return cursor;
+}
+
+static inline const uint8_t *
+pm_named_capture_escape_unicode(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *cursor, const uint8_t *end) {
+    const uint8_t *start = cursor - 1;
+    cursor++;
+
+    if (cursor >= end) {
+        pm_buffer_append_string(unescaped, "\\u", 2);
+        return cursor;
+    }
+
+    if (*cursor != '{') {
+        size_t length = pm_strspn_hexadecimal_digit(cursor, MIN(end - cursor, 4));
+        uint32_t value = escape_unicode(parser, cursor, length);
+
+        if (!pm_buffer_append_unicode_codepoint(unescaped, value)) {
+            pm_buffer_append_string(unescaped, (const char *) start, (size_t) ((cursor + length) - start));
+        }
+
+        return cursor + length;
+    }
+
+    cursor++;
+    for (;;) {
+        while (cursor < end && *cursor == ' ') cursor++;
+
+        if (cursor >= end) break;
+        if (*cursor == '}') {
+            cursor++;
+            break;
+        }
+
+        size_t length = pm_strspn_hexadecimal_digit(cursor, end - cursor);
+        uint32_t value = escape_unicode(parser, cursor, length);
+
+        (void) pm_buffer_append_unicode_codepoint(unescaped, value);
+        cursor += length;
+    }
+
+    return cursor;
+}
+
+static void
+pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8_t *source, const size_t length, const uint8_t *cursor) {
+    const uint8_t *end = source + length;
+    pm_buffer_append_string(unescaped, (const char *) source, (size_t) (cursor - source));
+
+    for (;;) {
+        if (++cursor >= end) {
+            pm_buffer_append_byte(unescaped, '\\');
+            return;
+        }
+
+        switch (*cursor) {
+            case 'x':
+                cursor = pm_named_capture_escape_hex(unescaped, cursor, end);
+                break;
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7':
+                cursor = pm_named_capture_escape_octal(unescaped, cursor, end);
+                break;
+            case 'u':
+                cursor = pm_named_capture_escape_unicode(parser, unescaped, cursor, end);
+                break;
+            default:
+                pm_buffer_append_byte(unescaped, '\\');
+                break;
+        }
+
+        const uint8_t *next_cursor = pm_memchr(cursor, '\\', (size_t) (end - cursor), parser->encoding_changed, parser->encoding);
+        if (next_cursor == NULL) break;
+
+        pm_buffer_append_string(unescaped, (const char *) cursor, (size_t) (next_cursor - cursor));
+        cursor = next_cursor;
+    }
+
+    pm_buffer_append_string(unescaped, (const char *) cursor, (size_t) (end - cursor));
+}
+
 /**
  * This callback is called when the regular expression parser encounters a named
  * capture group.
@@ -20887,13 +20990,32 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
 
     const uint8_t *source = pm_string_source(capture);
     size_t length = pm_string_length(capture);
+    pm_buffer_t unescaped = { 0 };
+
+    // First, we need to handle escapes within the name of the capture group.
+    // This is because regular expressions have three different representations
+    // in prism. The first is the plain source code. The second is the
+    // representation that will be sent to the regular expression engine, which
+    // is the value of the "unescaped" field. This is poorly named, because it
+    // actually still contains escapes, just a subset of them that the regular
+    // expression engine knows how to handle. The third representation is fully
+    // unescaped, which is what we need.
+    const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
+    if (PRISM_UNLIKELY(cursor != NULL)) {
+        pm_named_capture_escape(parser, &unescaped, source, length, cursor);
+        source = (const uint8_t *) pm_buffer_value(&unescaped);
+        length = pm_buffer_length(&unescaped);
+    }
 
     pm_location_t location;
     pm_constant_id_t name;
 
     // If the name of the capture group isn't a valid identifier, we do
     // not add it to the local table.
-    if (!pm_slice_is_valid_local(parser, source, source + length)) return;
+    if (!pm_slice_is_valid_local(parser, source, source + length)) {
+        pm_buffer_free(&unescaped);
+        return;
+    }
 
     if (callback_data->shared) {
         // If the unescaped string is a slice of the source, then we can
@@ -20921,7 +21043,10 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
         if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
             // If the local is not already a local but it is a keyword, then we
             // do not want to add a capture for this.
-            if (pm_local_is_keyword((const char *) source, length)) return;
+            if (pm_local_is_keyword((const char *) source, length)) {
+                pm_buffer_free(&unescaped);
+                return;
+            }
 
             // If the identifier is not already a local, then we will add it to
             // the local table.
@@ -20939,6 +21064,8 @@ parse_regular_expression_named_capture(const pm_string_t *capture, void *data) {
         pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create(parser, &location, name, depth == -1 ? 0 : (uint32_t) depth);
         pm_node_list_append(&callback_data->match->targets, target);
     }
+
+    pm_buffer_free(&unescaped);
 }
 
 /**
