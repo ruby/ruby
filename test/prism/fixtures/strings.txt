@@ -45,10 +45,13 @@ foo\
 b\nar
 "
 
+<<<<<<< HEAD
 "foo
 \nbar\n\n
 a\nb\n\nc\n"
 
+=======
+>>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
 %q{abc}
 
 %s[abc]

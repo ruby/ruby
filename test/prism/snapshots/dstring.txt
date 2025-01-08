@@ -1,10 +1,10 @@
-@ ProgramNode (location: (1,0)-(32,4))
+@ ProgramNode (location: (1,0)-(38,4))
 ├── flags: ∅
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(32,4))
+    @ StatementsNode (location: (1,0)-(38,4))
     ├── flags: ∅
-    └── body: (length: 9)
+    └── body: (length: 10)
         ├── @ StringNode (location: (1,0)-(2,6))
         │   ├── flags: newline
         │   ├── opening_loc: (1,0)-(1,1) = "\""
@@ -87,9 +87,31 @@
         │   ├── content_loc: (27,1)-(29,0) = "\nfoo\\\\\\\\\\\n"
         │   ├── closing_loc: (29,0)-(29,1) = "\""
         │   └── unescaped: "\nfoo\\\\"
-        └── @ StringNode (location: (31,0)-(32,4))
+        ├── @ InterpolatedStringNode (location: (31,0)-(35,1))
+        │   ├── flags: newline
+        │   ├── opening_loc: (31,0)-(31,1) = "\""
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (31,1)-(34,0))
+        │   │   │   ├── flags: static_literal, frozen
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (31,1)-(34,0) = "\nfoo\\\nb\\nar\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "\nfoob\nar\n"
+        │   │   ├── @ EmbeddedStatementsNode (location: (34,0)-(34,3))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (34,0)-(34,2) = "\#{"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── closing_loc: (34,2)-(34,3) = "}"
+        │   │   └── @ StringNode (location: (34,3)-(35,0))
+        │   │       ├── flags: static_literal, frozen
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (34,3)-(35,0) = "\n"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "\n"
+        │   └── closing_loc: (35,0)-(35,1) = "\""
+        └── @ StringNode (location: (37,0)-(38,4))
             ├── flags: newline
-            ├── opening_loc: (31,0)-(31,1) = "\""
-            ├── content_loc: (31,1)-(32,3) = "\n’"
-            ├── closing_loc: (32,3)-(32,4) = "\""
+            ├── opening_loc: (37,0)-(37,1) = "\""
+            ├── content_loc: (37,1)-(38,3) = "\n’"
+            ├── closing_loc: (38,3)-(38,4) = "\""
             └── unescaped: "\n’"
