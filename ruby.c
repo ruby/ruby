@@ -1721,11 +1721,27 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
             if (!s[1])
                 break;
 
-          default:
+          default: {
+            rb_encoding *enc = IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding());
+            const char *e = s + strlen(s);
+            int r = rb_enc_precise_mbclen(s, e, enc);
+            unsigned int c = (unsigned char)*s;
+            if (r > 0) {
+                c = rb_enc_mbc_to_codepoint(s, e, enc);
+                if (ONIGENC_IS_CODE_GRAPH(enc, c) ||
+                    ((s = ruby_escaped_char(c)) != 0 &&
+                     (r = (int)strlen(s), /* 3 at most */ 1))) {
+                    rb_enc_raise(enc, rb_eRuntimeError,
+                                 "invalid option -%.*s  (-h will show valid options)",
+                                 r, s);
+                }
+            }
             rb_raise(rb_eRuntimeError,
-                     "invalid option -%c  (-h will show valid options)",
-                     (int)(unsigned char)*s);
+                     "invalid option -\\x%.2x  (-h will show valid options)",
+                     c);
+
             goto switch_end;
+          }
 
           noenvopt:
             /* "EIdvwWrKU" only */

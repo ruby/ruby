@@ -441,11 +441,15 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -[\r\n]  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
 
-    assert_in_out_err(%W(-\x01), "", [], /invalid option -\x01  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%w(-Z), "", [], /invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/)
+
+    # On some platforms, langinfo returns ANSI_X3.4-1968 when LC_ALL=C  and fall backs to UTF-8.
+    # Anyway only printable chars should be printed.
+    assert_in_out_err(%W(-\u{1f608}), "", [], /invalid option -(\\xf0|\u{1f608})  \(-h will show valid options\) \(RuntimeError\)/)
   end
 
   def test_rubyopt
