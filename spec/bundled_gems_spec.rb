@@ -58,7 +58,12 @@ end
 RSpec.describe "bundled_gems.rb" do
   def script(code, options = {})
     options[:artifice] ||= "compact_index"
-    ruby("require 'bundler/inline'\n\n" + code, options)
+    code = <<~RUBY
+      require 'bundler/inline'
+
+      #{code}
+    RUBY
+    ruby(code, options)
   end
 
   it "Show warning require and LoadError" do
