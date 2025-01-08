@@ -1,0 +1,14 @@
+a => [-2*b]
+        ^ expected a `]` to close the pattern expression
+        ^ unexpected '*', expecting end-of-input
+        ^ unexpected '*', ignoring it
+          ^ unexpected ']', expecting end-of-input
+          ^ unexpected ']', ignoring it
+
+a => [-2**b]
+        ^ expected a `]` to close the pattern expression
+        ^~ unexpected '**', expecting end-of-input
+        ^~ unexpected '**', ignoring it
+           ^ unexpected ']', expecting end-of-input
+           ^ unexpected ']', ignoring it
+

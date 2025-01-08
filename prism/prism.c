@@ -20527,12 +20527,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             return (pm_node_t *) node;
         }
         case PM_TOKEN_UMINUS_NUM: {
+            pm_token_t prev = parser->previous;
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
             pm_node_t *node = parse_expression(parser, pm_binding_powers[parser->previous.type].right, false, false, PM_ERR_UNARY_RECEIVER, (uint16_t) (depth + 1));
 
-            if (accept1(parser, PM_TOKEN_STAR_STAR)) {
+            if ((prev.type != PM_TOKEN_BRACKET_LEFT_ARRAY) && (accept1(parser, PM_TOKEN_STAR_STAR))) {
                 pm_token_t exponent_operator = parser->previous;
                 pm_node_t *exponent = parse_expression(parser, pm_binding_powers[exponent_operator.type].right, false, false, PM_ERR_EXPECT_ARGUMENT, (uint16_t) (depth + 1));
                 node = (pm_node_t *) pm_call_node_binary_create(parser, node, &exponent_operator, exponent, 0);
