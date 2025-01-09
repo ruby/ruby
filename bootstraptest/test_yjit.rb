@@ -5347,3 +5347,11 @@ assert_equal '["x", "Y", "c", "A", "t", "A", "b", "C", "d"]', <<~'RUBY'
 
   Swap.new("xy").swap + Swap.new("cat").reverse_odd + Swap.new("abcd").reverse_even
 RUBY
+
+assert_normal_exit %{
+  class Bug20997
+    def foo(&) = self.class.name(&)
+
+    new.foo
+  end
+}
