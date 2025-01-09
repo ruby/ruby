@@ -6425,6 +6425,7 @@ path_check_0(VALUE path)
 int
 rb_path_check(const char *path)
 {
+    rb_warn_deprecated_to_remove_at(3.6, "rb_path_check", NULL);
 #if ENABLE_PATH_CHECK
     const char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
