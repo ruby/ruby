@@ -9,17 +9,17 @@ create_gc_makefile("mmtk")
 
 makefile = File.read("Makefile")
 
-# Modify the `all` target to run the `mmtk` target first
-makefile.gsub!(/^all:\s+(.*)$/, 'all: mmtk \1')
+makefile.prepend("MMTK_BUILD=debug\n")
 
-# Add the `mmtk` target to run `cargo build`
-makefile << <<~'MAKEFILE'
-  $(srcdir)/mmtk.c: mmtk
+# Add `libmmtk_ruby.a` as an object file
+makefile.gsub!(/^OBJS = (.*)$/, "OBJS = \\1 $(MMTK_BUILD)/libmmtk_ruby.#{RbConfig::CONFIG["LIBEXT"]}")
 
-  MMTK_BUILD=debug
+# Modify the `all` target to run the `libmmtk_ruby.a` target first
+makefile.gsub!(/^all:\s+(.*)$/, "all: $(MMTK_BUILD)/libmmtk_ruby.#{RbConfig::CONFIG["LIBEXT"]} \\1")
 
-  .PHONY: mmtk
-  mmtk:
+# Add the `libmmtk_ruby.a` target to run `cargo build`
+makefile << <<~MAKEFILE
+  $(MMTK_BUILD)/libmmtk_ruby.#{RbConfig::CONFIG["LIBEXT"]}: $(wildcard $(srcdir)/src/*.rs) $(srcdir)/Cargo.toml $(srcdir)/Cargo.toml
   	$(Q) case $(MMTK_BUILD) in \
   		release) \
   			CARGO_TARGET_DIR="." cargo build --manifest-path=$(srcdir)/Cargo.toml --release \
