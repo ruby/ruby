@@ -11513,7 +11513,8 @@ rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_bo
 {
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(nd_args, nd_body, loc);
-    rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, loc);
+    YYLTYPE lambda_loc = code_loc_gen(operator_loc, closing_loc);
+    rb_node_lambda_t *n = NODE_NEWNODE(NODE_LAMBDA, rb_node_lambda_t, &lambda_loc);
     n->nd_body = scope;
     n->operator_loc = *operator_loc;
     n->opening_loc = *opening_loc;
