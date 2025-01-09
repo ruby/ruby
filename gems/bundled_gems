@@ -38,3 +38,4 @@ repl_type_completor 0.1.9   https://github.com/ruby/repl_type_completor
 ostruct             0.6.1   https://github.com/ruby/ostruct
 pstore              0.1.4   https://github.com/ruby/pstore
 benchmark           0.4.0   https://github.com/ruby/benchmark
+logger              1.6.4   https://github.com/ruby/logger
