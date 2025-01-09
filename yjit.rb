@@ -44,11 +44,11 @@ module RubyVM::YJIT
   #     * `false`: Don't enable the log.
   #     * `true`: Enable the log. Print log at exit.
   #     * `:quiet`: Enable the log. Do not print log at exit.
-  def self.enable(stats: false, log: false, exec_mem_size: nil, call_threshold: nil)
+  def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
     call_yjit_hooks
-    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, exec_mem_size, call_threshold)
+    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, mem_size, call_threshold)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from

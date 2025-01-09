@@ -185,24 +185,24 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE, exec_mem_size: VALUE, call_threshold: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE, mem_size: VALUE, call_threshold: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
-        // Validate and set exec_mem_size
-        if !exec_mem_size.nil_p() && exec_mem_size.fixnum_p() {
-            let exec_mem_size_val = exec_mem_size.as_isize();
-            let exec_mem_size_mb = exec_mem_size_val >> 1;
+        // Validate and set mem_size
+        if !mem_size.nil_p() && mem_size.fixnum_p() {
+            let mem_size_val = mem_size.as_isize();
+            let mem_size_mb = mem_size_val >> 1;
 
-            if exec_mem_size_mb > 0 && exec_mem_size_mb <= 2048 {
-                let exec_mem_size_bytes = exec_mem_size_mb * 1024 * 1024;
+            if mem_size_mb > 0 && mem_size_mb <= 2048 {
+                let mem_size_bytes = mem_size_mb * 1024 * 1024;
                 unsafe {
-                    OPTIONS.exec_mem_size = Some(exec_mem_size_bytes as usize);
+                    OPTIONS.mem_size = mem_size_bytes as usize;
                 }
-                eprintln!("exec_mem_size set to: {} MB ({} bytes)", exec_mem_size_mb, exec_mem_size_bytes);
+                eprintln!("mem_size set to: {} MB ({} bytes)", mem_size_mb, mem_size_bytes);
             } else {
-                eprintln!("Invalid exec_mem_size: {} MB. Must be between 1 and 2048 MB. Not setting.", exec_mem_size_mb);
+                eprintln!("Invalid mem_size: {} MB. Must be between 1 and 2048 MB. Not setting.", mem_size_mb);
             }
-        } else if !exec_mem_size.nil_p() {
-            eprintln!("exec_mem_size must be a Fixnum. Not setting.");
+        } else if !mem_size.nil_p() {
+            eprintln!("mem_size must be a Fixnum. Not setting.");
         }
 
         // Validate and set call_threshold
