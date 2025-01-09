@@ -16,6 +16,7 @@
 #include "internal/fixnum.h"
 #include "internal/numeric.h"
 #include "internal/gc.h"
+#include "internal/vm.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"
@@ -94,6 +95,11 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+}
+
+uint64_t
+rb_yjit_vm_insns_count(void) {
+    return rb_vm_insns_count;
 }
 
 // Free the specified memory block.
