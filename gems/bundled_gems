@@ -36,3 +36,4 @@ syslog              0.2.0   https://github.com/ruby/syslog
 csv                 3.3.2   https://github.com/ruby/csv
 repl_type_completor 0.1.9   https://github.com/ruby/repl_type_completor
 ostruct             0.6.1   https://github.com/ruby/ostruct
+pstore              0.1.4   https://github.com/ruby/pstore
