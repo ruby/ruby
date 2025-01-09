@@ -4541,11 +4541,8 @@ primary         : inline_primary
                         /* {|*internal_id| <m> = internal_id; ... } */
                         args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@for_var), &@for_var);
                         scope = NEW_SCOPE2(tbl, args, $compstmt, &@$);
-                        if ($do == keyword_do_cond) {
-                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &@do, &@k_end);
-                        } else {
-                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &NULL_LOC, &@k_end);
-                        }
+                        YYLTYPE do_keyword_loc = $do == keyword_do_cond ? @do : NULL_LOC;
+                        $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &do_keyword_loc, &@k_end);
                         fixpos($$, $for_var);
                     /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                     }
