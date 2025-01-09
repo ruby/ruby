@@ -142,6 +142,51 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_with_valid_runtime_call_threshold_option
+    assert_separately([], <<~RUBY)
+      def not_compiled = nil
+      def will_compile = nil
+      def compiled_counts = RubyVM::YJIT.runtime_stats&.dig(:compiled_iseq_count)
+
+      not_compiled
+      assert_nil compiled_counts
+      assert_false RubyVM::YJIT.enabled?
+
+      RubyVM::YJIT.enable(call_threshold: 0)
+
+      will_compile
+      assert compiled_counts > 0
+      assert_true RubyVM::YJIT.enabled?
+    RUBY
+  end
+
+  def test_yjit_enable_with_invalid_runtime_call_threshold_option
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_separately([], <<~RUBY, ignore_stderr: false)
+        begin
+          RubyVM::YJIT.enable(call_threshold: 0)
+        rescue => e
+          puts e.message
+          raise
+        end
+      RUBY
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_mem_size_option
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_separately([], <<~RUBY, ignore_stderr: false)
+        begin
+          RubyVM::YJIT.enable(mem_size: -1)
+        rescue => e
+          puts e.message
+          raise
+        end
+      RUBY
+    end
+  end
+
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
