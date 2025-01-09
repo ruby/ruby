@@ -163,6 +163,10 @@ module Bundler
       @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
     end
 
+    def specs_with_additional_variants_from(other)
+      sorted | additional_variants_from(other)
+    end
+
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
 
@@ -275,6 +279,12 @@ module Bundler
 
     def all_platforms
       @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq
+    end
+
+    def additional_variants_from(other)
+      other.select do |spec|
+        version_for(spec.name) == spec.version && valid_dependencies?(spec)
+      end
     end
 
     def valid_dependencies?(s)

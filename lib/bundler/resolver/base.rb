@@ -5,10 +5,11 @@ require_relative "package"
 module Bundler
   class Resolver
     class Base
-      attr_reader :packages, :requirements, :source_requirements
+      attr_reader :packages, :requirements, :source_requirements, :locked_specs
 
       def initialize(source_requirements, dependencies, base, platforms, options)
         @source_requirements = source_requirements
+        @locked_specs = options[:locked_specs]
 
         @base = base
 

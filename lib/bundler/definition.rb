@@ -742,7 +742,7 @@ module Bundler
 
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
-      SpecSet.new(result.for(dependencies, @platforms))
+      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
