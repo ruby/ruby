@@ -185,8 +185,18 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE, exec_mem_size: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
+
+        let exec_mem_size_val = exec_mem_size.as_isize();
+        let exec_mem_size_mb = exec_mem_size_val >> 1; // Shift right to get the actual number
+        let exec_mem_size_bytes = exec_mem_size_mb * 1024 * 1024;
+
+        eprintln!("exec_mem_size in rb_yjit_enable: {} MB ({} bytes)", exec_mem_size_mb, exec_mem_size_bytes);
+
+        unsafe {
+            OPTIONS.exec_mem_size = Some(exec_mem_size_bytes as usize);
+        }
         // Initialize and enable YJIT
         if gen_stats.test() {
             unsafe {

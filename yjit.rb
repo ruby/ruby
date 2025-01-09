@@ -46,16 +46,9 @@ module RubyVM::YJIT
   #     * `:quiet`: Enable the log. Do not print log at exit.
   def self.enable(stats: false, log: false, exec_mem_size: nil, call_threshold: nil)
     return false if enabled?
-
-    if exec_mem_size.nil? && call_threshold.nil?
-      # Proceed with original enable process
-      at_exit { print_and_dump_stats } if stats
-      call_yjit_hooks
-      Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
-    else
-      # Call helper function for custom configuration
-      enable_with_custom_config(stats, log, exec_mem_size, call_threshold)
-    end
+    at_exit { print_and_dump_stats } if stats
+    call_yjit_hooks
+    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, exec_mem_size)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -260,33 +253,6 @@ module RubyVM::YJIT
   class << self
     # :stopdoc:
     private
-
-    def enable_with_custom_config(stats, log, exec_mem_size, call_threshold)
-      validate_config_params(exec_mem_size, call_threshold)
-      config_success = Primitive.rb_yjit_parse_custom_config(exec_mem_size, call_threshold)
-
-      unless config_success
-        warn 'YJIT custom configuration failed to get set. YJIT will not be enabled.'
-        return false
-      end
-
-      at_exit { print_and_dump_stats } if stats
-      Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
-    rescue ArgumentError => e
-      warn "YJIT configuration error: #{e.message}. YJIT will not be enabled."
-      false
-    end
-
-    def validate_config_params(exec_mem_size, call_threshold)
-      if exec_mem_size && !(exec_mem_size.is_a?(Integer) && exec_mem_size.between?(1, 2048))
-        raise ArgumentError, 'Invalid exec_mem_size: must be an integer between 1 and 2048'
-      end
-
-      return unless call_threshold
-      return if call_threshold.is_a?(Integer) && call_threshold >= 1
-
-      raise ArgumentError, 'Invalid call_threshold: must be an integer >= 1'
-    end
 
     # Register a block to be called when YJIT is enabled
     def add_yjit_hook(hook)
