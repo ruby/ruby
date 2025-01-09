@@ -1866,13 +1866,13 @@ assert_equal 'true', %q{
 
   Ractor.new{
     begin
-      require 'benchmark'
-      Benchmark.measure{}
+      require 'tempfile'
+      Tempfile.new
     rescue SystemStackError
       # prism parser with -O0 build consumes a lot of machine stack
-      Data.define(:real).new(1)
+      Data.define(:fileno).new(1)
     end
-  }.take.real > 0
+  }.take.fileno > 0
 }
 
 # require_relative in Ractor
@@ -1912,27 +1912,27 @@ assert_equal 'LoadError', %q{
 
 # autolaod in Ractor
 assert_equal 'true', %q{
-  autoload :Benchmark, 'benchmark'
+  autoload :Tempfile, 'tempfile'
 
   r = Ractor.new do
     begin
-      Benchmark.measure{}
+      Tempfile.new
     rescue SystemStackError
       # prism parser with -O0 build consumes a lot of machine stack
-      Data.define(:real).new(1)
+      Data.define(:fileno).new(1)
     end
   end
-  r.take.real > 0
+  r.take.fileno > 0
 }
 
 # failed in autolaod in Ractor
 assert_equal 'LoadError', %q{
   dummyfile = File.join(__dir__, "not_existed_dummy#{rand}.rb")
-  autoload :Benchmark, dummyfile
+  autoload :Tempfile, dummyfile
 
   r = Ractor.new do
     begin
-      Benchmark.measure{}
+      Tempfile.new
     rescue LoadError => e
       e.class
     end
