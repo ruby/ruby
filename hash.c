@@ -1805,19 +1805,19 @@ static VALUE rb_hash_to_a(VALUE hash);
  *  (but not with its +default+ or +default_proc+):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    Hash[h] # => {:foo=>0, :bar=>1, :baz=>2}
+ *    Hash[h] # => {foo: 0, bar: 1, baz: 2}
  *
  *  With a single argument given that is an array of 2-element arrays,
  *  returns a new hash wherein each given 2-element array forms a
  *  key-value entry:
  *
- *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {:foo=>0, :bar=>1}
+ *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {foo: 0, bar: 1}
  *
  *  With an even number of arguments given,
  *  returns a new hash wherein each successive pair of arguments
  *  is a key-value entry:
  *
- *    Hash[:foo, 0, :bar, 1] # => {:foo=>0, :bar=>1}
+ *    Hash[:foo, 0, :bar, 1] # => {foo: 0, bar: 1}
  *
  *  Raises ArgumentError if the argument list does not conform to any
  *  of the above.
@@ -2406,7 +2406,7 @@ rb_hash_delete(VALUE hash, VALUE key)
  *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
- *    h # => {:foo=>0, :baz=>2}
+ *    h # => {foo: 0, baz: 2}
  *
  *  If no block given and +key+ is not found, returns +nil+.
  *
@@ -2414,13 +2414,13 @@ rb_hash_delete(VALUE hash, VALUE key)
  *  deletes the entry, and returns the associated value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:baz) { |key| raise 'Will never happen'} # => 2
- *    h # => {:foo=>0, :bar=>1}
+ *    h # => {foo: 0, bar: 1}
  *
  *  If a block is given and +key+ is not found,
  *  calls the block and returns the block's return value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:nosuch) { |key| "Key #{key} not found" } # => "Key nosuch not found"
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  */
 
 static VALUE
@@ -2469,7 +2469,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *  returns a 2-element Array containing the removed key and value:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.shift # => [:foo, 0]
- *    h # => {:bar=>1, :baz=>2}
+ *    h # => {bar: 1, baz: 2}
  *
  *  Returns nil if the hash is empty.
  */
@@ -2538,12 +2538,12 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
  *  deletes each entry for which the block returns a truthy value;
  *  returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.delete_if {|key, value| value > 0 } # => {:foo=>0}
+ *    h.delete_if {|key, value| value > 0 } # => {foo: 0}
  *
  *  If no block given, returns a new Enumerator:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.delete_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:delete_if>
- *    e.each { |key, value| value > 0 } # => {:foo=>0}
+ *    e = h.delete_if # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:delete_if>
+ *    e.each { |key, value| value > 0 } # => {foo: 0}
  */
 
 VALUE
@@ -2566,14 +2566,14 @@ rb_hash_delete_if(VALUE hash)
  *  Returns +self+, whose remaining entries are those
  *  for which the block returns +false+ or +nil+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.reject! {|key, value| value < 2 } # => {:baz=>2}
+ *    h.reject! {|key, value| value < 2 } # => {baz: 2}
  *
  *  Returns +nil+ if no entries are removed.
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.reject! # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject!>
- *    e.each {|key, value| key.start_with?('b') } # => {:foo=>0}
+ *    e = h.reject! # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:reject!>
+ *    e.each {|key, value| key.start_with?('b') } # => {foo: 0}
  */
 
 static VALUE
@@ -2599,13 +2599,13 @@ rb_hash_reject_bang(VALUE hash)
  *  from +self+ for which the block returns +false+ or +nil+:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.reject {|key, value| key.start_with?('b') }
- *    h1 # => {:foo=>0}
+ *    h1 # => {foo: 0}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.reject # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:reject>
+ *    e = h.reject # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:reject>
  *    h1 = e.each {|key, value| key.start_with?('b') }
- *    h1 # => {:foo=>0}
+ *    h1 # => {foo: 0}
  */
 
 static VALUE
@@ -2628,7 +2628,7 @@ rb_hash_reject(VALUE hash)
  *
  *  Returns a new +Hash+ object containing the entries for the given +keys+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.slice(:baz, :foo) # => {:baz=>2, :foo=>0}
+ *    h.slice(:baz, :foo) # => {baz: 2, foo: 0}
  *
  *  Any given +keys+ that are not found are ignored.
  */
@@ -2660,7 +2660,7 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
  *
  *  Returns a new +Hash+ excluding entries for the given +keys+:
  *     h = { a: 100, b: 200, c: 300 }
- *     h.except(:a)          #=> {:b=>200, :c=>300}
+ *     h.except(:a)          #=> {b: 200, c: 300}
  *
  *  Any given +keys+ that are not found are ignored.
  */
@@ -2756,12 +2756,12 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *
  *  Returns a new +Hash+ object whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.select {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
+ *    h.select {|key, value| value < 2 } # => {foo: 0, bar: 1}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.select # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select>
- *    e.each {|key, value| value < 2 } # => {:foo=>0, :bar=>1}
+ *    e = h.select # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:select>
+ *    e.each {|key, value| value < 2 } # => {foo: 0, bar: 1}
  */
 
 static VALUE
@@ -2785,14 +2785,14 @@ rb_hash_select(VALUE hash)
  *
  *  Returns +self+, whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.select! {|key, value| value < 2 }  => {:foo=>0, :bar=>1}
+ *    h.select! {|key, value| value < 2 }  => {foo: 0, bar: 1}
  *
  *  Returns +nil+ if no entries were removed.
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.select!  # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:select!>
- *    e.each { |key, value| value < 2 } # => {:foo=>0, :bar=>1}
+ *    e = h.select!  # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:select!>
+ *    e.each { |key, value| value < 2 } # => {foo: 0, bar: 1}
  */
 
 static VALUE
@@ -2818,12 +2818,12 @@ rb_hash_select_bang(VALUE hash)
  *  retains the entry if the block returns a truthy value;
  *  otherwise deletes the entry; returns +self+.
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.keep_if { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
+ *    h.keep_if { |key, value| key.start_with?('b') } # => {bar: 1, baz: 2}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.keep_if # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:keep_if>
- *    e.each { |key, value| key.start_with?('b') } # => {:bar=>1, :baz=>2}
+ *    e = h.keep_if # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:keep_if>
+ *    e.each { |key, value| key.start_with?('b') } # => {bar: 1, baz: 2}
  */
 
 static VALUE
@@ -2912,7 +2912,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h = {foo: 0, bar: 1}
  *    h[:foo] = 2 # => 2
  *    h.store(:bar, 3) # => 3
- *    h # => {:foo=>2, :bar=>3}
+ *    h # => {foo: 2, bar: 3}
  *
  *  If +key+ does not exist, adds the +key+ and +value+;
  *  the new entry is last in the order
@@ -2920,7 +2920,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
  *    h.store(:bat, 3) # => 3
- *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    h # => {foo: 0, bar: 1, baz: 2, bat: 3}
  */
 
 VALUE
@@ -2946,7 +2946,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *  Replaces the entire contents of +self+ with the contents of +other_hash+;
  *  returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.replace({bat: 3, bam: 4}) # => {:bat=>3, :bam=>4}
+ *    h.replace({bat: 3, bam: 4}) # => {bat: 3, bam: 4}
  */
 
 static VALUE
@@ -3025,7 +3025,7 @@ each_value_i(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each value; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.each_value {|value| puts value } # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.each_value {|value| puts value } # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    0
  *    1
@@ -3033,9 +3033,9 @@ each_value_i(VALUE key, VALUE value, VALUE _)
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.each_value # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_value>
+ *    e = h.each_value # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:each_value>
  *    h1 = e.each {|value| puts value }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    0
  *    1
@@ -3064,7 +3064,7 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each key; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.each_key {|key| puts key }  # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.each_key {|key| puts key }  # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    foo
  *    bar
@@ -3072,9 +3072,9 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.each_key # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_key>
+ *    e = h.each_key # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:each_key>
  *    h1 = e.each {|key| puts key }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    foo
  *    bar
@@ -3114,7 +3114,7 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *
  *  Calls the given block with each key-value pair; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.each_pair {|key, value| puts "#{key}: #{value}"} # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    foo: 0
  *    bar: 1
@@ -3122,9 +3122,9 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.each_pair # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:each_pair>
+ *    e = h.each_pair # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:each_pair>
  *    h1 = e.each {|key, value| puts "#{key}: #{value}"}
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 # => {foo: 0, bar: 1, baz: 2}
  *  Output:
  *    foo: 0
  *    bar: 1
@@ -3196,16 +3196,16 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
  *      #=> {bar: 0, foo: 1, baz: 2}
  *
  *      h.transform_keys(foo: :hello, &:to_s)
- *      #=> {:hello=>0, "bar"=>1, "baz"=>2}
+ *      #=> {hello: 0, "bar" => 1, "baz" => 2}
  *
  *  Overwrites values for duplicate keys:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.transform_keys {|key| :bat }
- *    h1 # => {:bat=>2}
+ *    h1 # => {bat: 2}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_keys # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_keys>
+ *    e = h.transform_keys # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:transform_keys>
  *    h1 = e.each { |key| key.to_s }
  *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
  */
@@ -3326,13 +3326,13 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
  *  Transform values:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.transform_values {|value| value * 100}
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
+ *    h1 # => {foo: 0, bar: 100, baz: 200}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_values # => #<Enumerator: {:foo=>0, :bar=>1, :baz=>2}:transform_values>
+ *    e = h.transform_values # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:transform_values>
  *    h1 = e.each { |value| value * 100}
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
+ *    h1 # => {foo: 0, bar: 100, baz: 200}
  */
 static VALUE
 rb_hash_transform_values(VALUE hash)
@@ -3358,13 +3358,13 @@ rb_hash_transform_values(VALUE hash)
  *
  *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.transform_values! {|value| value * 100} # => {:foo=>0, :bar=>100, :baz=>200}
+ *    h.transform_values! {|value| value * 100} # => {foo: 0, bar: 100, baz: 200}
  *
  *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_values! # => #<Enumerator: {:foo=>0, :bar=>100, :baz=>200}:transform_values!>
+ *    e = h.transform_values! # => #<Enumerator: {foo: 0, bar: 100, baz: 200}:transform_values!>
  *    h1 = e.each {|value| value * 100}
- *    h1 # => {:foo=>0, :bar=>100, :baz=>200}
+ *    h1 # => {foo: 0, bar: 100, baz: 200}
  */
 static VALUE
 rb_hash_transform_values_bang(VALUE hash)
@@ -3972,7 +3972,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
- *    h.merge!(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
+ *    h.merge!(h1, h2) # => {foo: 0, bar: 4, baz: 2, bat: 6, bam: 5}
  *
  *  With arguments and a block:
  *  * Returns +self+, after the given hashes are merged.
@@ -3987,7 +3987,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| old_value + new_value }
- *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
+ *    h3 # => {foo: 0, bar: 5, baz: 2, bat: 9, bam: 5}
  *
  *  With no arguments:
  *  * Returns +self+, unmodified.
@@ -3995,9 +3995,9 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *
  *  Example:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.merge # => {foo: 0, bar: 1, baz: 2}
  *    h1 = h.merge! { |key, old_value, new_value| raise 'Cannot happen' }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 # => {foo: 0, bar: 1, baz: 2}
  */
 
 static VALUE
@@ -4091,7 +4091,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
- *    h.merge(h1, h2) # => {:foo=>0, :bar=>4, :baz=>2, :bat=>6, :bam=>5}
+ *    h.merge(h1, h2) # => {foo: 0, bar: 4, baz: 2, bat: 6, bam: 5}
  *
  *  With arguments and a block:
  *  * Returns a new +Hash+ object that is the merge of +self+ and each given hash.
@@ -4106,7 +4106,7 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
  *    h3 = h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
- *    h3 # => {:foo=>0, :bar=>5, :baz=>2, :bat=>9, :bam=>5}
+ *    h3 # => {foo: 0, bar: 5, baz: 2, bat: 9, bam: 5}
  *
  *  With no arguments:
  *  * Returns a copy of +self+.
@@ -4114,9 +4114,9 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *
  *  Example:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.merge # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h.merge # => {foo: 0, bar: 1, baz: 2}
  *    h1 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
- *    h1 # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h1 # => {foo: 0, bar: 1, baz: 2}
  */
 
 static VALUE
@@ -4332,7 +4332,7 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
  *  Returns a copy of +self+ with all +nil+-valued entries removed:
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
  *    h1 = h.compact
- *    h1 # => {:foo=>0, :baz=>2}
+ *    h1 # => {foo: 0, baz: 2}
  */
 
 static VALUE
@@ -4355,7 +4355,7 @@ rb_hash_compact(VALUE hash)
  *
  *  Returns +self+ with all its +nil+-valued entries removed (in place):
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
- *    h.compact! # => {:foo=>0, :baz=>2}
+ *    h.compact! # => {foo: 0, baz: 2}
  *
  *  Returns +nil+ if no entries were removed.
  */
@@ -4584,8 +4584,8 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *
  *  Nested Hashes:
  *    h = {foo: {bar: {baz: 2}}}
- *    h.dig(:foo) # => {:bar=>{:baz=>2}}
- *    h.dig(:foo, :bar) # => {:baz=>2}
+ *    h.dig(:foo) # => {bar: {baz: 2}}
+ *    h.dig(:foo, :bar) # => {baz: 2}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
  *
@@ -6301,7 +6301,7 @@ env_f_to_hash(VALUE _)
  * Each name/value pair in ENV is yielded to the block.
  * The block must return a 2-element Array (name/value pair)
  * that is added to the return Hash as a key and value:
- *   ENV.to_h { |name, value| [name.to_sym, value.to_i] } # => {:bar=>1, :foo=>0}
+ *   ENV.to_h { |name, value| [name.to_sym, value.to_i] } # => {bar: 1, foo: 0}
  * Raises an exception if the block does not return an Array:
  *   ENV.to_h { |name, value| name } # Raises TypeError (wrong element type String (expected array))
  * Raises an exception if the block returns an Array of the wrong size:
@@ -6633,24 +6633,24 @@ static const rb_data_type_t env_data_type = {
  *  The older syntax for +Hash+ data uses the "hash rocket," <tt>=></tt>:
  *
  *    h = {:foo => 0, :bar => 1, :baz => 2}
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  Alternatively, but only for a +Hash+ key that's a Symbol,
  *  you can use a newer JSON-style syntax,
  *  where each bareword becomes a Symbol:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  You can also use a String in place of a bareword:
  *
  *    h = {'foo': 0, 'bar': 1, 'baz': 2}
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  And you can mix the styles:
  *
  *    h = {foo: 0, :bar => 1, 'baz': 2}
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  But it's an error to try the JSON-style syntax
  *  for a key that's not a bareword or a String:
@@ -6664,26 +6664,26 @@ static const rb_data_type_t env_data_type = {
  *    x = 0
  *    y = 100
  *    h = {x:, y:}
- *    h # => {:x=>0, :y=>100}
+ *    h # => {x: 0, y: 100}
  *
  *  === Common Uses
  *
  *  You can use a +Hash+ to give names to objects:
  *
  *    person = {name: 'Matz', language: 'Ruby'}
- *    person # => {:name=>"Matz", :language=>"Ruby"}
+ *    person # => {name: "Matz", language: "Ruby"}
  *
  *  You can use a +Hash+ to give names to method arguments:
  *
  *    def some_method(hash)
  *      p hash
  *    end
- *    some_method({foo: 0, bar: 1, baz: 2}) # => {:foo=>0, :bar=>1, :baz=>2}
+ *    some_method({foo: 0, bar: 1, baz: 2}) # => {foo: 0, bar: 1, baz: 2}
  *
  *  Note: when the last argument in a method call is a +Hash+,
  *  the curly braces may be omitted:
  *
- *    some_method(foo: 0, bar: 1, baz: 2) # => {:foo=>0, :bar=>1, :baz=>2}
+ *    some_method(foo: 0, bar: 1, baz: 2) # => {foo: 0, bar: 1, baz: 2}
  *
  *  You can use a +Hash+ to initialize an object:
  *
@@ -6725,7 +6725,7 @@ static const rb_data_type_t env_data_type = {
  *  Create a +Hash+ with initial entries:
  *
  *    h = Hash[foo: 0, bar: 1, baz: 2]
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  You can create a +Hash+ by using its literal form (curly braces).
  *
@@ -6737,7 +6737,7 @@ static const rb_data_type_t env_data_type = {
  *  Create a +Hash+ with initial entries:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *
  *  === +Hash+ Value Basics
@@ -6751,15 +6751,15 @@ static const rb_data_type_t env_data_type = {
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:bat] = 3 # => 3
- *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
+ *    h # => {foo: 0, bar: 1, baz: 2, bat: 3}
  *    h[:foo] = 4 # => 4
- *    h # => {:foo=>4, :bar=>1, :baz=>2, :bat=>3}
+ *    h # => {foo: 4, bar: 1, baz: 2, bat: 3}
  *
  *  The simplest way to delete a +Hash+ entry (instance method #delete):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
- *    h # => {:foo=>0, :baz=>2}
+ *    h # => {foo: 0, baz: 2}
  *
  *  === Entry Order
  *
@@ -6772,23 +6772,23 @@ static const rb_data_type_t env_data_type = {
  *  A new +Hash+ has its initial ordering per the given entries:
  *
  *    h = Hash[foo: 0, bar: 1]
- *    h # => {:foo=>0, :bar=>1}
+ *    h # => {foo: 0, bar: 1}
  *
  *  New entries are added at the end:
  *
  *    h[:baz] = 2
- *    h # => {:foo=>0, :bar=>1, :baz=>2}
+ *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  Updating a value does not affect the order:
  *
  *    h[:baz] = 3
- *    h # => {:foo=>0, :bar=>1, :baz=>3}
+ *    h # => {foo: 0, bar: 1, baz: 3}
  *
  *  But re-creating a deleted entry can affect the order:
  *
  *    h.delete(:foo)
  *    h[:foo] = 5
- *    h # => {:bar=>1, :baz=>3, :foo=>5}
+ *    h # => {bar: 1, baz: 3, foo: 5}
  *
  *  === +Hash+ Keys
  *
