@@ -4507,7 +4507,7 @@ primary         : inline_primary
                   compstmt(stmts)
                   k_end
                     {
-                        restore_block_exit(p, $1);
+                        restore_block_exit(p, $k_for);
                         /*
                          *  for a, b, c in e
                          *  #=>
@@ -4520,34 +4520,34 @@ primary         : inline_primary
                         ID id = internal_id(p);
                         rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
                         rb_node_args_t *args;
-                        NODE *scope, *internal_var = NEW_DVAR(id, &@2);
+                        NODE *scope, *internal_var = NEW_DVAR(id, &@for_var);
                         rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
                         tbl->ids[0] = id; /* internal id */
 
-                        switch (nd_type($2)) {
+                        switch (nd_type($for_var)) {
                           case NODE_LASGN:
                           case NODE_DASGN: /* e.each {|internal_var| a = internal_var; ... } */
-                            set_nd_value(p, $2, internal_var);
+                            set_nd_value(p, $for_var, internal_var);
                             id = 0;
                             m->nd_plen = 1;
-                            m->nd_next = $2;
+                            m->nd_next = $for_var;
                             break;
                           case NODE_MASGN: /* e.each {|*internal_var| a, b, c = (internal_var.length == 1 && Array === (tmp = internal_var[0]) ? tmp : internal_var); ... } */
-                            m->nd_next = node_assign(p, $2, NEW_FOR_MASGN(internal_var, &@2), NO_LEX_CTXT, &@2);
+                            m->nd_next = node_assign(p, $for_var, NEW_FOR_MASGN(internal_var, &@for_var), NO_LEX_CTXT, &@for_var);
                             break;
                           default: /* e.each {|*internal_var| @a, B, c[1], d.attr = internal_val; ... } */
-                            m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($2, &@2), 0, &@2), internal_var, NO_LEX_CTXT, &@2);
+                            m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST($for_var, &@for_var), 0, &@for_var), internal_var, NO_LEX_CTXT, &@for_var);
                         }
                         /* {|*internal_id| <m> = internal_id; ... } */
-                        args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@2), &@2);
-                        scope = NEW_SCOPE2(tbl, args, $8, &@$);
-                        if ($6 == keyword_do_cond) {
-                            $$ = NEW_FOR($5, scope, &@$, &@1, &@3, &@6, &@9);
+                        args = new_args(p, m, 0, id, 0, new_args_tail(p, 0, 0, 0, &@for_var), &@for_var);
+                        scope = NEW_SCOPE2(tbl, args, $compstmt, &@$);
+                        if ($do == keyword_do_cond) {
+                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &@do, &@k_end);
                         } else {
-                            $$ = NEW_FOR($5, scope, &@$, &@1, &@3, &NULL_LOC, &@9);
+                            $$ = NEW_FOR($5, scope, &@$, &@k_for, &@keyword_in, &NULL_LOC, &@k_end);
                         }
-                        fixpos($$, $2);
-                    /*% ripper: for!($:2, $:5, $:8) %*/
+                        fixpos($$, $for_var);
+                    /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                     }
                 | k_class cpath superclass
                     {
