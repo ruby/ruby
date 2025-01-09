@@ -438,3 +438,9 @@ rb_node_set_type(NODE *n, enum node_type t)
 {
     return nd_init_type(n, t);
 }
+
+enum node_type
+rb_node_get_type(const NODE *n)
+{
+    return (enum node_type)nd_type(n);
+}

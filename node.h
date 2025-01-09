@@ -67,6 +67,7 @@ const struct kwtable *rb_reserved_word(const char *, unsigned int);
 struct parser_params;
 PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
 VALUE rb_node_set_type(NODE *n, enum node_type t);
+enum node_type rb_node_get_type(const NODE *n);
 
 RUBY_SYMBOL_EXPORT_END
 
