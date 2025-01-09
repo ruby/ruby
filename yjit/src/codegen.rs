@@ -6894,11 +6894,12 @@ fn gen_send_cfunc(
     // Increment total cfunc send count
     gen_counter_incr(jit, asm, Counter::num_send_cfunc);
 
-    // Delegate to codegen for C methods if we have it.
+    // Delegate to codegen for C methods if we have it and the callsite is simple enough.
     if kw_arg.is_null() &&
             !kw_splat &&
             flags & VM_CALL_OPT_SEND == 0 &&
             flags & VM_CALL_ARGS_SPLAT == 0 &&
+            flags & VM_CALL_ARGS_BLOCKARG == 0 &&
             (cfunc_argc == -1 || argc == cfunc_argc) {
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
