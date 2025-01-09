@@ -1058,7 +1058,7 @@ XXX
   def help_exit
     if $stdout.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
       less = ENV["LESS"]
-      args = [{"LESS" => "#{!less || less.empty? ? '-' : less}Fe"}, pager, "w"]
+      args = [{"LESS" => "#{less} -Fe"}, pager, "w"]
       print = proc do |f|
         f.puts help
       rescue Errno::EPIPE
