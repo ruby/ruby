@@ -5,8 +5,12 @@ require 'tmpdir'
 
 class YAMLStoreTest < Test::Unit::TestCase
   def setup
-    @yaml_store_file = File.join(Dir.tmpdir, "yaml_store.tmp.#{Process.pid}")
-    @yaml_store = YAML::Store.new(@yaml_store_file)
+    if defined?(::PStore)
+      @yaml_store_file = File.join(Dir.tmpdir, "yaml_store.tmp.#{Process.pid}")
+      @yaml_store = YAML::Store.new(@yaml_store_file)
+    else
+      omit "PStore is not available"
+    end
   end
 
   def teardown
@@ -177,4 +181,4 @@ class YAMLStoreTest < Test::Unit::TestCase
     end
     assert_equal(indentation_3_yaml, File.read(@yaml_store_file), bug12800)
   end
-end if defined?(::YAML::Store)
+end
