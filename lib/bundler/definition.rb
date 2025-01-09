@@ -1108,7 +1108,7 @@ module Bundler
       return resolution_packages if @explicit_unlocks.empty?
       full_update = dup_for_full_unlock.resolve
       @explicit_unlocks.each do |name|
-        version = full_update[name].first&.version
+        version = full_update.version_for(name)
         resolution_packages.base_requirements[name] = Gem::Requirement.new("= #{version}") if version
       end
       resolution_packages

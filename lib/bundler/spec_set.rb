@@ -169,6 +169,10 @@ module Bundler
       reset!
     end
 
+    def version_for(name)
+      self[name].first&.version
+    end
+
     def what_required(spec)
       unless req = find {|s| s.runtime_dependencies.any? {|d| d.name == spec.name } }
         return [spec]
