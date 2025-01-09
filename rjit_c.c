@@ -541,7 +541,7 @@ extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 extern void* rb_rjit_entry_stub_hit(VALUE branch_stub);
 extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
-extern uint64_t rb_vm_insns_count;
+extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
 
 #include "rjit_c.rbinc"
 

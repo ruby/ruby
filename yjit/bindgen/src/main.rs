@@ -317,6 +317,7 @@ fn main() {
         .allowlist_function("rb_yjit_get_page_size")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_iseq_inspect")
+        .allowlist_function("rb_yjit_vm_insns_count")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -379,9 +380,6 @@ fn main() {
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
         .allowlist_function("rb_mod_name")
-
-        // From internal/vm.h
-        .allowlist_var("rb_vm_insns_count")
 
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")

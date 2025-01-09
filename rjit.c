@@ -170,7 +170,7 @@ struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
-extern uint64_t rb_vm_insns_count;
+extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
 
 // Disable GC, TracePoint, JIT, stats, and $!
 #define WITH_RJIT_ISOLATED_USING_PC(using_pc, stmt) do { \
