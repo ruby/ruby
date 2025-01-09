@@ -235,5 +235,5 @@ module SyntaxSuggest
         end_is_missing_here
       EOM
     end
-  end
+  end if defined?(::Benchmark)
 end
