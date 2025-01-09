@@ -48,7 +48,7 @@ module RubyVM::YJIT
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
     call_yjit_hooks
-    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, exec_mem_size)
+    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, exec_mem_size, call_threshold)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
