@@ -549,12 +549,6 @@ Init_ossl_engine(void)
     DefEngineConst(METHOD_DSA);
     DefEngineConst(METHOD_DH);
     DefEngineConst(METHOD_RAND);
-#ifdef ENGINE_METHOD_BN_MOD_EXP
-    DefEngineConst(METHOD_BN_MOD_EXP);
-#endif
-#ifdef ENGINE_METHOD_BN_MOD_EXP_CRT
-    DefEngineConst(METHOD_BN_MOD_EXP_CRT);
-#endif
     DefEngineConst(METHOD_CIPHERS);
     DefEngineConst(METHOD_DIGESTS);
     DefEngineConst(METHOD_ALL);
