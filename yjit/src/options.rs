@@ -190,22 +190,6 @@ macro_rules! get_option_ref {
 pub(crate) use get_option_ref;
 use crate::log::Log;
 
-pub fn set_config(exec_mem_size: Option<usize>, call_threshold: Option<u64>) -> bool {
-    eprintln!("Entering set_config function");
-
-    exec_mem_size.map(|size| {
-        unsafe { OPTIONS.exec_mem_size = Some(size * 1024 * 1024); }
-        eprintln!("Set exec_mem_size to {} bytes ({} MiB)", size * 1024 * 1024, size);
-    });
-
-    call_threshold.map(|threshold| {
-        unsafe { rb_yjit_call_threshold = threshold; }
-        eprintln!("Set call_threshold to {}", threshold);
-    });
-
-    true
-}
-
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
 /// they pass exact "--yjit-".
