@@ -120,7 +120,6 @@ jobs:
           echo 'MMTK_PLAN=${{ matrix.gc.mmtk_plan }}' >> $GITHUB_ENV
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
-          echo 'GITHUB_WORKFLOW=ModGC' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
 
       - run: $SETARCH make
