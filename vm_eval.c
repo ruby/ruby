@@ -400,9 +400,9 @@ static inline const rb_callable_method_entry_t *rb_search_method_entry(VALUE rec
 static inline enum method_missing_reason rb_method_call_status(rb_execution_context_t *ec, const rb_callable_method_entry_t *me, call_type scope, VALUE self);
 
 static VALUE
-gccct_hash(VALUE klass, ID mid)
+gccct_hash(VALUE klass, VALUE namespace, ID mid)
 {
-    // TODO: inject the namespace id into the hash?
+    // return ((klass ^ namespace) >> 3) ^ (VALUE)mid;
     return (klass >> 3) ^ (VALUE)mid;
 }
 
@@ -449,6 +449,7 @@ static inline const struct rb_callcache *
 gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
     VALUE klass;
+    const rb_namespace_t *ns = rb_current_namespace();
 
     if (!SPECIAL_CONST_P(recv)) {
         klass = RBASIC_CLASS(recv);
@@ -459,7 +460,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
     }
 
     // search global method cache
-    unsigned int index = (unsigned int)(gccct_hash(klass, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+    unsigned int index = (unsigned int)(gccct_hash(klass, ns && ns->ns_object, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     const struct rb_callcache *cc = vm->global_cc_cache_table[index];
 

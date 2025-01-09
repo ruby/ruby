@@ -807,9 +807,7 @@ rb_class_debug_dump_all_classext(VALUE klass)
     snprintf(buf, 2048, "=========== current ns: %s ===========\n", RSTRING_PTR(ns_str));
     VALUE r = rb_str_new_cstr(buf);
     rb_str_concat(r, debug_dump_inspect_or_return_type(klass));
-    rb_str_cat_cstr(r, " (");
-    rb_str_concat(r, rb_funcall(rb_obj_id(klass), rb_intern("to_s"), 0));
-    snprintf(buf, 2048, ",%p)\n", (void *)klass);
+    snprintf(buf, 2048, " (%d,%p)\n", NUM2INT(rb_obj_id(klass)), (void *)klass);
     rb_str_cat_cstr(r, buf);
     rb_str_cat_cstr(r, "klass: ");
     if (METACLASS_OF(klass)) {
