@@ -277,6 +277,11 @@ module Fiddle
       assert_equal [[TYPE_INT,TYPE_VOIDP,TYPE_VOIDP], ['x', 'cb', 'name']], parse_struct_signature('int x; void (*cb)(); const char* name')
     end
 
+    def test_struct_bool
+      assert_equal([[TYPE_INT, TYPE_BOOL], ['x', 'toggle']],
+                   parse_struct_signature('int x; bool toggle'))
+    end
+
     def test_struct_undefined
       assert_raise(DLError) { parse_struct_signature(['int i', 'DWORD cb']) }
     end
