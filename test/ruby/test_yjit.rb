@@ -161,29 +161,26 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_invalid_runtime_call_threshold_option
-    assert_raise(Test::Unit::AssertionFailedError) do
-      assert_separately([], <<~RUBY, ignore_stderr: false)
-        begin
-          RubyVM::YJIT.enable(call_threshold: 0)
-        rescue => e
-          puts e.message
-          raise
-        end
-      RUBY
-    end
+    args = [
+      "-e",
+      "RubyVM::YJIT.enable(call_threshold: 0)" # This should cause a panic
+    ]
+
+    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
+    assert_includes(stderr, "panicked")
+    assert_includes(stderr, "call_threshold must be a positive integer")
   end
 
+
   def test_yjit_enable_with_invalid_runtime_mem_size_option
-    assert_raise(Test::Unit::AssertionFailedError) do
-      assert_separately([], <<~RUBY, ignore_stderr: false)
-        begin
-          RubyVM::YJIT.enable(mem_size: -1)
-        rescue => e
-          puts e.message
-          raise
-        end
-      RUBY
-    end
+    args = [
+      "-e",
+      "RubyVM::YJIT.enable(mem_size: 2049)" # This should cause a panic
+    ]
+
+    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
+    assert_includes(stderr, "panicked")
+    assert_includes(stderr, "mem_size must be between 1 and 2048 MB")
   end
 
 
