@@ -133,8 +133,8 @@ module Bundler
       validation_set.incomplete_specs.any?
     end
 
-    def missing_specs_for(dependencies)
-      materialize_dependencies(dependencies)
+    def missing_specs_for(deps)
+      materialize_dependencies(deps)
 
       missing_specs
     end
