@@ -435,6 +435,7 @@ EXTSTATIC     =
 
 OBJEXT = obj
 ASMEXT = asm
+DLEXT = so
 
 INSTALLED_LIST= .installed.list
 
@@ -872,7 +873,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 #define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
 #define LOAD_RELATIVE 1
-#define DLEXT ".so"
+#define DLEXT ".$(DLEXT)"
 !if "$(libdir_basename)" != "lib"
 #define LIBDIR_BASENAME "$(libdir_basename)"
 !endif
@@ -985,7 +986,7 @@ s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
 s,@LDSHARED@,$(LDSHARED),;t t
 s,@SOEXT@,dll,;t t
-s,@DLEXT@,so,;t t
+s,@DLEXT@,$(DLEXT),;t t
 s,@LIBEXT@,lib,;t t
 s,@STRIP@,$(STRIP),;t t
 s,@ENCSTATIC@,$(ENCSTATIC),;t t
