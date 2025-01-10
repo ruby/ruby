@@ -600,6 +600,8 @@ module IRB
         set_last_value(result)
       when Statement::Command
         statement.command_class.execute(self, statement.arg)
+      when Statement::IncorrectAlias
+        warn statement.message
       end
 
       nil
@@ -633,35 +635,60 @@ module IRB
       result
     end
 
-    def parse_command(code)
+    def parse_input(code, is_assignment_expression)
       command_name, arg = code.strip.split(/\s+/, 2)
-      return unless code.lines.size == 1 && command_name
-
       arg ||= ''
-      command = command_name.to_sym
-      # Command aliases are always command. example: $, @
-      if (alias_name = command_aliases[command])
-        return [alias_name, arg]
+
+      # command can only be 1 line
+      if code.lines.size != 1 ||
+        # command name is required
+        command_name.nil? ||
+        # local variable have precedence over command
+        local_variables.include?(command_name.to_sym) ||
+        # assignment expression is not a command
+        (is_assignment_expression ||
+        (arg.start_with?(ASSIGN_OPERATORS_REGEXP) && !arg.start_with?(/==|=~/)))
+        return Statement::Expression.new(code, is_assignment_expression)
       end
 
-      # Assignment-like expression is not a command
-      return if arg.start_with?(ASSIGN_OPERATORS_REGEXP) && !arg.start_with?(/==|=~/)
+      command = command_name.to_sym
 
-      # Local variable have precedence over command
-      return if local_variables.include?(command)
+      # Check command aliases
+      if aliased_name = command_aliases[command]
+        if command_class = Command.load_command(aliased_name)
+          command = aliased_name
+        elsif HelperMethod.helper_methods[aliased_name]
+          message = <<~MESSAGE
+            Using command alias `#{command}` for helper method `#{aliased_name}` is not supported.
+            Please check the value of `IRB.conf[:COMMAND_ALIASES]`.
+          MESSAGE
+          return Statement::IncorrectAlias.new(message)
+        else
+          message = <<~MESSAGE
+            You're trying to use command alias `#{command}` for command `#{aliased_name}`, but `#{aliased_name}` does not exist.
+            Please check the value of `IRB.conf[:COMMAND_ALIASES]`.
+          MESSAGE
+          return Statement::IncorrectAlias.new(message)
+        end
+      else
+        command_class = Command.load_command(command)
+      end
 
       # Check visibility
       public_method = !!KERNEL_PUBLIC_METHOD.bind_call(main, command) rescue false
       private_method = !public_method && !!KERNEL_METHOD.bind_call(main, command) rescue false
-      if Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
-        [command, arg]
+      if command_class && Command.execute_as_command?(command, public_method: public_method, private_method: private_method)
+        Statement::Command.new(code, command_class, arg)
+      else
+        Statement::Expression.new(code, is_assignment_expression)
       end
     end
 
     def colorize_input(input, complete:)
       if IRB.conf[:USE_COLORIZE] && IRB::Color.colorable?
         lvars = local_variables || []
-        if parse_command(input)
+        parsed_input = parse_input(input, false)
+        if parsed_input.is_a?(Statement::Command)
           name, sep, arg = input.split(/(\s+)/, 2)
           arg = IRB::Color.colorize_code(arg, complete: complete, local_variables: lvars)
           "#{IRB::Color.colorize(name, [:BOLD])}\e[m#{sep}#{arg}"

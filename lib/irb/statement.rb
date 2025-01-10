@@ -54,6 +54,27 @@ module IRB
       end
     end
 
+    class IncorrectAlias < Statement
+      attr_reader :message
+
+      def initialize(message)
+        @code = ""
+        @message = message
+      end
+
+      def should_be_handled_by_debugger?
+        false
+      end
+
+      def is_assignment?
+        false
+      end
+
+      def suppresses_echo?
+        true
+      end
+    end
+
     class Command < Statement
       attr_reader :command_class, :arg
 
