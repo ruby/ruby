@@ -333,6 +333,7 @@ module Prism
                 lines.map do |line|
                   newline = line.end_with?("\r\n") ? "\r\n" : "\n"
                   chomped_line = line.chomp
+<<<<<<< HEAD
                   if match = chomped_line.match(/(?<backslashes>\\+)\z/)
                     adjustment = match[:backslashes].size / 2
                     adjusted_line = chomped_line.delete_suffix("\\" * adjustment)
@@ -342,6 +343,24 @@ module Prism
                     else
                       adjusted_line << newline
                     end
+=======
+                  backslash_count = chomped_line[/\\{1,}\z/]&.length || 0
+                  is_interpolation = interpolation?(quote_stack.last)
+                  is_percent_array = percent_array?(quote_stack.last)
+
+                  if backslash_count.odd? && (is_interpolation || is_percent_array)
+                    if is_percent_array
+                      # Remove the last backslash, keep potential newlines
+                      current_line << line.sub(/(\\)(\r?\n)\z/, '\2')
+                      adjustment += 1
+                    else
+                      chomped_line.delete_suffix!("\\")
+                      current_line << chomped_line
+                      adjustment += 2
+                    end
+                    # If the string ends with a line continuation emit the remainder
+                    emit = index == lines.count - 1
+>>>>>>> b6554ad64e (Fix parser translator tokens for backslashes in single-quoted strings and word arrays)
                   else
                     adjusted_line = line
                     adjustment = 0
