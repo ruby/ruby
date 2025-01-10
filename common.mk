@@ -9717,6 +9717,7 @@ main.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 main.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 main.$(OBJEXT): {$(VPATH)}config.h
 main.$(OBJEXT): {$(VPATH)}defines.h
+main.$(OBJEXT): {$(VPATH)}id.h
 main.$(OBJEXT): {$(VPATH)}intern.h
 main.$(OBJEXT): {$(VPATH)}internal/abi.h
 main.$(OBJEXT): {$(VPATH)}internal/anyargs.h
