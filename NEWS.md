@@ -18,7 +18,7 @@ The following bundled gems are promoted from default gems.
 * ostruct 0.6.1
 * pstore 0.1.4
 * benchmark 0.4.0
-* logger 1.6.4
+* logger 1.6.5
 
 We only list stdlib changes that are notable feature changes.
 
