@@ -11,7 +11,11 @@ set p=%1
 shift
 set p=%p:/=\%
 if not exist "%p%" goto :begin
-del /q "%p%" > nul && goto :begin
+
+::- Try `rd` first for symlink to a directory; `del` attemps to remove all
+::- files under the target directory, instead of the symlink itself.
+(rd /q "%p%" || del /q "%p%") 2> nul && goto :begin
+
 if "%recursive%" == "1" for /D %%I in (%p%) do (
     rd /s /q %%I
 )
