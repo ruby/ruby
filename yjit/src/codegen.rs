@@ -9009,7 +9009,7 @@ fn gen_send_general(
 
     // Dynamic stack layout. No good way to support without inlining.
     if ci_flags & VM_CALL_FORWARDING != 0 {
-        gen_counter_incr(jit, asm, Counter::send_iseq_forwarding);
+        gen_counter_incr(jit, asm, Counter::send_forwarding);
         return None;
     }
 

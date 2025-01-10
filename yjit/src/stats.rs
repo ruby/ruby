@@ -358,6 +358,7 @@ make_counters! {
 
     // Method calls that fallback to dynamic dispatch
     send_singleton_class,
+    send_forwarding,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
@@ -385,7 +386,6 @@ make_counters! {
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
     send_iseq_complex_discard_extras,
-    send_iseq_forwarding,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_mismatch,
