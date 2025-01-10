@@ -4,7 +4,6 @@ source "https://rubygems.org"
 
 gem "rack", "~> 3.0"
 gem "rackup", "~> 2.1"
-gem "base64"
 gem "webrick", "~> 1.9"
 gem "rack-test", "~> 2.1"
 gem "compact_index", "~> 0.15.0"
