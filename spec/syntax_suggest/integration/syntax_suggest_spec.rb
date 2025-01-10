@@ -4,6 +4,10 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe "Integration tests that don't spawn a process (like using the cli)" do
+    before(:each) do
+      skip "Benchmark is not available" unless defined?(::Benchmark)
+    end
+
     it "does not timeout on massive files" do
       next unless ENV["SYNTAX_SUGGEST_TIMEOUT"]
 
@@ -235,5 +239,5 @@ module SyntaxSuggest
         end_is_missing_here
       EOM
     end
-  end if defined?(::Benchmark)
+  end
 end
