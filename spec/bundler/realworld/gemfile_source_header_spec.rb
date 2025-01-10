@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../support/silent_logger"
-
 RSpec.describe "fetching dependencies with a mirrored source", realworld: true do
   let(:mirror) { "https://server.example.org" }
   let(:original) { "http://127.0.0.1:#{@port}" }
@@ -38,6 +36,7 @@ RSpec.describe "fetching dependencies with a mirrored source", realworld: true d
     @server_uri = "http://127.0.0.1:#{@port}"
 
     require_relative "../support/artifice/endpoint_mirror_source"
+    require_relative "../support/silent_logger"
 
     require "rackup/server"
 

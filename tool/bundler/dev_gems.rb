@@ -13,7 +13,6 @@ gem "rspec-core", "~> 3.12"
 gem "rspec-expectations", "~> 3.12"
 gem "rspec-mocks", "~> 3.12"
 gem "uri", "~> 0.13.0"
-gem "logger", "~> 1.6.5"
 
 group :doc do
   gem "ronn-ng", "~> 0.10.1", platform: :ruby
