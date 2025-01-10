@@ -144,6 +144,7 @@ see {Script Encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].
 
 The default encoding for a string created with method String.new is:
 
+- For no argument, ASCII-8BIT.
 - For a \String object argument, the encoding of that string.
 - For a string literal, the script encoding;
   see {Script Encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].
