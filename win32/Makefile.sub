@@ -1193,8 +1193,8 @@ ext/clean.sub ext/distclean.sub ext/realclean.sub \
 		    call set n=%I && \
 		    call set n=%n:%CD%\$(@D)\=% && \
 		    call set n=%n:\.=% && \
-		    call echo $(@F)ing %n:\=/% & \
-		    $(MAKE) $(MFLAGS) $(@F) & \
+		    call echo $(@F:.sub=)ing %n:\=/% & \
+		    $(MAKE) $(MFLAGS) $(@F:.sub=) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
 		))) || $(NULLCMD)
