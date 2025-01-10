@@ -385,7 +385,7 @@ module SyncDefaultGems
       rm_rf("prism/templates/javascript")
       rm_rf("prism/templates/java")
       rm_rf("prism/templates/rbi")
-      rm_rf("prism/templates/sig")
+      rm_rf("prism/templates/sig/prism/_private")
 
       rm("test/prism/snapshots_test.rb")
       rm_rf("test/prism/snapshots")
