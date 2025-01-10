@@ -1382,7 +1382,8 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c]], proc {|a, *b, c|}.parameters)
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
-    assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:rest, :_], [:opt]], proc {|(a_), *_, (b_)|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
 
     assert_equal([[:req]], method(:putc).parameters)

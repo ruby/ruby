@@ -4323,7 +4323,7 @@ proc_ruby2_keywords(VALUE procval)
  *
  *     p = proc { it**2 }
  *     l = lambda { it**2 }
- *     p.parameters     # => [[:opt, nil]]
+ *     p.parameters     # => [[:opt]]
  *     p.arity          # => 1
  *     l.parameters     # => [[:req]]
  *     l.arity          # => 1
