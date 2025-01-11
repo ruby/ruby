@@ -426,7 +426,10 @@ module IRB
       # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
       message = message.gsub(/\(irb\):(?<num>\d+):in (?<open_quote>[`'])<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in #{$~[:open_quote]}<main>'" }
       puts message
-      puts 'Maybe IRB bug!' if irb_bug
+
+      if irb_bug
+        puts "This may be an issue with IRB. If you believe this is an unexpected behavior, please report it to https://github.com/ruby/irb/issues"
+      end
     rescue Exception => handler_exc
       begin
         puts exc.inspect
