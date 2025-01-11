@@ -93,7 +93,7 @@ module IRB # :nodoc:
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
-    @CONF[:SAVE_HISTORY] = 1000
+    @CONF[:SAVE_HISTORY] = History::DEFAULT_ENTRY_LIMIT
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 

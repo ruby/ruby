@@ -2,9 +2,13 @@ require "pathname"
 
 module IRB
   module History
+    DEFAULT_ENTRY_LIMIT = 1000
+
     class << self
       # Integer representation of <code>IRB.conf[:HISTORY_FILE]</code>.
       def save_history
+        return 0 if IRB.conf[:SAVE_HISTORY] == false
+        return DEFAULT_ENTRY_LIMIT if IRB.conf[:SAVE_HISTORY] == true
         IRB.conf[:SAVE_HISTORY].to_i
       end
 

@@ -279,6 +279,47 @@ module TestIRB
   end
 
   class IRBHistoryIntegrationTest < IntegrationTestCase
+    def test_history_saving_can_be_disabled_with_false
+      write_history ""
+      write_rc <<~RUBY
+        IRB.conf[:SAVE_HISTORY] = false
+      RUBY
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "puts 'foo' + 'bar'"
+        type "exit"
+      end
+
+      assert_include(output, "foobar")
+      assert_equal "", @history_file.open.read
+    end
+
+    def test_history_saving_accepts_true
+      write_history ""
+      write_rc <<~RUBY
+        IRB.conf[:SAVE_HISTORY] = true
+      RUBY
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "puts 'foo' + 'bar'"
+        type "exit"
+      end
+
+      assert_include(output, "foobar")
+      assert_equal <<~HISTORY, @history_file.open.read
+        puts 'foo' + 'bar'
+        exit
+      HISTORY
+    end
+
     def test_history_saving_with_debug
       write_history ""
 
