@@ -1,0 +1,49 @@
+@ ProgramNode (location: (3,0)-(9,8))
+├── flags: ∅
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (3,0)-(9,8))
+    ├── flags: ∅
+    └── body: (length: 4)
+        ├── @ StringNode (location: (3,0)-(3,6))
+        │   ├── flags: newline
+        │   ├── opening_loc: (3,0)-(3,1) = "\""
+        │   ├── content_loc: (3,1)-(3,5) = "\\xcd"
+        │   ├── closing_loc: (3,5)-(3,6) = "\""
+        │   └── unescaped: "\xCD"
+        ├── @ SymbolNode (location: (5,0)-(5,7))
+        │   ├── flags: newline, static_literal
+        │   ├── opening_loc: (5,0)-(5,2) = ":\""
+        │   ├── value_loc: (5,2)-(5,6) = "\\xcd"
+        │   ├── closing_loc: (5,6)-(5,7) = "\""
+        │   └── unescaped: "\xCD"
+        ├── @ InterpolatedRegularExpressionNode (location: (7,0)-(7,11))
+        │   ├── flags: newline, static_literal
+        │   ├── opening_loc: (7,0)-(7,1) = "/"
+        │   ├── parts: (length: 1)
+        │   │   └── @ EmbeddedStatementsNode (location: (7,1)-(7,10))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (7,1)-(7,3) = "\#{"
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (7,3)-(7,9))
+        │   │       │   ├── flags: ∅
+        │   │       │   └── body: (length: 1)
+        │   │       │       └── @ StringNode (location: (7,3)-(7,9))
+        │   │       │           ├── flags: static_literal, frozen
+        │   │       │           ├── opening_loc: (7,3)-(7,4) = "\""
+        │   │       │           ├── content_loc: (7,4)-(7,8) = "\\xcd"
+        │   │       │           ├── closing_loc: (7,8)-(7,9) = "\""
+        │   │       │           └── unescaped: "\xCD"
+        │   │       └── closing_loc: (7,9)-(7,10) = "}"
+        │   └── closing_loc: (7,10)-(7,11) = "/"
+        └── @ ArrayNode (location: (9,0)-(9,8))
+            ├── flags: newline
+            ├── elements: (length: 1)
+            │   └── @ StringNode (location: (9,3)-(9,7))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (9,3)-(9,7) = "\\xC0"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\xC0"
+            ├── opening_loc: (9,0)-(9,3) = "%W["
+            └── closing_loc: (9,7)-(9,8) = "]"

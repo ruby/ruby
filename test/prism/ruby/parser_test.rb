@@ -17,6 +17,18 @@ end
 # First, opt in to every AST feature.
 Parser::Builders::Default.modernize
 
+# The parser gem rejects some strings that would most likely lead to errors
+# in consumers due to encoding problems. RuboCop however monkey-patches this
+# method out in order to accept such code.
+# https://github.com/whitequark/parser/blob/v3.3.6.0/lib/parser/builders/default.rb#L2289-L2295
+Parser::Builders::Default.prepend(
+  Module.new {
+    def string_value(token)
+      value(token)
+    end
+  }
+)
+
 # Modify the source map == check so that it doesn't check against the node
 # itself so we don't get into a recursive loop.
 Parser::Source::Map.prepend(

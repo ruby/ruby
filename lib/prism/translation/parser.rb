@@ -51,7 +51,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+        result = unwrap(Prism.parse(source, **prism_options), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -64,7 +64,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+        result = unwrap(Prism.parse(source, **prism_options), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -83,7 +83,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version), partial_script: true, encoding: false), offset_cache)
+            unwrap(Prism.parse_lex(source, **prism_options), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
@@ -283,6 +283,20 @@ module Prism
           offset_cache[location.start_offset],
           offset_cache[location.end_offset]
         )
+      end
+
+      # Options for how prism should parse/lex the source.
+      def prism_options
+        options = {
+          filepath: @source_buffer.name,
+          version: convert_for_prism(version),
+          partial_script: true,
+        }
+        # The parser gem always encodes to UTF-8, unless it is binary.
+        # https://github.com/whitequark/parser/blob/v3.3.6.0/lib/parser/source/buffer.rb#L80-L107
+        options[:encoding] = false if @source_buffer.source.encoding != Encoding::BINARY
+
+        options
       end
 
       # Converts the version format handled by Parser to the format handled by Prism.

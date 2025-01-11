@@ -26,6 +26,7 @@ Sexp.prepend(
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "encoding_euc_jp.txt",
       "newline_terminated.txt",
       "regex_char_width.txt",
       "seattlerb/bug169.txt",
