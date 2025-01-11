@@ -1045,10 +1045,20 @@ module Prism
             bounds(node.location)
             on_unary(node.name, receiver)
           when :!
-            receiver = visit(node.receiver)
+            if node.message == "not"
+              receiver =
+                if !node.receiver.is_a?(ParenthesesNode) || !node.receiver.body.nil?
+                  visit(node.receiver)
+                end
 
-            bounds(node.location)
-            on_unary(node.message == "not" ? :not : :!, receiver)
+              bounds(node.location)
+              on_unary(:not, receiver)
+            else
+              receiver = visit(node.receiver)
+
+              bounds(node.location)
+              on_unary(:!, receiver)
+            end
           when *BINARY_OPERATORS
             receiver = visit(node.receiver)
             value = visit(node.arguments.arguments.first)
