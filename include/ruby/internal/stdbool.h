@@ -27,7 +27,7 @@
 
 #elif defined(__cplusplus)
 # /* bool is a keyword in C++. */
-# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L) && (__cplusplus < 201703L)
 #  include <cstdbool>
 # endif
 #
