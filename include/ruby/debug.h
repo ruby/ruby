@@ -520,6 +520,18 @@ VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
 
 RBIMPL_ATTR_NONNULL(())
 /**
+ *
+ * Queries the parameters passed on a call or return event.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event does not support querying parameters.
+ * @return     Array of parameters in the format of `Method#parameters`.
+ *
+ */
+VALUE rb_tracearg_parameters(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL(())
+/**
  * Queries the method name of the point where the trace is at.
  *
  * @param[in]  trace_arg  A trace instance.
@@ -594,6 +606,32 @@ RBIMPL_ATTR_NONNULL(())
  * @return     The raised exception.
  */
 VALUE rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ * Queries the compiled source code of the 'script_compiled' event.
+ * If loaded from a file, it will return nil.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event is not 'script_compiled'.
+ * @retval     RUBY_Qnil         The script was loaded from a file.
+ * @retval     otherwise         The compiled source code.
+ *
+ */
+VALUE rb_tracearg_eval_script(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL(())
+/**
+ *
+ * Queries the compiled instruction sequence on a 'script_compiled' event.
+ * Note that this method is MRI specific.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event is not 'script_compiled'.
+ * @return     The `RubyVM::InstructionSequence` object representing the instruction sequence.
+ *
+ */
+VALUE rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg);
 
 RBIMPL_ATTR_NONNULL(())
 /**
