@@ -6898,15 +6898,21 @@ static const rb_data_type_t env_data_type = {
  *  - #dig(key, *identifiers).
  *  - #values_at(*keys).
  *
- *  You can override these behaviors for #[], #dig, and #values_at;
+ *  You can override these behaviors for #[], #dig, and #values_at (but not #assoc);
  *  see {Hash Default}[rdoc-ref:Hash@Hash+Default].
  *
- *  ==== KeyError
+ *  ==== \KeyError
  *
  *  If you want KeyError raised for a not-found key, you can call:
  *
  *  - #fetch(key).
  *  - #fetch_values(*keys).
+ *
+ *  Examples:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h.fetch(:baz)              # Raises KeyError 'key not found: :baz'
+ *    h.fetch_values(:bar, :baz) # Raises KeyError 'key not found: :baz'
  *
  *  You can override these behaviors;
  *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]
@@ -6914,138 +6920,94 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== \Hash Default
  *
- *  - #[](key) (usually written as <tt>#[key]</tt>.
- *  - #dig(key, *identifiers).
- *  - #values_at(*keys).
+ *  For certain methods (#[], #dig, and #values_at),
+ *  the return value for a not-found key is determined by two hash properties:
  *
- *  ===== All Keys
+ *  - <i>default value</i>: returned by method #default.
+ *  - <i>default proc</i>: returned by method #default_proc.
  *
- *  ===== Per Key
+ *  In the simple case, both values are +nil+,
+ *  and the methods return +nil+ for a not-found key;
+ *  see {Nil Return Value}[rdoc-ref:Hash@Nil+Return+Value] above.
+ *
+ *  Note that this entire section:
+ *
+ *  - Applies _only_ to methods #[], #dig, and #values_at.
+ *  - Does _not_ apply to methods #assoc, #fetch, or #fetch_values,
+ *    which are not affected by the default value or default proc.
+ *
+ *  ===== Any-Key Default
+ *
+ *  You can define an any-key default for a hash;
+ *  that is, a value that will be returned for _any_ not-found key:
+ *
+ *  - The value of #default_proc <i>must be</i> +nil+.
+ *  - The value of #default (which may be any object, including +nil+)
+ *    will be returned for a not-found key.
+ *
+ *  Examples:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h.default_proc # => nil
+ *    h.default      # => nil
+ *    h[:baz]        # => nil
+ *
+ *  You can set the default value with method #default=:
+ *
+ *    h.default = false
+ *    h[:baz]      # => false
+ *
+ *  Or when the hash is created with Hash.new and option +default_value+:
+ *
+ *    h = Hash.new(false) # => {}
+ *    h[:foo]             # => false
+ *
+ *  Note: although the value of #default may be any object,
+ *  it may not be a good idea to use a mutable object:
+ *
+ *    h = Hash.new([0, 1, 2])
+ *    h[:baz] # => [0, 1, 2]
+ *    h[:baz].reverse!
+ *    h[:baz] # => [2, 1, 0]
+ *
+ *  ===== Per-Key Defaults
+ *
+ *  You can define a per-key default for a hash;
+ *  that is, a Proc that will return a value based on the key itself:
+ *
+ *  - The value of #default_proc must be a proc.
+ *  - The value of #default is +nil+ (always true when #default_proc is a proc).
+ *
+ *  You can set the default proc with method #default_proc=:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h.default_proc = proc {|hash, key| key.to_s.reverse }
+ *    h[:baz] # => "zab"
+ *
+ *  Or when the hash is created with Hash.new and a block:
+ *
+ *    h = Hash.new {|hash, key| key.to_s.upcase }
+ *    h[:baz] # => "BAZ"
+ *
+ *  In either case, the proc should accept two arguments:
+ *
+ *  - +hash+: the hash +self+.
+ *  - +key+: the key to be handled.
+ *
+ *  Note that the proc can modify +self+:
+ *
+ *    h = {foo: 0, bar: 1} # => {:foo=>0, :bar=>1}
+ *    h.default_proc = proc {|hash, key| hash.transform_keys! {|k| k.to_s } }
+ *    h[:baz]              # => {"foo"=>0, "bar"=>1}
+ *
+ *  Note that a default proc that modifies +self+ is not thread-safe in the
+ *  sense that multiple threads can call into the default proc concurrently for the
+ *  same key.
  *
  *  ==== \Method Default
  *
  *  - #fetch(key).
  *  - #fetch_values(*keys).
- *
- *
- *  -----------------------
- *
- *  Then the returned value is determined by default values,
- *  as defined in the hash and sometimes by the method call itself.
- *
- *  ==== Initial Default Return
- *
- *  In the simplest case, no default value has been specified
- *  (See {Default Values}[rdoc-ref:Hash@Default+Values] below),
- *  and each of these methods responds with these behaviors:
- *
- *  - #[](key) (usually written as <tt>#[key]</tt>): returns +nil+.
- *  - #dig(key, *identifiers): returns +nil+.
- *  - #fetch_values(*keys): raises KeyError.
- *  - #fetch(key): raises KeyError.
- *  - #values_at(*keys): returns +nil+ for each not-found key.
- *
- *  ==== Default Values
- *
- *  For many purposes, the behaviors described above are sufficient;
- *  however you can modify those behaviors with <i>custom default values</i>:
- *
- *  - A custom default value may be defined for a hash;
- *    see {Custom Hash Default Value}[rdoc-ref:Hash@Custom+Hash+Default+Value].
- *
- *  - For some methods, a custom default value may be specified in the call to to the method;
- *    see {Custom Method Default Value}[rdoc-ref:Hash@Custom+Method+Default+Value].
- *
- *  ===== Custom \Hash Default Value
- *
- *  The default value for a hash is determined by two of its properties:
- *
- *  - Its <i>default proc</i>, which is retrieved by method #default_proc,
- *    and may be set by method #default_proc= or method #new.
- *  - Its <i>default value</i>, which is retrieved by method #default,
- *    and may be set by method #default= or method #new.
- *
- *  In general:
- *
- *  - When #default_proc is +nil+, the value of #default is returned:
- *
- *      h = Hash.new
- *      h.default_proc # => nil
- *      h.default      # => nil
- *      h[:nosuch]     # => nil
- *      h.default = false
- *      h['nosuch']    # => false
- *
- *  - When the default proc is a Proc, that proc is called and its return value is returned
- *    (see {Default Proc}[rdoc-ref:Hash@Default+Proc] immediately below):
- *
- *      h.default_proc = Proc.new {|hash, key| key.upcase }
- *      h['nosuch'] # => "NOSUCH"
- *
- *  ===== Default \Proc
- *
- *  The default proc should be a proc that accepts two arguments
- *  (see the example above):
- *
- *  - The hash +self+.
- *  - The given key.
- *
- *  The default proc may be set with method #default_proc= (as above),
- *  or via the block in a call to #new:
- *
- *    h = Hash.new {|hash, key| "Hash #{hash}: Default value for #{key}" }
- *    h.default_proc # => #<Proc>
- *    h[:nosuch]     # => "Hash {}: Default value for nosuch"
- *
- *  ===== Default Value
- *
- *  The default value may be any object,
- *  and may be set via parameter +default_value+ in a call to #new,
- *  or with method #default=:
- *
- *    h = Hash.new(false)
- *    h.default  # => false
- *    h[:nosuch] # => false
- *    h.default = nil
- *    h[:nosuch] # => nil
- *
- *  ===== Custom \Method Default Value
- *
- *  ---------------------------------------
- *
- *  Note that the default value is returned without being duplicated. It is not advised to set
- *  the default value to a mutable object:
- *
- *    synonyms = Hash.new([])
- *    synonyms[:hello] # => []
- *    synonyms[:hello] << :hi # => [:hi], but this mutates the default!
- *    synonyms.default # => [:hi]
- *    synonyms[:world] << :universe
- *    synonyms[:world] # => [:hi, :universe], oops
- *    synonyms.keys # => [], oops
- *
- *  To use a mutable object as default, it is recommended to use a default proc
- *
- *    h = Hash.new { |hash, key| "Default value for #{key}" }
- *    h[:nosuch] # => "Default value for nosuch"
- *
- *  Note that in the example above no entry for key +:nosuch+ is created:
- *
- *    h.include?(:nosuch) # => false
- *
- *  However, the proc itself can add a new entry:
- *
- *    synonyms = Hash.new { |hash, key| hash[key] = [] }
- *    synonyms.include?(:hello) # => false
- *    synonyms[:hello] << :hi # => [:hi]
- *    synonyms[:world] << :universe # => [:universe]
- *    synonyms.keys # => [:hello, :world]
- *
- *  Note that setting the default proc will clear the default value and vice versa.
- *
- *  Be aware that a default proc that modifies the hash is not thread-safe in the
- *  sense that multiple threads can call into the default proc concurrently for the
- *  same key.
  *
  *  === What's Here
  *
