@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "strscan"
+
 module Prism
   module Translation
     class Parser
@@ -251,6 +253,8 @@ module Prism
               end
             when :tCHARACTER
               value.delete_prefix!("?")
+              # Character literals behave similar to double-quoted strings. We can use the same escaping mechanism.
+              value = unescape_string(value, "?")
             when :tCOMMENT
               if token.type == :EMBDOC_BEGIN
                 start_index = index
@@ -431,6 +435,156 @@ module Prism
           end
         rescue ArgumentError
           0r
+        end
+
+        # Wonky heredoc tab/spaces rules.
+        # https://github.com/ruby/prism/blob/v1.3.0/src/prism.c#L10548-L10558
+        def calculate_heredoc_whitespace(heredoc_token_index)
+          next_token_index = heredoc_token_index
+          nesting_level = 0
+          previous_line = -1
+          result = Float::MAX
+
+          while (lexed[next_token_index] && next_token = lexed[next_token_index][0])
+            next_token_index += 1
+            next_next_token = lexed[next_token_index] && lexed[next_token_index][0]
+
+            # String content inside nested heredocs and interpolation is ignored
+            if next_token.type == :HEREDOC_START || next_token.type == :EMBEXPR_BEGIN
+              nesting_level += 1
+            elsif next_token.type == :HEREDOC_END || next_token.type == :EMBEXPR_END
+              nesting_level -= 1
+              # When we encountered the matching heredoc end, we can exit
+              break if nesting_level == -1
+            elsif next_token.type == :STRING_CONTENT && nesting_level == 0
+              common_whitespace = 0
+              next_token.value[/^\s*/].each_char do |char|
+                if char == "\t"
+                  common_whitespace = (common_whitespace / 8 + 1) * 8;
+                else
+                  common_whitespace += 1
+                end
+              end
+
+              is_first_token_on_line = next_token.location.start_line != previous_line
+              # Whitespace is significant if followed by interpolation
+              whitespace_only = common_whitespace == next_token.value.length && next_next_token&.location&.start_line != next_token.location.start_line
+              if is_first_token_on_line && !whitespace_only && common_whitespace < result
+                result = common_whitespace
+                previous_line = next_token.location.start_line
+              end
+            end
+          end
+          result
+        end
+
+        # Wonky heredoc tab/spaces rules.
+        # https://github.com/ruby/prism/blob/v1.3.0/src/prism.c#L16528-L16545
+        def trim_heredoc_whitespace(string, heredoc)
+          trimmed_whitespace = 0
+          trimmed_characters = 0
+          while (string[trimmed_characters] == "\t" || string[trimmed_characters] == " ") && trimmed_whitespace < heredoc.common_whitespace
+            if string[trimmed_characters] == "\t"
+              trimmed_whitespace = (trimmed_whitespace / 8 + 1) * 8;
+              break if trimmed_whitespace > heredoc.common_whitespace
+            else
+              trimmed_whitespace += 1
+            end
+            trimmed_characters += 1
+          end
+
+          string[trimmed_characters..]
+        end
+
+        # Escape sequences that have special and should appear unescaped in the resulting string.
+        ESCAPES = {
+          "a" => "\a", "b" => "\b", "e" => "\e", "f" => "\f",
+          "n" => "\n", "r" => "\r", "s" => "\s", "t" => "\t",
+          "v" => "\v", "\\" => "\\"
+        }.freeze
+        private_constant :ESCAPES
+
+        # When one of these delimiters is encountered, then the other
+        # one is allowed to be escaped as well.
+        DELIMITER_SYMETRY = { "[" => "]", "(" => ")", "{" => "}", "<" => ">" }.freeze
+        private_constant :DELIMITER_SYMETRY
+
+        # Apply Ruby string escaping rules
+        def unescape_string(string, quote)
+          # In single-quoted heredocs, everything is taken literally.
+          return string if quote == "<<'"
+
+          # TODO: Implement regexp escaping
+          return string if quote == "/" || quote.start_with?("%r")
+
+          # OPTIMIZATION: Assume that few strings need escaping to speed up the common case.
+          return string unless string.include?("\\")
+
+          if interpolation?(quote)
+            # Appending individual escape sequences may force the string out of its intended
+            # encoding. Start out with binary and force it back later.
+            result = "".b
+
+            scanner = StringScanner.new(string)
+            while (skipped = scanner.skip_until(/\\/))
+              # Append what was just skipped over, excluding the found backslash.
+              result << string.byteslice(scanner.pos - skipped, skipped - 1)
+
+              # Simple single-character escape sequences like \n
+              if (replacement = ESCAPES[scanner.peek(1)])
+                result << replacement
+                scanner.pos += 1
+              elsif (octal = scanner.check(/[0-7]{1,3}/))
+                # \nnn
+                # NOTE: When Ruby 3.4 is required, this can become result.append_as_bytes(chr)
+                result << octal.to_i(8).chr.b
+                scanner.pos += octal.bytesize
+              elsif (hex = scanner.check(/x([0-9a-fA-F]{1,2})/))
+                # \xnn
+                result << hex[1..].to_i(16).chr.b
+                scanner.pos += hex.bytesize
+              elsif (unicode = scanner.check(/u([0-9a-fA-F]{4})/))
+                # \unnnn
+                result << unicode[1..].hex.chr(Encoding::UTF_8).b
+                scanner.pos += unicode.bytesize
+              elsif scanner.peek(3) == "u{}"
+                # https://github.com/whitequark/parser/issues/856
+                scanner.pos += 3
+              elsif (unicode_parts = scanner.check(/u{.*}/))
+                # \u{nnnn ...}
+                unicode_parts[2..-2].split.each do |unicode|
+                  result << unicode.hex.chr(Encoding::UTF_8).b
+                end
+                scanner.pos += unicode_parts.bytesize
+              end
+            end
+
+            # Add remainging chars
+            result << string.byteslice(scanner.pos..)
+
+            result.force_encoding(source_buffer.source.encoding)
+
+            result
+          else
+            if quote == "'"
+              delimiter = "'"
+            else
+              delimiter = quote[2]
+            end
+
+            delimiters = Regexp.escape("#{delimiter}#{DELIMITER_SYMETRY[delimiter]}")
+            string.gsub(/\\([\\#{delimiters}])/, '\1')
+          end
+        end
+
+        # Determine if characters preceeded by a backslash should be escaped or not
+        def interpolation?(quote)
+          quote != "'" && !quote.start_with?("%q", "%w", "%i")
+        end
+
+        # Determine if the string is part of a %-style array.
+        def percent_array?(quote)
+          quote.start_with?("%w", "%W", "%i", "%I")
         end
       end
     end
