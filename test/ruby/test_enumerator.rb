@@ -1008,4 +1008,19 @@ class TestEnumerator < Test::Unit::TestCase
       Enumerator.product(1..3, foo: 1, bar: 2)
     }
   end
+
+  def test_sum_of_numeric
+    num = Class.new(Numeric) do
+      attr_reader :to_f
+      def initialize(val)
+        @to_f = Float(val)
+      end
+    end
+
+    ary = [5, 10, 20].map {|i| num.new(i)}
+
+    assert_equal(35.0, ary.sum)
+    enum = ary.each
+    assert_equal(35.0, enum.sum)
+  end
 end
