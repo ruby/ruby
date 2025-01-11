@@ -199,10 +199,18 @@ module Prism
         # The following token types are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = [
           :kBREAK, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
-          :tEQL, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
+          :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
         ]
 
-        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LAMBDA_TOKEN_TYPES, :LPAREN_CONVERSION_TOKEN_TYPES
+        # Types of tokens that are allowed to continue a method call with comments in-between.
+        # For these, the parser gem doesn't emit a newline token after the last comment.
+        COMMENT_CONTINUATION_TYPES = [:COMMENT, :AMPERSAND_DOT, :DOT]
+        private_constant :COMMENT_CONTINUATION_TYPES
+
+        # Heredocs are complex and require us to keep track of a bit of info to refer to later
+        HeredocData = Struct.new(:identifier, :common_whitespace, keyword_init: true)
+
+        private_constant :TYPES, :EXPR_BEG, :EXPR_LABEL, :LAMBDA_TOKEN_TYPES, :LPAREN_CONVERSION_TOKEN_TYPES, :HeredocData
 
         # The Parser::Source::Buffer that the tokens were lexed from.
         attr_reader :source_buffer
@@ -232,7 +240,13 @@ module Prism
           index = 0
           length = lexed.length
 
-          heredoc_identifier_stack = []
+          heredoc_stack = []
+          quote_stack = []
+
+          # The parser gem emits the newline tokens for comments out of order. This saves
+          # that token location to emit at a later time to properly line everything up.
+          # https://github.com/whitequark/parser/issues/1025
+          comment_newline_location = nil
 
           while index < length
             token, state = lexed[index]
@@ -241,7 +255,7 @@ module Prism
 
             type = TYPES.fetch(token.type)
             value = token.value
-            location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset])
+            location = range(token.location.start_offset, token.location.end_offset)
 
             case type
             when :kDO
@@ -257,23 +271,46 @@ module Prism
               value = unescape_string(value, "?")
             when :tCOMMENT
               if token.type == :EMBDOC_BEGIN
-                start_index = index
 
                 while !((next_token = lexed[index][0]) && next_token.type == :EMBDOC_END) && (index < length - 1)
                   value += next_token.value
                   index += 1
                 end
 
-                if start_index != index
-                  value += next_token.value
-                  location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[lexed[index][0].location.end_offset])
-                  index += 1
-                end
+                value += next_token.value
+                location = range(token.location.start_offset, lexed[index][0].location.end_offset)
+                index += 1
               else
                 value.chomp!
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset - 1])
+                location = range(token.location.start_offset, token.location.end_offset - 1)
+
+                prev_token = lexed[index - 2][0]
+                next_token = lexed[index][0]
+
+                is_inline_comment = prev_token.location.start_line == token.location.start_line
+                if is_inline_comment && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
+                  tokens << [:tCOMMENT, [value, location]]
+
+                  nl_location = range(token.location.end_offset - 1, token.location.end_offset)
+                  tokens << [:tNL, [nil, nl_location]]
+                  next
+                elsif is_inline_comment && next_token&.type == :COMMENT
+                  comment_newline_location = range(token.location.end_offset - 1, token.location.end_offset)
+                elsif comment_newline_location && !COMMENT_CONTINUATION_TYPES.include?(next_token&.type)
+                  tokens << [:tCOMMENT, [value, location]]
+                  tokens << [:tNL, [nil, comment_newline_location]]
+                  comment_newline_location = nil
+                  next
+                end
               end
             when :tNL
+              next_token = next_token = lexed[index][0]
+              # Newlines after comments are emitted out of order.
+              if next_token&.type == :COMMENT
+                comment_newline_location = location
+                next
+              end
+
               value = nil
             when :tFLOAT
               value = parse_float(value)
@@ -281,8 +318,8 @@ module Prism
               value = parse_complex(value)
             when :tINTEGER
               if value.start_with?("+")
-                tokens << [:tUNARY_NUM, ["+", Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.start_offset + 1])]]
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset + 1], offset_cache[token.location.end_offset])
+                tokens << [:tUNARY_NUM, ["+", range(token.location.start_offset, token.location.start_offset + 1)]]
+                location = range(token.location.start_offset + 1, token.location.end_offset)
               end
 
               value = parse_integer(value)
@@ -303,47 +340,80 @@ module Prism
             when :tSPACE
               value = nil
             when :tSTRING_BEG
-              if token.type == :HEREDOC_START
-                heredoc_identifier_stack.push(value.match(/<<[-~]?["'`]?(?<heredoc_identifier>.*?)["'`]?\z/)[:heredoc_identifier])
-              end
-              if ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_END
+              next_token = lexed[index][0]
+              next_next_token = lexed[index + 1][0]
+              basic_quotes = ["\"", "'"].include?(value)
+
+              if basic_quotes && next_token&.type == :STRING_END
                 next_location = token.location.join(next_token.location)
                 type = :tSTRING
                 value = ""
-                location = Range.new(source_buffer, offset_cache[next_location.start_offset], offset_cache[next_location.end_offset])
+                location = range(next_location.start_offset, next_location.end_offset)
                 index += 1
-              elsif ["\"", "'"].include?(value) && (next_token = lexed[index][0]) && next_token.type == :STRING_CONTENT && next_token.value.lines.count <= 1 && (next_next_token = lexed[index + 1][0]) && next_next_token.type == :STRING_END
-                next_location = token.location.join(next_next_token.location)
-                type = :tSTRING
-                value = next_token.value.gsub("\\\\", "\\")
-                location = Range.new(source_buffer, offset_cache[next_location.start_offset], offset_cache[next_location.end_offset])
-                index += 2
-              elsif value.start_with?("<<")
+              elsif value.start_with?("'", '"', "%")
+                if next_token&.type == :STRING_CONTENT && next_token.value.lines.count <= 1 && next_next_token&.type == :STRING_END
+                  # the parser gem doesn't simplify strings when its value ends in a newline
+                  if !(string_value = next_token.value).end_with?("\n") && basic_quotes
+                    next_location = token.location.join(next_next_token.location)
+                    value = unescape_string(string_value, value)
+                    type = :tSTRING
+                    location = range(next_location.start_offset, next_location.end_offset)
+                    index += 2
+                    tokens << [type, [value, location]]
+
+                    next
+                  end
+                end
+
+                quote_stack.push(value)
+              elsif token.type == :HEREDOC_START
                 quote = value[2] == "-" || value[2] == "~" ? value[3] : value[2]
+                heredoc_type = value[2] == "-" || value[2] == "~" ? value[2] : ""
+                heredoc = HeredocData.new(
+                  identifier: value.match(/<<[-~]?["'`]?(?<heredoc_identifier>.*?)["'`]?\z/)[:heredoc_identifier],
+                  common_whitespace: 0,
+                )
+
                 if quote == "`"
                   type = :tXSTRING_BEG
-                  value = "<<`"
-                else
-                  value = "<<#{quote == "'" || quote == "\"" ? quote : "\""}"
                 end
+
+                # The parser gem trims whitespace from squiggly heredocs. We must record
+                # the most common whitespace to later remove.
+                if heredoc_type == "~" || heredoc_type == "`"
+                  heredoc.common_whitespace = calculate_heredoc_whitespace(index)
+                end
+
+                if quote == "'" || quote == '"' || quote == "`"
+                  value = "<<#{quote}"
+                else
+                  value = '<<"'
+                end
+
+                heredoc_stack.push(heredoc)
+                quote_stack.push(value)
               end
             when :tSTRING_CONTENT
-              unless (lines = token.value.lines).one?
+              if (lines = token.value.lines).one?
+                # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
+                is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
+                # The parser gem only removes indentation when the heredoc is not nested
+                not_nested = heredoc_stack.size == 1
+                if is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
+                  value = trim_heredoc_whitespace(value, current_heredoc)
+                end
+
+                value = unescape_string(value, quote_stack.last)
+              else
+                # When the parser gem encounters a line continuation inside of a multiline string,
+                # it emits a single string node. The backslash (and remaining newline) is removed.
+                current_line = +""
+                adjustment = 0
                 start_offset = offset_cache[token.location.start_offset]
-                lines.map do |line|
-                  newline = line.end_with?("\r\n") ? "\r\n" : "\n"
+                emit = false
+
+                lines.each.with_index do |line, index|
                   chomped_line = line.chomp
-<<<<<<< HEAD
-                  if match = chomped_line.match(/(?<backslashes>\\+)\z/)
-                    adjustment = match[:backslashes].size / 2
-                    adjusted_line = chomped_line.delete_suffix("\\" * adjustment)
-                    if match[:backslashes].size.odd?
-                      adjusted_line.delete_suffix!("\\")
-                      adjustment += 2
-                    else
-                      adjusted_line << newline
-                    end
-=======
                   backslash_count = chomped_line[/\\{1,}\z/]&.length || 0
                   is_interpolation = interpolation?(quote_stack.last)
                   is_percent_array = percent_array?(quote_stack.last)
@@ -360,15 +430,18 @@ module Prism
                     end
                     # If the string ends with a line continuation emit the remainder
                     emit = index == lines.count - 1
->>>>>>> b6554ad64e (Fix parser translator tokens for backslashes in single-quoted strings and word arrays)
                   else
-                    adjusted_line = line
-                    adjustment = 0
+                    current_line << line
+                    emit = true
                   end
 
-                  end_offset = start_offset + adjusted_line.bytesize + adjustment
-                  tokens << [:tSTRING_CONTENT, [adjusted_line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
-                  start_offset = end_offset
+                  if emit
+                    end_offset = start_offset + current_line.bytesize + adjustment
+                    tokens << [:tSTRING_CONTENT, [unescape_string(current_line, quote_stack.last), range(start_offset, end_offset)]]
+                    start_offset = end_offset
+                    current_line = +""
+                    adjustment = 0
+                  end
                 end
                 next
               end
@@ -377,20 +450,24 @@ module Prism
             when :tSTRING_END
               if token.type == :HEREDOC_END && value.end_with?("\n")
                 newline_length = value.end_with?("\r\n") ? 2 : 1
-                value = heredoc_identifier_stack.pop
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.end_offset - newline_length])
+                value = heredoc_stack.pop.identifier
+                location = range(token.location.start_offset, token.location.end_offset - newline_length)
               elsif token.type == :REGEXP_END
                 value = value[0]
-                location = Range.new(source_buffer, offset_cache[token.location.start_offset], offset_cache[token.location.start_offset + 1])
+                location = range(token.location.start_offset, token.location.start_offset + 1)
               end
+
+              quote_stack.pop
             when :tSYMBEG
               if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR && next_token.type != :STRING_END
                 next_location = token.location.join(next_token.location)
                 type = :tSYMBOL
                 value = next_token.value
                 value = { "~@" => "~", "!@" => "!" }.fetch(value, value)
-                location = Range.new(source_buffer, offset_cache[next_location.start_offset], offset_cache[next_location.end_offset])
+                location = range(next_location.start_offset, next_location.end_offset)
                 index += 1
+              else
+                quote_stack.push(value)
               end
             when :tFID
               if !tokens.empty? && tokens.dig(-1, 0) == :kDEF
@@ -400,12 +477,21 @@ module Prism
               if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :STRING_END
                 type = :tBACK_REF2
               end
+              quote_stack.push(value)
+            when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
+              if (next_token = lexed[index][0]) && next_token.type == :WORDS_SEP
+                index += 1
+              end
+
+              quote_stack.push(value)
+            when :tREGEXP_BEG
+              quote_stack.push(value)
             end
 
             tokens << [type, [value, location]]
 
             if token.type == :REGEXP_END
-              tokens << [:tREGEXP_OPT, [token.value[1..], Range.new(source_buffer, offset_cache[token.location.start_offset + 1], offset_cache[token.location.end_offset])]]
+              tokens << [:tREGEXP_OPT, [token.value[1..], range(token.location.start_offset + 1, token.location.end_offset)]]
             end
           end
 
@@ -413,6 +499,11 @@ module Prism
         end
 
         private
+
+        # Creates a new parser range, taking prisms byte offsets into account
+        def range(start_offset, end_offset)
+          Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])
+        end
 
         # Parse an integer from the string representation.
         def parse_integer(value)
