@@ -1178,7 +1178,7 @@ clean-prism:
 		@for /R $(PRISM_BUILD_DIR:/=\) %I in (.time) do @(del /q %I && $(RMDIRS) %~pI) 2> nul || $(NULLCMD)
 
 distclean-local::
-		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
+		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\) miniprelude.c
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 		-$(Q)$(RMDIR) win32
