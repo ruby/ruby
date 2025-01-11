@@ -3902,13 +3902,13 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
  *    s = 'foo'
  *    s.encoding              # => <Encoding:UTF-8>
  *    s << 0x00110000         # 1114112 out of char range (RangeError)
- *    s = 'foo'.encode('EUC-JP')
+ *    s = 'foo'.encode(Encoding::EUC_JP)
  *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
  *
  *  If the encoding is US-ASCII and the codepoint is 0..0xff, _string_
  *  is automatically promoted to ASCII-8BIT.
  *
- *    s = 'foo'.encode('US-ASCII')
+ *    s = 'foo'.encode(Encoding::US_ASCII)
  *    s << 0xff
  *    s.encoding              # => #<Encoding:BINARY (ASCII-8BIT)>
  *
@@ -4137,7 +4137,7 @@ rb_str_cmp(VALUE str1, VALUE str2)
  *    s == 'FOO' # => false
  *
  *  Returns +false+ if the two strings' encodings are not compatible:
- *    "\u{e4 f6 fc}".encode("ISO-8859-1") == ("\u{c4 d6 dc}") # => false
+ *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
  *  If +object+ is not an instance of +String+ but responds to +to_str+, then the
  *  two strings are compared using <code>object.==</code>.
@@ -4170,7 +4170,7 @@ rb_str_equal(VALUE str1, VALUE str2)
  *
  *  Returns +false+ if the two strings' encodings are not compatible:
  *
- *    "\u{e4 f6 fc}".encode("ISO-8859-1").eql?("\u{c4 d6 dc}") # => false
+ *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1).eql?("\u{c4 d6 dc}") # => false
  *
  */
 
@@ -11412,9 +11412,9 @@ rb_str_b(VALUE str)
  *
  *  Returns +true+ if +self+ is encoded correctly, +false+ otherwise:
  *
- *    "\xc2\xa1".force_encoding("UTF-8").valid_encoding? # => true
- *    "\xc2".force_encoding("UTF-8").valid_encoding?     # => false
- *    "\x80".force_encoding("UTF-8").valid_encoding?     # => false
+ *    "\xc2\xa1".force_encoding(Encoding::UTF_8).valid_encoding? # => true
+ *    "\xc2".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
+ *    "\x80".force_encoding(Encoding::UTF_8).valid_encoding?     # => false
  */
 
 static VALUE
@@ -11889,7 +11889,7 @@ rb_str_unicode_normalize_bang(int argc, VALUE *argv, VALUE str)
  *
  *  Raises an exception if +self+ is not in a Unicode encoding:
  *
- *    s = "\xE0".force_encoding('ISO-8859-1')
+ *    s = "\xE0".force_encoding(Encoding::ISO_8859_1)
  *    s.unicode_normalized? # Raises Encoding::CompatibilityError.
  *
  *  Related: String#unicode_normalize, String#unicode_normalize!.
