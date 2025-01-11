@@ -1170,7 +1170,7 @@ clean-local::
 		$(Q)$(RM) $(WINMAINOBJ) ext\extinit.c ext\extinit.$(OBJEXT) ext\vc*.pdb miniruby.lib
 		$(Q)$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res
 		$(Q)$(RM) miniruby.rc $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc
-		$(Q)$(RM) *.map *.pdb *.ilk *.exp $(RUBYDEF) ext\ripper\y.output
+		$(Q)$(RM) *.map *.pdb *.ilk *.exp *.dll $(RUBYDEF) ext\ripper\y.output
 
 clean-local:: clean-prism
 
