@@ -13,6 +13,10 @@ PWD = $(MAKEDIR)
 empty =
 tooldir = $(srcdir)/tool
 
+PROMPT = +$$S
+
+MAKEFLAGS = l$(MAKEFLAGS)
+
 !ifndef MFLAGS
 MFLAGS=-l
 !endif
@@ -1210,7 +1214,7 @@ realclean-prism: distclean-prism
 .bundle/realclean.sub:: ext/realclean.mk
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
-	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
+	$(Q)if exist $(EXTS_MK) $(MAKE) $(MFLAGS) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
