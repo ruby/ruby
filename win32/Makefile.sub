@@ -1183,6 +1183,9 @@ distclean-local::
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
 		-$(Q)$(RMDIR) win32
 
+distclean-local:: clean-srcs-local
+distclean-ext:: clean-srcs-ext
+
 distclean-local:: distclean-prism
 
 distclean-prism: clean-prism
