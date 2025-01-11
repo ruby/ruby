@@ -6881,38 +6881,139 @@ static const rb_data_type_t env_data_type = {
  *
  *    reviews.length #=> 1
  *
- *  === Default Values
+ *  === Key Not Found?
  *
- *  The methods #[], #values_at and #dig need to return the value associated to a certain key.
- *  When that key is not found, that value will be determined by its default proc (if any)
- *  or else its default (initially `nil`).
+ *  When a method tries to retrieve and return the value for a key and that key <i>is found</i>,
+ *  the returned value is the value associated with the key.
  *
- *  You can retrieve the default value with method #default:
+ *  But what if the key <i>is not found</i>?
+ *  In that case, you have a wide choice of behaviors.
  *
- *    h = Hash.new
- *    h.default # => nil
+ *  ==== Nil Return Value
  *
- *  You can set the default value by passing an argument to method Hash.new or
- *  with method #default=
+ *  If you want +nil+ returned for a not-found key, you can call:
  *
- *    h = Hash.new(-1)
- *    h.default # => -1
- *    h.default = 0
- *    h.default # => 0
+ *  - #[](key) (usually written as <tt>#[key]</tt>.
+ *  - #assoc(key).
+ *  - #dig(key, *identifiers).
+ *  - #values_at(*keys).
  *
- *  This default value is returned for #[], #values_at and #dig when a key is
- *  not found:
+ *  You can override these behaviors for #[], #dig, and #values_at;
+ *  see {Hash Default}[rdoc-ref:Hash@Hash+Default].
  *
- *    counts = {foo: 42}
- *    counts.default # => nil (default)
- *    counts[:foo] = 42
- *    counts[:bar] # => nil
- *    counts.default = 0
- *    counts[:bar] # => 0
- *    counts.values_at(:foo, :bar, :baz) # => [42, 0, 0]
- *    counts.dig(:bar) # => 0
+ *  ==== KeyError
  *
- *  Note that the default value is used without being duplicated. It is not advised to set
+ *  If you want KeyError raised for a not-found key, you can call:
+ *
+ *  - #fetch(key).
+ *  - #fetch_values(*keys).
+ *
+ *  You can override these behaviors;
+ *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]
+ *  and {Method Default}[rdoc-ref:Hash@Method+Default].
+ *
+ *  ==== \Hash Default
+ *
+ *  - #[](key) (usually written as <tt>#[key]</tt>.
+ *  - #dig(key, *identifiers).
+ *  - #values_at(*keys).
+ *
+ *  ===== All Keys
+ *
+ *  ===== Per Key
+ *
+ *  ==== \Method Default
+ *
+ *  - #fetch(key).
+ *  - #fetch_values(*keys).
+ *
+ *
+ *  -----------------------
+ *
+ *  Then the returned value is determined by default values,
+ *  as defined in the hash and sometimes by the method call itself.
+ *
+ *  ==== Initial Default Return
+ *
+ *  In the simplest case, no default value has been specified
+ *  (See {Default Values}[rdoc-ref:Hash@Default+Values] below),
+ *  and each of these methods responds with these behaviors:
+ *
+ *  - #[](key) (usually written as <tt>#[key]</tt>): returns +nil+.
+ *  - #dig(key, *identifiers): returns +nil+.
+ *  - #fetch_values(*keys): raises KeyError.
+ *  - #fetch(key): raises KeyError.
+ *  - #values_at(*keys): returns +nil+ for each not-found key.
+ *
+ *  ==== Default Values
+ *
+ *  For many purposes, the behaviors described above are sufficient;
+ *  however you can modify those behaviors with <i>custom default values</i>:
+ *
+ *  - A custom default value may be defined for a hash;
+ *    see {Custom Hash Default Value}[rdoc-ref:Hash@Custom+Hash+Default+Value].
+ *
+ *  - For some methods, a custom default value may be specified in the call to to the method;
+ *    see {Custom Method Default Value}[rdoc-ref:Hash@Custom+Method+Default+Value].
+ *
+ *  ===== Custom \Hash Default Value
+ *
+ *  The default value for a hash is determined by two of its properties:
+ *
+ *  - Its <i>default proc</i>, which is retrieved by method #default_proc,
+ *    and may be set by method #default_proc= or method #new.
+ *  - Its <i>default value</i>, which is retrieved by method #default,
+ *    and may be set by method #default= or method #new.
+ *
+ *  In general:
+ *
+ *  - When #default_proc is +nil+, the value of #default is returned:
+ *
+ *      h = Hash.new
+ *      h.default_proc # => nil
+ *      h.default      # => nil
+ *      h[:nosuch]     # => nil
+ *      h.default = false
+ *      h['nosuch']    # => false
+ *
+ *  - When the default proc is a Proc, that proc is called and its return value is returned
+ *    (see {Default Proc}[rdoc-ref:Hash@Default+Proc] immediately below):
+ *
+ *      h.default_proc = Proc.new {|hash, key| key.upcase }
+ *      h['nosuch'] # => "NOSUCH"
+ *
+ *  ===== Default \Proc
+ *
+ *  The default proc should be a proc that accepts two arguments
+ *  (see the example above):
+ *
+ *  - The hash +self+.
+ *  - The given key.
+ *
+ *  The default proc may be set with method #default_proc= (as above),
+ *  or via the block in a call to #new:
+ *
+ *    h = Hash.new {|hash, key| "Hash #{hash}: Default value for #{key}" }
+ *    h.default_proc # => #<Proc>
+ *    h[:nosuch]     # => "Hash {}: Default value for nosuch"
+ *
+ *  ===== Default Value
+ *
+ *  The default value may be any object,
+ *  and may be set via parameter +default_value+ in a call to #new,
+ *  or with method #default=:
+ *
+ *    h = Hash.new(false)
+ *    h.default  # => false
+ *    h[:nosuch] # => false
+ *    h.default = nil
+ *    h[:nosuch] # => nil
+ *
+ *  ===== Custom \Method Default Value
+ *
+ *  ---------------------------------------
+ *
+ *  Note that the default value is returned without being duplicated. It is not advised to set
  *  the default value to a mutable object:
  *
  *    synonyms = Hash.new([])
@@ -6924,29 +7025,6 @@ static const rb_data_type_t env_data_type = {
  *    synonyms.keys # => [], oops
  *
  *  To use a mutable object as default, it is recommended to use a default proc
- *
- *  ==== Default Proc
- *
- *  When the default proc for a +Hash+ is set (i.e., not +nil+),
- *  the default value returned by method #[] is determined by the default proc alone.
- *
- *  You can retrieve the default proc with method #default_proc:
- *
- *    h = Hash.new
- *    h.default_proc # => nil
- *
- *  You can set the default proc by calling Hash.new with a block or
- *  calling the method #default_proc=
- *
- *    h = Hash.new { |hash, key| "Default value for #{key}" }
- *    h.default_proc.class # => Proc
- *    h.default_proc = proc { |hash, key| "Default value for #{key.inspect}" }
- *    h.default_proc.class # => Proc
- *
- *  When the default proc is set (i.e., not +nil+)
- *  and method #[] is called with with a non-existent key,
- *  #[] calls the default proc with both the +Hash+ object itself and the missing key,
- *  then returns the proc's return value:
  *
  *    h = Hash.new { |hash, key| "Default value for #{key}" }
  *    h[:nosuch] # => "Default value for nosuch"
