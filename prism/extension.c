@@ -30,6 +30,7 @@ VALUE rb_cPrismDebugEncoding;
 ID rb_id_option_command_line;
 ID rb_id_option_encoding;
 ID rb_id_option_filepath;
+ID rb_id_option_freeze;
 ID rb_id_option_frozen_string_literal;
 ID rb_id_option_line;
 ID rb_id_option_main_script;
@@ -180,6 +181,8 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_main_script_set(options, RTEST(value));
     } else if (key_id == rb_id_option_partial_script) {
         if (!NIL_P(value)) pm_options_partial_script_set(options, RTEST(value));
+    } else if (key_id == rb_id_option_freeze) {
+        if (!NIL_P(value)) pm_options_freeze_set(options, RTEST(value));
     } else {
         rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, key);
     }
@@ -344,6 +347,7 @@ dump(int argc, VALUE *argv, VALUE self) {
 #endif
 
     VALUE value = dump_input(&input, &options);
+    if (options.freeze) rb_obj_freeze(value);
 
 #ifdef PRISM_BUILD_DEBUG
     xfree(dup);
@@ -387,7 +391,7 @@ dump_file(int argc, VALUE *argv, VALUE self) {
  * Extract the comments out of the parser into an array.
  */
 static VALUE
-parser_comments(pm_parser_t *parser, VALUE source) {
+parser_comments(pm_parser_t *parser, VALUE source, bool freeze) {
     VALUE comments = rb_ary_new_capa(parser->comment_list.size);
 
     for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
@@ -397,11 +401,19 @@ parser_comments(pm_parser_t *parser, VALUE source) {
             LONG2FIX(comment->location.end - comment->location.start)
         };
 
+        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(location);
+
+        VALUE comment_argv[] = { location };
         VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
-        VALUE comment_argv[] = { rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
-        rb_ary_push(comments, rb_class_new_instance(1, comment_argv, type));
+
+        VALUE value = rb_class_new_instance(1, comment_argv, type);
+        if (freeze) rb_obj_freeze(value);
+
+        rb_ary_push(comments, value);
     }
 
+    if (freeze) rb_obj_freeze(comments);
     return comments;
 }
 
@@ -409,7 +421,7 @@ parser_comments(pm_parser_t *parser, VALUE source) {
  * Extract the magic comments out of the parser into an array.
  */
 static VALUE
-parser_magic_comments(pm_parser_t *parser, VALUE source) {
+parser_magic_comments(pm_parser_t *parser, VALUE source, bool freeze) {
     VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
 
     for (pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) parser->magic_comment_list.head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
@@ -419,20 +431,26 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
             LONG2FIX(magic_comment->key_length)
         };
 
+        VALUE key_loc = rb_class_new_instance(3, key_loc_argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(key_loc);
+
         VALUE value_loc_argv[] = {
             source,
             LONG2FIX(magic_comment->value_start - parser->start),
             LONG2FIX(magic_comment->value_length)
         };
 
-        VALUE magic_comment_argv[] = {
-            rb_class_new_instance(3, key_loc_argv, rb_cPrismLocation),
-            rb_class_new_instance(3, value_loc_argv, rb_cPrismLocation)
-        };
+        VALUE value_loc = rb_class_new_instance(3, value_loc_argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(value_loc);
 
-        rb_ary_push(magic_comments, rb_class_new_instance(2, magic_comment_argv, rb_cPrismMagicComment));
+        VALUE magic_comment_argv[] = { key_loc, value_loc };
+        VALUE value = rb_class_new_instance(2, magic_comment_argv, rb_cPrismMagicComment);
+        if (freeze) rb_obj_freeze(value);
+
+        rb_ary_push(magic_comments, value);
     }
 
+    if (freeze) rb_obj_freeze(magic_comments);
     return magic_comments;
 }
 
@@ -441,7 +459,7 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
  * exists.
  */
 static VALUE
-parser_data_loc(const pm_parser_t *parser, VALUE source) {
+parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
     if (parser->data_loc.end == NULL) {
         return Qnil;
     } else {
@@ -451,7 +469,10 @@ parser_data_loc(const pm_parser_t *parser, VALUE source) {
             LONG2FIX(parser->data_loc.end - parser->data_loc.start)
         };
 
-        return rb_class_new_instance(3, argv, rb_cPrismLocation);
+        VALUE location = rb_class_new_instance(3, argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(location);
+
+        return location;
     }
 }
 
@@ -459,7 +480,7 @@ parser_data_loc(const pm_parser_t *parser, VALUE source) {
  * Extract the errors out of the parser into an array.
  */
 static VALUE
-parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
+parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE errors = rb_ary_new_capa(parser->error_list.size);
     pm_diagnostic_t *error;
 
@@ -469,6 +490,9 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
             LONG2FIX(error->location.start - parser->start),
             LONG2FIX(error->location.end - error->location.start)
         };
+
+        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(location);
 
         VALUE level = Qnil;
         switch (error->level) {
@@ -485,16 +509,19 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
         }
 
-        VALUE error_argv[] = {
-            ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id))),
-            rb_enc_str_new_cstr(error->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cPrismLocation),
-            level
-        };
+        VALUE message = rb_enc_str_new_cstr(error->message, encoding);
+        if (freeze) rb_obj_freeze(message);
 
-        rb_ary_push(errors, rb_class_new_instance(4, error_argv, rb_cPrismParseError));
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
+        VALUE error_argv[] = { type, message, location, level };
+
+        VALUE value = rb_class_new_instance(4, error_argv, rb_cPrismParseError);
+        if (freeze) rb_obj_freeze(value);
+
+        rb_ary_push(errors, value);
     }
 
+    if (freeze) rb_obj_freeze(errors);
     return errors;
 }
 
@@ -502,7 +529,7 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
  * Extract the warnings out of the parser into an array.
  */
 static VALUE
-parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
+parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
     pm_diagnostic_t *warning;
 
@@ -512,6 +539,9 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
             LONG2FIX(warning->location.start - parser->start),
             LONG2FIX(warning->location.end - warning->location.start)
         };
+
+        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
+        if (freeze) rb_obj_freeze(location);
 
         VALUE level = Qnil;
         switch (warning->level) {
@@ -525,16 +555,19 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning->level);
         }
 
-        VALUE warning_argv[] = {
-            ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id))),
-            rb_enc_str_new_cstr(warning->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cPrismLocation),
-            level
-        };
+        VALUE message = rb_enc_str_new_cstr(warning->message, encoding);
+        if (freeze) rb_obj_freeze(message);
 
-        rb_ary_push(warnings, rb_class_new_instance(4, warning_argv, rb_cPrismParseWarning));
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
+        VALUE warning_argv[] = { type, message, location, level };
+
+        VALUE value = rb_class_new_instance(4, warning_argv, rb_cPrismParseWarning);
+        if (freeze) rb_obj_freeze(value);
+
+        rb_ary_push(warnings, value);
     }
 
+    if (freeze) rb_obj_freeze(warnings);
     return warnings;
 }
 
@@ -542,18 +575,21 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
  * Create a new parse result from the given parser, value, encoding, and source.
  */
 static VALUE
-parse_result_create(VALUE class, pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source) {
+parse_result_create(VALUE class, pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE result_argv[] = {
         value,
-        parser_comments(parser, source),
-        parser_magic_comments(parser, source),
-        parser_data_loc(parser, source),
-        parser_errors(parser, encoding, source),
-        parser_warnings(parser, encoding, source),
+        parser_comments(parser, source, freeze),
+        parser_magic_comments(parser, source, freeze),
+        parser_data_loc(parser, source, freeze),
+        parser_errors(parser, encoding, source, freeze),
+        parser_warnings(parser, encoding, source, freeze),
         source
     };
 
-    return rb_class_new_instance(7, result_argv, class);
+    VALUE result = rb_class_new_instance(7, result_argv, class);
+    if (freeze) rb_obj_freeze(result);
+
+    return result;
 }
 
 /******************************************************************************/
@@ -569,6 +605,7 @@ typedef struct {
     VALUE source;
     VALUE tokens;
     rb_encoding *encoding;
+    bool freeze;
 } parse_lex_data_t;
 
 /**
@@ -580,10 +617,13 @@ static void
 parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
 
-    VALUE yields = rb_assoc_new(
-        pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source),
-        INT2FIX(parser->lex_state)
-    );
+    VALUE value = pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source, parse_lex_data->freeze);
+    VALUE yields = rb_assoc_new(value, INT2FIX(parser->lex_state));
+
+    if (parse_lex_data->freeze) {
+        rb_obj_freeze(value);
+        rb_obj_freeze(yields);
+    }
 
     rb_ary_push(parse_lex_data->tokens, yields);
 }
@@ -603,14 +643,37 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     // one or two tokens, since the encoding can only change at the top of the
     // file.
     VALUE tokens = parse_lex_data->tokens;
+    VALUE next_tokens = rb_ary_new();
+
     for (long index = 0; index < RARRAY_LEN(tokens); index++) {
         VALUE yields = rb_ary_entry(tokens, index);
         VALUE token = rb_ary_entry(yields, 0);
 
         VALUE value = rb_ivar_get(token, rb_intern("@value"));
-        rb_enc_associate(value, parse_lex_data->encoding);
-        ENC_CODERANGE_CLEAR(value);
+        VALUE next_value = rb_str_dup(value);
+
+        rb_enc_associate(next_value, parse_lex_data->encoding);
+        if (parse_lex_data->freeze) rb_obj_freeze(next_value);
+
+        VALUE next_token_argv[] = {
+            parse_lex_data->source,
+            rb_ivar_get(token, rb_intern("@type")),
+            next_value,
+            rb_ivar_get(token, rb_intern("@location"))
+        };
+
+        VALUE next_token = rb_class_new_instance(4, next_token_argv, rb_cPrismToken);
+        VALUE next_yields = rb_assoc_new(next_token, rb_ary_entry(yields, 1));
+
+        if (parse_lex_data->freeze) {
+            rb_obj_freeze(next_token);
+            rb_obj_freeze(next_yields);
+        }
+
+        rb_ary_push(next_tokens, next_yields);
     }
+
+    rb_ary_replace(parse_lex_data->tokens, next_tokens);
 }
 
 /**
@@ -630,7 +693,8 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
-        .encoding = rb_utf8_encoding()
+        .encoding = rb_utf8_encoding(),
+        .freeze = options->freeze,
     };
 
     parse_lex_data_t *data = &parse_lex_data;
@@ -653,14 +717,22 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
     }
 
+    if (options->freeze) {
+        rb_obj_freeze(source_string);
+        rb_obj_freeze(offsets);
+        rb_obj_freeze(source);
+        rb_obj_freeze(parse_lex_data.tokens);
+    }
+
     VALUE result;
     if (return_nodes) {
         VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source));
+        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source, options->freeze));
         rb_ary_push(value, parse_lex_data.tokens);
-        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source);
+        if (options->freeze) rb_obj_freeze(value);
+        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source, options->freeze);
     } else {
-        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source);
+        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, options->freeze);
     }
 
     pm_node_destroy(&parser, node);
@@ -726,9 +798,13 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
-    VALUE source = pm_source_new(&parser, encoding);
-    VALUE value = pm_ast_new(&parser, node, encoding, source);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source) ;
+    VALUE source = pm_source_new(&parser, encoding, options->freeze);
+    VALUE value = pm_ast_new(&parser, node, encoding, source, options->freeze);
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options->freeze);
+
+    if (options->freeze) {
+        rb_obj_freeze(source);
+    }
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -750,6 +826,8 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       encoding or nil.
  * * `filepath` - the filepath of the source being parsed. This should be a
  *       string or nil.
+ * * `freeze` - whether or not to deeply freeze the AST. This should be a
+ *       boolean or nil.
  * * `frozen_string_literal` - whether or not the frozen string literal pragma
  *       has been set. This should be a boolean or nil.
  * * `line` - the line number that the parse starts on. This should be an
@@ -769,12 +847,12 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       parsed. This should be an array of arrays of symbols or nil. Scopes are
  *       ordered from the outermost scope to the innermost one.
  * * `version` - the version of Ruby syntax that prism should used to parse Ruby
- *       code. By default prism assumes you want to parse with the latest version
- *       of Ruby syntax (which you can trigger with `nil` or `"latest"`). You
- *       may also restrict the syntax to a specific version of Ruby, e.g., with `"3.3.0"`.
- *       To parse with the same syntax version that the current Ruby is running
- *       use `version: RUBY_VERSION`. Raises ArgumentError if the version is not
- *       currently supported by Prism.
+ *       code. By default prism assumes you want to parse with the latest
+ *       version of Ruby syntax (which you can trigger with `nil` or
+ *       `"latest"`). You may also restrict the syntax to a specific version of
+ *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
+ *       the current Ruby is running use `version: RUBY_VERSION`. Raises
+ *       ArgumentError if the version is not currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
@@ -922,9 +1000,9 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, &options);
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
-    VALUE source = pm_source_new(&parser, encoding);
-    VALUE value = pm_ast_new(&parser, node, encoding, source);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source);
+    VALUE source = pm_source_new(&parser, encoding, options.freeze);
+    VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
+    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
 
     pm_node_destroy(&parser, node);
     pm_buffer_free(&buffer);
@@ -944,8 +1022,8 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_node_t *node = pm_parse(&parser);
     rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
-    VALUE source = pm_source_new(&parser, encoding);
-    VALUE comments = parser_comments(&parser, source);
+    VALUE source = pm_source_new(&parser, encoding, options->freeze);
+    VALUE comments = parser_comments(&parser, source, options->freeze);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -1240,6 +1318,7 @@ Init_prism(void) {
     rb_id_option_command_line = rb_intern_const("command_line");
     rb_id_option_encoding = rb_intern_const("encoding");
     rb_id_option_filepath = rb_intern_const("filepath");
+    rb_id_option_freeze = rb_intern_const("freeze");
     rb_id_option_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_id_option_line = rb_intern_const("line");
     rb_id_option_main_script = rb_intern_const("main_script");

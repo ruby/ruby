@@ -160,6 +160,13 @@ typedef struct pm_options {
      * inside another script.
      */
     bool partial_script;
+
+    /**
+     * Whether or not the parser should freeze the nodes that it creates. This
+     * makes it possible to have a deeply frozen AST that is safe to share
+     * between concurrency primitives.
+     */
+    bool freeze;
 } pm_options_t;
 
 /**
@@ -286,6 +293,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, b
 PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options, bool partial_script);
 
 /**
+ * Set the freeze option on the given options struct.
+ *
+ * @param options The options struct to set the freeze value on.
+ * @param freeze The freeze value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze);
+
+/**
  * Allocate and zero out the scopes array on the given options struct.
  *
  * @param options The options struct to initialize the scopes array on.
@@ -355,6 +370,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `1`     | encoding locked            |
  * | `1`     | main script                |
  * | `1`     | partial script             |
+ * | `1`     | freeze                     |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *

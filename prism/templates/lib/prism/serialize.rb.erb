@@ -17,12 +17,12 @@ module Prism
     PATCH_VERSION = 0
 
     # Deserialize the AST represented by the given string into a parse result.
-    def self.load(input, serialized)
+    def self.load(input, serialized, freeze)
       input = input.dup
       source = Source.for(input)
 
       loader = Loader.new(source, serialized)
-      result = loader.load_result
+      result = loader.load_result(freeze)
 
       input.force_encoding(loader.encoding)
 
@@ -35,13 +35,20 @@ module Prism
         input.force_encoding(Encoding::BINARY) unless input.valid_encoding?
       end
 
+      if freeze
+        input.freeze
+        source.source.freeze
+        source.offsets.freeze
+        source.freeze
+      end
+
       result
     end
 
     # Deserialize the tokens represented by the given string into a parse
     # result.
-    def self.load_tokens(source, serialized)
-      Loader.new(source, serialized).load_tokens_result
+    def self.load_tokens(source, serialized, freeze)
+      Loader.new(source, serialized).load_tokens_result(freeze)
     end
 
     class Loader # :nodoc:
@@ -111,20 +118,47 @@ module Prism
       end
 
       def load_start_line
-        source.instance_variable_set :@start_line, load_varsint
+        source.instance_variable_set(:@start_line, load_varsint)
       end
 
-      def load_line_offsets
-        source.instance_variable_set :@offsets, Array.new(load_varuint) { load_varuint }
+      def load_line_offsets(freeze)
+        offsets = Array.new(load_varuint) { load_varuint }
+        offsets.freeze if freeze
+        source.instance_variable_set(:@offsets, offsets)
       end
 
-      def load_comments
-        Array.new(load_varuint) do
-          case load_varuint
-          when 0 then InlineComment.new(load_location_object)
-          when 1 then EmbDocComment.new(load_location_object)
+      def load_comments(freeze)
+        comments =
+          Array.new(load_varuint) do
+            comment =
+              case load_varuint
+              when 0 then InlineComment.new(load_location_object(freeze))
+              when 1 then EmbDocComment.new(load_location_object(freeze))
+              end
+
+            comment.freeze if freeze
+            comment
           end
-        end
+
+        comments.freeze if freeze
+        comments
+      end
+
+      def load_magic_comments(freeze)
+        magic_comments =
+          Array.new(load_varuint) do
+            magic_comment =
+              MagicComment.new(
+                load_location_object(freeze),
+                load_location_object(freeze)
+              )
+
+            magic_comment.freeze if freeze
+            magic_comment
+          end
+
+        magic_comments.freeze if freeze
+        magic_comments
       end
 
       DIAGNOSTIC_TYPES = [
@@ -138,57 +172,155 @@ module Prism
 
       private_constant :DIAGNOSTIC_TYPES
 
-      def load_metadata
-        comments = load_comments
-        magic_comments = Array.new(load_varuint) { MagicComment.new(load_location_object, load_location_object) }
-        data_loc = load_optional_location_object
-        errors = Array.new(load_varuint) { ParseError.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_error_level) }
-        warnings = Array.new(load_varuint) { ParseWarning.new(DIAGNOSTIC_TYPES.fetch(load_varuint), load_embedded_string, load_location_object, load_warning_level) }
-        [comments, magic_comments, data_loc, errors, warnings]
+      def load_error_level
+        level = io.getbyte
+
+        case level
+        when 0
+          :syntax
+        when 1
+          :argument
+        when 2
+          :load
+        else
+          raise "Unknown level: #{level}"
+        end
       end
 
-      def load_tokens
+      def load_errors(freeze)
+        errors =
+          Array.new(load_varuint) do
+            error =
+              ParseError.new(
+                DIAGNOSTIC_TYPES.fetch(load_varuint),
+                load_embedded_string,
+                load_location_object(freeze),
+                load_error_level
+              )
+
+            error.freeze if freeze
+            error
+          end
+
+        errors.freeze if freeze
+        errors
+      end
+
+      def load_warning_level
+        level = io.getbyte
+
+        case level
+        when 0
+          :default
+        when 1
+          :verbose
+        else
+          raise "Unknown level: #{level}"
+        end
+      end
+
+      def load_warnings(freeze)
+        warnings =
+          Array.new(load_varuint) do
+            warning =
+              ParseWarning.new(
+                DIAGNOSTIC_TYPES.fetch(load_varuint),
+                load_embedded_string,
+                load_location_object(freeze),
+                load_warning_level
+              )
+
+            warning.freeze if freeze
+            warning
+          end
+
+        warnings.freeze if freeze
+        warnings
+      end
+
+      def load_metadata(freeze)
+        [
+          load_comments(freeze),
+          load_magic_comments(freeze),
+          load_optional_location_object(freeze),
+          load_errors(freeze),
+          load_warnings(freeze)
+        ]
+      end
+
+      def load_tokens(freeze)
         tokens = []
-        while type = TOKEN_TYPES.fetch(load_varuint)
+
+        while (type = TOKEN_TYPES.fetch(load_varuint))
           start = load_varuint
           length = load_varuint
           lex_state = load_varuint
+
           location = Location.new(@source, start, length)
-          tokens << [Token.new(source, type, location.slice, location), lex_state]
+          location.freeze if freeze
+
+          slice = location.slice
+          slice.freeze if freeze
+
+          token = Token.new(@source, type, slice, location)
+          token.freeze if freeze
+
+          tokens << [token, lex_state]
         end
 
+        tokens.freeze if freeze
         tokens
       end
 
-      def load_tokens_result
-        tokens = load_tokens
+      def load_tokens_result(freeze)
+        tokens = load_tokens(false)
         encoding = load_encoding
         load_start_line
-        load_line_offsets
-        comments, magic_comments, data_loc, errors, warnings = load_metadata
-        tokens.each { |token,| token.value.force_encoding(encoding) }
+        load_line_offsets(freeze)
+        comments, magic_comments, data_loc, errors, warnings = load_metadata(freeze)
+
+        tokens.each do |token,|
+          token.value.force_encoding(encoding)
+
+          if freeze
+            token.value.freeze
+            token.location.freeze
+            token.freeze
+          end
+        end
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        LexResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
+        result = LexResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
+
+        if freeze
+          tokens.each(&:freeze)
+          tokens.freeze
+          result.freeze
+        end
+
+        result
       end
 
-      def load_nodes
+      def load_nodes(freeze)
         load_header
         load_encoding
         load_start_line
-        load_line_offsets
+        load_line_offsets(freeze)
 
-        comments, magic_comments, data_loc, errors, warnings = load_metadata
+        comments, magic_comments, data_loc, errors, warnings = load_metadata(freeze)
 
         @constant_pool_offset = load_uint32
         @constant_pool = Array.new(load_varuint, nil)
 
-        [load_node, comments, magic_comments, data_loc, errors, warnings]
+        [load_node(freeze), comments, magic_comments, data_loc, errors, warnings]
       end
 
-      def load_result
-        node, comments, magic_comments, data_loc, errors, warnings = load_nodes
-        ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
+      def load_result(freeze)
+        node, comments, magic_comments, data_loc, errors, warnings = load_nodes(freeze)
+        result = ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
+
+        result.freeze if freeze
+        result
       end
 
       private
@@ -233,10 +365,10 @@ module Prism
         io.read(4).unpack1("L")
       end
 
-      def load_optional_node
+      def load_optional_node(freeze)
         if io.getbyte != 0
           io.pos -= 1
-          load_node
+          load_node(freeze)
         end
       end
 
@@ -245,8 +377,7 @@ module Prism
       end
 
       def load_string
-        type = io.getbyte
-        case type
+        case (type = io.getbyte)
         when 1
           input.byteslice(load_varuint, load_varuint).force_encoding(encoding).freeze
         when 2
@@ -256,20 +387,23 @@ module Prism
         end
       end
 
-      def load_location
+      def load_location_object(freeze)
+        location = Location.new(source, load_varuint, load_varuint)
+        location.freeze if freeze
+        location
+      end
+
+      def load_location(freeze)
+        return load_location_object(freeze) if freeze
         (load_varuint << 32) | load_varuint
       end
 
-      def load_location_object
-        Location.new(source, load_varuint, load_varuint)
+      def load_optional_location(freeze)
+        load_location(freeze) if io.getbyte != 0
       end
 
-      def load_optional_location
-        load_location if io.getbyte != 0
-      end
-
-      def load_optional_location_object
-        load_location_object if io.getbyte != 0
+      def load_optional_location_object(freeze)
+        load_location_object(freeze) if io.getbyte != 0
       end
 
       def load_constant(index)
@@ -302,41 +436,12 @@ module Prism
         load_constant(index - 1) if index != 0
       end
 
-      def load_error_level
-        level = io.getbyte
-
-        case level
-        when 0
-          :syntax
-        when 1
-          :argument
-        when 2
-          :load
-        else
-          raise "Unknown level: #{level}"
-        end
-      end
-
-      def load_warning_level
-        level = io.getbyte
-
-        case level
-        when 0
-          :default
-        when 1
-          :verbose
-        else
-          raise "Unknown level: #{level}"
-        end
-      end
-
       if RUBY_ENGINE == "ruby"
-        def load_node
+        def load_node(freeze)
           type = io.getbyte
           node_id = load_varuint
-          location = load_location
-
-          case type
+          location = load_location(freeze)
+          value = case type
           <%- nodes.each_with_index do |node, index| -%>
           when <%= index + 1 %> then
             <%- if node.needs_serialized_length? -%>
@@ -344,15 +449,15 @@ module Prism
             <%- end -%>
             <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
               case field
-              when Prism::Template::NodeField then "load_node"
-              when Prism::Template::OptionalNodeField then "load_optional_node"
+              when Prism::Template::NodeField then "load_node(freeze)"
+              when Prism::Template::OptionalNodeField then "load_optional_node(freeze)"
               when Prism::Template::StringField then "load_string"
-              when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node }"
+              when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node(freeze) }.tap { |nodes| nodes.freeze if freeze }"
               when Prism::Template::ConstantField then "load_required_constant"
               when Prism::Template::OptionalConstantField then "load_optional_constant"
-              when Prism::Template::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
-              when Prism::Template::LocationField then "load_location"
-              when Prism::Template::OptionalLocationField then "load_optional_location"
+              when Prism::Template::ConstantListField then "Array.new(load_varuint) { load_required_constant }.tap { |constants| constants.freeze if freeze }"
+              when Prism::Template::LocationField then "load_location(freeze)"
+              when Prism::Template::OptionalLocationField then "load_optional_location(freeze)"
               when Prism::Template::UInt8Field then "io.getbyte"
               when Prism::Template::UInt32Field then "load_varuint"
               when Prism::Template::IntegerField then "load_integer"
@@ -362,34 +467,37 @@ module Prism
             }].join(", ") -%>)
             <%- end -%>
           end
+
+          value.freeze if freeze
+          value
         end
       else
-        def load_node
+        def load_node(freeze)
           type = io.getbyte
-          @load_node_lambdas[type].call
+          @load_node_lambdas[type].call(freeze)
         end
 
         def define_load_node_lambdas
           @load_node_lambdas = [
             nil,
             <%- nodes.each do |node| -%>
-            -> {
+            -> (freeze) {
               node_id = load_varuint
-              location = load_location
+              location = load_location(freeze)
               <%- if node.needs_serialized_length? -%>
               load_uint32
               <%- end -%>
-              <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
+              value = <%= node.name %>.new(<%= ["source", "node_id", "location", "load_varuint", *node.fields.map { |field|
                 case field
-                when Prism::Template::NodeField then "load_node"
-                when Prism::Template::OptionalNodeField then "load_optional_node"
+                when Prism::Template::NodeField then "load_node(freeze)"
+                when Prism::Template::OptionalNodeField then "load_optional_node(freeze)"
                 when Prism::Template::StringField then "load_string"
-                when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node }"
+                when Prism::Template::NodeListField then "Array.new(load_varuint) { load_node(freeze) }"
                 when Prism::Template::ConstantField then "load_required_constant"
                 when Prism::Template::OptionalConstantField then "load_optional_constant"
                 when Prism::Template::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
-                when Prism::Template::LocationField then "load_location"
-                when Prism::Template::OptionalLocationField then "load_optional_location"
+                when Prism::Template::LocationField then "load_location(freeze)"
+                when Prism::Template::OptionalLocationField then "load_optional_location(freeze)"
                 when Prism::Template::UInt8Field then "io.getbyte"
                 when Prism::Template::UInt32Field then "load_varuint"
                 when Prism::Template::IntegerField then "load_integer"
@@ -397,6 +505,8 @@ module Prism
                 else raise
                 end
               }].join(", ") -%>)
+              value.freeze if freeze
+              value
             },
             <%- end -%>
           ]
@@ -411,5 +521,7 @@ module Prism
       <%= token.name.to_sym.inspect %>,
       <%- end -%>
     ]
+
+    private_constant :TOKEN_TYPES
   end
 end

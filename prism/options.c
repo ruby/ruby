@@ -139,6 +139,14 @@ pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
     options->partial_script = partial_script;
 }
 
+/**
+ * Set the freeze option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_freeze_set(pm_options_t *options, bool freeze) {
+    options->freeze = freeze;
+}
+
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
 // locals here, even though we definitely aren't. This is a false positive.
 // Ideally we wouldn't need to suppress this.
@@ -274,6 +282,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->encoding_locked = ((uint8_t) *data++) > 0;
     options->main_script = ((uint8_t) *data++) > 0;
     options->partial_script = ((uint8_t) *data++) > 0;
+    options->freeze = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

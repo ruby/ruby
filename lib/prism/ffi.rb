@@ -279,7 +279,7 @@ module Prism
         # access to the IO object already through the closure of the lambda, we
         # can pass a null pointer here and not worry.
         LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, dump_options(options))
-        Prism.load(source, buffer.read)
+        Prism.load(source, buffer.read, options.fetch(:freeze, false))
       end
     end
 
@@ -354,22 +354,37 @@ module Prism
     def dump_common(string, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+
+        dumped = buffer.read
+        dumped.freeze if options.fetch(:freeze, false)
+
+        dumped
       end
     end
 
     def lex_common(string, code, options) # :nodoc:
-      serialized = LibRubyParser::PrismBuffer.with do |buffer|
-        LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+      serialized =
+        LibRubyParser::PrismBuffer.with do |buffer|
+          LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
+          buffer.read
+        end
+
+      freeze = options.fetch(:freeze, false)
+      source = Source.for(code)
+      result = Serialize.load_tokens(source, serialized, freeze)
+
+      if freeze
+        source.source.freeze
+        source.offsets.freeze
+        source.freeze
       end
 
-      Serialize.load_tokens(Source.for(code), serialized)
+      result
     end
 
     def parse_common(string, code, options) # :nodoc:
       serialized = dump_common(string, options)
-      Prism.load(code, serialized)
+      Prism.load(code, serialized, options.fetch(:freeze, false))
     end
 
     def parse_comments_common(string, code, options) # :nodoc:
@@ -382,7 +397,14 @@ module Prism
         loader.load_header
         loader.load_encoding
         loader.load_start_line
-        loader.load_comments
+
+        if (freeze = options.fetch(:freeze, false))
+          source.source.freeze
+          source.offsets.freeze
+          source.freeze
+        end
+
+        loader.load_comments(freeze)
       end
     end
 
@@ -392,12 +414,35 @@ module Prism
 
         source = Source.for(code)
         loader = Serialize::Loader.new(source, buffer.read)
+        freeze = options.fetch(:freeze, false)
 
-        tokens = loader.load_tokens
-        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
-        tokens.each { |token,| token.value.force_encoding(loader.encoding) }
+        tokens = loader.load_tokens(false)
+        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes(freeze)
 
-        ParseLexResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
+        tokens.each do |token,|
+          token.value.force_encoding(loader.encoding)
+
+          if freeze
+            token.value.freeze
+            token.location.freeze
+            token.freeze
+          end
+        end
+
+        value = [node, tokens]
+        result = ParseLexResult.new(value, comments, magic_comments, data_loc, errors, warnings, source)
+
+        if freeze
+          source.source.freeze
+          source.offsets.freeze
+          source.freeze
+          tokens.each(&:freeze)
+          tokens.freeze
+          value.freeze
+          result.freeze
+        end
+
+        result
       end
     end
 
@@ -481,6 +526,9 @@ module Prism
 
       template << "C"
       values << (options.fetch(:partial_script, false) ? 1 : 0)
+
+      template << "C"
+      values << (options.fetch(:freeze, false) ? 1 : 0)
 
       template << "L"
       if (scopes = options[:scopes])
