@@ -42,4 +42,5 @@ Gem::Specification.new do |spec|
 
   spec.add_dependency "reline", ">= 0.4.2"
   spec.add_dependency "rdoc", ">= 4.0.0"
+  spec.add_dependency "pp", ">= 0.6.0"
 end
