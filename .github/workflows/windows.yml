@@ -183,6 +183,12 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
+      - name: clean up
+        run: |
+          nmake distclean
+          cd ..
+          rd build
+
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
