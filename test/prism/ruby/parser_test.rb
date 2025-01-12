@@ -219,13 +219,6 @@ module Prism
           expected_index += 1
           actual_index += 1
 
-          # The parser gem always has a space before a string end in list
-          # literals, but we don't. So we'll skip over the space.
-          if expected_token[0] == :tSPACE && actual_token[0] == :tSTRING_END
-            expected_index += 1
-            next
-          end
-
           # There are a lot of tokens that have very specific meaning according
           # to the context of the parser. We don't expose that information in
           # prism, so we need to normalize these tokens a bit.
