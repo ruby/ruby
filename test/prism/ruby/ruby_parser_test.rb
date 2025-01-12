@@ -35,6 +35,7 @@ module Prism
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
       "seattlerb/regexp_esc_C_slash.txt",
       "seattlerb/str_lit_concat_bad_encodings.txt",
+      "strings.txt",
       "unescaping.txt",
       "unparser/corpus/literal/kwbegin.txt",
       "unparser/corpus/literal/send.txt",
