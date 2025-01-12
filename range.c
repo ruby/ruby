@@ -488,6 +488,7 @@ range_step(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
+    v = b;
 
     const VALUE b_num_p = rb_obj_is_kind_of(b, rb_cNumeric);
     const VALUE e_num_p = rb_obj_is_kind_of(e, rb_cNumeric);
@@ -559,7 +560,8 @@ range_step(int argc, VALUE *argv, VALUE range)
                 rb_yield(LONG2NUM(i));
                 i += unit;
             }
-        } else {
+        }
+        else {
             if (!EXCL(range))
                 end += 1;
             i = FIX2LONG(b);
@@ -571,7 +573,8 @@ range_step(int argc, VALUE *argv, VALUE range)
     }
     else if (b_num_p && step_num_p && ruby_float_step(b, e, step, EXCL(range), TRUE)) {
         /* done */
-    } else if (!NIL_P(str_b) && FIXNUM_P(step)) {
+    }
+    else if (!NIL_P(str_b) && FIXNUM_P(step)) {
         // backwards compatibility behavior for String only, when no step/Integer step is passed
         // See discussion in https://bugs.ruby-lang.org/issues/18368
 
@@ -583,7 +586,8 @@ range_step(int argc, VALUE *argv, VALUE range)
         else {
             rb_str_upto_each(str_b, e, EXCL(range), step_i, (VALUE)iter);
         }
-    } else if (!NIL_P(sym_b) && FIXNUM_P(step)) {
+    }
+    else if (!NIL_P(sym_b) && FIXNUM_P(step)) {
         // same as above: backward compatibility for symbols
 
         VALUE iter[2] = {INT2FIX(1), step};
@@ -594,47 +598,48 @@ range_step(int argc, VALUE *argv, VALUE range)
         else {
             rb_str_upto_each(sym_b, rb_sym2str(e), EXCL(range), sym_step_i, (VALUE)iter);
         }
-    } else {
-        v = b;
-        if (!NIL_P(e)) {
-            if (b_num_p && step_num_p && r_less(step, INT2FIX(0)) < 0) {
-                // iterate backwards, for consistency with ArithmeticSequence
-                if (EXCL(range)) {
-                    for (; r_less(e, v) < 0; v = rb_funcall(v, id_plus, 1, step))
-                        rb_yield(v);
-                }
-                else {
-                    for (; (c = r_less(e, v)) <= 0; v = rb_funcall(v, id_plus, 1, step)) {
-                        rb_yield(v);
-                        if (!c) break;
-                    }
-                }
-
-            } else {
-                // Direction of the comparison. We use it as a comparison operator in cycle:
-                // if begin < end, the cycle performs while value < end (iterating forward)
-                // if begin > end, the cycle performs while value > end (iterating backward with
-                // a negative step)
-                dir = r_less(b, e);
-                // One preliminary addition to check the step moves iteration in the same direction as
-                // from begin to end; otherwise, the iteration should be empty.
-                if (r_less(b, rb_funcall(b, id_plus, 1, step)) == dir) {
-                    if (EXCL(range)) {
-                        for (; r_less(v, e) == dir; v = rb_funcall(v, id_plus, 1, step))
-                            rb_yield(v);
-                    }
-                    else {
-                        for (; (c = r_less(v, e)) == dir || c == 0; v = rb_funcall(v, id_plus, 1, step)) {
-                            rb_yield(v);
-                            if (!c) break;
-                        }
-                    }
-                }
+    }
+    else if (NIL_P(e)) {
+        // endless range
+        for (;; v = rb_funcall(v, id_plus, 1, step))
+            rb_yield(v);
+    }
+    else if (b_num_p && step_num_p && r_less(step, INT2FIX(0)) < 0) {
+        // iterate backwards, for consistency with ArithmeticSequence
+        if (EXCL(range)) {
+            for (; r_less(e, v) < 0; v = rb_funcall(v, id_plus, 1, step))
+                rb_yield(v);
+        }
+        else {
+            for (; (c = r_less(e, v)) <= 0; v = rb_funcall(v, id_plus, 1, step)) {
+                rb_yield(v);
+                if (!c) break;
             }
         }
-        else
-            for (;; v = rb_funcall(v, id_plus, 1, step))
+
+    }
+    else if ((dir = r_less(b, e)) == 0) {
+        if (!EXCL(range)) {
+            rb_yield(v);
+        }
+    }
+    else if (dir == r_less(b, rb_funcall(b, id_plus, 1, step))) {
+        // Direction of the comparison. We use it as a comparison operator in cycle:
+        // if begin < end, the cycle performs while value < end (iterating forward)
+        // if begin > end, the cycle performs while value > end (iterating backward with
+        // a negative step)
+        // One preliminary addition to check the step moves iteration in the same direction as
+        // from begin to end; otherwise, the iteration should be empty.
+        if (EXCL(range)) {
+            for (; r_less(v, e) == dir; v = rb_funcall(v, id_plus, 1, step))
                 rb_yield(v);
+        }
+        else {
+            for (; (c = r_less(v, e)) == dir || c == 0; v = rb_funcall(v, id_plus, 1, step)) {
+                rb_yield(v);
+                if (!c) break;
+            }
+        }
     }
     return range;
 }
