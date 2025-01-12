@@ -1196,12 +1196,12 @@ ext/clean.sub ext/distclean.sub ext/realclean.sub \
 		    $(MAKE) $(MFLAGS) $(@F) & \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
-		))) || @
+		))) || $(NULLCMD)
 
 ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (exts.mk*) \
-		do $(Q)(del %I & rmdir %~dpI)) || @
-		-$(Q)rmdir $(@D) 2> nul || @
+		do $(Q)(del %I & rmdir %~dpI)) || $(NULLCMD)
+		-$(Q)rmdir $(@D) 2> nul || $(NULLCMD)
 
 .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
