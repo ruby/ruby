@@ -6898,6 +6898,14 @@ static const rb_data_type_t env_data_type = {
  *  - #dig(key, *identifiers).
  *  - #values_at(*keys).
  *
+ *  Examples:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h[:nosuch]                       # => nil
+ *    h.assoc(:nosuch)                 # => nil
+ *    h.dig(:nosuch)                   # => nil
+ *    h.values_at(:bar, :nosuch, :foo) # => [1, nil, 0]
+ *
  *  You can override these behaviors for #[], #dig, and #values_at (but not #assoc);
  *  see {Hash Default}[rdoc-ref:Hash@Hash+Default].
  *
@@ -6930,7 +6938,7 @@ static const rb_data_type_t env_data_type = {
  *  and the methods return +nil+ for a not-found key;
  *  see {Nil Return Value}[rdoc-ref:Hash@Nil+Return+Value] above.
  *
- *  Note that this entire section:
+ *  Note that this entire section ("Hash Default"):
  *
  *  - Applies _only_ to methods #[], #dig, and #values_at.
  *  - Does _not_ apply to methods #assoc, #fetch, or #fetch_values,
@@ -7000,14 +7008,34 @@ static const rb_data_type_t env_data_type = {
  *    h.default_proc = proc {|hash, key| hash.transform_keys! {|k| k.to_s } }
  *    h[:baz]              # => {"foo"=>0, "bar"=>1}
  *
- *  Note that a default proc that modifies +self+ is not thread-safe in the
- *  sense that multiple threads can call into the default proc concurrently for the
- *  same key.
+ *  Modifying +self+ in this way is not thread-safe;
+ *  multiple threads can concurrently call into the default proc
+ *  for the same key.
  *
  *  ==== \Method Default
  *
+ *  For two methods, you can specify a default value for a not-found key
+ *  that has effect only for a single method call
+ *  (and not for any subsequent calls):
+ *
  *  - #fetch(key).
  *  - #fetch_values(*keys).
+ *
+ *  For method #fetch, you can specify an any-key default:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h.fetch(:nosuch, false) # => false
+ *    h.fetch(:nosuch)        # Raises KeyError.
+ *
+ *  For either method, you can specify a per-key default via a block:
+ *
+ *    h.fetch(:nosuch) {|key| "No key #{key}"}
+ *    # => "No key nosuch"
+ *    h.fetch(:nosuch)        # Raises KeyError.
+ *
+ *    h.fetch_values(:bar, :nosuch, :foo) {|key| "No key #{key}"}
+ *    # => [1, "No key nosuch", 0]
+ *    h.fetch_values(:bar, :nosuch, :foo) # Raises KeyError.
  *
  *  === What's Here
  *
