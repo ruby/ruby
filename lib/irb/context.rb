@@ -155,11 +155,6 @@ module IRB
       @command_aliases = IRB.conf[:COMMAND_ALIASES].dup
     end
 
-    private def term_interactive?
-      return true if ENV['TEST_IRB_FORCE_INTERACTIVE']
-      STDIN.tty? && ENV['TERM'] != 'dumb'
-    end
-
     def use_tracer=(val)
       require_relative "ext/tracer" if val
       IRB.conf[:USE_TRACER] = val
@@ -175,45 +170,6 @@ module IRB
       self.class.remove_method(__method__)
       require_relative "ext/use-loader"
       __send__(__method__, val)
-    end
-
-    private def build_completor
-      completor_type = IRB.conf[:COMPLETOR]
-
-      # Gem repl_type_completor is added to bundled gems in Ruby 3.4.
-      # Use :type as default completor only in Ruby 3.4 or later.
-      verbose = !!completor_type
-      completor_type ||= RUBY_VERSION >= '3.4' ? :type : :regexp
-
-      case completor_type
-      when :regexp
-        return RegexpCompletor.new
-      when :type
-        completor = build_type_completor(verbose: verbose)
-        return completor if completor
-      else
-        warn "Invalid value for IRB.conf[:COMPLETOR]: #{completor_type}"
-      end
-      # Fallback to RegexpCompletor
-      RegexpCompletor.new
-    end
-
-    private def build_type_completor(verbose:)
-      if RUBY_ENGINE == 'truffleruby'
-        # Avoid SyntaxError. truffleruby does not support endless method definition yet.
-        warn 'TypeCompletor is not supported on TruffleRuby yet' if verbose
-        return
-      end
-
-      begin
-        require 'repl_type_completor'
-      rescue LoadError => e
-        warn "TypeCompletor requires `gem repl_type_completor`: #{e.message}" if verbose
-        return
-      end
-
-      ReplTypeCompletor.preload_rbs
-      TypeCompletor.new(self)
     end
 
     def save_history=(val)
@@ -738,6 +694,52 @@ module IRB
     def safe_method_call_on_main(method_name)
       main_object = main
       Object === main_object ? main_object.__send__(method_name) : Object.instance_method(method_name).bind_call(main_object)
+    end
+
+    private
+
+    def term_interactive?
+      return true if ENV['TEST_IRB_FORCE_INTERACTIVE']
+      STDIN.tty? && ENV['TERM'] != 'dumb'
+    end
+
+    def build_completor
+      completor_type = IRB.conf[:COMPLETOR]
+
+      # Gem repl_type_completor is added to bundled gems in Ruby 3.4.
+      # Use :type as default completor only in Ruby 3.4 or later.
+      verbose = !!completor_type
+      completor_type ||= RUBY_VERSION >= '3.4' ? :type : :regexp
+
+      case completor_type
+      when :regexp
+        return RegexpCompletor.new
+      when :type
+        completor = build_type_completor(verbose: verbose)
+        return completor if completor
+      else
+        warn "Invalid value for IRB.conf[:COMPLETOR]: #{completor_type}"
+      end
+      # Fallback to RegexpCompletor
+      RegexpCompletor.new
+    end
+
+    def build_type_completor(verbose:)
+      if RUBY_ENGINE == 'truffleruby'
+        # Avoid SyntaxError. truffleruby does not support endless method definition yet.
+        warn 'TypeCompletor is not supported on TruffleRuby yet' if verbose
+        return
+      end
+
+      begin
+        require 'repl_type_completor'
+      rescue LoadError => e
+        warn "TypeCompletor requires `gem repl_type_completor`: #{e.message}" if verbose
+        return
+      end
+
+      ReplTypeCompletor.preload_rbs
+      TypeCompletor.new(self)
     end
   end
 end
