@@ -1,0 +1,7 @@
+module Prism
+  class MutationCompiler < Compiler
+    <%- nodes.each do |node| -%>
+    def visit_<%= node.human %>: (<%= node.name %>) -> node?
+    <%- end -%>
+  end
+end

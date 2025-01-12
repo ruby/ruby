@@ -1,0 +1,17 @@
+module Prism
+  class BasicVisitor
+    def visit: (Prism::node?) -> void
+    def visit_all: (Array[Prism::node?]) -> void
+    def visit_child_nodes: (Prism::node) -> void
+  end
+
+  interface _Visitor
+    <%- nodes.each do |node| -%>
+    def visit_<%= node.human %>: (<%= node.name %>) -> void
+    <%- end -%>
+  end
+
+  class Visitor < BasicVisitor
+    include _Visitor
+  end
+end
