@@ -594,6 +594,22 @@ class TestRange < Test::Unit::TestCase
     assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
   end
 
+  def test_step_with_nonnumeric_endpoint
+    num = Data.define(:value) do
+      def coerce(o); [o, 100]; end
+      def <=>(o) value<=>o; end
+      def +(o) with(value: value + o) end
+    end
+    i = num.new(100)
+
+    assert_equal([100], (100..100).step(10).to_a)
+    assert_equal([], (100...100).step(10).to_a)
+    assert_equal([100], (100..i).step(10).to_a)
+    assert_equal([i], (i..100).step(10).to_a)
+    assert_equal([], (100...i).step(10).to_a)
+    assert_equal([], (i...100).step(10).to_a)
+  end
+
   def test_each
     a = []
     (0..10).each {|x| a << x }
