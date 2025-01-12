@@ -1221,6 +1221,7 @@ ext/clean.mk ext/distclean.mk ext/realclean.mk::
 
 ext/clean.sub ext/distclean.sub ext/realclean.sub \
 .bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
+		::- $@ begin
 		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (.) \
 		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
@@ -1232,13 +1233,18 @@ ext/clean.sub ext/distclean.sub ext/realclean.sub \
 		    cd %CD% & \
 		    $(RMDIRS) %I \
 		))) || $(NULLCMD)
+		::- $@ end
 
 ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
+		::- $@ begin
 		$(Q)(for /D /R $(@D) %I in (*) do $(Q)if %~zI == 0 $(RMDIRS) %I) || $(NULLCMD)
+		::- $@ end
 
 .bundle/distclean .bundle/realclean::
+		::- $@ begin
 		$(Q)for /D %I in ($(@D)\*) do $(Q)$(RMDIRS) %I || $(NULLCMD)
 		-$(Q)rmdir $(@D) 2> nul || $(NULLCMD)
+		::- $@ end
 
 .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
