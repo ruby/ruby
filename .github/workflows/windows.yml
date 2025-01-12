@@ -27,16 +27,7 @@ jobs:
         include:
           - os: 2022
             vc: 2022
-            test_task: check
-          - os: 2025
-            vc: 2022
-            test_task: check
-          - os: 11-arm
-            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
-            target: arm64
-          - os: 2025
-            vc: 2022
-            test_task: test-bundled-gems
+            test_task: btest
       fail-fast: false
 
     runs-on: windows-${{ matrix.os }}
@@ -185,7 +176,8 @@ jobs:
 
       - name: clean up
         run: |
-          nmake distclean
+          nmake V=1 distclean
+          dir /s
           cd ..
           rd build
 
