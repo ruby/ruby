@@ -328,6 +328,18 @@ Alternatives:
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
     - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
 
+### Constants
+
+In discussions, and especially in example code,
+prefer using a constant as a value (rather than a numeric, string, or symbol)
+whenever there is a choice.
+
+This may encourage users to do the same,
+which can help with code completion, static analysis, etc.
+
+For examples, see changed files in
+[PR "Encourage use of encoding constants"](https://github.com/ruby/ruby/pull/12552/files).
+
 ## Documenting Classes and Modules
 
 The general structure of the class or module documentation should be:
