@@ -105,8 +105,8 @@ CC = cl -nologo
 !if !defined(CPP) || "$(CPP)" == "cl"
 CPP = $(CC) -E
 !endif
-!if !defined(YACC)
-YACC = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
+!if !defined(LRAMA)
+LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 !endif
 AR = lib -nologo
 PURIFY =
@@ -1040,7 +1040,7 @@ s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
 s,@LD@,$$(CC),;t t
-s,@YACC@,$(YACC),;t t
+s,@LRAMA@,$(LRAMA),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
