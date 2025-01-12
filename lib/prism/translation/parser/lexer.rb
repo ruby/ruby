@@ -409,7 +409,7 @@ module Prism
                 # it emits a single string node. The backslash (and remaining newline) is removed.
                 current_line = +""
                 adjustment = 0
-                start_offset = offset_cache[token.location.start_offset]
+                start_offset = token.location.start_offset
                 emit = false
 
                 lines.each.with_index do |line, index|
