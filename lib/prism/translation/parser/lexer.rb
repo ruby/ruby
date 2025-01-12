@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "strscan"
+require_relative "../../polyfill/append_as_bytes"
 
 module Prism
   module Translation
@@ -670,24 +671,23 @@ module Prism
             scanner = StringScanner.new(string)
             while (skipped = scanner.skip_until(/\\/))
               # Append what was just skipped over, excluding the found backslash.
-              result << string.byteslice(scanner.pos - skipped, skipped - 1)
+              result.append_as_bytes(string.byteslice(scanner.pos - skipped, skipped - 1))
 
               # Simple single-character escape sequences like \n
               if (replacement = ESCAPES[scanner.peek(1)])
-                result << replacement
+                result.append_as_bytes(replacement)
                 scanner.pos += 1
               elsif (octal = scanner.check(/[0-7]{1,3}/))
                 # \nnn
-                # NOTE: When Ruby 3.4 is required, this can become result.append_as_bytes(chr)
-                result << octal.to_i(8).chr.b
+                result.append_as_bytes(octal.to_i(8).chr)
                 scanner.pos += octal.bytesize
               elsif (hex = scanner.check(/x([0-9a-fA-F]{1,2})/))
                 # \xnn
-                result << hex[1..].to_i(16).chr.b
+                result.append_as_bytes(hex[1..].to_i(16).chr)
                 scanner.pos += hex.bytesize
               elsif (unicode = scanner.check(/u([0-9a-fA-F]{4})/))
                 # \unnnn
-                result << unicode[1..].hex.chr(Encoding::UTF_8).b
+                result.append_as_bytes(unicode[1..].hex.chr(Encoding::UTF_8))
                 scanner.pos += unicode.bytesize
               elsif scanner.peek(3) == "u{}"
                 # https://github.com/whitequark/parser/issues/856
@@ -695,14 +695,14 @@ module Prism
               elsif (unicode_parts = scanner.check(/u{.*}/))
                 # \u{nnnn ...}
                 unicode_parts[2..-2].split.each do |unicode|
-                  result << unicode.hex.chr(Encoding::UTF_8).b
+                  result.append_as_bytes(unicode.hex.chr(Encoding::UTF_8))
                 end
                 scanner.pos += unicode_parts.bytesize
               end
             end
 
             # Add remainging chars
-            result << string.byteslice(scanner.pos..)
+            result.append_as_bytes(string.byteslice(scanner.pos..))
 
             result.force_encoding(source_buffer.source.encoding)
 
