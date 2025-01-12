@@ -22,6 +22,10 @@ module Lrama
         end
       end
 
+      def concatenated_args_str(token)
+        "#{token.rule_name}_#{token_to_args_s_values(token).join('_')}"
+      end
+
       private
 
       def parameter_to_arg(symbol)
@@ -29,6 +33,17 @@ module Lrama
           arg.alias_name = symbol.alias_name
         end
         arg
+      end
+
+      def token_to_args_s_values(token)
+        token.args.flat_map do |arg|
+          resolved = resolve_symbol(arg)
+          if resolved.is_a?(Lexer::Token::InstantiateRule)
+            [resolved.s_value] + resolved.args.map(&:s_value)
+          else
+            [resolved.s_value]
+          end
+        end
       end
     end
   end

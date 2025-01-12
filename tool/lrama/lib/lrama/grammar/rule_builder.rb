@@ -136,7 +136,7 @@ module Lrama
             raise "Unexpected token. #{token}" unless parameterizing_rule
 
             bindings = Binding.new(parameterizing_rule, token.args)
-            lhs_s_value = lhs_s_value(token, bindings)
+            lhs_s_value = bindings.concatenated_args_str(token)
             if (created_lhs = @parameterizing_rule_resolver.created_lhs(lhs_s_value))
               @replaced_rhs << created_lhs
             else
@@ -172,18 +172,6 @@ module Lrama
             raise "Unexpected token. #{token}"
           end
         end
-      end
-
-      def lhs_s_value(token, bindings)
-        s_values = token.args.map do |arg|
-          resolved = bindings.resolve_symbol(arg)
-          if resolved.is_a?(Lexer::Token::InstantiateRule)
-            [resolved.s_value, resolved.args.map(&:s_value)]
-          else
-            resolved.s_value
-          end
-        end
-        "#{token.rule_name}_#{s_values.join('_')}"
       end
 
       def resolve_inline_rhs(rule_builder, inline_rhs, index, bindings = nil)
