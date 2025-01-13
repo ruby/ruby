@@ -207,15 +207,14 @@ module Prism
 
     def assert_equal_tokens(expected_tokens, actual_tokens)
       if expected_tokens != actual_tokens
-        expected_index = 0
-        actual_index = 0
+        index = 0
+        max_index = [expected_tokens, actual_tokens].map(&:size).max
 
-        while expected_index < expected_tokens.length
-          expected_token = expected_tokens[expected_index]
-          actual_token = actual_tokens.fetch(actual_index, [])
+        while index <= max_index
+          expected_token = expected_tokens.fetch(index, [])
+          actual_token = actual_tokens.fetch(index, [])
 
-          expected_index += 1
-          actual_index += 1
+          index += 1
 
           # There are a lot of tokens that have very specific meaning according
           # to the context of the parser. We don't expose that information in
