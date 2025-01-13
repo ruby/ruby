@@ -85,6 +85,7 @@ a\nb\n\nc\n"
 %w[foo\ bar\\ baz\\\
  bat]
 
+<<<<<<< HEAD
 %W[#{foo}\
 bar
 baz #{bat}
@@ -100,6 +101,8 @@ baz #{bat}
 %W(foo\
 bar)
 
+=======
+>>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
 %w[foo     bar]
 
 %w[

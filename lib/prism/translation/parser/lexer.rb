@@ -403,6 +403,20 @@ module Prism
               end
             when :tSTRING_CONTENT
               is_percent_array = percent_array?(quote_stack.last)
+<<<<<<< HEAD
+=======
+
+              if (lines = token.value.lines).one?
+                # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
+                is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
+                # The parser gem only removes indentation when the heredoc is not nested
+                not_nested = heredoc_stack.size == 1
+                if is_percent_array
+                  value = percent_array_unescape(value)
+                elsif is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
+                  value = trim_heredoc_whitespace(value, current_heredoc)
+                end
+>>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
 
               if (lines = token.value.lines).one?
                 # Prism usually emits a single token for strings with line continuations.
@@ -712,6 +726,7 @@ module Prism
           end
         end
 
+<<<<<<< HEAD
         # Certain strings are merged into a single string token.
         def simplify_string?(value, quote)
           case quote
@@ -777,6 +792,8 @@ module Prism
           end
         end
 
+=======
+>>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
         # In a percent array, certain whitespace can be preceeded with a backslash,
         # causing the following characters to be part of the previous element.
         def percent_array_unescape(string)
