@@ -284,23 +284,6 @@ typedef VALUE rb_hash_update_func(VALUE newkey, VALUE oldkey, VALUE value);
  */
 VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
 
-/* file.c */
-
-/**
- * If the PATH_SEPARATOR-separated list of directory names contains the name of
- * a world-writable directory, issue a warning  for it.  This may do nothing on
- * some platforms.
- *
- * @param[in]  path       A local path.
- * @retval     0          The "check" succeeded.
- * @retval     otherwise  The "check" failed.
- * @note       This  feature may  be  disabled  by setting  `ENABLE_PATH_CHECK`
- *             macro to zero at compilation time.
- */
-int rb_path_check(const char *path);
-
-/* hash.c */
-
 /**
  * Destructively removes every environment variables of the running process.
  *
