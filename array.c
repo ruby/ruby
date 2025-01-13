@@ -22,6 +22,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/range.h"
 #include "internal/rational.h"
 #include "internal/vm.h"
 #include "probes.h"
@@ -2020,6 +2021,23 @@ rb_ary_last(int argc, const VALUE *argv, VALUE ary) // used by parse.y
     }
 }
 
+static VALUE
+ary_fetch(VALUE ary, long idx, VALUE ifnone, bool block_given)
+{
+    if (idx < 0) {
+        idx +=  RARRAY_LEN(ary);
+    }
+    if (idx < 0 || RARRAY_LEN(ary) <= idx) {
+        if (block_given) return rb_yield(LONG2NUM(idx));
+        if (UNDEF_P(ifnone)) {
+            rb_raise(rb_eIndexError, "index %ld outside of array bounds: %ld...%ld",
+                        idx - (idx < 0 ? RARRAY_LEN(ary) : 0), -RARRAY_LEN(ary), RARRAY_LEN(ary));
+        }
+        return ifnone;
+    }
+    return RARRAY_AREF(ary, idx);
+}
+
 /*
  *  call-seq:
  *    fetch(index) -> element
@@ -2074,18 +2092,7 @@ rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
     }
     idx = NUM2LONG(pos);
 
-    if (idx < 0) {
-        idx +=  RARRAY_LEN(ary);
-    }
-    if (idx < 0 || RARRAY_LEN(ary) <= idx) {
-        if (block_given) return rb_yield(pos);
-        if (argc == 1) {
-            rb_raise(rb_eIndexError, "index %ld outside of array bounds: %ld...%ld",
-                        idx - (idx < 0 ? RARRAY_LEN(ary) : 0), -RARRAY_LEN(ary), RARRAY_LEN(ary));
-        }
-        return ifnone;
-    }
-    return RARRAY_AREF(ary, idx);
+    return ary_fetch(ary, idx, ifnone, block_given);
 }
 
 /*
@@ -3976,6 +3983,83 @@ rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
         append_values_at_single(result, ary, olen, argv[i]);
     }
     RB_GC_GUARD(ary);
+    return result;
+}
+
+static VALUE
+append_fetch_values_single(VALUE result, VALUE ary, long olen, VALUE idx, bool block_given)
+{
+    long beg, len;
+    if (FIXNUM_P(idx)) {
+        beg = FIX2LONG(idx);
+    }
+    /* check if idx is Range */
+    else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
+        if (NIL_P(RANGE_BEG(idx))) {
+            rb_raise(rb_eIndexError, "Can't use beginless ranges with Array#fetch_values");
+        }
+        else if (NIL_P(RANGE_END(idx))) {
+            rb_raise(rb_eIndexError, "Can't use endless ranges with Array#fetch_values");
+        }
+
+        if (len > 0) {
+            long index;
+            for (index = 0; index < len; index++) {
+                rb_ary_push(result, ary_fetch(ary, beg + index, Qundef, block_given));
+            }
+        }
+        return result;
+    }
+    else {
+        beg = NUM2LONG(idx);
+    }
+    return rb_ary_push(result, ary_fetch(ary, beg, Qundef, block_given));
+}
+
+/*
+ * call-seq:
+ *   fetch_values(*indexes) -> new_array
+ *   fetch_values(*indexes) { |index| ... } -> new_array
+ *
+ * With no block given, returns a new array containing the elements of +self+
+ * at the offsets specified by +indexes+. Each of the +indexes+ must be an
+ * {integer-convertible object}[rdoc-ref:implicit_conversion.rdoc@Integer-Convertible+Objects]:
+ *
+ *    a = [:foo, :bar, :baz]
+ *    a.fetch_values(2, 0)   # => [:baz, :foo]
+ *    a.fetch_values(2.1, 0) # => [:baz, :foo]
+ *    a.fetch_values         # => []
+ *
+ * For a negative index, counts backwards from the end of the array:
+ *
+ *    a.fetch_values(-2, -1) # [:bar, :baz]
+ *
+ * When no block is given, raises an exception if any index is out of range.
+ *
+ * With a block given, for each index:
+ *
+ * - If the index is in range, uses an element of +self+ (as above).
+ * - Otherwise, calls the block with the index and uses the block's return value.
+ *
+ * Example:
+ *
+ *   a = [:foo, :bar, :baz]
+ *   a.fetch_values(1, 0, 42, 777) { |index| index.to_s }
+ *   # => [:bar, :foo, "42", "777"]
+ *
+ * Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
+ */
+
+static VALUE
+rb_ary_fetch_values(int argc, VALUE *argv, VALUE ary)
+{
+    bool block_given = rb_block_given_p();
+
+    long i, olen = RARRAY_LEN(ary);
+    VALUE result = rb_ary_new_capa(argc);
+    for (i = 0; i < argc; ++i) {
+        append_fetch_values_single(result, ary, olen, argv[i], block_given);
+    }
     return result;
 }
 
@@ -8932,6 +9016,7 @@ Init_Array(void)
     rb_define_method(rb_cArray, "filter!", rb_ary_select_bang, 0);
     rb_define_method(rb_cArray, "keep_if", rb_ary_keep_if, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
+    rb_define_method(rb_cArray, "fetch_values", rb_ary_fetch_values, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
