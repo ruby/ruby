@@ -1068,8 +1068,19 @@ static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func func,
     return fbuffer_finalize(&buffer);
 }
 
-static VALUE cState_generate(VALUE self, VALUE obj, VALUE io)
+/* call-seq:
+ *   generate(obj) -> String
+ *   generate(obj, anIO) -> anIO
+ *
+ * Generates a valid JSON document from object +obj+ and returns the
+ * result. If no valid JSON document can be created this method raises a
+ * GeneratorError exception.
+ */
+static VALUE cState_generate(int argc, VALUE *argv, VALUE self)
 {
+    rb_check_arity(argc, 1, 2);
+    VALUE obj = argv[0];
+    VALUE io = argc > 1 ? argv[1] : Qnil;
     VALUE result = cState_partial_generate(self, obj, generate_json, io);
     GET_STATE(self);
     (void)state;
@@ -1582,7 +1593,7 @@ void Init_generator(void)
     rb_define_method(cState, "depth=", cState_depth_set, 1);
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
-    rb_define_private_method(cState, "_generate", cState_generate, 2);
+    rb_define_method(cState, "generate", cState_generate, -1);
 
     rb_define_singleton_method(cState, "generate", cState_m_generate, 3);
 

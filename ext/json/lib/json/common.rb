@@ -818,11 +818,7 @@ module JSON
     opts = merge_dump_options(opts, **kwargs) if kwargs
 
     begin
-      if State === opts
-        opts.generate(obj, anIO)
-      else
-        State.generate(obj, opts, anIO)
-      end
+      State.generate(obj, opts, anIO)
     rescue JSON::NestingError
       raise ArgumentError, "exceed depth limit"
     end
