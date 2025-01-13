@@ -388,28 +388,54 @@ dump_file(int argc, VALUE *argv, VALUE self) {
 /******************************************************************************/
 
 /**
+ * The same as rb_class_new_instance, but accepts an additional boolean to
+ * indicate whether or not the resulting class instance should be frozen.
+ */
+static inline VALUE
+rb_class_new_instance_freeze(int argc, const VALUE *argv, VALUE klass, bool freeze) {
+    VALUE value = rb_class_new_instance(argc, argv, klass);
+    if (freeze) rb_obj_freeze(value);
+    return value;
+}
+
+/**
+ * Create a new Location instance from the given parser and bounds.
+ */
+static inline VALUE
+parser_location(const pm_parser_t *parser, VALUE source, bool freeze, const uint8_t *start, size_t length) {
+    VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(length) };
+    return rb_class_new_instance_freeze(3, argv, rb_cPrismLocation, freeze);
+}
+
+/**
+ * Create a new Location instance from the given parser and location.
+ */
+#define PARSER_LOCATION_LOC(parser, source, freeze, loc) \
+    parser_location(parser, source, freeze, loc.start, (size_t) (loc.end - loc.start))
+
+/**
+ * Build a new Comment instance from the given parser and comment.
+ */
+static inline VALUE
+parser_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_comment_t *comment) {
+    VALUE argv[] = { PARSER_LOCATION_LOC(parser, source, freeze, comment->location) };
+    VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
+    return rb_class_new_instance_freeze(1, argv, type, freeze);
+}
+
+/**
  * Extract the comments out of the parser into an array.
  */
 static VALUE
-parser_comments(pm_parser_t *parser, VALUE source, bool freeze) {
+parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
     VALUE comments = rb_ary_new_capa(parser->comment_list.size);
 
-    for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
-        VALUE location_argv[] = {
-            source,
-            LONG2FIX(comment->location.start - parser->start),
-            LONG2FIX(comment->location.end - comment->location.start)
-        };
-
-        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(location);
-
-        VALUE comment_argv[] = { location };
-        VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
-
-        VALUE value = rb_class_new_instance(1, comment_argv, type);
-        if (freeze) rb_obj_freeze(value);
-
+    for (
+        const pm_comment_t *comment = (const pm_comment_t *) parser->comment_list.head;
+        comment != NULL;
+        comment = (const pm_comment_t *) comment->node.next
+    ) {
+        VALUE value = parser_comment(parser, source, freeze, comment);
         rb_ary_push(comments, value);
     }
 
@@ -418,35 +444,29 @@ parser_comments(pm_parser_t *parser, VALUE source, bool freeze) {
 }
 
 /**
+ * Build a new MagicComment instance from the given parser and magic comment.
+ */
+static inline VALUE
+parser_magic_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
+    VALUE key_loc = parser_location(parser, source, freeze, magic_comment->key_start, magic_comment->key_length);
+    VALUE value_loc = parser_location(parser, source, freeze, magic_comment->value_start, magic_comment->value_length);
+    VALUE argv[] = { key_loc, value_loc };
+    return rb_class_new_instance_freeze(2, argv, rb_cPrismMagicComment, freeze);
+}
+
+/**
  * Extract the magic comments out of the parser into an array.
  */
 static VALUE
-parser_magic_comments(pm_parser_t *parser, VALUE source, bool freeze) {
+parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
     VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
 
-    for (pm_magic_comment_t *magic_comment = (pm_magic_comment_t *) parser->magic_comment_list.head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
-        VALUE key_loc_argv[] = {
-            source,
-            LONG2FIX(magic_comment->key_start - parser->start),
-            LONG2FIX(magic_comment->key_length)
-        };
-
-        VALUE key_loc = rb_class_new_instance(3, key_loc_argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(key_loc);
-
-        VALUE value_loc_argv[] = {
-            source,
-            LONG2FIX(magic_comment->value_start - parser->start),
-            LONG2FIX(magic_comment->value_length)
-        };
-
-        VALUE value_loc = rb_class_new_instance(3, value_loc_argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(value_loc);
-
-        VALUE magic_comment_argv[] = { key_loc, value_loc };
-        VALUE value = rb_class_new_instance(2, magic_comment_argv, rb_cPrismMagicComment);
-        if (freeze) rb_obj_freeze(value);
-
+    for (
+        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) parser->magic_comment_list.head;
+        magic_comment != NULL;
+        magic_comment = (const pm_magic_comment_t *) magic_comment->node.next
+    ) {
+        VALUE value = parser_magic_comment(parser, source, freeze, magic_comment);
         rb_ary_push(magic_comments, value);
     }
 
@@ -463,16 +483,7 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
     if (parser->data_loc.end == NULL) {
         return Qnil;
     } else {
-        VALUE argv[] = {
-            source,
-            LONG2FIX(parser->data_loc.start - parser->start),
-            LONG2FIX(parser->data_loc.end - parser->data_loc.start)
-        };
-
-        VALUE location = rb_class_new_instance(3, argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(location);
-
-        return location;
+        return PARSER_LOCATION_LOC(parser, source, freeze, parser->data_loc);
     }
 }
 
@@ -480,19 +491,17 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
  * Extract the errors out of the parser into an array.
  */
 static VALUE
-parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
+parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE errors = rb_ary_new_capa(parser->error_list.size);
-    pm_diagnostic_t *error;
 
-    for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
-        VALUE location_argv[] = {
-            source,
-            LONG2FIX(error->location.start - parser->start),
-            LONG2FIX(error->location.end - error->location.start)
-        };
-
-        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(location);
+    for (
+        const pm_diagnostic_t *error = (const pm_diagnostic_t *) parser->error_list.head;
+        error != NULL;
+        error = (const pm_diagnostic_t *) error->node.next
+    ) {
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
+        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(error->message, encoding));
+        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, error->location);
 
         VALUE level = Qnil;
         switch (error->level) {
@@ -509,15 +518,8 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool fre
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
         }
 
-        VALUE message = rb_enc_str_new_cstr(error->message, encoding);
-        if (freeze) rb_obj_freeze(message);
-
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
-        VALUE error_argv[] = { type, message, location, level };
-
-        VALUE value = rb_class_new_instance(4, error_argv, rb_cPrismParseError);
-        if (freeze) rb_obj_freeze(value);
-
+        VALUE argv[] = { type, message, location, level };
+        VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseError, freeze);
         rb_ary_push(errors, value);
     }
 
@@ -529,19 +531,17 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool fre
  * Extract the warnings out of the parser into an array.
  */
 static VALUE
-parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
+parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
-    pm_diagnostic_t *warning;
 
-    for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
-        VALUE location_argv[] = {
-            source,
-            LONG2FIX(warning->location.start - parser->start),
-            LONG2FIX(warning->location.end - warning->location.start)
-        };
-
-        VALUE location = rb_class_new_instance(3, location_argv, rb_cPrismLocation);
-        if (freeze) rb_obj_freeze(location);
+    for (
+        const pm_diagnostic_t *warning = (const pm_diagnostic_t *) parser->warning_list.head;
+        warning != NULL;
+        warning = (const pm_diagnostic_t *) warning->node.next
+    ) {
+        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
+        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(warning->message, encoding));
+        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, warning->location);
 
         VALUE level = Qnil;
         switch (warning->level) {
@@ -555,15 +555,8 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool f
                 rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning->level);
         }
 
-        VALUE message = rb_enc_str_new_cstr(warning->message, encoding);
-        if (freeze) rb_obj_freeze(message);
-
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
-        VALUE warning_argv[] = { type, message, location, level };
-
-        VALUE value = rb_class_new_instance(4, warning_argv, rb_cPrismParseWarning);
-        if (freeze) rb_obj_freeze(value);
-
+        VALUE argv[] = { type, message, location, level };
+        VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseWarning, freeze);
         rb_ary_push(warnings, value);
     }
 
@@ -575,7 +568,7 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool f
  * Create a new parse result from the given parser, value, encoding, and source.
  */
 static VALUE
-parse_result_create(VALUE class, pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source, bool freeze) {
+parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_encoding *encoding, VALUE source, bool freeze) {
     VALUE result_argv[] = {
         value,
         parser_comments(parser, source, freeze),
@@ -586,10 +579,7 @@ parse_result_create(VALUE class, pm_parser_t *parser, VALUE value, rb_encoding *
         source
     };
 
-    VALUE result = rb_class_new_instance(7, result_argv, class);
-    if (freeze) rb_obj_freeze(result);
-
-    return result;
+    return rb_class_new_instance_freeze(7, result_argv, class, freeze);
 }
 
 /******************************************************************************/

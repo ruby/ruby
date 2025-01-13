@@ -63,7 +63,7 @@ module Prism
   #
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized, freeze = false)
-    Serialize.load(source, serialized, freeze)
+    Serialize.load_parse(source, serialized, freeze)
   end
 end
 

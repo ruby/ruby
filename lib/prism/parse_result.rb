@@ -48,6 +48,16 @@ module Prism
       @offsets = offsets # set after parsing is done
     end
 
+    # Replace the value of start_line with the given value.
+    def replace_start_line(start_line)
+      @start_line = start_line
+    end
+
+    # Replace the value of offsets with the given value.
+    def replace_offsets(offsets)
+      @offsets.replace(offsets)
+    end
+
     # Returns the encoding of the source code, which is set by parameters to the
     # parser or by the encoding magic comment.
     def encoding
@@ -130,6 +140,13 @@ module Prism
     # given byte offset.
     def code_units_column(byte_offset, encoding)
       code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
+    end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      source.freeze
+      offsets.freeze
+      freeze
     end
 
     private
@@ -853,6 +870,13 @@ module Prism
     def inspect
       location
       super
+    end
+
+    # Freeze this object and the objects it contains.
+    def deep_freeze
+      value.freeze
+      location.freeze
+      freeze
     end
   end
 end

@@ -15,7 +15,8 @@ module Prism
     # must align with the build shared library from make/rake.
     libprism_in_build = File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
     libprism_in_libdir = "#{RbConfig::CONFIG["libdir"]}/prism/libprism.#{RbConfig::CONFIG["SOEXT"]}"
-    if File.exist? libprism_in_build
+
+    if File.exist?(libprism_in_build)
       INCLUDE_DIR = File.expand_path("../../include", __dir__)
       ffi_lib libprism_in_build
     else
@@ -363,86 +364,28 @@ module Prism
     end
 
     def lex_common(string, code, options) # :nodoc:
-      serialized =
-        LibRubyParser::PrismBuffer.with do |buffer|
-          LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-          buffer.read
-        end
-
-      freeze = options.fetch(:freeze, false)
-      source = Source.for(code)
-      result = Serialize.load_tokens(source, serialized, freeze)
-
-      if freeze
-        source.source.freeze
-        source.offsets.freeze
-        source.freeze
+      LibRubyParser::PrismBuffer.with do |buffer|
+        LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
+        Serialize.load_lex(code, buffer.read, options.fetch(:freeze, false))
       end
-
-      result
     end
 
     def parse_common(string, code, options) # :nodoc:
       serialized = dump_common(string, options)
-      Prism.load(code, serialized, options.fetch(:freeze, false))
+      Serialize.load_parse(code, serialized, options.fetch(:freeze, false))
     end
 
     def parse_comments_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-
-        loader.load_header
-        loader.load_encoding
-        loader.load_start_line
-
-        if (freeze = options.fetch(:freeze, false))
-          source.source.freeze
-          source.offsets.freeze
-          source.freeze
-        end
-
-        loader.load_comments(freeze)
+        Serialize.load_parse_comments(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
     def parse_lex_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-        freeze = options.fetch(:freeze, false)
-
-        tokens = loader.load_tokens(false)
-        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes(freeze)
-
-        tokens.each do |token,|
-          token.value.force_encoding(loader.encoding)
-
-          if freeze
-            token.value.freeze
-            token.location.freeze
-            token.freeze
-          end
-        end
-
-        value = [node, tokens]
-        result = ParseLexResult.new(value, comments, magic_comments, data_loc, errors, warnings, source)
-
-        if freeze
-          source.source.freeze
-          source.offsets.freeze
-          source.freeze
-          tokens.each(&:freeze)
-          tokens.freeze
-          value.freeze
-          result.freeze
-        end
-
-        result
+        Serialize.load_parse_lex(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
