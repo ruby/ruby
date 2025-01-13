@@ -64,6 +64,19 @@ fn mmtk_builder_default_parse_heap_min() -> usize {
     size
 }
 
+fn mmtk_builder_default_parse_heap_max() -> usize {
+    let heap_max_str = std::env::var("MMTK_HEAP_MAX")
+        .unwrap_or(default_heap_max().to_string());
+
+    let size = parse_capacity(&heap_max_str, 0);
+    if size == 0 {
+        eprintln!("[FATAL] Invalid MMTK_HEAP_MAX {}", heap_max_str);
+        std::process::exit(1);
+    }
+
+    size
+}
+
 #[no_mangle]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
@@ -76,25 +89,16 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     let heap_min = mmtk_builder_default_parse_heap_min();
 
-    let mmtk_heap_max = match std::env::var("MMTK_HEAP_MAX") {
-        Ok(max) => {
-            let capa = parse_capacity(&max, default_heap_max());
-            if capa == default_heap_max() {
-                eprintln!("MMTK_HEAP_MAX: value ({}) unusable, Using default.", max)
-            };
-            capa
-        },
-        Err(_) => default_heap_max()
-    };
+    let heap_max = mmtk_builder_default_parse_heap_max();
 
-    if heap_min >= mmtk_heap_max {
-        eprintln!("[FATAL] MMTK_HEAP_MIN({}) >= MMTK_HEAP_MAX({})", heap_min, mmtk_heap_max);
+    if heap_min >= heap_max {
+        eprintln!("[FATAL] MMTK_HEAP_MIN({}) >= MMTK_HEAP_MAX({})", heap_min, heap_max);
         std::process::exit(1);
     }
 
     let mmtk_mode = match std::env::var("MMTK_HEAP_MODE") {
-        Ok(mode) if (mode == "fixed") => GCTriggerSelector::FixedHeapSize(mmtk_heap_max),
-        Ok(_) | Err(_) => GCTriggerSelector::DynamicHeapSize(heap_min, mmtk_heap_max)
+        Ok(mode) if (mode == "fixed") => GCTriggerSelector::FixedHeapSize(heap_max),
+        Ok(_) | Err(_) => GCTriggerSelector::DynamicHeapSize(heap_min, heap_max)
     };
 
     // Parse the env var, if it's not found set the plan name to MarkSweep
