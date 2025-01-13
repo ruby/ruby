@@ -37,6 +37,18 @@ pub extern "C" fn mmtk_is_reachable(object: ObjectReference) -> bool {
 
 // =============== Bootup ===============
 
+fn mmtk_builder_default_parse_threads() -> usize {
+    let threads_str = std::env::var("MMTK_THREADS")
+        .unwrap_or("0".to_string());
+
+    threads_str
+        .parse::<usize>()
+        .unwrap_or_else(|_err| {
+            eprintln!("[FATAL] Invalid MMTK_THREADS {}", threads_str);
+            std::process::exit(1);
+        })
+}
+
 #[no_mangle]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
@@ -44,10 +56,10 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     const DEFAULT_HEAP_MIN: usize = 1 << 20;
 
-    let mmtk_threads: usize = std::env::var("MMTK_THREADS")
-        .unwrap_or("0".to_string())
-        .parse::<usize>()
-        .unwrap_or(0);
+    let threads = mmtk_builder_default_parse_threads();
+    if threads > 0 {
+        builder.options.threads.set(threads);
+    }
 
     let mut mmtk_heap_min = match std::env::var("MMTK_HEAP_MIN") {
         Ok(min) => {
@@ -95,9 +107,6 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     // Between 1MiB and 500MiB
     builder.options.gc_trigger.set(mmtk_mode);
 
-    if mmtk_threads > 0 {
-        builder.options.threads.set(mmtk_threads);
-    }
 
     Box::into_raw(Box::new(builder))
 }
