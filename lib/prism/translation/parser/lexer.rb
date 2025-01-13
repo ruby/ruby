@@ -482,7 +482,8 @@ module Prism
                 type = :tIDENTIFIER
               end
             when :tXSTRING_BEG
-              if (next_token = lexed[index][0]) && next_token.type != :STRING_CONTENT && next_token.type != :STRING_END
+              if (next_token = lexed[index][0]) && !%i[STRING_CONTENT STRING_END EMBEXPR_BEGIN].include?(next_token.type)
+                # self.`()
                 type = :tBACK_REF2
               end
               quote_stack.push(value)
