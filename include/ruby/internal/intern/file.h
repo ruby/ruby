@@ -24,6 +24,9 @@
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
+#if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
+# include "ruby/backward.h"
+#endif
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
@@ -208,6 +211,9 @@ int rb_is_absolute_path(const char *path);
  */
 rb_off_t rb_file_size(VALUE file);
 
+#ifdef RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY
+RBIMPL_ATTR_DEPRECATED_INTERNAL_ONLY()
+#endif
 /**
  * If the PATH_SEPARATOR-separated list of directory names contains the name of
  * a world-writable directory, issue a warning  for it.  This may do nothing on
