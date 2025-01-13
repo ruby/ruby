@@ -753,13 +753,6 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
 }
 
 VALUE
-rb_func_proc_new(rb_block_call_func_t func, VALUE val)
-{
-    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
-    return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
-}
-
-VALUE
 rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
