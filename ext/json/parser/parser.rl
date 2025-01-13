@@ -1,7 +1,7 @@
 #include "ruby.h"
 #include "../fbuffer/fbuffer.h"
 
-static VALUE mJSON, mExt, cParser, eNestingError, Encoding_UTF_8;
+static VALUE mJSON, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_json_creatable_p, i_json_create, i_create_id,
@@ -372,17 +372,11 @@ static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 }
 
 typedef struct JSON_ParserStruct {
-    VALUE Vsource;
-    char *source;
-    long len;
-    char *memo;
     VALUE create_id;
     VALUE object_class;
     VALUE array_class;
     VALUE decimal_class;
     VALUE match_string;
-    FBuffer fbuffer;
-    int in_array;
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
@@ -391,16 +385,22 @@ typedef struct JSON_ParserStruct {
     bool freeze;
     bool create_additions;
     bool deprecated_create_additions;
-    rvalue_cache name_cache;
-    rvalue_stack *stack;
-    VALUE stack_handle;
 } JSON_Parser;
 
-#define GET_PARSER                          \
-    GET_PARSER_INIT;                        \
-    if (!json->Vsource) rb_raise(rb_eTypeError, "uninitialized instance")
+typedef struct JSON_ParserStateStruct {
+    JSON_Parser *json;
+    VALUE Vsource;
+    VALUE stack_handle;
+    char *source;
+    long len;
+    char *memo;
+    FBuffer fbuffer;
+    rvalue_stack *stack;
+    rvalue_cache name_cache;
+    int in_array;
+} JSON_ParserState;
 
-#define GET_PARSER_INIT                     \
+#define GET_PARSER                          \
     JSON_Parser *json;                      \
     TypedData_Get_Struct(self, JSON_Parser, &JSON_Parser_type, json)
 
@@ -408,12 +408,11 @@ typedef struct JSON_ParserStruct {
 #define EVIL 0x666
 
 static const rb_data_type_t JSON_Parser_type;
-static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *result);
-static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
-
+static char *JSON_parse_string(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_object(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+static char *JSON_parse_value(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
+static char *JSON_parse_number(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result);
+static char *JSON_parse_array(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting);
 
 #ifndef HAVE_STRNLEN
 static size_t strnlen(const char *s, size_t maxlen)
@@ -479,7 +478,7 @@ static void raise_parse_error(const char *format, const char *start)
     write data;
 
     action parse_value {
-        char *np = JSON_parse_value(json, fpc, pe, result, current_nesting);
+        char *np = JSON_parse_value(state, json, fpc, pe, result, current_nesting);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -492,7 +491,7 @@ static void raise_parse_error(const char *format, const char *start)
     action parse_name {
         char *np;
         json->parsing_name = true;
-        np = JSON_parse_string(json, fpc, pe, result);
+        np = JSON_parse_string(state, json, fpc, pe, result);
         json->parsing_name = false;
         if (np == NULL) { fhold; fbreak; } else {
             PUSH(*result);
@@ -512,9 +511,9 @@ static void raise_parse_error(const char *format, const char *start)
     ) @exit;
 }%%
 
-#define PUSH(result) rvalue_stack_push(json->stack, result, &json->stack_handle, &json->stack)
+#define PUSH(result) rvalue_stack_push(state->stack, result, &state->stack_handle, &state->stack)
 
-static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
+static char *JSON_parse_object(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
 
@@ -522,18 +521,18 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
 
-    long stack_head = json->stack->head;
+    long stack_head = state->stack->head;
 
     %% write init;
     %% write exec;
 
     if (cs >= JSON_object_first_final) {
-        long count = json->stack->head - stack_head;
+        long count = state->stack->head - stack_head;
 
         if (RB_UNLIKELY(json->object_class)) {
             VALUE object = rb_class_new_instance(0, 0, json->object_class);
             long index = 0;
-            VALUE *items = rvalue_stack_peek(json->stack, count);
+            VALUE *items = rvalue_stack_peek(state->stack, count);
             while (index < count) {
                 VALUE name = items[index++];
                 VALUE value = items[index++];
@@ -547,10 +546,10 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 #else
             hash = rb_hash_new();
 #endif
-            rb_hash_bulk_insert(count, rvalue_stack_peek(json->stack, count), hash);
+            rb_hash_bulk_insert(count, rvalue_stack_peek(state->stack, count), hash);
             *result = hash;
         }
-        rvalue_stack_pop(json->stack, count);
+        rvalue_stack_pop(state->stack, count);
 
         if (RB_UNLIKELY(json->create_additions)) {
             VALUE klassname;
@@ -605,7 +604,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         }
     }
     action parse_string {
-        char *np = JSON_parse_string(json, fpc, pe, result);
+        char *np = JSON_parse_string(state, json, fpc, pe, result);
         if (np == NULL) {
             fhold;
             fbreak;
@@ -625,7 +624,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
                 raise_parse_error("unexpected token at '%s'", p);
             }
         }
-        np = JSON_parse_number(json, fpc, pe, result);
+        np = JSON_parse_number(state, json, fpc, pe, result);
         if (np != NULL) {
             fexec np;
         }
@@ -634,15 +633,15 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_array {
         char *np;
-        json->in_array++;
-        np = JSON_parse_array(json, fpc, pe, result, current_nesting + 1);
-        json->in_array--;
+        state->in_array++;
+        np = JSON_parse_array(state, json, fpc, pe, result, current_nesting + 1);
+        state->in_array--;
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
     action parse_object {
         char *np;
-        np =  JSON_parse_object(json, fpc, pe, result, current_nesting + 1);
+        np =  JSON_parse_object(state, json, fpc, pe, result, current_nesting + 1);
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
@@ -661,7 +660,7 @@ main := ignore* (
         ) ignore* %*exit;
 }%%
 
-static char *JSON_parse_value(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
+static char *JSON_parse_value(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
 
@@ -712,16 +711,16 @@ static inline VALUE fast_parse_integer(char *p, char *pe)
     return LL2NUM(memo);
 }
 
-static char *JSON_decode_integer(JSON_Parser *json, char *p, VALUE *result)
+static char *JSON_decode_integer(JSON_ParserState *state, JSON_Parser *json, char *p, VALUE *result)
 {
-        long len = p - json->memo;
+        long len = p - state->memo;
         if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
-            *result = fast_parse_integer(json->memo, p);
+            *result = fast_parse_integer(state->memo, p);
         } else {
-            fbuffer_clear(&json->fbuffer);
-            fbuffer_append(&json->fbuffer, json->memo, len);
-            fbuffer_append_char(&json->fbuffer, '\0');
-            *result = rb_cstr2inum(FBUFFER_PTR(&json->fbuffer), 10);
+            fbuffer_clear(&state->fbuffer);
+            fbuffer_append(&state->fbuffer, state->memo, len);
+            fbuffer_append_char(&state->fbuffer, '\0');
+            *result = rb_cstr2inum(FBUFFER_PTR(&state->fbuffer), 10);
         }
         return p + 1;
 }
@@ -742,18 +741,18 @@ static char *JSON_decode_integer(JSON_Parser *json, char *p, VALUE *result)
               ) (^[0-9Ee.\-]? @exit ));
 }%%
 
-static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_number(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
     bool is_float = false;
 
     %% write init;
-    json->memo = p;
+    state->memo = p;
     %% write exec;
 
     if (cs >= JSON_float_first_final) {
         if (!is_float) {
-            return JSON_decode_integer(json, p, result);
+            return JSON_decode_integer(state, json, p, result);
         }
         VALUE mod = Qnil;
         ID method_id = 0;
@@ -785,16 +784,16 @@ static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *resu
             }
         }
 
-        long len = p - json->memo;
-        fbuffer_clear(&json->fbuffer);
-        fbuffer_append(&json->fbuffer, json->memo, len);
-        fbuffer_append_char(&json->fbuffer, '\0');
+        long len = p - state->memo;
+        fbuffer_clear(&state->fbuffer);
+        fbuffer_append(&state->fbuffer, state->memo, len);
+        fbuffer_append_char(&state->fbuffer, '\0');
 
         if (method_id) {
-            VALUE text = rb_str_new2(FBUFFER_PTR(&json->fbuffer));
+            VALUE text = rb_str_new2(FBUFFER_PTR(&state->fbuffer));
             *result = rb_funcallv(mod, method_id, 1, &text);
         } else {
-            *result = DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(&json->fbuffer), 1));
+            *result = DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(&state->fbuffer), 1));
         }
 
         return p + 1;
@@ -812,7 +811,7 @@ static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *resu
 
     action parse_value {
         VALUE v = Qnil;
-        char *np = JSON_parse_value(json, fpc, pe, &v, current_nesting);
+        char *np = JSON_parse_value(state, json, fpc, pe, &v, current_nesting);
         if (np == NULL) {
             fhold; fbreak;
         } else {
@@ -832,34 +831,34 @@ static char *JSON_parse_number(JSON_Parser *json, char *p, char *pe, VALUE *resu
           end_array @exit;
 }%%
 
-static char *JSON_parse_array(JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
+static char *JSON_parse_array(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result, int current_nesting)
 {
     int cs = EVIL;
 
     if (json->max_nesting && current_nesting > json->max_nesting) {
         rb_raise(eNestingError, "nesting of %d is too deep", current_nesting);
     }
-    long stack_head = json->stack->head;
+    long stack_head = state->stack->head;
 
     %% write init;
     %% write exec;
 
     if(cs >= JSON_array_first_final) {
-        long count = json->stack->head - stack_head;
+        long count = state->stack->head - stack_head;
 
         if (RB_UNLIKELY(json->array_class)) {
             VALUE array = rb_class_new_instance(0, 0, json->array_class);
-            VALUE *items = rvalue_stack_peek(json->stack, count);
+            VALUE *items = rvalue_stack_peek(state->stack, count);
             long index;
             for (index = 0; index < count; index++) {
                 rb_funcall(array, i_leftshift, 1, items[index]);
             }
             *result = array;
         } else {
-            VALUE array = rb_ary_new_from_values(count, rvalue_stack_peek(json->stack, count));
+            VALUE array = rb_ary_new_from_values(count, rvalue_stack_peek(state->stack, count));
             *result = array;
         }
-        rvalue_stack_pop(json->stack, count);
+        rvalue_stack_pop(state->stack, count);
 
         return p + 1;
     } else {
@@ -894,16 +893,16 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     return result;
 }
 
-static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
+static VALUE json_string_fastpath(JSON_ParserState *state, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
 
-    if (is_name && json->in_array) {
+    if (is_name && state->in_array) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
-            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+            cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
         } else {
-            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+            cached_key = rstring_cache_fetch(&state->name_cache, string, bufferSize);
         }
 
         if (RB_LIKELY(cached_key)) {
@@ -914,19 +913,19 @@ static VALUE json_string_fastpath(JSON_Parser *json, char *string, char *stringE
     return build_string(string, stringEnd, intern, symbolize);
 }
 
-static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
+static VALUE json_string_unescape(JSON_ParserState *state, char *string, char *stringEnd, bool is_name, bool intern, bool symbolize)
 {
     size_t bufferSize = stringEnd - string;
     char *p = string, *pe = string, *unescape, *bufferStart, *buffer;
     int unescape_len;
     char buf[4];
 
-    if (is_name && json->in_array) {
+    if (is_name && state->in_array) {
         VALUE cached_key;
         if (RB_UNLIKELY(symbolize)) {
-            cached_key = rsymbol_cache_fetch(&json->name_cache, string, bufferSize);
+            cached_key = rsymbol_cache_fetch(&state->name_cache, string, bufferSize);
         } else {
-            cached_key = rstring_cache_fetch(&json->name_cache, string, bufferSize);
+            cached_key = rstring_cache_fetch(&state->name_cache, string, bufferSize);
         }
 
         if (RB_LIKELY(cached_key)) {
@@ -1042,14 +1041,14 @@ static VALUE json_string_unescape(JSON_Parser *json, char *string, char *stringE
     write data;
 
     action parse_complex_string {
-        *result = json_string_unescape(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        *result = json_string_unescape(state, state->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         fexec p + 1;
         fhold;
         fbreak;
     }
 
     action parse_simple_string {
-        *result = json_string_fastpath(json, json->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
+        *result = json_string_fastpath(state, state->memo + 1, p, json->parsing_name, json->parsing_name || json-> freeze, json->parsing_name && json->symbolize_names);
         fexec p + 1;
         fhold;
         fbreak;
@@ -1080,13 +1079,13 @@ match_i(VALUE regexp, VALUE klass, VALUE memo)
     return ST_CONTINUE;
 }
 
-static char *JSON_parse_string(JSON_Parser *json, char *p, char *pe, VALUE *result)
+static char *JSON_parse_string(JSON_ParserState *state, JSON_Parser *json, char *p, char *pe, VALUE *result)
 {
     int cs = EVIL;
     VALUE match_string;
 
     %% write init;
-    json->memo = p;
+    state->memo = p;
     %% write exec;
 
     if (json->create_additions && RTEST(match_string = json->match_string)) {
@@ -1162,13 +1161,8 @@ static int configure_parser_i(VALUE key, VALUE val, VALUE data)
     return ST_CONTINUE;
 }
 
-static void parser_init(JSON_Parser *json, VALUE source, VALUE opts)
+static void parser_init(JSON_Parser *json, VALUE opts)
 {
-    if (json->Vsource) {
-        rb_raise(rb_eTypeError, "already initialized instance");
-    }
-
-    json->fbuffer.initial_length = FBUFFER_INITIAL_LENGTH_DEFAULT;
     json->max_nesting = 100;
 
     if (!NIL_P(opts)) {
@@ -1190,17 +1184,12 @@ static void parser_init(JSON_Parser *json, VALUE source, VALUE opts)
         }
 
     }
-    source = convert_encoding(StringValue(source));
-    StringValue(source);
-    json->len = RSTRING_LEN(source);
-    json->source = RSTRING_PTR(source);
-    json->Vsource = source;
 }
 
 /*
- * call-seq: new(source, opts => {})
+ * call-seq: new(opts => {})
  *
- * Creates a new JSON::Ext::Parser instance for the string _source_.
+ * Creates a new JSON::Ext::ParserConfig instance.
  *
  * It will be configured by the _opts_ hash. _opts_ can have the following
  * keys:
@@ -1229,13 +1218,11 @@ static void parser_init(JSON_Parser *json, VALUE source, VALUE opts)
  *    (Float) when parsing decimal numbers. This class must accept a single
  *    string argument in its constructor.
  */
-static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
+static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
 {
-    GET_PARSER_INIT;
+    GET_PARSER;
 
-    rb_check_arity(argc, 1, 2);
-
-    parser_init(json, argv[0], argc == 2 ? argv[1] : Qnil);
+    parser_init(json, opts);
     return self;
 }
 
@@ -1247,7 +1234,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
     include JSON_common;
 
     action parse_value {
-        char *np = JSON_parse_value(json, fpc, pe, &result, 0);
+        char *np = JSON_parse_value(state, json, fpc, pe, &result, 0);
         if (np == NULL) { fhold; fbreak; } else fexec np;
     }
 
@@ -1256,114 +1243,110 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
             ) ignore*;
 }%%
 
+static VALUE cParser_parse_safe(VALUE vstate)
+{
+    JSON_ParserState *state = (JSON_ParserState *)vstate;
+    VALUE result = Qnil;
+    char *p, *pe;
+    int cs = EVIL;
+    JSON_Parser *json = state->json;
+
+    %% write init;
+    p = state->source;
+    pe = p + state->len;
+    %% write exec;
+
+    if (state->stack_handle) {
+        rvalue_stack_eagerly_release(state->stack_handle);
+    }
+
+    if (cs >= JSON_first_final && p == pe) {
+        return result;
+    } else {
+        raise_parse_error("unexpected token at '%s'", p);
+        return Qnil;
+    }
+}
+
+static VALUE cParser_parse(JSON_Parser *json, VALUE Vsource)
+{
+    Vsource = convert_encoding(StringValue(Vsource));
+    StringValue(Vsource);
+
+    VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
+    rvalue_stack stack = {
+        .type = RVALUE_STACK_STACK_ALLOCATED,
+        .ptr = rvalue_stack_buffer,
+        .capa = RVALUE_STACK_INITIAL_CAPA,
+    };
+
+    JSON_ParserState _state = {
+        .json = json,
+        .len = RSTRING_LEN(Vsource),
+        .source = RSTRING_PTR(Vsource),
+        .Vsource = Vsource,
+        .stack = &stack,
+    };
+    JSON_ParserState *state = &_state;
+
+    char stack_buffer[FBUFFER_STACK_SIZE];
+    fbuffer_stack_init(&state->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
+
+    int interupted;
+    VALUE result = rb_protect(cParser_parse_safe, (VALUE)state, &interupted);
+
+    fbuffer_free(&state->fbuffer);
+    if (interupted) {
+        rb_jump_tag(interupted);
+    }
+
+    return result;
+}
+
 /*
- * call-seq: parse()
+ * call-seq: parse(source)
  *
  *  Parses the current JSON text _source_ and returns the complete data
  *  structure as a result.
  *  It raises JSON::ParserError if fail to parse.
  */
-static VALUE cParser_parse(VALUE self)
+static VALUE cParserConfig_parse(VALUE self, VALUE Vsource)
 {
-    char *p, *pe;
-    int cs = EVIL;
-    VALUE result = Qnil;
     GET_PARSER;
-
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    fbuffer_stack_init(&json->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
-
-    VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
-    rvalue_stack stack = {
-        .type = RVALUE_STACK_STACK_ALLOCATED,
-        .ptr = rvalue_stack_buffer,
-        .capa = RVALUE_STACK_INITIAL_CAPA,
-    };
-    json->stack = &stack;
-
-    %% write init;
-    p = json->source;
-    pe = p + json->len;
-    %% write exec;
-
-    if (json->stack_handle) {
-        rvalue_stack_eagerly_release(json->stack_handle);
-    }
-
-    if (cs >= JSON_first_final && p == pe) {
-        return result;
-    } else {
-        raise_parse_error("unexpected token at '%s'", p);
-        return Qnil;
-    }
+    return cParser_parse(json, Vsource);
 }
 
-static VALUE cParser_m_parse(VALUE klass, VALUE source, VALUE opts)
+static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 {
-    char *p, *pe;
-    int cs = EVIL;
-    VALUE result = Qnil;
+    Vsource = convert_encoding(StringValue(Vsource));
+    StringValue(Vsource);
 
     JSON_Parser _parser = {0};
     JSON_Parser *json = &_parser;
-    parser_init(json, source, opts);
+    parser_init(json, opts);
 
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    fbuffer_stack_init(&json->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
-
-    VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
-    rvalue_stack stack = {
-        .type = RVALUE_STACK_STACK_ALLOCATED,
-        .ptr = rvalue_stack_buffer,
-        .capa = RVALUE_STACK_INITIAL_CAPA,
-    };
-    json->stack = &stack;
-
-    %% write init;
-    p = json->source;
-    pe = p + json->len;
-    %% write exec;
-
-    if (json->stack_handle) {
-        rvalue_stack_eagerly_release(json->stack_handle);
-    }
-
-    if (cs >= JSON_first_final && p == pe) {
-        return result;
-    } else {
-        raise_parse_error("unexpected token at '%s'", p);
-        return Qnil;
-    }
+    return cParser_parse(json, Vsource);
 }
 
 static void JSON_mark(void *ptr)
 {
     JSON_Parser *json = ptr;
-    rb_gc_mark(json->Vsource);
     rb_gc_mark(json->create_id);
     rb_gc_mark(json->object_class);
     rb_gc_mark(json->array_class);
     rb_gc_mark(json->decimal_class);
     rb_gc_mark(json->match_string);
-    rb_gc_mark(json->stack_handle);
-
-    long index;
-    for (index = 0; index < json->name_cache.length; index++) {
-        rb_gc_mark(json->name_cache.entries[index]);
-    }
 }
 
 static void JSON_free(void *ptr)
 {
     JSON_Parser *json = ptr;
-    fbuffer_free(&json->fbuffer);
     ruby_xfree(json);
 }
 
 static size_t JSON_memsize(const void *ptr)
 {
-    const JSON_Parser *json = ptr;
-    return sizeof(*json) + FBUFFER_CAPA(&json->fbuffer);
+    return sizeof(JSON_Parser);
 }
 
 static const rb_data_type_t JSON_Parser_type = {
@@ -1376,21 +1359,7 @@ static const rb_data_type_t JSON_Parser_type = {
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
     JSON_Parser *json;
-    VALUE obj = TypedData_Make_Struct(klass, JSON_Parser, &JSON_Parser_type, json);
-    fbuffer_stack_init(&json->fbuffer, 0, NULL, 0);
-    return obj;
-}
-
-/*
- * call-seq: source()
- *
- * Returns a copy of the current _source_ string, that was used to construct
- * this Parser.
- */
-static VALUE cParser_source(VALUE self)
-{
-    GET_PARSER;
-    return rb_str_dup(json->Vsource);
+    return TypedData_Make_Struct(klass, JSON_Parser, &JSON_Parser_type, json);
 }
 
 void Init_parser(void)
@@ -1402,15 +1371,15 @@ void Init_parser(void)
 #undef rb_intern
     rb_require("json/common");
     mJSON = rb_define_module("JSON");
-    mExt = rb_define_module_under(mJSON, "Ext");
-    cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
+    VALUE mExt = rb_define_module_under(mJSON, "Ext");
+    VALUE cParserConfig = rb_define_class_under(mExt, "ParserConfig", rb_cObject);
     eNestingError = rb_path2class("JSON::NestingError");
     rb_gc_register_mark_object(eNestingError);
-    rb_define_alloc_func(cParser, cJSON_parser_s_allocate);
-    rb_define_method(cParser, "initialize", cParser_initialize, -1);
-    rb_define_method(cParser, "parse", cParser_parse, 0);
-    rb_define_method(cParser, "source", cParser_source, 0);
+    rb_define_alloc_func(cParserConfig, cJSON_parser_s_allocate);
+    rb_define_method(cParserConfig, "initialize", cParserConfig_initialize, 1);
+    rb_define_method(cParserConfig, "parse", cParserConfig_parse, 1);
 
+    VALUE cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     rb_define_singleton_method(cParser, "parse", cParser_m_parse, 2);
 
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));

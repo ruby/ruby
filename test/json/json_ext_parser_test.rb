@@ -6,11 +6,11 @@ class JSONExtParserTest < Test::Unit::TestCase
 
   def test_allocate
     parser = JSON::Ext::Parser.new("{}")
-    assert_raise(TypeError, '[ruby-core:35079]') do
-      parser.__send__(:initialize, "{}")
-    end
+    parser.__send__(:initialize, "{}")
+    assert_equal "{}", parser.source
+
     parser = JSON::Ext::Parser.allocate
-    assert_raise(TypeError, '[ruby-core:35079]') { parser.source }
+    assert_nil parser.source
   end
 
   def test_error_messages
