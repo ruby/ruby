@@ -3,6 +3,22 @@ describe :uri_parse, shared: true do
     @object.parse("http://www.example.com/").should be_kind_of(URI::HTTP)
   end
 
+  it "returns nil for an invalid URI when exception is false" do
+    @object.parse("https://www.example.com/\[\]", exception: false).should be_nil
+  end
+
+  it "raises an error for an invalid URI when exception is true" do
+    -> {
+      @object.parse("https://www.example.com/\[\]", exception: true)
+    }.should raise_error(URI::InvalidURIError)
+  end
+
+  it "raises an error for an invalid URI when exception is not provided" do
+    -> {
+      @object.parse("https://www.example.com/\[\]")
+    }.should raise_error(URI::InvalidURIError)
+  end
+
   it "populates the components of a parsed URI::HTTP, setting the port to 80 by default" do
     # general case
     URISpec.components(@object.parse("http://user:pass@example.com/path/?query=val&q2=val2#fragment")).should == {

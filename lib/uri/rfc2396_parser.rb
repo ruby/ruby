@@ -117,7 +117,7 @@ module URI
     attr_reader :regexp
 
     # Returns a split URI against +regexp[:ABS_URI]+.
-    def split(uri)
+    def split(uri, exception: true)
       case uri
       when ''
         # null uri
@@ -173,6 +173,8 @@ module URI
         # server        = [ [ userinfo "@" ] hostport ]
 
       else
+        return unless exception
+
         raise InvalidURIError, "bad URI (is not URI?): #{uri}"
       end
 
@@ -206,8 +208,11 @@ module URI
     #   p.parse("ldap://ldap.example.com/dc=example?user=john")
     #   #=> #<URI::LDAP ldap://ldap.example.com/dc=example?user=john>
     #
-    def parse(uri)
-      URI.for(*self.split(uri), self)
+    def parse(uri, exception: true)
+      scheme = self.split(uri, exception:)
+      return if scheme.nil?
+
+      URI.for(*scheme, self)
     end
 
     #

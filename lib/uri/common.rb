@@ -204,8 +204,8 @@ module URI
   # It's recommended to first ::escape string +uri+
   # if it may contain invalid URI characters.
   #
-  def self.parse(uri)
-    DEFAULT_PARSER.parse(uri)
+  def self.parse(uri, exception: true)
+    DEFAULT_PARSER.parse(uri, exception:)
   end
 
   # Merges the given URI strings +str+

@@ -74,7 +74,7 @@ module URI
       @regexp = default_regexp.each_value(&:freeze).freeze
     end
 
-    def split(uri) #:nodoc:
+    def split(uri, exception: true) #:nodoc:
       begin
         uri = uri.to_str
       rescue NoMethodError
@@ -127,12 +127,17 @@ module URI
           m["fragment"]
         ]
       else
+        return unless exception
+
         raise InvalidURIError, "bad URI (is not URI?): #{uri.inspect}"
       end
     end
 
-    def parse(uri) # :nodoc:
-      URI.for(*self.split(uri), self)
+    def parse(uri, exception: true) # :nodoc:
+      scheme = self.split(uri, exception:)
+      return if scheme.nil?
+
+      URI.for(*scheme, self)
     end
 
     def join(*uris) # :nodoc:
