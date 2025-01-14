@@ -517,8 +517,7 @@ ossl_pkey_check_public_key(const EVP_PKEY *pkey)
     if (EVP_PKEY_missing_parameters(pkey))
 	ossl_raise(ePKeyError, "parameters missing");
 
-    /* OpenSSL < 1.1.0 takes non-const pointer */
-    ptr = EVP_PKEY_get0((EVP_PKEY *)pkey);
+    ptr = EVP_PKEY_get0(pkey);
     switch (EVP_PKEY_base_id(pkey)) {
       case EVP_PKEY_RSA:
 	RSA_get0_key(ptr, &n, &e, NULL);
@@ -799,20 +798,9 @@ ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 	}
     }
     else {
-#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
 	if (!PEM_write_bio_PrivateKey_traditional(bio, pkey, enc, NULL, 0,
 						  ossl_pem_passwd_cb,
 						  (void *)pass)) {
-#else
-	char pem_str[80];
-	const char *aname;
-
-	EVP_PKEY_asn1_get0_info(NULL, NULL, NULL, NULL, &aname, pkey->ameth);
-	snprintf(pem_str, sizeof(pem_str), "%s PRIVATE KEY", aname);
-	if (!PEM_ASN1_write_bio((i2d_of_void *)i2d_PrivateKey, pem_str, bio,
-				pkey, enc, NULL, 0, ossl_pem_passwd_cb,
-				(void *)pass)) {
-#endif
 	    BIO_free(bio);
 	    ossl_raise(ePKeyError, "PEM_write_bio_PrivateKey_traditional");
 	}

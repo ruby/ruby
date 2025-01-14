@@ -1609,9 +1609,7 @@ void Init_ossl_ec(void)
     ID_hybrid = rb_intern("hybrid");
 
     rb_define_const(cEC, "NAMED_CURVE", INT2NUM(OPENSSL_EC_NAMED_CURVE));
-#if defined(OPENSSL_EC_EXPLICIT_CURVE)
     rb_define_const(cEC, "EXPLICIT_CURVE", INT2NUM(OPENSSL_EC_EXPLICIT_CURVE));
-#endif
 
     rb_define_singleton_method(cEC, "builtin_curves", ossl_s_builtin_curves, 0);
 

@@ -11,7 +11,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_generic_oid_inspect_x25519
-    omit "X25519 not supported" if openssl? && !openssl?(1, 1, 0)
     omit_on_fips
 
     # X25519 private key
@@ -136,7 +135,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_x25519
-    omit "X25519 not supported" if openssl? && !openssl?(1, 1, 0)
     omit_on_fips
 
     # Test vector from RFC 7748 Section 6.1

@@ -3,9 +3,7 @@
  * Copyright (C) 2007, 2017 Ruby/OpenSSL Project Authors
  */
 #include "ossl.h"
-#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
-# include <openssl/kdf.h>
-#endif
+#include <openssl/kdf.h>
 
 static VALUE mKDF, eKDF;
 
@@ -141,7 +139,6 @@ kdf_scrypt(int argc, VALUE *argv, VALUE self)
 }
 #endif
 
-#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
 /*
  * call-seq:
  *    KDF.hkdf(ikm, salt:, info:, length:, hash:) -> String
@@ -238,7 +235,6 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
 
     return str;
 }
-#endif
 
 void
 Init_ossl_kdf(void)
@@ -305,7 +301,5 @@ Init_ossl_kdf(void)
 #if defined(HAVE_EVP_PBE_SCRYPT)
     rb_define_module_function(mKDF, "scrypt", kdf_scrypt, -1);
 #endif
-#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
     rb_define_module_function(mKDF, "hkdf", kdf_hkdf, -1);
-#endif
 }

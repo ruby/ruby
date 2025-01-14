@@ -620,14 +620,7 @@ ossl_ts_resp_get_failure_info(VALUE self)
 {
     TS_RESP *resp;
     TS_STATUS_INFO *si;
-
-    /* The ASN1_BIT_STRING_get_bit changed from 1.0.0. to 1.1.0, making this
-     * const. */
-    #if defined(HAVE_TS_STATUS_INFO_GET0_FAILURE_INFO)
     const ASN1_BIT_STRING *fi;
-    #else
-    ASN1_BIT_STRING *fi;
-    #endif
 
     GetTSResponse(self, resp);
     si = TS_RESP_get_status_info(resp);

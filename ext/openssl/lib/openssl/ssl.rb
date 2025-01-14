@@ -51,8 +51,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         }
       end
 
-      if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
-           OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
+      if !OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL")
         DEFAULT_PARAMS.merge!(
           min_version: OpenSSL::SSL::TLS1_VERSION,
           ciphers: %w{

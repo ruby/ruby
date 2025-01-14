@@ -212,10 +212,6 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     GetX509Store(self, store);
     if (argc != 0)
         rb_warn("OpenSSL::X509::Store.new does not take any arguments");
-#if !defined(HAVE_OPAQUE_OPENSSL)
-    /* [Bug #405] [Bug #1678] [Bug #3000]; already fixed? */
-    store->ex_data.sk = NULL;
-#endif
     X509_STORE_set_verify_cb(store, x509store_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
@@ -332,11 +328,7 @@ ossl_x509store_set_time(VALUE self, VALUE time)
     X509_VERIFY_PARAM *param;
 
     GetX509Store(self, store);
-#ifdef HAVE_X509_STORE_GET0_PARAM
     param = X509_STORE_get0_param(store);
-#else
-    param = store->param;
-#endif
     X509_VERIFY_PARAM_set_time(param, NUM2LONG(rb_Integer(time)));
     return time;
 }

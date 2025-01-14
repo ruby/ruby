@@ -329,15 +329,12 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
   end
 
   def test_add_cert_duplicate
-    # Up until OpenSSL 1.1.0, X509_STORE_add_{cert,crl}() returned an error
-    # if the given certificate is already in the X509_STORE
-    return unless openssl? && !openssl?(1, 1, 0)
     ca1 = OpenSSL::X509::Name.parse_rfc2253("CN=Root CA")
     ca1_key = Fixtures.pkey("rsa-1")
     ca1_cert = issue_cert(ca1, ca1_key, 1, [], nil, nil)
     store = OpenSSL::X509::Store.new
     store.add_cert(ca1_cert)
-    assert_raise(OpenSSL::X509::StoreError){
+    assert_nothing_raised {
       store.add_cert(ca1_cert)  # add same certificate twice
     }
 
@@ -349,7 +346,7 @@ class OpenSSL::TestX509Store < OpenSSL::TestCase
     crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
                      ca1_cert, ca1_key, "sha256")
     store.add_crl(crl1)
-    assert_raise(OpenSSL::X509::StoreError){
+    assert_nothing_raised {
       store.add_crl(crl2) # add CRL issued by same CA twice.
     }
   end

@@ -85,30 +85,13 @@ ossl_sslctx_s_alloc(VALUE klass)
     VALUE obj;
 
     obj = TypedData_Wrap_Struct(klass, &ossl_sslctx_type, 0);
-#if OPENSSL_VERSION_NUMBER >= 0x10100000 || defined(LIBRESSL_VERSION_NUMBER)
     ctx = SSL_CTX_new(TLS_method());
-#else
-    ctx = SSL_CTX_new(SSLv23_method());
-#endif
     if (!ctx) {
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
-
-#if !defined(OPENSSL_NO_EC) && OPENSSL_VERSION_NUMBER < 0x10100000 && \
-    !defined(LIBRESSL_VERSION_NUMBER)
-    /* We use SSL_CTX_set1_curves_list() to specify the curve used in ECDH. It
-     * allows to specify multiple curve names and OpenSSL will select
-     * automatically from them. In OpenSSL 1.0.2, the automatic selection has to
-     * be enabled explicitly. OpenSSL 1.1.0 and LibreSSL 2.6.1 removed the knob
-     * and it is always enabled. To uniform the behavior, we enable the
-     * automatic selection also in 1.0.2. Users can still disable ECDH by
-     * removing ECDH cipher suites by SSLContext#ciphers=. */
-    if (!SSL_CTX_set_ecdh_auto(ctx, 1))
-	ossl_raise(eSSLError, "SSL_CTX_set_ecdh_auto");
-#endif
 
     return obj;
 }
@@ -162,40 +145,10 @@ ossl_sslctx_set_minmax_proto_version(VALUE self, VALUE min_v, VALUE max_v)
     min = parse_proto_version(min_v);
     max = parse_proto_version(max_v);
 
-#ifdef HAVE_SSL_CTX_SET_MIN_PROTO_VERSION
     if (!SSL_CTX_set_min_proto_version(ctx, min))
 	ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
     if (!SSL_CTX_set_max_proto_version(ctx, max))
 	ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
-#else
-    {
-	unsigned long sum = 0, opts = 0;
-	int i;
-	static const struct {
-	    int ver;
-	    unsigned long opts;
-	} options_map[] = {
-	    { SSL2_VERSION, SSL_OP_NO_SSLv2 },
-	    { SSL3_VERSION, SSL_OP_NO_SSLv3 },
-	    { TLS1_VERSION, SSL_OP_NO_TLSv1 },
-	    { TLS1_1_VERSION, SSL_OP_NO_TLSv1_1 },
-	    { TLS1_2_VERSION, SSL_OP_NO_TLSv1_2 },
-# if defined(TLS1_3_VERSION)
-	    { TLS1_3_VERSION, SSL_OP_NO_TLSv1_3 },
-# endif
-	};
-
-	for (i = 0; i < numberof(options_map); i++) {
-	    sum |= options_map[i].opts;
-            if ((min && min > options_map[i].ver) ||
-                (max && max < options_map[i].ver)) {
-		opts |= options_map[i].opts;
-            }
-	}
-	SSL_CTX_clear_options(ctx, sum);
-	SSL_CTX_set_options(ctx, opts);
-    }
-#endif
 
     return Qnil;
 }
@@ -335,11 +288,7 @@ ossl_ssl_verify_callback(int preverify_ok, X509_STORE_CTX *ctx)
 	}
         if (ret != Qtrue) {
             preverify_ok = 0;
-#if defined(X509_V_ERR_HOSTNAME_MISMATCH)
             X509_STORE_CTX_set_error(ctx, X509_V_ERR_HOSTNAME_MISMATCH);
-#else
-            X509_STORE_CTX_set_error(ctx, X509_V_ERR_CERT_REJECTED);
-#endif
         }
     }
 
@@ -361,11 +310,7 @@ ossl_call_session_get_cb(VALUE ary)
 }
 
 static SSL_SESSION *
-#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
 ossl_sslctx_session_get_cb(SSL *ssl, const unsigned char *buf, int len, int *copy)
-#else
-ossl_sslctx_session_get_cb(SSL *ssl, unsigned char *buf, int len, int *copy)
-#endif
 {
     VALUE ary, ssl_obj, ret_obj;
     SSL_SESSION *sess;
@@ -1203,12 +1148,7 @@ ossl_sslctx_get_security_level(VALUE self)
 
     GetSSLCTX(self, ctx);
 
-#if defined(HAVE_SSL_CTX_GET_SECURITY_LEVEL)
     return INT2NUM(SSL_CTX_get_security_level(ctx));
-#else
-    (void)ctx;
-    return INT2FIX(0);
-#endif
 }
 
 /*
@@ -1238,14 +1178,7 @@ ossl_sslctx_set_security_level(VALUE self, VALUE value)
     rb_check_frozen(self);
     GetSSLCTX(self, ctx);
 
-#if defined(HAVE_SSL_CTX_GET_SECURITY_LEVEL)
     SSL_CTX_set_security_level(ctx, NUM2INT(value));
-#else
-    (void)ctx;
-    if (NUM2INT(value) != 0)
-	ossl_raise(rb_eNotImpError, "setting security level to other than 0 is "
-		   "not supported in this version of OpenSSL");
-#endif
 
     return value;
 }
