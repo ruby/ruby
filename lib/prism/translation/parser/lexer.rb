@@ -825,6 +825,11 @@ module Prism
           quote == "/" || quote.start_with?("%r")
         end
 
+        # Regexp allow interpolation but are handled differently during unescaping
+        def regexp?(quote)
+          quote == "/" || quote.start_with?("%r")
+        end
+
         # Determine if the string is part of a %-style array.
         def percent_array?(quote)
           quote.start_with?("%w", "%W", "%i", "%I")

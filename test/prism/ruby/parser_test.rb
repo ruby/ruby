@@ -74,6 +74,7 @@ module Prism
 
       # Contains an escaped multibyte character. This is supposed to drop to backslash
       "seattlerb/regexp_escape_extended.txt",
+<<<<<<< HEAD
 
       # https://github.com/whitequark/parser/issues/1020
       # These contain consecutive \r characters, followed by \n. Prism only receives
@@ -82,12 +83,21 @@ module Prism
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
+=======
+>>>>>>> e1c75f304b (Better handle regexp in the parser translator)
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
       "unescaping.txt",
+<<<<<<< HEAD
+=======
+      "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
+      "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
+      "seattlerb/heredoc_with_only_carriage_returns.txt",
+      "seattlerb/pctW_lineno.txt",
+>>>>>>> e1c75f304b (Better handle regexp in the parser translator)
       "seattlerb/regexp_esc_C_slash.txt",
     ]
 
