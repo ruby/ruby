@@ -2,6 +2,16 @@
 require_relative "helper"
 module MMTk
   class TestConfiguration < TestCase
+    def test_MMTK_THREADS
+      assert_separately([{ "MMTK_THREADS" => "5" }], <<~RUBY)
+        assert_equal(5, GC.config[:mmtk_worker_count])
+      RUBY
+
+      assert_separately([{ "MMTK_THREADS" => "1" }], <<~RUBY)
+        assert_equal(1, GC.config[:mmtk_worker_count])
+      RUBY
+    end
+
     %w(MMTK_THREADS MMTK_HEAP_MIN MMTK_HEAP_MAX MMTK_HEAP_MODE MMTK_PLAN).each do |var|
       define_method(:"test_invalid_#{var}") do
         exit_code = assert_in_out_err(

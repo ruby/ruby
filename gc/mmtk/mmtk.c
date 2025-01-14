@@ -630,8 +630,11 @@ rb_gc_impl_stress_get(void *objspace_ptr)
 VALUE
 rb_gc_impl_config_get(void *objspace_ptr)
 {
-    // TODO
-    return rb_hash_new();
+    VALUE hash = rb_hash_new();
+
+    rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_worker_count")), RB_ULONG2NUM(mmtk_worker_count()));
+
+    return hash;
 }
 
 void

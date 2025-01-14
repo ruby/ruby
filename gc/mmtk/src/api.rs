@@ -328,6 +328,11 @@ pub extern "C" fn mmtk_last_heap_address() -> Address {
     memory_manager::last_heap_address()
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_worker_count() -> usize {
+    memory_manager::num_of_workers(mmtk())
+}
+
 // =============== Miscellaneous ===============
 
 #[no_mangle]
