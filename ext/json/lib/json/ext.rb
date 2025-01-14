@@ -11,6 +11,7 @@ module JSON
         def parse(...)
           new(...).parse
         end
+        alias_method :parse, :parse # Allow redefinition by extensions
       end
 
       def initialize(source, opts = nil)
