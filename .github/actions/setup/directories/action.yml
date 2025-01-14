@@ -140,8 +140,15 @@ runs:
       run: |
         sudo chmod -R go-w /usr/share
         chmod -v go-w $HOME $HOME/.config || :
-        SAVE_IFS="$IFS" IFS=:; set $PATH; dirs=() IFS="$SAVE_IFS"
-        for d do [ ! -d "$d" ] || dirs+=("$d"); done
+        declare -a dirs # -A is not supported by old bash, e.g. macos
+        SAVE_IFS="$IFS" IFS=:; set $PATH
+        for d do
+          while [ -d "$d" ]; do
+            case "$IFS${dirs[*]}$IFS" in *"$IFS$d$IFS"*) ;; *) dirs+=("$d");; esac
+            d="${d%/*}"
+          done
+        done
+        IFS="$SAVE_IFS"
         sudo chmod -v go-w "${dirs[@]}" || :
 
     - if: inputs.dummy-files == 'true'
