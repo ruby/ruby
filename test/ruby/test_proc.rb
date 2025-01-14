@@ -1391,6 +1391,8 @@ class TestProc < Test::Unit::TestCase
 
     pr = eval("proc{|"+"(_),"*30+"|}")
     assert_empty(pr.parameters.map{|_,n|n}.compact)
+
+    assert_equal([[:opt]], proc { it }.parameters)
   end
 
   def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
@@ -1439,6 +1441,9 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal([[:opt, :a]], lambda {|a|}.parameters(lambda: false))
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], lambda {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters(lambda: false))
+
+    assert_equal([[:req]], proc { it }.parameters(lambda: true))
+    assert_equal([[:opt]], lambda { it }.parameters(lambda: false))
   end
 
   def pm0() end
