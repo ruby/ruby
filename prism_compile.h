@@ -83,6 +83,12 @@ typedef struct {
     bool parsed;
 } pm_parse_result_t;
 
+#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
+#define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_DOT3 ((pm_constant_id_t)(idDot3 | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
+
 VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error);
 VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);
 VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath, VALUE *script_lines);

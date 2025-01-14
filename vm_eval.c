@@ -1692,11 +1692,23 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     iseq = parent;
     rb_encoding *encoding = rb_enc_get(src);
 
+#define FORWARDING_POSITIONALS_CHR '*'
+#define FORWARDING_POSITIONALS_STR "*"
+#define FORWARDING_KEYWORDS_CHR ':'
+#define FORWARDING_KEYWORDS_STR ":"
+#define FORWARDING_BLOCK_CHR '&'
+#define FORWARDING_BLOCK_STR "&"
+#define FORWARDING_ALL_CHR '.'
+#define FORWARDING_ALL_STR "."
+
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
         pm_options_scope_init(options_scope, locals_count);
+
+        uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             pm_string_t *scope_local = &options_scope->locals[local_index];
@@ -1729,10 +1741,23 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
                 RB_GC_GUARD(name_obj);
 
-                pm_string_owned_init(scope_local, (uint8_t *)name_dup, length);
+                pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
+            } else if (local == idMULT) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
+                pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
+            } else if (local == idPow) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
+                pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
+            } else if (local == idAnd) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
+                pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
+            } else if (local == idDot3) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
+                pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
             }
         }
 
+        pm_options_scope_forwarding_set(options_scope, forwarding);
         iseq = ISEQ_BODY(iseq)->parent_iseq;
 
         /* We need to GC guard the iseq because the code above malloc memory
@@ -1775,14 +1800,38 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             const pm_string_t *scope_local = &options_scope->locals[local_index];
-
             pm_constant_id_t constant_id = 0;
-            if (pm_string_length(scope_local) > 0) {
-                constant_id = pm_constant_pool_insert_constant(
-                        &result.parser.constant_pool, pm_string_source(scope_local),
-                        pm_string_length(scope_local));
-                st_insert(parent_scope->index_lookup_table, (st_data_t)constant_id, (st_data_t)local_index);
+
+            const uint8_t *source = pm_string_source(scope_local);
+            size_t length = pm_string_length(scope_local);
+
+            if (length > 0) {
+                if (length == 1) {
+                    switch (*source) {
+                      case FORWARDING_POSITIONALS_CHR:
+                        constant_id = PM_CONSTANT_MULT;
+                        break;
+                      case FORWARDING_KEYWORDS_CHR:
+                        constant_id = PM_CONSTANT_POW;
+                        break;
+                      case FORWARDING_BLOCK_CHR:
+                        constant_id = PM_CONSTANT_AND;
+                        break;
+                      case FORWARDING_ALL_CHR:
+                        constant_id = PM_CONSTANT_DOT3;
+                        break;
+                      default:
+                        constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                        break;
+                    }
+                }
+                else {
+                    constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                }
+
+                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
             }
+
             pm_constant_id_list_append(&parent_scope->locals, constant_id);
         }
 
@@ -1790,6 +1839,15 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         node = parent_scope;
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
+
+#undef FORWARDING_POSITIONALS_CHR
+#undef FORWARDING_POSITIONALS_STR
+#undef FORWARDING_KEYWORDS_CHR
+#undef FORWARDING_KEYWORDS_STR
+#undef FORWARDING_BLOCK_CHR
+#undef FORWARDING_BLOCK_STR
+#undef FORWARDING_ALL_CHR
+#undef FORWARDING_ALL_STR
 
     int error_state;
     iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0, &error_state);
