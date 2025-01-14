@@ -69,13 +69,15 @@ module Prism
 
       # https://github.com/whitequark/parser/issues/950
       "whitequark/dedenting_interpolating_heredoc_fake_line_continuation.txt",
+
+      # Contains an escaped multibyte character. This is supposed to drop to backslash
+      "seattlerb/regexp_escape_extended.txt",
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
       "unescaping.txt",
-      "seattlerb/bug190.txt",
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",

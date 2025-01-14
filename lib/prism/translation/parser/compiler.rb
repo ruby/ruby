@@ -1507,7 +1507,7 @@ module Prism
             elsif node.content.include?("\n")
               string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
             else
-              [builder.string_internal(token(node.content_loc))]
+              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
             end
 
           builder.regexp_compose(

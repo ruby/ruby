@@ -633,18 +633,34 @@ module Prism
         DELIMITER_SYMETRY = { "[" => "]", "(" => ")", "{" => "}", "<" => ">" }.freeze
         private_constant :DELIMITER_SYMETRY
 
+
+        # https://github.com/whitequark/parser/blob/v3.3.6.0/lib/parser/lexer-strings.rl#L14
+        REGEXP_META_CHARACTERS = ["\\", "$", "(", ")", "*", "+", ".", "<", ">", "?", "[", "]", "^", "{", "|", "}"]
+        private_constant :REGEXP_META_CHARACTERS
+
         # Apply Ruby string escaping rules
         def unescape_string(string, quote)
           # In single-quoted heredocs, everything is taken literally.
           return string if quote == "<<'"
 
-          # TODO: Implement regexp escaping
-          return string if quote == "/" || quote.start_with?("%r")
-
           # OPTIMIZATION: Assume that few strings need escaping to speed up the common case.
           return string unless string.include?("\\")
 
-          if interpolation?(quote)
+          # Enclosing character for the string. `"` for `"foo"`, `{` for `%w{foo}`, etc.
+          delimiter = quote[-1]
+
+          if regexp?(quote)
+            # Should be escaped handled to single-quoted heredocs. The only character that is
+            # allowed to be escaped is the delimiter, except when that also has special meaning
+            # in the regexp. Since all the symetry delimiters have special meaning, they don't need
+            # to be considered separately.
+            if REGEXP_META_CHARACTERS.include?(delimiter)
+              string
+            else
+              # There can never be an even amount of backslashes. It would be a syntax error.
+              string.gsub(/\\(#{Regexp.escape(delimiter)})/, '\1')
+            end
+          elsif interpolation?(quote)
             # Appending individual escape sequences may force the string out of its intended
             # encoding. Start out with binary and force it back later.
             result = "".b
@@ -690,12 +706,6 @@ module Prism
 
             result
           else
-            if quote == "'"
-              delimiter = "'"
-            else
-              delimiter = quote[2]
-            end
-
             delimiters = Regexp.escape("#{delimiter}#{DELIMITER_SYMETRY[delimiter]}")
             string.gsub(/\\([\\#{delimiters}])/, '\1')
           end
@@ -704,6 +714,11 @@ module Prism
         # Determine if characters preceeded by a backslash should be escaped or not
         def interpolation?(quote)
           quote != "'" && !quote.start_with?("%q", "%w", "%i")
+        end
+
+        # Regexp allow interpolation but are handled differently during unescaping
+        def regexp?(quote)
+          quote == "/" || quote.start_with?("%r")
         end
 
         # Determine if the string is part of a %-style array.
