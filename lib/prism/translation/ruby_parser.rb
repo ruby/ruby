@@ -1559,7 +1559,7 @@ module Prism
           else
             parameters =
               case block.parameters
-              when nil, NumberedParametersNode
+              when nil, ItParametersNode, NumberedParametersNode
                 0
               else
                 visit(block.parameters)
