@@ -9,6 +9,6 @@ $CPPFLAGS << " -DBUILDING_MODULAR_GC"
 
 append_cflags("-fPIC")
 
-def create_gc_makefile(name)
-  create_makefile("librubygc.#{name}")
+def create_gc_makefile(name, &block)
+  create_makefile("librubygc.#{name}", &block)
 end
