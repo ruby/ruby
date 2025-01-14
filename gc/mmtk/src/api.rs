@@ -77,6 +77,20 @@ fn mmtk_builder_default_parse_heap_max() -> usize {
     size
 }
 
+fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCTriggerSelector {
+    let heap_mode_str = std::env::var("MMTK_HEAP_MODE")
+        .unwrap_or("dynamic".to_string());
+
+    match heap_mode_str.as_str() {
+        "fixed" => GCTriggerSelector::FixedHeapSize(heap_max),
+        "dynamic" => GCTriggerSelector::DynamicHeapSize(heap_min, heap_max),
+        _ => {
+            eprintln!("[FATAL] Invalid MMTK_HEAP_MODE {}", heap_mode_str);
+            std::process::exit(1);
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
@@ -96,10 +110,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
         std::process::exit(1);
     }
 
-    let mmtk_mode = match std::env::var("MMTK_HEAP_MODE") {
-        Ok(mode) if (mode == "fixed") => GCTriggerSelector::FixedHeapSize(heap_max),
-        Ok(_) | Err(_) => GCTriggerSelector::DynamicHeapSize(heap_min, heap_max)
-    };
+    let heap_mode = mmtk_builder_default_parse_heap_mode(heap_min, heap_max);
 
     // Parse the env var, if it's not found set the plan name to MarkSweep
     let plan_name = std::env::var("MMTK_PLAN")
@@ -111,9 +122,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 
     builder.options.plan.set(plan_selector);
 
-    // Between 1MiB and 500MiB
-    builder.options.gc_trigger.set(mmtk_mode);
-
+    builder.options.gc_trigger.set(heap_mode);
 
     Box::into_raw(Box::new(builder))
 }
