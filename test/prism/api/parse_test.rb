@@ -140,6 +140,24 @@ module Prism
       end
     end
 
+    def test_scopes
+      assert_kind_of Prism::CallNode, Prism.parse_statement("foo")
+      assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [[:foo]])
+      assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [Prism.scope(locals: [:foo])])
+
+      assert Prism.parse_failure?("foo(*)")
+      assert Prism.parse_success?("foo(*)", scopes: [Prism.scope(forwarding: [:*])])
+
+      assert Prism.parse_failure?("foo(**)")
+      assert Prism.parse_success?("foo(**)", scopes: [Prism.scope(forwarding: [:**])])
+
+      assert Prism.parse_failure?("foo(&)")
+      assert Prism.parse_success?("foo(&)", scopes: [Prism.scope(forwarding: [:&])])
+
+      assert Prism.parse_failure?("foo(...)")
+      assert Prism.parse_success?("foo(...)", scopes: [Prism.scope(forwarding: [:"..."])])
+    end
+
     private
 
     def find_source_file_node(program)

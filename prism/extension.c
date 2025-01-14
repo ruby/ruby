@@ -24,6 +24,7 @@ VALUE rb_cPrismParseResult;
 VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
 VALUE rb_cPrismStringQuery;
+VALUE rb_cPrismScope;
 
 VALUE rb_cPrismDebugEncoding;
 
@@ -38,6 +39,10 @@ ID rb_id_option_partial_script;
 ID rb_id_option_scopes;
 ID rb_id_option_version;
 ID rb_id_source_for;
+ID rb_id_forwarding_positionals;
+ID rb_id_forwarding_keywords;
+ID rb_id_forwarding_block;
+ID rb_id_forwarding_all;
 
 /******************************************************************************/
 /* IO of Ruby code                                                            */
@@ -95,14 +100,53 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
     for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
         VALUE scope = rb_ary_entry(scopes, scope_index);
 
-        // Check that the scope is an array. If it's not, then raise a type
-        // error.
-        if (!RB_TYPE_P(scope, T_ARRAY)) {
-            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array)", rb_obj_class(scope));
+        // The scope can be either an array or it can be a Prism::Scope object.
+        // Parse out the correct values here from either.
+        VALUE locals;
+        uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
+
+        if (RB_TYPE_P(scope, T_ARRAY)) {
+            locals = scope;
+        } else if (rb_obj_is_kind_of(scope, rb_cPrismScope)) {
+            locals = rb_ivar_get(scope, rb_intern("@locals"));
+            if (!RB_TYPE_P(locals, T_ARRAY)) {
+                rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array)", rb_obj_class(locals));
+            }
+
+            VALUE names = rb_ivar_get(scope, rb_intern("@forwarding"));
+            if (!RB_TYPE_P(names, T_ARRAY)) {
+                rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array)", rb_obj_class(names));
+            }
+
+            size_t names_count = RARRAY_LEN(names);
+            for (size_t name_index = 0; name_index < names_count; name_index++) {
+                VALUE name = rb_ary_entry(names, name_index);
+
+                // Check that the name is a symbol. If it's not, then raise
+                // a type error.
+                if (!RB_TYPE_P(name, T_SYMBOL)) {
+                    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Symbol)", rb_obj_class(name));
+                }
+
+                ID id = SYM2ID(name);
+                if (id == rb_id_forwarding_positionals) {
+                    forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
+                } else if (id == rb_id_forwarding_keywords) {
+                    forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
+                } else if (id == rb_id_forwarding_block) {
+                    forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
+                } else if (id == rb_id_forwarding_all) {
+                    forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
+                } else {
+                    rb_raise(rb_eArgError, "invalid forwarding value: %" PRIsVALUE, name);
+                }
+            }
+        } else {
+            rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected Array or Prism::Scope)", rb_obj_class(scope));
         }
 
         // Initialize the scope array.
-        size_t locals_count = RARRAY_LEN(scope);
+        size_t locals_count = RARRAY_LEN(locals);
         pm_options_scope_t *options_scope = &options->scopes[scope_index];
         if (!pm_options_scope_init(options_scope, locals_count)) {
             rb_raise(rb_eNoMemError, "failed to allocate memory");
@@ -110,7 +154,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
         // Iterate over the locals and add them to the scope.
         for (size_t local_index = 0; local_index < locals_count; local_index++) {
-            VALUE local = rb_ary_entry(scope, local_index);
+            VALUE local = rb_ary_entry(locals, local_index);
 
             // Check that the local is a symbol. If it's not, then raise a
             // type error.
@@ -123,6 +167,9 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
             const char *name = rb_id2name(SYM2ID(local));
             pm_string_constant_init(scope_local, name, strlen(name));
         }
+
+        // Now set the forwarding options.
+        pm_options_scope_forwarding_set(options_scope, forwarding);
     }
 }
 
@@ -1302,6 +1349,7 @@ Init_prism(void) {
     rb_cPrismLexResult = rb_define_class_under(rb_cPrism, "LexResult", rb_cPrismResult);
     rb_cPrismParseLexResult = rb_define_class_under(rb_cPrism, "ParseLexResult", rb_cPrismResult);
     rb_cPrismStringQuery = rb_define_class_under(rb_cPrism, "StringQuery", rb_cObject);
+    rb_cPrismScope = rb_define_class_under(rb_cPrism, "Scope", rb_cObject);
 
     // Intern all of the IDs eagerly that we support so that we don't have to do
     // it every time we parse.
@@ -1316,6 +1364,10 @@ Init_prism(void) {
     rb_id_option_scopes = rb_intern_const("scopes");
     rb_id_option_version = rb_intern_const("version");
     rb_id_source_for = rb_intern("for");
+    rb_id_forwarding_positionals = rb_intern("*");
+    rb_id_forwarding_keywords = rb_intern("**");
+    rb_id_forwarding_block = rb_intern("&");
+    rb_id_forwarding_all = rb_intern("...");
 
     /**
      * The version of the prism library.

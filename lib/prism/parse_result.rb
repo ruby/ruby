@@ -879,4 +879,32 @@ module Prism
       freeze
     end
   end
+
+  # This object is passed to the various Prism.* methods that accept the
+  # `scopes` option as an element of the list. It defines both the local
+  # variables visible at that scope as well as the forwarding parameters
+  # available at that scope.
+  class Scope
+    # The list of local variables that are defined in this scope. This should be
+    # defined as an array of symbols.
+    attr_reader :locals
+
+    # The list of local variables that are forwarded to the next scope. This
+    # should by defined as an array of symbols containing the specific values of
+    # :*, :**, :&, or :"...".
+    attr_reader :forwarding
+
+    # Create a new scope object with the given locals and forwarding.
+    def initialize(locals, forwarding)
+      @locals = locals
+      @forwarding = forwarding
+    end
+  end
+
+  # Create a new scope with the given locals and forwarding options that is
+  # suitable for passing into one of the Prism.* methods that accepts the
+  # `scopes` option.
+  def self.scope(locals: [], forwarding: [])
+    Scope.new(locals, forwarding)
+  end
 end

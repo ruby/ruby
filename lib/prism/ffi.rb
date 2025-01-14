@@ -478,10 +478,35 @@ module Prism
         values << scopes.length
 
         scopes.each do |scope|
-          template << "L"
-          values << scope.length
+          locals = nil
+          forwarding = 0
 
-          scope.each do |local|
+          case scope
+          when Array
+            locals = scope
+          when Scope
+            locals = scope.locals
+
+            scope.forwarding.each do |forward|
+              case forward
+              when :*     then forwarding |= 0x1
+              when :**    then forwarding |= 0x2
+              when :&     then forwarding |= 0x4
+              when :"..." then forwarding |= 0x8
+              else raise ArgumentError, "invalid forwarding value: #{forward}"
+              end
+            end
+          else
+            raise TypeError, "wrong argument type #{scope.class.inspect} (expected Array or Prism::Scope)"
+          end
+
+          template << "L"
+          values << locals.length
+
+          template << "C"
+          values << forwarding
+
+          locals.each do |local|
             name = local.name
             template << "L"
             values << name.bytesize
