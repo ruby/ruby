@@ -1,0 +1,118 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    diff-lcs (1.5.1)
+    kramdown (2.5.1)
+      rexml (>= 3.3.9)
+    kramdown-parser-gfm (1.1.0)
+      kramdown (~> 2.0)
+    mini_portile2 (2.8.8)
+    mustache (1.1.1)
+    nokogiri (1.18.1)
+      mini_portile2 (~> 2.8.2)
+      racc (~> 1.4)
+    nokogiri (1.18.1-aarch64-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.1-arm-linux-gnu)
+      racc (~> 1.4)
+    nokogiri (1.18.1-arm64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.1-java)
+      racc (~> 1.4)
+    nokogiri (1.18.1-x64-mingw-ucrt)
+      racc (~> 1.4)
+    nokogiri (1.18.1-x86_64-darwin)
+      racc (~> 1.4)
+    nokogiri (1.18.1-x86_64-linux-gnu)
+      racc (~> 1.4)
+    parallel (1.24.0)
+    parallel_tests (4.7.2)
+      parallel
+    power_assert (2.0.3)
+    racc (1.8.1)
+    racc (1.8.1-java)
+    rake (13.2.1)
+    rb_sys (0.9.91)
+    rexml (3.4.0)
+    ronn-ng (0.10.1)
+      kramdown (~> 2, >= 2.1)
+      kramdown-parser-gfm (~> 1, >= 1.0.1)
+      mustache (~> 1)
+      nokogiri (~> 1, >= 1.14.3)
+    rspec (3.13.0)
+      rspec-core (~> 3.13.0)
+      rspec-expectations (~> 3.13.0)
+      rspec-mocks (~> 3.13.0)
+    rspec-core (3.13.0)
+      rspec-support (~> 3.13.0)
+    rspec-expectations (3.13.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-mocks (3.13.0)
+      diff-lcs (>= 1.2.0, < 2.0)
+      rspec-support (~> 3.13.0)
+    rspec-support (3.13.1)
+    test-unit (3.6.2)
+      power_assert
+    turbo_tests (2.2.3)
+      parallel_tests (>= 3.3.0, < 5)
+      rspec (>= 3.10)
+
+PLATFORMS
+  aarch64-darwin
+  aarch64-linux
+  arm-linux
+  arm64-darwin
+  java
+  ruby
+  universal-java
+  x64-mingw-ucrt
+  x86-linux
+  x86_64-darwin
+  x86_64-linux
+
+DEPENDENCIES
+  parallel (~> 1.19)
+  parallel_tests (~> 4.7)
+  rake (~> 13.1)
+  rb_sys
+  ronn-ng (~> 0.10.1)
+  rspec-core (~> 3.12)
+  rspec-expectations (~> 3.12)
+  rspec-mocks (~> 3.12)
+  test-unit (~> 3.0)
+  turbo_tests (~> 2.2.3)
+
+CHECKSUMS
+  diff-lcs (1.5.1) sha256=273223dfb40685548436d32b4733aa67351769c7dea621da7d9dd4813e63ddfe
+  kramdown (2.5.1) sha256=87bbb6abd9d3cebe4fc1f33e367c392b4500e6f8fa19dd61c0972cf4afe7368c
+  kramdown-parser-gfm (1.1.0) sha256=fb39745516427d2988543bf01fc4cf0ab1149476382393e0e9c48592f6581729
+  mini_portile2 (2.8.8) sha256=8e47136cdac04ce81750bb6c09733b37895bf06962554e4b4056d78168d70a75
+  mustache (1.1.1) sha256=90891fdd50b53919ca334c8c1031eada1215e78d226d5795e523d6123a2717d0
+  nokogiri (1.18.1) sha256=df18be7e96c34736b6abfdeda80c6e845134fb9afe2fe5d4fbc1cf1f89c68475
+  nokogiri (1.18.1-aarch64-linux-gnu) sha256=35837013800e34342fcbaca305f8c49231f6bd4f779bfa23fe7b4686ae82d5b8
+  nokogiri (1.18.1-arm-linux-gnu) sha256=3b873fd6b0cd1ad7c77e87af701075bdfd14c9a6b2f2965c5e00ed29a5627a37
+  nokogiri (1.18.1-arm64-darwin) sha256=d75193f284c899d225943a8944479faedd995a7573ddd5c8308ffbdf2ec55204
+  nokogiri (1.18.1-java) sha256=e0e19b340f92d09b2b731e22d68895b2062d6555188aff370b05617516d3a781
+  nokogiri (1.18.1-x64-mingw-ucrt) sha256=50d81e905a60dff706b99c980abefedaf1c3d2c434a3b49afaf1b69b80f7f5b4
+  nokogiri (1.18.1-x86_64-darwin) sha256=d94e3aa6483577495fc8969d6b4b5c075840ce6b1ab09636a6d4177ad171051d
+  nokogiri (1.18.1-x86_64-linux-gnu) sha256=e516cf16ccde67ed4cc595a2621ca5ddd42562ecb24928914b0045a20a41620e
+  parallel (1.24.0) sha256=5bf38efb9b37865f8e93d7a762727f8c5fc5deb19949f4040c76481d5eee9397
+  parallel_tests (4.7.2) sha256=d6b3a46d3c36f5167716bba38e571d813ae7c754e9b096b2daa41095e70a2612
+  power_assert (2.0.3) sha256=cd5e13c267370427c9804ce6a57925d6030613e341cb48e02eec1f3c772d4cf8
+  racc (1.8.1) sha256=4a7f6929691dbec8b5209a0b373bc2614882b55fc5d2e447a21aaa691303d62f
+  racc (1.8.1-java) sha256=54f2e6d1e1b91c154013277d986f52a90e5ececbe91465d29172e49342732b98
+  rake (13.2.1) sha256=46cb38dae65d7d74b6020a4ac9d48afed8eb8149c040eccf0523bec91907059d
+  rb_sys (0.9.91) sha256=8c6ad8f97fd86f80530e942f1a904c229a510ca372c6b92dc05270a84e51ecda
+  rexml (3.4.0) sha256=efbea1efba7fa151158e0ee1e643525834da2d8eb4cf744aa68f6480bc9804b2
+  ronn-ng (0.10.1) sha256=4eeb0185c0fbfa889efed923b5b50e949cd869e7d82ac74138acd0c9c7165ec0
+  rspec (3.13.0) sha256=d490914ac1d5a5a64a0e1400c1d54ddd2a501324d703b8cfe83f458337bab993
+  rspec-core (3.13.0) sha256=557792b4e88da883d580342b263d9652b6a10a12d5bda9ef967b01a48f15454c
+  rspec-expectations (3.13.0) sha256=621d48c62262f955421eaa418130744760802cad47e781df70dba4d9f897102e
+  rspec-mocks (3.13.0) sha256=735a891215758d77cdb5f4721fffc21078793959d1f0ee4a961874311d9b7f66
+  rspec-support (3.13.1) sha256=48877d4f15b772b7538f3693c22225f2eda490ba65a0515c4e7cf6f2f17de70f
+  test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
+  turbo_tests (2.2.3) sha256=c1a8763361a019c3ff68e8a47c5e1acb32c1e7668f9d4a4e08416ca4786ea8a0
+
+BUNDLED WITH
+   2.7.0.dev
