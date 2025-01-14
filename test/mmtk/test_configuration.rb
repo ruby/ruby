@@ -14,5 +14,25 @@ module MMTk
         assert_equal(1, exit_code.exitstatus)
       end
     end
+
+    def test_MMTK_HEAP_MIN_greater_than_or_equal_to_MMTK_HEAP_MAX
+      exit_code = assert_in_out_err(
+        [{ "MMTK_HEAP_MIN" => "100MiB", "MMTK_HEAP_MAX" => "10MiB" }, "--"],
+        "",
+        [],
+        ["[FATAL] MMTK_HEAP_MIN(104857600) >= MMTK_HEAP_MAX(10485760)"]
+      )
+
+      assert_equal(1, exit_code.exitstatus)
+
+      exit_code = assert_in_out_err(
+        [{ "MMTK_HEAP_MIN" => "10MiB", "MMTK_HEAP_MAX" => "10MiB" }, "--"],
+        "",
+        [],
+        ["[FATAL] MMTK_HEAP_MIN(10485760) >= MMTK_HEAP_MAX(10485760)"]
+      )
+
+      assert_equal(1, exit_code.exitstatus)
+    end
   end
 end
