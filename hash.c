@@ -6898,14 +6898,6 @@ static const rb_data_type_t env_data_type = {
  *  - #dig(key, *identifiers).
  *  - #values_at(*keys).
  *
- *  Examples:
- *
- *    h = {foo: 0, bar: 1}
- *    h[:nosuch]                       # => nil
- *    h.assoc(:nosuch)                 # => nil
- *    h.dig(:nosuch)                   # => nil
- *    h.values_at(:bar, :nosuch, :foo) # => [1, nil, 0]
- *
  *  You can override these behaviors for #[], #dig, and #values_at (but not #assoc);
  *  see {Hash Default}[rdoc-ref:Hash@Hash+Default].
  *
@@ -6915,12 +6907,6 @@ static const rb_data_type_t env_data_type = {
  *
  *  - #fetch(key).
  *  - #fetch_values(*keys).
- *
- *  Examples:
- *
- *    h = {foo: 0, bar: 1}
- *    h.fetch(:baz)              # Raises KeyError 'key not found: :baz'
- *    h.fetch_values(:bar, :baz) # Raises KeyError 'key not found: :baz'
  *
  *  You can override these behaviors;
  *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]
@@ -6953,62 +6939,22 @@ static const rb_data_type_t env_data_type = {
  *  - The value of #default (which may be any object, including +nil+)
  *    will be returned for a not-found key.
  *
- *  Examples:
- *
- *    h = {foo: 0, bar: 1}
- *    h.default_proc # => nil
- *    h.default      # => nil
- *    h[:baz]        # => nil
- *
- *  You can set the default value with method #default=:
- *
- *    h.default = false
- *    h[:baz]      # => false
- *
- *  Or when the hash is created with Hash.new and option +default_value+:
- *
- *    h = Hash.new(false) # => {}
- *    h[:foo]             # => false
+ *  You can set the default value when the hash is created with Hash.new and option +default_value+,
+ *  or later with method #default=.
  *
  *  Note: although the value of #default may be any object,
- *  it may not be a good idea to use a mutable object:
- *
- *    h = Hash.new([0, 1, 2])
- *    h[:baz] # => [0, 1, 2]
- *    h[:baz].reverse!
- *    h[:baz] # => [2, 1, 0]
+ *  it may not be a good idea to use a mutable object.
  *
  *  ===== Per-Key Defaults
  *
  *  You can define a per-key default for a hash;
- *  that is, a Proc that will return a value based on the key itself:
+ *  that is, a Proc that will return a value based on the key itself.
  *
- *  - The value of #default_proc must be a proc.
- *  - The value of #default is +nil+ (always true when #default_proc is a proc).
+ *  You can set the default proc when the hash is created with Hash.new and a block,
+ *  or later with method #default_proc=.
  *
- *  You can set the default proc with method #default_proc=:
- *
- *    h = {foo: 0, bar: 1}
- *    h.default_proc = proc {|hash, key| key.to_s.reverse }
- *    h[:baz] # => "zab"
- *
- *  Or when the hash is created with Hash.new and a block:
- *
- *    h = Hash.new {|hash, key| key.to_s.upcase }
- *    h[:baz] # => "BAZ"
- *
- *  In either case, the proc should accept two arguments:
- *
- *  - +hash+: the hash +self+.
- *  - +key+: the key to be handled.
- *
- *  Note that the proc can modify +self+:
- *
- *    h = {foo: 0, bar: 1} # => {:foo=>0, :bar=>1}
- *    h.default_proc = proc {|hash, key| hash.transform_keys! {|k| k.to_s } }
- *    h[:baz]              # => {"foo"=>0, "bar"=>1}
- *
- *  Modifying +self+ in this way is not thread-safe;
+ *  Note that the proc can modify +self+,
+ *  but modifying +self+ in this way is not thread-safe;
  *  multiple threads can concurrently call into the default proc
  *  for the same key.
  *
@@ -7018,24 +6964,9 @@ static const rb_data_type_t env_data_type = {
  *  that has effect only for a single method call
  *  (and not for any subsequent calls):
  *
- *  - #fetch(key).
- *  - #fetch_values(*keys).
- *
- *  For method #fetch, you can specify an any-key default:
- *
- *    h = {foo: 0, bar: 1}
- *    h.fetch(:nosuch, false) # => false
- *    h.fetch(:nosuch)        # Raises KeyError.
- *
- *  For either method, you can specify a per-key default via a block:
- *
- *    h.fetch(:nosuch) {|key| "No key #{key}"}
- *    # => "No key nosuch"
- *    h.fetch(:nosuch)        # Raises KeyError.
- *
- *    h.fetch_values(:bar, :nosuch, :foo) {|key| "No key #{key}"}
- *    # => [1, "No key nosuch", 0]
- *    h.fetch_values(:bar, :nosuch, :foo) # Raises KeyError.
+ *  - For method #fetch, you can specify an any-key default:
+ *  - For either method #fetch or method #fetch_values,
+ *    you can specify a per-key default via a block.
  *
  *  === What's Here
  *
