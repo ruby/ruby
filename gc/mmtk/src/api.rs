@@ -91,6 +91,21 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
     }
 }
 
+fn mmtk_builder_default_parse_plan() -> PlanSelector {
+    let plan_str = std::env::var("MMTK_PLAN")
+        .unwrap_or("MarkSweep".to_string());
+
+    match plan_str.as_str() {
+        "NoGC" => PlanSelector::NoGC,
+        "MarkSweep" => PlanSelector::MarkSweep,
+        "Immix" => PlanSelector::Immix,
+        _ => {
+            eprintln!("[FATAL] Invalid MMTK_PLAN {}", plan_str);
+            std::process::exit(1);
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
@@ -110,19 +125,9 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
         std::process::exit(1);
     }
 
-    let heap_mode = mmtk_builder_default_parse_heap_mode(heap_min, heap_max);
+    builder.options.gc_trigger.set(mmtk_builder_default_parse_heap_mode(heap_min, heap_max));
 
-    // Parse the env var, if it's not found set the plan name to MarkSweep
-    let plan_name = std::env::var("MMTK_PLAN")
-        .unwrap_or(String::from("MarkSweep"));
-
-    // Parse the plan name into a valid MMTK Plan, if the name is not a valid plan use MarkSweep
-    let plan_selector = plan_name.parse::<PlanSelector>()
-        .unwrap_or("MarkSweep".parse::<PlanSelector>().unwrap());
-
-    builder.options.plan.set(plan_selector);
-
-    builder.options.gc_trigger.set(heap_mode);
+    builder.options.plan.set(mmtk_builder_default_parse_plan());
 
     Box::into_raw(Box::new(builder))
 }
