@@ -79,7 +79,7 @@ module Bundler
 
         if @definition.setup_domain!(options)
           ensure_specs_are_compatible!
-          Bundler.load_plugins(@definition)
+          load_plugins
         end
         install(options)
 
@@ -207,6 +207,20 @@ module Bundler
       end
 
       Bundler.settings.processor_count
+    end
+
+    def load_plugins
+      Gem.load_plugins
+
+      requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
+      path_plugin_files = requested_path_gems.flat_map do |spec|
+        spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
+      end
+      Gem.load_plugin_files(path_plugin_files)
+      Gem.load_env_plugins
     end
 
     def ensure_specs_are_compatible!

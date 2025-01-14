@@ -431,6 +431,22 @@ RSpec.describe "Bundler.require" do
     expect(out).to eq("WIN")
   end
 
+  it "does not load plugins" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    create_file "plugins/rubygems_plugin.rb", "puts 'FAIL'"
+
+    run <<~R, env: { "RUBYLIB" => rubylib.unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR) }
+      Bundler.require
+      puts "WIN"
+    R
+
+    expect(out).to eq("WIN")
+  end
+
   it "does not extract gemspecs from application cache packages" do
     gemfile <<-G
       source "https://gem.repo1"

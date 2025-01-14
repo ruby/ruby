@@ -212,7 +212,6 @@ module Bundler
     #    Bundler.require(:test)   # requires second_gem
     #
     def require(*groups)
-      load_plugins
       setup(*groups).require(*groups)
     end
 
@@ -574,23 +573,6 @@ module Bundler
 
     def feature_flag
       @feature_flag ||= FeatureFlag.new(VERSION)
-    end
-
-    def load_plugins(definition = Bundler.definition)
-      return if defined?(@load_plugins_ran)
-
-      Bundler.rubygems.load_plugins
-
-      requested_path_gems = definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
-      path_plugin_files = requested_path_gems.flat_map do |spec|
-        spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
-      rescue TypeError
-        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-        raise Gem::InvalidSpecificationException, error_message
-      end
-      Bundler.rubygems.load_plugin_files(path_plugin_files)
-      Bundler.rubygems.load_env_plugins
-      @load_plugins_ran = true
     end
 
     def reset!
