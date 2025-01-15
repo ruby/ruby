@@ -102,6 +102,7 @@ module TestIRB
         "\t" => Reline::Unicode.escape_for_print("\t") == '  ' ? '  ' : "\t", # not ^I
         "foo(*%W(bar))" => "foo(*#{RED}#{BOLD}%W(#{CLEAR}#{RED}bar#{CLEAR}#{RED}#{BOLD})#{CLEAR})",
         "$stdout" => "#{GREEN}#{BOLD}$stdout#{CLEAR}",
+        "$&" => "#{GREEN}#{BOLD}$&#{CLEAR}",
         "__END__" => "#{GREEN}__END__#{CLEAR}",
         "foo\n__END__\nbar" => "foo\n#{GREEN}__END__#{CLEAR}\nbar",
         "foo\n<<A\0\0bar\nA\nbaz" => "foo\n#{RED}<<A#{CLEAR}^@^@bar\n#{RED}A#{CLEAR}\nbaz",
@@ -136,7 +137,7 @@ module TestIRB
           "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}]^S",
           "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}) end",
           "nil = 1" => "#{CYAN}#{BOLD}nil#{CLEAR} = #{BLUE}#{BOLD}1#{CLEAR}",
-          "alias $x $1" => "#{GREEN}alias#{CLEAR} #{GREEN}#{BOLD}$x#{CLEAR} $1",
+          "alias $x $1" => "#{GREEN}alias#{CLEAR} #{GREEN}#{BOLD}$x#{CLEAR} #{GREEN}#{BOLD}$1#{CLEAR}",
           "class bad; end" => "#{GREEN}class#{CLEAR} bad; #{GREEN}end#{CLEAR}",
           "def req(@a) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(@a) #{GREEN}end#{CLEAR}",
         })

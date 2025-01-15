@@ -41,6 +41,7 @@ module IRB # :nodoc:
         on_embvar:          [[RED],                   ALL],
         on_float:           [[MAGENTA, BOLD],         ALL],
         on_gvar:            [[GREEN, BOLD],           ALL],
+        on_backref:         [[GREEN, BOLD],           ALL],
         on_heredoc_beg:     [[RED],                   ALL],
         on_heredoc_end:     [[RED],                   ALL],
         on_ident:           [[BLUE, BOLD],            Ripper::EXPR_ENDFN],
