@@ -53,6 +53,7 @@ module Prism
       "alias.txt",
       "dsym_str.txt",
       "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "method_calls.txt",
       "methods.txt",

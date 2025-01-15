@@ -88,10 +88,7 @@ module Prism
     # skip them for now.
     skip_all = skip_incorrect | [
       "unescaping.txt",
-      "seattlerb/pctW_lineno.txt",
       "seattlerb/regexp_esc_C_slash.txt",
-      "unparser/corpus/literal/literal.txt",
-      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -104,7 +101,6 @@ module Prism
     skip_tokens = [
       "dash_heredocs.txt",
       "embdoc_no_newline_at_end.txt",
-      "heredocs_with_ignored_newlines.txt",
       "methods.txt",
       "strings.txt",
       "seattlerb/bug169.txt",
@@ -116,9 +112,9 @@ module Prism
       "seattlerb/parse_line_heredoc.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
       "seattlerb/required_kwarg_no_value.txt",
-      "seattlerb/slashy_newlines_within_string.txt",
       "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/assignment.txt",
+      "unparser/corpus/literal/literal.txt",
       "whitequark/args.txt",
       "whitequark/beginless_erange_after_newline.txt",
       "whitequark/beginless_irange_after_newline.txt",
@@ -127,13 +123,11 @@ module Prism
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
-      "whitequark/parser_bug_640.txt",
       "whitequark/pattern_matching_expr_in_paren.txt",
       "whitequark/pattern_matching_hash.txt",
       "whitequark/pin_expr.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
-      "whitequark/slash_newline_in_heredocs.txt",
       "whitequark/space_args_arg_block.txt",
       "whitequark/space_args_block.txt"
     ]
