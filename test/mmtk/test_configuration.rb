@@ -21,6 +21,14 @@ module MMTk
       end
     end
 
+    %w(fixed dynamic).each do |heap|
+      define_method(:"test_MMTK_HEAP_MODE_#{heap}") do
+        assert_separately([{ "MMTK_HEAP_MODE" => heap }], <<~RUBY)
+          assert_equal("#{heap}", GC.config[:mmtk_heap_mode])
+        RUBY
+      end
+    end
+
     %w(MMTK_THREADS MMTK_HEAP_MIN MMTK_HEAP_MAX MMTK_HEAP_MODE MMTK_PLAN).each do |var|
       define_method(:"test_invalid_#{var}") do
         exit_code = assert_in_out_err(

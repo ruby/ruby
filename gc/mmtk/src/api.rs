@@ -347,6 +347,18 @@ pub extern "C" fn mmtk_plan() -> *const u8 {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_heap_mode() -> *const u8 {
+    static FIXED_HEAP: &[u8] = b"fixed\0";
+    static DYNAMIC_HEAP: &[u8] = b"dynamic\0";
+
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(_) => FIXED_HEAP.as_ptr(),
+        GCTriggerSelector::DynamicHeapSize(_, _) => DYNAMIC_HEAP.as_ptr(),
+        _ => panic!("Unknown heap mode")
+    }
+}
+
 // =============== Miscellaneous ===============
 
 #[no_mangle]

@@ -634,6 +634,7 @@ rb_gc_impl_config_get(void *objspace_ptr)
 
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_worker_count")), RB_ULONG2NUM(mmtk_worker_count()));
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_plan")), rb_str_new_cstr((const char *)mmtk_plan()));
+    rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_mode")), rb_str_new_cstr((const char *)mmtk_heap_mode()));
 
     return hash;
 }
