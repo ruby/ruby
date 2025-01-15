@@ -104,6 +104,11 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('+23') }
     assert_raise(JSON::ParserError) { parse('.23') }
     assert_raise(JSON::ParserError) { parse('023') }
+    assert_raise(JSON::ParserError) { parse('-023') }
+    assert_raise(JSON::ParserError) { parse('023.12') }
+    assert_raise(JSON::ParserError) { parse('-023.12') }
+    assert_raise(JSON::ParserError) { parse('023e12') }
+    assert_raise(JSON::ParserError) { parse('-023e12') }
     assert_equal(23, parse('23'))
     assert_equal(-23, parse('-23'))
     assert_equal_float(3.141, parse('3.141'))
@@ -620,7 +625,7 @@ class JSONParserTest < Test::Unit::TestCase
       JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
     end
     if RUBY_ENGINE == "ruby"
-      assert_equal %(unexpected token at '{"input":{"firstName":"Bob","las'), error.message
+      assert_equal %(expected ',' or '}' after object value, got: ''), error.message
     end
   end
 
