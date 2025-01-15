@@ -86,6 +86,9 @@ a\nb\n\nc\n"
  bat]
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 %W[#{foo}\
 bar
 baz #{bat}
@@ -101,8 +104,11 @@ baz #{bat}
 %W(foo\
 bar)
 
+<<<<<<< HEAD
 =======
 >>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 %w[foo     bar]
 
 %w[

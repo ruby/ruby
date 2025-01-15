@@ -1119,6 +1119,7 @@ module Prism
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
           parts = if node.parts.one? { |part| part.type == :string_node }
             node.parts.flat_map do |node|
@@ -1150,6 +1151,8 @@ module Prism
           end
 
 >>>>>>> a651126458 (Fix an incompatibility with the parser translator)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
           builder.string_compose(
             token(node.opening_loc),
             string_nodes_from_interpolation(node, node.opening),
@@ -2214,9 +2217,13 @@ module Prism
           unescaped = unescaped.lines
           escaped = escaped.lines
 <<<<<<< HEAD
+<<<<<<< HEAD
           percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
 =======
 >>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
+=======
+          percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 
           # Non-interpolating strings
           if opening&.end_with?("'") || opening&.start_with?("%q", "%s", "%w", "%i")
@@ -2224,6 +2231,9 @@ module Prism
             current_line = +""
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             escaped.filter_map.with_index do |escaped_line, index|
               unescaped_line = unescaped.fetch(index, "")
               current_length += escaped_line.bytesize
@@ -2238,6 +2248,7 @@ module Prism
               current_line = +""
               current_length = 0
               s
+<<<<<<< HEAD
 =======
           if opening&.end_with?("'")
             escaped.each do |line|
@@ -2245,6 +2256,8 @@ module Prism
               normalized_lengths << chomped_bytesize(line)
               do_next_tokens << true
 >>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             end
           else
             escaped_lengths = []
