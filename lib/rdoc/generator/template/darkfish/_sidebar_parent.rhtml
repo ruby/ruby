@@ -1,6 +1,0 @@
-<%- if klass.type == 'class' && (ancestors = klass.super_classes).any? -%>
-<div id="parent-class-section" class="nav-section">
-  <h3>Ancestors</h3>
-  <%= generate_ancestor_list(ancestors, klass) %>
-</div>
-<%- end -%>
