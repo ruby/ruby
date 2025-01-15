@@ -34,4 +34,3 @@ void Init_psych(void)
     Init_psych_to_ruby();
     Init_psych_yaml_tree();
 }
-/* vim: set noet sws=4 sw=4: */
