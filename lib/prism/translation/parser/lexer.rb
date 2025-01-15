@@ -440,6 +440,7 @@ module Prism
 
               if (lines = token.value.lines).one?
 <<<<<<< HEAD
+<<<<<<< HEAD
                 # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
                 is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
                 # The parser gem only removes indentation when the heredoc is not nested
@@ -470,6 +471,25 @@ module Prism
                   end
 
 <<<<<<< HEAD
+=======
+                # Prism usually emits a single token for strings with line continuations.
+                # For squiggly heredocs they are not joined so we do that manually here.
+                current_string = +""
+                current_length = 0
+                start_offset = token.location.start_offset
+                while token.type == :STRING_CONTENT
+                  current_length += token.value.bytesize
+                  # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
+                  is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
+                  # The parser gem only removes indentation when the heredoc is not nested
+                  not_nested = heredoc_stack.size == 1
+                  if is_percent_array
+                    value = percent_array_unescape(token.value)
+                  elsif is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
+                    value = trim_heredoc_whitespace(token.value, current_heredoc)
+                  end
+
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
                 # Prism usually emits a single token for strings with line continuations.
                 # For squiggly heredocs they are not joined so we do that manually here.
@@ -817,6 +837,9 @@ module Prism
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         # Certain strings are merged into a single string token.
@@ -836,6 +859,7 @@ module Prism
           end
         end
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -903,6 +927,8 @@ module Prism
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         # In a percent array, certain whitespace can be preceeded with a backslash,
         # causing the following characters to be part of the previous element.
         def percent_array_unescape(string)
@@ -928,11 +954,14 @@ module Prism
         def interpolation?(quote)
           !quote.end_with?("'") && !quote.start_with?("%q", "%w", "%i", "%s")
 <<<<<<< HEAD
+<<<<<<< HEAD
         end
 
         # Regexp allow interpolation but are handled differently during unescaping
         def regexp?(quote)
           quote == "/" || quote.start_with?("%r")
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         end
