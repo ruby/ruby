@@ -45,7 +45,6 @@ module SyncDefaultGems
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
     psych: 'ruby/psych',
-    rdoc: 'ruby/rdoc',
     readline: "ruby/readline",
     reline: 'ruby/reline',
     resolv: "ruby/resolv",
@@ -148,34 +147,6 @@ module SyncDefaultGems
       end
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
-    when "rdoc"
-      rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
-      cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
-      cp_r("#{upstream}/doc/rdoc", "doc")
-      cp_r("#{upstream}/test/rdoc", "test")
-      cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
-      cp_r("#{upstream}/Gemfile", "lib/rdoc")
-      cp_r("#{upstream}/Rakefile", "lib/rdoc")
-      cp_r("#{upstream}/exe/rdoc", "libexec")
-      cp_r("#{upstream}/exe/ri", "libexec")
-      parser_files = {
-        'lib/rdoc/markdown.kpeg' => 'lib/rdoc/markdown.rb',
-        'lib/rdoc/markdown/literals.kpeg' => 'lib/rdoc/markdown/literals.rb',
-        'lib/rdoc/rd/block_parser.ry' => 'lib/rdoc/rd/block_parser.rb',
-        'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
-      }
-      Dir.chdir(upstream) do
-        `bundle install`
-        parser_files.each_value do |dst|
-          `bundle exec rake #{dst}`
-        end
-      end
-      parser_files.each_pair do |src, dst|
-        rm_rf(src)
-        cp_r("#{upstream}/#{dst}", dst)
-      end
-      `git checkout lib/rdoc/.document`
-      rm_rf(%w[lib/rdoc/Gemfile lib/rdoc/Rakefile])
     when "reline"
       rm_rf(%w[lib/reline lib/reline.rb test/reline])
       cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
