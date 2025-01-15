@@ -167,7 +167,7 @@ RSpec.describe "bundle cache" do
         G
 
         bundle :cache, raise_on_error: false
-        expect(exitstatus).to_not eq(0)
+        expect(last_command).to be_failure
         expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
       end
     end
