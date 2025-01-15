@@ -220,6 +220,8 @@ module Bundler
 
     def prefer_local!
       @prefer_local = true
+
+      sources.prefer_local!
     end
 
     # For given dependency list returns a SpecSet with Gemspec of all the required

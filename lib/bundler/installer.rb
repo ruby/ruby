@@ -193,7 +193,7 @@ module Bundler
     def install(options)
       standalone = options[:standalone]
       force = options[:force]
-      local = options[:local]
+      local = options[:local] || options[:"prefer-local"]
       jobs = installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
