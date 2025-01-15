@@ -353,7 +353,19 @@ class TestGemSafeMarshal < Gem::TestCase
 
     unmarshalled_spec = Gem::SafeMarshal.safe_load(Marshal.dump(spec))
 
-    assert_equal ["MIT"], unmarshalled_spec.license
+    assert_equal ["MIT"], unmarshalled_spec.licenses
+    assert_equal "MIT", unmarshalled_spec.license
+
+    spec = Gem::Specification.new do |s|
+      s.name = "hi"
+      s.version = "1.2.3"
+      s.licenses = ["MIT", "GPL2"]
+    end
+
+    unmarshalled_spec = Gem::SafeMarshal.safe_load(Marshal.dump(spec))
+
+    assert_equal ["MIT", "GPL2"], unmarshalled_spec.licenses
+    assert_equal "MIT", unmarshalled_spec.license
   end
 
   def test_gem_spec_unmarshall_required_ruby_rubygems_version

@@ -1322,7 +1322,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@description,               array[13]
     spec.instance_variable_set :@homepage,                  array[14]
     spec.instance_variable_set :@has_rdoc,                  array[15]
-    spec.instance_variable_set :@licenses,                  [array[17]]
+    spec.instance_variable_set :@licenses,                  array[17]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
     spec.instance_variable_set :@activated,                 false
