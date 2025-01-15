@@ -45,6 +45,10 @@ foo\
 b\nar
 "
 
+"foo
+\nbar\n\n
+a\nb\n\nc\n"
+
 %q{abc}
 
 %s[abc]
@@ -68,6 +72,34 @@ b\nar
 %w[foo\ bar \#{1}]
 
 %w[foo\ bar baz]
+
+%w[foo\ bar\\ baz\\\
+ bat]
+
+%W[#{foo}\
+bar
+baz #{bat}
+]
+
+%w(foo\n)
+
+%w(foo\
+)
+
+%w(foo \n)
+
+%W(foo\
+bar)
+
+%w[foo     bar]
+
+%w[
+  a   
+  b   c  
+ d   
+]
+
+%W[f\u{006f 006f}]
 
 %W[a b#{c}d e]
 
@@ -97,6 +129,8 @@ baz
 "\7 \43 \141"
 
 "ち\xE3\x81\xFF"
+
+"\777"
 
 %[abc]
 

@@ -74,7 +74,29 @@ module Prism
         # []
         # ^^
         def visit_array_node(node)
-          builder.array(token(node.opening_loc), visit_all(node.elements), token(node.closing_loc))
+          if node.opening&.start_with?("%w", "%W", "%i", "%I")
+            elements = node.elements.flat_map do |element|
+              if element.is_a?(StringNode)
+                if element.content.include?("\n")
+                  string_nodes_from_line_continuations(element.unescaped, element.content, element.content_loc.start_offset, node.opening)
+                else
+                  [builder.string_internal([element.unescaped, srange(element.content_loc)])]
+                end
+              elsif element.is_a?(InterpolatedStringNode)
+                builder.string_compose(
+                  token(element.opening_loc),
+                  string_nodes_from_interpolation(element, node.opening),
+                  token(element.closing_loc)
+                )
+              else
+                [visit(element)]
+              end
+            end
+          else
+            elements = visit_all(node.elements)
+          end
+
+          builder.array(token(node.opening_loc), elements, token(node.closing_loc))
         end
 
         # foo => [bar]
@@ -1088,19 +1110,9 @@ module Prism
             return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
-          parts = node.parts.flat_map do |part|
-            # When the content of a string node is split across multiple lines, the
-            # parser gem creates individual string nodes for each line the content is part of.
-            if part.type == :string_node && part.content.include?("\n") && part.opening_loc.nil?
-              string_nodes_from_line_continuations(part.unescaped, part.content, part.content_loc.start_offset, node.opening)
-            else
-              visit(part)
-            end
-          end
-
           builder.string_compose(
             token(node.opening_loc),
-            parts,
+            string_nodes_from_interpolation(node, node.opening),
             token(node.closing_loc)
           )
         end
@@ -1119,14 +1131,14 @@ module Prism
         # ^^^^^^^^^^^^
         def visit_interpolated_x_string_node(node)
           if node.heredoc?
-            visit_heredoc(node) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
-          else
-            builder.xstring_compose(
-              token(node.opening_loc),
-              visit_all(node.parts),
-              token(node.closing_loc)
-            )
+            return visit_heredoc(node) { |children, closing| builder.xstring_compose(token(node.opening_loc), children, closing) }
           end
+
+          builder.xstring_compose(
+            token(node.opening_loc),
+            string_nodes_from_interpolation(node, node.opening),
+            token(node.closing_loc)
+          )
         end
 
         # -> { it }
@@ -2024,13 +2036,6 @@ module Prism
           end
         end
 
-        # The parser gem automatically converts \r\n to \n, meaning our offsets
-        # need to be adjusted to always subtract 1 from the length.
-        def chomped_bytesize(line)
-          chomped = line.chomp
-          chomped.bytesize + (chomped == line ? 0 : 1)
-        end
-
         # Visit a heredoc that can be either a string or an xstring.
         def visit_heredoc(node)
           children = Array.new
@@ -2099,55 +2104,88 @@ module Prism
           end
         end
 
+        # When the content of a string node is split across multiple lines, the
+        # parser gem creates individual string nodes for each line the content is part of.
+        def string_nodes_from_interpolation(node, opening)
+          node.parts.flat_map do |part|
+            if part.type == :string_node && part.content.include?("\n") && part.opening_loc.nil?
+              string_nodes_from_line_continuations(part.unescaped, part.content, part.content_loc.start_offset, opening)
+            else
+              visit(part)
+            end
+          end
+        end
+
         # Create parser string nodes from a single prism node. The parser gem
         # "glues" strings together when a line continuation is encountered.
         def string_nodes_from_line_continuations(unescaped, escaped, start_offset, opening)
           unescaped = unescaped.lines
           escaped = escaped.lines
+          percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
 
-          escaped_lengths = []
-          normalized_lengths = []
-          # Keeps track of where an unescaped line should start a new token. An unescaped
-          # \n would otherwise be indistinguishable from the actual newline at the end of
-          # of the line. The parser gem only emits a new string node at "real" newlines,
-          # line continuations don't start a new node as well.
-          do_next_tokens = []
+          # Non-interpolating strings
+          if opening&.end_with?("'") || opening&.start_with?("%q", "%s", "%w", "%i")
+            current_length = 0
+            current_line = +""
 
-          if opening&.end_with?("'")
-            escaped.each do |line|
-              escaped_lengths << line.bytesize
-              normalized_lengths << chomped_bytesize(line)
-              do_next_tokens << true
+            escaped.filter_map.with_index do |escaped_line, index|
+              unescaped_line = unescaped.fetch(index, "")
+              current_length += escaped_line.bytesize
+              current_line << unescaped_line
+
+              # Glue line continuations together. Only %w and %i arrays can contain these.
+              if percent_array && escaped_line[/(\\)*\n$/, 1]&.length&.odd?
+                next unless index == escaped.count - 1
+              end
+              s = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_length)])
+              start_offset += escaped_line.bytesize
+              current_line = +""
+              current_length = 0
+              s
             end
           else
+            escaped_lengths = []
+            normalized_lengths = []
+            # Keeps track of where an unescaped line should start a new token. An unescaped
+            # \n would otherwise be indistinguishable from the actual newline at the end of
+            # of the line. The parser gem only emits a new string node at "real" newlines,
+            # line continuations don't start a new node as well.
+            do_next_tokens = []
+
             escaped
               .chunk_while { |before, after| before[/(\\*)\r?\n$/, 1]&.length&.odd? || false }
               .each do |lines|
                 escaped_lengths << lines.sum(&:bytesize)
-                normalized_lengths << lines.sum { |line| chomped_bytesize(line) }
                 unescaped_lines_count = lines.sum do |line|
                   line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? || false }
                 end
-                do_next_tokens.concat(Array.new(unescaped_lines_count + 1, false))
+                extra = 1
+                extra = lines.count if percent_array # Account for line continuations in percent arrays
+
+                normalized_lengths.concat(Array.new(unescaped_lines_count + extra, 0))
+                normalized_lengths[-1] = lines.sum { |line| line.bytesize }
+                do_next_tokens.concat(Array.new(unescaped_lines_count + extra, false))
                 do_next_tokens[-1] = true
               end
-          end
 
-          current_line = +""
-          current_normalized_length = 0
+            current_line = +""
+            current_normalized_length = 0
 
-          unescaped.filter_map.with_index do |unescaped_line, index|
-            current_line << unescaped_line
-            current_normalized_length += normalized_lengths.fetch(index, 0)
+            emitted_count = 0
+            unescaped.filter_map.with_index do |unescaped_line, index|
+              current_line << unescaped_line
+              current_normalized_length += normalized_lengths.fetch(index, 0)
 
-            if do_next_tokens[index]
-              inner_part = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_normalized_length)])
-              start_offset += escaped_lengths.fetch(index, 0)
-              current_line = +""
-              current_normalized_length = 0
-              inner_part
-            else
-              nil
+              if do_next_tokens[index]
+                inner_part = builder.string_internal([current_line, srange_offsets(start_offset, start_offset + current_normalized_length)])
+                start_offset += escaped_lengths.fetch(emitted_count, 0)
+                current_line = +""
+                current_normalized_length = 0
+                emitted_count += 1
+                inner_part
+              else
+                nil
+              end
             end
           end
         end
