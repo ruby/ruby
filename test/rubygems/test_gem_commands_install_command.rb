@@ -665,7 +665,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
     assert_path_exist File.join(a2.doc_dir, "ri")
     assert_path_exist File.join(a2.doc_dir, "rdoc")
-  end unless Gem.rdoc_hooks_defined_via_plugin?
+  end if defined?(Gem::RDoc) && !Gem.rdoc_hooks_defined_via_plugin?
 
   def test_execute_rdoc_with_path
     specs = spec_fetcher do |fetcher|
@@ -701,7 +701,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
     wait_for_child_process_to_exit
 
     assert_path_exist "whatever/doc/a-2", "documentation not installed"
-  end unless Gem.rdoc_hooks_defined_via_plugin?
+  end if defined?(Gem::RDoc) && !Gem.rdoc_hooks_defined_via_plugin?
 
   def test_execute_saves_build_args
     specs = spec_fetcher do |fetcher|
