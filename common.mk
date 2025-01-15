@@ -1268,13 +1268,13 @@ srcs-enc: $(ENC_MK)
 	$(ECHO) making srcs under enc
 	$(Q) $(MAKE) $(MAKE_ENC) srcs
 
-all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h
+all-incs: incs {$(VPATH)}encdb.h {$(VPATH)}transdb.h {$(VPATH)}probes.h
 incs: $(INSNS) {$(VPATH)}node_name.inc {$(VPATH)}known_errors.inc \
       {$(VPATH)}vm_call_iseq_optimized.inc $(srcdir)/revision.h \
       $(REVISION_H) \
       $(UNICODE_DATA_HEADERS) $(ENC_HEADERS) \
       $(srcs_vpath)prism/ast.h $(srcs_vpath)prism/diagnostic.h \
-      {$(VPATH)}id.h {$(VPATH)}probes.dmyh {$(VPATH)}probes.h
+      {$(VPATH)}id.h {$(VPATH)}probes.dmyh
 
 insns: $(INSNS)
 
