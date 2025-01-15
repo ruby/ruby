@@ -12,6 +12,15 @@ module MMTk
       RUBY
     end
 
+    # TODO: Add NoGC once this is fixed: https://github.com/mmtk/mmtk-core/pull/1263
+    %w(MarkSweep Immix).each do |plan|
+      define_method(:"test_MMTK_PLAN_#{plan}") do
+        assert_separately([{ "MMTK_PLAN" => plan }], <<~RUBY)
+          assert_equal("#{plan}", GC.config[:mmtk_plan])
+        RUBY
+      end
+    end
+
     %w(MMTK_THREADS MMTK_HEAP_MIN MMTK_HEAP_MAX MMTK_HEAP_MODE MMTK_PLAN).each do |var|
       define_method(:"test_invalid_#{var}") do
         exit_code = assert_in_out_err(

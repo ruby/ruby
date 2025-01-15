@@ -147,6 +147,8 @@ MMTk_Address mmtk_last_heap_address(void);
 
 size_t mmtk_worker_count(void);
 
+const uint8_t *mmtk_plan(void);
+
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
 #endif  /* MMTK_H */
