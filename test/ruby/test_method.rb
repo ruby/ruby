@@ -209,6 +209,27 @@ class TestMethod < Test::Unit::TestCase
     assert_kind_of(String, o.method(:foo).hash.to_s)
   end
 
+  def test_hash_does_not_change_after_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    # iseq backed method
+    assert_separately([], <<~RUBY)
+      def a; end
+
+      # Need this method here because otherwise the iseq may be on the C stack
+      # which would get pinned and not move during compaction
+      def get_hash
+        method(:a).hash
+      end
+
+      hash = get_hash
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_equal(hash, get_hash)
+    RUBY
+  end
+
   def test_owner
     c = Class.new do
       def foo; end

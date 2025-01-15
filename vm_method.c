@@ -2237,7 +2237,7 @@ rb_hash_method_definition(st_index_t hash, const rb_method_definition_t *def)
 
     switch (def->type) {
       case VM_METHOD_TYPE_ISEQ:
-        return rb_hash_uint(hash, (st_index_t)def->body.iseq.iseqptr);
+        return rb_hash_uint(hash, (st_index_t)def->body.iseq.iseqptr->body);
       case VM_METHOD_TYPE_CFUNC:
         hash = rb_hash_uint(hash, (st_index_t)def->body.cfunc.func);
         return rb_hash_uint(hash, def->body.cfunc.argc);
