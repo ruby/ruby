@@ -6908,10 +6908,6 @@ static const rb_data_type_t env_data_type = {
  *  - #fetch(key).
  *  - #fetch_values(*keys).
  *
- *  You can override these behaviors;
- *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]
- *  and {Method Default}[rdoc-ref:Hash@Method+Default].
- *
  *  ==== \Hash Default
  *
  *  For certain methods (#[], #dig, and #values_at),
