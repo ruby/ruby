@@ -3461,9 +3461,8 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         break;
       }
       case RB_GC_VM_FROZEN_STRINGS_TABLE: {
-        st_table *frozen_strings = GET_VM()->frozen_strings;
         st_foreach_with_replace(
-            frozen_strings,
+            vm->frozen_strings,
             vm_weak_table_frozen_strings_foreach,
             vm_weak_table_foreach_update_key,
             (st_data_t)&foreach_data
