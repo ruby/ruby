@@ -4372,23 +4372,31 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
 static VALUE
 io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE chomp)
 {
+    long limit = -1;
     if (NIL_P(lim)) {
+        VALUE tmp = Qnil;
         // If sep is specified, but it's not a string and not nil, then assume
         // it's the limit (it should be an integer)
-        if (!NIL_P(sep) && NIL_P(rb_check_string_type(sep))) {
+        if (!NIL_P(sep) && NIL_P(tmp = rb_check_string_type(sep))) {
             // If the user has specified a non-nil / non-string value
             // for the separator, we assume it's the limit and set the
             // separator to default: rb_rs.
             lim = sep;
+            limit = NUM2LONG(lim);
             sep = rb_rs;
         }
+        else {
+            sep = tmp;
+        }
+    }
+    else {
+        if (!NIL_P(sep)) StringValue(sep);
+        limit = NUM2LONG(lim);
     }
 
-    if (!NIL_P(sep)) {
-        StringValue(sep);
-    }
+    check_getline_args(&sep, &limit, io);
 
-    VALUE line = rb_io_getline_1(sep, NIL_P(lim) ? -1L : NUM2LONG(lim), RTEST(chomp), io);
+    VALUE line = rb_io_getline_1(sep, limit, RTEST(chomp), io);
     rb_lastline_set_up(line, 1);
 
     if (NIL_P(line)) {

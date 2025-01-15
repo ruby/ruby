@@ -2002,6 +2002,14 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_readline_incompatible_rs
+    first_line = File.open(__FILE__, &:gets).encode("utf-32le")
+    File.open(__FILE__, encoding: "utf-8:utf-32le") {|f|
+      assert_equal first_line, f.readline
+      assert_raise(ArgumentError) {f.readline("\0")}
+    }
+  end
+
   def test_set_lineno_readline
     pipe(proc do |w|
       w.puts "foo"
