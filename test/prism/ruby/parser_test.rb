@@ -92,12 +92,15 @@ module Prism
     skip_all = skip_incorrect | [
       "unescaping.txt",
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
       "seattlerb/pctW_lineno.txt",
 >>>>>>> e1c75f304b (Better handle regexp in the parser translator)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
       "seattlerb/regexp_esc_C_slash.txt",
     ]
 
