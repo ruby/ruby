@@ -5931,24 +5931,23 @@ env_to_s(VALUE _)
 static VALUE
 env_inspect(VALUE _)
 {
-    VALUE i;
     VALUE str = rb_str_buf_new2("{");
+    rb_encoding *enc = env_encoding();
 
     ENV_LOCK();
     {
         char **env = GET_ENVIRON(environ);
         while (*env) {
-            char *s = strchr(*env, '=');
+            const char *s = strchr(*env, '=');
 
             if (env != environ) {
                 rb_str_buf_cat2(str, ", ");
             }
             if (s) {
-                rb_str_buf_cat2(str, "\"");
-                rb_str_buf_cat(str, *env, s-*env);
-                rb_str_buf_cat2(str, "\"=>");
-                i = rb_inspect(rb_str_new2(s+1));
-                rb_str_buf_append(str, i);
+                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(*env, s-*env, enc)));
+                rb_str_buf_cat2(str, "=>");
+                s++;
+                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
             }
             env++;
         }
