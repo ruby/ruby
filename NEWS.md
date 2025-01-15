@@ -19,6 +19,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.1.4
 * benchmark 0.4.0
 * logger 1.6.5
+* rdoc 6.10.0
 
 We only list stdlib changes that are notable feature changes.
 
