@@ -150,7 +150,7 @@ def parse_args(argv = ARGV)
   end
 
   $destdir ||= $mflags.defined?("DESTDIR")
-  $destdir = File.expand_path($destdir) if $destdir
+  $destdir = File.expand_path($destdir) unless $destdir.empty?
   if $extout ||= $mflags.defined?("EXTOUT")
     RbConfig.expand($extout)
   end
