@@ -93,6 +93,22 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([[:req]], parameters)
   end
 
+  def test_c_call_aliased_method
+    # [Bug #20915]
+    klass = Class.new do
+      alias_method :new_method, :method
+    end
+
+    instance = klass.new
+    parameters = nil
+
+    TracePoint.new(:c_call) do |tp|
+      parameters = tp.parameters
+    end.enable { instance.new_method(:to_s) }
+
+    assert_equal([[:req]], parameters)
+  end
+
   def test_call
     events = []
     name = "#{self.class}\##{__method__}"
