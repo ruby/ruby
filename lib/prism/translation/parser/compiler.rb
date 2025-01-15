@@ -1120,6 +1120,7 @@ module Prism
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
           parts = if node.parts.one? { |part| part.type == :string_node }
             node.parts.flat_map do |node|
@@ -1151,6 +1152,8 @@ module Prism
           end
 
 >>>>>>> a651126458 (Fix an incompatibility with the parser translator)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
           builder.string_compose(
@@ -2218,9 +2221,13 @@ module Prism
           escaped = escaped.lines
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
 =======
 >>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
+=======
+          percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
           percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
@@ -2232,6 +2239,9 @@ module Prism
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             escaped.filter_map.with_index do |escaped_line, index|
@@ -2249,6 +2259,7 @@ module Prism
               current_length = 0
               s
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
           if opening&.end_with?("'")
             escaped.each do |line|
@@ -2256,6 +2267,8 @@ module Prism
               normalized_lengths << chomped_bytesize(line)
               do_next_tokens << true
 >>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
+=======
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             end

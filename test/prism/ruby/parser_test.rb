@@ -92,6 +92,11 @@ module Prism
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
+<<<<<<< HEAD
+=======
+      "unescaping.txt",
+      "seattlerb/regexp_esc_C_slash.txt",
+>>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
