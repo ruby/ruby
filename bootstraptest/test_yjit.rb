@@ -4510,3 +4510,10 @@ assert_equal 'ok', <<~'RUBY'
 
   :ok
 RUBY
+
+assert_normal_exit %{
+  class Bug20997
+    def foo(&) = self.class.name(&)
+    new.foo
+  end
+}
