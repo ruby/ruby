@@ -149,4 +149,4 @@ size_t mmtk_worker_count(void);
 
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
-#endif /* MMTK_H */
+#endif  /* MMTK_H */
