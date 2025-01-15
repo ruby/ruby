@@ -410,6 +410,18 @@ class TestProc < Test::Unit::TestCase
     assert_throw(:initialize_dup) {c1.new{}.dup}
   end
 
+  def test_dup_ifunc_proc_bug_20950
+    assert_normal_exit(<<~RUBY, "[Bug #20950]")
+      p = { a: 1 }.to_proc
+      100.times do
+        p = p.dup
+        GC.start
+        p.call
+      rescue ArgumentError
+      end
+    RUBY
+  end
+
   def test_clone_subclass
     c1 = Class.new(Proc)
     assert_equal c1, c1.new{}.clone.class, '[Bug #17545]'
