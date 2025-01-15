@@ -1,6 +1,6 @@
 #!ruby -W0
 
-rdoc_path = Dir.glob("#{ARGV[0]}/.bundle/gems/rdoc-*").first
+rdoc_path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/rdoc-*").first
 $LOAD_PATH.unshift("#{rdoc_path}/lib")
 require 'rdoc/rdoc'
 
