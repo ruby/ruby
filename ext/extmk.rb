@@ -584,7 +584,6 @@ extend Module.new {
         }
       end
 
-      gemlib = File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/lib")
       if conf.any? {|s| /^TARGET *= *\S/ =~ s}
         conf << %{
 gem_platform = #{Gem::Platform.local}
@@ -617,23 +616,25 @@ gemspec: $(gemspec)
 
 clean-gemspec:
 	-$(Q)$(RM) $(gemspec)
-}
-
-        if gemlib
-          conf << %{
-install-rb: gemlib
-clean-rb:: clean-gemlib
 
 LN_S = #{config_string('LN_S')}
 CP_R = #{config_string('CP')} -r
-
-gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
-gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
-	$(Q) #{@inplace ? '$(NULLCMD) ' : ''}$(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/lib $(gemlib)
-
-clean-gemlib:
-	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
 }
+        unless @inplace
+          %w[bin lib].each do |d|
+            next unless File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/#{d}")
+            conf << %{
+install-rb: gem#{d}
+clean-rb:: clean-gem#{d}
+
+gem#{d} = $(TARGET_TOPDIR)/gems/$(gem)/#{d}
+gem#{d}:#{%{ $(gem#{d})\n$(gem#{d}): $(gem_srcdir)/#{d}} if $nmake}
+	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/#{d} $(gem#{d})
+
+clean-gem#{d}:
+	$(Q) $(RM_RF) $(gem#{d})
+}
+          end
         end
       end
 
