@@ -1,5 +1,32 @@
 #include "ruby.h"
-#include "../fbuffer/fbuffer.h"
+#include "ruby/encoding.h"
+
+/* shims */
+/* This is the fallback definition from Ruby 3.4 */
+
+#ifndef RBIMPL_STDBOOL_H
+#if defined(__cplusplus)
+# if defined(HAVE_STDBOOL_H) && (__cplusplus >= 201103L)
+#  include <cstdbool>
+# endif
+#elif defined(HAVE_STDBOOL_H)
+# include <stdbool.h>
+#elif !defined(HAVE__BOOL)
+typedef unsigned char _Bool;
+# define bool  _Bool
+# define true  ((_Bool)+1)
+# define false ((_Bool)+0)
+# define __bool_true_false_are_defined
+#endif
+#endif
+
+#ifndef RB_UNLIKELY
+#define RB_UNLIKELY(expr) expr
+#endif
+
+#ifndef RB_LIKELY
+#define RB_LIKELY(expr) expr
+#endif
 
 static VALUE mJSON, eNestingError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
@@ -401,7 +428,6 @@ typedef struct JSON_ParserStateStruct {
     VALUE stack_handle;
     const char *cursor;
     const char *end;
-    FBuffer fbuffer;
     rvalue_stack *stack;
     rvalue_cache name_cache;
     int in_array;
@@ -690,26 +716,44 @@ static inline VALUE fast_decode_integer(const char *p, const char *pe)
     return LL2NUM(memo);
 }
 
-static VALUE
+static VALUE json_decode_large_integer(const char *start, long len)
+{
+    VALUE buffer_v;
+    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
+    MEMCPY(buffer, start, char, len);
+    buffer[len] = '\0';
+    VALUE number = rb_cstr2inum(buffer, 10);
+    RB_ALLOCV_END(buffer_v);
+    return number;
+}
+
+static inline VALUE
 json_decode_integer(JSON_ParserState *state, const char *start, const char *end)
 {
         long len = end - start;
         if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
             return fast_decode_integer(start, end);
         }
-
-        fbuffer_clear(&state->fbuffer);
-        fbuffer_append(&state->fbuffer, start, len);
-        fbuffer_append_char(&state->fbuffer, '\0');
-        return rb_cstr2inum(FBUFFER_PTR(&state->fbuffer), 10);
+        return json_decode_large_integer(start, len);
 }
 
+static VALUE json_decode_large_float(const char *start, long len)
+{
+    VALUE buffer_v;
+    char *buffer = RB_ALLOCV_N(char, buffer_v, len + 1);
+    MEMCPY(buffer, start, char, len);
+    buffer[len] = '\0';
+    VALUE number = DBL2NUM(rb_cstr_to_dbl(buffer, 1));
+    RB_ALLOCV_END(buffer_v);
+    return number;
+}
+    
 static VALUE json_decode_float(JSON_ParserState *state, const char *start, const char *end)
 {
     VALUE mod = Qnil;
     ID method_id = 0;
     JSON_ParserConfig *config = state->config;
-    if (config->decimal_class) {
+    if (RB_UNLIKELY(config->decimal_class)) {
         // TODO: we should move this to the constructor
         if (rb_respond_to(config->decimal_class, i_try_convert)) {
             mod = config->decimal_class;
@@ -739,15 +783,17 @@ static VALUE json_decode_float(JSON_ParserState *state, const char *start, const
     }
 
     long len = end - start;
-    fbuffer_clear(&state->fbuffer);
-    fbuffer_append(&state->fbuffer, start, len);
-    fbuffer_append_char(&state->fbuffer, '\0');
 
-    if (method_id) {
-        VALUE text = rb_str_new2(FBUFFER_PTR(&state->fbuffer));
+    if (RB_UNLIKELY(method_id)) {
+        VALUE text = rb_str_new(start, len);
         return rb_funcallv(mod, method_id, 1, &text);
+    } else if (RB_LIKELY(len < 64)) {
+        char buffer[64];
+        MEMCPY(buffer, start, char, len);
+        buffer[len] = '\0';
+        return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
     } else {
-        return DBL2NUM(rb_cstr_to_dbl(FBUFFER_PTR(&state->fbuffer), 1));
+        return json_decode_large_float(start, len);
     }
 }
 
@@ -1283,14 +1329,6 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     return self;
 }
 
-static VALUE cParser_parse_safe(VALUE vstate)
-{
-    JSON_ParserState *state = (JSON_ParserState *)vstate;
-    VALUE result = json_parse_any(state);
-    json_ensure_eof(state);
-    return result;
-}
-
 static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
 {
     Vsource = convert_encoding(StringValue(Vsource));
@@ -1311,17 +1349,13 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     };
     JSON_ParserState *state = &_state;
 
-    char stack_buffer[FBUFFER_STACK_SIZE];
-    fbuffer_stack_init(&state->fbuffer, FBUFFER_INITIAL_LENGTH_DEFAULT, stack_buffer, FBUFFER_STACK_SIZE);
+    VALUE result = json_parse_any(state);
 
-    int interupted;
-    VALUE result = rb_protect(cParser_parse_safe, (VALUE)state, &interupted);
-
+    // This may be skipped in case of exception, but
+    // it won't cause a leak.
     rvalue_stack_eagerly_release(state->stack_handle);
-    fbuffer_free(&state->fbuffer);
-    if (interupted) {
-        rb_jump_tag(interupted);
-    }
+
+    json_ensure_eof(state);
 
     return result;
 }
