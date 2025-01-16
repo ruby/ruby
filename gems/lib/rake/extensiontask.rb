@@ -8,5 +8,7 @@ module Rake
         puts "#{args.name} => #{args.prereqs.join(' ')}"
       end
     end
+
+    def lib_dir; end
   end
 end
