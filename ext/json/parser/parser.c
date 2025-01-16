@@ -412,6 +412,7 @@ typedef struct JSON_ParserStruct {
     VALUE object_class;
     VALUE array_class;
     VALUE decimal_class;
+    ID decimal_method_id;
     VALUE match_string;
     int max_nesting;
     bool allow_nan;
@@ -746,45 +747,14 @@ static VALUE json_decode_large_float(const char *start, long len)
     RB_ALLOCV_END(buffer_v);
     return number;
 }
-    
+
 static VALUE json_decode_float(JSON_ParserConfig *config, const char *start, const char *end)
 {
-    VALUE mod = Qnil;
-    ID method_id = 0;
-    if (RB_UNLIKELY(config->decimal_class)) {
-        // TODO: we should move this to the constructor
-        if (rb_respond_to(config->decimal_class, i_try_convert)) {
-            mod = config->decimal_class;
-            method_id = i_try_convert;
-        } else if (rb_respond_to(config->decimal_class, i_new)) {
-            mod = config->decimal_class;
-            method_id = i_new;
-        } else if (RB_TYPE_P(config->decimal_class, T_CLASS)) {
-            VALUE name = rb_class_name(config->decimal_class);
-            const char *name_cstr = RSTRING_PTR(name);
-            const char *last_colon = strrchr(name_cstr, ':');
-            if (last_colon) {
-                const char *mod_path_end = last_colon - 1;
-                VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
-                mod = rb_path_to_class(mod_path);
-
-                const char *method_name_beg = last_colon + 1;
-                long before_len = method_name_beg - name_cstr;
-                long len = RSTRING_LEN(name) - before_len;
-                VALUE method_name = rb_str_substr(name, before_len, len);
-                method_id = SYM2ID(rb_str_intern(method_name));
-            } else {
-                mod = rb_mKernel;
-                method_id = SYM2ID(rb_str_intern(name));
-            }
-        }
-    }
-
     long len = end - start;
 
-    if (RB_UNLIKELY(method_id)) {
+    if (RB_UNLIKELY(config->decimal_class)) {
         VALUE text = rb_str_new(start, len);
-        return rb_funcallv(mod, method_id, 1, &text);
+        return rb_funcallv(config->decimal_class, config->decimal_method_id, 1, &text);
     } else if (RB_LIKELY(len < 64)) {
         char buffer[64];
         MEMCPY(buffer, start, char, len);
@@ -1240,8 +1210,36 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_create_id)            { config->create_id = RTEST(val) ? val : Qfalse; }
     else if (key == sym_object_class)         { config->object_class = RTEST(val) ? val : Qfalse; }
     else if (key == sym_array_class)          { config->array_class = RTEST(val) ? val : Qfalse; }
-    else if (key == sym_decimal_class)        { config->decimal_class = RTEST(val) ? val : Qfalse; }
     else if (key == sym_match_string)         { config->match_string = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_decimal_class)        {
+        if (RTEST(val)) {
+            if (rb_respond_to(val, i_try_convert)) {
+                config->decimal_class = val;
+                config->decimal_method_id = i_try_convert;
+            } else if (rb_respond_to(val, i_new)) {
+                config->decimal_class = val;
+                config->decimal_method_id = i_new;
+            } else if (RB_TYPE_P(val, T_CLASS)) {
+                VALUE name = rb_class_name(val);
+                const char *name_cstr = RSTRING_PTR(name);
+                const char *last_colon = strrchr(name_cstr, ':');
+                if (last_colon) {
+                    const char *mod_path_end = last_colon - 1;
+                    VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
+                    config->decimal_class = rb_path_to_class(mod_path);
+
+                    const char *method_name_beg = last_colon + 1;
+                    long before_len = method_name_beg - name_cstr;
+                    long len = RSTRING_LEN(name) - before_len;
+                    VALUE method_name = rb_str_substr(name, before_len, len);
+                    config->decimal_method_id = SYM2ID(rb_str_intern(method_name));
+                } else {
+                    config->decimal_class = rb_mKernel;
+                    config->decimal_method_id = SYM2ID(rb_str_intern(name));
+                }
+            }
+        }
+    }
     else if (key == sym_create_additions)     {
         if (NIL_P(val)) {
             config->create_additions = true;
