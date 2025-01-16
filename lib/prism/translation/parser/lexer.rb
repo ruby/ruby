@@ -735,6 +735,7 @@ module Prism
               # Append what was just skipped over, excluding the found backslash.
               result.append_as_bytes(string.byteslice(scanner.pos - skipped, skipped - 1))
 <<<<<<< HEAD
+<<<<<<< HEAD
               escape_read(result, scanner, false, false)
 =======
 
@@ -768,6 +769,9 @@ module Prism
                 scanner.pos += unicode_parts.bytesize
               end
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
+=======
+              escape_read(result, scanner, false, false)
+>>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
             end
 
             # Add remaining chars
@@ -801,11 +805,18 @@ module Prism
         end
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
         # Escape a byte value, given the control and meta flags.
         def escape_build(value, control, meta)
           value &= 0x9f if control
           value |= 0x80 if meta
+<<<<<<< HEAD
           value
+=======
+          value.chr
+>>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
         end
 
         # Read an escape out of the string scanner, given the control and meta
@@ -849,10 +860,13 @@ module Prism
           end
         end
 
+<<<<<<< HEAD
 =======
 >>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
 =======
 >>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
+=======
+>>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
         # In a percent array, certain whitespace can be preceeded with a backslash,
         # causing the following characters to be part of the previous element.
         def percent_array_unescape(string)
