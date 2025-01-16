@@ -209,7 +209,7 @@ module Forwardable
       accessor = "#{accessor}()"
     end
 
-    method_call = ".__send__(:#{method}, *args, &block)"
+    method_call = ".__send__(:#{method}, ...)"
     if _valid_method?(method)
       loc, = caller_locations(2,1)
       pre = "_ ="
@@ -220,7 +220,7 @@ module Forwardable
             ::Kernel.warn #{mesg.dump}"\#{_.class}"'##{method}', uplevel: 1
             _#{method_call}
           else
-            _.#{method}(*args, &block)
+            _.#{method}(...)
           end
         end;
     end
@@ -228,7 +228,7 @@ module Forwardable
     _compile_method("#{<<-"begin;"}\n#{<<-"end;"}", __FILE__, __LINE__+1)
     begin;
       proc do
-        def #{ali}(*args, &block)
+        def #{ali}(...)
           #{pre}
           begin
             #{accessor}
