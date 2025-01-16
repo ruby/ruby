@@ -424,7 +424,6 @@ typedef struct JSON_ParserStruct {
 } JSON_ParserConfig;
 
 typedef struct JSON_ParserStateStruct {
-    JSON_ParserConfig *config;
     VALUE stack_handle;
     const char *cursor;
     const char *end;
@@ -728,7 +727,7 @@ static VALUE json_decode_large_integer(const char *start, long len)
 }
 
 static inline VALUE
-json_decode_integer(JSON_ParserState *state, const char *start, const char *end)
+json_decode_integer(const char *start, const char *end)
 {
         long len = end - start;
         if (RB_LIKELY(len < MAX_FAST_INTEGER_SIZE)) {
@@ -748,11 +747,10 @@ static VALUE json_decode_large_float(const char *start, long len)
     return number;
 }
     
-static VALUE json_decode_float(JSON_ParserState *state, const char *start, const char *end)
+static VALUE json_decode_float(JSON_ParserConfig *config, const char *start, const char *end)
 {
     VALUE mod = Qnil;
     ID method_id = 0;
-    JSON_ParserConfig *config = state->config;
     if (RB_UNLIKELY(config->decimal_class)) {
         // TODO: we should move this to the constructor
         if (rb_respond_to(config->decimal_class, i_try_convert)) {
@@ -797,11 +795,11 @@ static VALUE json_decode_float(JSON_ParserState *state, const char *start, const
     }
 }
 
-static inline VALUE json_decode_array(JSON_ParserState *state, long count)
+static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig *config, long count)
 {
     VALUE array;
-    if (RB_UNLIKELY(state->config->array_class)) {
-        array = rb_class_new_instance(0, 0, state->config->array_class);
+    if (RB_UNLIKELY(config->array_class)) {
+        array = rb_class_new_instance(0, 0, config->array_class);
         VALUE *items = rvalue_stack_peek(state->stack, count);
         long index;
         for (index = 0; index < count; index++) {
@@ -813,18 +811,18 @@ static inline VALUE json_decode_array(JSON_ParserState *state, long count)
 
     rvalue_stack_pop(state->stack, count);
 
-    if (state->config->freeze) {
+    if (config->freeze) {
         RB_OBJ_FREEZE(array);
     }
 
     return array;
 }
 
-static inline VALUE json_decode_object(JSON_ParserState *state, long count)
+static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, long count)
 {
     VALUE object;
-    if (RB_UNLIKELY(state->config->object_class)) {
-        object = rb_class_new_instance(0, 0, state->config->object_class);
+    if (RB_UNLIKELY(config->object_class)) {
+        object = rb_class_new_instance(0, 0, config->object_class);
         long index = 0;
         VALUE *items = rvalue_stack_peek(state->stack, count);
         while (index < count) {
@@ -839,17 +837,17 @@ static inline VALUE json_decode_object(JSON_ParserState *state, long count)
 
     rvalue_stack_pop(state->stack, count);
 
-    if (RB_UNLIKELY(state->config->create_additions)) {
+    if (RB_UNLIKELY(config->create_additions)) {
         VALUE klassname;
-        if (state->config->object_class) {
-            klassname = rb_funcall(object, i_aref, 1, state->config->create_id);
+        if (config->object_class) {
+            klassname = rb_funcall(object, i_aref, 1, config->create_id);
         } else {
-            klassname = rb_hash_aref(object, state->config->create_id);
+            klassname = rb_hash_aref(object, config->create_id);
         }
         if (!NIL_P(klassname)) {
             VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
             if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
-                if (state->config->deprecated_create_additions) {
+                if (config->deprecated_create_additions) {
                     json_deprecated(deprecated_create_additions_warning);
                 }
                 object = rb_funcall(klass, i_json_create, 1, object);
@@ -857,7 +855,7 @@ static inline VALUE json_decode_object(JSON_ParserState *state, long count)
         }
     }
 
-    if (state->config->freeze) {
+    if (config->freeze) {
         RB_OBJ_FREEZE(object);
     }
 
@@ -875,22 +873,22 @@ static int match_i(VALUE regexp, VALUE klass, VALUE memo)
     return ST_CONTINUE;
 }
 
-static inline VALUE json_decode_string(JSON_ParserState *state, const char *start, const char *end, bool escaped, bool is_name)
+static inline VALUE json_decode_string(JSON_ParserState *state, JSON_ParserConfig *config, const char *start, const char *end, bool escaped, bool is_name)
 {
     VALUE string;
-    bool intern = is_name || state->config->freeze;
-    bool symbolize = is_name && state->config->symbolize_names;
+    bool intern = is_name || config->freeze;
+    bool symbolize = is_name && config->symbolize_names;
     if (escaped) {
         string = json_string_unescape(state, start, end, is_name, intern, symbolize);
     } else {
         string = json_string_fastpath(state, start, end, is_name, intern, symbolize);
     }
 
-    if (RB_UNLIKELY(state->config->create_additions && RTEST(state->config->match_string))) {
+    if (RB_UNLIKELY(config->create_additions && RTEST(config->match_string))) {
           VALUE klass;
           VALUE memo = rb_ary_new2(2);
           rb_ary_push(memo, string);
-          rb_hash_foreach(state->config->match_string, match_i, memo);
+          rb_hash_foreach(config->match_string, match_i, memo);
           klass = rb_ary_entry(memo, 1);
           if (RTEST(klass)) {
               string = rb_funcall(klass, i_json_create, 1, string);
@@ -915,7 +913,7 @@ static const bool string_scan[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static inline VALUE json_parse_string(JSON_ParserState *state, bool is_name)
+static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
 {
     state->cursor++;
     const char *start = state->cursor;
@@ -925,7 +923,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, bool is_name)
         if (RB_UNLIKELY(string_scan[(unsigned char)*state->cursor])) {
             switch (*state->cursor) {
                 case '"': {
-                    VALUE string = json_decode_string(state, start, state->cursor, escaped, is_name);
+                    VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
                     state->cursor++;
                     return PUSH(string);
                 }
@@ -950,7 +948,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, bool is_name)
     return Qfalse;
 }
 
-static VALUE json_parse_any(JSON_ParserState *state)
+static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
     if (state->cursor >= state->end) {
@@ -985,7 +983,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
-            if (state->config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
+            if (config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
                 state->cursor += 3;
                 return PUSH(CNaN);
             }
@@ -993,7 +991,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
             raise_parse_error("unexpected token at '%s'", state->cursor);
             break;
         case 'I':
-            if (state->config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
+            if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
                 state->cursor += 8;
                 return PUSH(CInfinity);
             }
@@ -1003,7 +1001,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
         case '-':
             // Note: memcmp with a small power of two compile to an integer comparison
             if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
-                if (state->config->allow_nan) {
+                if (config->allow_nan) {
                     state->cursor += 9;
                     return PUSH(CMinusInfinity);
                 } else {
@@ -1060,13 +1058,13 @@ static VALUE json_parse_any(JSON_ParserState *state)
             }
 
             if (integer) {
-                return PUSH(json_decode_integer(state, start, state->cursor));
+                return PUSH(json_decode_integer(start, state->cursor));
             }
-            return PUSH(json_decode_float(state, start, state->cursor));
+            return PUSH(json_decode_float(config, start, state->cursor));
         }
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
-            return json_parse_string(state, false);
+            return json_parse_string(state, config, false);
             break;
         }
         case '[': {
@@ -1076,14 +1074,14 @@ static VALUE json_parse_any(JSON_ParserState *state)
 
             if ((state->cursor < state->end) && (*state->cursor == ']')) {
                 state->cursor++;
-                return PUSH(json_decode_array(state, 0));
+                return PUSH(json_decode_array(state, config, 0));
             } else {
                 state->current_nesting++;
-                if (RB_UNLIKELY(state->config->max_nesting && (state->config->max_nesting < state->current_nesting))) {
+                if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
                     rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
                 }
                 state->in_array++;
-                json_parse_any(state);
+                json_parse_any(state, config);
             }
 
             while (true) {
@@ -1095,18 +1093,18 @@ static VALUE json_parse_any(JSON_ParserState *state)
                         long count = state->stack->head - stack_head;
                         state->current_nesting--;
                         state->in_array--;
-                        return PUSH(json_decode_array(state, count));
+                        return PUSH(json_decode_array(state, config, count));
                     }
 
                     if (*state->cursor == ',') {
                         state->cursor++;
-                        if (state->config->allow_trailing_comma) {
+                        if (config->allow_trailing_comma) {
                             json_eat_whitespace(state);
                             if ((state->cursor < state->end) && (*state->cursor == ']')) {
                                 continue;
                             }
                         }
-                        json_parse_any(state);
+                        json_parse_any(state, config);
                         continue;
                     }
                 }
@@ -1122,17 +1120,17 @@ static VALUE json_parse_any(JSON_ParserState *state)
 
             if ((state->cursor < state->end) && (*state->cursor == '}')) {
                 state->cursor++;
-                return PUSH(json_decode_object(state, 0));
+                return PUSH(json_decode_object(state, config, 0));
             } else {
                 state->current_nesting++;
-                if (RB_UNLIKELY(state->config->max_nesting && (state->config->max_nesting < state->current_nesting))) {
+                if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
                     rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
                 }
 
                 if (*state->cursor != '"') {
                     raise_parse_error("expected object key, got '%s", state->cursor);
                 }
-                json_parse_string(state, true);
+                json_parse_string(state, config, true);
 
                 json_eat_whitespace(state);
                 if ((state->cursor >= state->end) || (*state->cursor != ':')) {
@@ -1140,7 +1138,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
                 }
                 state->cursor++;
 
-                json_parse_any(state);
+                json_parse_any(state, config);
             }
 
             while (true) {
@@ -1151,14 +1149,14 @@ static VALUE json_parse_any(JSON_ParserState *state)
                         state->cursor++;
                         state->current_nesting--;
                         long count = state->stack->head - stack_head;
-                        return PUSH(json_decode_object(state, count));
+                        return PUSH(json_decode_object(state, config, count));
                     }
 
                     if (*state->cursor == ',') {
                         state->cursor++;
                         json_eat_whitespace(state);
 
-                        if (state->config->allow_trailing_comma) {
+                        if (config->allow_trailing_comma) {
                             if ((state->cursor < state->end) && (*state->cursor == '}')) {
                                 continue;
                             }
@@ -1167,7 +1165,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
                         if (*state->cursor != '"') {
                             raise_parse_error("expected object key, got: '%s'", state->cursor);
                         }
-                        json_parse_string(state, true);
+                        json_parse_string(state, config, true);
 
                         json_eat_whitespace(state);
                         if ((state->cursor >= state->end) || (*state->cursor != ':')) {
@@ -1175,7 +1173,7 @@ static VALUE json_parse_any(JSON_ParserState *state)
                         }
                         state->cursor++;
 
-                        json_parse_any(state);
+                        json_parse_any(state, config);
 
                         continue;
                     }
@@ -1342,14 +1340,13 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     };
 
     JSON_ParserState _state = {
-        .config = config,
         .cursor = RSTRING_PTR(Vsource),
         .end = RSTRING_END(Vsource),
         .stack = &stack,
     };
     JSON_ParserState *state = &_state;
 
-    VALUE result = json_parse_any(state);
+    VALUE result = json_parse_any(state, config);
 
     // This may be skipped in case of exception, but
     // it won't cause a leak.
