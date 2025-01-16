@@ -3424,49 +3424,59 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
 
     switch (table) {
       case RB_GC_VM_CI_TABLE: {
-        st_foreach_with_replace(
-            vm->ci_table,
-            vm_weak_table_foreach_key,
-            vm_weak_table_foreach_update_key,
-            (st_data_t)&foreach_data
-        );
+        if (vm->ci_table) {
+            st_foreach_with_replace(
+                vm->ci_table,
+                vm_weak_table_foreach_key,
+                vm_weak_table_foreach_update_key,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       case RB_GC_VM_OVERLOADED_CME_TABLE: {
-        st_foreach_with_replace(
-            vm->overloaded_cme_table,
-            vm_weak_table_foreach_key,
-            vm_weak_table_foreach_update_key,
-            (st_data_t)&foreach_data
-        );
+        if (vm->overloaded_cme_table) {
+            st_foreach_with_replace(
+                vm->overloaded_cme_table,
+                vm_weak_table_foreach_key,
+                vm_weak_table_foreach_update_key,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       case RB_GC_VM_GLOBAL_SYMBOLS_TABLE: {
-        st_foreach_with_replace(
-            global_symbols.str_sym,
-            vm_weak_table_str_sym_foreach,
-            vm_weak_table_foreach_update_value,
-            (st_data_t)&foreach_data
-        );
+        if (global_symbols.str_sym) {
+            st_foreach_with_replace(
+                global_symbols.str_sym,
+                vm_weak_table_str_sym_foreach,
+                vm_weak_table_foreach_update_value,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       case RB_GC_VM_GENERIC_IV_TABLE: {
         st_table *generic_iv_tbl = rb_generic_ivtbl_get();
-        st_foreach_with_replace(
-            generic_iv_tbl,
-            vm_weak_table_gen_ivar_foreach,
-            vm_weak_table_foreach_update_key,
-            (st_data_t)&foreach_data
-        );
+        if (generic_iv_tbl) {
+            st_foreach_with_replace(
+                generic_iv_tbl,
+                vm_weak_table_gen_ivar_foreach,
+                vm_weak_table_foreach_update_key,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       case RB_GC_VM_FROZEN_STRINGS_TABLE: {
-        st_foreach_with_replace(
-            vm->frozen_strings,
-            vm_weak_table_frozen_strings_foreach,
-            vm_weak_table_foreach_update_key,
-            (st_data_t)&foreach_data
-        );
+        if (vm->frozen_strings) {
+            st_foreach_with_replace(
+                vm->frozen_strings,
+                vm_weak_table_frozen_strings_foreach,
+                vm_weak_table_foreach_update_key,
+                (st_data_t)&foreach_data
+            );
+        }
         break;
       }
       default:
