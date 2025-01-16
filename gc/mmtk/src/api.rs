@@ -359,6 +359,15 @@ pub extern "C" fn mmtk_heap_mode() -> *const u8 {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_heap_min() -> usize {
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(_) => 0,
+        GCTriggerSelector::DynamicHeapSize(min_size, _) => min_size,
+        _ => panic!("Unknown heap mode")
+    }
+}
+
 // =============== Miscellaneous ===============
 
 #[no_mangle]

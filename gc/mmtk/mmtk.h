@@ -151,6 +151,8 @@ const uint8_t *mmtk_plan(void);
 
 const uint8_t *mmtk_heap_mode(void);
 
+size_t mmtk_heap_min(void);
+
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
 #endif  /* MMTK_H */

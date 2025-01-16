@@ -28,6 +28,17 @@ module MMTk
       end
     end
 
+    def test_MMTK_HEAP_MIN
+      # TODO: uncomment this test when the infinite loop is fixed
+      # assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "1" }], <<~RUBY)
+      #   assert_equal(1, GC.config[:mmtk_heap_min])
+      # RUBY
+
+      assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "10MiB", "MMTK_HEAP_MAX" => "1GiB" }], <<~RUBY)
+        assert_equal(10 * 1024 * 1024, GC.config[:mmtk_heap_min])
+      RUBY
+    end
+
     %w(MMTK_THREADS MMTK_HEAP_MIN MMTK_HEAP_MAX MMTK_HEAP_MODE MMTK_PLAN).each do |var|
       define_method(:"test_invalid_#{var}") do
         exit_code = assert_in_out_err(

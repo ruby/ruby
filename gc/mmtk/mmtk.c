@@ -635,6 +635,8 @@ rb_gc_impl_config_get(void *objspace_ptr)
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_worker_count")), RB_ULONG2NUM(mmtk_worker_count()));
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_plan")), rb_str_new_cstr((const char *)mmtk_plan()));
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_mode")), rb_str_new_cstr((const char *)mmtk_heap_mode()));
+    size_t heap_min = mmtk_heap_min();
+    if (heap_min > 0) rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_min")), RB_ULONG2NUM(heap_min));
 
     return hash;
 }
