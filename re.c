@@ -961,7 +961,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
  *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
  *
- *  See also "Special global variables" section in Regexp documentation.
+ *  See also Regexp@Global+Variables.
  */
 
 VALUE rb_cMatch;
