@@ -233,6 +233,12 @@ VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, 
     return rb_io_blocking_region_wait(io, function, argument, 0);
 }
 
+VALUE
+rb_io_interruptable_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument, int flags)
+{
+    return rb_thread_io_interruptable_operation(self, function, argument, flags);
+}
+
 struct argf {
     VALUE filename, current_file;
     long last_lineno;		/* $. */
