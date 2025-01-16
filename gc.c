@@ -2485,7 +2485,7 @@ mark_current_machine_context(const rb_execution_context_t *ec)
 # else // use Asyncify version
 
 static void
-mark_current_machine_context(const rb_execution_context_t *ec)
+mark_current_machine_context(rb_execution_context_t *ec)
 {
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
