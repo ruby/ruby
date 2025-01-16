@@ -81,7 +81,7 @@ jobs:
         include:
           - test_task: 'yjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--with-gcc=clang-12 --enable-yjit=dev'
+            configure: '--with-gcc=clang-14 --enable-yjit=dev'
 
           - test_task: 'check'
             # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
