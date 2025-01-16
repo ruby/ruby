@@ -56,8 +56,8 @@ class Reline::KeyStroke
     if func.is_a?(Array)
       # Perform simple macro expansion for single byte key bindings.
       # Multibyte key bindings and recursive macro expansion are not supported yet.
-      marco = func.pack('c*').force_encoding(@encoding)
-      keys = marco.chars.map do |c|
+      macro = func.pack('c*').force_encoding(@encoding)
+      keys = macro.chars.map do |c|
         f = key_mapping.get(c.bytes)
         Reline::Key.new(c, f.is_a?(Symbol) ? f : :ed_insert, false)
       end
