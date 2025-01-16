@@ -127,6 +127,9 @@ The affected global variables are:
   Note that <tt>$0</tt> is quite different;
   it returns the name of the currently executing program.
 
+These variables, except for <tt>$~</tt>, are shorthands for methods of
+<tt>$~</tt>.  See MatchData@Global+variables+equivalence.
+
 Examples:
 
   # Matched string, but no matched groups.
