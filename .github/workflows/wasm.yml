@@ -48,7 +48,7 @@ jobs:
       BINARYEN_VERSION: 113
       WASMTIME_VERSION: v15.0.0
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
