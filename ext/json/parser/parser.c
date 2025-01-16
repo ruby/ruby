@@ -1184,7 +1184,7 @@ static VALUE convert_encoding(VALUE source)
   return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
 }
 
-static int configure_parser_i(VALUE key, VALUE val, VALUE data)
+static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
     JSON_ParserConfig *config = (JSON_ParserConfig *)data;
 
@@ -1220,7 +1220,7 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts)
         if (RHASH_SIZE(opts) > 0) {
             // We assume in most cases few keys are set so it's faster to go over
             // the provided keys than to check all possible keys.
-            rb_hash_foreach(opts, configure_parser_i, (VALUE)config);
+            rb_hash_foreach(opts, parser_config_init_i, (VALUE)config);
 
             if (config->symbolize_names && config->create_additions) {
                 rb_raise(rb_eArgError,
@@ -1273,6 +1273,13 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     GET_PARSER_CONFIG;
 
     parser_config_init(config, opts);
+
+    RB_OBJ_WRITTEN(self, Qundef, config->create_id);
+    RB_OBJ_WRITTEN(self, Qundef, config->object_class);
+    RB_OBJ_WRITTEN(self, Qundef, config->array_class);
+    RB_OBJ_WRITTEN(self, Qundef, config->decimal_class);
+    RB_OBJ_WRITTEN(self, Qundef, config->match_string);
+
     return self;
 }
 
@@ -1344,7 +1351,7 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
     return cParser_parse(config, Vsource);
 }
 
-static void JSON_mark(void *ptr)
+static void JSON_ParserConfig_mark(void *ptr)
 {
     JSON_ParserConfig *config = ptr;
     rb_gc_mark(config->create_id);
@@ -1354,22 +1361,26 @@ static void JSON_mark(void *ptr)
     rb_gc_mark(config->match_string);
 }
 
-static void JSON_free(void *ptr)
+static void JSON_ParserConfig_free(void *ptr)
 {
     JSON_ParserConfig *config = ptr;
     ruby_xfree(config);
 }
 
-static size_t JSON_memsize(const void *ptr)
+static size_t JSON_ParserConfig_memsize(const void *ptr)
 {
     return sizeof(JSON_ParserConfig);
 }
 
 static const rb_data_type_t JSON_ParserConfig_type = {
-    "JSON/ParserConfig",
-    {JSON_mark, JSON_free, JSON_memsize,},
+    "JSON::Ext::Parser/ParserConfig",
+    {
+        JSON_ParserConfig_mark,
+        JSON_ParserConfig_free,
+        JSON_ParserConfig_memsize,
+    },
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
