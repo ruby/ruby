@@ -68,9 +68,15 @@ class Scheduler
   def run
     # $stderr.puts [__method__, Fiber.current].inspect
 
+    readable = writable = nil
+
     while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
       # May only handle file descriptors up to 1024...
-      readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
+      begin
+        readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
+      rescue IOError
+        # Ignore - this can happen if the IO is closed while we are waiting.
+      end
 
       # puts "readable: #{readable}" if readable&.any?
       # puts "writable: #{writable}" if writable&.any?
@@ -284,6 +290,30 @@ class Scheduler
 
     @lock.synchronize do
       @ready << fiber
+    end
+
+    io = @urgent.last
+    io.write_nonblock('.')
+  end
+
+  class FiberInterrupt
+    def initialize(fiber, exception)
+      @fiber = fiber
+      @exception = exception
+    end
+
+    def alive?
+      @fiber.alive?
+    end
+
+    def transfer
+      @fiber.raise(@exception)
+    end
+  end
+
+  def fiber_interrupt(fiber, exception)
+    @lock.synchronize do
+      @ready << FiberInterrupt.new(fiber, exception)
     end
 
     io = @urgent.last

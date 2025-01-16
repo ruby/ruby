@@ -1758,6 +1758,37 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
     }
 }
 
+
+static VALUE
+rb_thread_io_blocking_operation_ensure(VALUE _argument)
+{
+    struct io_blocking_operation_arguments *arguments = (void*)_argument;
+
+    rb_io_blocking_operation_exit(arguments->io, arguments->blocking_operation);
+
+    return Qnil;
+}
+
+VALUE
+rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument)
+{
+    struct rb_io *io;
+    RB_IO_POINTER(self, io);
+
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_io_blocking_operation blocking_operation = {
+        .ec = ec,
+    };
+    ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+
+    struct io_blocking_operation_arguments io_blocking_operation_arguments = {
+        .io = io,
+        .blocking_operation = &blocking_operation
+    };
+
+    return rb_ensure(function, argument, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
+}
+
 static bool
 thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *timeout)
 {
@@ -1859,7 +1890,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 saved_errno = errno;
             }, ubf_select, th, FALSE);
 
-            th = rb_ec_thread_ptr(ec);
+            RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
@@ -2672,10 +2703,10 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
     return 1;
 }
 
-static size_t
-thread_io_close_notify_all(struct rb_io *io)
+static VALUE
+thread_io_close_notify_all(VALUE _io)
 {
-    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    struct rb_io *io = (struct rb_io *)_io;
 
     size_t count = 0;
     rb_vm_t *vm = io->closing_ec->thread_ptr->vm;
@@ -2687,17 +2718,17 @@ thread_io_close_notify_all(struct rb_io *io)
 
         rb_thread_t *thread = ec->thread_ptr;
 
-        rb_threadptr_pending_interrupt_enque(thread, error);
-
-        // This operation is slow:
-        rb_threadptr_interrupt(thread);
+        if (thread->scheduler != Qnil) {
+            rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+        } else {
+            rb_threadptr_pending_interrupt_enque(thread, error);
+            rb_threadptr_interrupt(thread);
+        }
 
         count += 1;
     }
 
-    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
-
-    return count;
+    return (VALUE)count;
 }
 
 size_t
@@ -2720,7 +2751,9 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
 
-    return thread_io_close_notify_all(io);
+    VALUE result = rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
+
+    return (size_t)result;
 }
 
 void
