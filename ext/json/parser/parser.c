@@ -1344,7 +1344,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     JSON_ParserState _state = {
         .config = config,
         .cursor = RSTRING_PTR(Vsource),
-        .end = RSTRING_PTR(Vsource) + RSTRING_LEN(Vsource),
+        .end = RSTRING_END(Vsource),
         .stack = &stack,
     };
     JSON_ParserState *state = &_state;
