@@ -12,8 +12,7 @@ module MMTk
       RUBY
     end
 
-    # TODO: Add NoGC once this is fixed: https://github.com/mmtk/mmtk-core/pull/1263
-    %w(MarkSweep Immix).each do |plan|
+    %w(NoGC MarkSweep Immix).each do |plan|
       define_method(:"test_MMTK_PLAN_#{plan}") do
         assert_separately([{ "MMTK_PLAN" => plan }], <<~RUBY)
           assert_equal("#{plan}", GC.config[:mmtk_plan])
