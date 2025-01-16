@@ -91,6 +91,18 @@ jobs:
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
       - run: ./autogen.sh
         working-directory: src
+
+      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
+      - name: Download config.guess with wasi version
+        run: |
+          rm tool/config.guess tool/config.sub
+          ruby tool/downloader.rb -d tool -e gnu config.guess config.sub
+        working-directory: src
+
       - name: Run configure
         run: |
           ../src/configure \
