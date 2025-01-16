@@ -20,6 +20,7 @@ The following bundled gems are promoted from default gems.
 * benchmark 0.4.0
 * logger 1.6.5
 * rdoc 6.10.0
+* win32ole 1.9.1
 
 We only list stdlib changes that are notable feature changes.
 
