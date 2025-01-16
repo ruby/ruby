@@ -333,6 +333,20 @@ pub extern "C" fn mmtk_worker_count() -> usize {
     memory_manager::num_of_workers(mmtk())
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_plan() -> *const u8 {
+    static NO_GC: &[u8] = b"NoGC\0";
+    static MARK_SWEEP: &[u8] = b"MarkSweep\0";
+    static IMMIX: &[u8] = b"Immix\0";
+
+    match *crate::BINDING.get().unwrap().mmtk.get_options().plan {
+        PlanSelector::NoGC => NO_GC.as_ptr(),
+        PlanSelector::MarkSweep => MARK_SWEEP.as_ptr(),
+        PlanSelector::Immix => IMMIX.as_ptr(),
+        _ => panic!("Unknown plan")
+    }
+}
+
 // =============== Miscellaneous ===============
 
 #[no_mangle]

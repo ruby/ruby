@@ -633,6 +633,7 @@ rb_gc_impl_config_get(void *objspace_ptr)
     VALUE hash = rb_hash_new();
 
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_worker_count")), RB_ULONG2NUM(mmtk_worker_count()));
+    rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_plan")), rb_str_new_cstr((const char *)mmtk_plan()));
 
     return hash;
 }

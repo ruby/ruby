@@ -3736,33 +3736,477 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     ISEQ_COMPILE_DATA(iseq)->current_block = previous_block;
 }
 
+/**
+ * Compile and return the VALUE associated with the given back reference read
+ * node.
+ */
+static inline VALUE
+pm_compile_back_reference_ref(const pm_back_reference_read_node_t *node)
+{
+    const char *type = (const char *) (node->base.location.start + 1);
+
+    // Since a back reference is `$<char>`, Ruby represents the ID as an
+    // rb_intern on the value after the `$`.
+    return INT2FIX(rb_intern2(type, 1)) << 1 | 1;
+}
+
+/**
+ * Compile and return the VALUE associated with the given numbered reference
+ * read node.
+ */
+static inline VALUE
+pm_compile_numbered_reference_ref(const pm_numbered_reference_read_node_t *node)
+{
+    return INT2FIX(node->number << 1);
+}
+
 static void
 pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, bool in_condition, LABEL **lfinish, bool explicit_receiver)
 {
+#define PUSH_VAL(type) (in_condition ? Qtrue : rb_iseq_defined_string(type))
+
     // in_condition is the same as compile.c's needstr
     enum defined_type dtype = DEFINED_NOT_DEFINED;
     const pm_node_location_t location = *node_location;
 
     switch (PM_NODE_TYPE(node)) {
-      case PM_ARGUMENTS_NODE: {
-        const pm_arguments_node_t *cast = (const pm_arguments_node_t *) node;
-        const pm_node_list_t *arguments = &cast->arguments;
-        for (size_t idx = 0; idx < arguments->size; idx++) {
-            const pm_node_t *argument = arguments->nodes[idx];
-            pm_compile_defined_expr0(iseq, argument, node_location, ret, popped, scope_node, in_condition, lfinish, false);
-
-            if (!lfinish[1]) {
-                lfinish[1] = NEW_LABEL(location.line);
-            }
-            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-        }
-        dtype = DEFINED_TRUE;
-        break;
-      }
+/* DEFINED_NIL ****************************************************************/
       case PM_NIL_NODE:
+        // defined?(nil)
+        //          ^^^
         dtype = DEFINED_NIL;
         break;
+/* DEFINED_IVAR ***************************************************************/
+      case PM_INSTANCE_VARIABLE_READ_NODE: {
+        // defined?(@a)
+        //          ^^
+        const pm_instance_variable_read_node_t *cast = (const pm_instance_variable_read_node_t *) node;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+
+        PUSH_INSN3(ret, location, definedivar, ID2SYM(name), get_ivar_ic_value(iseq, name), PUSH_VAL(DEFINED_IVAR));
+
+        return;
+      }
+/* DEFINED_LVAR ***************************************************************/
+      case PM_LOCAL_VARIABLE_READ_NODE:
+        // a = 1; defined?(a)
+        //                 ^
+      case PM_IT_LOCAL_VARIABLE_READ_NODE:
+        // 1.then { defined?(it) }
+        //                   ^^
+        dtype = DEFINED_LVAR;
+        break;
+/* DEFINED_GVAR ***************************************************************/
+      case PM_GLOBAL_VARIABLE_READ_NODE: {
+        // defined?($a)
+        //          ^^
+        const pm_global_variable_read_node_t *cast = (const pm_global_variable_read_node_t *) node;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_GVAR), ID2SYM(name), PUSH_VAL(DEFINED_GVAR));
+
+        return;
+      }
+/* DEFINED_CVAR ***************************************************************/
+      case PM_CLASS_VARIABLE_READ_NODE: {
+        // defined?(@@a)
+        //          ^^^
+        const pm_class_variable_read_node_t *cast = (const pm_class_variable_read_node_t *) node;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CVAR), ID2SYM(name), PUSH_VAL(DEFINED_CVAR));
+
+        return;
+      }
+/* DEFINED_CONST **************************************************************/
+      case PM_CONSTANT_READ_NODE: {
+        // defined?(A)
+        //          ^
+        const pm_constant_read_node_t *cast = (const pm_constant_read_node_t *) node;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST), ID2SYM(name), PUSH_VAL(DEFINED_CONST));
+
+        return;
+      }
+/* DEFINED_YIELD **************************************************************/
+      case PM_YIELD_NODE:
+        // defined?(yield)
+        //          ^^^^^
+        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
+
+        return;
+/* DEFINED_ZSUPER *************************************************************/
+      case PM_SUPER_NODE: {
+        // defined?(super 1, 2)
+        //          ^^^^^^^^^^
+        const pm_super_node_t *cast = (const pm_super_node_t *) node;
+
+        if (cast->block != NULL && !PM_NODE_TYPE_P(cast->block, PM_BLOCK_ARGUMENT_NODE)) {
+            dtype = DEFINED_EXPR;
+            break;
+        }
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_ZSUPER), 0, PUSH_VAL(DEFINED_ZSUPER));
+        return;
+      }
+      case PM_FORWARDING_SUPER_NODE: {
+        // defined?(super)
+        //          ^^^^^
+        const pm_forwarding_super_node_t *cast = (const pm_forwarding_super_node_t *) node;
+
+        if (cast->block != NULL) {
+            dtype = DEFINED_EXPR;
+            break;
+        }
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_ZSUPER), 0, PUSH_VAL(DEFINED_ZSUPER));
+        return;
+      }
+/* DEFINED_SELF ***************************************************************/
+      case PM_SELF_NODE:
+        // defined?(self)
+        //          ^^^^
+        dtype = DEFINED_SELF;
+        break;
+/* DEFINED_TRUE ***************************************************************/
+      case PM_TRUE_NODE:
+        // defined?(true)
+        //          ^^^^
+        dtype = DEFINED_TRUE;
+        break;
+/* DEFINED_FALSE **************************************************************/
+      case PM_FALSE_NODE:
+        // defined?(false)
+        //          ^^^^^
+        dtype = DEFINED_FALSE;
+        break;
+/* DEFINED_ASGN ***************************************************************/
+      case PM_CALL_AND_WRITE_NODE:
+        // defined?(a.a &&= 1)
+        //          ^^^^^^^^^
+      case PM_CALL_OPERATOR_WRITE_NODE:
+        // defined?(a.a += 1)
+        //          ^^^^^^^^
+      case PM_CALL_OR_WRITE_NODE:
+        // defined?(a.a ||= 1)
+        //          ^^^^^^^^^
+      case PM_CLASS_VARIABLE_AND_WRITE_NODE:
+        // defined?(@@a &&= 1)
+        //          ^^^^^^^^^
+      case PM_CLASS_VARIABLE_OPERATOR_WRITE_NODE:
+        // defined?(@@a += 1)
+        //          ^^^^^^^^
+      case PM_CLASS_VARIABLE_OR_WRITE_NODE:
+        // defined?(@@a ||= 1)
+        //          ^^^^^^^^^
+      case PM_CLASS_VARIABLE_WRITE_NODE:
+        // defined?(@@a = 1)
+        //          ^^^^^^^
+      case PM_CONSTANT_AND_WRITE_NODE:
+        // defined?(A &&= 1)
+        //          ^^^^^^^
+      case PM_CONSTANT_OPERATOR_WRITE_NODE:
+        // defined?(A += 1)
+        //          ^^^^^^
+      case PM_CONSTANT_OR_WRITE_NODE:
+        // defined?(A ||= 1)
+        //          ^^^^^^^
+      case PM_CONSTANT_PATH_AND_WRITE_NODE:
+        // defined?(A::A &&= 1)
+        //          ^^^^^^^^^^
+      case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE:
+        // defined?(A::A += 1)
+        //          ^^^^^^^^^
+      case PM_CONSTANT_PATH_OR_WRITE_NODE:
+        // defined?(A::A ||= 1)
+        //          ^^^^^^^^^^
+      case PM_CONSTANT_PATH_WRITE_NODE:
+        // defined?(A::A = 1)
+        //          ^^^^^^^^
+      case PM_CONSTANT_WRITE_NODE:
+        // defined?(A = 1)
+        //          ^^^^^
+      case PM_GLOBAL_VARIABLE_AND_WRITE_NODE:
+        // defined?($a &&= 1)
+        //          ^^^^^^^^
+      case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
+        // defined?($a += 1)
+        //          ^^^^^^^
+      case PM_GLOBAL_VARIABLE_OR_WRITE_NODE:
+        // defined?($a ||= 1)
+        //          ^^^^^^^^
+      case PM_GLOBAL_VARIABLE_WRITE_NODE:
+        // defined?($a = 1)
+        //          ^^^^^^
+      case PM_INDEX_AND_WRITE_NODE:
+        // defined?(a[1] &&= 1)
+        //          ^^^^^^^^^^
+      case PM_INDEX_OPERATOR_WRITE_NODE:
+        // defined?(a[1] += 1)
+        //          ^^^^^^^^^
+      case PM_INDEX_OR_WRITE_NODE:
+        // defined?(a[1] ||= 1)
+        //          ^^^^^^^^^^
+      case PM_INSTANCE_VARIABLE_AND_WRITE_NODE:
+        // defined?(@a &&= 1)
+        //          ^^^^^^^^
+      case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
+        // defined?(@a += 1)
+        //          ^^^^^^^
+      case PM_INSTANCE_VARIABLE_OR_WRITE_NODE:
+        // defined?(@a ||= 1)
+        //          ^^^^^^^^
+      case PM_INSTANCE_VARIABLE_WRITE_NODE:
+        // defined?(@a = 1)
+        //          ^^^^^^
+      case PM_LOCAL_VARIABLE_AND_WRITE_NODE:
+        // defined?(a &&= 1)
+        //          ^^^^^^^
+      case PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE:
+        // defined?(a += 1)
+        //          ^^^^^^
+      case PM_LOCAL_VARIABLE_OR_WRITE_NODE:
+        // defined?(a ||= 1)
+        //          ^^^^^^^
+      case PM_LOCAL_VARIABLE_WRITE_NODE:
+        // defined?(a = 1)
+        //          ^^^^^
+      case PM_MULTI_WRITE_NODE:
+        // defined?((a, = 1))
+        //           ^^^^^^
+        dtype = DEFINED_ASGN;
+        break;
+/* DEFINED_EXPR ***************************************************************/
+      case PM_ALIAS_GLOBAL_VARIABLE_NODE:
+        // defined?((alias $a $b))
+        //           ^^^^^^^^^^^
+      case PM_ALIAS_METHOD_NODE:
+        // defined?((alias a b))
+        //           ^^^^^^^^^
+      case PM_AND_NODE:
+        // defined?(a and b)
+        //          ^^^^^^^
+      case PM_BREAK_NODE:
+        // defined?(break 1)
+        //          ^^^^^^^
+      case PM_CASE_MATCH_NODE:
+        // defined?(case 1; in 1; end)
+        //          ^^^^^^^^^^^^^^^^^
+      case PM_CASE_NODE:
+        // defined?(case 1; when 1; end)
+        //          ^^^^^^^^^^^^^^^^^^^
+      case PM_CLASS_NODE:
+        // defined?(class Foo; end)
+        //          ^^^^^^^^^^^^^^
+      case PM_DEF_NODE:
+        // defined?(def a() end)
+        //          ^^^^^^^^^^^
+      case PM_DEFINED_NODE:
+        // defined?(defined?(a))
+        //          ^^^^^^^^^^^
+      case PM_FLIP_FLOP_NODE:
+        // defined?(not (a .. b))
+        //               ^^^^^^
+      case PM_FLOAT_NODE:
+        // defined?(1.0)
+        //          ^^^
+      case PM_FOR_NODE:
+        // defined?(for a in 1 do end)
+        //          ^^^^^^^^^^^^^^^^^
+      case PM_IF_NODE:
+        // defined?(if a then end)
+        //          ^^^^^^^^^^^^^
+      case PM_IMAGINARY_NODE:
+        // defined?(1i)
+        //          ^^
+      case PM_INTEGER_NODE:
+        // defined?(1)
+        //          ^
+      case PM_INTERPOLATED_MATCH_LAST_LINE_NODE:
+        // defined?(not /#{1}/)
+        //              ^^^^^^
+      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+        // defined?(/#{1}/)
+        //          ^^^^^^
+      case PM_INTERPOLATED_STRING_NODE:
+        // defined?("#{1}")
+        //          ^^^^^^
+      case PM_INTERPOLATED_SYMBOL_NODE:
+        // defined?(:"#{1}")
+        //          ^^^^^^^
+      case PM_INTERPOLATED_X_STRING_NODE:
+        // defined?(`#{1}`)
+        //          ^^^^^^
+      case PM_LAMBDA_NODE:
+        // defined?(-> {})
+        //          ^^^^^
+      case PM_MATCH_LAST_LINE_NODE:
+        // defined?(not //)
+        //          ^^^^^^
+      case PM_MATCH_PREDICATE_NODE:
+        // defined?(1 in 1)
+        //          ^^^^^^
+      case PM_MATCH_REQUIRED_NODE:
+        // defined?(1 => 1)
+        //          ^^^^^^
+      case PM_MATCH_WRITE_NODE:
+        // defined?(/(?<a>)/ =~ "")
+        //          ^^^^^^^^^^^^^^
+      case PM_MODULE_NODE:
+        // defined?(module A end)
+        //          ^^^^^^^^^^^^
+      case PM_NEXT_NODE:
+        // defined?(next 1)
+        //          ^^^^^^
+      case PM_OR_NODE:
+        // defined?(a or b)
+        //          ^^^^^^
+      case PM_POST_EXECUTION_NODE:
+        // defined?((END {}))
+        //          ^^^^^^^^
+      case PM_RANGE_NODE:
+        // defined?(1..1)
+        //          ^^^^
+      case PM_RATIONAL_NODE:
+        // defined?(1r)
+        //          ^^
+      case PM_REDO_NODE:
+        // defined?(redo)
+        //          ^^^^
+      case PM_REGULAR_EXPRESSION_NODE:
+        // defined?(//)
+        //          ^^
+      case PM_RESCUE_MODIFIER_NODE:
+        // defined?(a rescue b)
+        //          ^^^^^^^^^^
+      case PM_RETRY_NODE:
+        // defined?(retry)
+        //          ^^^^^
+      case PM_RETURN_NODE:
+        // defined?(return)
+        //          ^^^^^^
+      case PM_SINGLETON_CLASS_NODE:
+        // defined?(class << self; end)
+        //          ^^^^^^^^^^^^^^^^^^
+      case PM_SOURCE_ENCODING_NODE:
+        // defined?(__ENCODING__)
+        //          ^^^^^^^^^^^^
+      case PM_SOURCE_FILE_NODE:
+        // defined?(__FILE__)
+        //          ^^^^^^^^
+      case PM_SOURCE_LINE_NODE:
+        // defined?(__LINE__)
+        //          ^^^^^^^^
+      case PM_STRING_NODE:
+        // defined?("")
+        //          ^^
+      case PM_SYMBOL_NODE:
+        // defined?(:a)
+        //          ^^
+      case PM_UNDEF_NODE:
+        // defined?((undef a))
+        //           ^^^^^^^
+      case PM_UNLESS_NODE:
+        // defined?(unless a then end)
+        //          ^^^^^^^^^^^^^^^^^
+      case PM_UNTIL_NODE:
+        // defined?(until a do end)
+        //          ^^^^^^^^^^^^^^
+      case PM_WHILE_NODE:
+        // defined?(while a do end)
+        //          ^^^^^^^^^^^^^^
+      case PM_X_STRING_NODE:
+        // defined?(``)
+        //          ^^
+        dtype = DEFINED_EXPR;
+        break;
+/* DEFINED_REF ****************************************************************/
+      case PM_BACK_REFERENCE_READ_NODE: {
+        // defined?($+)
+        //          ^^
+        const pm_back_reference_read_node_t *cast = (const pm_back_reference_read_node_t *) node;
+        VALUE ref = pm_compile_back_reference_ref(cast);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_REF), ref, PUSH_VAL(DEFINED_GVAR));
+
+        return;
+      }
+      case PM_NUMBERED_REFERENCE_READ_NODE: {
+        // defined?($1)
+        //          ^^
+        const pm_numbered_reference_read_node_t *cast = (const pm_numbered_reference_read_node_t *) node;
+        VALUE ref = pm_compile_numbered_reference_ref(cast);
+
+        PUSH_INSN(ret, location, putnil);
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_REF), ref, PUSH_VAL(DEFINED_GVAR));
+
+        return;
+      }
+/* DEFINED_CONST_FROM *********************************************************/
+      case PM_CONSTANT_PATH_NODE: {
+        // defined?(A::A)
+        //          ^^^^
+        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
+        ID name = pm_constant_id_lookup(scope_node, cast->name);
+
+        if (cast->parent != NULL) {
+            if (!lfinish[1]) lfinish[1] = NEW_LABEL(location.line);
+            pm_compile_defined_expr0(iseq, cast->parent, node_location, ret, popped, scope_node, true, lfinish, false);
+
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+            PM_COMPILE(cast->parent);
+        }
+        else {
+            PUSH_INSN1(ret, location, putobject, rb_cObject);
+        }
+
+        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST_FROM), ID2SYM(name), PUSH_VAL(DEFINED_CONST));
+        return;
+      }
+/* Containers *****************************************************************/
+      case PM_BEGIN_NODE: {
+        // defined?(begin end)
+        //          ^^^^^^^^^
+        const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+
+        if (cast->rescue_clause == NULL && cast->ensure_clause == NULL && cast->else_clause == NULL) {
+            if (cast->statements == NULL) {
+                // If we have empty statements, then we want to return "nil".
+                dtype = DEFINED_NIL;
+            }
+            else if (cast->statements->body.size == 1) {
+                // If we have a begin node that is wrapping a single statement
+                // then we want to recurse down to that statement and compile
+                // it.
+                pm_compile_defined_expr0(iseq, cast->statements->body.nodes[0], node_location, ret, popped, scope_node, in_condition, lfinish, false);
+                return;
+            }
+            else {
+                // Otherwise, we have a begin wrapping multiple statements, in
+                // which case this is defined as "expression".
+                dtype = DEFINED_EXPR;
+            }
+        } else {
+            // If we have any of the other clauses besides the main begin/end,
+            // this is defined as "expression".
+            dtype = DEFINED_EXPR;
+        }
+
+        break;
+      }
       case PM_PARENTHESES_NODE: {
+        // defined?(())
+        //          ^^
         const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
 
         if (cast->body == NULL) {
@@ -3783,16 +4227,9 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
         break;
       }
-      case PM_SELF_NODE:
-        dtype = DEFINED_SELF;
-        break;
-      case PM_TRUE_NODE:
-        dtype = DEFINED_TRUE;
-        break;
-      case PM_FALSE_NODE:
-        dtype = DEFINED_FALSE;
-        break;
       case PM_ARRAY_NODE: {
+        // defined?([])
+        //          ^^
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
 
         if (cast->elements.size > 0 && !lfinish[1]) {
@@ -3808,7 +4245,11 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         break;
       }
       case PM_HASH_NODE:
+        // defined?({ a: 1 })
+        //          ^^^^^^^^
       case PM_KEYWORD_HASH_NODE: {
+        // defined?(a(a: 1))
+        //            ^^^^
         const pm_node_list_t *elements;
 
         if (PM_NODE_TYPE_P(node, PM_HASH_NODE)) {
@@ -3823,175 +4264,49 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
         }
 
         for (size_t index = 0; index < elements->size; index++) {
-            const pm_node_t *element = elements->nodes[index];
-
-            switch (PM_NODE_TYPE(element)) {
-              case PM_ASSOC_NODE: {
-                const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
-
-                pm_compile_defined_expr0(iseq, assoc->key, node_location, ret, popped, scope_node, true, lfinish, false);
-                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-
-                pm_compile_defined_expr0(iseq, assoc->value, node_location, ret, popped, scope_node, true, lfinish, false);
-                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-
-                break;
-              }
-              case PM_ASSOC_SPLAT_NODE: {
-                const pm_assoc_splat_node_t *assoc_splat = (const pm_assoc_splat_node_t *) element;
-
-                pm_compile_defined_expr0(iseq, assoc_splat->value, node_location, ret, popped, scope_node, true, lfinish, false);
-                PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-
-                break;
-              }
-              default:
-                rb_bug("unexpected node type in hash node: %s", pm_node_type_to_str(PM_NODE_TYPE(element)));
-                break;
-            }
+            pm_compile_defined_expr0(iseq, elements->nodes[index], node_location, ret, popped, scope_node, true, lfinish, false);
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
 
         dtype = DEFINED_EXPR;
         break;
       }
-      case PM_SPLAT_NODE: {
-        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
-        pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
+      case PM_ASSOC_NODE: {
+        // defined?({ a: 1 })
+        //            ^^^^
+        const pm_assoc_node_t *cast = (const pm_assoc_node_t *) node;
 
-        if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(location.line);
+        pm_compile_defined_expr0(iseq, cast->key, node_location, ret, popped, scope_node, true, lfinish, false);
+        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, true, lfinish, false);
+
+        return;
+      }
+      case PM_ASSOC_SPLAT_NODE: {
+        // defined?({ **a })
+        //            ^^^^
+        const pm_assoc_splat_node_t *cast = (const pm_assoc_splat_node_t *) node;
+
+        if (cast->value == NULL) {
+            dtype = DEFINED_EXPR;
+            break;
         }
 
-        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-        dtype = DEFINED_EXPR;
-        break;
+        pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, true, lfinish, false);
+        return;
       }
       case PM_IMPLICIT_NODE: {
+        // defined?({ a: })
+        //            ^^
         const pm_implicit_node_t *cast = (const pm_implicit_node_t *) node;
         pm_compile_defined_expr0(iseq, cast->value, node_location, ret, popped, scope_node, in_condition, lfinish, false);
-        return;
-      }
-      case PM_AND_NODE:
-      case PM_BEGIN_NODE:
-      case PM_BREAK_NODE:
-      case PM_CASE_NODE:
-      case PM_CASE_MATCH_NODE:
-      case PM_CLASS_NODE:
-      case PM_DEF_NODE:
-      case PM_DEFINED_NODE:
-      case PM_FLOAT_NODE:
-      case PM_FOR_NODE:
-      case PM_IF_NODE:
-      case PM_IMAGINARY_NODE:
-      case PM_INTEGER_NODE:
-      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
-      case PM_INTERPOLATED_STRING_NODE:
-      case PM_INTERPOLATED_SYMBOL_NODE:
-      case PM_INTERPOLATED_X_STRING_NODE:
-      case PM_LAMBDA_NODE:
-      case PM_MATCH_PREDICATE_NODE:
-      case PM_MATCH_REQUIRED_NODE:
-      case PM_MATCH_WRITE_NODE:
-      case PM_MODULE_NODE:
-      case PM_NEXT_NODE:
-      case PM_OR_NODE:
-      case PM_RANGE_NODE:
-      case PM_RATIONAL_NODE:
-      case PM_REDO_NODE:
-      case PM_REGULAR_EXPRESSION_NODE:
-      case PM_RETRY_NODE:
-      case PM_RETURN_NODE:
-      case PM_SINGLETON_CLASS_NODE:
-      case PM_SOURCE_ENCODING_NODE:
-      case PM_SOURCE_FILE_NODE:
-      case PM_SOURCE_LINE_NODE:
-      case PM_STRING_NODE:
-      case PM_SYMBOL_NODE:
-      case PM_UNLESS_NODE:
-      case PM_UNTIL_NODE:
-      case PM_WHILE_NODE:
-      case PM_X_STRING_NODE:
-        dtype = DEFINED_EXPR;
-        break;
-      case PM_LOCAL_VARIABLE_READ_NODE:
-        dtype = DEFINED_LVAR;
-        break;
-
-#define PUSH_VAL(type) (in_condition ? Qtrue : rb_iseq_defined_string(type))
-
-      case PM_INSTANCE_VARIABLE_READ_NODE: {
-        const pm_instance_variable_read_node_t *cast = (const pm_instance_variable_read_node_t *) node;
-
-        ID name = pm_constant_id_lookup(scope_node, cast->name);
-        PUSH_INSN3(ret, location, definedivar, ID2SYM(name), get_ivar_ic_value(iseq, name), PUSH_VAL(DEFINED_IVAR));
-
-        return;
-      }
-      case PM_BACK_REFERENCE_READ_NODE: {
-        const char *char_ptr = (const char *) (node->location.start + 1);
-        ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_REF), backref_val, PUSH_VAL(DEFINED_GVAR));
-
-        return;
-      }
-      case PM_NUMBERED_REFERENCE_READ_NODE: {
-        uint32_t reference_number = ((const pm_numbered_reference_read_node_t *) node)->number;
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_REF), INT2FIX(reference_number << 1), PUSH_VAL(DEFINED_GVAR));
-
-        return;
-      }
-      case PM_GLOBAL_VARIABLE_READ_NODE: {
-        const pm_global_variable_read_node_t *cast = (const pm_global_variable_read_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_GVAR), name, PUSH_VAL(DEFINED_GVAR));
-
-        return;
-      }
-      case PM_CLASS_VARIABLE_READ_NODE: {
-        const pm_class_variable_read_node_t *cast = (const pm_class_variable_read_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CVAR), name, PUSH_VAL(DEFINED_CVAR));
-
-        return;
-      }
-      case PM_CONSTANT_READ_NODE: {
-        const pm_constant_read_node_t *cast = (const pm_constant_read_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST), name, PUSH_VAL(DEFINED_CONST));
-
-        return;
-      }
-      case PM_CONSTANT_PATH_NODE: {
-        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
-        VALUE name = ID2SYM(pm_constant_id_lookup(scope_node, cast->name));
-
-        if (cast->parent != NULL) {
-            if (!lfinish[1]) lfinish[1] = NEW_LABEL(location.line);
-            pm_compile_defined_expr0(iseq, cast->parent, node_location, ret, popped, scope_node, true, lfinish, false);
-
-            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
-            PM_COMPILE(cast->parent);
-        }
-        else {
-            PUSH_INSN1(ret, location, putobject, rb_cObject);
-        }
-
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_CONST_FROM), name, PUSH_VAL(DEFINED_CONST));
         return;
       }
       case PM_CALL_NODE: {
 #define BLOCK_P(cast) ((cast)->block != NULL && PM_NODE_TYPE_P((cast)->block, PM_BLOCK_NODE))
 
+        // defined?(a(1, 2, 3))
+        //          ^^^^^^^^^^
         const pm_call_node_t *cast = ((const pm_call_node_t *) node);
 
         if (BLOCK_P(cast)) {
@@ -3999,9 +4314,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             break;
         }
 
-        ID method_id = pm_constant_id_lookup(scope_node, cast->name);
-
-        if (cast->receiver || cast->arguments) {
+        if (cast->receiver || cast->arguments || (cast->block && PM_NODE_TYPE_P(cast->block, PM_BLOCK_ARGUMENT_NODE))) {
             if (!lfinish[1]) lfinish[1] = NEW_LABEL(location.line);
             if (!lfinish[2]) lfinish[2] = NEW_LABEL(location.line);
         }
@@ -4011,13 +4324,21 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             PUSH_INSNL(ret, location, branchunless, lfinish[1]);
         }
 
+        if (cast->block && PM_NODE_TYPE_P(cast->block, PM_BLOCK_ARGUMENT_NODE)) {
+            pm_compile_defined_expr0(iseq, cast->block, node_location, ret, popped, scope_node, true, lfinish, false);
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        }
+
         if (cast->receiver) {
             if (PM_NODE_TYPE_P(cast->receiver, PM_CALL_NODE) && !BLOCK_P((const pm_call_node_t *) cast->receiver)) {
+                // Special behavior here where we chain calls together. This is
+                // the only path that sets explicit_receiver to true.
                 pm_compile_defined_expr0(iseq, cast->receiver, node_location, ret, popped, scope_node, true, lfinish, true);
                 PUSH_INSNL(ret, location, branchunless, lfinish[2]);
 
                 const pm_call_node_t *receiver = (const pm_call_node_t *) cast->receiver;
                 ID method_id = pm_constant_id_lookup(scope_node, receiver->name);
+
                 pm_compile_call(iseq, receiver, ret, popped, scope_node, method_id, NULL);
             }
             else {
@@ -4026,12 +4347,17 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                 PM_COMPILE(cast->receiver);
             }
 
+            ID method_id = pm_constant_id_lookup(scope_node, cast->name);
+
             if (explicit_receiver) PUSH_INSN(ret, location, dup);
             PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_METHOD), rb_id2sym(method_id), PUSH_VAL(DEFINED_METHOD));
         }
         else {
+            ID method_id = pm_constant_id_lookup(scope_node, cast->name);
+
             PUSH_INSN(ret, location, putself);
             if (explicit_receiver) PUSH_INSN(ret, location, dup);
+
             PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_FUNC), rb_id2sym(method_id), PUSH_VAL(DEFINED_METHOD));
         }
 
@@ -4039,63 +4365,108 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
 #undef BLOCK_P
       }
-      case PM_YIELD_NODE:
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_YIELD), 0, PUSH_VAL(DEFINED_YIELD));
-        iseq_set_use_block(ISEQ_BODY(iseq)->local_iseq);
-        return;
-      case PM_SUPER_NODE:
-      case PM_FORWARDING_SUPER_NODE:
-        PUSH_INSN(ret, location, putnil);
-        PUSH_INSN3(ret, location, defined, INT2FIX(DEFINED_ZSUPER), 0, PUSH_VAL(DEFINED_ZSUPER));
-        return;
-      case PM_CALL_AND_WRITE_NODE:
-      case PM_CALL_OPERATOR_WRITE_NODE:
-      case PM_CALL_OR_WRITE_NODE:
+      case PM_ARGUMENTS_NODE: {
+        // defined?(a(1, 2, 3))
+        //            ^^^^^^^
+        const pm_arguments_node_t *cast = (const pm_arguments_node_t *) node;
 
-      case PM_CONSTANT_WRITE_NODE:
-      case PM_CONSTANT_OPERATOR_WRITE_NODE:
-      case PM_CONSTANT_AND_WRITE_NODE:
-      case PM_CONSTANT_OR_WRITE_NODE:
+        for (size_t index = 0; index < cast->arguments.size; index++) {
+            pm_compile_defined_expr0(iseq, cast->arguments.nodes[index], node_location, ret, popped, scope_node, in_condition, lfinish, false);
+            PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+        }
 
-      case PM_CONSTANT_PATH_AND_WRITE_NODE:
-      case PM_CONSTANT_PATH_OPERATOR_WRITE_NODE:
-      case PM_CONSTANT_PATH_OR_WRITE_NODE:
-      case PM_CONSTANT_PATH_WRITE_NODE:
-
-      case PM_GLOBAL_VARIABLE_WRITE_NODE:
-      case PM_GLOBAL_VARIABLE_OPERATOR_WRITE_NODE:
-      case PM_GLOBAL_VARIABLE_AND_WRITE_NODE:
-      case PM_GLOBAL_VARIABLE_OR_WRITE_NODE:
-
-      case PM_CLASS_VARIABLE_WRITE_NODE:
-      case PM_CLASS_VARIABLE_OPERATOR_WRITE_NODE:
-      case PM_CLASS_VARIABLE_AND_WRITE_NODE:
-      case PM_CLASS_VARIABLE_OR_WRITE_NODE:
-
-      case PM_INDEX_AND_WRITE_NODE:
-      case PM_INDEX_OPERATOR_WRITE_NODE:
-      case PM_INDEX_OR_WRITE_NODE:
-
-      case PM_INSTANCE_VARIABLE_WRITE_NODE:
-      case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
-      case PM_INSTANCE_VARIABLE_AND_WRITE_NODE:
-      case PM_INSTANCE_VARIABLE_OR_WRITE_NODE:
-
-      case PM_LOCAL_VARIABLE_WRITE_NODE:
-      case PM_LOCAL_VARIABLE_OPERATOR_WRITE_NODE:
-      case PM_LOCAL_VARIABLE_AND_WRITE_NODE:
-      case PM_LOCAL_VARIABLE_OR_WRITE_NODE:
-
-      case PM_MULTI_WRITE_NODE:
-        dtype = DEFINED_ASGN;
+        dtype = DEFINED_EXPR;
         break;
-      default:
-        rb_bug("Unsupported node %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+      }
+      case PM_BLOCK_ARGUMENT_NODE:
+        // defined?(a(&b))
+        //            ^^
+        dtype = DEFINED_EXPR;
+        break;
+      case PM_FORWARDING_ARGUMENTS_NODE:
+        // def a(...) = defined?(a(...))
+        //                         ^^^
+        dtype = DEFINED_EXPR;
+        break;
+      case PM_SPLAT_NODE: {
+        // def a(*) = defined?(a(*))
+        //                       ^
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+
+        if (cast->expression == NULL) {
+            dtype = DEFINED_EXPR;
+            break;
+        }
+
+        pm_compile_defined_expr0(iseq, cast->expression, node_location, ret, popped, scope_node, in_condition, lfinish, false);
+
+        if (!lfinish[1]) lfinish[1] = NEW_LABEL(location.line);
+        PUSH_INSNL(ret, location, branchunless, lfinish[1]);
+
+        dtype = DEFINED_EXPR;
+        break;
+      }
+      case PM_SHAREABLE_CONSTANT_NODE:
+        // # shareable_constant_value: literal
+        // defined?(A = 1)
+        //          ^^^^^
+        pm_compile_defined_expr0(iseq, ((const pm_shareable_constant_node_t *) node)->write, node_location, ret, popped, scope_node, in_condition, lfinish, explicit_receiver);
+        return;
+/* Unreachable (parameters) ***************************************************/
+      case PM_BLOCK_LOCAL_VARIABLE_NODE:
+      case PM_BLOCK_PARAMETER_NODE:
+      case PM_BLOCK_PARAMETERS_NODE:
+      case PM_FORWARDING_PARAMETER_NODE:
+      case PM_IMPLICIT_REST_NODE:
+      case PM_IT_PARAMETERS_NODE:
+      case PM_PARAMETERS_NODE:
+      case PM_KEYWORD_REST_PARAMETER_NODE:
+      case PM_NO_KEYWORDS_PARAMETER_NODE:
+      case PM_NUMBERED_PARAMETERS_NODE:
+      case PM_OPTIONAL_KEYWORD_PARAMETER_NODE:
+      case PM_OPTIONAL_PARAMETER_NODE:
+      case PM_REQUIRED_KEYWORD_PARAMETER_NODE:
+      case PM_REQUIRED_PARAMETER_NODE:
+      case PM_REST_PARAMETER_NODE:
+/* Unreachable (pattern matching) *********************************************/
+      case PM_ALTERNATION_PATTERN_NODE:
+      case PM_ARRAY_PATTERN_NODE:
+      case PM_CAPTURE_PATTERN_NODE:
+      case PM_FIND_PATTERN_NODE:
+      case PM_HASH_PATTERN_NODE:
+      case PM_PINNED_EXPRESSION_NODE:
+      case PM_PINNED_VARIABLE_NODE:
+/* Unreachable (indirect writes) **********************************************/
+      case PM_CALL_TARGET_NODE:
+      case PM_CLASS_VARIABLE_TARGET_NODE:
+      case PM_CONSTANT_PATH_TARGET_NODE:
+      case PM_CONSTANT_TARGET_NODE:
+      case PM_GLOBAL_VARIABLE_TARGET_NODE:
+      case PM_INDEX_TARGET_NODE:
+      case PM_INSTANCE_VARIABLE_TARGET_NODE:
+      case PM_LOCAL_VARIABLE_TARGET_NODE:
+      case PM_MULTI_TARGET_NODE:
+/* Unreachable (clauses) ******************************************************/
+      case PM_ELSE_NODE:
+      case PM_ENSURE_NODE:
+      case PM_IN_NODE:
+      case PM_RESCUE_NODE:
+      case PM_WHEN_NODE:
+/* Unreachable (miscellaneous) ************************************************/
+      case PM_BLOCK_NODE:
+      case PM_EMBEDDED_STATEMENTS_NODE:
+      case PM_EMBEDDED_VARIABLE_NODE:
+      case PM_MISSING_NODE:
+      case PM_PRE_EXECUTION_NODE:
+      case PM_PROGRAM_NODE:
+      case PM_SCOPE_NODE:
+      case PM_STATEMENTS_NODE:
+        rb_bug("Unreachable node in defined?: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
     }
 
     RUBY_ASSERT(dtype != DEFINED_NOT_DEFINED);
     PUSH_INSN1(ret, location, putobject, PUSH_VAL(dtype));
+
 #undef PUSH_VAL
 }
 
@@ -8310,11 +8681,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // $+
         // ^^
         if (!popped) {
-            // Since a back reference is `$<char>`, ruby represents the ID as the
-            // an rb_intern on the value after the `$`.
-            char *char_ptr = (char *)(node->location.start) + 1;
-            ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
-            PUSH_INSN2(ret, location, getspecial, INT2FIX(1), backref_val);
+            const pm_back_reference_read_node_t *cast = (const pm_back_reference_read_node_t *) node;
+            VALUE backref = pm_compile_back_reference_ref(cast);
+
+            PUSH_INSN2(ret, location, getspecial, INT2FIX(1), backref);
         }
         return;
       }
@@ -9524,10 +9894,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // $1
         // ^^
         if (!popped) {
-            uint32_t reference_number = ((const pm_numbered_reference_read_node_t *) node)->number;
+            const pm_numbered_reference_read_node_t *cast = (const pm_numbered_reference_read_node_t *) node;
 
-            if (reference_number > 0) {
-                PUSH_INSN2(ret, location, getspecial, INT2FIX(1), INT2FIX(reference_number << 1));
+            if (cast->number != 0) {
+                VALUE ref = pm_compile_numbered_reference_ref(cast);
+                PUSH_INSN2(ret, location, getspecial, INT2FIX(1), ref);
             }
             else {
                 PUSH_INSN(ret, location, putnil);

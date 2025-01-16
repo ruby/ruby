@@ -587,4 +587,3 @@ void Init_psych_emitter(void)
     id_indentation = rb_intern("indentation");
     id_canonical   = rb_intern("canonical");
 }
-/* vim: set noet sws=4 sw=4: */

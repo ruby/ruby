@@ -280,7 +280,7 @@ class TestProcess < Test::Unit::TestCase
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
   when /darwin/
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
