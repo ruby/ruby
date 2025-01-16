@@ -76,6 +76,9 @@ void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/sock
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
 VALUE rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events);
 
+// Invoke the given function, with the specified argument, in a way that `IO#close` from another execution context can interrupt it.
+VALUE rb_thread_io_interruptible_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument);
+
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 

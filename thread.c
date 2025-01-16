@@ -150,7 +150,7 @@ static rb_internal_thread_specific_key_t specific_key_count;
 
 struct waiting_fd {
     struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
-    rb_thread_t *th;
+    rb_execution_context_t *ec;
     int fd;
     struct rb_io_close_wait_list *busy;
 };
@@ -1691,11 +1691,13 @@ waitfd_to_waiting_flag(int wfd_event)
 }
 
 static void
-thread_io_setup_wfd(rb_thread_t *th, int fd, struct waiting_fd *wfd)
+thread_io_setup_wfd(rb_execution_context_t *ec, int fd, struct waiting_fd *wfd)
 {
     wfd->fd = fd;
-    wfd->th = th;
+    wfd->ec = ec;
     wfd->busy = NULL;
+
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     RB_VM_LOCK_ENTER();
     {
@@ -1728,6 +1730,29 @@ thread_io_wake_pending_closer(struct waiting_fd *wfd)
         }
         rb_mutex_unlock(wfd->busy->wakeup_mutex);
     }
+}
+
+
+static VALUE
+rb_thread_io_interruptible_operation_ensure(VALUE _argument)
+{
+    struct waiting_fd *wfd = (struct waiting_fd *)_argument;
+    thread_io_wake_pending_closer(wfd);
+    return Qnil;
+}
+
+VALUE
+rb_thread_io_interruptible_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument)
+{
+    struct rb_io *io;
+    RB_IO_POINTER(self, io);
+
+    rb_execution_context_t *ec = GET_EC();
+
+    struct waiting_fd waiting_fd;
+    thread_io_setup_wfd(ec, io->fd, &waiting_fd);
+
+    return rb_ensure(function, argument, rb_thread_io_interruptible_operation_ensure, (VALUE)&waiting_fd);
 }
 
 static bool
@@ -1815,18 +1840,18 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     // `func` or not (as opposed to some previously set value).
     errno = 0;
 
-    thread_io_setup_wfd(th, fd, &waiting_fd);
+    thread_io_setup_wfd(ec, fd, &waiting_fd);
     {
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
-            BLOCKING_REGION(waiting_fd.th, {
+            BLOCKING_REGION(th, {
                 val = func(data1);
                 saved_errno = errno;
-            }, ubf_select, waiting_fd.th, FALSE);
+            }, ubf_select, th, FALSE);
 
-            th = rb_ec_thread_ptr(ec);
+            RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
@@ -2640,6 +2665,7 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
 int
 rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
 {
+    // fprintf(stderr, "rb_notify_fd_close(%d) pid=%d\n", fd, getpid());
     rb_vm_t *vm = GET_THREAD()->vm;
     struct waiting_fd *wfd = 0, *next;
     ccan_list_head_init(&busy->pending_fd_users);
@@ -2650,16 +2676,23 @@ rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy)
     {
         ccan_list_for_each_safe(&vm->waiting_fds, wfd, next, wfd_node) {
             if (wfd->fd == fd) {
-                rb_thread_t *th = wfd->th;
-                VALUE err;
+                rb_execution_context_t *ec = wfd->ec;
+                rb_thread_t *th = rb_ec_thread_ptr(ec);
 
                 ccan_list_del(&wfd->wfd_node);
                 ccan_list_add(&busy->pending_fd_users, &wfd->wfd_node);
 
                 wfd->busy = busy;
-                err = th->vm->special_exceptions[ruby_error_stream_closed];
-                rb_threadptr_pending_interrupt_enque(th, err);
-                rb_threadptr_interrupt(th);
+
+                VALUE error = th->vm->special_exceptions[ruby_error_stream_closed];
+
+                if (th->scheduler != Qnil) {
+                    rb_fiber_scheduler_fiber_interrupt(th->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+                } else {
+                    // fprintf(stderr, "rb_notify_fd_close: Interrupting thread %p\n", (void *)th);
+                    rb_threadptr_pending_interrupt_enque(th, error);
+                    rb_threadptr_interrupt(th);
+                }
             }
         }
     }
@@ -4417,7 +4450,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-    thread_io_setup_wfd(th, fd, &wfd);
+    thread_io_setup_wfd(ec, fd, &wfd);
 
     if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
         // fd is readable
@@ -4426,16 +4459,16 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
         errno = 0;
     }
     else {
-        EC_PUSH_TAG(wfd.th->ec);
+        EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             rb_hrtime_t *to, rel, end = 0;
-            RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
             timeout_prepare(&to, &rel, &end, timeout);
             do {
                 nfds = numberof(fds);
-                result = wait_for_single_fd_blocking_region(wfd.th, fds, nfds, to, &lerrno);
+                result = wait_for_single_fd_blocking_region(th, fds, nfds, to, &lerrno);
 
-                RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+                RUBY_VM_CHECK_INTS_BLOCKING(ec);
             } while (wait_retryable(&result, lerrno, to, end));
         }
         EC_POP_TAG();
@@ -4444,7 +4477,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     thread_io_wake_pending_closer(&wfd);
 
     if (state) {
-        EC_JUMP_TAG(wfd.th->ec, state);
+        EC_JUMP_TAG(ec, state);
     }
 
     if (result < 0) {
@@ -4543,14 +4576,13 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     int r;
     VALUE ptr = (VALUE)&args;
     rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
     args.write = (events & RB_WAITFD_OUT) ? init_set_fd(fd, &wfds) : NULL;
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = timeout;
-    thread_io_setup_wfd(th, fd, &args.wfd);
+    thread_io_setup_wfd(ec, fd, &args.wfd);
 
     r = (int)rb_ensure(select_single, ptr, select_single_cleanup, ptr);
     if (r == -1)

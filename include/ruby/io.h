@@ -665,6 +665,19 @@ VALUE rb_io_get_io(VALUE io);
 VALUE rb_io_check_io(VALUE io);
 
 /**
+ * Invoke the given function with the given data, which may block the current
+ * execution context.
+ *
+ * During the execution of the function, the current execution context may be
+ * interrupted by an exception raised by another thread if the IO is closed.
+ *
+ * @param[in]  self      An IO.
+ * @param[in]  function  A function to call.
+ * @param[in]  argument  An argument to pass to the function.
+ */
+VALUE rb_io_interruptible_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument);
+
+/**
  * Queries the tied IO  for writing.  An IO can be  duplexed.  Fine.  The thing
  * is,  that characteristics  could  sometimes be  achieved  by the  underlying
  * operating  system (for  instance  a  socket's duplexity  is  by nature)  but
