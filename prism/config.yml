@@ -4085,6 +4085,8 @@ nodes:
           - on error: BackReferenceReadNode # => begin; rescue => $&; end
           - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
           - on error: MissingNode # begin; rescue =>; end
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

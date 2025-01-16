@@ -6684,6 +6684,7 @@ pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .operator_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .reference = NULL,
         .statements = NULL,
         .subsequent = NULL,
@@ -15078,8 +15079,8 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
             case PM_TOKEN_NEWLINE:
             case PM_TOKEN_SEMICOLON:
             case PM_TOKEN_KEYWORD_THEN:
-                // Here we have a terminator for the rescue keyword, in which case we're
-                // going to just continue on.
+                // Here we have a terminator for the rescue keyword, in which
+                // case we're going to just continue on.
                 break;
             default: {
                 if (token_begins_expression_p(parser->current.type) || match1(parser, PM_TOKEN_USTAR)) {
@@ -15111,9 +15112,12 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         }
 
         if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-            accept1(parser, PM_TOKEN_KEYWORD_THEN);
+            if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
+                rescue->then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(&parser->previous);
+            }
         } else {
             expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_RESCUE_TERM);
+            rescue->then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(&parser->previous);
         }
 
         if (!match3(parser, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
