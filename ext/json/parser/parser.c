@@ -592,96 +592,87 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
         }
     }
 
-    pe = memchr(p, '\\', bufferSize);
-    if (RB_UNLIKELY(pe == NULL)) {
-        return build_string(string, stringEnd, intern, symbolize);
-    }
-
     VALUE result = rb_str_buf_new(bufferSize);
     rb_enc_associate_index(result, utf8_encindex);
     buffer = RSTRING_PTR(result);
     bufferStart = buffer;
 
-    while (pe < stringEnd) {
-        if (*pe == '\\') {
-            unescape = (char *) "?";
-            unescape_len = 1;
-            if (pe > p) {
-              MEMCPY(buffer, p, char, pe - p);
-              buffer += pe - p;
-            }
-            switch (*++pe) {
-                case 'n':
-                    unescape = (char *) "\n";
-                    break;
-                case 'r':
-                    unescape = (char *) "\r";
-                    break;
-                case 't':
-                    unescape = (char *) "\t";
-                    break;
-                case '"':
-                    unescape = (char *) "\"";
-                    break;
-                case '\\':
-                    unescape = (char *) "\\";
-                    break;
-                case 'b':
-                    unescape = (char *) "\b";
-                    break;
-                case 'f':
-                    unescape = (char *) "\f";
-                    break;
-                case 'u':
-                    if (pe > stringEnd - 4) {
-                      raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
-                    } else {
-                        uint32_t ch = unescape_unicode((unsigned char *) ++pe);
-                        pe += 3;
-                        /* To handle values above U+FFFF, we take a sequence of
-                         * \uXXXX escapes in the U+D800..U+DBFF then
-                         * U+DC00..U+DFFF ranges, take the low 10 bits from each
-                         * to make a 20-bit number, then add 0x10000 to get the
-                         * final codepoint.
-                         *
-                         * See Unicode 15: 3.8 "Surrogates", 5.3 "Handling
-                         * Surrogate Pairs in UTF-16", and 23.6 "Surrogates
-                         * Area".
-                         */
-                        if ((ch & 0xFC00) == 0xD800) {
-                            pe++;
-                            if (pe > stringEnd - 6) {
-                              raise_parse_error("incomplete surrogate pair at '%s'", p);
-                            }
-                            if (pe[0] == '\\' && pe[1] == 'u') {
-                                uint32_t sur = unescape_unicode((unsigned char *) pe + 2);
-                                ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
-                                        | (sur & 0x3FF));
-                                pe += 5;
-                            } else {
-                                unescape = (char *) "?";
-                                break;
-                            }
-                        }
-                        unescape_len = convert_UTF32_to_UTF8(buf, ch);
-                        unescape = buf;
-                    }
-                    break;
-                default:
-                    p = pe;
-                    continue;
-            }
-            MEMCPY(buffer, unescape, char, unescape_len);
-            buffer += unescape_len;
-            p = ++pe;
-        } else {
-            pe++;
+    while ((pe = memchr(pe, '\\', stringEnd - pe))) {
+        unescape = (char *) "?";
+        unescape_len = 1;
+        if (pe > p) {
+          MEMCPY(buffer, p, char, pe - p);
+          buffer += pe - p;
         }
+        switch (*++pe) {
+            case 'n':
+                unescape = (char *) "\n";
+                break;
+            case 'r':
+                unescape = (char *) "\r";
+                break;
+            case 't':
+                unescape = (char *) "\t";
+                break;
+            case '"':
+                unescape = (char *) "\"";
+                break;
+            case '\\':
+                unescape = (char *) "\\";
+                break;
+            case 'b':
+                unescape = (char *) "\b";
+                break;
+            case 'f':
+                unescape = (char *) "\f";
+                break;
+            case 'u':
+                if (pe > stringEnd - 4) {
+                  raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
+                } else {
+                    uint32_t ch = unescape_unicode((unsigned char *) ++pe);
+                    pe += 3;
+                    /* To handle values above U+FFFF, we take a sequence of
+                     * \uXXXX escapes in the U+D800..U+DBFF then
+                     * U+DC00..U+DFFF ranges, take the low 10 bits from each
+                     * to make a 20-bit number, then add 0x10000 to get the
+                     * final codepoint.
+                     *
+                     * See Unicode 15: 3.8 "Surrogates", 5.3 "Handling
+                     * Surrogate Pairs in UTF-16", and 23.6 "Surrogates
+                     * Area".
+                     */
+                    if ((ch & 0xFC00) == 0xD800) {
+                        pe++;
+                        if (pe > stringEnd - 6) {
+                          raise_parse_error("incomplete surrogate pair at '%s'", p);
+                        }
+                        if (pe[0] == '\\' && pe[1] == 'u') {
+                            uint32_t sur = unescape_unicode((unsigned char *) pe + 2);
+                            ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
+                                    | (sur & 0x3FF));
+                            pe += 5;
+                        } else {
+                            unescape = (char *) "?";
+                            break;
+                        }
+                    }
+                    unescape_len = convert_UTF32_to_UTF8(buf, ch);
+                    unescape = buf;
+                }
+                break;
+            default:
+                p = pe;
+                continue;
+        }
+        MEMCPY(buffer, unescape, char, unescape_len);
+        buffer += unescape_len;
+        p = ++pe;
     }
 
-    if (pe > p) {
-      MEMCPY(buffer, p, char, pe - p);
-      buffer += pe - p;
+    if (stringEnd > p) {
+      MEMCPY(buffer, p, char, stringEnd - p);
+      buffer += stringEnd - p;
     }
     rb_str_set_len(result, buffer - bufferStart);
 
