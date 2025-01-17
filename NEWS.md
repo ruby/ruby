@@ -36,6 +36,7 @@ The following default gems are updated.
 * bundler 2.7.0.dev
 * fiddle 1.1.7.dev
 * prism 1.3.0
+* psych 5.2.3
 * stringio 3.1.3.dev
 
 The following bundled gems are added.
