@@ -43,7 +43,7 @@ module Spec
       # sign extension bundles on macOS, to avoid trying to find the specified key
       # from the fake $HOME/Library/Keychains directory.
       ENV.delete "RUBY_CODESIGN"
-      ENV["TMPDIR"] = Path.tmpdir.to_s
+      ENV["TMPDIR"] = Path.tmpdir.to_s unless ruby_core?
 
       require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
