@@ -74,6 +74,7 @@ jobs:
         with:
           ruby-version: '3.0'
           bundler: none
+        if: ${{ !endsWith(matrix.os, 'arm') }}
 
       - uses: ./.github/actions/setup/directories
         with:
