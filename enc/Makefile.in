@@ -31,6 +31,7 @@ BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
 		  enc/unicode.c enc/utf_8.c
 
 BUILTIN_TRANSES	= enc/trans/newline.trans
+BUILTIN_TRANS_CSRCS = $(BUILTIN_TRANSES:.trans=.c)
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@

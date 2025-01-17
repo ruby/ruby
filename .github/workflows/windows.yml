@@ -25,16 +25,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2015
-            vs: 2019
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
-            test_task: check
-          - vs: 2019
-            test_task: check
           - vs: 2022
             test_task: check
-          - vs: 2022
-            test_task: test-bundled-gems
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
@@ -196,6 +188,13 @@ jobs:
           label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+      - name: clean up
+        run: |
+          nmake V=1 distclean
+          dir /s
+          cd ..
+          rd build
 
   result:
     if: ${{ always() }}
