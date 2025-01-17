@@ -2098,7 +2098,7 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *    h[:foo] # => 0
  *
  *  If +key+ is not found, returns a default value
- *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
+ *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:nosuch] # => nil
  */
@@ -2207,7 +2207,7 @@ rb_hash_fetch(VALUE hash, VALUE key)
  *
  *  Returns the default value for the given +key+.
  *  The returned value will be determined either by the default proc or by the default value.
- *  See {Default Values}[rdoc-ref:Hash@Default+Values].
+ *  See {Hash Default}[rdoc-ref:Hash@Hash+Default].
  *
  *  With no argument, returns the current default value:
  *    h = {}
@@ -2244,7 +2244,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *    h.default = false # => false
  *    h.default # => false
  *
- *  See {Default Values}[rdoc-ref:Hash@Default+Values].
+ *  See {Hash Default}[rdoc-ref:Hash@Hash+Default].
  */
 
 static VALUE
@@ -2260,7 +2260,7 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
  *    hash.default_proc -> proc or nil
  *
  *  Returns the default proc for +self+
- *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
+ *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
  *    h = {}
  *    h.default_proc # => nil
  *    h.default_proc = proc {|hash, key| "Default value for #{key}" }
@@ -2281,7 +2281,7 @@ rb_hash_default_proc(VALUE hash)
  *    hash.default_proc = proc -> proc
  *
  *  Sets the default proc for +self+ to +proc+
- *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
+ *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
  *    h = {}
  *    h.default_proc # => nil
  *    h.default_proc = proc { |hash, key| "Default value for #{key}" }
@@ -2690,8 +2690,8 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values_at(:baz, :foo) # => [2, 0]
  *
- *  The {default values}[rdoc-ref:Hash@Default+Values] are returned
- *  for any keys that are not found:
+ *  The {hash default}[rdoc-ref:Hash@Hash+Default] is returned
+ *  for each key that is not found:
  *    h.values_at(:hello, :foo) # => [nil, 0]
  */
 
@@ -4593,7 +4593,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:foo, :bar, 2) # => :c
  *
- *  This method will use the {default values}[rdoc-ref:Hash@Default+Values]
+ *  This method will use the {hash default}[rdoc-ref:Hash@Hash+Default]
  *  for keys that are not present:
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:hello) # => nil
