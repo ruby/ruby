@@ -637,6 +637,7 @@ rb_gc_impl_config_get(void *objspace_ptr)
     rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_mode")), rb_str_new_cstr((const char *)mmtk_heap_mode()));
     size_t heap_min = mmtk_heap_min();
     if (heap_min > 0) rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_min")), RB_ULONG2NUM(heap_min));
+    rb_hash_aset(hash, ID2SYM(rb_intern_const("mmtk_heap_max")), RB_ULONG2NUM(mmtk_heap_max()));
 
     return hash;
 }

@@ -368,6 +368,15 @@ pub extern "C" fn mmtk_heap_min() -> usize {
     }
 }
 
+#[no_mangle]
+pub extern "C" fn mmtk_heap_max() -> usize {
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(max_size) => max_size,
+        GCTriggerSelector::DynamicHeapSize(_, max_size) => max_size,
+        _ => panic!("Unknown heap mode")
+    }
+}
+
 // =============== Miscellaneous ===============
 
 #[no_mangle]

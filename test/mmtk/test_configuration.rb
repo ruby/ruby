@@ -39,6 +39,12 @@ module MMTk
       RUBY
     end
 
+    def test_MMTK_HEAP_MAX
+      assert_separately([{ "MMTK_HEAP_MODE" => "fixed", "MMTK_HEAP_MAX" => "100MiB" }], <<~RUBY)
+        assert_equal(100 * 1024 * 1024, GC.config[:mmtk_heap_max])
+      RUBY
+    end
+
     %w(MMTK_THREADS MMTK_HEAP_MIN MMTK_HEAP_MAX MMTK_HEAP_MODE MMTK_PLAN).each do |var|
       define_method(:"test_invalid_#{var}") do
         exit_code = assert_in_out_err(
