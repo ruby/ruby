@@ -40,6 +40,8 @@ jobs:
             os: ubuntu-20.04
           - test_task: check
             os: ubuntu-24.04
+          - test_task: check
+            os: ubuntu-24.04-arm
       fail-fast: false
 
     env:
