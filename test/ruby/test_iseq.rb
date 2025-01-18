@@ -173,7 +173,7 @@ class TestISeq < Test::Unit::TestCase
     obj = Object.new
     def obj.foo(*) nil.instance_eval{ ->{super} } end
     assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable '\*'/) do
-      Ractor.make_shareable(obj.foo)
+      Ractor.make_shareable(obj.foo(*[]))
     end
   end
 
