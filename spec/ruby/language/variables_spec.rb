@@ -363,11 +363,22 @@ describe "Multiple assignment" do
       a.should == []
     end
 
-    it "calls #to_a to convert nil to an empty Array" do
-      nil.should_receive(:to_a).and_return([])
+    ruby_version_is "3.5" do
+      it "converts nil to empty array without calling a method" do
+        nil.should_not_receive(:to_a)
 
-      (*a = *nil).should == []
-      a.should == []
+        (*a = *nil).should == []
+        a.should == []
+      end
+    end
+
+    ruby_version_is ""..."3.5"  do
+      it "calls #to_a to convert nil to an empty Array" do
+        nil.should_receive(:to_a).and_return([])
+
+        (*a = *nil).should == []
+        a.should == []
+      end
     end
 
     it "does not call #to_a on an Array" do

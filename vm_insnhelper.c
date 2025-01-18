@@ -5578,6 +5578,9 @@ vm_concat_to_array(VALUE ary1, VALUE ary2st)
 {
     /* ary1 must be a newly created array */
     const VALUE ary2 = ary2st;
+
+    if (NIL_P(ary2)) return ary1;
+
     VALUE tmp2 = rb_check_to_array(ary2);
 
     if (NIL_P(tmp2)) {
@@ -5604,6 +5607,9 @@ rb_vm_concat_to_array(VALUE ary1, VALUE ary2st)
 static VALUE
 vm_splat_array(VALUE flag, VALUE ary)
 {
+    if (NIL_P(ary)) {
+        return RTEST(flag) ? rb_ary_new() : rb_cArray_empty_frozen;
+    }
     VALUE tmp = rb_check_to_array(ary);
     if (NIL_P(tmp)) {
         return rb_ary_new3(1, ary);
