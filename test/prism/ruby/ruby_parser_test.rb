@@ -71,6 +71,7 @@ module Prism
       "seattlerb/heredoc_with_only_carriage_returns.txt",
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
+      "symbols.txt",
       "tilde_heredocs.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
