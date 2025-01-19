@@ -813,10 +813,14 @@ module Prism
           value &= 0x9f if control
           value |= 0x80 if meta
 <<<<<<< HEAD
+<<<<<<< HEAD
           value
 =======
           value.chr
 >>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
+=======
+          value
+>>>>>>> 161c606b1f (Fix parser translator crash for certain octal escapes)
         end
 
         # Read an escape out of the string scanner, given the control and meta
