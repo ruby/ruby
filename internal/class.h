@@ -205,6 +205,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
 #define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
+#define RCLASS_PRIME_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_PRIME_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_PRIME_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT(c)->m_tbl != tbl)

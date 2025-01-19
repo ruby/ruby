@@ -3426,6 +3426,8 @@ rb_mod_remove_const(VALUE mod, VALUE name)
     return rb_const_remove(mod, id);
 }
 
+static rb_const_entry_t * const_lookup(struct rb_id_table *tbl, ID id);
+
 VALUE
 rb_const_remove(VALUE mod, ID id)
 {
@@ -3453,7 +3455,11 @@ rb_const_remove(VALUE mod, ID id)
         val = Qnil;
     }
 
-    ruby_xfree(ce);
+    if (ce == const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
+        // skip free'ing the ce because it still exists in the prime classext
+    } else {
+        ruby_xfree(ce);
+    }
 
     return val;
 }
@@ -4459,11 +4465,9 @@ rb_iv_tbl_copy(VALUE dst, VALUE src)
     rb_ivar_foreach(src, tbl_copy_i, dst);
 }
 
-rb_const_entry_t *
-rb_const_lookup(VALUE klass, ID id)
+static rb_const_entry_t *
+const_lookup(struct rb_id_table *tbl, ID id)
 {
-    struct rb_id_table *tbl = RCLASS_CONST_TBL(klass);
-
     if (tbl) {
         VALUE val;
         bool r;
@@ -4476,4 +4480,10 @@ rb_const_lookup(VALUE klass, ID id)
         if (r) return (rb_const_entry_t *)val;
     }
     return NULL;
+}
+
+rb_const_entry_t *
+rb_const_lookup(VALUE klass, ID id)
+{
+    return const_lookup(RCLASS_CONST_TBL(klass), id);
 }
