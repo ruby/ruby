@@ -128,14 +128,17 @@ module Prism
               builder.pair_quoted(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc), visit(node.value))
             end
           elsif node.value.is_a?(ImplicitNode)
-            if (value = node.value.value).is_a?(LocalVariableReadNode)
-              builder.pair_keyword(
-                [key.unescaped, srange(key)],
-                builder.ident([value.name, srange(key.value_loc)]).updated(:lvar)
-              )
+            value = node.value.value
+
+            implicit_value = if value.is_a?(CallNode)
+              builder.call_method(nil, nil, [value.name, srange(value.message_loc)])
+            elsif value.is_a?(ConstantReadNode)
+              builder.const([value.name, srange(key.value_loc)])
             else
-              builder.pair_label([key.unescaped, srange(key.location)])
+              builder.ident([value.name, srange(key.value_loc)]).updated(:lvar)
             end
+
+            builder.pair_keyword([key.unescaped, srange(key)], implicit_value)
           elsif node.operator_loc
             builder.pair(visit(key), token(node.operator_loc), visit(node.value))
           elsif key.is_a?(SymbolNode) && key.opening_loc.nil?
