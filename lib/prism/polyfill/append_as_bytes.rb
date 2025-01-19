@@ -5,7 +5,10 @@ if !("".respond_to?(:append_as_bytes))
   String.include(
     Module.new {
       def append_as_bytes(*args)
-        args.each { self.<<(_1.b) } # steep:ignore
+        args.each do |arg|
+          arg = Integer === arg ? [arg].pack("C") : arg.b
+          self.<<(arg) # steep:ignore
+        end
       end
     }
   )
