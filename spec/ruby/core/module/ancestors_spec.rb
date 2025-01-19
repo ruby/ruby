@@ -8,9 +8,9 @@ describe "Module#ancestors" do
     ModuleSpecs::Basic.ancestors.should == [ModuleSpecs::Basic]
     ModuleSpecs::Super.ancestors.should == [ModuleSpecs::Super, ModuleSpecs::Basic]
     ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
-      [ModuleSpecs::Parent, Object, Kernel, BasicObject]
+      [ModuleSpecs::Parent, Object, Namespace::Loader, Kernel, BasicObject]
     ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
-      [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Kernel, BasicObject]
+      [ModuleSpecs::Child, ModuleSpecs::Super, ModuleSpecs::Basic, ModuleSpecs::Parent, Object, Namespace::Loader, Kernel, BasicObject]
   end
 
   it "returns only modules and classes" do
