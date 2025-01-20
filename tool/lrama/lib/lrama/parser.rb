@@ -658,17 +658,18 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 428)
 
 include Lrama::Report::Duration
 
-def initialize(text, path, debug = false)
+def initialize(text, path, debug = false, define = {})
   @grammar_file = Lrama::Lexer::GrammarFile.new(path, text)
   @yydebug = debug
   @rule_counter = Lrama::Grammar::Counter.new(0)
   @midrule_action_counter = Lrama::Grammar::Counter.new(1)
+  @define = define
 end
 
 def parse
   report_duration(:parse) do
     @lexer = Lrama::Lexer.new(@grammar_file)
-    @grammar = Lrama::Grammar.new(@rule_counter)
+    @grammar = Lrama::Grammar.new(@rule_counter, @define)
     @precedence_number = 0
     reset_precs
     do_parse
@@ -914,7 +915,7 @@ racc_reduce_table = [
   2, 73, :_reduce_15,
   1, 60, :_reduce_none,
   2, 60, :_reduce_17,
-  3, 60, :_reduce_none,
+  3, 60, :_reduce_18,
   2, 60, :_reduce_none,
   2, 60, :_reduce_20,
   2, 60, :_reduce_21,
@@ -1328,7 +1329,12 @@ module_eval(<<'.,.,', 'parser.y', 26)
   end
 .,.,
 
-# reduce 18 omitted
+module_eval(<<'.,.,', 'parser.y', 27)
+  def _reduce_18(val, _values, result)
+     @grammar.define[val[1].s_value] = val[2]&.s_value
+    result
+  end
+.,.,
 
 # reduce 19 omitted
 

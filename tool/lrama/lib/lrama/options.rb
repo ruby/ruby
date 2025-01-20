@@ -7,10 +7,11 @@ module Lrama
                   :report_file, :outfile,
                   :error_recovery, :grammar_file,
                   :trace_opts, :report_opts,
-                  :diagnostic, :y, :debug
+                  :diagnostic, :y, :debug, :define
 
     def initialize
       @skeleton = "bison/yacc.c"
+      @define = {}
       @header = false
       @header_file = nil
       @report_file = nil

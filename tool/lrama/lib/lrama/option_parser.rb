@@ -59,8 +59,8 @@ module Lrama
         o.separator ''
         o.separator 'Tuning the Parser:'
         o.on('-S', '--skeleton=FILE', 'specify the skeleton to use') {|v| @options.skeleton = v }
-        o.on('-t', 'reserved, do nothing') { }
-        o.on('--debug', 'display debugging outputs of internal parser') {|v| @options.debug = true }
+        o.on('-t', '--debug', 'display debugging outputs of internal parser') {|v| @options.debug = true }
+        o.on('-D', '--define=NAME[=VALUE]', Array, "similar to '%define NAME VALUE'") {|v| @options.define = v }
         o.separator ''
         o.separator 'Output:'
         o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
@@ -86,6 +86,7 @@ module Lrama
         o.on_tail '    automaton                        display states'
         o.on_tail '    closure                          display states'
         o.on_tail '    rules                            display grammar rules'
+        o.on_tail '    only-explicit-rules              display only explicit grammar rules'
         o.on_tail '    actions                          display grammar rules with actions'
         o.on_tail '    time                             display generation time'
         o.on_tail '    all                              include all the above traces'
@@ -136,26 +137,27 @@ module Lrama
 
     VALID_TRACES = %w[
       locations scan parse automaton bitsets closure
-      grammar rules actions resource sets muscles
-      tools m4-early m4 skeleton time ielr cex
+      grammar rules only-explicit-rules actions resource
+      sets muscles tools m4-early m4 skeleton time ielr cex
     ].freeze
     NOT_SUPPORTED_TRACES = %w[
       locations scan parse bitsets grammar resource
       sets muscles tools m4-early m4 skeleton ielr cex
     ].freeze
+    SUPPORTED_TRACES = VALID_TRACES - NOT_SUPPORTED_TRACES
 
     def validate_trace(trace)
       h = {}
       return h if trace.empty? || trace == ['none']
-      supported = VALID_TRACES - NOT_SUPPORTED_TRACES
+      all_traces = SUPPORTED_TRACES - %w[only-explicit-rules]
       if trace == ['all']
-        supported.each { |t| h[t.to_sym] = true }
+        all_traces.each { |t| h[t.gsub(/-/, '_').to_sym] = true }
         return h
       end
 
       trace.each do |t|
-        if supported.include?(t)
-          h[t.to_sym] = true
+        if SUPPORTED_TRACES.include?(t)
+          h[t.gsub(/-/, '_').to_sym] = true
         else
           raise "Invalid trace option \"#{t}\"."
         end
