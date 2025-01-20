@@ -264,6 +264,8 @@ module IRB
     attr_reader :use_autocomplete
     # A copy of the default <code>IRB.conf[:INSPECT_MODE]</code>
     attr_reader :inspect_mode
+    # Inspector for the current context
+    attr_reader :inspect_method
 
     # A copy of the default <code>IRB.conf[:PROMPT_MODE]</code>
     attr_reader :prompt_mode

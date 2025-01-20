@@ -9,6 +9,7 @@ require_relative "command/cd"
 require_relative "command/chws"
 require_relative "command/context"
 require_relative "command/continue"
+require_relative "command/copy"
 require_relative "command/debug"
 require_relative "command/delete"
 require_relative "command/disable_irb"
@@ -250,6 +251,7 @@ module IRB
     )
 
     register(:cd, Command::CD)
+    register(:copy, Command::Copy)
   end
 
   ExtendCommand = Command
