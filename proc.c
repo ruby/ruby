@@ -404,9 +404,8 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
-get_local_variable_ptr(const rb_env_t **envp, ID lid)
+get_local_variable_ptr(const rb_env_t *env, ID lid)
 {
-    const rb_env_t *env = *envp;
     do {
         if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
             if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
@@ -430,18 +429,15 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
                         }
                     }
 
-                    *envp = env;
                     return &env->env[i];
                 }
             }
         }
         else {
-            *envp = NULL;
             return NULL;
         }
     } while ((env = rb_vm_env_prev_env(env)) != NULL);
 
-    *envp = NULL;
     return NULL;
 }
 
@@ -531,7 +527,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+    if ((ptr = get_local_variable_ptr(env, lid)) != NULL) {
         return *ptr;
     }
 
@@ -579,7 +575,7 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
+    if ((ptr = get_local_variable_ptr(env, lid)) == NULL) {
         /* not found. create new env */
         ptr = rb_binding_add_dynavars(bindval, bind, 1, &lid);
         env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -622,7 +618,7 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    return RBOOL(get_local_variable_ptr(&env, lid));
+    return RBOOL(get_local_variable_ptr(env, lid));
 }
 
 /*
