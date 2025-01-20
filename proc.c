@@ -404,41 +404,60 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
+get_local_variable_ptr0(const rb_env_t *env, ID lid, int *stop)
+{
+    if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
+        if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
+            *stop = 1;
+            return NULL;
+        }
+
+        const rb_iseq_t *iseq = env->iseq;
+        unsigned int i;
+
+        VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
+
+        for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+            if (ISEQ_BODY(iseq)->local_table[i] == lid) {
+                if (ISEQ_BODY(iseq)->local_iseq == iseq &&
+                        ISEQ_BODY(iseq)->param.flags.has_block &&
+                        (unsigned int)ISEQ_BODY(iseq)->param.block_start == i) {
+                    const VALUE *ep = env->ep;
+                    if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
+                        RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
+                        VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
+                    }
+                }
+
+                *stop = 1;
+                return &env->env[i];
+            }
+        }
+    }
+    else {
+        *stop = 1;
+        return NULL;
+    }
+    return NULL;
+}
+
+static const VALUE *
 get_local_variable_ptr(const rb_env_t *env, ID lid)
 {
     do {
-        if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
-            if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
-                return NULL;
-            }
-
-            const rb_iseq_t *iseq = env->iseq;
-            unsigned int i;
-
-            VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
-
-            for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
-                if (ISEQ_BODY(iseq)->local_table[i] == lid) {
-                    if (ISEQ_BODY(iseq)->local_iseq == iseq &&
-                            ISEQ_BODY(iseq)->param.flags.has_block &&
-                            (unsigned int)ISEQ_BODY(iseq)->param.block_start == i) {
-                        const VALUE *ep = env->ep;
-                        if (!VM_ENV_FLAGS(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM)) {
-                            RB_OBJ_WRITE(env, &env->env[i], rb_vm_bh_to_procval(GET_EC(), VM_ENV_BLOCK_HANDLER(ep)));
-                            VM_ENV_FLAGS_SET(ep, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM);
-                        }
-                    }
-
-                    return &env->env[i];
-                }
-            }
-        }
-        else {
-            return NULL;
-        }
+        int stop = 0;
+        const VALUE *ret = get_local_variable_ptr0(env, lid, &stop);
+        if (stop) return ret;
     } while ((env = rb_vm_env_prev_env(env)) != NULL);
 
     return NULL;
+}
+
+static const VALUE *
+get_numbered_parameter_ptr(const rb_env_t *env, ID lid)
+{
+    int dummy = 0;
+    return get_local_variable_ptr0(env, lid, &dummy);
 }
 
 /*
@@ -633,6 +652,78 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return RBOOL(get_local_variable_ptr(env, lid));
+}
+
+/*
+ *  call-seq:
+ *     binding.numbered_parameters -> Array
+ *
+ *  TODO
+ */
+static VALUE
+bind_numbered_parameters(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return rb_vm_env_numbered_parameters(env);
+}
+
+/*
+ *  call-seq:
+ *     binding.numbered_parameter_get(symbol) -> obj
+ *
+ *  TODO
+ */
+static VALUE
+bind_numbered_parameter_get(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const VALUE *ptr;
+    const rb_env_t *env;
+
+    if (!lid) goto undefined;
+    if (!numparam_id_p(lid)) {
+        rb_name_err_raise("local variable '%1$s' is not a numbered parameter",
+                          bindval, ID2SYM(lid));
+    }
+
+    GetBindingPtr(bindval, bind);
+
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    if ((ptr = get_numbered_parameter_ptr(env, lid)) != NULL) {
+        return *ptr;
+    }
+
+    sym = ID2SYM(lid);
+  undefined:
+    rb_name_err_raise("local variable '%1$s' is not defined for %2$s",
+                      bindval, sym);
+    UNREACHABLE_RETURN(Qundef);
+}
+
+/*
+ *  call-seq:
+ *     binding.numbered_parameter_defined?(symbol) -> obj
+ *
+ *  TODO
+ */
+
+static VALUE
+bind_numbered_parameter_defined_p(VALUE bindval, VALUE sym)
+{
+    ID lid = check_local_id(bindval, &sym);
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    if (!lid) return Qfalse;
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return RBOOL(get_numbered_parameter_ptr(env, lid));
 }
 
 /*
@@ -4554,6 +4645,9 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "local_variable_get", bind_local_variable_get, 1);
     rb_define_method(rb_cBinding, "local_variable_set", bind_local_variable_set, 2);
     rb_define_method(rb_cBinding, "local_variable_defined?", bind_local_variable_defined_p, 1);
+    rb_define_method(rb_cBinding, "numbered_parameters", bind_numbered_parameters, 0);
+    rb_define_method(rb_cBinding, "numbered_parameter_get", bind_numbered_parameter_get, 1);
+    rb_define_method(rb_cBinding, "numbered_parameter_defined?", bind_numbered_parameter_defined_p, 1);
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

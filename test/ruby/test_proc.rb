@@ -1669,6 +1669,44 @@ class TestProc < Test::Unit::TestCase
     assert_equal(false, b.local_variable_defined?(:b))
   end
 
+  def test_numbered_parameters
+    "foo".tap do
+      _9
+      assert_equal([], binding.local_variables)
+      assert_equal([:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9], binding.numbered_parameters)
+      assert_equal("foo", binding.numbered_parameter_get(:_1))
+      assert_equal(true, binding.numbered_parameter_defined?(:_1))
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_equal([], binding.numbered_parameters)
+        assert_raise(NameError) { binding.numbered_parameter_get(:_1) }
+        assert_equal(false, binding.numbered_parameter_defined?(:_1))
+      end
+      assert_equal([], binding.local_variables)
+      assert_equal([:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9], binding.numbered_parameters)
+      assert_equal("foo", binding.numbered_parameter_get(:_1))
+      assert_equal(true, binding.numbered_parameter_defined?(:_1))
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_equal([], binding.numbered_parameters)
+      assert_raise(NameError) { binding.numbered_parameter_get(:_1) }
+      assert_equal(false, binding.numbered_parameter_defined?(:_1))
+      "bar".tap do
+        _9
+        assert_equal([], binding.local_variables)
+        assert_equal([:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9], binding.numbered_parameters)
+        assert_equal("bar", binding.numbered_parameter_get(:_1))
+        assert_equal(true, binding.numbered_parameter_defined?(:_1))
+      end
+      assert_equal([], binding.local_variables)
+      assert_equal([], binding.numbered_parameters)
+      assert_raise(NameError) { binding.numbered_parameter_get(:_1) }
+      assert_equal(false, binding.numbered_parameter_defined?(:_1))
+    end
+  end
+
   def test_binding_receiver
     feature8779 = '[ruby-dev:47613] [Feature #8779]'
 
