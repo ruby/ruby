@@ -84,7 +84,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   def test_ed25519
     # Ed25519 is not FIPS-approved.
     omit_on_fips
-    omit "Ed25519 not supported" if openssl? && !openssl?(1, 1, 1)
 
     # Test vector from RFC 8032 Section 7.1 TEST 2
     priv_pem = <<~EOF
@@ -157,9 +156,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
 
-    if openssl? && !openssl?(1, 1, 1)
-      omit "running OpenSSL version does not have raw public key support"
-    end
     alice_private = OpenSSL::PKey.new_raw_private_key("X25519", alice.raw_private_key)
     bob_public = OpenSSL::PKey.new_raw_public_key("X25519", bob.raw_public_key)
     assert_equal alice_private.private_to_pem,
@@ -173,8 +169,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end
 
   def test_raw_initialize_errors
-    omit "Ed25519 not supported" if openssl? && !openssl?(1, 1, 1)
-
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_public_key("foo123", "xxx") }

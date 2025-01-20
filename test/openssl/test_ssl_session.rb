@@ -250,7 +250,6 @@ __EOS__
   end
 
   def test_ctx_client_session_cb_tls13
-    omit "TLS 1.3 not supported" unless tls13_supported?
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
 
     start_server do |port|
@@ -274,7 +273,6 @@ __EOS__
   end
 
   def test_ctx_client_session_cb_tls13_exception
-    omit "TLS 1.3 not supported" unless tls13_supported?
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
 
     server_proc = lambda do |ctx, ssl|
@@ -375,11 +373,6 @@ __EOS__
       connections = 2
       sess2 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
-        if !ssl.session_reused? && openssl?(1, 1, 0) && !openssl?(1, 1, 0, 7)
-          # OpenSSL >= 1.1.0, < 1.1.0g
-          pend "External session cache is not working; " \
-            "see https://github.com/openssl/openssl/pull/4014"
-        end
         assert_equal true, ssl.session_reused?
         ssl.session
       }

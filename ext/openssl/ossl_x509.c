@@ -130,7 +130,7 @@ Init_ossl_x509(void)
 #if defined(X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_PROXY_SUBJECT_NAME_VIOLATION);
 #endif
-#if defined(X509_V_ERR_OCSP_VERIFY_NEEDED)
+#if defined(X509_V_ERR_OCSP_VERIFY_NEEDED) /* OpenSSL 1.1.1, missing in LibreSSL */
     DefX509Const(V_ERR_OCSP_VERIFY_NEEDED);
     DefX509Const(V_ERR_OCSP_VERIFY_FAILED);
     DefX509Const(V_ERR_OCSP_CERT_UNKNOWN);

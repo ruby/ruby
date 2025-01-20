@@ -115,11 +115,11 @@ version_ok = if have_macro("LIBRESSL_VERSION_NUMBER", "openssl/opensslv.h")
     try_static_assert("LIBRESSL_VERSION_NUMBER >= 0x30900000L", "openssl/opensslv.h") }
 else
   is_openssl = true
-  checking_for("OpenSSL version >= 1.1.0") {
-    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10100000L", "openssl/opensslv.h") }
+  checking_for("OpenSSL version >= 1.1.1") {
+    try_static_assert("OPENSSL_VERSION_NUMBER >= 0x10101000L", "openssl/opensslv.h") }
 end
 unless version_ok
-  raise "OpenSSL >= 1.1.0 or LibreSSL >= 3.9.0 is required"
+  raise "OpenSSL >= 1.1.1 or LibreSSL >= 3.9.0 is required"
 end
 
 # Prevent wincrypt.h from being included, which defines conflicting macro with openssl/x509.h
@@ -138,11 +138,8 @@ have_func("RAND_egd()", "openssl/rand.h")
 # added in 1.1.0, currently not in LibreSSL
 have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0)", evp_h)
 
-# added in 1.1.1
+# added in OpenSSL 1.1.1 and LibreSSL 3.5.0, then removed in LibreSSL 4.0.0
 have_func("EVP_PKEY_check(NULL)", evp_h)
-have_func("EVP_PKEY_new_raw_private_key(0, NULL, (unsigned char *)\"\", 0)", evp_h)
-have_func("SSL_CTX_set_ciphersuites(NULL, \"\")", ssl_h)
-have_func("SSL_CTX_set_post_handshake_auth(NULL, 0)", ssl_h)
 
 # added in 3.0.0
 have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)

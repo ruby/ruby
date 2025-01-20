@@ -294,7 +294,6 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   def test_sign_and_verify_ed25519
     # Ed25519 is not FIPS-approved.
     omit_on_fips
-    omit "Ed25519 not supported" if openssl? && !openssl?(1, 1, 1)
     ed25519 = OpenSSL::PKey::generate_key("ED25519")
     cert = issue_cert(@ca, ed25519, 1, [], nil, nil, digest: nil)
     assert_equal(true, cert.verify(ed25519))

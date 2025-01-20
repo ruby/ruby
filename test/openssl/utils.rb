@@ -186,14 +186,6 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
     @server = nil
   end
 
-  def tls13_supported?
-    return false unless defined?(OpenSSL::SSL::TLS1_3_VERSION)
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
-    true
-  rescue
-  end
-
   def readwrite_loop(ctx, ssl)
     while line = ssl.gets
       ssl.write(line)

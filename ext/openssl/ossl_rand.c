@@ -189,9 +189,7 @@ Init_ossl_rand(void)
     rb_define_module_function(mRandom, "load_random_file", ossl_rand_load_file, 1);
     rb_define_module_function(mRandom, "write_random_file", ossl_rand_write_file, 1);
     rb_define_module_function(mRandom, "random_bytes", ossl_rand_bytes, 1);
-#if OPENSSL_VERSION_NUMBER < 0x10101000 || defined(LIBRESSL_VERSION_NUMBER)
     rb_define_alias(rb_singleton_class(mRandom), "pseudo_bytes", "random_bytes");
-#endif
 #ifdef HAVE_RAND_EGD
     rb_define_module_function(mRandom, "egd", ossl_rand_egd, 1);
     rb_define_module_function(mRandom, "egd_bytes", ossl_rand_egd_bytes, 2);
