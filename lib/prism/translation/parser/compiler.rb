@@ -206,7 +206,14 @@ module Prism
           if (rescue_clause = node.rescue_clause)
             begin
               find_start_offset = (rescue_clause.reference&.location || rescue_clause.exceptions.last&.location || rescue_clause.keyword_loc).end_offset
-              find_end_offset = (rescue_clause.statements&.location&.start_offset || rescue_clause.subsequent&.location&.start_offset || (find_start_offset + 1))
+              find_end_offset = (
+                rescue_clause.statements&.location&.start_offset ||
+                rescue_clause.subsequent&.location&.start_offset ||
+                node.else_clause&.location&.start_offset ||
+                node.ensure_clause&.location&.start_offset ||
+                node.end_keyword_loc&.start_offset ||
+                find_start_offset + 1
+              )
 
               rescue_bodies << builder.rescue_body(
                 token(rescue_clause.keyword_loc),
