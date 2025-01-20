@@ -167,6 +167,12 @@ module JSON
   # system. Usually this means that the iconv library is not installed.
   class MissingUnicodeSupport < JSONError; end
 
+  Fragment = Struct.new(:json) do
+    def to_json(state = nil)
+      json
+    end
+  end
+
   module_function
 
   # :call-seq:

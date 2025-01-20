@@ -27,7 +27,7 @@ typedef struct JSON_Generator_StateStruct {
 #define RB_UNLIKELY(cond) (cond)
 #endif
 
-static VALUE mJSON, cState, mString_Extend, eGeneratorError, eNestingError, Encoding_UTF_8;
+static VALUE mJSON, cState, cFragment, mString_Extend, eGeneratorError, eNestingError, Encoding_UTF_8;
 
 static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
 static ID sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan,
@@ -68,6 +68,7 @@ static void generate_json_integer(FBuffer *buffer, struct generate_json_data *da
 static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
+static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
@@ -971,6 +972,13 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     fbuffer_append_str(buffer, tmp);
 }
 
+static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+{
+    VALUE fragment = RSTRUCT_GET(obj, 0);
+    Check_Type(fragment, T_STRING);
+    fbuffer_append_str(buffer, fragment);
+}
+
 static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
     VALUE tmp;
@@ -1009,6 +1017,10 @@ static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON
             case T_FLOAT:
                 if (klass != rb_cFloat) goto general;
                 generate_json_float(buffer, data, state, obj);
+                break;
+            case T_STRUCT:
+                if (klass != cFragment) goto general;
+                generate_json_fragment(buffer, data, state, obj);
                 break;
             default:
             general:
@@ -1546,6 +1558,10 @@ void Init_generator(void)
     rb_require("json/common");
 
     mJSON = rb_define_module("JSON");
+
+    rb_global_variable(&cFragment);
+    cFragment = rb_const_get(mJSON, rb_intern("Fragment"));
+
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
