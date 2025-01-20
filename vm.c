@@ -1121,6 +1121,21 @@ rb_vm_env_local_variables(const rb_env_t *env)
 }
 
 VALUE
+rb_vm_env_numbered_parameters(const rb_env_t *env)
+{
+    struct local_var_list vars;
+    local_var_list_init(&vars);
+    // if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) break; // TODO: is this needed?
+    const rb_iseq_t *iseq = env->iseq;
+    unsigned int i;
+    if (!iseq) return 0;
+    for (i = 0; i < ISEQ_BODY(iseq)->local_table_size; i++) {
+        numparam_list_add(&vars, ISEQ_BODY(iseq)->local_table[i]);
+    }
+    return local_var_list_finish(&vars);
+}
+
+VALUE
 rb_iseq_local_variables(const rb_iseq_t *iseq)
 {
     struct local_var_list vars;

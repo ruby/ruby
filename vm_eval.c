@@ -2664,8 +2664,26 @@ local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int exist
 static void
 local_var_list_add(const struct local_var_list *vars, ID lid)
 {
-    if (lid && rb_is_local_id(lid)) {
-        /* should skip temporary variable */
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip numbered parameters as well */
+    if ((tNUMPARAM_1 << ID_SCOPE_SHIFT) <= lid && lid < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT)) return;
+
+    st_data_t idx = 0;	/* tbl->num_entries */
+    rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
+}
+
+static void
+numparam_list_add(const struct local_var_list *vars, ID lid)
+{
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip anything but numbered parameters */
+    if ((tNUMPARAM_1 << ID_SCOPE_SHIFT) <= lid && lid < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT)) {
         st_data_t idx = 0;	/* tbl->num_entries */
         rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
     }
