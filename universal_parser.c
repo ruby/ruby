@@ -124,7 +124,6 @@
 #define RSTRING_PTR                       p->config->rstring_ptr
 #undef RSTRING_LEN
 #define RSTRING_LEN                       p->config->rstring_len
-#define rb_obj_as_string                  p->config->obj_as_string
 
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
