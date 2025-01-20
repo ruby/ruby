@@ -990,6 +990,8 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 raise_parse_error("invalid number: %s", start);
             } else if (RB_UNLIKELY(integer_length > 2 && start[0] == '-' && start[1] == '0')) {
                 raise_parse_error("invalid number: %s", start);
+            } else if (RB_UNLIKELY(integer_length == 1 && start[0] == '-')) {
+                raise_parse_error("invalid number: %s", start);
             }
 
             if ((state->cursor < state->end) && (*state->cursor == '.')) {
