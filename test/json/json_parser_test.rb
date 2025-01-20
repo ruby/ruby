@@ -302,6 +302,14 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_invalid_unicode_escape
+    assert_raise(JSON::ParserError) { parse('"\u"') }
+    assert_raise(JSON::ParserError) { parse('"\ua"') }
+    assert_raise(JSON::ParserError) { parse('"\uaa"') }
+    assert_raise(JSON::ParserError) { parse('"\uaaa"') }
+    assert_equal "\uaaaa", parse('"\uaaaa"')
+  end
+
   def test_parse_big_integers
     json1 = JSON(orig = (1 << 31) - 1)
     assert_equal orig, parse(json1)

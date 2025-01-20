@@ -630,7 +630,7 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                 unescape = (char *) "\f";
                 break;
             case 'u':
-                if (pe > stringEnd - 4) {
+                if (pe > stringEnd - 5) {
                   raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
                 } else {
                     uint32_t ch = unescape_unicode((unsigned char *) ++pe);
