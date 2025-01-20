@@ -476,7 +476,7 @@ static const bool whitespace[256] = {
     ['/'] = 1,
 };
 
-static bool
+static void
 json_eat_comments(JSON_ParserState *state)
 {
     if (state->cursor + 1 < state->end) {
@@ -496,7 +496,7 @@ json_eat_comments(JSON_ParserState *state)
                     state->cursor = memchr(state->cursor, '*', state->end - state->cursor);
                     if (!state->cursor) {
                         state->cursor = state->end;
-                        break;
+                        raise_parse_error("unexpected end of input, expected closing '*/'", state->cursor);
                     } else {
                         state->cursor++;
                         if (state->cursor < state->end && *state->cursor == '/') {
@@ -508,10 +508,12 @@ json_eat_comments(JSON_ParserState *state)
                 break;
             }
             default:
-                return false;
+                raise_parse_error("unexpected token at '%s'", state->cursor);
+                break;
         }
+    } else {
+        raise_parse_error("unexpected token at '%s'", state->cursor);
     }
-    return true;
 }
 
 static inline void
@@ -521,9 +523,7 @@ json_eat_whitespace(JSON_ParserState *state)
         if (RB_LIKELY(*state->cursor != '/')) {
             state->cursor++;
         } else {
-            if (!json_eat_comments(state)) {
-                return;
-            }
+            json_eat_comments(state);
         }
     }
 }

@@ -406,6 +406,11 @@ class JSONParserTest < Test::Unit::TestCase
       }
     JSON
     assert_equal({ "key1" => "value1" }, parse(json))
+    assert_equal({}, parse('{} /**/'))
+    assert_raise(ParserError) { parse('{} /* comment not closed') }
+    assert_raise(ParserError) { parse('{} /*/') }
+    assert_raise(ParserError) { parse('{} /x wrong comment') }
+    assert_raise(ParserError) { parse('{} /') }
   end
 
   def test_nesting
