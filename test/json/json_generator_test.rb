@@ -661,4 +661,9 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_nonutf8_encoding
     assert_equal("\"5\u{b0}\"", "5\xb0".dup.force_encoding(Encoding::ISO_8859_1).to_json)
   end
+
+  def test_fragment
+    fragment = JSON::Fragment.new(" 42")
+    assert_equal '{"number": 42}', JSON.generate({ number: fragment })
+  end
 end
