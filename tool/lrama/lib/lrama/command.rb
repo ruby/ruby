@@ -19,7 +19,7 @@ module Lrama
       text = options.y.read
       options.y.close if options.y != STDIN
       begin
-        grammar = Lrama::Parser.new(text, options.grammar_file, options.debug).parse
+        grammar = Lrama::Parser.new(text, options.grammar_file, options.debug, options.define).parse
         unless grammar.no_stdlib
           stdlib_grammar = Lrama::Parser.new(File.read(STDLIB_FILE_PATH), STDLIB_FILE_PATH, options.debug).parse
           grammar.insert_before_parameterizing_rules(stdlib_grammar.parameterizing_rules)
@@ -34,6 +34,7 @@ module Lrama
       end
       states = Lrama::States.new(grammar, trace_state: (options.trace_opts[:automaton] || options.trace_opts[:closure]))
       states.compute
+      states.compute_ielr if grammar.ielr_defined?
       context = Lrama::Context.new(states)
 
       if options.report_file
