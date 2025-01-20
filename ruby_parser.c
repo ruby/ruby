@@ -374,7 +374,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .rb_sprintf = rb_sprintf,
     .rstring_ptr = RSTRING_PTR,
     .rstring_len = RSTRING_LEN,
-    .obj_as_string = rb_obj_as_string,
 
     .int2num = rb_int2num_inline,
 

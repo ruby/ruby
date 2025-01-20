@@ -1260,7 +1260,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
     long (*rstring_len)(VALUE str);
-    VALUE (*obj_as_string)(VALUE);
 
     /* Numeric */
     VALUE (*int2num)(int v);
