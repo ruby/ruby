@@ -111,7 +111,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
     # function pass the RFC 7919 FFDHE group texts.
     # https://github.com/openssl/openssl/pull/9435
-    unless openssl?(1, 1, 1, 4)
+    if openssl? && !openssl?(1, 1, 1, 4)
       pend 'DH check for RFC 7919 FFDHE group texts is not implemented'
     end
 
