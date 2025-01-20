@@ -46,12 +46,18 @@ b\nar
 "
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 4ef093b600 (Fix parser translator edge-case when multiline string ends with \n)
 "foo
 \nbar\n\n
 a\nb\n\nc\n"
 
+<<<<<<< HEAD
 =======
 >>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
+=======
+>>>>>>> 4ef093b600 (Fix parser translator edge-case when multiline string ends with \n)
 %q{abc}
 
 %s[abc]
