@@ -64,7 +64,6 @@ module SyncDefaultGems
     un: "ruby/un",
     uri: "ruby/uri",
     weakref: "ruby/weakref",
-    win32ole: "ruby/win32ole",
     yaml: "ruby/yaml",
     zlib: 'ruby/zlib',
   }.transform_keys(&:to_s)
@@ -327,12 +326,6 @@ module SyncDefaultGems
       cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
       cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
       cp_r("#{upstream}/test", "test/error_highlight")
-    when "win32ole"
-      sync_lib gem, upstream
-      rm_rf(%w[ext/win32ole/lib])
-      Dir.mkdir(*%w[ext/win32ole/lib])
-      move("lib/win32ole/win32ole.gemspec", "ext/win32ole")
-      move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
     when "open3"
       sync_lib gem, upstream
       rm_rf("lib/open3/jruby_windows.rb")
