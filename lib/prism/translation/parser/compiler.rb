@@ -1372,7 +1372,7 @@ module Prism
         def visit_multi_write_node(node)
           elements = multi_target_elements(node)
 
-          if elements.length == 1 && elements.first.is_a?(MultiTargetNode)
+          if elements.length == 1 && elements.first.is_a?(MultiTargetNode) && !node.rest
             elements = multi_target_elements(elements.first)
           end
 
