@@ -168,7 +168,7 @@ module JSON
   class MissingUnicodeSupport < JSONError; end
 
   Fragment = Struct.new(:json) do
-    def to_json(state = nil)
+    def to_json(state = nil, *)
       json
     end
   end
