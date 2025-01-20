@@ -109,6 +109,9 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('-023.12') }
     assert_raise(JSON::ParserError) { parse('023e12') }
     assert_raise(JSON::ParserError) { parse('-023e12') }
+    assert_raise(JSON::ParserError) { parse('-') }
+    assert_raise(JSON::ParserError) { parse('-.1') }
+    assert_raise(JSON::ParserError) { parse('-e0') }
     assert_equal(23, parse('23'))
     assert_equal(-23, parse('-23'))
     assert_equal_float(3.141, parse('3.141'))
