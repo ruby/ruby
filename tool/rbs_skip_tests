@@ -44,8 +44,5 @@ test_compile(RegexpSingletonTest)
 test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
-# https://github.com/ruby/ruby/pull/12598#issuecomment-2601479034
-# The handrolled parser of JSON is not working with `json-schema` gem
-RBS::SchemaTest
-
 ## Failed tests caused by unreleased version of Ruby
+
