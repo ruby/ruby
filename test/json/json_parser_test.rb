@@ -629,6 +629,13 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_parse_leading_slash
+    # ref: https://github.com/ruby/ruby/pull/12598
+    assert_raise(JSON::ParserError) do
+      JSON.parse("/foo/bar")
+    end
+  end
+
   private
 
   def string_deduplication_available?

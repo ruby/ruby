@@ -476,7 +476,7 @@ static const bool whitespace[256] = {
     ['/'] = 1,
 };
 
-static void
+static bool
 json_eat_comments(JSON_ParserState *state)
 {
     if (state->cursor + 1 < state->end) {
@@ -508,9 +508,10 @@ json_eat_comments(JSON_ParserState *state)
                 break;
             }
             default:
-                return;
+                return false;
         }
     }
+    return true;
 }
 
 static inline void
@@ -520,7 +521,9 @@ json_eat_whitespace(JSON_ParserState *state)
         if (RB_LIKELY(*state->cursor != '/')) {
             state->cursor++;
         } else {
-            json_eat_comments(state);
+            if (!json_eat_comments(state)) {
+                return;
+            }
         }
     }
 }
