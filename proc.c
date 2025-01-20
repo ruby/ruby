@@ -24,6 +24,8 @@
 #include "vm_core.h"
 #include "yjit.h"
 
+ID rb_it_id;
+
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {
@@ -724,6 +726,50 @@ bind_numbered_parameter_defined_p(VALUE bindval, VALUE sym)
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
     return RBOOL(get_numbered_parameter_ptr(env, lid));
+}
+
+/*
+ *  call-seq:
+ *     binding.it_get -> obj
+ *
+ *  TODO
+ */
+static VALUE
+bind_it_get(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const VALUE *ptr;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    if ((ptr = get_numbered_parameter_ptr(env, rb_it_id)) != NULL) {
+        return *ptr;
+    }
+
+    VALUE sym = ID2SYM(rb_it_id);
+    rb_name_err_raise("'it' is not defined",
+                      bindval, sym);
+    UNREACHABLE_RETURN(Qundef);
+}
+
+/*
+ *  call-seq:
+ *     binding.it_defined?(symbol) -> obj
+ *
+ *  TODO
+ */
+
+static VALUE
+bind_it_defined_p(VALUE bindval)
+{
+    const rb_binding_t *bind;
+    const rb_env_t *env;
+
+    GetBindingPtr(bindval, bind);
+    env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
+    return RBOOL(get_numbered_parameter_ptr(env, rb_it_id));
 }
 
 /*
@@ -4648,6 +4694,8 @@ Init_Binding(void)
     rb_define_method(rb_cBinding, "numbered_parameters", bind_numbered_parameters, 0);
     rb_define_method(rb_cBinding, "numbered_parameter_get", bind_numbered_parameter_get, 1);
     rb_define_method(rb_cBinding, "numbered_parameter_defined?", bind_numbered_parameter_defined_p, 1);
+    rb_define_method(rb_cBinding, "it_get", bind_it_get, 0);
+    rb_define_method(rb_cBinding, "it_defined?", bind_it_defined_p, 0);
     rb_define_method(rb_cBinding, "receiver", bind_receiver, 0);
     rb_define_method(rb_cBinding, "source_location", bind_location, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

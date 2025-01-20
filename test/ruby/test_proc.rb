@@ -1707,6 +1707,47 @@ class TestProc < Test::Unit::TestCase
     end
   end
 
+  def test_it
+    "foo".tap do
+      it
+      assert_equal([], binding.local_variables)
+      assert_equal("foo", binding.it_get)
+      assert_equal(true, binding.it_defined?)
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.it_get }
+        assert_equal(false, binding.it_defined?)
+      end
+      assert_equal([], binding.local_variables)
+      assert_equal("foo", binding.it_get)
+      assert_equal(true, binding.it_defined?)
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_equal("bar", binding.it_get)
+        assert_equal(true, binding.it_defined?)
+      end
+      assert_equal([], binding.local_variables)
+      assert_equal("foo", binding.it_get)
+      assert_equal(true, binding.it_defined?)
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.it_get }
+      assert_equal(false, binding.it_defined?)
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_equal("bar", binding.it_get)
+        assert_equal(true, binding.it_defined?)
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.it_get }
+      assert_equal(false, binding.it_defined?)
+    end
+  end
+
   def test_binding_receiver
     feature8779 = '[ruby-dev:47613] [Feature #8779]'
 

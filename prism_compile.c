@@ -6331,7 +6331,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (scope_node->parameters != NULL && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
-        ID local = rb_make_temporary_id(local_index);
+        ID local = rb_it_id;
         local_table_for_iseq->ids[local_index++] = local;
     }
 

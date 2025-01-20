@@ -2248,4 +2248,6 @@ RUBY_EXTERN VALUE rb_eRactorIsolationError;
 
 RUBY_SYMBOL_EXPORT_END
 
+extern ID rb_it_id;
+
 #endif /* RUBY_VM_CORE_H */
