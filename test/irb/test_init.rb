@@ -163,6 +163,26 @@ module TestIRB
       IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
     end
 
+    def test_copy_command_environment_variable
+      orig_copy_command_env = ENV['IRB_COPY_COMMAND']
+      orig_copy_command_conf = IRB.conf[:COPY_COMMAND]
+
+      ENV['IRB_COPY_COMMAND'] = nil
+      IRB.setup(__FILE__)
+      refute IRB.conf[:COPY_COMMAND]
+
+      ENV['IRB_COPY_COMMAND'] = ''
+      IRB.setup(__FILE__)
+      assert_equal('', IRB.conf[:COPY_COMMAND])
+
+      ENV['IRB_COPY_COMMAND'] = 'blah'
+      IRB.setup(__FILE__)
+      assert_equal('blah', IRB.conf[:COPY_COMMAND])
+    ensure
+      ENV['IRB_COPY_COMMAND'] = orig_copy_command_env
+      IRB.conf[:COPY_COMMAND] = orig_copy_command_conf
+    end
+
     def test_completor_environment_variable
       orig_use_autocomplete_env = ENV['IRB_COMPLETOR']
       orig_use_autocomplete_conf = IRB.conf[:COMPLETOR]

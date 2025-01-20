@@ -49,6 +49,19 @@ module TestIRB
       end
     end
 
+    def test_colorization_disabled
+      {
+        1 => "1\n",
+        "a\nb" => %["a\\nb"\n],
+        IRBTestColorPrinter.new('test') => "#<struct TestIRB::ColorPrinterTest::IRBTestColorPrinter a=\"test\">\n",
+        Ripper::Lexer.new('1').scan => "[#<Ripper::Lexer::Elem: on_int@1:0 END token: \"1\">]\n",
+        Class.new{define_method(:pretty_print){|q| q.text("[__FILE__, __LINE__, __ENCODING__]")}}.new => "[__FILE__, __LINE__, __ENCODING__]\n",
+      }.each do |object, result|
+        actual = with_term { IRB::ColorPrinter.pp(object, '', colorize: false) }
+        assert_equal(result, actual, "Case: IRB::ColorPrinter.pp(#{object.inspect}, '')")
+      end
+    end
+
     private
 
     def with_term
