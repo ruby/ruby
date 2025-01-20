@@ -88,8 +88,8 @@ RSpec.describe "bundle info" do
 
     context "given a default gem shippped in ruby", :ruby_repo do
       it "prints information about the default gem" do
-        bundle "info rdoc"
-        expect(out).to include("* rdoc")
+        bundle "info json"
+        expect(out).to include("* json")
         expect(out).to include("Default Gem: yes")
       end
     end
