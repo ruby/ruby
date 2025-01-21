@@ -308,6 +308,7 @@ pub struct RubyUpcalls {
     pub scan_objspace: extern "C" fn(),
     pub scan_object_ruby_style: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
+    pub handle_weak_references: extern "C" fn(object: ObjectReference),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
     pub vm_live_bytes: extern "C" fn() -> usize,
     pub update_global_tables: extern "C" fn(tbl_idx: c_int),
