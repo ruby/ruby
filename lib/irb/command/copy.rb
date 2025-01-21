@@ -3,11 +3,21 @@
 module IRB
   module Command
     class Copy < Base
-      category "Workspace"
-      description "Copy command output to clipboard"
+      category "Misc"
+      description "Copy expression output to clipboard"
 
       help_message(<<~HELP)
-        Usage: copy [command]
+        Usage: copy ([expression])
+
+        When given:
+        - an expression, copy the inspect result of the expression to the clipboard.
+        - no arguments, copy the last evaluated result (`_`) to the clipboard.
+
+        Examples:
+
+          copy Foo.new
+          copy User.all.to_a
+          copy
       HELP
 
       def execute(arg)
