@@ -57,7 +57,13 @@ module Spec
     end
 
     def default_locked_platforms
-      [local_platform, generic_local_platform]
+      [local_platform, generic_default_locked_platform].compact
+    end
+
+    def generic_default_locked_platform
+      return unless generic_local_platform_is_ruby?
+
+      Gem::Platform::RUBY
     end
   end
 end

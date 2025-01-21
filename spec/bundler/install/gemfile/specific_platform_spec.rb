@@ -1077,7 +1077,7 @@ RSpec.describe "bundle install with specific platforms" do
           myrack (3.0.7)
 
       PLATFORMS
-        #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
+        #{lockfile_platforms(generic_default_locked_platform || local_platform, defaults: ["ruby"])}
 
       DEPENDENCIES
         concurrent-ruby

@@ -113,7 +113,7 @@ module Spec
     # that requires regenerating tmp/.
 
     def test_env_version
-      1
+      2
     end
 
     def scope

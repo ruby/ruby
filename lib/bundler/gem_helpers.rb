@@ -11,7 +11,7 @@ module Bundler
     def generic(p)
       GENERIC_CACHE[p] ||= begin
         found = GENERICS.find do |match|
-          p.os == match.os && (!match.cpu || p.cpu == match.cpu)
+          p === match
         end
         found || Gem::Platform::RUBY
       end
