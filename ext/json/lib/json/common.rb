@@ -167,6 +167,13 @@ module JSON
   # system. Usually this means that the iconv library is not installed.
   class MissingUnicodeSupport < JSONError; end
 
+  # Fragment of JSON document that is to be included as is:
+  #   fragment = JSON::Fragment.new("[1, 2, 3]")
+  #   JSON.generate({ count: 3, items: fragments })
+  #
+  # This allows to easily assemble multiple JSON fragments that have
+  # been peristed somewhere without having to parse them nor resorting
+  # to string interpolation.
   Fragment = Struct.new(:json) do
     def to_json(state = nil, *)
       json
