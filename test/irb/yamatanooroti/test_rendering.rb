@@ -385,9 +385,25 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write("'a' * 80 * 11\n")
     write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
 
-    assert_screen(/(a{80}\n){8}/)
+    assert_screen(/"a{79}\n(a{80}\n){7}/)
     # because pager is invoked, foobar will not be evaluated
     assert_screen(/\A(?!foobar)/)
+    close
+  end
+
+  def test_pretty_print_preview_with_slow_inspect
+    write_irbrc <<~'LINES'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: /irb\(main\)/)
+    write("o1 = Object.new; def o1.inspect; 'INSPECT'; end\n")
+    write("o2 = Object.new; def o2.inspect; sleep 0.1; 'SLOW'; end\n")
+    # preview should be shown even if pretty_print is not completed.
+    write("[o1] * 20 + [o2] * 100\n")
+    assert_screen(/=>\n\[INSPECT,\n( INSPECT,\n){6}Preparing full inspection value\.\.\./)
+    write("\C-c") # abort pretty_print
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    assert_screen(/foobar/)
     close
   end
 

@@ -361,7 +361,7 @@ module TestIRB
           irb.eval_input
         end
         assert_empty err
-        assert_equal("=> #{value_first_line[0..(input.winsize.last - 9)]}...\n=> \n#{value}\n", out)
+        assert_equal("=> \n#{value_first_line[0, input.winsize.last]}...\n=> \n#{value}\n", out)
         irb.context.evaluate_expression('A.remove_method(:inspect)', 0)
 
         input.reset
