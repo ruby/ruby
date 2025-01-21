@@ -6887,7 +6887,7 @@ static const rb_data_type_t env_data_type = {
  *  the returned value is the value associated with the key.
  *
  *  But what if the key <i>is not found</i>?
- *  In that case, you have a wide choice of behaviors.
+ *  In that case, certain methods will return a default value while other will raise a \KeyError.
  *
  *  ==== Nil Return Value
  *
