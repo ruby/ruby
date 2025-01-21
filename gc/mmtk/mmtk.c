@@ -257,6 +257,12 @@ rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 }
 
 static void
+rb_mmtk_handle_weak_references(MMTk_ObjectReference object)
+{
+    rb_gc_handle_weak_references((VALUE)object);
+}
+
+static void
 rb_mmtk_call_obj_free(MMTk_ObjectReference object)
 {
     VALUE obj = (VALUE)object;
@@ -368,6 +374,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_objspace,
     rb_mmtk_scan_object_ruby_style,
     rb_mmtk_call_gc_mark_children,
+    rb_mmtk_handle_weak_references,
     rb_mmtk_call_obj_free,
     rb_mmtk_vm_live_bytes,
     rb_mmtk_update_global_tables,
@@ -397,7 +404,7 @@ void *
 rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
-    mmtk_init_binding(builder, NULL, &ruby_upcalls, (MMTk_ObjectReference)Qundef);
+    mmtk_init_binding(builder, NULL, &ruby_upcalls);
 
     return calloc(1, sizeof(struct objspace));
 }
@@ -730,16 +737,18 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
     }
 }
 
-void
-rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
-{
-    mmtk_mark_weak((MMTk_ObjectReference *)ptr);
-}
+// Weak references
 
 void
-rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
+rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
-    mmtk_remove_weak((MMTk_ObjectReference *)ptr);
+    mmtk_declare_weak_references((MMTk_ObjectReference)obj);
+}
+
+bool
+rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
+{
+    return mmtk_weak_references_alive_p((MMTk_ObjectReference)obj);
 }
 
 // Compaction
