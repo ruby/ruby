@@ -1179,9 +1179,9 @@ rb_gc_handle_weak_references_alive_p(VALUE obj)
     return rb_gc_impl_handle_weak_references_alive_p(rb_gc_get_objspace(), obj);
 }
 
-extern const rb_data_type_t weakmap_type;
+extern const rb_data_type_t rb_weakmap_type;
 void rb_wmap_handle_weak_references(VALUE obj);
-extern const rb_data_type_t weakkeymap_type;
+extern const rb_data_type_t rb_weakkeymap_type;
 void rb_wkmap_handle_weak_references(VALUE obj);
 
 void
@@ -1192,10 +1192,10 @@ rb_gc_handle_weak_references(VALUE obj)
         if (RTYPEDDATA_P(obj)) {
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
 
-            if (type == &weakmap_type) {
+            if (type == &rb_weakmap_type) {
                 rb_wmap_handle_weak_references(obj);
             }
-            else if (type == &weakkeymap_type) {
+            else if (type == &rb_weakkeymap_type) {
                 rb_wkmap_handle_weak_references(obj);
             }
             else {
