@@ -35,6 +35,7 @@ The following default gems are updated.
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
 * fiddle 1.1.7.dev
+* irb 1.15.0
 * prism 1.3.0
 * psych 5.2.3
 * stringio 3.1.3.dev
