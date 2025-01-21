@@ -29,6 +29,11 @@ module MMTk
     end
 
     def test_MMTK_HEAP_MIN
+      # Defaults to 1MiB
+      assert_separately([], <<~RUBY)
+        assert_equal(1 * 1024 * 1024, GC.config[:mmtk_heap_min])
+      RUBY
+
       # TODO: uncomment this test when the infinite loop is fixed
       # assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "1" }], <<~RUBY)
       #   assert_equal(1, GC.config[:mmtk_heap_min])
@@ -36,6 +41,12 @@ module MMTk
 
       assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "10MiB", "MMTK_HEAP_MAX" => "1GiB" }], <<~RUBY)
         assert_equal(10 * 1024 * 1024, GC.config[:mmtk_heap_min])
+      RUBY
+    end
+
+    def test_MMTK_HEAP_MIN_is_ignored_for_fixed_heaps
+      assert_separately([{ "MMTK_HEAP_MODE" => "fixed", "MMTK_HEAP_MIN" => "1" }], <<~RUBY)
+        assert_nil(GC.config[:mmtk_heap_min])
       RUBY
     end
 
