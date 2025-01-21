@@ -31,6 +31,11 @@ module Prism
         end
       end
 
+      # Create the parser with our custom builder class
+      def initialize(builder = Parser::Builder.new)
+        super
+      end
+
       Racc_debug_parser = false # :nodoc:
 
       # By using the `:parser` keyword argument, you can translate in a way that is compatible with
@@ -342,6 +347,7 @@ module Prism
         end
       end
 
+      require_relative "parser/builder"
       require_relative "parser/compiler"
       require_relative "parser/lexer"
 

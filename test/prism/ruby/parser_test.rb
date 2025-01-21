@@ -16,6 +16,7 @@ end
 
 # First, opt in to every AST feature.
 Parser::Builders::Default.modernize
+Prism::Translation::Parser::Builder.modernize
 
 # The parser gem rejects some strings that would most likely lead to errors
 # in consumers due to encoding problems. RuboCop however monkey-patches this
