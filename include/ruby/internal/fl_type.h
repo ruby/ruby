@@ -295,11 +295,11 @@ ruby_fl_type {
                          = 0,
 
    /**
-    * This flag is no longer in use
+    * This object weakly refers to other objects.
     *
     * @internal
     */
-    RUBY_FL_UNUSED9  = (1<<9),
+    RUBY_FL_WEAK_REFERENCE = (1<<9),
 
    /**
     * This flag is no longer in use
