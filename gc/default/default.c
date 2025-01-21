@@ -6927,15 +6927,6 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(src), src);
     CLEAR_IN_BITMAP(GET_HEAP_PAGE(src)->remembered_bits, src);
 
-    if (FL_TEST(src, FL_EXIVAR)) {
-        /* Resizing the st table could cause a malloc */
-        DURING_GC_COULD_MALLOC_REGION_START();
-        {
-            rb_mv_generic_ivar(src, dest);
-        }
-        DURING_GC_COULD_MALLOC_REGION_END();
-    }
-
     if (FL_TEST(src, FL_SEEN_OBJ_ID)) {
         /* If the source object's object_id has been seen, we need to update
          * the object to object id mapping. */
