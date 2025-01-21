@@ -50,12 +50,11 @@ int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_convert_to_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
+void rb_generic_ivar_update_references(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
 void rb_mark_generic_ivar(VALUE obj);
-void rb_ref_update_generic_ivar(VALUE);
-void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
 void rb_iv_tbl_copy(VALUE dst, VALUE src);
