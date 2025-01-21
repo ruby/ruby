@@ -659,8 +659,20 @@ class Resolv
       }
     end
 
-    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
-      begin
+    case RUBY_PLATFORM
+    when *[
+      # https://www.rfc-editor.org/rfc/rfc6056.txt
+      # Appendix A. Survey of the Algorithms in Use by Some Popular Implementations
+      /freebsd/, /linux/, /netbsd/, /openbsd/, /solaris/,
+      /darwin/, # the same as FreeBSD
+    ] then
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        udpsock.bind(bind_host, 0)
+      end
+    else
+      # Sequential port assignment
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        # Ephemeral port number range recommended by RFC 6056
         port = random(1024..65535)
         udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE, # POSIX
