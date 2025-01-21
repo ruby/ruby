@@ -668,6 +668,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_fragment
     fragment = JSON::Fragment.new(" 42")
     assert_equal '{"number": 42}', JSON.generate({ number: fragment })
+    assert_equal '{"number": 42}', JSON.generate({ number: fragment }, strict: true)
   end
 
   def test_json_generate_as_json_convert_to_proc
