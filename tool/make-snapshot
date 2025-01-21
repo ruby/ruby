@@ -71,16 +71,6 @@ ENV["LC_ALL"] = ENV["LANG"] = "C"
 GITURL = URI.parse("https://github.com/ruby/ruby.git")
 RUBY_VERSION_PATTERN = /^\#define\s+RUBY_VERSION\s+"([\d.]+)"/
 
-ENV["VPATH"] ||= "include/ruby"
-LRAMA = ENV["LRAMA"] ||= "#{$tooldir}/lrama/exe/lrama"
-ENV["BASERUBY"] ||= "ruby"
-ENV["RUBY"] ||= "ruby"
-ENV["MV"] ||= "mv"
-ENV["RM"] ||= "rm -f"
-ENV["MINIRUBY"] ||= "ruby"
-ENV["PROGRAM"] ||= "ruby"
-ENV["AUTOCONF"] ||= "autoconf"
-ENV["BUILTIN_TRANSOBJS"] ||= "newline.o"
 ENV["TZ"] = "UTC"
 
 class String
@@ -117,22 +107,32 @@ $digests &&= $digests.split(/[, ]+/).tap {|dig|
 $digests ||= DIGESTS
 
 $patch_file &&= File.expand_path($patch_file)
-path = ENV["PATH"].split(File::PATH_SEPARATOR)
-%w[LRAMA BASERUBY RUBY MV MINIRUBY].each do |var|
-  cmd, = ENV[var].shellsplit
-  unless path.any? {|dir|
+PATH = ENV["PATH"].split(File::PATH_SEPARATOR)
+def PATH.executable_env(var, command = nil)
+  command = ENV[var] ||= (command or return)
+  cmd, = command.shellsplit
+  unless any? {|dir|
       file = File.expand_path(cmd, dir)
       File.file?(file) and File.executable?(file)
     }
     abort "#{File.basename $0}: #{var} command not found - #{cmd}"
   end
+  command
 end
 
+PATH.executable_env("MV", "mv")
+PATH.executable_env("RM", "rm -f")
+PATH.executable_env("AUTOCONF", "autoconf")
+
 %w[BASERUBY RUBY MINIRUBY].each do |var|
-  %x[#{ENV[var]} --disable-gem -e1 2>&1]
-  if $?.success?
-    ENV[var] += ' --disable-gem'
+  cmd = PATH.executable_env(var, "ruby")
+  help = IO.popen("#{cmd} --help", err: %i[child out], &:read)
+  unless $?.success? and /ruby/ =~ help
+    abort "#{File.basename $0}: #{var} ruby not found - #{cmd}"
   end
+  IO.popen("#{cmd} --disable-gem -eexit", err: %i[child out], &:read)
+  cmd += ' --disable-gem' if $?.success?
+  ENV[var] = cmd
 end
 
 if defined?($help) or defined?($_help)
@@ -469,6 +469,9 @@ def package(vcs, rev, destdir, tmp = nil)
         "MAJOR"=>api_major_version,
         "MINOR"=>api_minor_version,
         "TEENY"=>version_teeny,
+        "VPATH"=>(ENV["VPATH"] || "include/ruby"),
+        "PROGRAM"=>(ENV["PROGRAM"] || "ruby"),
+        "BUILTIN_TRANSOBJS"=>(ENV["BUILTIN_TRANSOBJS"] || "newline.o"),
       }
       status.scan(/^s([%,])@([A-Za-z_][A-Za-z_0-9]*)@\1(.*?)\1g$/) do
         vars[$2] ||= $3
@@ -514,7 +517,7 @@ touch-unicode-files:
       end
       print "prerequisites"
     else
-      system(*%W"#{LRAMA} -o parse.c parse.y")
+      system(*%W[#{PATH.executable_env("YACC", "bison")} -o parse.c parse.y])
     end
     vcs.after_export(".") if exported
     clean.concat(Dir.glob("ext/**/autom4te.cache"))
