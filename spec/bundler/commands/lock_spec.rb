@@ -765,8 +765,7 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list(java, x86_mingw32))
   end
 
   it "supports adding new platforms, when most specific locked platform is not the current platform, and current resolve is not compatible with the target platform" do
@@ -845,16 +844,14 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to contain_exactly(rb, linux, java, x86_mingw32)
+    expect(the_bundle.locked_platforms).to contain_exactly(rb, linux, java, x86_mingw32)
   end
 
   it "supports adding the `ruby` platform" do
     bundle "lock --add-platform ruby"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list("ruby"))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("ruby"))
   end
 
   it "fails when adding an unknown platform" do
@@ -867,13 +864,11 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list(java, x86_mingw32))
 
     bundle "lock --remove-platform java"
 
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list(x86_mingw32))
   end
 
   it "also cleans up redundant platform gems when removing platforms" do
