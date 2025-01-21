@@ -34,10 +34,9 @@ module MMTk
         assert_equal(1 * 1024 * 1024, GC.config[:mmtk_heap_min])
       RUBY
 
-      # TODO: uncomment this test when the infinite loop is fixed
-      # assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "1" }], <<~RUBY)
-      #   assert_equal(1, GC.config[:mmtk_heap_min])
-      # RUBY
+      assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "1" }], <<~RUBY)
+        assert_equal(1, GC.config[:mmtk_heap_min])
+      RUBY
 
       assert_separately([{ "MMTK_HEAP_MODE" => "dynamic", "MMTK_HEAP_MIN" => "10MiB", "MMTK_HEAP_MAX" => "1GiB" }], <<~RUBY)
         assert_equal(10 * 1024 * 1024, GC.config[:mmtk_heap_min])
