@@ -15,7 +15,7 @@ module IRB
         arg = '_' if arg.to_s.strip.empty?
 
         value = irb_context.workspace.binding.eval(arg)
-        output = irb_context.inspect_method.inspect_value(value, colorize: false)
+        output = irb_context.inspect_method.inspect_value(value, +'', colorize: false).chomp
 
         if clipboard_available?
           copy_to_clipboard(output)
