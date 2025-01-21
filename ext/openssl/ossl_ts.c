@@ -855,16 +855,26 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
         X509_up_ref(cert);
     }
 
+    if (!X509_STORE_up_ref(x509st)) {
+        sk_X509_pop_free(x509inter, X509_free);
+        TS_VERIFY_CTX_free(ctx);
+        ossl_raise(eTimestampError, "X509_STORE_up_ref");
+    }
+
+#ifdef HAVE_TS_VERIFY_CTX_SET0_CERTS
+    TS_VERIFY_CTX_set0_certs(ctx, x509inter);
+    TS_VERIFY_CTX_set0_store(ctx, x509st);
+#else
+# if OSSL_OPENSSL_PREREQ(3, 0, 0) || OSSL_IS_LIBRESSL
     TS_VERIFY_CTX_set_certs(ctx, x509inter);
-    TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
+# else
+    TS_VERIFY_CTS_set_certs(ctx, x509inter);
+# endif
     TS_VERIFY_CTX_set_store(ctx, x509st);
+#endif
+    TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
 
     ok = TS_RESP_verify_response(ctx, resp);
-    /*
-     * TS_VERIFY_CTX_set_store() call above does not increment the reference
-     * counter, so it must be unset before TS_VERIFY_CTX_free() is called.
-     */
-    TS_VERIFY_CTX_set_store(ctx, NULL);
     TS_VERIFY_CTX_free(ctx);
 
     if (!ok)

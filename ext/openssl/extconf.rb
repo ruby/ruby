@@ -144,13 +144,15 @@ have_func("EVP_PKEY_check(NULL)", evp_h)
 # added in 3.0.0
 have_func("SSL_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)
 have_func("ERR_get_error_all(NULL, NULL, NULL, NULL, NULL)", "openssl/err.h")
-have_func("TS_VERIFY_CTX_set_certs(NULL, NULL)", ts_h)
 have_func("SSL_CTX_load_verify_file(NULL, \"\")", ssl_h)
 have_func("BN_check_prime(NULL, NULL, NULL)", "openssl/bn.h")
 have_func("EVP_MD_CTX_get0_md(NULL)", evp_h)
 have_func("EVP_MD_CTX_get_pkey_ctx(NULL)", evp_h)
 have_func("EVP_PKEY_eq(NULL, NULL)", evp_h)
 have_func("EVP_PKEY_dup(NULL)", evp_h)
+
+# added in 3.4.0
+have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
 
 Logging::message "=== Checking done. ===\n"
 
