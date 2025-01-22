@@ -82,6 +82,24 @@ jobs:
           echo gems=$gems >> $GITHUB_OUTPUT
           echo update=${news:-$gems} >> $GITHUB_OUTPUT
 
+      - name: Commit
+        id: commit
+        run: |
+          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
+          message="Update bundled gems list"
+          if [ -z "${gems}" ]; then
+            git commit --message="[DOC] ${message} at ${GITHUB_SHA:0:30}"
+          else
+            git commit --message="${message} as of ${TODAY}"
+          fi
+        env:
+          TODAY: ${{ steps.bundled_gems.outputs.latest_date || env.TODAY }}
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
+          gems: ${{ steps.diff.outputs.gems }}
+        if: ${{ steps.diff.outputs.update }}
+
       - name: Install libraries
         uses: ./.github/actions/setup/ubuntu
         if: ${{ steps.diff.outputs.gems }}
@@ -107,27 +125,14 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
         if: ${{ steps.diff.outputs.gems }}
 
-      - name: Commit
+      - name: Push
         run: |
-          git pull --ff-only origin ${GITHUB_REF#refs/heads/}
-          message="Update bundled gems list"
-          if [ -z "${gems}" ]; then
-            git commit --message="[DOC] ${message} at ${GITHUB_SHA:0:30}"
-          else
-            git commit --message="${message} as of ${TODAY}"
-          fi
           git push origin ${GITHUB_REF#refs/heads/}
-        env:
-          TODAY: ${{ steps.bundled_gems.outputs.latest_date || env.TODAY }}
-          EMAIL: svn-admin@ruby-lang.org
-          GIT_AUTHOR_NAME: git
-          GIT_COMMITTER_NAME: git
-          gems: ${{ steps.diff.outputs.gems }}
         if: >-
           ${{
           github.repository == 'ruby/ruby' &&
           !startsWith(github.event_name, 'pull') &&
-          steps.diff.outputs.update
+          steps.commit.outcome == 'success'
           }}
 
       - uses: ./.github/actions/slack
