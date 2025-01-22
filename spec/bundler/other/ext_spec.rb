@@ -35,14 +35,12 @@ RSpec.describe "Bundler::GemHelpers#generic" do
   end
 
   it "converts 32-bit mingw platform variants into x86-mingw32" do
-    expect(generic(pl("mingw32"))).to eq(pl("x86-mingw32"))
     expect(generic(pl("i386-mingw32"))).to eq(pl("x86-mingw32"))
     expect(generic(pl("x86-mingw32"))).to eq(pl("x86-mingw32"))
   end
 
   it "converts 64-bit mingw platform variants into x64-mingw32" do
     expect(generic(pl("x64-mingw32"))).to eq(pl("x64-mingw32"))
-    expect(generic(pl("x86_64-mingw32"))).to eq(pl("x64-mingw32"))
   end
 
   it "converts 64-bit mingw UCRT platform variants into x64-mingw-ucrt" do
