@@ -121,6 +121,7 @@
 #include "ruby_assert.h"
 #include "ruby_atomic.h"
 #include "symbol.h"
+#include "variable.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "vm_callinfo.h"
@@ -3384,11 +3385,23 @@ vm_weak_table_foreach_update_value(st_data_t *key, st_data_t *value, st_data_t d
     return iter_data->update_callback((VALUE *)value, iter_data->data);
 }
 
+static void
+free_gen_ivtbl(VALUE obj, struct gen_ivtbl *ivtbl)
+{
+    if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
+        st_free_table(ivtbl->as.complex.table);
+    }
+
+    xfree(ivtbl);
+}
+
 static int
 vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
 {
     int retval = vm_weak_table_foreach_key(key, value, data, error);
     if (retval == ST_DELETE) {
+        free_gen_ivtbl((VALUE)key, (struct gen_ivtbl *)value);
+
         FL_UNSET((VALUE)key, FL_EXIVAR);
     }
     return retval;

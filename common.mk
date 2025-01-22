@@ -7555,6 +7555,7 @@ gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
 gc.$(OBJEXT): {$(VPATH)}util.h
+gc.$(OBJEXT): {$(VPATH)}variable.h
 gc.$(OBJEXT): {$(VPATH)}vm.h
 gc.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 gc.$(OBJEXT): {$(VPATH)}vm_core.h
