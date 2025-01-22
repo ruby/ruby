@@ -482,7 +482,6 @@ version = "0.1.0"
 dependencies = [
  "atomic_refcell",
  "env_logger",
- "lazy_static",
  "libc",
  "log",
  "mmtk",
