@@ -7,13 +7,21 @@ module TestIRB
   class PagerTest < TestCase
     def test_take_first_page
       assert_equal ['a' * 40, true], IRB::Pager.take_first_page(10, 4) {|io| io.puts 'a' * 41; raise 'should not reach here' }
+      assert_equal ["a\nb\na\nb\n", true], IRB::Pager.take_first_page(10, 4) {|io| 10.times { io.puts "a\nb\n" } }
+      assert_equal ["a\n\n\na\n", true], IRB::Pager.take_first_page(10, 4) {|io| 10.times { io.puts "a\n\n\n" } }
+      assert_equal ["11\n" * 4, true], IRB::Pager.take_first_page(10, 4) {|io| 10.times { io.write 1; io.puts 1 } }
+      assert_equal ["\n" * 4, true], IRB::Pager.take_first_page(10, 4) {|io| 10.times { io.write nil; io.puts nil } }
       assert_equal ['a' * 39, false], IRB::Pager.take_first_page(10, 4) {|io| io.write 'a' * 39 }
       assert_equal ['a' * 39 + 'b', false], IRB::Pager.take_first_page(10, 4) {|io| io.write 'a' * 39 + 'b' }
       assert_equal ['a' * 39 + 'b', true], IRB::Pager.take_first_page(10, 4) {|io| io.write 'a' * 39 + 'bc' }
       assert_equal ["a\nb\nc\nd\n", false], IRB::Pager.take_first_page(10, 4) {|io| io.write "a\nb\nc\nd\n" }
       assert_equal ["a\nb\nc\nd\n", true], IRB::Pager.take_first_page(10, 4) {|io| io.write "a\nb\nc\nd\ne" }
       assert_equal ['a' * 15 + "\n" + 'b' * 20, true], IRB::Pager.take_first_page(10, 4) {|io| io.puts 'a' * 15; io.puts 'b' * 30 }
-      assert_equal ["\e[31mA\e[0m" * 10 + 'x' * 30, true], IRB::Pager.take_first_page(10, 4) {|io| io.puts "\e[31mA\e[0m" * 10 + 'x' * 31; }
+      assert_equal ["\e[31mA\e[0m" * 10 + 'x' * 30, true], IRB::Pager.take_first_page(10, 4) {|io| io.puts "\e[31mA\e[0m" * 10 + 'x' * 31 }
+      text, overflow = IRB::Pager.take_first_page(10, 4) {|io| 41.times { io.write "\e[31mA\e[0m" } }
+      assert_equal ['A' * 40, true], [text.gsub(/\e\[\d+m/, ''), overflow]
+      text, overflow = IRB::Pager.take_first_page(10, 4) {|io| 41.times { io.write "\e[31mAAA\e[0m" } }
+      assert_equal ['A' * 40, true], [text.gsub(/\e\[\d+m/, ''), overflow]
     end
   end
 
