@@ -8,7 +8,7 @@ module TestIRB
   class CopyTest < IntegrationTestCase
     def setup
       super
-      @envs['IRB_COPY_COMMAND'] = "ruby -e \"puts 'foo' + STDIN.read\""
+      @envs['IRB_COPY_COMMAND'] = "#{EnvUtil.rubybin} -e \"puts 'foo' + STDIN.read\""
     end
 
     def test_copy_with_pbcopy
