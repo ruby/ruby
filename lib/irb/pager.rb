@@ -152,11 +152,13 @@ module IRB
       end
 
       def puts(text = '')
+        text = text.to_s unless text.is_a?(String)
         write(text)
         write("\n") unless text.end_with?("\n")
       end
 
       def write(text)
+        text = text.to_s unless text.is_a?(String)
         @string << text
         if @multipage
           if @delay_until && Time.now > @delay_until
@@ -171,23 +173,24 @@ module IRB
           text = text[0, overflow_size]
           overflow = true
         end
-
         @buffer << text
-        @col += Reline::Unicode.calculate_width(text)
+        @col += Reline::Unicode.calculate_width(text, true)
         if text.include?("\n") || @col >= @width
           @buffer.lines.each do |line|
             wrapped_lines = Reline::Unicode.split_by_width(line.chomp, @width).first.compact
             wrapped_lines.pop if wrapped_lines.last == ''
             @lines.concat(wrapped_lines)
-            if @lines.empty?
-              @lines << "\n"
-            elsif line.end_with?("\n")
-              @lines[-1] += "\n"
+            if line.end_with?("\n")
+              if @lines.empty? || @lines.last.end_with?("\n")
+                @lines << "\n"
+              else
+                @lines[-1] += "\n"
+              end
             end
           end
           @buffer.clear
           @buffer << @lines.pop unless @lines.last.end_with?("\n")
-          @col = Reline::Unicode.calculate_width(@buffer)
+          @col = Reline::Unicode.calculate_width(@buffer, true)
         end
         if overflow || @lines.size > @height || (@lines.size == @height && @col > 0)
           @first_page_lines = @lines.take(@height)
