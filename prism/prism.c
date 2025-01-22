@@ -12974,7 +12974,7 @@ typedef struct {
 
 pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
     // rescue
-    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER_RESCUE),
+    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = { PM_BINDING_POWER_MODIFIER_RESCUE, PM_BINDING_POWER_COMPOSITION, true, false },
 
     // if unless until while
     [PM_TOKEN_KEYWORD_IF_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
@@ -19476,7 +19476,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     context_push(parser, PM_CONTEXT_RESCUE_MODIFIER);
 
                     pm_token_t rescue_keyword = parser->previous;
-                    pm_node_t *value = parse_expression(parser, binding_power, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+                    pm_node_t *value = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
                     context_pop(parser);
 
                     statement = (pm_node_t *) pm_rescue_modifier_node_create(parser, statement, &rescue_keyword, value);
@@ -20697,7 +20697,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         pm_token_t rescue = parser->current;
         parser_lex(parser);
 
-        pm_node_t *right = parse_expression(parser, binding_power, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, false, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
@@ -20803,7 +20803,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
             }
         }
 
-        pm_node_t *right = parse_expression(parser, binding_power, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
+        pm_node_t *right = parse_expression(parser, pm_binding_powers[PM_TOKEN_KEYWORD_RESCUE_MODIFIER].right, accepts_command_call_inner, false, PM_ERR_RESCUE_MODIFIER_VALUE, (uint16_t) (depth + 1));
         context_pop(parser);
 
         return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
