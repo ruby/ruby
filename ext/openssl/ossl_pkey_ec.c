@@ -1478,7 +1478,6 @@ static VALUE ossl_ec_point_add(VALUE self, VALUE other)
 /*
  * call-seq:
  *   point.mul(bn1 [, bn2]) => point
- *   point.mul(bns, points [, bn2]) => point
  *
  * Performs elliptic curve point multiplication.
  *
@@ -1486,11 +1485,9 @@ static VALUE ossl_ec_point_add(VALUE self, VALUE other)
  * generator of the group of _point_. _bn2_ may be omitted, and in that case,
  * the result is just <tt>bn1 * point</tt>.
  *
- * The second form calculates <tt>bns[0] * point + bns[1] * points[0] + ...
- * + bns[-1] * points[-1] + bn2 * G</tt>. _bn2_ may be omitted. _bns_ must be
- * an array of OpenSSL::BN. _points_ must be an array of
- * OpenSSL::PKey::EC::Point. Please note that <tt>points[0]</tt> is not
- * multiplied by <tt>bns[0]</tt>, but <tt>bns[1]</tt>.
+ * Before version 4.0.0, and when compiled with OpenSSL 1.1.1 or older, this
+ * method allowed another form:
+ *   point.mul(bns, points [, bn2]) => point
  */
 static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
 {
@@ -1508,62 +1505,15 @@ static VALUE ossl_ec_point_mul(int argc, VALUE *argv, VALUE self)
     GetECPoint(result, point_result);
 
     rb_scan_args(argc, argv, "12", &arg1, &arg2, &arg3);
-    if (!RB_TYPE_P(arg1, T_ARRAY)) {
-	BIGNUM *bn = GetBNPtr(arg1);
+    if (RB_TYPE_P(arg1, T_ARRAY) || argc > 2)
+        rb_raise(rb_eNotImpError, "OpenSSL::PKey::EC::Point#mul with arrays " \
+                 "is no longer supported");
 
-	if (!NIL_P(arg2))
-	    bn_g = GetBNPtr(arg2);
-	if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
-	    ossl_raise(eEC_POINT, NULL);
-    } else {
-#if (defined(OPENSSL_VERSION_MAJOR) && OPENSSL_VERSION_MAJOR >= 3) || defined(LIBRESSL_VERSION_NUMBER)
-        rb_raise(rb_eNotImpError, "calling #mul with arrays is not" \
-                 "supported by this OpenSSL version");
-#else
-	/*
-	 * bignums | arg1[0] | arg1[1] | arg1[2] | ...
-	 * points  | self    | arg2[0] | arg2[1] | ...
-	 */
-	long i, num;
-	VALUE bns_tmp, tmp_p, tmp_b;
-	const EC_POINT **points;
-	const BIGNUM **bignums;
-
-	Check_Type(arg1, T_ARRAY);
-	Check_Type(arg2, T_ARRAY);
-	if (RARRAY_LEN(arg1) != RARRAY_LEN(arg2) + 1) /* arg2 must be 1 larger */
-	    ossl_raise(rb_eArgError, "bns must be 1 longer than points; see the documentation");
-
-        rb_warning("OpenSSL::PKey::EC::Point#mul(ary, ary) is deprecated; " \
-                   "use #mul(bn) form instead");
-
-	num = RARRAY_LEN(arg1);
-	bns_tmp = rb_ary_tmp_new(num);
-	bignums = ALLOCV_N(const BIGNUM *, tmp_b, num);
-	for (i = 0; i < num; i++) {
-	    VALUE item = RARRAY_AREF(arg1, i);
-	    bignums[i] = GetBNPtr(item);
-	    rb_ary_push(bns_tmp, item);
-	}
-
-	points = ALLOCV_N(const EC_POINT *, tmp_p, num);
-	points[0] = point_self; /* self */
-	for (i = 0; i < num - 1; i++)
-	    GetECPoint(RARRAY_AREF(arg2, i), points[i + 1]);
-
-	if (!NIL_P(arg3))
-	    bn_g = GetBNPtr(arg3);
-
-	if (EC_POINTs_mul(group, point_result, bn_g, num, points, bignums, ossl_bn_ctx) != 1) {
-	    ALLOCV_END(tmp_b);
-	    ALLOCV_END(tmp_p);
-	    ossl_raise(eEC_POINT, NULL);
-	}
-
-	ALLOCV_END(tmp_b);
-	ALLOCV_END(tmp_p);
-#endif
-    }
+    BIGNUM *bn = GetBNPtr(arg1);
+    if (!NIL_P(arg2))
+        bn_g = GetBNPtr(arg2);
+    if (EC_POINT_mul(group, point_result, bn_g, point_self, bn, ossl_bn_ctx) != 1)
+        ossl_raise(eEC_POINT, NULL);
 
     return result;
 }
