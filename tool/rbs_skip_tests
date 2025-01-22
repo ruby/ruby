@@ -46,3 +46,5 @@ test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
 
+# https://github.com/ruby/openssl/pull/774
+test_params(OpenSSLDHTest)
