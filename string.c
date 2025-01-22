@@ -4951,7 +4951,7 @@ static VALUE get_pat(VALUE);
  *      regexp = Regexp.new(pattern)
  *  - Computes +matchdata+, which will be either a MatchData object or +nil+
  *    (see Regexp#match):
- *      matchdata = <tt>regexp.match(self)
+ *      matchdata = regexp.match(self)
  *
  *  With no block given, returns the computed +matchdata+:
  *
