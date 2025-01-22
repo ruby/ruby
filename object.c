@@ -4350,7 +4350,7 @@ InitVM_Object(void)
      * - #print: Prints the given objects to standard output without a newline.
      * - #printf: Prints the string resulting from applying the given format string
      *   to any additional arguments.
-     * - #putc: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
+     * - #putc: Equivalent to <tt>$stdout.putc(object)</tt> for the given object.
      * - #puts: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
      * - #readline: Similar to #gets, but raises an exception at the end of file.
      * - #readlines: Returns an array of the remaining lines from the current input.
