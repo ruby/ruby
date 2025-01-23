@@ -9,26 +9,9 @@ module Bundler
   end
 
   class CurrentRuby
-    KNOWN_MINOR_VERSIONS = %w[
-      1.8
-      1.9
-      2.0
-      2.1
-      2.2
-      2.3
-      2.4
-      2.5
-      2.6
-      2.7
-      3.0
-      3.1
-      3.2
-      3.3
-      3.4
-      3.5
-    ].freeze
-
-    KNOWN_MAJOR_VERSIONS = KNOWN_MINOR_VERSIONS.map {|v| v.split(".", 2).first }.uniq.freeze
+    ALL_RUBY_VERSIONS = (18..27).to_a.concat((30..35).to_a).freeze
+    KNOWN_MINOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.reverse.join(".") }.freeze
+    KNOWN_MAJOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.last.to_s }.uniq.freeze
 
     KNOWN_PLATFORMS = %w[
       jruby
