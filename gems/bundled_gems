@@ -41,3 +41,6 @@ benchmark           0.4.0   https://github.com/ruby/benchmark
 logger              1.6.5   https://github.com/ruby/logger
 rdoc                6.11.0  https://github.com/ruby/rdoc
 win32ole            1.9.1   https://github.com/ruby/win32ole
+irb                 1.15.1  https://github.com/ruby/irb
+reline              0.6.0   https://github.com/ruby/reline
+readline            0.0.4   https://github.com/ruby/readline
