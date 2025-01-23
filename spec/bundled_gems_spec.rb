@@ -64,7 +64,7 @@ RSpec.describe "bundled_gems.rb" do
       Gem::BUNDLED_GEMS.send(:remove_const, :PREFIXED)
       Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
-      Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "irb" => "3.5.0", "csv" => "3.4.0", "net-smtp" => "3.1.0" })
+      Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "irb" => "3.5.0", "csv" => "3.4.0", "net-smtp" => "3.1.0" })
       Gem::BUNDLED_GEMS.const_set(:SINCE_FAST_PATH, Gem::BUNDLED_GEMS::SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") } )
       Gem::BUNDLED_GEMS.const_set(:PREFIXED, { "openssl" => true })
     STUB
@@ -281,10 +281,10 @@ RSpec.describe "bundled_gems.rb" do
 
   it "Show warning with bootsnap and some gem in Gemfile" do
     # Original issue is childprocess 5.0.0 and logger.
-    build_lib "openssl2", "5.0.0" do |s|
+    build_lib "fileutils2", "5.0.0" do |s|
       # bootsnap expand required feature to full path
-      rubyextpath = File.expand_path(File.join(__dir__, "..", ".ext", "common"))
-      s.write "lib/openssl2.rb", "require '#{rubyextpath}/openssl'"
+      rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
+      s.write "lib/fileutils2.rb", "require '#{rubylibpath}/fileutils'"
     end
 
     script <<-RUBY
@@ -292,7 +292,7 @@ RSpec.describe "bundled_gems.rb" do
         source "https://rubygems.org"
         # gem "bootsnap", require: false
         path "#{lib_path}" do
-          gem "openssl2", "5.0.0"
+          gem "fileutils2", "5.0.0"
         end
       end
 
@@ -300,10 +300,10 @@ RSpec.describe "bundled_gems.rb" do
       # Bootsnap.setup(cache_dir: 'tmp/cache')
 
       # bootsnap expand required feature to full path
-      require Gem.loaded_specs["openssl2"].full_gem_path + '/lib/openssl2'
+      require Gem.loaded_specs["fileutils2"].full_gem_path + '/lib/fileutils2'
     RUBY
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/fileutils was loaded from (.*) from Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
