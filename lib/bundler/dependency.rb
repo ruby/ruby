@@ -2,29 +2,11 @@
 
 require "rubygems/dependency"
 require_relative "shared_helpers"
-require_relative "rubygems_ext"
 
 module Bundler
   class Dependency < Gem::Dependency
     attr_reader :autorequire
     attr_reader :groups, :platforms, :gemfile, :path, :git, :github, :branch, :ref, :glob
-
-    PLATFORM_MAP = {
-      ruby: [Gem::Platform::RUBY, CurrentRuby::ALL_RUBY_VERSIONS],
-      mri: [Gem::Platform::RUBY, CurrentRuby::ALL_RUBY_VERSIONS],
-      rbx: [Gem::Platform::RUBY],
-      truffleruby: [Gem::Platform::RUBY],
-      jruby: [Gem::Platform::JAVA, [18, 19]],
-      windows: [Gem::Platform::WINDOWS, CurrentRuby::ALL_RUBY_VERSIONS],
-      # deprecated
-      mswin: [Gem::Platform::MSWIN, CurrentRuby::ALL_RUBY_VERSIONS],
-      mswin64: [Gem::Platform::MSWIN64, CurrentRuby::ALL_RUBY_VERSIONS - [18]],
-      mingw: [Gem::Platform::MINGW, CurrentRuby::ALL_RUBY_VERSIONS],
-      x64_mingw: [Gem::Platform::X64_MINGW, CurrentRuby::ALL_RUBY_VERSIONS - [18, 19]],
-    }.each_with_object({}) do |(platform, spec), hash|
-      hash[platform] = spec[0]
-      spec[1]&.each {|version| hash[:"#{platform}_#{version}"] = spec[0] }
-    end.freeze
 
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
@@ -60,7 +42,7 @@ module Bundler
     end
 
     def expanded_platforms
-      @expanded_platforms ||= @platforms.filter_map {|pl| PLATFORM_MAP[pl] }.flatten.uniq
+      @expanded_platforms ||= @platforms.filter_map {|pl| CurrentRuby::PLATFORM_MAP[pl] }.flatten.uniq
     end
 
     def should_include?

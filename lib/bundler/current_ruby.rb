@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "rubygems_ext"
+
 module Bundler
   # Returns current version of Ruby
   #
@@ -12,20 +14,22 @@ module Bundler
     ALL_RUBY_VERSIONS = (18..27).to_a.concat((30..35).to_a).freeze
     KNOWN_MINOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.reverse.join(".") }.freeze
     KNOWN_MAJOR_VERSIONS = ALL_RUBY_VERSIONS.map {|v| v.digits.last.to_s }.uniq.freeze
-
-    KNOWN_PLATFORMS = %w[
-      jruby
-      maglev
-      mingw
-      mri
-      mswin
-      mswin64
-      rbx
-      ruby
-      truffleruby
-      windows
-      x64_mingw
-    ].freeze
+    PLATFORM_MAP = {
+      ruby: [Gem::Platform::RUBY, CurrentRuby::ALL_RUBY_VERSIONS],
+      mri: [Gem::Platform::RUBY, CurrentRuby::ALL_RUBY_VERSIONS],
+      rbx: [Gem::Platform::RUBY],
+      truffleruby: [Gem::Platform::RUBY],
+      jruby: [Gem::Platform::JAVA, [18, 19]],
+      windows: [Gem::Platform::WINDOWS, CurrentRuby::ALL_RUBY_VERSIONS],
+      # deprecated
+      mswin: [Gem::Platform::MSWIN, CurrentRuby::ALL_RUBY_VERSIONS],
+      mswin64: [Gem::Platform::MSWIN64, CurrentRuby::ALL_RUBY_VERSIONS - [18]],
+      mingw: [Gem::Platform::MINGW, CurrentRuby::ALL_RUBY_VERSIONS],
+      x64_mingw: [Gem::Platform::X64_MINGW, CurrentRuby::ALL_RUBY_VERSIONS - [18, 19]],
+    }.each_with_object({}) do |(platform, spec), hash|
+      hash[platform] = spec[0]
+      spec[1]&.each {|version| hash[:"#{platform}_#{version}"] = spec[0] }
+    end.freeze
 
     def ruby?
       return true if Bundler::GemHelpers.generic_local_platform_is_ruby?
@@ -67,7 +71,8 @@ module Bundler
         RUBY_VERSION.start_with?("#{version}.")
       end
 
-      KNOWN_PLATFORMS.each do |platform|
+      all_platforms = PLATFORM_MAP.keys << "maglev"
+      all_platforms.each do |platform|
         define_method(:"#{platform}_#{trimmed_version}?") do
           send(:"#{platform}?") && send(:"on_#{trimmed_version}?")
         end
