@@ -426,12 +426,6 @@ have commit right, others don't.
 * https://github.com/ruby/strscan
 * https://rubygems.org/gems/strscan
 
-#### ext/win32ole
-
-* Masaki Suketa ([suketa])
-* https://github.com/ruby/win32ole
-* https://rubygems.org/gems/win32ole
-
 #### ext/zlib
 
 * NARUSE, Yui ([nurse])
@@ -571,6 +565,10 @@ have commit right, others don't.
 #### rdoc
 
 * https://github.com/ruby/rdoc
+
+#### win32ole
+
+* https://github.com/ruby/win32ole
 
 ## Platform Maintainers
 

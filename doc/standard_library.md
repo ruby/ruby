@@ -82,7 +82,6 @@ of each.
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
 - TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
-- WIN32OLE ([GitHub][win32ole]): Provides an interface for OLE Automation in Ruby
 - Zlib ([GitHub][zlib]): Ruby interface for the zlib compression/decompression library
 
 ## Tools
@@ -131,6 +130,7 @@ of each.
 - [logger]: Provides a simple logging utility for outputting messages
 - [pstore]: Implements a file-based persistence mechanism based on a Hash
 - [rdoc]: Documentation generator for Ruby, [RDoc documentation][rdoc-doc]
+- [win32ole]: Provides an interface for OLE Automation in Ruby
 
 
 [abbrev]: https://github.com/ruby/abbrev
