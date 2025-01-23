@@ -44,16 +44,8 @@ module Spec
       "x64-mingw-ucrt"
     end
 
-    def windows_platforms
-      [x86_mswin32, x64_mswin64, x86_mingw32, x64_mingw32, x64_mingw_ucrt]
-    end
-
-    def all_platforms
-      [rb, java, linux, windows_platforms].flatten
-    end
-
     def not_local
-      all_platforms.find {|p| p != generic_local_platform.to_s }
+      generic_local_platform == rb ? java : rb
     end
 
     def local_tag
