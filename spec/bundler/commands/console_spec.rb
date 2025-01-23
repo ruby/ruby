@@ -2,6 +2,12 @@
 
 RSpec.describe "bundle console", readline: true do
   before :each do
+    begin
+      require "irb"
+    rescue LoadError
+      skip "This spec requires IRB to be available"
+    end
+
     build_repo2 do
       # A minimal fake pry console
       build_gem "pry" do |s|
