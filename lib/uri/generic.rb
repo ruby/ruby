@@ -73,7 +73,7 @@ module URI
     #
     # At first, tries to create a new URI::Generic instance using
     # URI::Generic::build. But, if exception URI::InvalidComponentError is raised,
-    # then it does URI::Escape.escape all URI components and tries again.
+    # then it does URI::RFC2396_PARSER.escape all URI components and tries again.
     #
     def self.build2(args)
       begin
