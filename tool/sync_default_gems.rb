@@ -29,7 +29,6 @@ module SyncDefaultGems
     error_highlight: "ruby/error_highlight",
     etc: 'ruby/etc',
     fcntl: 'ruby/fcntl',
-    fiddle: 'ruby/fiddle',
     fileutils: 'ruby/fileutils',
     find: "ruby/find",
     forwardable: "ruby/forwardable",
@@ -164,14 +163,6 @@ module SyncDefaultGems
       rm_rf(["ext/psych/yaml/LICENSE"])
       cp_r("#{upstream}/psych.gemspec", "ext/psych")
       `git checkout ext/psych/depend ext/psych/.gitignore`
-    when "fiddle"
-      rm_rf(%w[ext/fiddle test/fiddle])
-      cp_r("#{upstream}/ext/fiddle", "ext")
-      cp_r("#{upstream}/lib", "ext/fiddle")
-      cp_r("#{upstream}/test/fiddle", "test")
-      cp_r("#{upstream}/fiddle.gemspec", "ext/fiddle")
-      `git checkout ext/fiddle/depend`
-      rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
     when "stringio"
       rm_rf(%w[ext/stringio test/stringio])
       cp_r("#{upstream}/ext/stringio", "ext")
