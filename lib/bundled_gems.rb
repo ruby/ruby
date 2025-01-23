@@ -127,6 +127,12 @@ module Gem::BUNDLED_GEMS # :nodoc:
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
 
+    # Sometimes paths come with UTF-8 encoding but sometimes as ASCII-8BIT
+    # To make things work cast to UTF-8
+    if feature.encoding == Encoding::ASCII_8BIT
+        feature = feature.dup.force_encoding(Encoding::UTF_8)
+    end
+
     # irb already has reline as a dependency on gemspec, so we don't want to warn about it.
     # We should update this with a more general solution when we have another case.
     # ex: Gem.loaded_specs[called_gem].dependencies.any? {|d| d.name == feature }
@@ -152,6 +158,9 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
     return if specs.include?(name)
     _t, path = $:.resolve_feature_path(feature)
+    if path.is_a?(String) && path.encoding == Encoding::ASCII_8BIT
+        path = path.dup.force_encoding(Encoding::UTF_8)
+    end
     if gem = find_gem(path)
       return if specs.include?(gem)
     elsif SINCE[name] && !path
@@ -205,6 +214,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
         end
       end
 
+      location = location.dup.force_encoding(Encoding::UTF_8) if location.is_a?(String) && location.encoding == Encoding::ASCII_8BIT
       if location && File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
         Gem.path.each do |path|
