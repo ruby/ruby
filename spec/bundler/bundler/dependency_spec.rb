@@ -170,5 +170,17 @@ RSpec.describe Bundler::Dependency do
     it "includes all platforms" do
       expect(subject).to eq(platforms.merge(deprecated))
     end
+
+    it "is on the current platform" do
+      engine = Gem.win_platform? ? "windows" : RUBY_ENGINE
+
+      dep = described_class.new(
+        "test_gem",
+        "1.0.0",
+        { "platforms" => "#{engine}_#{RbConfig::CONFIG["MAJOR"]}#{RbConfig::CONFIG["MINOR"]}" },
+      )
+
+      expect(dep.current_platform?).to be_truthy
+    end
   end
 end
