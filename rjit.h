@@ -14,6 +14,10 @@
 
 # if USE_RJIT
 
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
+#endif
+
 #include "ruby.h"
 #include "vm_core.h"
 

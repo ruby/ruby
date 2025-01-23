@@ -168,9 +168,17 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
+#if RJIT_STATS
+void
+rb_rjit_collect_vm_usage_insn(int insn)
+{
+    if (!rjit_stats_p) return;
+    rb_rjit_counters.vm_insns_count++;
+}
+#endif // YJIT_STATS
+
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
-extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
 
 // Disable GC, TracePoint, JIT, stats, and $!
 #define WITH_RJIT_ISOLATED_USING_PC(using_pc, stmt) do { \
@@ -190,15 +198,12 @@ extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
     rb_rjit_call_p = false; \
     \
     rjit_stats_p = false; \
-    uint64_t insns_count = rb_vm_insns_count; \
     \
     VALUE err = rb_errinfo(); \
     \
     stmt; \
     \
     rb_set_errinfo(err); \
-    \
-    rb_vm_insns_count = insns_count; \
     rjit_stats_p = rb_rjit_opts.stats; \
     \
     rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \

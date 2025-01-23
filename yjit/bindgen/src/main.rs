@@ -317,7 +317,6 @@ fn main() {
         .allowlist_function("rb_yjit_get_page_size")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_iseq_inspect")
-        .allowlist_function("rb_yjit_vm_insns_count")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
