@@ -339,12 +339,6 @@ have commit right, others don't.
 * https://github.com/ruby/fcntl
 * https://rubygems.org/gems/fcntl
 
-#### ext/fiddle
-
-* Aaron Patterson ([tenderlove])
-* https://github.com/ruby/fiddle
-* https://rubygems.org/gems/fiddle
-
 #### ext/io/console
 
 * Nobuyuki Nakada ([nobu])
@@ -557,6 +551,10 @@ have commit right, others don't.
 #### readline
 
 * https://github.com/ruby/readline
+
+#### fiddle
+
+* https://github.com/ruby/fiddle
 
 ## Platform Maintainers
 
