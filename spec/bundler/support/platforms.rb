@@ -4,48 +4,8 @@ module Spec
   module Platforms
     include Bundler::GemHelpers
 
-    def rb
-      Gem::Platform::RUBY
-    end
-
-    def mac
-      "x86-darwin-10"
-    end
-
-    def x64_mac
-      "x86_64-darwin-15"
-    end
-
-    def java
-      "java"
-    end
-
-    def linux
-      "x86_64-linux"
-    end
-
-    def x86_mswin32
-      "x86-mswin32"
-    end
-
-    def x64_mswin64
-      "x64-mswin64"
-    end
-
-    def x86_mingw32
-      "x86-mingw32"
-    end
-
-    def x64_mingw32
-      "x64-mingw32"
-    end
-
-    def x64_mingw_ucrt
-      "x64-mingw-ucrt"
-    end
-
     def not_local
-      generic_local_platform == rb ? java : rb
+      generic_local_platform == Gem::Platform::RUBY ? "java" : Gem::Platform::RUBY
     end
 
     def local_tag

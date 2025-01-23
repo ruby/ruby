@@ -281,7 +281,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32 do
+        simulate_platform "x86-mswin32" do
           install_gemfile <<-G
             source "https://gem.repo1"
             gem "platform_specific"

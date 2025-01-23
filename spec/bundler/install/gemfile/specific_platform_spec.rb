@@ -367,9 +367,9 @@ RSpec.describe "bundle install with specific platforms" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
         install_gemfile(google_protobuf)
-        bundle "lock --add-platform=#{x64_mingw32}"
+        bundle "lock --add-platform=x64-mingw32"
 
-        expect(the_bundle.locked_platforms).to include(x64_mingw32, "universal-darwin")
+        expect(the_bundle.locked_platforms).to include("x64-mingw32", "universal-darwin")
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to include(*%w[
           google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin
           google-protobuf-3.0.0.alpha.5.0.5.1-x64-mingw32
@@ -381,9 +381,9 @@ RSpec.describe "bundle install with specific platforms" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
         install_gemfile(google_protobuf)
-        bundle "lock --add-platform=#{java}"
+        bundle "lock --add-platform=java"
 
-        expect(the_bundle.locked_platforms).to include(java, "universal-darwin")
+        expect(the_bundle.locked_platforms).to include("java", "universal-darwin")
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to include(
           "google-protobuf-3.0.0.alpha.5.0.5.1",
           "google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin"

@@ -178,7 +178,7 @@ RSpec.describe "bundle install from an existing gemspec" do
   end
 
   it "should match a lockfile without needing to re-resolve with development dependencies" do
-    simulate_platform java do
+    simulate_platform "java" do
       build_lib("foo", path: tmp("foo")) do |s|
         s.add_dependency "myrack"
         s.add_development_dependency "thin"
@@ -448,7 +448,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         simulate_new_machine
         simulate_platform("jruby") { bundle "install" }
-        simulate_platform(x64_mingw32) { bundle "install" }
+        simulate_platform("x64-mingw32") { bundle "install" }
       end
 
       context "on ruby" do
