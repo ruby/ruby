@@ -461,8 +461,6 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           gem "platform_specific", :platforms => [:windows]
         G
 
-        bundle "install"
-
         expect(the_bundle).to include_gems "platform_specific 1.0 #{platform}"
       end
     end
