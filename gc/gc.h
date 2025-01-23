@@ -77,7 +77,7 @@ void *rb_gc_get_ractor_newobj_cache(void);
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
-void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, enum rb_gc_vm_weak_tables table);
+void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
 #endif
 RUBY_SYMBOL_EXPORT_END
 
