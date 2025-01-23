@@ -54,16 +54,20 @@ RSpec.describe "bundle doctor" do
       doctor = Bundler::CLI::Doctor.new({})
       expect(doctor).to receive(:bundles_for_gem).exactly(2).times.and_return ["/path/to/myrack/myrack.bundle"]
       expect(doctor).to receive(:dylibs).exactly(2).times.and_return ["/usr/lib/libSystem.dylib"]
-      allow(Fiddle).to receive(:dlopen).with("/usr/lib/libSystem.dylib").and_return(true)
+      allow(doctor).to receive(:lookup_with_fiddle).with("/usr/lib/libSystem.dylib").and_return(false)
       expect { doctor.run }.not_to raise_error
       expect(@stdout.string).to be_empty
     end
+
+    class Fiddle
+      class DLError < StandardError; end
+    end unless defined?(Fiddle)
 
     it "exits with a message if one of the linked libraries is missing" do
       doctor = Bundler::CLI::Doctor.new({})
       expect(doctor).to receive(:bundles_for_gem).exactly(2).times.and_return ["/path/to/myrack/myrack.bundle"]
       expect(doctor).to receive(:dylibs).exactly(2).times.and_return ["/usr/local/opt/icu4c/lib/libicui18n.57.1.dylib"]
-      allow(Fiddle).to receive(:dlopen).with("/usr/local/opt/icu4c/lib/libicui18n.57.1.dylib").and_raise(Fiddle::DLError)
+      allow(doctor).to receive(:lookup_with_fiddle).with("/usr/local/opt/icu4c/lib/libicui18n.57.1.dylib").and_return(true)
       expect { doctor.run }.to raise_error(Bundler::ProductionError, <<~E.strip), @stdout.string
         The following gems are missing OS dependencies:
          * bundler: /usr/local/opt/icu4c/lib/libicui18n.57.1.dylib
