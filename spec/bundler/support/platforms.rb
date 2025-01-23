@@ -9,9 +9,9 @@ module Spec
     end
 
     def local_tag
-      if RUBY_PLATFORM == "java"
+      if Gem.java_platform?
         :jruby
-      elsif ["x64-mingw32", "x64-mingw-ucrt"].include?(RUBY_PLATFORM)
+      elsif Gem.win_platform?
         :windows
       else
         :ruby
