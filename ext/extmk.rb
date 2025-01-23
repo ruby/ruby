@@ -584,6 +584,8 @@ extend Module.new {
         }
       end
 
+      conf = yield conf if block
+
       if conf.any? {|s| /^TARGET *= *\S/ =~ s}
         conf << %{
 gem_platform = #{Gem::Platform.local}
