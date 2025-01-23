@@ -71,7 +71,6 @@ of each.
 - Digest ([GitHub][digest]): Provides a framework for message digest libraries
 - Etc ([GitHub][etc]): Provides access to information typically stored in the UNIX /etc directory
 - Fcntl ([GitHub][fcntl]): Loads constants defined in the OS fcntl.h C header file
-- Fiddle ([GitHub][fiddle]): A libffi wrapper for Ruby
 - IO.console ([GitHub][io-console]): Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
@@ -126,6 +125,7 @@ of each.
 - [win32ole]: Provides an interface for OLE Automation in Ruby
 - [reline]: GNU Readline and Editline in a pure Ruby implementation
 - [readline]: Wrapper for the Readline extension and Reline
+- [fiddle]: A libffi wrapper for Ruby
 
 ## Tools
 
