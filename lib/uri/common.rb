@@ -94,7 +94,9 @@ module URI
   module Schemes # :nodoc:
     class << self
       ReservedChars = ".+-"
-      EscapedChars = "\uFE52\uFE62\uFE63"
+      EscapedChars = "\u01C0\u01C1\u01C2"
+      # Use Lo category chars as escaped chars for TruffleRuby, which
+      # does not allow Symbol categories as identifiers.
 
       def escape(name)
         unless name and name.ascii_only?
