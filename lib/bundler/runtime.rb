@@ -62,11 +62,14 @@ module Bundler
           begin
             Kernel.require required_file
           rescue LoadError => e
-            raise if dep.autorequire || e.path != required_file
-
-            if required_file.include?("-")
-              required_file = required_file.tr("-", "/")
-              retry
+            if dep.autorequire.nil? && e.path == required_file
+              if required_file.include?("-")
+                required_file = required_file.tr("-", "/")
+                retry
+              end
+            else
+              raise Bundler::GemRequireError.new e,
+                "There was an error while trying to load the gem '#{file}'."
             end
           rescue RuntimeError => e
             raise Bundler::GemRequireError.new e,
