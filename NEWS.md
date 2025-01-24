@@ -21,6 +21,9 @@ The following bundled gems are promoted from default gems.
 * logger 1.6.5
 * rdoc 6.11.0
 * win32ole 1.9.1
+* irb 1.15.1
+* reline 0.6.0
+* readline 0.0.4
 
 We only list stdlib changes that are notable feature changes.
 
