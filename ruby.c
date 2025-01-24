@@ -332,8 +332,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
         M("-i[extension]", "",			   "Set ARGF in-place mode;\n"
             "create backup files with given extension."),
-        M("-Idirpath",     "",			   "Add specified directory to load paths ($LOAD_PATH);\n"
-            "multiple -I allowed."),
+        M("-Idirpath",     "",			   "Prepend specified directory to load paths ($LOAD_PATH);\n"
+            "relative paths are expanded; multiple -I are allowed."),
         M("-l",		   "",			   "Set output record separator ($\\) to $/;\n"
             "used for line-oriented output."),
         M("-n",		   "",			   "Run program in gets loop."),
