@@ -25,7 +25,7 @@ describe "SystemCallError.new" do
     @example_errno_class = Errno::EINVAL
     @last_known_errno = Errno.constants.size - 1
     @unknown_errno = Errno.constants.size
-    @some_human_readable = "[[:graph:]]+"
+    @some_human_readable = /[[:graph:]]+/
   end
 
   it "requires at least one argument" do
@@ -97,11 +97,11 @@ describe "SystemCallError.new" do
   end
 
   it "sets an 'unknown error' message when an unknown error number" do
-    SystemCallError.new(-1).message.should =~ Regexp.new(@some_human_readable)
+    SystemCallError.new(-1).message.should =~ @some_human_readable
   end
 
   it "adds a custom error message to an 'unknown error' message when an unknown error number and a custom message specified" do
-    SystemCallError.new("custom message", -1).message.should =~ Regexp.new("#{@some_human_readable}.* - custom message")
+    SystemCallError.new("custom message", -1).message.should =~ /#{@some_human_readable}.* - custom message/
   end
 
   it "converts to Integer if errno is a Complex convertible to Integer" do
@@ -142,7 +142,7 @@ describe "SystemCallError#message" do
       SystemCallError.new(2**28).message.should =~ /Error .*occurred/i
     end
     platform_is_not :aix do
-      SystemCallError.new(2**28).message.should =~ Regexp.new(@some_human_readable)
+      SystemCallError.new(2**28).message.should =~ @some_human_readable
     end
   end
 
