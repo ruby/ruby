@@ -2849,18 +2849,17 @@ rb_w32_strerror(int e)
                     e = errmap[i].winerr;
 #endif
                     if (FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-                                      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, e,
+                                      FORMAT_MESSAGE_IGNORE_INSERTS |
+                                      FORMAT_MESSAGE_MAX_WIDTH_MASK, NULL, e,
                                       MAKELANGID(LANG_ENGLISH,
                                               SUBLANG_ENGLISH_US),
                                       buffer, sizeof(buffer), NULL) != 0 ||
                         FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM |
-                                      FORMAT_MESSAGE_IGNORE_INSERTS, NULL, e,
+                                      FORMAT_MESSAGE_IGNORE_INSERTS |
+                                      FORMAT_MESSAGE_MAX_WIDTH_MASK, NULL, e,
                                       0,
-                                      buffer, sizeof(buffer), NULL) != 0) {
-                        if (p = strpbrk(buffer, "\r\n"))
-                            *p = '\0';
+                                      buffer, sizeof(buffer), NULL) != 0)
                         return buffer;
-                    }
 #if WSAEWOULDBLOCK != EWOULDBLOCK
                     break;
                 }
