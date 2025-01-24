@@ -61,17 +61,13 @@ module Bundler
           file = dep.name if file == true
           required_file = file
           begin
-            Kernel.require file
+            Kernel.require required_file
           rescue LoadError => e
             raise if dep.autorequire || e.path != required_file
 
-            if dep.autorequire.nil? && dep.name.include?("-")
-              begin
-                namespaced_file = dep.name.tr("-", "/")
-                Kernel.require namespaced_file
-              rescue LoadError => e
-                raise if e.path != namespaced_file
-              end
+            if dep.autorequire.nil? && required_file.include?("-")
+              required_file = required_file.tr("-", "/")
+              retry
             end
           rescue RuntimeError => e
             raise Bundler::GemRequireError.new e,
