@@ -3341,7 +3341,6 @@ update_superclasses(void *objspace, VALUE obj)
 extern rb_symbols_t ruby_global_symbols;
 #define global_symbols ruby_global_symbols
 
-#if USE_MODULAR_GC
 struct global_vm_table_foreach_data {
     vm_table_foreach_callback_func callback;
     vm_table_update_callback_func update_callback;
@@ -3596,7 +3595,6 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
     }
 }
-#endif
 
 void
 rb_gc_update_vm_references(void *objspace)
@@ -3605,11 +3603,9 @@ rb_gc_update_vm_references(void *objspace)
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
 
     rb_vm_update_references(vm);
-    rb_generic_ivar_update_references();
     rb_gc_update_global_tbl();
     global_symbols.ids = gc_location_internal(objspace, global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = gc_location_internal(objspace, global_symbols.dsymbol_fstr_hash);
-    gc_update_table_refs(global_symbols.str_sym);
 
 #if USE_YJIT
     void rb_yjit_root_update_references(void); // in Rust

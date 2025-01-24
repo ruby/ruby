@@ -1136,42 +1136,6 @@ rb_mark_generic_ivar(VALUE obj)
     }
 }
 
-static int
-rb_generic_ivar_update_references_i(st_data_t key, st_data_t val, st_data_t _data)
-{
-    VALUE orig_obj = (VALUE)key;
-    VALUE obj = rb_gc_location(orig_obj);
-    struct gen_ivtbl *ivtbl = (struct gen_ivtbl *)val;
-
-    if (rb_shape_obj_too_complex(obj)) {
-        rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
-    }
-    else {
-        for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-            ivtbl->as.shape.ivptr[i] = rb_gc_location(ivtbl->as.shape.ivptr[i]);
-        }
-    }
-
-    if (obj != orig_obj) {
-        st_insert(generic_iv_tbl_, (st_data_t)obj, (st_data_t)ivtbl);
-
-        return ST_DELETE;
-    }
-    else {
-        return ST_CONTINUE;
-    }
-}
-
-void
-rb_generic_ivar_update_references(void)
-{
-    DURING_GC_COULD_MALLOC_REGION_START();
-    {
-        st_foreach(generic_iv_tbl_, rb_generic_ivar_update_references_i, (st_data_t)0);
-    }
-    DURING_GC_COULD_MALLOC_REGION_END();
-}
-
 void
 rb_free_generic_ivar(VALUE obj)
 {
