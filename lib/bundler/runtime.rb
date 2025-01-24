@@ -50,7 +50,6 @@ module Bundler
       Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE_ALL, dependencies)
 
       dependencies.each do |dep|
-        required_file = nil
         Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
         # Loop through all the specified autorequires for the
