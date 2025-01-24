@@ -2981,7 +2981,7 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
 
 /*
  *  Document-module: Errno
-
+ *
  *  When an operating system encounters an error,
  *  it typically reports the error as an integer error code:
  *
@@ -3022,6 +3022,13 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
  *    Errno::ENOENT::Errno      # => 2
  *    Errno::ENOTCAPABLE::Errno # => 0
  *
+ *  Each class in Errno can be created with optional messages:
+ *
+ *    Errno::EPIPE.new                  # => #<Errno::EPIPE: Broken pipe>
+ *    Errno::EPIPE.new("foo")           # => #<Errno::EPIPE: Broken pipe - foo>
+ *    Errno::EPIPE.new("foo", "here")   # => #<Errno::EPIPE: Broken pipe @ here - foo>
+ *
+ *  See SystemCallError.new.
  */
 
 static st_table *syserr_tbl;
@@ -3092,12 +3099,33 @@ get_syserr(int n)
 
 /*
  * call-seq:
- *   SystemCallError.new(msg, errno)  -> system_call_error_subclass
+ *   SystemCallError.new(msg, errno = nil, func = nil)  -> system_call_error_subclass
  *
  * If _errno_ corresponds to a known system error code, constructs the
  * appropriate Errno class for that error, otherwise constructs a
  * generic SystemCallError object. The error number is subsequently
  * available via the #errno method.
+ *
+ * If only numeric object is given, it is treated as an Integer _errno_,
+ * and _msg_ is omitted, otherwise the first argument _msg_ is used as
+ * the additional error message.
+ *
+ *   SystemCallError.new(Errno::EPIPE::Errno)
+ *   #=> #<Errno::EPIPE: Broken pipe>
+ *
+ *   SystemCallError.new("foo")
+ *   #=> #<SystemCallError: unknown error - foo>
+ *
+ *   SystemCallError.new("foo", Errno::EPIPE::Errno)
+ *   #=> #<Errno::EPIPE: Broken pipe - foo>
+ *
+ * If _func_ is not +nil+, it is appended to the message with "<tt> @ </tt>".
+ *
+ *   SystemCallError.new("foo", Errno::EPIPE::Errno, "here")
+ *   #=> #<Errno::EPIPE: Broken pipe @ here - foo>
+ *
+ * A subclass of SystemCallError can also be instantiated via the
+ * +new+ method of the subclass.  See Errno.
  */
 
 static VALUE
