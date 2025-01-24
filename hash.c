@@ -1791,7 +1791,7 @@ static VALUE rb_hash_to_a(VALUE hash);
 /*
  *  call-seq:
  *    Hash[] -> new_empty_hash
- *    Hash[hash] -> new_hash
+ *    Hash[other_hash] -> new_hash
  *    Hash[ [*2_element_arrays] ] -> new_hash
  *    Hash[*objects] -> new_hash
  *
@@ -1800,20 +1800,20 @@ static VALUE rb_hash_to_a(VALUE hash);
  *
  *  With no argument given, returns a new empty hash.
  *
- *  With a single argument given that is a hash,
- *  returns a new hash initialized with the entries from +hash+
+ *  With a single argument +other_hash+ given that is a hash,
+ *  returns a new hash initialized with the entries from that hash
  *  (but not with its +default+ or +default_proc+):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    Hash[h] # => {foo: 0, bar: 1, baz: 2}
  *
- *  With a single argument given that is an array of 2-element arrays,
+ *  With a single argument +2_element_arrays+ given that is an array of 2-element arrays,
  *  returns a new hash wherein each given 2-element array forms a
  *  key-value entry:
  *
  *    Hash[ [ [:foo, 0], [:bar, 1] ] ] # => {foo: 0, bar: 1}
  *
- *  With an even number of arguments given,
+ *  With an even number of arguments +objects+ given,
  *  returns a new hash wherein each successive pair of arguments
  *  is a key-value entry:
  *
