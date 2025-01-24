@@ -64,7 +64,7 @@ module Bundler
           rescue LoadError => e
             raise if dep.autorequire || e.path != required_file
 
-            if dep.autorequire.nil? && required_file.include?("-")
+            if required_file.include?("-")
               required_file = required_file.tr("-", "/")
               retry
             end
