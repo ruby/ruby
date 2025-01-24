@@ -138,12 +138,7 @@ end
 
 describe "SystemCallError#message" do
   it "returns the default message when no message is given" do
-    platform_is :aix do
-      SystemCallError.new(2**28).message.should =~ /Error .*occurred/i
-    end
-    platform_is_not :aix do
-      SystemCallError.new(2**28).message.should =~ @some_human_readable
-    end
+    SystemCallError.new(2**28).message.should =~ @some_human_readable
   end
 
   it "returns the message given as an argument to new" do
