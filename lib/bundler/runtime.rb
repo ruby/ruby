@@ -53,31 +53,29 @@ module Bundler
         required_file = nil
         Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
-        begin
-          # Loop through all the specified autorequires for the
-          # dependency. If there are none, use the dependency's name
-          # as the autorequire.
-          Array(dep.autorequire || dep.name).each do |file|
-            # Allow `require: true` as an alias for `require: <name>`
-            file = dep.name if file == true
-            required_file = file
-            begin
-              Kernel.require file
-            rescue RuntimeError => e
-              raise Bundler::GemRequireError.new e,
-                "There was an error while trying to load the gem '#{file}'."
-            end
-          end
-        rescue LoadError => e
-          raise if dep.autorequire || e.path != required_file
+        # Loop through all the specified autorequires for the
+        # dependency. If there are none, use the dependency's name
+        # as the autorequire.
+        Array(dep.autorequire || dep.name).each do |file|
+          # Allow `require: true` as an alias for `require: <name>`
+          file = dep.name if file == true
+          required_file = file
+          begin
+            Kernel.require file
+          rescue LoadError => e
+            raise if dep.autorequire || e.path != required_file
 
-          if dep.autorequire.nil? && dep.name.include?("-")
-            begin
-              namespaced_file = dep.name.tr("-", "/")
-              Kernel.require namespaced_file
-            rescue LoadError => e
-              raise if e.path != namespaced_file
+            if dep.autorequire.nil? && dep.name.include?("-")
+              begin
+                namespaced_file = dep.name.tr("-", "/")
+                Kernel.require namespaced_file
+              rescue LoadError => e
+                raise if e.path != namespaced_file
+              end
             end
+          rescue RuntimeError => e
+            raise Bundler::GemRequireError.new e,
+              "There was an error while trying to load the gem '#{file}'."
           end
         end
 
