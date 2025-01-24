@@ -7110,6 +7110,20 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t *objspace, 
     return 0;
 }
 
+static int
+gc_update_references_weak_table_i(VALUE obj, void *data)
+{
+    return BUILTIN_TYPE(obj) == T_MOVED ? ST_REPLACE : ST_CONTINUE;
+}
+
+static int
+gc_update_references_weak_table_replace_i(VALUE *obj, void *data)
+{
+    *obj = rb_gc_location(*obj);
+
+    return ST_CONTINUE;
+}
+
 static void
 gc_update_references(rb_objspace_t *objspace)
 {
@@ -7139,6 +7153,16 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(finalizer_table);
 
     rb_gc_update_vm_references((void *)objspace);
+
+    for (int table = 0; table < RB_GC_VM_WEAK_TABLE_COUNT; table++) {
+        rb_gc_vm_weak_table_foreach(
+            gc_update_references_weak_table_i,
+            gc_update_references_weak_table_replace_i,
+            NULL,
+            false,
+            table
+        );
+    }
 
     objspace->flags.during_reference_updating = false;
 }
