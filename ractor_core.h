@@ -43,7 +43,8 @@ struct rb_ractor_basket {
         enum rb_ractor_basket_type e;
         rb_atomic_t atomic;
     } type;
-    VALUE sender;
+    VALUE sender; // Ractor object sending message
+    rb_thread_t *sending_th;
 
     union {
         struct {
@@ -117,9 +118,8 @@ struct rb_ractor_sync {
     struct rb_ractor_basket will_basket;
 
     struct ractor_wait {
-        enum rb_ractor_wait_status status;
-        enum rb_ractor_wakeup_status wakeup_status;
-        rb_thread_t *waiting_thread;
+        struct ccan_list_head waiting_threads;
+        // each thread has struct ccan_list_node ractor_waiting.waiting_node
     } wait;
 
 #ifndef RUBY_THREAD_PTHREAD_H

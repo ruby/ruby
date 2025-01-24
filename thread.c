@@ -375,6 +375,7 @@ threadptr_interrupt(rb_thread_t *th, int trap)
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
+/* Interrupt another thread or current thread */
 void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
@@ -2429,6 +2430,7 @@ NORETURN(static void rb_threadptr_to_kill(rb_thread_t *th));
 static void
 rb_threadptr_to_kill(rb_thread_t *th)
 {
+    VM_ASSERT(GET_THREAD() == th);
     rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
@@ -2452,12 +2454,15 @@ threadptr_get_interrupts(rb_thread_t *th)
 
 static void threadptr_interrupt_exec_exec(rb_thread_t *th);
 
+// Execute interrupts on currently running thread
 int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
     int postponed_job_interrupt = 0;
     int ret = FALSE;
+
+    VM_ASSERT(GET_THREAD() == th);
 
     if (th->ec->raised_flag) return ret;
 
