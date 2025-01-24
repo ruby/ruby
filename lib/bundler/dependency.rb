@@ -31,7 +31,6 @@ module Bundler
       type = options["type"] || :runtime
       super(name, version, type)
 
-      @autorequire    = nil
       @groups         = Array(options["group"] || :default).map(&:to_sym)
       @source         = options["source"]
       @path           = options["path"]
