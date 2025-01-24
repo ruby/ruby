@@ -705,7 +705,9 @@ ossl_sslctx_setup(VALUE self)
     SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
 #endif
 
+#if !defined(OPENSSL_IS_AWSLC) /* AWS-LC has no support for TLS 1.3 PHA. */
     SSL_CTX_set_post_handshake_auth(ctx, 1);
+#endif
 
     val = rb_attr_get(self, id_i_cert_store);
     if (!NIL_P(val)) {

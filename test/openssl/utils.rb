@@ -103,7 +103,7 @@ module OpenSSL::TestUtils
   end
 
   def openssl?(major = nil, minor = nil, fix = nil, patch = 0, status = 0)
-    return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL")
+    return false if OpenSSL::OPENSSL_VERSION.include?("LibreSSL") || OpenSSL::OPENSSL_VERSION.include?("AWS-LC")
     return true unless major
     OpenSSL::OPENSSL_VERSION_NUMBER >=
       major * 0x10000000 + minor * 0x100000 + fix * 0x1000 + patch * 0x10 +
@@ -114,6 +114,10 @@ module OpenSSL::TestUtils
     version = OpenSSL::OPENSSL_VERSION.scan(/LibreSSL (\d+)\.(\d+)\.(\d+).*/)[0]
     return false unless version
     !major || (version.map(&:to_i) <=> [major, minor, fix]) >= 0
+  end
+
+  def aws_lc?
+    OpenSSL::OPENSSL_VERSION.include?("AWS-LC")
   end
 end
 

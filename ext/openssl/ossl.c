@@ -404,7 +404,7 @@ ossl_fips_mode_get(VALUE self)
     VALUE enabled;
     enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -439,7 +439,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
         }
     }
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -1004,6 +1004,8 @@ Init_openssl(void)
                     Qtrue
 #elif defined(OPENSSL_FIPS)
 		    Qtrue
+#elif defined(OPENSSL_IS_AWSLC) // AWS-LC FIPS can only be enabled during compile time.
+            FIPS_mode() ? Qtrue : Qfalse
 #else
 		    Qfalse
 #endif
