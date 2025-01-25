@@ -508,7 +508,7 @@ ossl_pkey_s_generate_key(int argc, VALUE *argv, VALUE self)
 void
 ossl_pkey_check_public_key(const EVP_PKEY *pkey)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     if (EVP_PKEY_missing_parameters(pkey))
         ossl_raise(ePKeyError, "parameters missing");
 #else

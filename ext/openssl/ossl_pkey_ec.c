@@ -246,7 +246,7 @@ ossl_ec_key_get_group(VALUE self)
 static VALUE
 ossl_ec_key_set_group(VALUE self, VALUE group_v)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -288,7 +288,7 @@ static VALUE ossl_ec_key_get_private_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_private_key(VALUE self, VALUE private_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -339,7 +339,7 @@ static VALUE ossl_ec_key_get_public_key(VALUE self)
  */
 static VALUE ossl_ec_key_set_public_key(VALUE self, VALUE public_key)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -511,7 +511,7 @@ ossl_ec_key_to_der(VALUE self)
  */
 static VALUE ossl_ec_key_generate_key(VALUE self)
 {
-#if OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
     rb_raise(ePKeyError, "pkeys are immutable on OpenSSL 3.0");
 #else
     EC_KEY *ec;
@@ -1368,7 +1368,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     GetECPointGroup(self, group);
 
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
-#if !OSSL_OPENSSL_PREREQ(3, 0, 0) && !defined(OPENSSL_IS_AWSLC)
+#if !defined(OSSL_HAVE_IMMUTABLE_PKEY) && !defined(OPENSSL_IS_AWSLC)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
         ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif

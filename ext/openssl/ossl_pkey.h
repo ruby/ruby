@@ -105,7 +105,7 @@ static VALUE ossl_##_keytype##_get_##_name(VALUE self)			\
 	OSSL_PKEY_BN_DEF_GETTER0(_keytype, _type, a2,			\
 		_type##_get0_##_group(obj, NULL, &bn))
 
-#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
+#ifndef OSSL_HAVE_IMMUTABLE_PKEY
 #define OSSL_PKEY_BN_DEF_SETTER3(_keytype, _type, _group, a1, a2, a3)	\
 /*									\
  *  call-seq:								\
