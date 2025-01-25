@@ -4661,6 +4661,7 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h1 < h2 # => true
  *    h2 < h1 # => false
  *    h1 < h1 # => false
+ *
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -6963,6 +6964,67 @@ static const rb_data_type_t env_data_type = {
  *  - For method #fetch, you can specify an any-key default:
  *  - For either method #fetch or method #fetch_values,
  *    you can specify a per-key default via a block.
+ *
+ *  === \Hash Comparison
+ *
+ *  An entry <tt>{k0: v0}</tt> in a hash is equal to an entry <tt>{k1: v1}</tt> in another
+ *  if and only if the two keys are equal (<tt>k0 == k1</tt>)
+ *  and the two values are equal (<tt>v0 == v1</tt>).
+ *
+ *  Two hashes are equal (per Hash#==) if and only if every entry in one
+ *  is equal to an entry in the other;
+ *  that is, they are the same size and have equal entries (disregarding order):
+ *
+ *    {'foo' => 'zero', 'bar' => 'one'} == {'bar' => 'one', 'foo' => 'zero'} # => true
+ *    {foo: 0, bar: 1} == {bar: 1, foo: 0} # => true
+ *    {foo: 0, bar: 1} == {foo: 0}         # => false # Different size.
+ *    {foo: 0, bar: 1} == {baz: 1, foo: 0} # => false # Different key.
+ *    {foo: 0, bar: 1} == {bar: 1, foo: 1} # => false # Different value.
+ *
+ *  A hash is set-like in that it cannot have duplicate entries
+ *  (nor even duplicate keys).
+ *  \Hash inclusion can therefore based on the idea of
+ *  {subset and superset}[https://en.wikipedia.org/wiki/Subset]:
+ *
+ *  - Subset (set included in or equal to another):
+ *
+ *    - \Hash +h0+ is a _subset_ of hash +h1+ (per Hash#<=)
+ *      if each entry in +h0+ is equal to an entry in +h1+:
+ *
+ *        h0 = {foo: 0, bar: 1}
+ *        h1 = {bar: 1, foo: 0, baz: 2}
+ *        h0 <= h1 # => true
+ *        h1 <= h0 # => false
+ *        h1 <= h1 # => true
+ *
+ *    - Further, hash +h0+ is a <i>proper subset</i> of hash +h1+ (per Hash#<)
+ *      if +h1+ is larger than +h0+:
+ *
+ *        h0 = {foo: 0, bar: 1}
+ *        h1 = {bar: 1, foo: 0, baz: 2}
+ *        h0 < h1 # => true
+ *        h1 < h0 # => false
+ *        h1 < h1 # => false
+ *
+ *  - Superset (set including or equal to another):
+ *
+ *    - \Hash +h0+ is a _superset_ of hash +h1+ (per Hash#>=)
+ *      if each entry in +h1+ is equal to an entry in +h0+:
+ *
+ *        h0 = {foo: 0, bar: 1, baz: 2}
+ *        h1 = {bar: 1, foo: 0}
+ *        h0 >= h1 # => true
+ *        h1 >= h0 # => false
+ *        h1 >= h1 # => true
+ *
+ *    - Further, hash +h0+ is a <i>proper superset</i> of hash +h1+ (per Hash#>)
+ *      if +h0+ is larger than +h1+:
+ *
+ *        h0 = {foo: 0, bar: 1, baz: 2}
+ *        h1 = {bar: 1, foo: 0}
+ *        h0 > h1 # => true
+ *        h1 > h0 # => false
+ *        h1 > h1 # => false
  *
  *  === What's Here
  *
