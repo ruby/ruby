@@ -889,12 +889,15 @@ module Kernel
   # Returns a \URI object derived from the given +uri+,
   # which may be a \URI string or an existing \URI object:
   #
+  #   require 'uri'
   #   # Returns a new URI.
   #   uri = URI('http://github.com/ruby/ruby')
   #   # => #<URI::HTTP http://github.com/ruby/ruby>
   #   # Returns the given URI.
   #   URI(uri)
   #   # => #<URI::HTTP http://github.com/ruby/ruby>
+  #
+  # You must require 'uri' to use this method.
   #
   def URI(uri)
     if uri.is_a?(URI::Generic)
