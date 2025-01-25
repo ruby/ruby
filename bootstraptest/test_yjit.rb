@@ -3520,3 +3520,11 @@ assert_equal 'ok', %q{
 
   cw(4)
 }
+
+assert_normal_exit %{
+  class Bug20997
+    def foo(&) = self.class.name(&)
+
+    new.foo
+  end
+}
