@@ -169,6 +169,7 @@ runs:
             > "${test_all_session_file}"
           find test -name "*_test.rb" -o -name "test_*.rb" | sed 's|^|file=|' > "${test_all_subset_input_file}"
           launchable subset \
+            --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
             --session "$(cat "${test_all_session_file}")" \
