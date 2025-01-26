@@ -1285,7 +1285,7 @@ load_ext(VALUE path, VALUE fname)
 {
     VALUE loaded = path;
     GET_loading_vm_ns();
-    if (NAMESPACE_OPTIONAL_P(vm_ns->ns)) {
+    if (NAMESPACE_USER_P(vm_ns->ns)) {
         loaded = rb_namespace_local_extension(vm_ns->ns->ns_object, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
