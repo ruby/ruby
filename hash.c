@@ -1906,7 +1906,8 @@ rb_check_hash_type(VALUE hash)
  *
  *  If +object+ is a hash, returns +object+.
  *
- *  Otherwise if +object+ does not respond to +:to_hash+, returns +nil+.
+ *  Otherwise if +obj+ responds to <tt>:to_hash</tt>,
+ *  calls <tt>obj.to_hash</tt> and returns the result.
  *
  *  Otherwise calls <tt>object.to_hash</tt>;
  *  returns the result if it is a hash, or raises TypeError if not.
