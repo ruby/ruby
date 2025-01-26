@@ -193,23 +193,37 @@ invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID
     }
 }
 
+struct invalidate_callable_method_entry_foreach_arg {
+    VALUE klass;
+    ID mid;
+    const rb_method_entry_t *cme;
+    const rb_method_entry_t *newer;
+};
+
 static void
-invalidate_callable_method_entry_in_m_table(VALUE klass, struct rb_id_table *tbl, ID mid, const rb_callable_method_entry_t *cme)
+invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE namespace, void *data)
 {
-    // The argument cme must be invalidated later in the caller side
-    const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-    rb_method_table_insert(klass, tbl, mid, new_cme);
+    st_data_t me;
+    struct invalidate_callable_method_entry_foreach_arg *arg = (struct invalidate_callable_method_entry_foreach_arg *)data;
+    struct rb_id_table *tbl = RCLASSEXT_M_TBL(ext);
+
+    if (rb_id_table_lookup(tbl, arg->mid, &me) && arg->cme == (const rb_method_entry_t *)me) {
+        rb_method_table_insert(arg->klass, tbl, arg->mid, arg->newer);
+    }
 }
 
 static void
-invalidate_callable_method_entry_in_prime_m_table(VALUE klass, struct rb_id_table *tbl, ID mid)
+invalidate_callable_method_entry_in_every_m_table(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
-    VALUE older;
-    if (tbl && rb_id_table_lookup(tbl, mid, &older)) {
-        const rb_method_entry_t *newer = rb_method_entry_clone((const rb_method_entry_t *)older);
-        rb_method_table_insert(klass, tbl, mid, newer);
-        vm_cme_invalidate((rb_callable_method_entry_t *)older);
-    }
+    // The argument cme must be invalidated later in the caller side
+    const rb_method_entry_t *newer = rb_method_entry_clone((const rb_method_entry_t *)cme);
+    struct invalidate_callable_method_entry_foreach_arg arg = {
+        .klass = klass,
+        .mid = mid,
+        .cme = (const rb_method_entry_t *) cme,
+        .newer = newer,
+    };
+    rb_class_classext_foreach(klass, invalidate_callable_method_entry_in_every_m_table_i, (void *)&arg);
 }
 
 static void
@@ -276,13 +290,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         klass_housing_cme = RCLASS_ORIGIN(owner);
                     }
 
-                    // replace the cme that will be invalid
-                    struct rb_id_table *m_tbl = RCLASS_WRITABLE_M_TBL(klass_housing_cme);
-                    invalidate_callable_method_entry_in_m_table(klass_housing_cme, m_tbl, mid, cme);
-                    if (RCLASS_M_TBL_NOT_PRIME_P(klass_housing_cme, m_tbl)) {
-                        struct rb_id_table *prime_m_tbl = RCLASS_PRIME_M_TBL(klass_housing_cme);
-                        invalidate_callable_method_entry_in_prime_m_table(klass_housing_cme, prime_m_tbl, mid);
-                    }
+                    // replace the cme that will be invalid in the all classexts
+                    invalidate_callable_method_entry_in_every_m_table(klass_housing_cme, mid, cme);
                 }
 
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
