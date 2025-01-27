@@ -203,6 +203,7 @@ void rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *main_ractor, rb_thread_t *ma
 void rb_ractor_atexit(rb_execution_context_t *ec, VALUE result);
 void rb_ractor_atexit_exception(rb_execution_context_t *ec);
 void rb_ractor_teardown(rb_execution_context_t *ec);
+VALUE rb_ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r);
 void rb_ractor_receive_parameters(rb_execution_context_t *ec, rb_ractor_t *g, int len, VALUE *ptr);
 void rb_ractor_send_parameters(rb_execution_context_t *ec, rb_ractor_t *g, VALUE args);
 
