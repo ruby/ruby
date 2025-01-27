@@ -588,8 +588,16 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
             while (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
                 RUBY_DEBUG_LOG("barrier-wait");
 
-                ractor_sched_barrier_join_signal_locked(vm);
-                ractor_sched_barrier_join_wait_locked(vm, add_th);
+                rb_thread_t *lock_owner = NULL;
+#if VM_CHECK_MODE
+                lock_owner = sched->lock_owner;
+#endif
+                thread_sched_unlock(sched, lock_owner);
+                {
+                    ractor_sched_barrier_join_signal_locked(vm);
+                    ractor_sched_barrier_join_wait_locked(vm, add_th);
+                }
+                thread_sched_lock(sched, lock_owner);
             }
 
             VM_ASSERT(!ractor_sched_running_threads_contain_p(vm, add_th));
@@ -1448,6 +1456,7 @@ ractor_sched_barrier_join_signal_locked(rb_vm_t *vm)
 static void
 ractor_sched_barrier_join_wait_locked(rb_vm_t *vm, rb_thread_t *th)
 {
+    ASSERT_ractor_sched_locked(vm, NULL);
     VM_ASSERT(vm->ractor.sched.barrier_waiting);
 
     unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
