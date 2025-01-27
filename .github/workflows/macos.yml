@@ -123,6 +123,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           ulimit -c unlimited
+          ls
           for i in {1..100}; do
             make test-all TESTS=test/test_pty.rb
           done
