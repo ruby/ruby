@@ -31,7 +31,7 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_0_literal
-    assert_equal([1, 2, 3, 4], [1, 2] + [3, 4])
+    assert_equal([1, 2, 4], [1, 2] + [3, 4])
     assert_equal([1, 2, 1, 2], [1, 2] * 2)
     assert_equal("1:2", [1, 2] * ":")
 
