@@ -1689,7 +1689,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     data_class = anonymous_struct(klass);
     setup_data(data_class, rest);
     if (rb_block_given_p()) {
-        rb_mod_module_eval(0, 0, data_class);
+        rb_mod_yield_under(1, &data_class, data_class);
     }
 
     return data_class;
