@@ -7113,7 +7113,11 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t *objspace, 
 static int
 gc_update_references_weak_table_i(VALUE obj, void *data)
 {
-    return BUILTIN_TYPE(obj) == T_MOVED ? ST_REPLACE : ST_CONTINUE;
+    int ret;
+    asan_unpoisoning_object(obj) {
+        ret = BUILTIN_TYPE(obj) == T_MOVED ? ST_REPLACE : ST_CONTINUE;
+    }
+    return ret;
 }
 
 static int
