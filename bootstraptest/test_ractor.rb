@@ -1120,6 +1120,18 @@ values = r.take
 values.join
 }
 
+# embedded hashes are moved properly
+assert_equal 'true', %q{
+r = Ractor.new {
+  hash = receive
+  { equal: hash == {1=>"1",2=>"2",3=>"3"} }
+}
+obj = {1=>"1",2=>"2",3=>"3"}
+r.send(obj, move: true)
+r_values = r.take
+r_values[:equal]
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
