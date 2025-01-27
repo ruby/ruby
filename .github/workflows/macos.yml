@@ -124,7 +124,7 @@ jobs:
         run: |
           ulimit -c unlimited
           for i in {1..100}; do
-            make test-all TESTS=../test/test_pty.rb
+            make test-all TESTS=test/test_pty.rb
           done
         timeout-minutes: 1000
         env:
