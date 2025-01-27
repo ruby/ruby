@@ -868,6 +868,30 @@ rb_reg_named_captures(VALUE re)
     return hash;
 }
 
+/*
+ * call-seq:
+ *    rxp.captures_count  -> int
+ *
+ * Returns the number of unnamed capture groups that <i>rxp</i> contains.
+ *
+ *    /a (nice) day (?:for) a (?>walk)/.captures_count
+ *    # => 1
+ *
+ *    /(a (group) within a (group))/.captures_count
+ *    # => 3
+ *
+ *    /(?<named>group)/.captures_count
+ *    # => 1
+ */
+
+static VALUE
+rb_reg_captures_count(VALUE re)
+{
+    const regex_t *reg = (rb_reg_check(re), RREGEXP_PTR(re));
+    int captures_count = onig_number_of_captures(reg);
+    return RB_INT2NUM(captures_count);
+}
+
 static int
 onig_new_with_source(regex_t** reg, const UChar* pattern, const UChar* pattern_end,
                      OnigOptionType option, OnigEncoding enc, const OnigSyntaxType* syntax,
@@ -4825,6 +4849,7 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cRegexp, "fixed_encoding?", rb_reg_fixed_encoding_p, 0);
     rb_define_method(rb_cRegexp, "names", rb_reg_names, 0);
+    rb_define_method(rb_cRegexp, "captures_count", rb_reg_captures_count, 0);
     rb_define_method(rb_cRegexp, "named_captures", rb_reg_named_captures, 0);
     rb_define_method(rb_cRegexp, "timeout", rb_reg_timeout_get, 0);
 
