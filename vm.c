@@ -1397,7 +1397,7 @@ rb_proc_ractor_make_shareable(VALUE self)
         rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
-        if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
+        if (rb_vm_iseq_reads_self(iseq) && !rb_ractor_shareable_p(vm_block_self(&proc->block))) {
             rb_raise(rb_eRactorIsolationError,
                      "Proc's self is not shareable: %" PRIsVALUE,
                      self);
