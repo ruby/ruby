@@ -1628,13 +1628,13 @@ yes-test-bundled-gems-precheck: Preparing-test-bundled-gems
 yes-install-for-test-bundled-gems: Preparing-test-bundled-gems
 yes-test-bundled-gems-fetch: Preparing-test-bundled-gems
 
-
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
+yes-test-bundled-gems: test-bundled-gems-run
+no-test-bundled-gems:
+
 bundled_gems_spec-run: install-for-test-bundled-gems
 	$(XRUBY) -C $(srcdir) .bundle/bin/rspec spec/bundled_gems_spec.rb
-yes-test-bundled-gems: bundled_gems_spec-run $(DOT_WAIT) test-bundled-gems-run
-no-test-bundled-gems:
 
 # Override this to allow failure of specific gems on CI
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
@@ -1903,6 +1903,7 @@ info-arch: PHONY
 
 exam: check
 exam: $(DOT_WAIT) test-bundler-parallel
+exam: $(DOT_WAIT) bundled_gems_spec-run
 exam: $(DOT_WAIT) test-bundled-gems
 
 love: sudo-precheck up all test exam install
