@@ -134,9 +134,7 @@ jobs:
 
       - name: make skipped tests
         run: |
-          for i in {1..100}; do
-            make test-all TESTS=../test/test_pty.rb
-          done
+          make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
