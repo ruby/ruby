@@ -12,8 +12,7 @@ class TestPTY < Test::Unit::TestCase
   RUBY = EnvUtil.rubybin
 
   def test_spawn_without_block
-    omit "[Bug #20682] Flaky test behavior on MacOS" if /darwin/ =~ RUBY_PLATFORM
-    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"')
+    r, w, pid = PTY.spawn(RUBY, '-e', 'puts "a"; sleep 0.1')
   rescue RuntimeError
     omit $!
   else
@@ -25,8 +24,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_spawn_with_block
-    omit "[Bug #20682] Flaky test behavior on MacOS" if /darwin/ =~ RUBY_PLATFORM
-    PTY.spawn(RUBY, '-e', 'puts "b"') {|r,w,pid|
+    PTY.spawn(RUBY, '-e', 'puts "b"; sleep 0.1') {|r,w,pid|
       begin
         assert_equal("b\r\n", r.gets)
       ensure
@@ -40,8 +38,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_commandline
-    omit "[Bug #20682] Flaky test behavior on MacOS" if /darwin/ =~ RUBY_PLATFORM
-    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"'])
+    commandline = Shellwords.join([RUBY, '-e', 'puts "foo"; sleep 0.1'])
     PTY.spawn(commandline) {|r,w,pid|
       begin
         assert_equal("foo\r\n", r.gets)
@@ -56,8 +53,7 @@ class TestPTY < Test::Unit::TestCase
   end
 
   def test_argv0
-    omit "[Bug #20682] Flaky test behavior on MacOS" if /darwin/ =~ RUBY_PLATFORM
-    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"') {|r,w,pid|
+    PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"; sleep 0.1') {|r,w,pid|
       begin
         assert_equal("bar\r\n", r.gets)
       ensure
