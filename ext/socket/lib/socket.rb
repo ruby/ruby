@@ -280,7 +280,7 @@ class BasicSocket < IO
   #
   # sendmsg sends a message using sendmsg(2) system call in blocking manner.
   #
-  # _mesg_ is a string to send.
+  # _mesg_ is a string or an array of strings to send.
   #
   # _flags_ is bitwise OR of MSG_* constants such as Socket::MSG_OOB.
   #
