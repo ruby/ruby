@@ -451,6 +451,7 @@ rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
     }
 }
 
+// th is main_th for ractor
 void
 rb_thread_terminate_all(rb_thread_t *th)
 {
@@ -6068,12 +6069,13 @@ static VALUE
 interrupt_ractor_new_thread_func(void *data)
 {
     struct interrupt_ractor_new_thread_data d = *(struct interrupt_ractor_new_thread_data *)data;
-    ruby_xfree(data);
 
-    d.func(d.data);
+    d.func(d.data); // ex: ractor_require_func(crr)
+    ruby_xfree(data);
     return Qnil;
 }
 
+// called by main thread in main ractor
 static VALUE
 interrupt_ractor_func(void *data)
 {
@@ -6081,6 +6083,7 @@ interrupt_ractor_func(void *data)
     return Qnil;
 }
 
+// Called by non-main ractor
 // native thread safe
 // func/data should be native thread safe
 void
@@ -6089,8 +6092,9 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
 {
     struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
 
-    d->func = func;
-    d->data = data;
+    d->func = func; // ex: ractor_require_func
+    d->data = data; // ex: crr
+
     rb_thread_t *main_th = target_r->threads.main;
     rb_threadptr_interrupt_exec(main_th, interrupt_ractor_func, d, flags);
 

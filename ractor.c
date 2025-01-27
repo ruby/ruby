@@ -4060,8 +4060,8 @@ rb_ractor_channel_close(rb_execution_context_t *ec, VALUE vch)
 
 struct cross_ractor_require {
     VALUE ch;
-    VALUE result;
-    VALUE exception;
+    volatile VALUE result;
+    volatile VALUE exception;
 
     // require
     VALUE feature;
@@ -4109,13 +4109,14 @@ require_result_copy_body(VALUE data)
 }
 
 static VALUE
-require_result_copy_resuce(VALUE data, VALUE errinfo)
+require_result_copy_rescue(VALUE data, VALUE errinfo)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
     crr->exception = errinfo; // ractor_move(crr->exception);
     return Qnil;
 }
 
+// Gets called by main ractor in helper thread
 static VALUE
 ractor_require_protect(struct cross_ractor_require *crr, VALUE (*func)(VALUE))
 {
@@ -4124,15 +4125,16 @@ ractor_require_protect(struct cross_ractor_require *crr, VALUE (*func)(VALUE))
                require_rescue, (VALUE)crr, rb_eException, 0);
 
     rb_rescue2(require_result_copy_body, (VALUE)crr,
-               require_result_copy_resuce, (VALUE)crr, rb_eException, 0);
+               require_result_copy_rescue, (VALUE)crr, rb_eException, 0);
 
-    rb_ractor_channel_yield(GET_EC(), crr->ch, Qtrue);
+    rb_ractor_channel_yield(GET_EC(), crr->ch, Qtrue); // require done, yield to ractor channel to inform it
     return Qnil;
 
 }
 
+// Gets called by main ractor in helper thread
 static VALUE
-ractore_require_func(void *data)
+ractor_require_func(void *data)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
     return ractor_require_protect(crr, require_body);
@@ -4142,27 +4144,35 @@ VALUE
 rb_ractor_require(VALUE feature)
 {
     // TODO: make feature shareable
-    struct cross_ractor_require crr = {
-        .feature = feature, // TODO: ractor
-        .ch = rb_ractor_channel_new(),
-        .result = Qundef,
-        .exception = Qundef,
-    };
+    VALUE ch = rb_ractor_channel_new();
+
+    struct cross_ractor_require *crrp = ALLOC(struct cross_ractor_require);
+    crrp->feature = feature;
+    crrp->ch = ch;
+    crrp->result = Qundef;
+    crrp->exception = Qundef;
 
     rb_execution_context_t *ec = GET_EC();
     rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractore_require_func, &crr, 0);
+    rb_ractor_interrupt_exec(main_r, ractor_require_func, crrp, 0);
 
     // wait for require done
-    rb_ractor_channel_take(ec, crr.ch);
-    rb_ractor_channel_close(ec, crr.ch);
+    rb_ractor_channel_take(ec, crrp->ch);
+    rb_ractor_channel_close(ec, crrp->ch);
+    VALUE exc = crrp->exception;
+    VALUE res = crrp->result;
+    VM_ASSERT(res != Qundef || exc != Qundef);
+    ruby_xfree(crrp);
 
-    if (crr.exception != Qundef) {
-        rb_exc_raise(crr.exception);
+    if (exc != Qundef) {
+        rb_exc_raise(exc);
     }
     else {
-        return crr.result;
+        VM_ASSERT(res != Qundef);
+        return res;
     }
+    RB_GC_GUARD(ch);
+    RB_GC_GUARD(feature);
 }
 
 static VALUE
@@ -4189,28 +4199,37 @@ ractor_autoload_load_func(void *data)
 VALUE
 rb_ractor_autoload_load(VALUE module, ID name)
 {
-    struct cross_ractor_require crr = {
-        .module = module,
-        .name = name,
-        .ch = rb_ractor_channel_new(),
-        .result = Qundef,
-        .exception = Qundef,
-    };
+    VALUE ch = rb_ractor_channel_new();
+    struct cross_ractor_require *crrp = ALLOC(struct cross_ractor_require);
+    crrp->module = module;
+    crrp->name = name;
+    crrp->ch = ch;
+    crrp->result = Qundef;
+    crrp->exception = Qundef;
 
     rb_execution_context_t *ec = GET_EC();
     rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, &crr, 0);
+    rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, crrp, 0);
 
     // wait for require done
-    rb_ractor_channel_take(ec, crr.ch);
-    rb_ractor_channel_close(ec, crr.ch);
+    rb_ractor_channel_take(ec, crrp->ch);
+    rb_ractor_channel_close(ec, crrp->ch);
 
-    if (crr.exception != Qundef) {
-        rb_exc_raise(crr.exception);
+    VALUE exc = crrp->exception;
+    VALUE res = crrp->result;
+    ruby_xfree(crrp);
+
+    if (exc != Qundef) {
+        rb_exc_raise(exc);
     }
     else {
-        return crr.result;
+        VM_ASSERT(res != Qundef);
+        return res;
     }
+    RB_GC_GUARD(module);
+    RB_GC_GUARD(ch);
+    RB_GC_GUARD(crrp->exception);
+    RB_GC_GUARD(crrp->result);
 }
 
 #include "ractor.rbinc"
