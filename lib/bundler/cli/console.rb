@@ -20,9 +20,14 @@ module Bundler
       require name
       get_constant(name)
     rescue LoadError
-      Bundler.ui.error "Couldn't load console #{name}, falling back to irb"
-      require "irb"
-      get_constant("irb")
+      if name == "irb"
+        Bundler.ui.error "#{name} is not available"
+        exit 1
+      else
+        Bundler.ui.error "Couldn't load console #{name}, falling back to irb"
+        name = "irb"
+        retry
+      end
     end
 
     def get_constant(name)

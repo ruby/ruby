@@ -119,6 +119,17 @@ RSpec.describe "bundle console", readline: true do
       expect(out).to include("(irb)")
     end
 
+    it "does not try IRB twice if no console is configured and IRB is not available" do
+      create_file("irb.rb", "raise LoadError, 'irb is not available'")
+
+      bundle("console", env: { "RUBYOPT" => "-I#{bundled_app} #{ENV["RUBYOPT"]}" }, raise_on_error: false) do |input, _, _|
+        input.puts("puts ACTIVESUPPORT")
+        input.puts("exit")
+      end
+      expect(err).not_to include("falling back to irb")
+      expect(err).to include("irb is not available")
+    end
+
     it "doesn't load any other groups" do
       bundle "console" do |input, _, _|
         input.puts("puts ACTIVESUPPORT")
