@@ -32,9 +32,6 @@ module Bundler
         "irb" => :IRB,
       }[name]
       Object.const_get(const_name)
-    rescue NameError
-      Bundler.ui.error "Could not find constant #{const_name}"
-      exit 1
     end
   end
 end
