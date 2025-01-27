@@ -287,7 +287,7 @@ struct debug_log_filter {
     char str[MAX_DEBUG_LOG_FILTER_LEN];
 };
 
-static const char *dlf_type_names[] = {
+static const char dlf_type_names[][5] = {
     "all",
     "file",
     "func",
@@ -299,7 +299,7 @@ static const char *dlf_type_names[] = {
 #define DEBUG_LOG_MAX_PATH 255
 #endif
 
-static struct {
+static struct debug_log {
     char *mem;
     unsigned int cnt;
     struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
@@ -317,20 +317,51 @@ RUBY_DEBUG_LOG_MEM_ENTRY(unsigned int index)
 }
 
 static enum debug_log_filter_type
-filter_type(const char *str, int *skiplen)
+filter_type(const char *str, int len, int *skiplen)
 {
-    if (strncmp(str, "file:", 5) == 0) {
-        *skiplen = 5;
-        return dlf_file;
+    for (int i = 0; i < numberof(dlf_type_names); ++i) {
+        const char *name = dlf_type_names[i];
+        const int nlen = (int)strlen(name);
+        if (len > nlen && strncmp(str, name, nlen) == 0 && str[nlen] == ':') {
+            *skiplen = nlen;
+            return (enum debug_log_filter_type)i;
+        }
     }
-    else if(strncmp(str, "func:", 5) == 0) {
-        *skiplen = 5;
-        return dlf_func;
+    return dlf_all;
+}
+
+static void
+add_debug_log_filter(const char *str, int len, void *arg)
+{
+    struct debug_log *log = arg;
+    unsigned int i = log->filters_num;
+
+    // just ignore too many filter
+    if (i >= MAX_DEBUG_LOG_FILTER_NUM) return;
+
+    // positive/negative
+    if (*str == '-') {
+        log->filters[i].negative = true;
+        str++;
     }
-    else {
-        *skiplen = 0;
-        return dlf_all;
+    else if (*str == '+') {
+        // negative is false on default.
+        str++;
     }
+
+    // type
+    int skiplen;
+    log->filters[i].type = filter_type(str, len, &skiplen);
+    len -= skiplen;
+    str += skiplen;
+
+    if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
+        fprintf(stderr, "too long: %.*s (max:%d)\n", len, str, MAX_DEBUG_LOG_FILTER_LEN - 1);
+        exit(1);
+    }
+
+    // body
+    strncpy(log->filters[i].str, str, len);
 }
 
 static void
@@ -338,47 +369,10 @@ setup_debug_log_filter(void)
 {
     const char *filter_config = getenv("RUBY_DEBUG_LOG_FILTER");
 
-    if (filter_config && strlen(filter_config) > 0) {
+    if (filter_config && *filter_config) {
         unsigned int i;
-        for (i=0; i<MAX_DEBUG_LOG_FILTER_NUM && filter_config; i++) {
-            size_t len;
-            const char *str = filter_config;
-            const char *p;
 
-            if ((p = strchr(str, ',')) == NULL) {
-                len = strlen(str);
-                filter_config = NULL;
-            }
-            else {
-                len = p - str - 1; // 1 is ','
-                filter_config = p + 1;
-            }
-
-            // positive/negative
-            if (*str == '-') {
-                debug_log.filters[i].negative = true;
-                str++;
-            }
-            else if (*str == '+') {
-                // negative is false on default.
-                str++;
-            }
-
-            // type
-            int skiplen;
-            debug_log.filters[i].type = filter_type(str, &skiplen);
-            len -= skiplen;
-
-            if (len >= MAX_DEBUG_LOG_FILTER_LEN) {
-                fprintf(stderr, "too long: %s (max:%d)\n", str, MAX_DEBUG_LOG_FILTER_LEN - 1);
-                exit(1);
-            }
-
-            // body
-            strncpy(debug_log.filters[i].str, str + skiplen, len);
-            debug_log.filters[i].str[len] = 0;
-        }
-        debug_log.filters_num = i;
+        ruby_each_words(filter_config, add_debug_log_filter, &debug_log);
 
         for (i=0; i<debug_log.filters_num; i++) {
             fprintf(stderr, "RUBY_DEBUG_LOG_FILTER[%d]=%s (%s%s)\n", i,
