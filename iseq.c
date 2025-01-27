@@ -4391,4 +4391,6 @@ Init_ISeq(void)
 
     rb_undef_method(CLASS_OF(rb_cISeq), "translate");
     rb_undef_method(CLASS_OF(rb_cISeq), "load_iseq");
+
+    rb_it_id = rb_make_internal_id();
 }
