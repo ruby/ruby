@@ -1937,3 +1937,62 @@ assert_equal 'LoadError', %q{
   end
   r.take
 }
+
+# r.send and r.take from multiple threads
+assert_equal '[true, true]', %q{
+class Map
+  def initialize
+    @r = Ractor.new {
+      loop do
+        key = Ractor.receive
+        Ractor.yield key
+      end
+    }
+  end
+
+  def fetch(key)
+    @r.send key
+    # not guaranteed that the value received will be the same value sent from this thread
+    @r.take
+  end
+end
+
+tm = Map.new
+t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+vals = t1.value + t2.value
+[
+  vals.count { |v| v == "t1" } == 10,
+  vals.count { |v| v == "t2" } == 10
+]
+}
+
+# r.send and Ractor.select from multiple threads
+assert_equal '[true, true]', %q{
+class Map
+  def initialize
+    @r = Ractor.new {
+      loop do
+        key = Ractor.receive
+        Ractor.yield key
+      end
+    }
+  end
+
+  def fetch(key)
+    @r.send key
+    # not guaranteed that the value received will be the same value sent from this thread
+    _r, val = Ractor.select(@r)
+    val
+  end
+end
+
+tm = Map.new
+t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+vals = t1.value + t2.value
+[
+  vals.count { |v| v == "t1" } == 10,
+  vals.count { |v| v == "t2" } == 10
+]
+}
