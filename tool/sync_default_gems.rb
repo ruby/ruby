@@ -44,7 +44,6 @@ module SyncDefaultGems
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
     psych: 'ruby/psych',
-    readline: "ruby/readline",
     resolv: "ruby/resolv",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
