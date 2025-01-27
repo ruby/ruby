@@ -45,6 +45,14 @@ void rb_gvar_ractor_local(const char *name);
  */
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
+/**
+ * Return whether the module is anonymous or not.
+ *
+ * @retval     RUBY_Qtrue  The module is anonymous.
+ * @retval     RUBY_Qfalse The module is not anonymous.
+ */
+VALUE rb_mod_anonymous_p(VALUE);
+
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
