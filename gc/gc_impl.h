@@ -74,8 +74,9 @@ GC_IMPL_FN void rb_gc_impl_mark(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr);
 GC_IMPL_FN void rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN void rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr);
-GC_IMPL_FN void rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr);
+// Weak references
+GC_IMPL_FN void rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj);
+GC_IMPL_FN bool rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj);
 // Compaction
 GC_IMPL_FN bool rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN VALUE rb_gc_impl_location(void *objspace_ptr, VALUE value);

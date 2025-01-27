@@ -56,8 +56,6 @@ pub struct RubyBinding {
     pub weak_proc: WeakProcessor,
     pub gc_thread_join_handles: Mutex<Vec<JoinHandle<()>>>,
     pub wb_unprotected_objects: Mutex<HashSet<ObjectReference>>,
-
-    pub weak_reference_dead_value: ObjectReference,
 }
 
 unsafe impl Sync for RubyBinding {}
@@ -68,7 +66,6 @@ impl RubyBinding {
         mmtk: &'static MMTK<Ruby>,
         binding_options: &RubyBindingOptions,
         upcalls: *const abi::RubyUpcalls,
-        weak_reference_dead_value: ObjectReference,
     ) -> Self {
         unsafe {
             crate::BINDING_FAST.suffix_size = binding_options.suffix_size;
@@ -82,8 +79,6 @@ impl RubyBinding {
             weak_proc: WeakProcessor::new(),
             gc_thread_join_handles: Default::default(),
             wb_unprotected_objects: Default::default(),
-
-            weak_reference_dead_value
         }
     }
 

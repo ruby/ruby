@@ -42,8 +42,10 @@ void rb_gc_cr_unlock(unsigned int lev);
 unsigned int rb_gc_vm_lock_no_barrier(void);
 void rb_gc_vm_unlock_no_barrier(unsigned int lev);
 void rb_gc_vm_barrier(void);
+
 size_t rb_gc_obj_optimal_size(VALUE obj);
 void rb_gc_mark_children(void *objspace, VALUE obj);
+void rb_gc_handle_weak_references(VALUE obj);
 void rb_gc_update_object_references(void *objspace, VALUE obj);
 void rb_gc_update_vm_references(void *objspace);
 void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);

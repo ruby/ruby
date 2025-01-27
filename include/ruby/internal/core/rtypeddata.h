@@ -177,11 +177,6 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag no longer in use
-     */
-    RUBY_TYPED_UNUSED           = RUBY_FL_UNUSED6,
-
-    /**
      * This flag determines whether marking and compaction should be carried out
      * using the dmark/dcompact callback functions or whether we should mark
      * declaratively using a list of references defined inside the data struct we're wrapping

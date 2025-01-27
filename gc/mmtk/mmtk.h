@@ -65,6 +65,7 @@ typedef struct MMTk_RubyUpcalls {
                                          MMTk_VMWorkerThread worker_tls);
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
+    void (*handle_weak_references)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
     size_t (*vm_live_bytes)(void);
     void (*update_global_tables)(int tbl_idx);
@@ -87,8 +88,7 @@ MMTk_Builder *mmtk_builder_default(void);
 
 void mmtk_init_binding(MMTk_Builder *builder,
                        const struct MMTk_RubyBindingOptions *_binding_options,
-                       const struct MMTk_RubyUpcalls *upcalls,
-                       MMTk_ObjectReference weak_reference_dead_value);
+                       const struct MMTk_RubyUpcalls *upcalls);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
@@ -115,9 +115,9 @@ void mmtk_post_alloc(MMTk_Mutator *mutator,
 
 void mmtk_add_obj_free_candidate(MMTk_ObjectReference object);
 
-void mmtk_mark_weak(MMTk_ObjectReference *ptr);
+void mmtk_declare_weak_references(MMTk_ObjectReference object);
 
-void mmtk_remove_weak(const MMTk_ObjectReference *ptr);
+bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
 
 void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);
 

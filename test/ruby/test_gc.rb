@@ -379,51 +379,34 @@ class TestGc < Test::Unit::TestCase
   def test_latest_gc_info_weak_references_count
     assert_separately([], __FILE__, __LINE__, <<~RUBY)
       GC.disable
-      count = 10_000
+      COUNT = 10_000
       # Some weak references may be created, so allow some margin of error
       error_tolerance = 100
 
-      # Run full GC to clear out weak references
-      GC.start
-      # Run full GC again to collect stats about weak references
+      # Run full GC to collect stats about weak references
       GC.start
 
       before_weak_references_count = GC.latest_gc_info(:weak_references_count)
-      before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
 
-      # Create some objects and place it in a WeakMap
-      wmap = ObjectSpace::WeakMap.new
-      ary = Array.new(count)
-      enum = count.times
-      enum.each.with_index do |i|
-        obj = Object.new
-        ary[i] = obj
-        wmap[obj] = nil
+      # Create some WeakMaps
+      ary = Array.new(COUNT)
+      COUNT.times.with_index do |i|
+        ary[i] = ObjectSpace::WeakMap.new
       end
 
       # Run full GC to collect stats about weak references
       GC.start
 
-      assert_operator(GC.latest_gc_info(:weak_references_count), :>=, before_weak_references_count + count - error_tolerance)
-      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :>=, before_retained_weak_references_count + count - error_tolerance)
-      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, GC.latest_gc_info(:weak_references_count))
+      assert_operator(GC.latest_gc_info(:weak_references_count), :>=, before_weak_references_count + COUNT - error_tolerance)
 
       before_weak_references_count = GC.latest_gc_info(:weak_references_count)
-      before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
 
       ary = nil
 
-      # Free ary, which should empty out the wmap
-      GC.start
-      # Run full GC again to collect stats about weak references
+      # Free ary, which should GC all the WeakMaps
       GC.start
 
-      # Sometimes the WeakMap has one element, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 1)
-
-      assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
-      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
-      assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, GC.latest_gc_info(:weak_references_count))
+      assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - COUNT + error_tolerance)
     RUBY
   end
 

@@ -205,8 +205,8 @@ size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
-void rb_gc_mark_weak(VALUE *ptr);
-void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 

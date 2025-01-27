@@ -218,11 +218,11 @@ ruby_fl_type {
     RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag is no longer in use
+     * This object weakly refers to other objects.
      *
      * @internal
      */
-    RUBY_FL_UNUSED6    = (1<<6),
+    RUBY_FL_WEAK_REFERENCE = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
