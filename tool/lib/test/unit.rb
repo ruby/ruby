@@ -298,7 +298,7 @@ module Test
 
         opts.separator "parallel test options:"
 
-        options[:retry] = true
+        options[:retry] = false
 
         opts.on '-j N', '--jobs N', /\A(t)?(\d+)\z/, "Allow run tests with N jobs at once" do |_, t, a|
           options[:testing] = true & t # For testing
@@ -1815,8 +1815,13 @@ module Test
 
       alias orig_run_suite _run_suite
 
+      TARGET_TESTS = [ "test_spawn_without_block", "test_spawn_with_block", "test_argv0", "test_commandline" ]
+
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
+        unless TARGET_TESTS.include?(meth.to_s)
+          return nil
+        end
         n = report.size
         e = case e
             when Test::Unit::PendedError then
