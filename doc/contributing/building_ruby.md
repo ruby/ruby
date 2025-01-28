@@ -20,6 +20,9 @@
     * ruby - 3.0 or later
         * We can upgrade this version to system ruby version of the latest
           Ubuntu LTS.
+    * git - 2.32 or later
+        * Anterior versions may work; 2.32 or later will prevent build
+          errors in case your system `.gitconfig` uses `$HOME` paths.
 
 2. Install optional, recommended dependencies:
 
