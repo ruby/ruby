@@ -57,11 +57,11 @@ jobs:
 
       - name: Extract bundled gems
         run: |
-          make ruby -j2
+          make ruby -j5
           make extract-gems
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 
       - name: make all
         timeout-minutes: 30
-        run: make -j2 V=1
+        run: make -j4 V=1
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
