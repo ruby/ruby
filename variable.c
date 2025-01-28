@@ -214,6 +214,22 @@ is_constant_path(VALUE name)
  *    c.new # => #<C:0x0....>
  */
 
+
+static VALUE
+build_const_path(VALUE head, ID tail);
+
+static enum rb_id_table_iterator_result
+set_temporary_name_i(ID id, VALUE v, void *payload)
+{
+    rb_const_entry_t *ce = (rb_const_entry_t *)v;
+    VALUE value = ce->value;
+    VALUE parental_path = *((VALUE *) payload);
+
+    rb_mod_set_temporary_name(value, build_const_path(parental_path, id));
+
+    return ID_TABLE_CONTINUE;
+}
+
 VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
@@ -238,8 +254,17 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
             rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
-        // Set the temporary classpath to the given name:
-        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+        struct rb_id_table *const_table = RCLASS_CONST_TBL(mod);
+        RB_VM_LOCK_ENTER();
+        {
+            // Set the temporary classpath to the given name:
+            RCLASS_SET_CLASSPATH(mod, name, FALSE);
+
+            if (const_table) {
+                rb_id_table_foreach(const_table, set_temporary_name_i, &name);
+            }
+        }
+        RB_VM_LOCK_LEAVE();
     }
 
     return mod;

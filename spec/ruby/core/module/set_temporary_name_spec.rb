@@ -64,5 +64,14 @@ ruby_version_is "3.3" do
       m::M = m::N
       m::M.name.should =~ /\A#<Module:0x\h+>::M\z/m
     end
+
+    it "can update the name of child constants" do
+      m = Module.new
+      m::N = Module.new
+      m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+      m.set_temporary_name("foo")
+      m.name == "foo"
+      m::N.name == "foo"
+    end
   end
 end
