@@ -1937,3 +1937,26 @@ assert_equal 'LoadError', %q{
   end
   r.take
 }
+
+###
+### Scheduler tests
+###
+
+# [Bug #20905]
+assert_equal 'success', %q{
+  def counter_loop
+    counter = 0
+    counter += 1 while counter < 3_000_000
+  end
+
+  ractors = 5.times.map { Ractor.new { Thread.new { counter_loop }; counter_loop } }
+  counter_loop
+
+  while ractors.any?
+    r, obj = Ractor.select(*ractors)
+    if r
+      ractors.delete(r)
+    end
+  end
+  'success'
+}
