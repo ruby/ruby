@@ -389,7 +389,7 @@ showconfig:
 
 EXTS_NOTE = -f $(EXTS_MK) $(mflags) RUBY="$(MINIRUBY)" top_srcdir="$(srcdir)" note
 
-exts: build-ext
+exts: extract-gems build-ext
 
 EXTS_MK = exts.mk
 $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
