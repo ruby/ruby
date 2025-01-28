@@ -636,6 +636,21 @@ class TestThread < Test::Unit::TestCase
     assert_equal("bar", t.thread_variable_get(key_sym), "#{bug10667}: symbol key")
   end
 
+  def test_thread_local_dig
+    t = Thread.new { sleep }
+
+    assert_equal(false, t.key?(:foo))
+
+    t["foo"] = h = {"bar" => "bar"}
+
+    assert_equal("bar", t.dig(:foo, "bar"))
+    assert_equal("bar", t.dig("foo", "bar"))
+    assert_nil(t.dig("foo", "baz"))
+    assert_nil(t.dig(:foo, "baz"))
+  ensure
+    t&.kill&.join
+  end
+
   def test_select_wait
     assert_nil(IO.select(nil, nil, nil, 0.001))
     t = Thread.new do
