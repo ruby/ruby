@@ -8069,7 +8069,6 @@ fn gen_send_iseq(
         }
     }
 
-    // Don't nil fill forwarding iseqs
     if !forwarding {
         // Nil-initialize missing optional parameters
         nil_fill(
@@ -8104,9 +8103,13 @@ fn gen_send_iseq(
         assert_eq!(1, num_params);
         // Write the CI in to the stack and ensure that it actually gets
         // flushed to memory
+        asm_comment!(asm, "put call info for forwarding");
         let ci_opnd = asm.stack_opnd(-1);
         asm.ctx.dealloc_reg(ci_opnd.reg_opnd());
         asm.mov(ci_opnd, VALUE(ci as usize).into());
+
+        // Nil-initialize other locals which are above the CI
+        nil_fill("nil-initialize locals", 1..num_locals, asm);
     }
 
     // Points to the receiver operand on the stack unless a captured environment is used
