@@ -1,6 +1,38 @@
 # To run the tests in this file only, with YJIT enabled:
 # make btest BTESTS=bootstraptest/test_yjit.rb RUN_OPTS="--yjit-call-threshold=1"
 
+# This used to trigger a "try to mark T_NONE"
+# due to an uninitialized local in foo.
+assert_normal_exit %{
+  def foo(...)
+    _local_that_should_nil_on_call = GC.start
+  end
+
+  def test_bug21021
+    puts [], [], [], [], [], []
+    foo []
+  end
+
+  GC.stress = true
+  test_bug21021
+}
+
+assert_equal 'nil', %{
+  def foo(...)
+    _a = _b = _c = binding.local_variable_get(:_c)
+
+    _c
+  end
+
+  # [Bug #21021]
+  def test_local_fill_in_forwardable
+    puts [], [], [], [], []
+    foo []
+  end
+
+  test_local_fill_in_forwardable.inspect
+}
+
 # regression test for popping before side exit
 assert_equal "ok", %q{
   def foo(a, *) = a
