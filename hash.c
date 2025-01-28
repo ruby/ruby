@@ -2656,6 +2656,33 @@ rb_hash_slice(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
+ *     hsh.except!(*keys) -> a_hash
+ *
+ *  Returns +self+ excluding entries for the given +keys+:
+ *     h = { a: 100, b: 200, c: 300 }
+ *     h.except(:a)          #=> {:b=>200, :c=>300}
+ *
+ *  Any given +keys+ that are not found are ignored.
+ */
+
+static VALUE
+rb_hash_except_bang(int argc, VALUE *argv, VALUE hash)
+{
+    int i;
+    VALUE key;
+
+    rb_hash_modify_check(hash);
+
+    for (i = 0; i < argc; i++) {
+        key = argv[i];
+        rb_hash_delete_entry(hash, key);
+    }
+
+    return hash;
+}
+
+/*
+ *  call-seq:
  *     hsh.except(*keys) -> a_hash
  *
  *  Returns a new +Hash+ excluding entries for the given +keys+:
@@ -7160,6 +7187,7 @@ Init_Hash(void)
     rb_define_method(rb_cHash, "reject", rb_hash_reject, 0);
     rb_define_method(rb_cHash, "reject!", rb_hash_reject_bang, 0);
     rb_define_method(rb_cHash, "slice", rb_hash_slice, -1);
+    rb_define_method(rb_cHash, "except!", rb_hash_except_bang, -1);
     rb_define_method(rb_cHash, "except", rb_hash_except, -1);
     rb_define_method(rb_cHash, "clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash, "invert", rb_hash_invert, 0);

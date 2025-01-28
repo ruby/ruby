@@ -1125,6 +1125,22 @@ class TestHash < Test::Unit::TestCase
     assert_equal({}, {}.except)
   end
 
+  def test_except!
+    h = @cls[1=>2,3=>4,5=>6]
+    h.except!(1, 3)
+    assert_equal({5=>6}, h)
+
+    h = @cls[1=>2,3=>4,5=>6]
+    h.except!(7)
+    assert_equal({1=>2,3=>4,5=>6}, h)
+
+    h = @cls[1=>2,3=>4,5=>6]
+    h.except!
+    assert_equal({1=>2,3=>4,5=>6}, h)
+
+    assert_equal({}, {}.except!)
+  end
+
   def test_except_on_identhash
     h = @cls[1=>2,3=>4,5=>6]
     h.compare_by_identity
