@@ -486,6 +486,20 @@ class TestObjSpace < Test::Unit::TestCase
     assert_match(/"value":"foobar\h+"/, dump)
   end
 
+  def test_dump_outputs_object_id
+    obj = Object.new
+
+    # Doesn't output object_id when it has not been seen
+    dump = ObjectSpace.dump(obj)
+    assert_not_include(dump, "\"object_id\"")
+
+    id = obj.object_id
+
+    # Outputs object_id when it has been seen
+    dump = ObjectSpace.dump(obj)
+    assert_include(dump, "\"object_id\":#{id}")
+  end
+
   def test_dump_includes_imemo_type
     assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;

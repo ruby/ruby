@@ -638,6 +638,11 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_sizet(dc, memsize);
     }
 
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
+        dump_append(dc, ", \"object_id\":");
+        dump_append_lu(dc, RB_NUM2ULONG(rb_obj_id(obj)));
+    }
+
     if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
         dump_append(dc, ", \"flags\":{");
         for (i=0; i<n; i++) {
