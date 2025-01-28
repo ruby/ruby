@@ -53,7 +53,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "etc"
   check_existence "fcntl"
   check_existence "fiber"
-  check_existence "fiddle"
   check_existence "io/console"
   check_existence "io/nonblock"
   check_existence "io/wait"
