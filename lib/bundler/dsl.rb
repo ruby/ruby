@@ -413,6 +413,7 @@ module Bundler
         next if VALID_PLATFORMS.include?(p)
         raise GemfileError, "`#{p}` is not a valid platform. The available options are: #{VALID_PLATFORMS.inspect}"
       end
+      deprecate_legacy_windows_platforms(platforms)
 
       # Save sources passed in a key
       if opts.key?("source")
@@ -491,6 +492,16 @@ module Bundler
       else
         raise GemfileError, "Unknown source '#{source}'"
       end
+    end
+
+    def deprecate_legacy_windows_platforms(platforms)
+      windows_platforms = platforms.select {|pl| pl.to_s.match?(/mingw|mswin/) }
+      return if windows_platforms.empty?
+
+      windows_platforms = windows_platforms.map! {|pl| ":#{pl}" }.join(", ")
+      message = "Platform #{windows_platforms} is deprecated. Please use platform :windows instead."
+      removed_message = "Platform #{windows_platforms} has been removed. Please use platform :windows instead."
+      Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
     end
 
     def check_path_source_safety
