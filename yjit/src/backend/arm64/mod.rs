@@ -1341,16 +1341,13 @@ impl Assembler
             Err(EmitError::RetryOnNextPage) => {
                 // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
                 // range limit. We can easily exceed the limit in case the jump straddles two pages.
-                // In this case, we retry with a fresh page.
+                // In this case, we retry with a fresh page once.
                 cb.set_label_state(starting_label_state);
-                cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation);
-                let result = asm.arm64_emit(cb, &mut ocb);
-                assert_ne!(
-                    Err(EmitError::RetryOnNextPage),
-                    result,
-                    "should not fail when writing to a fresh code page"
-                );
-                result
+                if cb.next_page(start_ptr, emit_jmp_ptr_with_invalidation) {
+                    asm.arm64_emit(cb, &mut ocb)
+                } else {
+                    Err(EmitError::OutOfMemory)
+                }
             }
             result => result
         };
