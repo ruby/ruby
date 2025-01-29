@@ -1902,16 +1902,15 @@ rb_check_hash_type(VALUE hash)
 
 /*
  *  call-seq:
- *    Hash.try_convert(obj) -> obj, new_hash, or nil
+ *    Hash.try_convert(object) -> object, new_hash, or nil
  *
- *  If +obj+ is a +Hash+ object, returns +obj+.
+ *  If +object+ is a hash, returns +object+.
  *
- *  Otherwise if +obj+ responds to <tt>:to_hash</tt>,
- *  calls <tt>obj.to_hash</tt> and returns the result.
+ *  Otherwise if +object+ responds to +:to_hash+,
+ *  calls <tt>object.to_hash</tt>;
+ *  returns the result if it is a hash, or raises TypeError if not.
  *
- *  Returns +nil+ if +obj+ does not respond to <tt>:to_hash</tt>
- *
- *  Raises an exception unless <tt>obj.to_hash</tt> returns a +Hash+ object.
+ *  Otherwise if +object+ does not respond to +:to_hash+, returns +nil+.
  */
 static VALUE
 rb_hash_s_try_convert(VALUE dummy, VALUE hash)
