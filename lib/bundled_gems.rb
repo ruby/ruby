@@ -137,11 +137,11 @@ module Gem::BUNDLED_GEMS # :nodoc:
     end + build_message(name)
   end
 
-  def self.build_message(gem)
-    msg = " #{RUBY_VERSION < SINCE[gem] ? "will no longer be" : "is not"} part of the default gems starting from Ruby #{SINCE[gem]}."
+  def self.build_message(name)
+    msg = " #{RUBY_VERSION < SINCE[name] ? "will no longer be" : "is not"} part of the default gems starting from Ruby #{SINCE[name]}."
 
     if defined?(Bundler)
-      msg += "\nYou can add #{gem} to your Gemfile or gemspec to silence this warning."
+      msg += "\nYou can add #{name} to your Gemfile or gemspec to silence this warning."
 
       # We detect the gem name from caller_locations. First we walk until we find `require`
       # then take the first frame that's not from `require`.
@@ -179,11 +179,11 @@ module Gem::BUNDLED_GEMS # :nodoc:
           end
         end
         if caller_gem
-          msg += "\nAlso please contact the author of #{caller_gem} to request adding #{gem} into its gemspec."
+          msg += "\nAlso please contact the author of #{caller_gem} to request adding #{name} into its gemspec."
         end
       end
     else
-      msg += " Install #{gem} from RubyGems."
+      msg += " Install #{name} from RubyGems."
     end
 
     msg
