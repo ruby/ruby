@@ -64,5 +64,19 @@ ruby_version_is "3.3" do
       m::M = m::N
       m::M.name.should =~ /\A#<Module:0x\h+>::M\z/m
     end
+
+    ruby_bug "#21094", ""..."3.5" do
+      it "also updates a name of a nested module" do
+        m = Module.new
+        m::N = Module.new
+        m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+
+        m.set_temporary_name "m"
+        m::N.name.should == "m::N"
+
+        m.set_temporary_name nil
+        m::N.name.should == nil
+      end
+    end
   end
 end
