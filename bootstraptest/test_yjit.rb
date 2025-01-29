@@ -5355,3 +5355,35 @@ assert_normal_exit %{
     new.foo
   end
 }
+
+# This used to trigger a "try to mark T_NONE"
+# due to an uninitialized local in foo.
+assert_normal_exit %{
+  def foo(...)
+    _local_that_should_nil_on_call = GC.start
+  end
+
+  def test_bug21021
+    puts [], [], [], [], [], []
+    foo []
+  end
+
+  GC.stress = true
+  test_bug21021
+}
+
+assert_equal 'nil', %{
+  def foo(...)
+    _a = _b = _c = binding.local_variable_get(:_c)
+
+    _c
+  end
+
+  # [Bug #21021]
+  def test_local_fill_in_forwardable
+    puts [], [], [], [], []
+    foo []
+  end
+
+  test_local_fill_in_forwardable.inspect
+}
