@@ -1175,9 +1175,13 @@ fast_fallback_inetsock_cleanup(VALUE v)
         rb_nativethread_lock_unlock(&getaddrinfo_shared->lock);
 
         for (int i = 0; i < arg->family_size; i++) {
-            if (need_free[i]) free_fast_fallback_getaddrinfo_entry(&arg->getaddrinfo_entries[i]);
+            if (arg->getaddrinfo_entries[i] && need_free[i]) {
+                free_fast_fallback_getaddrinfo_entry(&arg->getaddrinfo_entries[i]);
+            }
         }
-        if (shared_need_free) free_fast_fallback_getaddrinfo_shared(&getaddrinfo_shared);
+        if (getaddrinfo_shared && shared_need_free) {
+            free_fast_fallback_getaddrinfo_shared(&getaddrinfo_shared);
+        }
     }
 
     int connection_attempt_fd;
