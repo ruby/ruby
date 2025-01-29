@@ -33,8 +33,6 @@ module Gem::BUNDLED_GEMS # :nodoc:
     # "readline" => "3.5.0", # This is wrapper for reline. We don't warn for this.
   }.freeze
 
-  SINCE_FAST_PATH = SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") }.freeze
-
   EXACT = {
     "kconv" => "nkf",
   }.freeze
@@ -142,7 +140,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
       end
     else
       name = feature.sub(LIBEXT, "")
-      return unless SINCE_FAST_PATH[name]
+      return unless SINCE[name]
     end
 
     return if specs.include?(name)
