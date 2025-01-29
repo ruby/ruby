@@ -283,7 +283,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS
-# define GC_DEBUG_STRESS_TO_CLASS RUBY_DEBUG
+# define GC_DEBUG_STRESS_TO_CLASS 1
 #endif
 
 typedef enum {
@@ -2517,9 +2517,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
 
     if (RB_UNLIKELY(stress_to_class)) {
-        long cnt = RARRAY_LEN(stress_to_class);
-        for (long i = 0; i < cnt; i++) {
-            if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
+        if (RTEST(rb_hash_has_key(stress_to_class, klass))) {
+            rb_memerror();
         }
     }
 
@@ -9328,9 +9327,13 @@ rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
     rb_objspace_t *objspace = rb_gc_get_objspace();
 
     if (!stress_to_class) {
-        set_stress_to_class(rb_ary_hidden_new(argc));
+        set_stress_to_class(rb_ident_hash_new_with_size(argc));
     }
-    rb_ary_cat(stress_to_class, argv, argc);
+
+    for (int i = 0; i < argc; i++) {
+        VALUE klass = argv[i];
+        rb_hash_aset(stress_to_class, klass, Qtrue);
+    }
 
     return self;
 }
@@ -9347,14 +9350,14 @@ static VALUE
 rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
 {
     rb_objspace_t *objspace = rb_gc_get_objspace();
-    int i;
 
     if (stress_to_class) {
-        for (i = 0; i < argc; ++i) {
-            rb_ary_delete_same(stress_to_class, argv[i]);
+        for (int i = 0; i < argc; ++i) {
+            rb_hash_delete(stress_to_class, argv[i]);
         }
-        if (RARRAY_LEN(stress_to_class) == 0) {
-            set_stress_to_class(0);
+
+        if (rb_hash_size(stress_to_class) == 0) {
+            stress_to_class = 0;
         }
     }
 
