@@ -101,7 +101,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
   def self.warning?(name, specs: nil)
     # name can be a feature name or a file path with String or Pathname
-    feature = File.path(name)
+    feature = File.path(name).sub(LIBEXT, "")
 
     # The actual checks needed to properly identify the gem being required
     # are costly (see [Bug #20641]), so we first do a much cheaper check
@@ -109,8 +109,9 @@ module Gem::BUNDLED_GEMS # :nodoc:
     subfeature = if feature.include?("/")
       # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
       # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
-      name = feature.delete_prefix(ARCHDIR).delete_prefix(LIBDIR).sub(LIBEXT, "")
-      segments = name.split("/")
+      feature.delete_prefix!(ARCHDIR)
+      feature.delete_prefix!(LIBDIR)
+      segments = feature.split("/")
       name = segments.shift
       name = EXACT[name] || name
       if !SINCE[name]
@@ -119,8 +120,7 @@ module Gem::BUNDLED_GEMS # :nodoc:
       end
       segments.any?
     else
-      name = feature.sub(LIBEXT, "")
-      name = EXACT[name] || name
+      name = EXACT[feature] || feature
       return unless SINCE[name]
       false
     end
@@ -130,18 +130,25 @@ module Gem::BUNDLED_GEMS # :nodoc:
     return if WARNED[name]
     WARNED[name] = true
 
+    level = RUBY_VERSION < SINCE[name] ? "warning" : "error"
+
     if subfeature
       "#{feature} is found in #{name}, which"
     else
-      "#{feature} was loaded from the standard library, but"
-    end + build_message(name)
+      "#{feature} #{level == "warning" ? "was loaded" : "used to be loaded"} from the standard library, but"
+    end + build_message(name, level)
   end
 
-  def self.build_message(name)
-    msg = " #{RUBY_VERSION < SINCE[name] ? "will no longer be" : "is not"} part of the default gems starting from Ruby #{SINCE[name]}."
+  def self.build_message(name, level)
+    msg = if level == "warning"
+      " will no longer be part of the default gems starting from Ruby #{SINCE[name]}"
+    else
+      " is not part of the default gems since Ruby #{SINCE[name]}."
+    end
 
     if defined?(Bundler)
-      msg += "\nYou can add #{name} to your Gemfile or gemspec to silence this warning."
+      motivation = level == "warning" ? "silence this warning" : "fix this error"
+      msg += "\nYou can add #{name} to your Gemfile or gemspec to #{motivation}."
 
       # We detect the gem name from caller_locations. First we walk until we find `require`
       # then take the first frame that's not from `require`.
@@ -230,7 +237,7 @@ class LoadError
 
     name = path.tr("/", "-")
     if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[name] && !Gem::BUNDLED_GEMS::WARNED[name]
-      warn name + Gem::BUNDLED_GEMS.build_message(name), uplevel: Gem::BUNDLED_GEMS.uplevel
+      warn name + Gem::BUNDLED_GEMS.build_message(name, "error"), uplevel: Gem::BUNDLED_GEMS.uplevel
     end
     super
   end

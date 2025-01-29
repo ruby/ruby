@@ -90,9 +90,9 @@ RSpec.describe "bundled_gems.rb" do
       require "openssl"
     RUBY
 
-    expect(err).to include(/csv was loaded from (.*) from Ruby 3.4.0/)
+    expect(err).to include(/csv used to be loaded from (.*) since Ruby 3.4.0/)
     expect(err).to include(/-e:15/)
-    expect(err).to include(/openssl was loaded from (.*) from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/-e:18/)
   end
 
@@ -112,7 +112,7 @@ RSpec.describe "bundled_gems.rb" do
       require "active_support/all"
     RUBY
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
@@ -128,7 +128,7 @@ RSpec.describe "bundled_gems.rb" do
       end
     RUBY
 
-    expect(err).to include(/net\/smtp was loaded from (.*) from Ruby 3.1.0/)
+    expect(err).to include(/net\/smtp used to be loaded from (.*) since Ruby 3.1.0/)
     expect(err).to include(/-e:15/)
     expect(err).to include("You can add net-smtp")
   end
@@ -144,7 +144,7 @@ RSpec.describe "bundled_gems.rb" do
       require "openssl/bn"
     RUBY
 
-    expect(err).to include(/openssl\/bn is found in openssl, (.*) part of the default gems starting from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/openssl\/bn is found in openssl, (.*) part of the default gems since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/-e:14/)
   end
 
@@ -158,7 +158,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/script\.rb:8/)
   end
 
@@ -176,7 +176,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ./script.rb"
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/script\.rb:9/)
   end
 
@@ -185,7 +185,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby -r./stub -ropenssl -e ''"
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
   end
 
   it "Show warning when warn is not the standard one in the current scope" do
@@ -208,7 +208,7 @@ RSpec.describe "bundled_gems.rb" do
       My.my
     RUBY
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/-e:19/)
   end
 
@@ -250,7 +250,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::ARCHDIR + 'openssl'
     RUBY
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap.rb:14: warning: ...
   end
@@ -270,7 +270,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::ARCHDIR + "openssl"
     RUBY
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap_rubyarchdir_gem.rb:14: warning: ...
   end
@@ -299,7 +299,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem.loaded_specs["fileutils2"].full_gem_path + '/lib/fileutils2'
     RUBY
 
-    expect(err).to include(/fileutils was loaded from (.*) from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/fileutils used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
@@ -319,7 +319,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/script\.rb:13/)
   end
 
