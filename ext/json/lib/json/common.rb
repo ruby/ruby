@@ -172,10 +172,10 @@ module JSON
   #   JSON.generate({ count: 3, items: fragments })
   #
   # This allows to easily assemble multiple JSON fragments that have
-  # been peristed somewhere without having to parse them nor resorting
+  # been persisted somewhere without having to parse them nor resorting
   # to string interpolation.
   #
-  # Note: no validation is performed on the provided string. it is the
+  # Note: no validation is performed on the provided string. It is the
   # responsability of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
     def initialize(json)
