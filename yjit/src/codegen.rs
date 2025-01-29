@@ -8090,13 +8090,13 @@ fn gen_send_iseq(
         // Nil-initialize non-parameter locals
         nil_fill(
             "nil-initialize locals",
-        {
-            let begin = -argc + num_params;
-            let end   = -argc + num_locals;
+            {
+                let begin = -argc + num_params;
+                let end   = -argc + num_locals;
 
-            begin..end
-        },
-        asm
+                begin..end
+            },
+            asm
         );
     }
 
