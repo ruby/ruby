@@ -1415,13 +1415,11 @@ class Gem::Specification < Gem::BasicSpecification
         raise e
       end
 
-      begin
-        specs = spec_dep.to_specs.uniq(&:full_name)
-      rescue Gem::MissingSpecError => e
-        raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{spec_file}")
-      end
+      specs = spec_dep.matching_specs(true).uniq(&:full_name)
 
-      if specs.size == 1
+      if specs.size == 0
+        raise Gem::MissingSpecError.new(spec_dep.name, spec_dep.requirement, "at: #{spec_file}")
+      elsif specs.size == 1
         specs.first.activate
       else
         name = spec_dep.name

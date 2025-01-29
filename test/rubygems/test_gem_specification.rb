@@ -652,6 +652,17 @@ end
     end
   end
 
+  def test_self_activate_missing_deps_does_not_raise_nested_exceptions
+    a = util_spec "a", "1.0", "b" => ">= 1.0"
+    install_specs a
+
+    e = assert_raise Gem::MissingSpecError do
+      a.activate
+    end
+
+    refute e.cause
+  end
+
   def test_self_all_equals
     a = util_spec "foo", "1", nil, "lib/foo.rb"
 
