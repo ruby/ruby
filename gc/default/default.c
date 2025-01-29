@@ -850,8 +850,8 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define stress_to_class         objspace->stress_to_class
 #define set_stress_to_class(c)  (stress_to_class = (c))
 #else
-#define stress_to_class         (objspace, 0)
-#define set_stress_to_class(c)  (objspace, (c))
+#define stress_to_class         ((void)objspace, 0)
+#define set_stress_to_class(c)  ((void)objspace, (c))
 #endif
 
 #if 0
