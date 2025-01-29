@@ -4,18 +4,8 @@ require_relative 'utils'
 if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
-  def test_ec_key
+  def test_ec_key_new
     key1 = OpenSSL::PKey::EC.generate("prime256v1")
-
-    # PKey is immutable in OpenSSL >= 3.0; constructing an empty EC object is
-    # deprecated
-    if !openssl?(3, 0, 0)
-      key2 = OpenSSL::PKey::EC.new
-      key2.group = key1.group
-      key2.private_key = key1.private_key
-      key2.public_key = key1.public_key
-      assert_equal key1.to_der, key2.to_der
-    end
 
     key3 = OpenSSL::PKey::EC.new(key1)
     assert_equal key1.to_der, key3.to_der
@@ -32,6 +22,23 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       key5.private_key = key_tmp.private_key
       key5.public_key = key_tmp.public_key
       assert_not_equal key1.to_der, key5.to_der
+    end
+  end
+
+  def test_ec_key_new_empty
+    # pkeys are immutable with OpenSSL >= 3.0; constructing an empty EC object is
+    # disallowed
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::EC.new }
+    else
+      key = OpenSSL::PKey::EC.new
+      assert_nil(key.group)
+
+      p256 = Fixtures.pkey("p256")
+      key.group = p256.group
+      key.private_key = p256.private_key
+      key.public_key = p256.public_key
+      assert_equal(p256.to_der, key.to_der)
     end
   end
 

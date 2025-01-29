@@ -59,6 +59,7 @@ static VALUE eRSAError;
  * If called without arguments, creates a new instance with no key components
  * set. They can be set individually by #set_key, #set_factors, and
  * #set_crt_params.
+ * This form is not compatible with OpenSSL 3.0 or later.
  *
  * If called with a String, tries to parse as DER or PEM encoding of an \RSA key.
  * Note that if _password_ is not specified, but the key is encrypted with a
@@ -89,10 +90,15 @@ ossl_rsa_initialize(int argc, VALUE *argv, VALUE self)
     /* The RSA.new(size, generator) form is handled by lib/openssl/pkey.rb */
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (argc == 0) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::RSA.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
 	rsa = RSA_new();
         if (!rsa)
             ossl_raise(eRSAError, "RSA_new");
         goto legacy;
+#endif
     }
 
     pass = ossl_pem_passwd_value(pass);

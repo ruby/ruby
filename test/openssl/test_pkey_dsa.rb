@@ -34,9 +34,14 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
   end
 
   def test_new_empty
-    key = OpenSSL::PKey::DSA.new
-    assert_nil(key.p)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.to_der }
+    # pkeys are immutable with OpenSSL >= 3.0
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::DSA.new }
+    else
+      key = OpenSSL::PKey::DSA.new
+      assert_nil(key.p)
+      assert_raise(OpenSSL::PKey::PKeyError) { key.to_der }
+    end
   end
 
   def test_generate

@@ -147,9 +147,14 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 
     rb_scan_args(argc, argv, "02", &arg, &pass);
     if (NIL_P(arg)) {
+#ifdef OSSL_HAVE_IMMUTABLE_PKEY
+        rb_raise(rb_eArgError, "OpenSSL::PKey::EC.new cannot be called " \
+                 "without arguments; pkeys are immutable with OpenSSL 3.0");
+#else
         if (!(ec = EC_KEY_new()))
             ossl_raise(eECError, "EC_KEY_new");
         goto legacy;
+#endif
     }
     else if (rb_obj_is_kind_of(arg, cEC_GROUP)) {
         ec = ec_key_new_from_group(arg);
