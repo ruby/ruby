@@ -9315,6 +9315,52 @@ gc_malloc_allocations(VALUE self)
 void rb_gc_impl_before_fork(void *objspace_ptr) { /* no-op */ }
 void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) { /* no-op */ }
 
+/*
+ *  call-seq:
+ *    GC.add_stress_to_class(class[, ...])
+ *
+ *  Raises NoMemoryError when allocating an instance of the given classes.
+ *
+ */
+static VALUE
+rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!stress_to_class) {
+        set_stress_to_class(rb_ary_hidden_new(argc));
+    }
+    rb_ary_cat(stress_to_class, argv, argc);
+
+    return self;
+}
+
+/*
+ *  call-seq:
+ *    GC.remove_stress_to_class(class[, ...])
+ *
+ *  No longer raises NoMemoryError when allocating an instance of the
+ *  given classes.
+ *
+ */
+static VALUE
+rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    int i;
+
+    if (stress_to_class) {
+        for (i = 0; i < argc; ++i) {
+            rb_ary_delete_same(stress_to_class, argv[i]);
+        }
+        if (RARRAY_LEN(stress_to_class) == 0) {
+            set_stress_to_class(0);
+        }
+    }
+
+    return Qnil;
+}
+
 void *
 rb_gc_impl_objspace_alloc(void)
 {
@@ -9408,6 +9454,11 @@ rb_gc_impl_init(void)
         rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
         rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
         rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+    }
+
+    if (GC_DEBUG_STRESS_TO_CLASS) {
+        rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+        rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
     }
 
     /* internal methods */
