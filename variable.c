@@ -166,6 +166,80 @@ is_constant_path(VALUE name)
     return true;
 }
 
+struct sub_temporary_name_args {
+    VALUE names;
+    ID last;
+};
+
+static VALUE build_const_path(VALUE head, ID tail);
+static void set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, VALUE name);
+
+static VALUE
+set_sub_temporary_name_recursive(VALUE mod, VALUE data, int recursive)
+{
+    if (recursive) return Qfalse;
+
+    struct sub_temporary_name_args *args = (void *)data;
+    VALUE name = 0;
+    if (args->names) {
+        name = build_const_path(rb_ary_last(0, 0, args->names), args->last);
+    }
+    set_sub_temporary_name_foreach(mod, args, name);
+    return Qtrue;
+}
+
+static VALUE
+set_sub_temporary_name_topmost(VALUE mod, VALUE data, int recursive)
+{
+    if (recursive) return Qfalse;
+
+    struct sub_temporary_name_args *args = (void *)data;
+    VALUE name = args->names;
+    if (name) {
+        args->names = rb_ary_hidden_new(0);
+    }
+    set_sub_temporary_name_foreach(mod, args, name);
+    return Qtrue;
+}
+
+static enum rb_id_table_iterator_result
+set_sub_temporary_name_i(ID id, VALUE val, void *data)
+{
+    val = ((rb_const_entry_t *)val)->value;
+    if (rb_namespace_p(val) && !RCLASS_EXT(val)->permanent_classpath) {
+        VALUE arg = (VALUE)data;
+        struct sub_temporary_name_args *args = data;
+        args->last = id;
+        rb_exec_recursive_paired(set_sub_temporary_name_recursive, val, arg, arg);
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, VALUE name)
+{
+    RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    struct rb_id_table *tbl = RCLASS_CONST_TBL(mod);
+    if (!tbl) return;
+    if (!name) {
+        rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
+    }
+    else {
+        long names_len = RARRAY_LEN(args->names); // paranoiac check?
+        rb_ary_push(args->names, name);
+        rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
+        rb_ary_set_len(args->names, names_len);
+    }
+}
+
+static void
+set_sub_temporary_name(VALUE mod, VALUE name)
+{
+    struct sub_temporary_name_args args = {name};
+    VALUE arg = (VALUE)&args;
+    rb_exec_recursive_paired(set_sub_temporary_name_topmost, mod, arg, arg);
+}
+
 /*
  *  call-seq:
  *     mod.set_temporary_name(string) -> self
@@ -224,7 +298,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
 
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
-        RCLASS_SET_CLASSPATH(mod, 0, FALSE);
+        RB_VM_LOCK_ENTER();
+        set_sub_temporary_name(mod, 0);
+        RB_VM_LOCK_LEAVE();
     }
     else {
         // Ensure the name is a string:
@@ -241,7 +317,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
         name = rb_str_new_frozen(name);
 
         // Set the temporary classpath to the given name:
-        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+        RB_VM_LOCK_ENTER();
+        set_sub_temporary_name(mod, name);
+        RB_VM_LOCK_LEAVE();
     }
 
     return mod;
