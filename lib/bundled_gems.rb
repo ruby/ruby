@@ -37,15 +37,6 @@ module Gem::BUNDLED_GEMS # :nodoc:
     "kconv" => "nkf",
   }.freeze
 
-  PREFIXED = {
-    "bigdecimal" => true,
-    "csv" => true,
-    "drb" => true,
-    "rinda" => true,
-    "syslog" => true,
-    "fiddle" => true,
-  }.freeze
-
   WARNED = {}                   # unfrozen
 
   conf = ::RbConfig::CONFIG
@@ -108,19 +99,6 @@ module Gem::BUNDLED_GEMS # :nodoc:
     require_found ? 1 : frame_count - 1
   end
 
-  def self.find_gem(path)
-    if !path
-      return
-    elsif path.start_with?(ARCHDIR)
-      n = path.delete_prefix(ARCHDIR).sub(DLEXT, "").chomp(".rb")
-    elsif path.start_with?(LIBDIR)
-      n = path.delete_prefix(LIBDIR).chomp(".rb")
-    else
-      return
-    end
-    (EXACT[n] || !!SINCE[n]) or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
-  end
-
   def self.warning?(name, specs: nil)
     # name can be a feature name or a file path with String or Pathname
     feature = File.path(name)
@@ -128,41 +106,35 @@ module Gem::BUNDLED_GEMS # :nodoc:
     # The actual checks needed to properly identify the gem being required
     # are costly (see [Bug #20641]), so we first do a much cheaper check
     # to exclude the vast majority of candidates.
-    if feature.include?("/")
+    subfeature = if feature.include?("/")
       # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
       # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
       name = feature.delete_prefix(ARCHDIR).delete_prefix(LIBDIR).sub(LIBEXT, "")
       segments = name.split("/")
-      name = segments.first
+      name = segments.shift
+      name = EXACT[name] || name
       if !SINCE[name]
-        name = segments[0..1].join("-")
+        name = [name, segments.shift].join("-")
         return unless SINCE[name]
       end
+      segments.any?
     else
       name = feature.sub(LIBEXT, "")
+      name = EXACT[name] || name
       return unless SINCE[name]
+      false
     end
 
     return if specs.include?(name)
-    _t, path = $:.resolve_feature_path(feature)
-    if gem = find_gem(path)
-      return if specs.include?(gem)
-    elsif SINCE[name] && !path
-      gem = true
-    else
-      return
-    end
 
     return if WARNED[name]
     WARNED[name] = true
-    if gem == true
-      gem = name
-      "#{feature} was loaded from the standard library, but"
-    elsif gem
-      "#{feature} is found in #{gem}, which"
+
+    if subfeature
+      "#{feature} is found in #{name}, which"
     else
-      return
-    end + build_message(gem)
+      "#{feature} was loaded from the standard library, but"
+    end + build_message(name)
   end
 
   def self.build_message(gem)
