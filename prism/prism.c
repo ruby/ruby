@@ -6169,7 +6169,10 @@ pm_numbered_reference_read_node_number(pm_parser_t *parser, const pm_token_t *to
     const uint8_t *end = token->end;
 
     ptrdiff_t diff = end - start;
-    assert(diff > 0 && ((unsigned long) diff < SIZE_MAX));
+    assert(diff > 0);
+#if PTRDIFF_MAX > SIZE_MAX
+    assert(diff < (ptrdiff_t) SIZE_MAX);
+#endif
     size_t length = (size_t) diff;
 
     char *digits = xcalloc(length + 1, sizeof(char));
