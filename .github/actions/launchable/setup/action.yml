@@ -106,9 +106,6 @@ runs:
         echo test_all_report_file='launchable_test_all_report.json' >> $GITHUB_OUTPUT
         echo btest_report_file='launchable_btest_report.json' >> $GITHUB_OUTPUT
         echo test_spec_report_dir='launchable_test_spec_report' >> $GITHUB_OUTPUT
-        echo test_all_subset_input_file='launchable_test_all_subset_input.txt' >> $GITHUB_OUTPUT
-        echo btest_subset_input_file='launchable_btest_subset_input.txt' >> $GITHUB_OUTPUT
-        echo test_spec_subset_input_file='launchable_test_spec_subset_input.txt' >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set environment variables for Launchable
@@ -167,12 +164,12 @@ runs:
             --flavor test_opts=${test_opts} \
             --test-suite ${test_all_test_suite} \
             > "${test_all_session_file}"
-          find test -name "*_test.rb" -o -name "test_*.rb" | sed 's|^|file=|' > "${test_all_subset_input_file}"
           launchable subset \
+            --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
             --session "$(cat "${test_all_session_file}")" \
-            raw ${test_all_subset_input_file} > /dev/null
+            raw > /dev/null
           echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
         fi
         if [ "${btest_enabled}" = "true" ]; then
@@ -184,12 +181,12 @@ runs:
             --flavor test_opts=${test_opts} \
             --test-suite ${btest_test_suite} \
             > "${btest_session_file}"
-          find bootstraptest -name "*_test.rb" -o -name "test_*.rb" | sed 's|^|file=|' > "${btest_subset_input_file}"
           launchable subset \
+            --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
             --session "$(cat "${btest_session_file}")" \
-            raw ${btest_subset_input_file} > /dev/null
+            raw > /dev/null
           echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
         if [ "${test_spec_enabled}" = "true" ]; then
@@ -201,12 +198,12 @@ runs:
             --flavor test_opts=${test_opts} \
             --test-suite ${test_spec_test_suite} \
             > "${test_spec_session_file}"
-          find spec/ruby -name "*_spec.rb" | sed 's|^|file=|' > "${test_spec_subset_input_file}"
           launchable subset \
+            --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
             --session "$(cat "${test_spec_session_file}")" \
-            raw ${test_spec_subset_input_file} > /dev/null
+            raw > /dev/null
           echo "SPECOPTS=${SPECOPTS} --launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
         fi
       if: steps.enable-launchable.outputs.enable-launchable
