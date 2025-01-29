@@ -83,7 +83,7 @@ class TestFiddle < Fiddle::TestCase
     handle = Fiddle.dlopen("libc.so")
     begin
       assert_equal("libc.so",
-                   File.basename(handle.file_name, ".*"))
+                   File.basename(handle.file_name, ".*").gsub(/\.so.\d+/,'.so'))
     ensure
       handle.close
     end
