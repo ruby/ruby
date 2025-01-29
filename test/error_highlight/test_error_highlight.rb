@@ -44,6 +44,15 @@ class ErrorHighlightTest < Test::Unit::TestCase
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
+      spot = ErrorHighlight.spot(err)
+      if spot
+        assert_kind_of(Integer, spot[:first_lineno])
+        assert_kind_of(Integer, spot[:first_column])
+        assert_kind_of(Integer, spot[:last_lineno])
+        assert_kind_of(Integer, spot[:last_column])
+        assert_kind_of(String, spot[:snippet])
+        assert_kind_of(Array, spot[:script_lines])
+      end
       assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
