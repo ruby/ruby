@@ -36,6 +36,7 @@ module Bundler
     def dependencies
       @dependencies ||= @unbuilt_dependencies.map! {|dep, reqs| build_dependency(dep, reqs) }
     end
+    alias_method :runtime_dependencies, :dependencies
 
     # needed for standalone, load required_paths from local gemspec
     # after the gem is installed
@@ -167,7 +168,7 @@ module Bundler
     end
 
     def build_dependency(name, requirements)
-      Gem::Dependency.new(name, requirements)
+      Dependency.new(name, requirements)
     end
   end
 end

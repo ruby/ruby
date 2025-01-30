@@ -40,7 +40,7 @@ module Bundler
 
       def dependencies
         @dependencies ||= @specs.flat_map do |spec|
-          __dependencies(spec) + metadata_dependencies(spec)
+          spec.runtime_dependencies + metadata_dependencies(spec)
         end.uniq.sort
       end
 
@@ -70,15 +70,6 @@ module Bundler
 
       def exemplary_spec
         @specs.first
-      end
-
-      def __dependencies(spec)
-        dependencies = []
-        spec.dependencies.each do |dep|
-          next if dep.type == :development
-          dependencies << Dependency.new(dep.name, dep.requirement)
-        end
-        dependencies
       end
 
       def metadata_dependencies(spec)
