@@ -95,10 +95,10 @@ describe "Dir.chdir" do
   end
 
   it "raises an Errno::ENOENT if the original directory no longer exists" do
-    dir1 = tmp('/testdir1')
-    dir2 = tmp('/testdir2')
-    File.should_not.exist?(dir1)
-    File.should_not.exist?(dir2)
+    dir1 = tmp('testdir1')
+    dir2 = tmp('testdir2')
+    Dir.should_not.exist?(dir1)
+    Dir.should_not.exist?(dir2)
     Dir.mkdir dir1
     Dir.mkdir dir2
     begin
@@ -108,8 +108,8 @@ describe "Dir.chdir" do
         end
       }.should raise_error(Errno::ENOENT)
     ensure
-      Dir.unlink dir1 if File.exist?(dir1)
-      Dir.unlink dir2 if File.exist?(dir2)
+      Dir.unlink dir1 if Dir.exist?(dir1)
+      Dir.unlink dir2 if Dir.exist?(dir2)
     end
   end
 
@@ -177,28 +177,29 @@ ruby_version_is '3.3' do
       dir.close
     end
 
-    it "raises an Errno::ENOENT if the original directory no longer exists" do
-      dir_name1 = tmp('/testdir1')
-      dir_name2 = tmp('/testdir2')
-      File.should_not.exist?(dir_name1)
-      File.should_not.exist?(dir_name2)
-      Dir.mkdir dir_name1
-      Dir.mkdir dir_name2
+    platform_is_not :windows do
+      it "does not raise an Errno::ENOENT if the original directory no longer exists" do
+        dir_name1 = tmp('testdir1')
+        dir_name2 = tmp('testdir2')
+        Dir.should_not.exist?(dir_name1)
+        Dir.should_not.exist?(dir_name2)
+        Dir.mkdir dir_name1
+        Dir.mkdir dir_name2
 
-      dir1 = Dir.new(dir_name1)
+        dir2 = Dir.new(dir_name2)
 
-      begin
-        -> {
-          dir1.chdir do
-            Dir.chdir(dir_name2) { Dir.unlink dir_name1 }
+        begin
+          Dir.chdir(dir_name1) do
+            dir2.chdir { Dir.unlink dir_name1 }
           end
-        }.should raise_error(Errno::ENOENT)
+          Dir.pwd.should == @original
+        ensure
+          Dir.unlink dir_name1 if Dir.exist?(dir_name1)
+          Dir.unlink dir_name2 if Dir.exist?(dir_name2)
+        end
       ensure
-        Dir.unlink dir_name1 if File.exist?(dir_name1)
-        Dir.unlink dir_name2 if File.exist?(dir_name2)
+        dir2.close
       end
-    ensure
-      dir1.close
     end
 
     it "always returns to the original directory when given a block" do

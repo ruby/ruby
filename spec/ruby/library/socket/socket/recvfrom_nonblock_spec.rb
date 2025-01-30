@@ -137,3 +137,79 @@ describe 'Socket#recvfrom_nonblock' do
     end
   end
 end
+
+describe 'Socket#recvfrom_nonblock' do
+  context "when recvfrom(2) returns 0 (if no messages are available to be received and the peer has performed an orderly shutdown)" do
+    describe "stream socket" do
+      before :each do
+        @server = Socket.new Socket::AF_INET, :STREAM, 0
+        @sockaddr = Socket.sockaddr_in(0, "127.0.0.1")
+        @server.bind(@sockaddr)
+        @server.listen(1)
+
+        server_ip    = @server.local_address.ip_port
+        @server_addr = Socket.sockaddr_in(server_ip, "127.0.0.1")
+
+        @client = Socket.new(Socket::AF_INET, :STREAM, 0)
+      end
+
+      after :each do
+        @server.close unless @server.closed?
+        @client.close unless @client.closed?
+      end
+
+      ruby_version_is ""..."3.3" do
+        quarantine! do # May fail with "IO::EAGAINWaitReadable: Resource temporarily unavailable - recvfrom(2) would block" error
+        it "returns an empty String as received data on a closed stream socket" do
+          ready = false
+
+          t = Thread.new do
+            client, _ = @server.accept
+
+            Thread.pass while !ready
+            client.recvfrom_nonblock(10)
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          @client.connect(@server_addr)
+          @client.close
+          ready = true
+
+          t.value.should.is_a? Array
+          t.value[0].should == ""
+        end
+        end
+      end
+
+      ruby_version_is "3.3" do
+        quarantine! do # May fail with "IO::EAGAINWaitReadable: Resource temporarily unavailable - recvfrom(2) would block" error
+        it "returns nil on a closed stream socket" do
+          ready = false
+
+          t = Thread.new do
+            client, _ = @server.accept
+
+            Thread.pass while !ready
+            client.recvfrom_nonblock(10)
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          @client.connect(@server_addr)
+          @client.close
+          ready = true
+
+          t.value.should be_nil
+        end
+        end
+      end
+    end
+  end
+end

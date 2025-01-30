@@ -25,7 +25,7 @@ describe :proc_dup, shared: true do
     end
 
     it "copies the finalizer" do
-      code = <<-RUBY
+      code = <<-'RUBY'
         obj = Proc.new { }
 
         ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })

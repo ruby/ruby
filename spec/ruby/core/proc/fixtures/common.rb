@@ -47,6 +47,13 @@ module ProcSpecs
       @first = other.first
       @second = other.second
     end
+
+    def initialize_clone(other, **options)
+      super
+      @initializer = :clone
+      @first = other.first
+      @second = other.second
+    end
   end
 
   class Arity

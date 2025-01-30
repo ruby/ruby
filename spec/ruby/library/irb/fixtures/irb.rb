@@ -1,3 +1,3 @@
 a = 10
 
-binding.irb
+binding.irb # rubocop:disable Lint/Debugger

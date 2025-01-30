@@ -47,6 +47,11 @@ describe "Marshal.dump" do
         Marshal.dump(-2**31 - 1).should == "\x04\bl-\a\x01\x00\x00\x80"
       end
     end
+
+    it "does not use object links for objects repeatedly dumped" do
+      Marshal.dump([0, 0]).should == "\x04\b[\ai\x00i\x00"
+      Marshal.dump([2**16, 2**16]).should == "\x04\b[\ai\x03\x00\x00\x01i\x03\x00\x00\x01"
+    end
   end
 
   describe "with a Symbol" do
@@ -93,6 +98,11 @@ describe "Marshal.dump" do
       value = [*value, value[0]]
       Marshal.dump(value).should == "\x04\b[\b#{symbol1}#{symbol2};\x00"
     end
+
+    it "uses symbol links for objects repeatedly dumped" do
+      symbol = :foo
+      Marshal.dump([symbol, symbol]).should == "\x04\b[\a:\bfoo;\x00" # ;\x00 is a link to the symbol object
+    end
   end
 
   describe "with an object responding to #marshal_dump" do
@@ -107,6 +117,20 @@ describe "Marshal.dump" do
 
     it "raises TypeError if an Object is an instance of an anonymous class" do
       -> { Marshal.dump(Class.new(UserMarshal).new) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      obj = UserMarshal.new
+      Marshal.dump([obj, obj]).should == "\x04\b[\aU:\x10UserMarshal:\tdata@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables of a dumped object after the object itself into the objects table" do
+      value = "<foo>"
+      obj = MarshalSpec::UserMarshalDumpWithIvar.new("string", value)
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\t, that means Integer 4)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bU:)MarshalSpec::UserMarshalDumpWithIvarI[\x06\"\vstring\x06:\t@foo\"\n<foo>@\x06@\t"
     end
   end
 
@@ -166,6 +190,20 @@ describe "Marshal.dump" do
       Marshal.dump([a, a]).should == "\x04\b[\aIu:\x17MarshalSpec::M1::A\v<dump>\x06:\t@foo\"\bbar#{reference}"
     end
 
+    it "uses object links for objects repeatedly dumped" do
+      obj = UserDefined.new
+      Marshal.dump([obj, obj]).should == "\x04\b[\au:\x10UserDefined\x12\x04\b[\a:\nstuff;\x00@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables of a dumped String before the object itself into the objects table" do
+      value = "<foo>"
+      obj = MarshalSpec::UserDefinedDumpWithIVars.new(+"string", value)
+
+      # expect a link to the object (@\a, that means Integer 2) is greater than a link
+      # to the instance variable value (@\x06, that means Integer 1)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bIu:*MarshalSpec::UserDefinedDumpWithIVars\vstring\x06:\t@foo\"\n<foo>@\a@\x06"
+    end
+
     describe "Core library classes with #_dump returning a String with instance variables" do
       it "indexes instance variables and then a Time object itself" do
         t = Time.utc(2022)
@@ -198,6 +236,10 @@ describe "Marshal.dump" do
       Marshal.dump(source_object).should == "\x04\bc,MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Class"
     end
 
+    it "uses object links for objects repeatedly dumped" do
+      Marshal.dump([String, String]).should == "\x04\b[\ac\vString@\x06" # @\x06 is a link to the object
+    end
+
     it "raises TypeError with an anonymous Class" do
       -> { Marshal.dump(Class.new) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
@@ -221,6 +263,10 @@ describe "Marshal.dump" do
       Marshal.dump(source_object).should == "\x04\bm-MarshalSpec::Multibyte\xE3\x81\x91\xE3\x81\x92\xE3\x81\x93\xE3\x81\x94Module"
     end
 
+    it "uses object links for objects repeatedly dumped" do
+      Marshal.dump([Marshal, Marshal]).should == "\x04\b[\am\fMarshal@\x06" # @\x06 is a link to the object
+    end
+
     it "raises TypeError with an anonymous Module" do
       -> { Marshal.dump(Module.new) }.should raise_error(TypeError, /can't dump anonymous module/)
     end
@@ -239,6 +285,10 @@ describe "Marshal.dump" do
         [Marshal,  nan_value,      "\004\bf\bnan"],
       ].should be_computed_by(:dump)
     end
+
+    it "uses object links for objects repeatedly dumped" do
+      Marshal.dump([0.0, 0.0]).should == "\x04\b[\af\x060@\x06" # @\x06 is a link to the float value
+    end
   end
 
   describe "with a Bignum" do
@@ -254,6 +304,11 @@ describe "Marshal.dump" do
         [Marshal, -2**63, "\004\bl-\t\000\000\000\000\000\000\000\200"],
         [Marshal, -2**64, "\004\bl-\n\000\000\000\000\000\000\000\000\001\000"],
       ].should be_computed_by(:dump)
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      n = 2**64
+      Marshal.dump([n, n]).should == "\x04\b[\al+\n\x00\x00\x00\x00\x00\x00\x00\x00\x01\x00@\x06" # @\x06 is a link to the object
     end
 
     it "increases the object links counter" do
@@ -275,11 +330,21 @@ describe "Marshal.dump" do
     it "dumps a Rational" do
       Marshal.dump(Rational(2, 3)).should == "\x04\bU:\rRational[\ai\ai\b"
     end
+
+    it "uses object links for objects repeatedly dumped" do
+      r = Rational(2, 3)
+      Marshal.dump([r, r]).should == "\x04\b[\aU:\rRational[\ai\ai\b@\x06" # @\x06 is a link to the object
+    end
   end
 
   describe "with a Complex" do
     it "dumps a Complex" do
       Marshal.dump(Complex(2, 3)).should == "\x04\bU:\fComplex[\ai\ai\b"
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      c = Complex(2, 3)
+      Marshal.dump([c, c]).should == "\x04\b[\aU:\fComplex[\ai\ai\b@\x06" # @\x06 is a link to the object
     end
   end
 
@@ -297,6 +362,11 @@ describe "Marshal.dump" do
       it "ignores overridden name method" do
         obj = MarshalSpec::DataSpec::MeasureWithOverriddenName.new(100, "km")
         Marshal.dump(obj).should == "\x04\bS:5MarshalSpec::DataSpec::MeasureWithOverriddenName\a:\vamountii:\tunit\"\akm"
+      end
+
+      it "uses object links for objects repeatedly dumped" do
+        d = MarshalSpec::DataSpec::Measure.new(100, 'km')
+        Marshal.dump([d, d]).should == "\x04\b[\aS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm@\x06" # @\x06 is a link to the object
       end
 
       it "raises TypeError with an anonymous Struct" do
@@ -359,6 +429,21 @@ describe "Marshal.dump" do
 
     it "dumps multiple strings using symlinks for the :E (encoding) symbol" do
       Marshal.dump(["".encode("us-ascii"), "".encode("utf-8")]).should == "\x04\b[\aI\"\x00\x06:\x06EFI\"\x00\x06;\x00T"
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      s = "string"
+      Marshal.dump([s, s]).should == "\x04\b[\a\"\vstring@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = +"string"
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bI\"\vstring\x06:\t@foo\"\n<foo>@\x06@\a"
     end
   end
 
@@ -427,6 +512,11 @@ describe "Marshal.dump" do
       obj = MarshalSpec::RegexpWithOverriddenName.new("")
       Marshal.dump(obj).should == "\x04\bIC:*MarshalSpec::RegexpWithOverriddenName/\x00\x00\x06:\x06EF"
     end
+
+    it "uses object links for objects repeatedly dumped" do
+      r = /\A.\Z/
+      Marshal.dump([r, r]).should == "\x04\b[\aI/\n\\A.\\Z\x00\x06:\x06EF@\x06" # @\x06 is a link to the object
+    end
   end
 
   describe "with an Array" do
@@ -461,6 +551,21 @@ describe "Marshal.dump" do
     it "ignores overridden name method when dumps an Array subclass" do
       obj = MarshalSpec::ArrayWithOverriddenName.new
       Marshal.dump(obj).should == "\x04\bC:)MarshalSpec::ArrayWithOverriddenName[\x00"
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      a = [1]
+      Marshal.dump([a, a]).should == "\x04\b[\a[\x06i\x06@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = []
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bI[\x00\x06:\t@foo\"\n<foo>@\x06@\a"
     end
   end
 
@@ -519,6 +624,21 @@ describe "Marshal.dump" do
       obj = MarshalSpec::HashWithOverriddenName.new
       Marshal.dump(obj).should == "\x04\bC:(MarshalSpec::HashWithOverriddenName{\x00"
     end
+
+    it "uses object links for objects repeatedly dumped" do
+      h = {a: 1}
+      Marshal.dump([h, h]).should == "\x04\b[\a{\x06:\x06ai\x06@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = {}
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bI{\x00\x06:\t@foo\"\n<foo>@\x06@\a"
+    end
   end
 
   describe "with a Struct" do
@@ -553,8 +673,23 @@ describe "Marshal.dump" do
       Marshal.dump(obj).should == "\x04\bS:*MarshalSpec::StructWithOverriddenName\x06:\x06a\"\vmember"
     end
 
+    it "uses object links for objects repeatedly dumped" do
+      s = Struct::Pyramid.new
+      Marshal.dump([s, s]).should == "\x04\b[\aS:\x14Struct::Pyramid\x00@\x06" # @\x06 is a link to the object
+    end
+
     it "raises TypeError with an anonymous Struct" do
       -> { Marshal.dump(Struct.new(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = Struct::Pyramid.new
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bIS:\x14Struct::Pyramid\x00\x06:\t@foo\"\n<foo>@\x06@\a"
     end
   end
 
@@ -645,19 +780,43 @@ describe "Marshal.dump" do
       ObjectSpace.define_finalizer(obj, finalizer.method(:noop))
       Marshal.load(Marshal.dump(obj)).class.should == Object
     end
+
+    it "uses object links for objects repeatedly dumped" do
+      obj = Object.new
+      Marshal.dump([obj, obj]).should == "\x04\b[\ao:\vObject\x00@\x06" # @\x06 is a link to the object
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = Object.new
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bo:\vObject\x06:\t@foo\"\n<foo>@\x06@\a"
+    end
   end
 
   describe "with a Range" do
-    it "dumps a Range inclusive of end (with indeterminant order)" do
+    it "dumps a Range inclusive of end" do
       dump = Marshal.dump(1..2)
+      dump.should == "\x04\bo:\nRange\b:\texclF:\nbegini\x06:\bendi\a"
+
       load = Marshal.load(dump)
       load.should == (1..2)
     end
 
-    it "dumps a Range exclusive of end (with indeterminant order)" do
+    it "dumps a Range exclusive of end" do
       dump = Marshal.dump(1...2)
+      dump.should == "\x04\bo:\nRange\b:\texclT:\nbegini\x06:\bendi\a"
+
       load = Marshal.load(dump)
       load.should == (1...2)
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      r = 1..2
+      Marshal.dump([r, r]).should == "\x04\b[\ao:\nRange\b:\texclF:\nbegini\x06:\bendi\a@\x06" # @\x06 is a link to the object
     end
 
     it "raises TypeError with an anonymous Range subclass" do
@@ -709,6 +868,26 @@ describe "Marshal.dump" do
     it "dumps a Time subclass with multibyte characters in name" do
       source_object = eval("MarshalSpec::MultibyteぁあぃいTime".dup.force_encoding(Encoding::UTF_8))
       Marshal.dump(source_object).should == "\x04\bc+MarshalSpec::Multibyte\xE3\x81\x81\xE3\x81\x82\xE3\x81\x83\xE3\x81\x84Time"
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      # order of the offset and zone instance variables is a subject to change
+      # and may be different on different CRuby versions
+      base = Regexp.quote("\x04\b[\aIu:\tTime\r\xF5\xEF\e\x80\x00\x00\x00\x00\a")
+      offset = Regexp.quote(":\voffseti\x020*:\tzoneI\"\bAST\x06:\x06EF")
+      zone = Regexp.quote(":\tzoneI\"\bAST\x06:\x06EF:\voffseti\x020*")
+      instance_variables = /#{offset}|#{zone}/
+      Marshal.dump([@t, @t]).should =~ /\A#{base}#{instance_variables}@\a\Z/ # @\a is a link to the object
+    end
+
+    it "adds instance variables before the object itself into the objects table" do
+      obj = @utc
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\b, that means Integer 3) is greater than a link
+      # to the instance variable value (@\x06, that means Integer 1)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bIu:\tTime\r \x00\x1C\xC0\x00\x00\x00\x00\a:\t@foo\"\n<foo>:\tzoneI\"\bUTC\x06:\x06EF@\b@\x06"
     end
 
     it "raises TypeError with an anonymous Time subclass" do
@@ -763,6 +942,21 @@ describe "Marshal.dump" do
       end
 
       Marshal.dump(e).should =~ /undefined method [`']foo' for ("":String|an instance of String)/
+    end
+
+    it "uses object links for objects repeatedly dumped" do
+      e = Exception.new
+      Marshal.dump([e, e]).should == "\x04\b[\ao:\x0EException\a:\tmesg0:\abt0@\x06" # @\x\a is a link to the object
+    end
+
+    it "adds instance variables after the object itself into the objects table" do
+      obj = Exception.new
+      value = "<foo>"
+      obj.instance_variable_set :@foo, value
+
+      # expect a link to the object (@\x06, that means Integer 1) is smaller than a link
+      # to the instance variable value (@\a, that means Integer 2)
+      Marshal.dump([obj, obj, value]).should == "\x04\b[\bo:\x0EException\b:\tmesg0:\abt0:\t@foo\"\n<foo>@\x06@\a"
     end
 
     it "raises TypeError if an Object is an instance of an anonymous class" do

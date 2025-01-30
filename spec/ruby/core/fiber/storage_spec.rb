@@ -90,15 +90,38 @@ ruby_version_is "3.2" do
         key = :"#{self.class.name}#.#{self.object_id}"
         Fiber.new { Fiber[key] = 42; Fiber[key] }.resume.should == 42
       end
+
+      it "can't use invalid keys" do
+        invalid_keys = [Object.new, 12]
+        invalid_keys.each do |key|
+          -> { Fiber[key] }.should raise_error(TypeError)
+        end
+      end
     end
 
     ruby_bug "#20978", "3.2"..."3.4" do
       it "can use keys as strings" do
         key = Object.new
         def key.to_str; "Foo"; end
-        Fiber[key] = 42
-        Fiber["Foo"].should == 42
+        Fiber.new { Fiber[key] = 42; Fiber["Foo"] }.resume.should == 42
       end
+
+      it "converts a String key into a Symbol" do
+        Fiber.new { Fiber["key"] = 42; Fiber[:key] }.resume.should == 42
+        Fiber.new { Fiber[:key] = 42; Fiber["key"] }.resume.should == 42
+      end
+
+      it "can use any object that responds to #to_str as a key" do
+        key = mock("key")
+        key.should_receive(:to_str).twice.and_return("key")
+        Fiber.new { Fiber[key] = 42; Fiber[key] }.resume.should == 42
+      end
+    end
+
+    it "does not call #to_sym on the key" do
+      key = mock("key")
+      key.should_not_receive(:to_sym)
+      -> { Fiber[key] }.should raise_error(TypeError)
     end
 
     it "can access the storage of the parent fiber" do
