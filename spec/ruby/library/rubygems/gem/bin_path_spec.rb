@@ -22,6 +22,7 @@ describe "Gem.bin_path" do
       end
 
       skip "Could not find the default gemspecs" unless Dir.exist?(default_specifications_dir)
+      skip "default_specifications_dir mismatch with GEM_HOME" unless default_specifications_dir.include?(ENV['GEM_HOME'])
 
       Gem::Specification.each_spec([default_specifications_dir]) do |spec|
         spec.executables.each do |exe|
