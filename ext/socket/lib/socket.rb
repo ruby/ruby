@@ -862,7 +862,10 @@ class Socket < BasicSocket
             unless (Socket.const_defined?(:EAI_ADDRFAMILY)) &&
               (result.is_a?(Socket::ResolutionError)) &&
               (result.error_code == Socket::EAI_ADDRFAMILY)
-              last_error = result
+              other = family_name == :ipv6 ? :ipv4 : :ipv6
+              if !resolution_store.resolved?(other) || !resolution_store.resolved_successfully?(other)
+                last_error = result
+              end
             end
           else
             resolution_store.add_resolved(family_name, result)
@@ -1068,7 +1071,7 @@ class Socket < BasicSocket
     end
 
     def resolved_successfully?(family)
-      resolved?(family) && !!@error_dict[family]
+      resolved?(family) && !@error_dict[family]
     end
 
     def resolved_all_families?

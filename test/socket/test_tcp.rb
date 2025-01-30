@@ -316,7 +316,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     port = server.connect_address.ip_port
     server.close
 
-    assert_raise(Socket::ResolutionError) do
+    assert_raise(Errno::ECONNREFUSED) do
       TCPSocket.new(
         "localhost",
         port,

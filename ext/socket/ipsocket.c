@@ -998,9 +998,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                             if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
                                 arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
-                                last_error.type = RESOLUTION_ERROR;
-                                last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
-                                syscall = "getaddrinfo(3)";
+                                if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                                    last_error.type = RESOLUTION_ERROR;
+                                    last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
+                                    syscall = "getaddrinfo(3)";
+                                }
                                 resolution_store.v6.has_error = true;
                             } else {
                                 resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
@@ -1015,9 +1017,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             resolution_store.v4.finished = true;
 
                             if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
-                                last_error.type = RESOLUTION_ERROR;
-                                last_error.ecode = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err;
-                                syscall = "getaddrinfo(3)";
+                                if (!resolution_store.v6.finished || resolution_store.v6.has_error) {
+                                    last_error.type = RESOLUTION_ERROR;
+                                    last_error.ecode = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err;
+                                    syscall = "getaddrinfo(3)";
+                                }
                                 resolution_store.v4.has_error = true;
                             } else {
                                 resolution_store.v4.ai = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->ai;
@@ -1057,9 +1061,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
-                    last_error.type = RESOLUTION_ERROR;
-                    last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
-                    syscall = "getaddrinfo(3)";
+                    if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                        last_error.type = RESOLUTION_ERROR;
+                        last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
+                        syscall = "getaddrinfo(3)";
+                    }
                     resolution_store.v6.has_error = true;
                 } else {
                     resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
@@ -1075,9 +1081,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.v4.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
-                    last_error.type = RESOLUTION_ERROR;
-                    last_error.ecode = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err;
-                    syscall = "getaddrinfo(3)";
+                    if (!resolution_store.v6.finished || resolution_store.v6.has_error) {
+                        last_error.type = RESOLUTION_ERROR;
+                        last_error.ecode = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err;
+                        syscall = "getaddrinfo(3)";
+                    }
                     resolution_store.v4.has_error = true;
                 } else {
                     resolution_store.v4.ai = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->ai;
