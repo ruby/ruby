@@ -171,7 +171,7 @@ runs:
             raw > "${test_all_subset_file}"
           cat ${test_all_subset_file}
           echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
-          echo "TESTS=${TESTS} $(cat ${test_all_subset_file} | sed 's:file=:../src/:')" >> $GITHUB_ENV
+          echo "TESTS=${TESTS} $(cat ${test_all_subset_file} | tr '\n' ' ' | sed 's:file=:../src/:')" >> $GITHUB_ENV
         fi
         if [ "${btest_enabled}" = "true" ]; then
           launchable record session \
