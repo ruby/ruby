@@ -193,6 +193,14 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
+    before do
+      begin
+        require "irb"
+      rescue LoadError
+        skip "This spec requires IRB to be available"
+      end
+    end
+
     let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false }
 
     context "when not specified in Gemfile" do
@@ -637,6 +645,12 @@ RSpec.describe "bundle exec" do
 
   describe "with gems bundled via :path with invalid gemspecs" do
     it "outputs the gemspec validation errors" do
+      begin
+        require "irb"
+      rescue LoadError
+        skip "This spec requires IRB to be available"
+      end
+
       build_lib "foo"
 
       gemspec = lib_path("foo-1.0").join("foo.gemspec").to_s
