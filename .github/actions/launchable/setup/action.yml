@@ -106,7 +106,7 @@ runs:
         echo test_all_report_file='launchable_test_all_report.json' >> $GITHUB_OUTPUT
         echo btest_report_file='launchable_btest_report.json' >> $GITHUB_OUTPUT
         echo test_spec_report_dir='launchable_test_spec_report' >> $GITHUB_OUTPUT
-        echo test_all_subset_file='launchable_test_all_subset.txt' >> $GITHUB_OUTPUT
+        echo btest_subset_file='launchable_btest_subset.txt' >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set environment variables for Launchable
@@ -159,6 +159,7 @@ runs:
         if [ "${test_all_enabled}" = "true" ]; then
           launchable record session \
             --build "${build_name}" \
+            --observation \
             --flavor os=${{ inputs.os }} \
             --flavor test_task=${{ inputs.test-task }} \
             --flavor test_opts=${test_opts} \
@@ -166,16 +167,15 @@ runs:
             > "${test_all_session_file}"
           launchable subset \
             --get-tests-from-previous-sessions \
+            --non-blocking \
             --target 90% \
             --session "$(cat "${test_all_session_file}")" \
-            raw > "${test_all_subset_file}"
+            raw > /dev/null
           echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
-          echo "TESTS=${TESTS} $(cat ${test_all_subset_file} | sed 's:file=:../src/:' | tr '\n' ' ' )" >> $GITHUB_ENV
         fi
         if [ "${btest_enabled}" = "true" ]; then
           launchable record session \
             --build "${build_name}" \
-            --observation \
             --flavor os=${{ inputs.os }} \
             --flavor test_task=${{ inputs.test-task }} \
             --flavor test_opts=${test_opts} \
@@ -183,10 +183,10 @@ runs:
             > "${btest_session_file}"
           launchable subset \
             --get-tests-from-previous-sessions \
-            --non-blocking \
             --target 90% \
             --session "$(cat "${btest_session_file}")" \
-            raw > /dev/null
+            raw > "${btest_subset_file}"
+          echo "BTESTS=${BTESTS} $(cat ${btest_subset_file} | sed 's:file=:../src/:' | tr '\n' ' ' )" >> $GITHUB_ENV
           echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
         if [ "${test_spec_enabled}" = "true" ]; then
@@ -220,7 +220,7 @@ runs:
         test_all_subset_input_file: ${{ steps.global.outputs.test_all_subset_input_file }}
         btest_subset_input_file: ${{ steps.global.outputs.btest_subset_input_file }}
         test_spec_subset_input_file: ${{ steps.global.outputs.test_spec_subset_input_file }}
-        test_all_subset_file: ${{ steps.global.outputs.test_all_subset_file }}
+        btest_subset_file: ${{ steps.global.outputs.btest_subset_file }}
 
     - name: Variables to report Launchable
       id: variables

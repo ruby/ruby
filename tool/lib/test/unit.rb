@@ -1144,7 +1144,7 @@ module Test
           return File.join(File.dirname(f), 'test_'+basename)
         end if f.end_with?(basename) # otherwise basename is dirname/
 
-        # raise ArgumentError, "file not found: #{orig_f}"
+        raise ArgumentError, "file not found: #{orig_f}"
       end
 
       def non_options(files, options)
