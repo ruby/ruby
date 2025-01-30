@@ -1,7 +1,3 @@
-#!/usr/bin/env ruby
-
-$:.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
-
 require 'mspec/version'
 require 'mspec/utils/options'
 require 'mspec/utils/script'
