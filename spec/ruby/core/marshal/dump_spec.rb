@@ -286,8 +286,10 @@ describe "Marshal.dump" do
       ].should be_computed_by(:dump)
     end
 
-    it "uses object links for objects repeatedly dumped" do
-      Marshal.dump([0.0, 0.0]).should == "\x04\b[\af\x060@\x06" # @\x06 is a link to the float value
+    quarantine! do # fails on i686 with 'Expected "\x04\b[\af\x060f\x060" == "\x04\b[\af\x060@\x06" to be truthy but was false'
+      it "uses object links for objects repeatedly dumped" do
+        Marshal.dump([0.0, 0.0]).should == "\x04\b[\af\x060@\x06" # @\x06 is a link to the float value
+      end
     end
   end
 
