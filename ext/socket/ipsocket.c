@@ -892,7 +892,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
 
         status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, NULL, delay_p);
-        syscall = "select(2)";
 
         now = current_clocktime_ts();
         if (is_timeout_tv(resolution_delay_expires_at, now)) {
