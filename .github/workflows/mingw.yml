@@ -114,7 +114,7 @@ jobs:
 
       - name: make all
         timeout-minutes: 30
-        run: make
+        run: make -j4
 
       - name: make install
         run: make DESTDIR=../install install-nodoc
@@ -145,7 +145,7 @@ jobs:
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
-            --retry --job-status=normal --show-skip --timeout-scale=1.5
+            --retry --job-status=normal --show-skip --timeout-scale=1.5 -j4
             ${{ matrix.test-all-opts }}
             ${{ env.TESTS }}
           BUNDLER_VERSION:
