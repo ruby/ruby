@@ -186,8 +186,7 @@ runs:
             --target 90% \
             --session "$(cat "${btest_session_file}")" \
             raw > "${btest_subset_file}"
-          echo "BTESTS=${BTESTS} $(cat ${btest_subset_file} | sed 's:file=:../bootstraptest/:' | tr '\n' ' ' )" >> $GITHUB_ENV
-          echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
+          echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file} $(cat ${btest_subset_file} | sed 's:file=:../bootstraptest/:' | tr '\n' ' ' )" >> $GITHUB_ENV
         fi
         if [ "${test_spec_enabled}" = "true" ]; then
           launchable record session \
