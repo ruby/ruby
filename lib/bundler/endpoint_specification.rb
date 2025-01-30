@@ -6,7 +6,8 @@ module Bundler
     include MatchRemoteMetadata
 
     attr_reader :name, :version, :platform, :checksum
-    attr_accessor :remote, :dependencies, :locked_platform
+    attr_writer :dependencies
+    attr_accessor :remote, :locked_platform
 
     def initialize(name, version, platform, spec_fetcher, dependencies, metadata = nil)
       super()
@@ -14,7 +15,8 @@ module Bundler
       @version      = Gem::Version.create version
       @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
-      @dependencies = dependencies.map {|dep, reqs| build_dependency(dep, reqs) }
+      @dependencies = nil
+      @unbuilt_dependencies = dependencies
 
       @loaded_from          = nil
       @remote_specification = nil
@@ -29,6 +31,10 @@ module Bundler
 
     def fetch_platform
       @platform
+    end
+
+    def dependencies
+      @dependencies ||= @unbuilt_dependencies.map! {|dep, reqs| build_dependency(dep, reqs) }
     end
 
     # needed for standalone, load required_paths from local gemspec
