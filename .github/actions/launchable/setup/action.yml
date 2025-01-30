@@ -220,6 +220,7 @@ runs:
         test_all_subset_input_file: ${{ steps.global.outputs.test_all_subset_input_file }}
         btest_subset_input_file: ${{ steps.global.outputs.btest_subset_input_file }}
         test_spec_subset_input_file: ${{ steps.global.outputs.test_spec_subset_input_file }}
+        test_all_subset_file: ${{ steps.global.outputs.test_all_subset_file }}
 
     - name: Variables to report Launchable
       id: variables
