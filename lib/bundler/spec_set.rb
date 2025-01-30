@@ -295,15 +295,12 @@ module Bundler
     end
 
     def sorted
-      rake = @specs.find {|s| s.name == "rake" }
-      begin
-        @sorted ||= ([rake] + tsort).compact.uniq
-      rescue TSort::Cyclic => error
-        cgems = extract_circular_gems(error)
-        raise CyclicDependencyError, "Your bundle requires gems that depend" \
-          " on each other, creating an infinite loop. Please remove either" \
-          " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
-      end
+      @sorted ||= ([@specs.find {|s| s.name == "rake" }] + tsort).compact.uniq
+    rescue TSort::Cyclic => error
+      cgems = extract_circular_gems(error)
+      raise CyclicDependencyError, "Your bundle requires gems that depend" \
+        " on each other, creating an infinite loop. Please remove either" \
+        " gem '#{cgems[0]}' or gem '#{cgems[1]}' and try again."
     end
 
     def extract_circular_gems(error)
