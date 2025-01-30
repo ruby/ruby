@@ -7403,7 +7403,7 @@ enum IseqReturn {
     Receiver,
 }
 
-extern {
+extern "C" {
     fn rb_simple_iseq_p(iseq: IseqPtr) -> bool;
     fn rb_iseq_only_kwparam_p(iseq: IseqPtr) -> bool;
 }
