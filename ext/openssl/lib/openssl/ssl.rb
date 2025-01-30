@@ -154,43 +154,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       end
 
       # call-seq:
-      #    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.min_version = :TLS1_2
-      #    ctx.min_version = nil
-      #
-      # Sets the lower bound on the supported SSL/TLS protocol version. The
-      # version may be specified by an integer constant named
-      # OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
-      #
-      # Be careful that you don't overwrite OpenSSL::SSL::OP_NO_{SSL,TLS}v*
-      # options by #options= once you have called #min_version= or
-      # #max_version=.
-      #
-      # === Example
-      #   ctx = OpenSSL::SSL::SSLContext.new
-      #   ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
-      #   ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      #
-      #   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
-      #   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
-      def min_version=(version)
-        set_minmax_proto_version(version, @max_proto_version ||= nil)
-        @min_proto_version = version
-      end
-
-      # call-seq:
-      #    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.max_version = :TLS1_2
-      #    ctx.max_version = nil
-      #
-      # Sets the upper bound of the supported SSL/TLS protocol version. See
-      # #min_version= for the possible values.
-      def max_version=(version)
-        set_minmax_proto_version(@min_proto_version ||= nil, version)
-        @max_proto_version = version
-      end
-
-      # call-seq:
       #    ctx.ssl_version = :TLSv1
       #    ctx.ssl_version = "SSLv23"
       #
@@ -214,8 +177,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         end
         version = METHODS_MAP[meth.intern] or
           raise ArgumentError, "unknown SSL method `%s'" % meth
-        set_minmax_proto_version(version, version)
-        @min_proto_version = @max_proto_version = version
+        self.min_version = self.max_version = version
       end
 
       METHODS_MAP = {

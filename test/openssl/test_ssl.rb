@@ -1375,6 +1375,50 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_minmax_version_system_default
+    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+
+    Tempfile.create("openssl.cnf") { |f|
+      f.puts(<<~EOF)
+        openssl_conf = default_conf
+        [default_conf]
+        ssl_conf = ssl_sect
+        [ssl_sect]
+        system_default = ssl_default_sect
+        [ssl_default_sect]
+        MaxProtocol = TLSv1.2
+      EOF
+      f.close
+
+      start_server(ignore_listener_error: true) do |port|
+        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
+          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
+          ctx = OpenSSL::SSL::SSLContext.new
+          ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+          ssl.sync_close = true
+          ssl.connect
+          assert_equal("TLSv1.2", ssl.ssl_version)
+          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+          ssl.close
+        end;
+
+        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
+          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
+          ctx = OpenSSL::SSL::SSLContext.new
+          ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+          ctx.max_version = nil
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+          ssl.sync_close = true
+          ssl.connect
+          assert_equal("TLSv1.3", ssl.ssl_version)
+          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+          ssl.close
+        end;
+      end
+    }
+  end
+
   def test_options_disable_versions
     # It's recommended to use SSLContext#{min,max}_version= instead in real
     # applications. The purpose of this test case is to check that SSL options

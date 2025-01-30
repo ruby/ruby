@@ -96,61 +96,6 @@ ossl_sslctx_s_alloc(VALUE klass)
     return obj;
 }
 
-static int
-parse_proto_version(VALUE str)
-{
-    int i;
-    static const struct {
-	const char *name;
-	int version;
-    } map[] = {
-	{ "SSL2", SSL2_VERSION },
-	{ "SSL3", SSL3_VERSION },
-	{ "TLS1", TLS1_VERSION },
-	{ "TLS1_1", TLS1_1_VERSION },
-	{ "TLS1_2", TLS1_2_VERSION },
-	{ "TLS1_3", TLS1_3_VERSION },
-    };
-
-    if (NIL_P(str))
-	return 0;
-    if (RB_INTEGER_TYPE_P(str))
-	return NUM2INT(str);
-
-    if (SYMBOL_P(str))
-	str = rb_sym2str(str);
-    StringValue(str);
-    for (i = 0; i < numberof(map); i++)
-	if (!strncmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)))
-	    return map[i].version;
-    rb_raise(rb_eArgError, "unrecognized version %+"PRIsVALUE, str);
-}
-
-/*
- * call-seq:
- *    ctx.set_minmax_proto_version(min, max) -> nil
- *
- * Sets the minimum and maximum supported protocol versions. See #min_version=
- * and #max_version=.
- */
-static VALUE
-ossl_sslctx_set_minmax_proto_version(VALUE self, VALUE min_v, VALUE max_v)
-{
-    SSL_CTX *ctx;
-    int min, max;
-
-    GetSSLCTX(self, ctx);
-    min = parse_proto_version(min_v);
-    max = parse_proto_version(max_v);
-
-    if (!SSL_CTX_set_min_proto_version(ctx, min))
-	ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
-    if (!SSL_CTX_set_max_proto_version(ctx, max))
-	ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
-
-    return Qnil;
-}
-
 static VALUE
 ossl_call_client_cert_cb(VALUE obj)
 {
@@ -913,6 +858,93 @@ ossl_sslctx_setup(VALUE self)
 #endif
 
     return Qtrue;
+}
+
+static int
+parse_proto_version(VALUE str)
+{
+    int i;
+    static const struct {
+	const char *name;
+	int version;
+    } map[] = {
+	{ "SSL2", SSL2_VERSION },
+	{ "SSL3", SSL3_VERSION },
+	{ "TLS1", TLS1_VERSION },
+	{ "TLS1_1", TLS1_1_VERSION },
+	{ "TLS1_2", TLS1_2_VERSION },
+	{ "TLS1_3", TLS1_3_VERSION },
+    };
+
+    if (NIL_P(str))
+	return 0;
+    if (RB_INTEGER_TYPE_P(str))
+	return NUM2INT(str);
+
+    if (SYMBOL_P(str))
+	str = rb_sym2str(str);
+    StringValue(str);
+    for (i = 0; i < numberof(map); i++)
+	if (!strncmp(map[i].name, RSTRING_PTR(str), RSTRING_LEN(str)))
+	    return map[i].version;
+    rb_raise(rb_eArgError, "unrecognized version %+"PRIsVALUE, str);
+}
+
+/*
+ * call-seq:
+ *    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+ *    ctx.min_version = :TLS1_2
+ *    ctx.min_version = nil
+ *
+ * Sets the lower bound on the supported SSL/TLS protocol version. The
+ * version may be specified by an integer constant named
+ * OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
+ *
+ * === Example
+ *   ctx = OpenSSL::SSL::SSLContext.new
+ *   ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
+ *   ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+ *
+ *   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
+ *   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
+ */
+static VALUE
+ossl_sslctx_set_min_version(VALUE self, VALUE v)
+{
+    SSL_CTX *ctx;
+    int version;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+    version = parse_proto_version(v);
+
+    if (!SSL_CTX_set_min_proto_version(ctx, version))
+        ossl_raise(eSSLError, "SSL_CTX_set_min_proto_version");
+    return v;
+}
+
+/*
+ * call-seq:
+ *    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+ *    ctx.max_version = :TLS1_2
+ *    ctx.max_version = nil
+ *
+ * Sets the upper bound of the supported SSL/TLS protocol version. See
+ * #min_version= for the possible values.
+ */
+static VALUE
+ossl_sslctx_set_max_version(VALUE self, VALUE v)
+{
+    SSL_CTX *ctx;
+    int version;
+
+    rb_check_frozen(self);
+    GetSSLCTX(self, ctx);
+    version = parse_proto_version(v);
+
+    if (!SSL_CTX_set_max_proto_version(ctx, version))
+        ossl_raise(eSSLError, "SSL_CTX_set_max_proto_version");
+    return v;
 }
 
 static VALUE
@@ -2846,8 +2878,8 @@ Init_ossl_ssl(void)
 
     rb_define_alias(cSSLContext, "ssl_timeout", "timeout");
     rb_define_alias(cSSLContext, "ssl_timeout=", "timeout=");
-    rb_define_private_method(cSSLContext, "set_minmax_proto_version",
-			     ossl_sslctx_set_minmax_proto_version, 2);
+    rb_define_method(cSSLContext, "min_version=", ossl_sslctx_set_min_version, 1);
+    rb_define_method(cSSLContext, "max_version=", ossl_sslctx_set_max_version, 1);
     rb_define_method(cSSLContext, "ciphers",     ossl_sslctx_get_ciphers, 0);
     rb_define_method(cSSLContext, "ciphers=",    ossl_sslctx_set_ciphers, 1);
     rb_define_method(cSSLContext, "ciphersuites=", ossl_sslctx_set_ciphersuites, 1);
