@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 require 'rbconfig'
 require 'mspec/version'
 require 'mspec/utils/options'
