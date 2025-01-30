@@ -43,8 +43,8 @@ ruby_version_is '3.3' do
 
       it "calls #to_int to convert a value to an Integer" do
         dir = Dir.new(DirSpecs.mock_dir)
-        obj = Object.new
-        obj.singleton_class.define_method(:to_int) { dir.fileno }
+        obj = mock("fd")
+        obj.should_receive(:to_int).and_return(dir.fileno)
 
         dir_new = Dir.for_fd(obj)
         dir_new.fileno.should == dir.fileno

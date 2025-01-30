@@ -15,7 +15,7 @@ describe "Proc#clone" do
   end
 
   ruby_version_is "3.3" do
-    it "calls #initialize_copy on subclass" do
+    it "calls #initialize_clone on subclass" do
       obj = ProcSpecs::MyProc2.new(:a, 2) { }
       dup = obj.clone
 
@@ -24,7 +24,7 @@ describe "Proc#clone" do
 
       dup.first.should == :a
       dup.second.should == 2
-      dup.initializer.should == :copy
+      dup.initializer.should == :clone
     end
   end
 end

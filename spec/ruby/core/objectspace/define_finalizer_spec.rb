@@ -156,7 +156,7 @@ describe "ObjectSpace.define_finalizer" do
   end
 
   it "allows multiple finalizers with different 'callables' to be defined" do
-    code = <<-RUBY
+    code = <<-'RUBY'
       obj = Object.new
 
       ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized1\n" })
