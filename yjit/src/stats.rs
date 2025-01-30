@@ -1,8 +1,6 @@
 //! Everything related to the collection of runtime stats in YJIT
 //! See the stats feature and the --yjit-stats command-line option
 
-#![allow(dead_code)] // Counters are only used with the stats features
-
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
 use std::sync::atomic::{AtomicUsize, Ordering};
