@@ -103,70 +103,6 @@ static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 static const unsigned char CHAR_LENGTH_MASK = 7;
 static const unsigned char ESCAPE_MASK = 8;
 
-static const unsigned char escape_table[256] = {
-    // ASCII Control Characters
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    // ASCII Characters
-     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-};
-
-static const unsigned char ascii_only_escape_table[256] = {
-    // ASCII Control Characters
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    // ASCII Characters
-     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // Continuation byte
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // First byte of a  2-byte code point
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    // First byte of a 3-byte code point
-     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    //First byte of a 4+ byte code point
-     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
-};
-
-static const unsigned char script_safe_escape_table[256] = {
-    // ASCII Control Characters
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    // ASCII Characters
-     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, // '"' and '/'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // Continuation byte
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // First byte of a 2-byte code point
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    // First byte of a 3-byte code point
-     3, 3,11, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xE2 is the start of \u2028 and \u2029
-    //First byte of a 4+ byte code point
-     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
-};
-
-
 typedef struct _search_state {
     const char *ptr;
     const char *end;
@@ -180,26 +116,25 @@ static inline void search_flush(search_state *search)
     search->cursor = search->ptr;
 }
 
-static inline unsigned char search_escape(search_state *search, const unsigned char escape_table[256])
+static const unsigned char escape_table_basic[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static inline unsigned char search_escape_basic(search_state *search)
 {
     while (search->ptr < search->end) {
-        unsigned char ch = (unsigned char)*search->ptr;
-        unsigned char ch_len = escape_table[ch];
-
-        if (RB_UNLIKELY(ch_len)) {
-            if (ch_len & ESCAPE_MASK) {
-                if (RB_UNLIKELY(ch_len == 11)) {
-                    const unsigned char *uptr = (const unsigned char *)search->ptr;
-                    if (!(uptr[1] == 0x80 && (uptr[2] >> 1) == 0x54)) {
-                        search->ptr += 3;
-                        continue;
-                    }
-                }
-                search_flush(search);
-                return ch_len & CHAR_LENGTH_MASK;
-            } else {
-                search->ptr += ch_len;
-            }
+        if (RB_UNLIKELY(escape_table_basic[(const unsigned char)*search->ptr])) {
+            search_flush(search);
+            return 1;
         } else {
             search->ptr++;
         }
@@ -208,7 +143,54 @@ static inline unsigned char search_escape(search_state *search, const unsigned c
     return 0;
 }
 
-static inline void fast_escape_UTF8_char(search_state *search, unsigned char ch_len) {
+static inline void escape_UTF8_char_basic(search_state *search) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch) {
+        case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+        case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+        case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+        case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+        case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+        case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+        case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+        case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
+        default: {
+            const char *hexdig = "0123456789abcdef";
+            char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+            scratch[4] = hexdig[(ch >> 4) & 0xf];
+            scratch[5] = hexdig[ch & 0xf];
+            fbuffer_append(search->buffer, scratch, 6);
+            break;
+        }
+    }
+    search->ptr++;
+    search->cursor = search->ptr;
+}
+
+/* Converts in_string to a JSON string (without the wrapping '"'
+ * characters) in FBuffer out_buffer.
+ *
+ * Character are JSON-escaped according to:
+ *
+ * - Always: ASCII control characters (0x00-0x1F), dquote, and
+ *   backslash.
+ *
+ * - If out_ascii_only: non-ASCII characters (>0x7F)
+ *
+ * - If script_safe: forwardslash (/), line separator (U+2028), and
+ *   paragraph separator (U+2029)
+ *
+ * Everything else (should be UTF-8) is just passed through and
+ * appended to the result.
+ */
+static inline void convert_UTF8_to_JSON(search_state *search)
+{
+    while (search_escape_basic(search)) {
+        escape_UTF8_char_basic(search);
+    }
+}
+
+static inline void escape_UTF8_char(search_state *search, unsigned char ch_len) {
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch_len) {
         case 1: {
@@ -244,29 +226,91 @@ static inline void fast_escape_UTF8_char(search_state *search, unsigned char ch_
     search->cursor = (search->ptr += ch_len);
 }
 
-/* Converts in_string to a JSON string (without the wrapping '"'
- * characters) in FBuffer out_buffer.
- *
- * Character are JSON-escaped according to:
- *
- * - Always: ASCII control characters (0x00-0x1F), dquote, and
- *   backslash.
- *
- * - If out_ascii_only: non-ASCII characters (>0x7F)
- *
- * - If script_safe: forwardslash (/), line separator (U+2028), and
- *   paragraph separator (U+2029)
- *
- * Everything else (should be UTF-8) is just passed through and
- * appended to the result.
- */
-static inline void convert_UTF8_to_JSON(search_state *search, const unsigned char escape_table[256])
+static const unsigned char script_safe_escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, // '"' and '/'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Continuation byte
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    // First byte of a 2-byte code point
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    // First byte of a 3-byte code point
+     3, 3,11, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 0xE2 is the start of \u2028 and \u2029
+    //First byte of a 4+ byte code point
+     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
+};
+
+static inline unsigned char search_script_safe_escape(search_state *search)
+{
+    while (search->ptr < search->end) {
+        unsigned char ch = (unsigned char)*search->ptr;
+        unsigned char ch_len = script_safe_escape_table[ch];
+
+        if (RB_UNLIKELY(ch_len)) {
+            if (ch_len & ESCAPE_MASK) {
+                if (RB_UNLIKELY(ch_len == 11)) {
+                    const unsigned char *uptr = (const unsigned char *)search->ptr;
+                    if (!(uptr[1] == 0x80 && (uptr[2] >> 1) == 0x54)) {
+                        search->ptr += 3;
+                        continue;
+                    }
+                }
+                search_flush(search);
+                return ch_len & CHAR_LENGTH_MASK;
+            } else {
+                search->ptr += ch_len;
+            }
+        } else {
+            search->ptr++;
+        }
+    }
+    search_flush(search);
+    return 0;
+}
+
+static void convert_UTF8_to_script_safe_JSON(search_state *search)
 {
     unsigned char ch_len;
-    while ((ch_len = search_escape(search, escape_table))) {
-        fast_escape_UTF8_char(search, ch_len);
+    while ((ch_len = search_script_safe_escape(search))) {
+        escape_UTF8_char(search, ch_len);
     }
 }
+
+static const unsigned char ascii_only_escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Continuation byte
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    // First byte of a  2-byte code point
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    // First byte of a 3-byte code point
+     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    //First byte of a 4+ byte code point
+     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
+};
 
 static inline unsigned char search_ascii_only_escape(search_state *search, const unsigned char escape_table[256])
 {
@@ -934,8 +978,10 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
                 convert_UTF8_to_ASCII_only_JSON(&search, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+            } else if (RB_UNLIKELY(state->script_safe)) {
+                convert_UTF8_to_script_safe_JSON(&search);
             } else {
-                convert_UTF8_to_JSON(&search, state->script_safe ? script_safe_escape_table : escape_table);
+                convert_UTF8_to_JSON(&search);
             }
             break;
         default:
