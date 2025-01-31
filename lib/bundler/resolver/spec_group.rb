@@ -82,7 +82,7 @@ module Bundler
       def metadata_dependency(name, requirement)
         return if requirement.nil? || requirement.none?
 
-        Dependency.new("#{name}\0", requirement)
+        Gem::Dependency.new("#{name}\0", requirement)
       end
     end
   end
