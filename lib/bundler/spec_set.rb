@@ -83,15 +83,11 @@ module Bundler
     end
 
     def []=(key, value)
-      @specs << value
-
-      reset!
+      add_spec(value)
     end
 
     def delete(specs)
-      Array(specs).each {|spec| @specs.delete(spec) }
-
-      reset!
+      Array(specs).each {|spec| remove_spec(spec) }
     end
 
     def sort!
@@ -168,8 +164,10 @@ module Bundler
 
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
+      @sorted&.reject! {|spec| spec.name == name }
+      return if @lookup.nil?
 
-      reset!
+      @lookup[name] = nil
     end
 
     def version_for(name)
@@ -248,11 +246,6 @@ module Bundler
       @materializations.filter_map(&:materialized_spec)
     end
 
-    def reset!
-      @sorted = nil
-      @lookup = nil
-    end
-
     def complete_platform(platform)
       new_specs = []
 
@@ -272,9 +265,7 @@ module Bundler
       end
 
       if valid_platform && new_specs.any?
-        @specs.concat(new_specs)
-
-        reset!
+        new_specs.each {|spec| add_spec(spec) }
       end
 
       valid_platform
@@ -311,8 +302,7 @@ module Bundler
       @lookup ||= begin
         lookup = {}
         @specs.each do |s|
-          lookup[s.name] ||= []
-          lookup[s.name] << s
+          index_spec(lookup, s.name, s)
         end
         lookup
       end
@@ -332,6 +322,37 @@ module Bundler
 
         specs_for_name.each {|s2| yield s2 }
       end
+    end
+
+    def add_spec(spec)
+      @specs << spec
+
+      name = spec.name
+
+      @sorted&.insert(@sorted.bsearch_index {|s| s.name >= name } || @sorted.size, spec)
+      return if @lookup.nil?
+
+      index_spec(@lookup, name, spec)
+    end
+
+    def remove_spec(spec)
+      @specs.delete(spec)
+      @sorted&.delete(spec)
+      return if @lookup.nil?
+
+      indexed_specs = @lookup[spec.name]
+      return unless indexed_specs
+
+      if indexed_specs.size > 1
+        @lookup[spec.name].delete(spec)
+      else
+        @lookup[spec.name] = nil
+      end
+    end
+
+    def index_spec(hash, key, value)
+      hash[key] ||= []
+      hash[key] << value
     end
   end
 end
