@@ -39,8 +39,8 @@ module Bundler
         path = File.expand_path("../../..", __dir__)
       else
         path = spec.full_gem_path
-        if spec.deleted_gem?
-          return Bundler.ui.warn "The gem #{name} has been deleted. It was installed at: #{path}"
+        if spec.installation_missing?
+          return Bundler.ui.warn "The gem #{name} is missing. It should be installed at #{path}, but was not found"
         end
       end
 
@@ -65,8 +65,8 @@ module Bundler
       gem_info << "\tDefault Gem: yes\n" if spec.respond_to?(:default_gem?) && spec.default_gem?
       gem_info << "\tReverse Dependencies: \n\t\t#{gem_dependencies.join("\n\t\t")}" if gem_dependencies.any?
 
-      if name != "bundler" && spec.deleted_gem?
-        return Bundler.ui.warn "The gem #{name} has been deleted. Gemspec information is still available though:\n#{gem_info}"
+      if name != "bundler" && spec.installation_missing?
+        return Bundler.ui.warn "The gem #{name} is missing. Gemspec information is still available though:\n#{gem_info}"
       end
 
       Bundler.ui.info gem_info

@@ -258,7 +258,7 @@ module Gem
       dependencies - development_dependencies
     end
 
-    def deleted_gem?
+    def installation_missing?
       !default_gem? && !File.directory?(full_gem_path)
     end
 

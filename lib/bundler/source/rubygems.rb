@@ -454,7 +454,7 @@ module Bundler
       end
 
       def installed?(spec)
-        installed_specs[spec].any? && !spec.deleted_gem?
+        installed_specs[spec].any? && !spec.installation_missing?
       end
 
       def rubygems_dir
