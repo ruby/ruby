@@ -1860,6 +1860,7 @@ rb_vm_make_lambda(const rb_execution_context_t *ec, const struct rb_captured_blo
 
 VALUE rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
+VALUE rb_vm_env_numbered_parameters(const rb_env_t *env);
 const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
 const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
@@ -2246,5 +2247,7 @@ RUBY_EXTERN VALUE rb_eRactorUnsafeError;
 RUBY_EXTERN VALUE rb_eRactorIsolationError;
 
 RUBY_SYMBOL_EXPORT_END
+
+extern ID rb_it_id;
 
 #endif /* RUBY_VM_CORE_H */
