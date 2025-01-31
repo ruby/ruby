@@ -101,6 +101,7 @@ static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 // 0 - single byte char that don't need to be escaped.
 // (x | 8) - char that needs to be escaped.
 static const unsigned char CHAR_LENGTH_MASK = 7;
+static const unsigned char ESCAPE_MASK = 8;
 
 static const unsigned char escape_table[256] = {
     // ASCII Control Characters
@@ -165,6 +166,84 @@ static const unsigned char script_safe_escape_table[256] = {
      4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
 };
 
+
+typedef struct _search_state {
+    const char *ptr;
+    const char *end;
+    const char *cursor;
+    FBuffer *buffer;
+} search_state;
+
+static inline void search_flush(search_state *search)
+{
+    fbuffer_append(search->buffer, search->cursor, search->ptr - search->cursor);
+    search->cursor = search->ptr;
+}
+
+static inline unsigned char search_escape(search_state *search, const unsigned char escape_table[256])
+{
+    while (search->ptr < search->end) {
+        unsigned char ch = (unsigned char)*search->ptr;
+        unsigned char ch_len = escape_table[ch];
+
+        if (RB_UNLIKELY(ch_len)) {
+            if (ch_len & ESCAPE_MASK) {
+                if (RB_UNLIKELY(ch_len == 11)) {
+                    const unsigned char *uptr = (const unsigned char *)search->ptr;
+                    if (!(uptr[1] == 0x80 && (uptr[2] >> 1) == 0x54)) {
+                        search->ptr += 3;
+                        continue;
+                    }
+                }
+                search_flush(search);
+                return ch_len & CHAR_LENGTH_MASK;
+            } else {
+                search->ptr += ch_len;
+            }
+        } else {
+            search->ptr++;
+        }
+    }
+    search_flush(search);
+    return 0;
+}
+
+static inline void fast_escape_UTF8_char(search_state *search, unsigned char ch_len) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch_len) {
+        case 1: {
+            switch (ch) {
+                case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+                case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+                case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+                case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+                case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+                case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+                case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+                case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
+                default: {
+                    const char *hexdig = "0123456789abcdef";
+                    char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+                    scratch[4] = hexdig[(ch >> 4) & 0xf];
+                    scratch[5] = hexdig[ch & 0xf];
+                    fbuffer_append(search->buffer, scratch, 6);
+                    break;
+                }
+            }
+            break;
+        }
+        case 3: {
+            if (search->ptr[2] & 1) {
+                fbuffer_append(search->buffer, "\\u2029", 6);
+            } else {
+                fbuffer_append(search->buffer, "\\u2028", 6);
+            }
+            break;
+        }
+    }
+    search->cursor = (search->ptr += ch_len);
+}
+
 /* Converts in_string to a JSON string (without the wrapping '"'
  * characters) in FBuffer out_buffer.
  *
@@ -181,182 +260,114 @@ static const unsigned char script_safe_escape_table[256] = {
  * Everything else (should be UTF-8) is just passed through and
  * appended to the result.
  */
-static inline void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
+static inline void convert_UTF8_to_JSON(search_state *search, const unsigned char escape_table[256])
 {
-    const char *hexdig = "0123456789abcdef";
-    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
-
-    const char *ptr = RSTRING_PTR(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    unsigned long beg = 0, pos = 0;
-
-#define FLUSH_POS(bytes) if (pos > beg) { fbuffer_append(out_buffer, &ptr[beg], pos - beg); } pos += bytes; beg = pos;
-
-    while (pos < len) {
-        unsigned char ch = ptr[pos];
-        unsigned char ch_len = escape_table[ch];
-        /* JSON encoding */
-
-        if (RB_UNLIKELY(ch_len)) {
-            switch (ch_len) {
-                case 9: {
-                    FLUSH_POS(1);
-                    switch (ch) {
-                        case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                        case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                        case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                        case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                        case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                        case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                        case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                        case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                        default: {
-                            scratch[2] = '0';
-                            scratch[3] = '0';
-                            scratch[4] = hexdig[(ch >> 4) & 0xf];
-                            scratch[5] = hexdig[ch & 0xf];
-                            fbuffer_append(out_buffer, scratch, 6);
-                            break;
-                        }
-                    }
-                    break;
-                }
-                case 11: {
-                    unsigned char b2 = ptr[pos + 1];
-                    if (RB_UNLIKELY(b2 == 0x80)) {
-                        unsigned char b3 = ptr[pos + 2];
-                        if (b3 == 0xA8) {
-                            FLUSH_POS(3);
-                            fbuffer_append(out_buffer, "\\u2028", 6);
-                            break;
-                        } else if (b3 == 0xA9) {
-                            FLUSH_POS(3);
-                            fbuffer_append(out_buffer, "\\u2029", 6);
-                            break;
-                        }
-                    }
-                    ch_len = 3;
-                    // fallthrough
-                }
-                default:
-                    pos += ch_len;
-                    break;
-            }
-        } else {
-            pos++;
-        }
+    unsigned char ch_len;
+    while ((ch_len = search_escape(search, escape_table))) {
+        fast_escape_UTF8_char(search, ch_len);
     }
-#undef FLUSH_POS
-
-    if (beg < len) {
-        fbuffer_append(out_buffer, &ptr[beg], len - beg);
-    }
-
-    RB_GC_GUARD(str);
 }
 
-static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
+static inline unsigned char search_ascii_only_escape(search_state *search, const unsigned char escape_table[256])
 {
-    const char *hexdig = "0123456789abcdef";
-    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
-
-    const char *ptr = RSTRING_PTR(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    unsigned long beg = 0, pos = 0;
-
-#define FLUSH_POS(bytes) if (pos > beg) { fbuffer_append(out_buffer, &ptr[beg], pos - beg); } pos += bytes; beg = pos;
-
-    while (pos < len) {
-        unsigned char ch = ptr[pos];
+    while (search->ptr < search->end) {
+        unsigned char ch = (unsigned char)*search->ptr;
         unsigned char ch_len = escape_table[ch];
 
         if (RB_UNLIKELY(ch_len)) {
-            switch (ch_len) {
-                case 9: {
-                    FLUSH_POS(1);
-                    switch (ch) {
-                        case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                        case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                        case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                        case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                        case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                        case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                        case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                        case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                        default: {
-                            scratch[2] = '0';
-                            scratch[3] = '0';
-                            scratch[4] = hexdig[(ch >> 4) & 0xf];
-                            scratch[5] = hexdig[ch & 0xf];
-                            fbuffer_append(out_buffer, scratch, 6);
-                            break;
-                        }
-                    }
-                    break;
-                }
+            search_flush(search);
+            return ch_len & CHAR_LENGTH_MASK;
+        } else {
+            search->ptr++;
+        }
+    }
+    search_flush(search);
+    return 0;
+}
+
+static inline void full_escape_UTF8_char(search_state *search, unsigned char ch_len) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch_len) {
+        case 1: {
+            switch (ch) {
+                case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+                case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+                case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+                case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+                case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+                case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+                case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+                case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
                 default: {
-                    uint32_t wchar = 0;
-                    ch_len = ch_len & CHAR_LENGTH_MASK;
-
-                    switch(ch_len) {
-                        case 2:
-                            wchar = ptr[pos] & 0x1F;
-                            break;
-                        case 3:
-                            wchar = ptr[pos] & 0x0F;
-                            break;
-                        case 4:
-                            wchar = ptr[pos] & 0x07;
-                            break;
-                    }
-
-                    for (short i = 1; i < ch_len; i++) {
-                        wchar = (wchar << 6) | (ptr[pos+i] & 0x3F);
-                    }
-
-                    FLUSH_POS(ch_len);
-
-                    if (wchar <= 0xFFFF) {
-                        scratch[2] = hexdig[wchar >> 12];
-                        scratch[3] = hexdig[(wchar >> 8) & 0xf];
-                        scratch[4] = hexdig[(wchar >> 4) & 0xf];
-                        scratch[5] = hexdig[wchar & 0xf];
-                        fbuffer_append(out_buffer, scratch, 6);
-                    } else {
-                        uint16_t hi, lo;
-                        wchar -= 0x10000;
-                        hi = 0xD800 + (uint16_t)(wchar >> 10);
-                        lo = 0xDC00 + (uint16_t)(wchar & 0x3FF);
-
-                        scratch[2] = hexdig[hi >> 12];
-                        scratch[3] = hexdig[(hi >> 8) & 0xf];
-                        scratch[4] = hexdig[(hi >> 4) & 0xf];
-                        scratch[5] = hexdig[hi & 0xf];
-
-                        scratch[8] = hexdig[lo >> 12];
-                        scratch[9] = hexdig[(lo >> 8) & 0xf];
-                        scratch[10] = hexdig[(lo >> 4) & 0xf];
-                        scratch[11] = hexdig[lo & 0xf];
-
-                        fbuffer_append(out_buffer, scratch, 12);
-                    }
-
+                    const char *hexdig = "0123456789abcdef";
+                    char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+                    scratch[4] = hexdig[(ch >> 4) & 0xf];
+                    scratch[5] = hexdig[ch & 0xf];
+                    fbuffer_append(search->buffer, scratch, 6);
                     break;
                 }
             }
-        } else {
-            pos++;
+            break;
+        }
+        default: {
+            const char *hexdig = "0123456789abcdef";
+            char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
+
+            uint32_t wchar = 0;
+
+            switch(ch_len) {
+                case 2:
+                    wchar = ch & 0x1F;
+                    break;
+                case 3:
+                    wchar = ch & 0x0F;
+                    break;
+                case 4:
+                    wchar = ch & 0x07;
+                    break;
+            }
+
+            for (short i = 1; i < ch_len; i++) {
+                wchar = (wchar << 6) | (search->ptr[i] & 0x3F);
+            }
+
+            if (wchar <= 0xFFFF) {
+                scratch[2] = hexdig[wchar >> 12];
+                scratch[3] = hexdig[(wchar >> 8) & 0xf];
+                scratch[4] = hexdig[(wchar >> 4) & 0xf];
+                scratch[5] = hexdig[wchar & 0xf];
+                fbuffer_append(search->buffer, scratch, 6);
+            } else {
+                uint16_t hi, lo;
+                wchar -= 0x10000;
+                hi = 0xD800 + (uint16_t)(wchar >> 10);
+                lo = 0xDC00 + (uint16_t)(wchar & 0x3FF);
+
+                scratch[2] = hexdig[hi >> 12];
+                scratch[3] = hexdig[(hi >> 8) & 0xf];
+                scratch[4] = hexdig[(hi >> 4) & 0xf];
+                scratch[5] = hexdig[hi & 0xf];
+
+                scratch[8] = hexdig[lo >> 12];
+                scratch[9] = hexdig[(lo >> 8) & 0xf];
+                scratch[10] = hexdig[(lo >> 4) & 0xf];
+                scratch[11] = hexdig[lo & 0xf];
+
+                fbuffer_append(search->buffer, scratch, 12);
+            }
+
+            break;
         }
     }
-#undef FLUSH_POS
+    search->cursor = (search->ptr += ch_len);
+}
 
-    if (beg < len) {
-        fbuffer_append(out_buffer, &ptr[beg], len - beg);
+static void convert_UTF8_to_ASCII_only_JSON(search_state *search, const unsigned char escape_table[256])
+{
+    unsigned char ch_len;
+    while ((ch_len = search_ascii_only_escape(search, escape_table))) {
+        full_escape_UTF8_char(search, ch_len);
     }
-
-    RB_GC_GUARD(str);
 }
 
 /*
@@ -911,13 +922,20 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
 
     fbuffer_append_char(buffer, '"');
 
+    long len;
+    search_state search;
+    search.buffer = buffer;
+    RSTRING_GETMEM(obj, search.ptr, len);
+    search.cursor = search.ptr;
+    search.end = search.ptr + len;
+
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+                convert_UTF8_to_ASCII_only_JSON(&search, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
             } else {
-                convert_UTF8_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table);
+                convert_UTF8_to_JSON(&search, state->script_safe ? script_safe_escape_table : escape_table);
             }
             break;
         default:
