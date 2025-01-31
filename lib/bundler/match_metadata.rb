@@ -16,8 +16,8 @@ module Bundler
 
     def expanded_dependencies
       runtime_dependencies + [
-        metadata_dependency("Ruby", required_ruby_version),
-        metadata_dependency("RubyGems", required_rubygems_version),
+        metadata_dependency("Ruby", @required_ruby_version),
+        metadata_dependency("RubyGems", @required_rubygems_version),
       ].compact
     end
 
