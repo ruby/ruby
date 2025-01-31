@@ -10,98 +10,72 @@ require 'fiddle/function'
 require 'fiddle/version'
 
 module Fiddle
-  if WINDOWS
-    # Returns the last win32 +Error+ of the current executing +Thread+ or nil
-    # if none
-    def self.win32_last_error
-      if RUBY_ENGINE == 'jruby'
-        errno = FFI.errno
-        errno == 0 ? nil : errno
-      else
+  case RUBY_ENGINE
+  when 'jruby'
+    def self.last_error
+      FFI.errno.nonzero?
+    end
+
+    def self.last_error= error
+      FFI.errno = error || 0
+    end
+
+    if WINDOWS
+      class << self
+        alias win32_last_error last_error
+        alias win32_last_error= last_error=
+        alias win32_last_socket_error last_error
+        alias win32_last_socket_error= last_error=
+      end
+    end
+  else
+    # Returns the last +Error+ of the current executing +Thread+ or nil if none
+    def self.last_error
+      Thread.current[:__FIDDLE_LAST_ERROR__]
+    end
+
+    # Sets the last +Error+ of the current executing +Thread+ to +error+
+    def self.last_error= error
+      Thread.current[:__DL2_LAST_ERROR__] = error
+      Thread.current[:__FIDDLE_LAST_ERROR__] = error
+    end
+
+    if WINDOWS
+      # Returns the last win32 +Error+ of the current executing +Thread+ or nil
+      # if none
+      def self.win32_last_error
         Thread.current[:__FIDDLE_WIN32_LAST_ERROR__]
       end
-    end
 
-    # Sets the last win32 +Error+ of the current executing +Thread+ to +error+
-    def self.win32_last_error= error
-      if RUBY_ENGINE == 'jruby'
-        FFI.errno = error || 0
-      else
+      # Sets the last win32 +Error+ of the current executing +Thread+ to +error+
+      def self.win32_last_error= error
         Thread.current[:__FIDDLE_WIN32_LAST_ERROR__] = error
       end
-    end
 
-    # Returns the last win32 socket +Error+ of the current executing
-    # +Thread+ or nil if none
-    def self.win32_last_socket_error
-      if RUBY_ENGINE == 'jruby'
-        errno = FFI.errno
-        errno == 0 ? nil : errno
-      else
+      # Returns the last win32 socket +Error+ of the current executing
+      # +Thread+ or nil if none
+      def self.win32_last_socket_error
         Thread.current[:__FIDDLE_WIN32_LAST_SOCKET_ERROR__]
       end
-    end
 
-    # Sets the last win32 socket +Error+ of the current executing
-    # +Thread+ to +error+
-    def self.win32_last_socket_error= error
-      if RUBY_ENGINE == 'jruby'
-        FFI.errno = error || 0
-      else
+      # Sets the last win32 socket +Error+ of the current executing
+      # +Thread+ to +error+
+      def self.win32_last_socket_error= error
         Thread.current[:__FIDDLE_WIN32_LAST_SOCKET_ERROR__] = error
       end
     end
   end
 
-  # Returns the last +Error+ of the current executing +Thread+ or nil if none
-  def self.last_error
-    if RUBY_ENGINE == 'jruby'
-      errno = FFI.errno
-      errno == 0 ? nil : errno
-    else
-      Thread.current[:__FIDDLE_LAST_ERROR__]
-    end
-  end
-
-  # Sets the last +Error+ of the current executing +Thread+ to +error+
-  def self.last_error= error
-    if RUBY_ENGINE == 'jruby'
-      FFI.errno = error || 0
-    else
-      Thread.current[:__DL2_LAST_ERROR__] = error
-      Thread.current[:__FIDDLE_LAST_ERROR__] = error
-    end
-  end
-
-  # call-seq: dlopen(library) => Fiddle::Handle
-  #
-  # Creates a new handler that opens +library+, and returns an instance of
-  # Fiddle::Handle.
-  #
-  # If +nil+ is given for the +library+, Fiddle::Handle::DEFAULT is used, which
-  # is the equivalent to RTLD_DEFAULT. See <code>man 3 dlopen</code> for more.
-  #
-  #   lib = Fiddle.dlopen(nil)
-  #
-  # The default is dependent on OS, and provide a handle for all libraries
-  # already loaded. For example, in most cases you can use this to access
-  # +libc+ functions, or ruby functions like +rb_str_new+.
-  #
-  # See Fiddle::Handle.new for more.
-  def dlopen library
-    begin
+  case RUBY_PLATFORM
+  when /linux/
+    def dlopen library
       Fiddle::Handle.new(library)
     rescue DLError => error
-      case RUBY_PLATFORM
-      when /linux/
-        case error.message
-        when /\A(\/.+?): (?:invalid ELF header|file too short)/
-          # This may be a linker script:
-          # https://sourceware.org/binutils/docs/ld.html#Scripts
-          path = $1
-        else
-          raise
-        end
+      case error.message
+      when /\A(\/.+?): (?:invalid ELF header|file too short)/
+        # This may be a linker script:
+        # https://sourceware.org/binutils/docs/ld.html#Scripts
+        path = $1
       else
         raise
       end
@@ -122,6 +96,25 @@ module Fiddle
 
       # Not found
       raise
+    end
+  else
+    # call-seq: dlopen(library) => Fiddle::Handle
+    #
+    # Creates a new handler that opens +library+, and returns an instance of
+    # Fiddle::Handle.
+    #
+    # If +nil+ is given for the +library+, Fiddle::Handle::DEFAULT is used, which
+    # is the equivalent to RTLD_DEFAULT. See <code>man 3 dlopen</code> for more.
+    #
+    #   lib = Fiddle.dlopen(nil)
+    #
+    # The default is dependent on OS, and provide a handle for all libraries
+    # already loaded. For example, in most cases you can use this to access
+    # +libc+ functions, or ruby functions like +rb_str_new+.
+    #
+    # See Fiddle::Handle.new for more.
+    def dlopen library
+      Fiddle::Handle.new(library)
     end
   end
   module_function :dlopen
