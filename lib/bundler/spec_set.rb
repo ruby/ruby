@@ -83,6 +83,8 @@ module Bundler
     end
 
     def []=(key, value)
+      delete_by_name(key)
+
       add_spec(value)
     end
 
