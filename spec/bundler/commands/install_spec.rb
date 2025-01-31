@@ -100,12 +100,23 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      FileUtils.rm_rf(default_bundle_path("gems/myrack-1.0.0"))
+      gem_dir = default_bundle_path("gems/myrack-1.0.0")
+
+      FileUtils.rm_rf(gem_dir)
 
       bundle "install --verbose"
 
       expect(out).to include("Installing myrack 1.0.0")
-      expect(default_bundle_path("gems/myrack-1.0.0")).to exist
+      expect(gem_dir).to exist
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+
+      FileUtils.rm_rf(gem_dir)
+      Dir.mkdir(gem_dir)
+
+      bundle "install --verbose"
+
+      expect(out).to include("Installing myrack 1.0.0")
+      expect(gem_dir).to exist
       expect(the_bundle).to include_gems("myrack 1.0.0")
     end
 
