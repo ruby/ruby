@@ -39,9 +39,7 @@ module Bundler
       end
 
       def dependencies
-        @dependencies ||= @specs.flat_map do |spec|
-          spec.runtime_dependencies + metadata_dependencies(spec)
-        end.uniq.sort
+        @dependencies ||= @specs.flat_map(&:expanded_dependencies).uniq.sort
       end
 
       def ==(other)
@@ -70,19 +68,6 @@ module Bundler
 
       def exemplary_spec
         @specs.first
-      end
-
-      def metadata_dependencies(spec)
-        [
-          metadata_dependency("Ruby", spec.required_ruby_version),
-          metadata_dependency("RubyGems", spec.required_rubygems_version),
-        ].compact
-      end
-
-      def metadata_dependency(name, requirement)
-        return if requirement.nil? || requirement.none?
-
-        Gem::Dependency.new("#{name}\0", requirement)
       end
     end
   end
