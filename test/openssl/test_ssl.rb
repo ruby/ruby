@@ -1419,6 +1419,55 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_respect_system_default_min
+    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+
+    Tempfile.create("openssl.cnf") { |f|
+      f.puts(<<~EOF)
+        openssl_conf = default_conf
+        [default_conf]
+        ssl_conf = ssl_sect
+        [ssl_sect]
+        system_default = ssl_default_sect
+        [ssl_default_sect]
+        MinProtocol = TLSv1.3
+      EOF
+      f.close
+
+      ctx_proc = proc { |ctx|
+        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      }
+      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
+          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
+          ctx = OpenSSL::SSL::SSLContext.new
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+          ssl.sync_close = true
+          assert_raise(OpenSSL::SSL::SSLError) do
+            ssl.connect
+          end
+          ssl.close
+        end;
+      end
+
+      ctx_proc = proc { |ctx|
+        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
+      }
+      start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+        assert_separately([{ "OPENSSL_CONF" => f.path }, "-ropenssl", "-", port.to_s], <<~"end;")
+          sock = TCPSocket.new("127.0.0.1", ARGV[0].to_i)
+          ctx = OpenSSL::SSL::SSLContext.new
+          ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
+          ssl.sync_close = true
+          ssl.connect
+          assert_equal("TLSv1.3", ssl.ssl_version)
+          ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+          ssl.close
+        end;
+      end
+    }
+  end
+
   def test_options_disable_versions
     # It's recommended to use SSLContext#{min,max}_version= instead in real
     # applications. The purpose of this test case is to check that SSL options
