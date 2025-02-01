@@ -414,11 +414,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             }
 
             const rb_iseq_t *iseq = env->iseq;
-            unsigned int i;
 
             VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
 
-            for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+            const unsigned int local_table_size = ISEQ_BODY(iseq)->local_table_size;
+            for (unsigned int i=0; i<local_table_size; i++) {
                 if (ISEQ_BODY(iseq)->local_table[i] == lid) {
                     if (ISEQ_BODY(iseq)->local_iseq == iseq &&
                             ISEQ_BODY(iseq)->param.flags.has_block &&
@@ -431,7 +431,9 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
                     }
 
                     *envp = env;
-                    return &env->env[i];
+                    unsigned int last_lvar = env->env_size+VM_ENV_INDEX_LAST_LVAR
+                        - 1 /* errinfo */;
+                    return &env->env[last_lvar - (local_table_size - i)];
                 }
             }
         }
