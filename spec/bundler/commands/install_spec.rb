@@ -615,6 +615,30 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
     end
 
+    it "errors out if a gem is specified in a gemspec and in the Gemfile" do
+      gem = tmp("my-gem-1")
+
+      build_lib "rubocop", path: gem do |s|
+        s.add_development_dependency "rubocop", "~> 1.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "rubocop", :path => "#{gem}"
+        gemspec path: "#{gem}"
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("There was an error parsing `Gemfile`: You cannot specify the same gem twice coming from different sources.")
+      expect(err).to include("You specified that rubocop (>= 0) should come from source at `#{gem}` and gemspec at `#{gem}`")
+    end
+
     it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do
       build_lib "my-gem", path: bundled_app do |s|
         s.add_development_dependency "activesupport"
