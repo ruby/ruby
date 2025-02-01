@@ -173,6 +173,16 @@ def parse_args(argv = ARGV)
   end
 end
 
+Compressors = {".gz"=>"gzip", ".bz2"=>"bzip2"}
+def Compressors.for(type)
+  ext = File.extname(type)
+  if compress = fetch(ext, nil)
+    [type.chomp(ext), ext, compress]
+  else
+    [type, *find {|_, z| system(z, in: IO::NULL, out: IO::NULL)}]
+  end
+end
+
 $install_procs = Hash.new {[]}
 def install?(*types, &block)
   unless types.delete(:nodefault)
@@ -993,14 +1003,10 @@ install?(:local, :comm, :man) do
   mdocs = Dir["#{srcdir}/man/*.[1-9]"]
   prepare "manpages", mandir, ([] | mdocs.collect {|mdoc| mdoc[/\d+$/]}).sort.collect {|sec| "man#{sec}"}
 
-  case $mantype
-  when /\.(?:(gz)|bz2)\z/
-    compress = $1 ? "gzip" : "bzip2"
-    suffix = $&
-  end
+  mantype, suffix, compress = Compressors.for($mantype)
   mandir = File.join(mandir, "man")
   has_goruby = File.exist?(goruby_install_name+exeext)
-  require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ $mantype
+  require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ mantype
   mdocs.each do |mdoc|
     next unless File.file?(mdoc) and File.read(mdoc, 1) == '.'
     base = File.basename(mdoc)
@@ -1012,7 +1018,7 @@ install?(:local, :comm, :man) do
     destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
-    if /\Adoc\b/ =~ $mantype
+    if /\Adoc\b/ =~ mantype
       if compress
         begin
           w = IO.popen(compress, "rb", in: mdoc, &:read)
