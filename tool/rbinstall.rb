@@ -850,6 +850,10 @@ def install_default_gem(dir, srcdir, bindir)
   end
 end
 
+def mdoc_file?(mdoc)
+  /^\.Nm / =~ File.read(mdoc, 1024)
+end
+
 # :startdoc:
 
 install?(:local, :arch, :bin, :'bin-arch') do
@@ -1018,7 +1022,7 @@ install?(:local, :comm, :man) do
     destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
-    if /\Adoc\b/ =~ mantype
+    if /\Adoc\b/ =~ mantype or !mdoc_file?(mdoc)
       if compress
         begin
           w = IO.popen(compress, "rb", in: mdoc, &:read)
@@ -1036,13 +1040,8 @@ install?(:local, :comm, :man) do
       class << (w = [])
         alias print push
       end
-      if File.basename(mdoc).start_with?('bundle') ||
-         File.basename(mdoc).start_with?('gemfile')
-        w = File.read(mdoc)
-      else
-        File.open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
-        w = w.join("")
-      end
+      File.open(mdoc) {|r| Mdoc2Man.mdoc2man(r, w)}
+      w = w.join("")
       if compress
         begin
           w = IO.popen(compress, "r+b") do |f|
