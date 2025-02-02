@@ -1056,7 +1056,7 @@ XXX
   end
 
   def help_exit
-    if STDOUT.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
+    if $stdout.tty? && (pager = ENV.values_at(*%w[RUBY_PAGER PAGER]).find {|e| e && !e.empty?})
       less = ENV["LESS"]
       args = [{"LESS" => "#{!less || less.empty? ? '-' : less}Fe"}, pager, "w"]
       print = proc do |f|
@@ -1065,7 +1065,7 @@ XXX
         # pager terminated
       end
       if Process.respond_to?(:fork) and false
-        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call(STDOUT)}
+        IO.popen("-") {|f| f ? Process.exec(*args, in: f) : print.call($stdout)}
         # unreachable
       end
       IO.popen(*args, &print)
@@ -1107,7 +1107,7 @@ XXX
   #
   Officious['*-completion-zsh'] = proc do |parser|
     Switch::OptionalArgument.new do |arg|
-      parser.compsys(STDOUT, arg)
+      parser.compsys($stdout, arg)
       exit
     end
   end
