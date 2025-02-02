@@ -49,10 +49,10 @@ module URI
       warn "URI::REGEXP is obsolete. Use URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
       URI::RFC2396_REGEXP
     elsif value = RFC2396_PARSER.regexp[const]
-      warn "URI::#{const} is obsolete. Use RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      warn "URI::#{const} is obsolete. Use URI::RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
       value
     elsif value = RFC2396_Parser.const_get(const)
-      warn "URI::#{const} is obsolete. Use RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
+      warn "URI::#{const} is obsolete. Use URI::RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
       value
     else
       super
