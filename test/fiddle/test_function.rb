@@ -8,7 +8,7 @@ module Fiddle
   class TestFunction < Fiddle::TestCase
     def setup
       super
-      Fiddle.last_error = nil
+      Fiddle.last_error = 0
       if WINDOWS
         Fiddle.win32_last_error = nil
         Fiddle.win32_last_socket_error = nil
@@ -126,14 +126,20 @@ module Fiddle
     end
 
     def test_last_error
-      if ffi_backend?
-        omit("Fiddle.last_error doesn't work with FFI backend")
+      if RUBY_ENGINE == 'jruby' && WINDOWS
+        omit("Fiddle.last_error doesn't work well on JRuby on Windows")
       end
 
-      func = Function.new(@libc['strcpy'], [TYPE_VOIDP, TYPE_VOIDP], TYPE_VOIDP)
+      require 'rbconfig/sizeof'
 
-      assert_nil Fiddle.last_error
-      func.call(+"000", "123")
+      strtol = Function.new(@libc['strtol'], [TYPE_VOIDP, TYPE_VOIDP, TYPE_INT], TYPE_LONG)
+
+      assert_equal 0, Fiddle.last_error
+
+      assert_equal RbConfig::LIMITS["LONG_MAX"], strtol.call((2**128).to_s, nil, 10) # overflow
+      assert_equal Errno::ERANGE::Errno, Fiddle.last_error
+
+      assert_equal 123, strtol.call("123", nil, 10)
       refute_nil Fiddle.last_error
     end
 

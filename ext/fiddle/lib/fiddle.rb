@@ -10,22 +10,30 @@ require 'fiddle/function'
 require 'fiddle/version'
 
 module Fiddle
-  case RUBY_ENGINE
-  when 'jruby'
+  if RUBY_ENGINE != 'ruby' # FFI backend
     def self.last_error
-      FFI.errno.nonzero?
+      FFI.errno
     end
 
-    def self.last_error= error
+    def self.last_error=(error)
       FFI.errno = error || 0
     end
 
     if WINDOWS
       class << self
-        alias win32_last_error last_error
-        alias win32_last_error= last_error=
-        alias win32_last_socket_error last_error
-        alias win32_last_socket_error= last_error=
+        def win32_last_error
+          FFI.errno.nonzero?
+        end
+        def win32_last_error=(error)
+          FFI.errno = error || 0
+        end
+
+        def win32_last_socket_error
+          FFI.errno.nonzero?
+        end
+        def win32_last_socket_error=(error)
+          FFI.errno = error || 0
+        end
       end
     end
   else
