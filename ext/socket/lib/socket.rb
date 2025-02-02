@@ -833,7 +833,7 @@ class Socket < BasicSocket
       if except_sockets&.any?
         except_sockets.each do |except_socket|
           failed_ai = connecting_sockets.delete except_socket
-          sockopt = except_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_CONNECT_TIME)
+          sockopt = except_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
           except_socket.close
           ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
           last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
