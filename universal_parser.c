@@ -166,7 +166,6 @@
 
 #define rb_errinfo p->config->errinfo
 #define rb_set_errinfo p->config->set_errinfo
-#define rb_exc_raise p->config->exc_raise
 #define rb_make_exception p->config->make_exception
 
 #define ruby_sized_xfree p->config->sized_xfree

@@ -1313,7 +1313,6 @@ typedef struct rb_parser_config_struct {
     /* Eval */
     VALUE (*errinfo)(void);
     void (*set_errinfo)(VALUE err);
-    void (*exc_raise)(VALUE mesg);
     VALUE (*make_exception)(int argc, const VALUE *argv);
 
     /* GC */
