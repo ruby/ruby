@@ -3809,8 +3809,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *  Returns whether +self+ and +object+ are equal.
  *
  *  Returns +true+ if +object+ is a hash (or can be converted to a hash),
- *  and hashes +self+ and +object+ are equal
- *  (see {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion]);
+ *  and hashes +self+ and +object+ are equal;
  *  otherwise, returns +false+:
  *
  *    h =  {'foo' => 'zero', 'bar' => 'one'}
@@ -3821,6 +3820,9 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *    h == {'FOO' => 'zero', 'bar' => 'one'} # => false  # Different key.
  *    h == {'foo' => 'ZERO', 'bar' => 'one'} # => false  # Different value.
  *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 
 static VALUE
@@ -4639,8 +4641,7 @@ hash_le(VALUE hash1, VALUE hash2)
  *    self <= other_hash -> true or false
  *
  *  Returns +true+ if the entries of +self+ are a subset of the entries of +other_hash+,
- *  +false+ otherwise;
- *  (see {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion];
+ *  +false+ otherwise:
  *
  *    h0 = {foo: 0, bar: 1}
  *    h1 = {foo: 0, bar: 1, baz: 2}
@@ -4648,7 +4649,11 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h0 <= h1 # => true
  *    h1 <= h0 # => false
  *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -4662,9 +4667,8 @@ rb_hash_le(VALUE hash, VALUE other)
  *  call-seq:
  *    self < other_hash -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+
- *  (see {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion]);
- *  otherwise, returns +false+:
+ *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
+ *  +false+ otherwise:
  *
  *    h = {'foo' => 'zero', 'bar' => 'one'}
  *    h < {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => true   # Proper subset.
@@ -4674,7 +4678,11 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {'FOO' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => false  # Different key.
  *    h < {'foo' => 'ZERO', 'bar' => 'one', 'baz' => 'two'} # => false  # Different value.
  *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -4689,8 +4697,7 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    self >= other_hash -> true or false
  *
  *  Returns +true+ if the entries of +self+ are a superset of the entries of +other_hash+,
- *  +false+ otherwise;
- *  (see {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion];
+ *  +false+ otherwise:
  *
  *    h0 = {foo: 0, bar: 1, baz: 2}
  *    h1 = {foo: 0, bar: 1}
@@ -4698,7 +4705,11 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h0 >= h0 # => true
  *    h1 >= h0 # => false
  *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -4712,9 +4723,8 @@ rb_hash_ge(VALUE hash, VALUE other)
  *  call-seq:
  *    self > other_hash -> true or false
  *
- *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+
- *  (see {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion];
- *  otherwise, returns +false+:
+ *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
+ *  +false+ otherwise:
  *
  *    h = {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'}
  *    h > {'foo' => 'zero', 'bar' => 'one'}                 # => true   # Proper superset.
@@ -4724,8 +4734,12 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {'FOO' => 'zero', 'bar' => 'one'}                 # => false  # Different key.
  *    h > {'foo' => 'ZERO', 'bar' => 'one'}                 # => false  # Different value.
  *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
-  */
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
+ */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
 {
