@@ -124,7 +124,7 @@ module Bundler
     def materialize_for_cache
       source.remote!
 
-      materialize_strictly
+      materialize(self, &:first)
     end
 
     def materialized_for_installation
@@ -137,7 +137,9 @@ module Bundler
       source.local!
 
       if use_exact_resolved_specifications?
-        materialize_strictly
+        materialize(self) do |matching_specs|
+          choose_compatible(matching_specs)
+        end
       else
         materialize([name, version]) do |matching_specs|
           target_platform = source.is_a?(Source::Path) ? platform : local_platform
@@ -183,12 +185,6 @@ module Bundler
       generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
 
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
-    end
-
-    def materialize_strictly
-      materialize(self) do |matching_specs|
-        choose_compatible(matching_specs)
-      end
     end
 
     def materialize(query)
