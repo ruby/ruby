@@ -30,7 +30,7 @@ typedef struct ruby_cmdline_options {
 
     const char *crash_report;
 
-    signed int sflag: 2;
+    signed int sflag: 3;
     unsigned int xflag: 1;
     unsigned int warning: 1;
     unsigned int verbose: 1;
