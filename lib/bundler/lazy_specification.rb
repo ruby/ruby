@@ -124,10 +124,9 @@ module Bundler
     def materialize_strictly
       source.local!
 
-      matching_specs = source.specs.search(self)
-      return self if matching_specs.empty?
-
-      choose_compatible(matching_specs)
+      materialize(self) do |matching_specs|
+        choose_compatible(matching_specs)
+      end
     end
 
     def materialized_for_installation
@@ -142,21 +141,20 @@ module Bundler
       if use_exact_resolved_specifications?
         materialize_strictly
       else
-        matching_specs = source.specs.search([name, version])
-        return self if matching_specs.empty?
+        materialize([name, version]) do |matching_specs|
+          target_platform = source.is_a?(Source::Path) ? platform : local_platform
 
-        target_platform = source.is_a?(Source::Path) ? platform : local_platform
+          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
 
-        installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
+          specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
+          return specification unless specification.nil?
 
-        specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
-        return specification unless specification.nil?
+          if target_platform != platform
+            installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+          end
 
-        if target_platform != platform
-          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+          choose_compatible(installable_candidates)
         end
-
-        choose_compatible(installable_candidates)
       end
     end
 
@@ -187,6 +185,13 @@ module Bundler
       generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
 
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
+    end
+
+    def materialize(query)
+      matching_specs = source.specs.search(query)
+      return self if matching_specs.empty?
+
+      yield matching_specs
     end
 
     # If in frozen mode, we fallback to a non-installable candidate because by
