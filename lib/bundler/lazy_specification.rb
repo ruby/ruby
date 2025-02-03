@@ -122,8 +122,6 @@ module Bundler
     end
 
     def materialize_strictly
-      source.local!
-
       materialize(self) do |matching_specs|
         choose_compatible(matching_specs)
       end
