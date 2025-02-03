@@ -291,7 +291,7 @@ describe "Marshal.dump" do
       # aren't used for Float values but on amd64 - object links are used
 
       dump = Marshal.dump([0.0, 0.0])
-      (dump == "\x04\b[\af\x060@\x06" || dump == "\x04\b[\af\x060f\x060").should == true
+      ["\x04\b[\af\x060@\x06", "\x04\b[\af\x060f\x060"].should.include?(dump)
 
       # if object links aren't used - entries in the objects table are still
       # occupied by Float values
