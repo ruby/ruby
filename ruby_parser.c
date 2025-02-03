@@ -412,7 +412,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .errinfo = rb_errinfo,
     .set_errinfo = rb_set_errinfo,
-    .make_exception = rb_make_exception,
 
     .sized_xfree = ruby_sized_xfree,
     .sized_realloc_n = ruby_sized_realloc_n,
