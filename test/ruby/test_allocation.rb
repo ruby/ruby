@@ -509,6 +509,7 @@ class TestAllocation < Test::Unit::TestCase
     end
 
     def test_anonymous_splat_and_anonymous_keyword_splat_parameters
+      only_block = block.empty? ? block : block[2..]
       check_allocations(<<~RUBY)
         def self.anon_splat_and_anon_keyword_splat(*, **#{block}); end
 
@@ -540,6 +541,10 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, **hash1, **empty_hash#{block})")
 
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(#{only_block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(a: 2#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(**empty_hash#{block})")
+
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
         check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash, a: 2#{block})")
@@ -554,6 +559,7 @@ class TestAllocation < Test::Unit::TestCase
     end
 
     def test_nested_anonymous_splat_and_anonymous_keyword_splat_parameters
+      only_block = block.empty? ? block : block[2..]
       check_allocations(<<~RUBY)
         def self.t(*, **#{block}); end
         def self.anon_splat_and_anon_keyword_splat(*, **#{block}); t(*, **) end
@@ -585,6 +591,10 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, **hash1, **empty_hash#{block})")
+
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(#{only_block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(a: 2#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(**empty_hash#{block})")
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
