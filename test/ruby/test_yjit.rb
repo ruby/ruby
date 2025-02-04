@@ -142,6 +142,48 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_with_valid_runtime_call_threshold_option
+    assert_separately([], <<~RUBY)
+      def not_compiled = nil
+      def will_compile = nil
+      def compiled_counts = RubyVM::YJIT.runtime_stats&.dig(:compiled_iseq_count)
+
+      not_compiled
+      assert_nil compiled_counts
+      assert_false RubyVM::YJIT.enabled?
+
+      RubyVM::YJIT.enable(call_threshold: 0)
+
+      will_compile
+      assert compiled_counts > 0
+      assert_true RubyVM::YJIT.enabled?
+    RUBY
+  end
+
+  def test_yjit_enable_with_invalid_runtime_call_threshold_option
+    args = [
+      "-e",
+      "RubyVM::YJIT.enable(call_threshold: 0)" # This should cause a panic
+    ]
+
+    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
+    assert_includes(stderr, "panicked")
+    assert_includes(stderr, "call_threshold must be a positive integer")
+  end
+
+
+  def test_yjit_enable_with_invalid_runtime_mem_size_option
+    args = [
+      "-e",
+      "RubyVM::YJIT.enable(mem_size: 2049)" # This should cause a panic
+    ]
+
+    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
+    assert_includes(stderr, "panicked")
+    assert_includes(stderr, "mem_size must be between 1 and 2048 MB")
+  end
+
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
