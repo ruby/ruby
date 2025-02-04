@@ -2901,26 +2901,31 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 
 /*
  *  call-seq:
- *    hash[key] = value -> value
- *    hash.store(key, value)
+ *    self[key] = object -> object
  *
- *  Associates the given +value+ with the given +key+; returns +value+.
+ *  Associates the given +object+ with the given +key+; returns +object+.
  *
- *  If the given +key+ exists, replaces its value with the given +value+;
+ *  Searches for a hash key equivalent to the given +key+;
+ *  see {Hash Key Equivalence}[rdoc-ref:Hash@Hash+Key+Equivalence].
+ *
+ *  If the key is found, replaces its value with the given +object+;
  *  the ordering is not affected
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *
  *    h = {foo: 0, bar: 1}
  *    h[:foo] = 2 # => 2
- *    h.store(:bar, 3) # => 3
- *    h # => {foo: 2, bar: 3}
+ *    h[:foo]     # => 2
  *
- *  If +key+ does not exist, adds the +key+ and +value+;
+ *  If the key is not found, creates a new entry for the given +key+ and +object+;
  *  the new entry is last in the order
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *
  *    h = {foo: 0, bar: 1}
  *    h[:baz] = 2 # => 2
- *    h.store(:bat, 3) # => 3
- *    h # => {foo: 0, bar: 1, baz: 2, bat: 3}
+ *    h[:baz]     # => 2
+ *    h           # => {:foo=>0, :bar=>1, :baz=>2}
+ *
+ *  Related: #[]; see also {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
 VALUE
