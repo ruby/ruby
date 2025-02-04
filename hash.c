@@ -2091,16 +2091,22 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
 
 /*
  *  call-seq:
- *    hash[key] -> value
+ *    self[key] -> object
  *
- *  Returns the value associated with the given +key+, if found:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h[:foo] # => 0
+ *  Searches for a hash key equivalent to the given +key+;
+ *  see {Hash Key Equivalence}[rdoc-ref:Hash@Hash+Key+Equivalence].
  *
- *  If +key+ is not found, returns a default value
- *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
- *    h = {foo: 0, bar: 1, baz: 2}
+ *  If the key is found, returns its value:
+ *
+ *    {foo: 0, bar: 1, baz: 2}
+ *    h[:bar] # => 1
+ *
+ *  Otherwise, returns a default value (or raises an exception);
+ *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]:
+ *
  *    h[:nosuch] # => nil
+ *
+ *  Related: #[]=; see also {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 VALUE
