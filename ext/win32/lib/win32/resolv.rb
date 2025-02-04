@@ -4,13 +4,8 @@
 
 =end
 
-require 'win32/registry'
-
 module Win32
   module Resolv
-    API = Registry::API
-    Error = Registry::Error
-
     def self.get_hosts_path
       path = get_hosts_dir
       path = File.expand_path('hosts', path)
@@ -47,20 +42,24 @@ module Win32
 # Windows NT
 #====================================================================
   module Resolv
-    module SZ
-      refine Registry do
-        # ad hoc workaround for broken registry
-        def read_s(key)
-          type, str = read(key)
-          unless type == Registry::REG_SZ
-            warn "Broken registry, #{name}\\#{key} was #{Registry.type2name(type)}, ignored"
-            return String.new
+    begin
+      require 'win32/registry'
+      module SZ
+        refine Registry do
+          # ad hoc workaround for broken registry
+          def read_s(key)
+            type, str = read(key)
+            unless type == Registry::REG_SZ
+              warn "Broken registry, #{name}\\#{key} was #{Registry.type2name(type)}, ignored"
+              return String.new
+            end
+            str
           end
-          str
         end
       end
+      using SZ
+    rescue LoadError
     end
-    using SZ
 
     TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
 
