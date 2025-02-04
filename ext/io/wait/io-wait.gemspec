@@ -15,20 +15,20 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
-    `git ls-files -z`.split("\x0").reject do |f|
-      File.identical?(f, __FILE__) || f.match(%r{\A(?:(?:bin|test|spec|features|rakelib)/|\.(?:git|travis|circleci)|appveyor|Rakefile)})
-    end
-  end
+  jruby = true if Gem::Platform.new('java') =~ spec.platform or RUBY_ENGINE == 'jruby'
+  dir, gemspec = File.split(__FILE__)
+  excludes = [
+    *%w[:^/.git* :^/Gemfile* :^/Rakefile* :^/bin/ :^/test/ :^/rakelib/ :^*.java],
+    *(jruby ? %w[:^/ext/io] : %w[:^/ext/java]),
+    ":(exclude,literal,top)#{gemspec}"
+  ]
+  files = IO.popen(%w[git ls-files -z --] + excludes, chdir: dir, &:read).split("\x0")
+
+  spec.files = files
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]
 
-  jruby = true if Gem::Platform.new('java') =~ spec.platform or RUBY_ENGINE == 'jruby'
-  spec.files.delete_if do |f|
-    f.end_with?(".java") or
-      f.start_with?("ext/") && (jruby ^ f.start_with?("ext/java/"))
-  end
   if jruby
     spec.platform = 'java'
     spec.files << "lib/io/wait.jar"
