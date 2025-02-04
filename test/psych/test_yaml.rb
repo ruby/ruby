@@ -35,6 +35,10 @@ class Psych_Unit_Tests < Psych::TestCase
         assert_cycle(Regexp.new("foo\nbar"))
     end
 
+    def test_regexp_with_slash
+      assert_cycle(Regexp.new('/'))
+    end
+
     # [ruby-core:34969]
     def test_regexp_with_n
         assert_cycle(Regexp.new('',Regexp::NOENCODING))

@@ -96,11 +96,11 @@ module Psych
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
           klass = class_loader.regexp
-          o.value =~ /^\/(.*)\/([mixn]*)$/m
-          source  = $1
+          matches = /^\/(?<string>.*)\/(?<options>[mixn]*)$/m.match(o.value)
+          source  = matches[:string].gsub('\/', '/')
           options = 0
           lang    = nil
-          $2&.each_char do |option|
+          matches[:options].each_char do |option|
             case option
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
