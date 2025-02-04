@@ -28,6 +28,11 @@ end
 
 if RubyVM::RJIT.enabled?
   begin
+    fiddle_paths = %w[.bundle/gems/fiddle-*/lib .bundle/extensions/*/*/fiddle-*].map do |dir|
+      Dir.glob("#{File.expand_path("..", __FILE__)}/#{dir}").first
+    end.compact
+    $LOAD_PATH.unshift(*fiddle_paths) unless fiddle_paths.empty?
+
     require 'fiddle'
     require 'fiddle/import'
   rescue LoadError
