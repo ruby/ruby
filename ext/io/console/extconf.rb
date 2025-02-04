@@ -49,6 +49,7 @@ when true
     have_func("rb_io_wait") # Ruby 3.0
   end
   win32 or have_func("ttyname_r") or have_func("ttyname")
+  have_func("rb_prepend_module") # exclude TruffleRuby
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }

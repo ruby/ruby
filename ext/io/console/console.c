@@ -1916,9 +1916,11 @@ console_ttyname(VALUE io)
 
 typedef enum {
     platform_none,
+#ifdef HAVE_RB_PREPEND_MODULE
 #if defined _WIN32 || defined __CYGWIN__
     platform_cygwin,
     platform_msys,
+#endif
 #endif
     platform_max
 } console_platform_t;
@@ -1933,6 +1935,7 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	VALUE m = argv[0];
 	if (!NIL_P(m)) {
 	    Check_Type(m, T_SYMBOL);
+#ifdef HAVE_RB_PREPEND_MODULE
 #if defined _WIN32 || defined __CYGWIN__
 	    if (m == ID2SYM(rb_intern("cygwin"))) {
 		mode = platform_cygwin;
@@ -1941,10 +1944,12 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 		mode = platform_msys;
 	    }
 #endif
+#endif
 	}
     }
     ret = rb_call_super(0, 0);
     if (mode != platform_none && !RTEST(ret)) {
+#ifdef HAVE_RB_PREPEND_MODULE
 #if defined _WIN32 || defined __CYGWIN__
 	HANDLE h;
 	union {
@@ -1972,6 +1977,7 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	    return Qfalse;
 	}
 	if (wcsstr(ptr, L"-pty")) ret = Qtrue;
+#endif
 #endif
     }
     return ret;
@@ -2045,12 +2051,14 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
+#ifdef HAVE_RB_PREPEND_MODULE
     {
 	VALUE platform = rb_define_module_under(rb_cIO, "platform_tty");
 	rb_define_method(platform, "tty?", console_platform_tty_p, -1);
 	rb_define_method(platform, "isatty", console_platform_tty_p, -1);
 	rb_prepend_module(rb_cIO, platform);
     }
+#endif
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :nodoc: */
