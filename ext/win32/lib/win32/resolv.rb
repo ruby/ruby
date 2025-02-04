@@ -67,15 +67,7 @@ module Win32
     class << self
       private
       def get_hosts_dir
-        if defined?(Win32::Registry)
-          Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-            reg.read_s_expand('DataBasePath')
-          end
-        else
-          cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name 'DataBasePath' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty DataBasePath"
-          output, _ = Open3.capture2('powershell', '-Command', cmd)
-          output.strip
-        end
+        get_item_property(TCPIP_NT, 'DataBasePath', expand: true)
       end
 
       def get_info
@@ -134,10 +126,10 @@ module Win32
         [ search.uniq, nameserver.uniq ]
       end
 
-      def get_item_property(path, name)
+      def get_item_property(path, name, expand: false)
         if defined?(Win32::Registry)
           Registry::HKEY_LOCAL_MACHINE.open(path) do |reg|
-            reg.read_s(key)
+            expand ? reg.read_s_expand(name) : reg.read_s(name)
           rescue Registry::Error
             ""
           end
