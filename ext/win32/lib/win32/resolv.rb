@@ -82,47 +82,16 @@ module Win32
         search = nil
         nameserver = get_dns_server_list
 
-        slist = if defined?(Win32::Registry)
-                  Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-                    reg.read_s('SearchList')
-                  rescue Registry::Error
-                    ""
-                  end
-                else
-                  cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name 'SearchList' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty SearchList"
-                  output, _ = Open3.capture2('powershell', '-Command', cmd)
-                  output.strip
-                end
+        slist = get_item_property(TCPIP_NT, 'SearchList')
         search = slist.split(/,\s*/) unless slist.empty?
 
         if add_search = search.nil?
           search = []
-          nvdom = if defined?(Win32::Registry)
-                    Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-                      reg.read_s('NV Domain')
-                    rescue Registry::Error
-                      ""
-                    end
-                  else
-                    cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name 'NV Domain' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty NV domain"
-                    output, _ = Open3.capture2('powershell', '-Command', cmd)
-                    output.strip
-                  end
+          nvdom = get_item_property(TCPIP_NT, 'NV Domain')
 
           unless nvdom.empty?
             @search = [ nvdom ]
-            udmnd = if defined?(Win32::Registry)
-                      Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-                        reg.read_i('UseDomainNameDevolution')
-                      rescue Registry::Error
-                        0
-                      end
-                    else
-                      cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name 'UseDomainNameDevolution' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty UseDomainNameDevolution"
-                      output, _ = Open3.capture2('powershell', '-Command', cmd)
-                      output.strip.to_i
-                    end
-
+            udmnd = get_item_property(TCPIP_NT, 'UseDomainNameDevolution').to_i
             if udmnd != 0
               if /^\w+\./ =~ nvdom
                 devo = $'
@@ -130,7 +99,6 @@ module Win32
             end
           end
         end
-
 
         ifs = if defined?(Win32::Registry)
                 Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces') do |reg|
@@ -146,17 +114,7 @@ module Win32
 
         ifs.each do |iface|
           next unless ns = %w[NameServer DhcpNameServer].find do |key|
-            ns = if defined?(Win32::Registry)
-                   Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces' + "\\#{iface}" ) do |regif|
-                     regif.read_s(key)
-                   rescue Registry::Error
-                     ""
-                   end
-                 else
-                   cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name '#{key}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty #{key}"
-                   output, _ = Open3.capture2('powershell', '-Command', cmd)
-                   output.strip
-                 end
+            ns = get_item_property(TCPIP_NT + '\Interfaces' + "\\#{iface}", key)
             break ns.split(/[,\s]\s*/) unless ns.empty?
           end
 
@@ -164,17 +122,7 @@ module Win32
 
           if add_search
             [ 'Domain', 'DhcpDomain' ].each do |key|
-              dom = if defined?(Win32::Registry)
-                       Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces' + "\\#{iface}" ) do |regif|
-                         regif.read_s(key)
-                       rescue Registry::Error
-                         ""
-                       end
-                    else
-                      cmd = "Get-ItemProperty -Path 'HKLM:\\#{TCPIP_NT}' -Name '#{key}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty #{key}"
-                      output, _ = Open3.capture2('powershell', '-Command', cmd)
-                      output.strip
-                    end
+              dom = get_item_property(TCPIP_NT + '\Interfaces' + "\\#{iface}", key)
               unless dom.empty?
                 search.concat(dom.split(/,\s*/))
                 break
@@ -184,6 +132,20 @@ module Win32
         end
         search << devo if add_search and devo
         [ search.uniq, nameserver.uniq ]
+      end
+
+      def get_item_property(path, name)
+        if defined?(Win32::Registry)
+          Registry::HKEY_LOCAL_MACHINE.open(path) do |reg|
+            reg.read_s(key)
+          rescue Registry::Error
+            ""
+          end
+        else
+          cmd = "Get-ItemProperty -Path 'HKLM:\\#{path}' -Name '#{name}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty #{name}"
+          output, _ = Open3.capture2('powershell', '-Command', cmd)
+          output.strip
+        end
       end
     end
   end
