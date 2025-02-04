@@ -59,6 +59,7 @@ module Win32
       end
       using SZ
     rescue LoadError
+      require "open3"
     end
 
     TCPIP_NT = 'SYSTEM\CurrentControlSet\Services\Tcpip\Parameters'
@@ -74,59 +75,70 @@ module Win32
       def get_info
         search = nil
         nameserver = get_dns_server_list
-        Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
-          begin
-            slist = reg.read_s('SearchList')
-            search = slist.split(/,\s*/) unless slist.empty?
-          rescue Registry::Error
-          end
-
-          if add_search = search.nil?
-            search = []
-            begin
-              nvdom = reg.read_s('NV Domain')
-              unless nvdom.empty?
-                @search = [ nvdom ]
-                if reg.read_i('UseDomainNameDevolution') != 0
-                  if /^\w+\./ =~ nvdom
-                    devo = $'
-                  end
+        slist = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
+                  reg.read_s('SearchList')
+                rescue Registry::Error
+                  ""
                 end
-              end
-            rescue Registry::Error
-            end
-          end
+        search = slist.split(/,\s*/) unless slist.empty?
 
-          reg.open('Interfaces') do |h|
-            h.each_key do |iface, |
-              h.open(iface) do |regif|
-                next unless ns = %w[NameServer DhcpNameServer].find do |key|
-                  begin
-                    ns = regif.read_s(key)
+        if add_search = search.nil?
+          search = []
+          nvdom = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
+                    reg.read_s('NV Domain')
                   rescue Registry::Error
-                  else
-                    break ns.split(/[,\s]\s*/) unless ns.empty?
+                    ""
                   end
-                end
-                next if (nameserver & ns).empty?
 
-                if add_search
-                  begin
-                    [ 'Domain', 'DhcpDomain' ].each do |key|
-                      dom = regif.read_s(key)
-                      unless dom.empty?
-                        search.concat(dom.split(/,\s*/))
-                        break
-                      end
+          unless nvdom.empty?
+            @search = [ nvdom ]
+            udmnd = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT) do |reg|
+                      reg.read_i('UseDomainNameDevolution')
+                    rescue Registry::Error
+                      0
                     end
-                  rescue Registry::Error
-                  end
-                end
+
+            if udmnd != 0
+              if /^\w+\./ =~ nvdom
+                devo = $'
               end
             end
           end
-          search << devo if add_search and devo
         end
+
+        ifs = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces') do |reg|
+                reg.keys
+              rescue Registry::Error
+                []
+              end
+
+        ifs.each do |iface|
+          next unless ns = %w[NameServer DhcpNameServer].find do |key|
+            ns = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces' + "\\#{iface}" ) do |regif|
+                   regif.read_s(key)
+                 rescue Registry::Error
+                   ""
+                 end
+            break ns.split(/[,\s]\s*/) unless ns.empty?
+          end
+
+          next if (nameserver & ns).empty?
+
+          if add_search
+            [ 'Domain', 'DhcpDomain' ].each do |key|
+              dom = Registry::HKEY_LOCAL_MACHINE.open(TCPIP_NT + '\Interfaces' + "\\#{iface}" ) do |regif|
+                      regif.read_s(key)
+                    rescue Registry::Error
+                      ""
+                    end
+              unless dom.empty?
+                search.concat(dom.split(/,\s*/))
+                break
+              end
+            end
+          end
+        end
+        search << devo if add_search and devo
         [ search.uniq, nameserver.uniq ]
       end
     end
