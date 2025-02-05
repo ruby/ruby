@@ -1106,8 +1106,11 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("post-execution");
         ANN("format: END { [nd_body] }");
         ANN("example: END { foo }");
-        LAST_NODE;
         F_NODE(nd_body, RNODE_POSTEXE, "END clause");
+        F_LOC(keyword_loc, RNODE_POSTEXE);
+        F_LOC(opening_loc, RNODE_POSTEXE);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_POSTEXE);
         return;
 
       case NODE_ATTRASGN:
