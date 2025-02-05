@@ -35,4 +35,19 @@ class JSONCoderTest < Test::Unit::TestCase
     coder = JSON::Coder.new(symbolize_names: true)
     assert_equal({a: 1}, coder.load('{"a":1}'))
   end
+
+  def test_json_coder_dump_NaN_or_Infinity
+    coder = JSON::Coder.new(&:inspect)
+    assert_equal "NaN", coder.load(coder.dump(Float::NAN))
+    assert_equal "Infinity", coder.load(coder.dump(Float::INFINITY))
+    assert_equal "-Infinity", coder.load(coder.dump(-Float::INFINITY))
+  end
+
+  def test_json_coder_dump_NaN_or_Infinity_loop
+    coder = JSON::Coder.new(&:itself)
+    error = assert_raise JSON::GeneratorError do
+      coder.dump(Float::NAN)
+    end
+    assert_include error.message, "NaN not allowed in JSON"
+  end
 end

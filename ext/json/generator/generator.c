@@ -841,15 +841,19 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     return ST_CONTINUE;
 }
 
-static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static inline long increase_depth(JSON_Generator_State *state)
 {
-    long max_nesting = state->max_nesting;
     long depth = ++state->depth;
-    int j;
-
-    if (max_nesting != 0 && depth > max_nesting) {
+    if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
+    return depth;
+}
+
+static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+{
+    int j;
+    long depth = increase_depth(state);
 
     if (RHASH_SIZE(obj) == 0) {
         fbuffer_append(buffer, "{}", 2);
@@ -879,12 +883,8 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
 
 static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
-    long max_nesting = state->max_nesting;
-    long depth = ++state->depth;
     int i, j;
-    if (max_nesting != 0 && depth > max_nesting) {
-        rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
-    }
+    long depth = increase_depth(state);
 
     if (RARRAY_LEN(obj) == 0) {
         fbuffer_append(buffer, "[]", 2);
@@ -1031,13 +1031,21 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
 {
     double value = RFLOAT_VALUE(obj);
     char allow_nan = state->allow_nan;
-    VALUE tmp = rb_funcall(obj, i_to_s, 0);
     if (!allow_nan) {
         if (isinf(value) || isnan(value)) {
-            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", tmp);
+            if (state->strict && state->as_json) {
+                VALUE casted_obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
+                if (casted_obj != obj) {
+                    increase_depth(state);
+                    generate_json(buffer, data, state, casted_obj);
+                    state->depth--;
+                    return;
+                }
+            }
+            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", rb_funcall(obj, i_to_s, 0));
         }
     }
-    fbuffer_append_str(buffer, tmp);
+    fbuffer_append_str(buffer, rb_funcall(obj, i_to_s, 0));
 }
 
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
