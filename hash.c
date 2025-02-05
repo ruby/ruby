@@ -3820,7 +3820,7 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *    h == {'FOO' => 'zero', 'bar' => 'one'} # => false  # Different key.
  *    h == {'foo' => 'ZERO', 'bar' => 'one'} # => false  # Different value.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
  *
  *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
@@ -4649,7 +4649,7 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h0 <= h1 # => true
  *    h1 <= h0 # => false
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4678,7 +4678,7 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {'FOO' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => false  # Different key.
  *    h < {'foo' => 'ZERO', 'bar' => 'one', 'baz' => 'two'} # => false  # Different value.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4705,7 +4705,7 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h0 >= h0 # => true
  *    h1 >= h0 # => false
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4734,7 +4734,7 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {'FOO' => 'zero', 'bar' => 'one'}                 # => false  # Different key.
  *    h > {'foo' => 'ZERO', 'bar' => 'one'}                 # => false  # Different value.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -7003,45 +7003,6 @@ static const rb_data_type_t env_data_type = {
  *  - For method #fetch, you can specify an any-key default:
  *  - For either method #fetch or method #fetch_values,
  *    you can specify a per-key default via a block.
- *
- *  === \Hash Equality and Inclusion
- *
- *  Two hashes may be tested for equality or inclusion,
- *  based on comparisons of their entries.
- *
- *
- *  An entry <tt>h0[k0]</tt> in one hash
- *  is equal to an entry <tt>h1[k1]</tt> in another hash
- *  if and only if the two keys are equal (<tt>k0 == k1</tt>)
- *  and their two values are equal (<tt>h0[k0] == h1[h1]</tt>).
- *
- *  ==== \Hash Equality
- *
- *  Two hashes are equal (see Hash#==) if and only if every entry in one
- *  is equal to an entry in the other;
- *  that is, they are the same size and, disregarding order, have equal entries.
- *
- *  ==== \Hash Inclusion
- *
- *  A hash is set-like in that it cannot have duplicate entries
- *  (or even duplicate keys).
- *  \Hash inclusion can therefore based on the idea of
- *  {subset and superset}[https://en.wikipedia.org/wiki/Subset].
- *
- *  A hash may be a subset or a superset of another hash:
- *
- *  - Subset (included in or equal to another):
- *
- *    - \Hash +h0+ is a _subset_ of hash +h1+ (see Hash#<=)
- *      if each entry in +h0+ is equal to an entry in +h1+.
- *    - Further, hash +h0+ is a <i>proper subset</i> of hash +h1+ (see Hash#<)
- *      if +h1+ is larger than +h0+.
- *
- *  - Superset (including or equal to another):
- *
- *    - \Hash +h0+ is a _superset_ of hash +h1+ (see Hash#>=)
- *      if each entry in +h1+ is equal to an entry in +h0+.
- *    - Further, hash +h0+ is a <i>proper superset</i> of hash +h1+ (see Hash#>)
  *
  *  === What's Here
  *
