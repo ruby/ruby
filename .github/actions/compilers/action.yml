@@ -122,4 +122,5 @@ runs:
         --env GITHUB_EVENT_NAME
         --env GITHUB_SHA
         --env GITHUB_HEAD_REF
+        --env GITHUB_SERVER_URL
         'ghcr.io/ruby/ruby-ci-image:${{ inputs.tag }}'
