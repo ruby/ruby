@@ -1349,6 +1349,11 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
             }
         }
 
+        // Do nothing if the ractor is terminating.
+        if ((cr->threads.main->ec->interrupt_flag & TERMINATE_INTERRUPT_MASK) == TERMINATE_INTERRUPT_MASK) {
+            return false;
+        }
+
         RACTOR_LOCK(tr);
         {
             VM_ASSERT(basket_type_p(tb, basket_type_yielding));
