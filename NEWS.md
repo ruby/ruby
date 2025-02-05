@@ -48,6 +48,7 @@ The following bundled gems are added.
 The following bundled gems are updated.
 
 * net-imap 0.5.5
+* net-smtp 0.5.1
 * rbs 3.8.1
 * bigdecimal 3.1.9
 * repl_type_completor 0.1.10
