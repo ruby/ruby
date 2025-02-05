@@ -3803,21 +3803,25 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *    hash == object -> true or false
+ *    self == object -> true or false
  *
- *  Returns +true+ if all of the following are true:
- *  * +object+ is a +Hash+ object.
- *  * +hash+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>hash[key] == object[key]</tt>.
+ *  Returns whether +self+ and +object+ are equal.
  *
- *  Otherwise, returns +false+.
+ *  Returns +true+ if +object+ is a hash (or can be converted to a hash),
+ *  and hashes +self+ and +object+ are equal;
+ *  otherwise, returns +false+:
  *
- *  Equal:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 == h2 # => true
- *    h3 = {baz: 2, bar: 1, foo: 0}
- *    h1 == h3 # => true
+ *    h =  {'foo' => 'zero', 'bar' => 'one'}
+ *    h == {'foo' => 'zero', 'bar' => 'one'} # => true   # Equal entries (same order)
+ *    h == {'bar' => 'one', 'foo' => 'zero'} # => true   # Equal entries (different order).
+ *    h == 1                                 # => false  # Object not a hash.
+ *    h == {}                                # => false  # Different number of entries.
+ *    h == {'FOO' => 'zero', 'bar' => 'one'} # => false  # Different key.
+ *    h == {'foo' => 'ZERO', 'bar' => 'one'} # => false  # Different value.
+ *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 
 static VALUE
@@ -4633,14 +4637,22 @@ hash_le(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash <= other_hash -> true or false
+ *    self <= other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a subset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 <= h2 # => true
- *    h2 <= h1 # => false
- *    h1 <= h1 # => true
+ *  Returns +true+ if the entries of +self+ are a subset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h0 = {foo: 0, bar: 1}
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h0 <= h0 # => true
+ *    h0 <= h1 # => true
+ *    h1 <= h0 # => false
+ *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -4652,14 +4664,24 @@ rb_hash_le(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash < other_hash -> true or false
+ *    self < other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a proper subset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 < h2 # => true
- *    h2 < h1 # => false
- *    h1 < h1 # => false
+ *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h = {'foo' => 'zero', 'bar' => 'one'}
+ *    h < {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => true   # Proper subset.
+ *    h < {'baz' => 'two', 'bar' => 'one', 'foo' => 'zero'} # => true   # Order may differ.
+ *    h < h                                                 # => false  # Not a proper subset.
+ *    h < {'bar' => 'one', 'foo' => 'zero'}                 # => false  # Not a proper subset.
+ *    h < {'FOO' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => false  # Different key.
+ *    h < {'foo' => 'ZERO', 'bar' => 'one', 'baz' => 'two'} # => false  # Different value.
+ *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -4671,14 +4693,22 @@ rb_hash_lt(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash >= other_hash -> true or false
+ *    self >= other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a superset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1}
- *    h1 >= h2 # => true
- *    h2 >= h1 # => false
- *    h1 >= h1 # => true
+ *  Returns +true+ if the entries of +self+ are a superset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h0 = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {foo: 0, bar: 1}
+ *    h0 >= h1 # => true
+ *    h0 >= h0 # => true
+ *    h1 >= h0 # => false
+ *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -4690,14 +4720,24 @@ rb_hash_ge(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash > other_hash -> true or false
+ *    self > other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a proper superset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1}
- *    h1 > h2 # => true
- *    h2 > h1 # => false
- *    h1 > h1 # => false
+ *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h = {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'}
+ *    h > {'foo' => 'zero', 'bar' => 'one'}                 # => true   # Proper superset.
+ *    h > {'bar' => 'one', 'foo' => 'zero'}                 # => true   # Order may differ.
+ *    h > h                                                 # => false  # Not a proper superset.
+ *    h > {'baz' => 'two', 'bar' => 'one', 'foo' => 'zero'} # => false  # Not a proper superset.
+ *    h > {'FOO' => 'zero', 'bar' => 'one'}                 # => false  # Different key.
+ *    h > {'foo' => 'ZERO', 'bar' => 'one'}                 # => false  # Different value.
+ *
+ *  See {Hash Equality and Inclusion}[rdoc-ref:Hash@Hash+Equality+and+Inclusion].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
@@ -6962,6 +7002,45 @@ static const rb_data_type_t env_data_type = {
  *  - For method #fetch, you can specify an any-key default:
  *  - For either method #fetch or method #fetch_values,
  *    you can specify a per-key default via a block.
+ *
+ *  === \Hash Equality and Inclusion
+ *
+ *  Two hashes may be tested for equality or inclusion,
+ *  based on comparisons of their entries.
+ *
+ *
+ *  An entry <tt>h0[k0]</tt> in one hash
+ *  is equal to an entry <tt>h1[k1]</tt> in another hash
+ *  if and only if the two keys are equal (<tt>k0 == k1</tt>)
+ *  and their two values are equal (<tt>h0[k0] == h1[h1]</tt>).
+ *
+ *  ==== \Hash Equality
+ *
+ *  Two hashes are equal (see Hash#==) if and only if every entry in one
+ *  is equal to an entry in the other;
+ *  that is, they are the same size and, disregarding order, have equal entries.
+ *
+ *  ==== \Hash Inclusion
+ *
+ *  A hash is set-like in that it cannot have duplicate entries
+ *  (or even duplicate keys).
+ *  \Hash inclusion can therefore based on the idea of
+ *  {subset and superset}[https://en.wikipedia.org/wiki/Subset].
+ *
+ *  A hash may be a subset or a superset of another hash:
+ *
+ *  - Subset (included in or equal to another):
+ *
+ *    - \Hash +h0+ is a _subset_ of hash +h1+ (see Hash#<=)
+ *      if each entry in +h0+ is equal to an entry in +h1+.
+ *    - Further, hash +h0+ is a <i>proper subset</i> of hash +h1+ (see Hash#<)
+ *      if +h1+ is larger than +h0+.
+ *
+ *  - Superset (including or equal to another):
+ *
+ *    - \Hash +h0+ is a _superset_ of hash +h1+ (see Hash#>=)
+ *      if each entry in +h1+ is equal to an entry in +h0+.
+ *    - Further, hash +h0+ is a <i>proper superset</i> of hash +h1+ (see Hash#>)
  *
  *  === What's Here
  *
