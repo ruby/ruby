@@ -333,6 +333,13 @@ void *rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_speci
  */
 void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data);
 
+/**
+ * Whether the current thread is holding the GVL.
+ *
+ * @return true if the current thread is holding the GVL, false otherwise.
+ */
+int ruby_thread_has_gvl_p(void);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_THREAD_H */
