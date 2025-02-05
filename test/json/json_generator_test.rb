@@ -86,6 +86,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
     assert_equal '42', dump(42, strict: true)
     assert_equal 'true', dump(true, strict: true)
+
+    assert_equal '"hello"', dump(:hello, strict: true)
+    assert_equal '"hello"', :hello.to_json(strict: true)
+    assert_equal '"World"', "World".to_json(strict: true)
   end
 
   def test_generate_pretty
