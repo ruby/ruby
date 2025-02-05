@@ -66,11 +66,6 @@ jobs:
             https://api.github.com/repos/ruby/actions/dispatches \
             -d '{"event_type": "update_index"}'
 
-      - name: Set latest flag for Ruby 3.3
-        if: contains(${{ env.RUBY_VERSION }}, '3.3.')
-        run: |
-          echo "LATEST=true" >> $GITHUB_ENV
-
       - name: Build and push Docker images
         run: |
           curl -L -X POST \
@@ -78,7 +73,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/docker-images/dispatches \
-            -d '{"event_type": "build", "client_payload": {"ruby_version": "${{ env.RUBY_VERSION }}", "arch": "amd64", "latest": "${{ env.LATEST }}"}}'
+            -d '{"event_type": "build", "client_payload": {"ruby_version": "${{ env.RUBY_VERSION }}"}}'
 
       - name: Build snapcraft packages
         run: |
