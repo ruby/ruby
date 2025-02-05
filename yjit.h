@@ -33,6 +33,7 @@ extern bool rb_yjit_enabled_p;
 void rb_yjit_incr_counter(const char *counter_name);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
+void rb_yjit_collect_vm_usage_insn(int insn);
 void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
 void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
@@ -59,6 +60,7 @@ void rb_yjit_invalidate_ep_is_bp(const rb_iseq_t *iseq);
 static inline void rb_yjit_incr_counter(const char *counter_name) {}
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}
+static inline void rb_yjit_collect_vm_usage_insn(int insn) {}
 static inline void rb_yjit_collect_binding_alloc(void) {}
 static inline void rb_yjit_collect_binding_set(void) {}
 static inline void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception) {}

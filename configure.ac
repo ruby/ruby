@@ -3930,17 +3930,17 @@ AS_CASE(["${YJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+	CARGO_BUILD_ARGS='--features stats,disasm,runtime_checks'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
 	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm'
+	CARGO_BUILD_ARGS='--profile dev_nodebug --features stats,disasm'
 	AC_DEFINE(YJIT_STATS, 1)
     ],
     [stats], [
 	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats'
+	CARGO_BUILD_ARGS='--profile stats --features stats'
 	AC_DEFINE(YJIT_STATS, 1)
     ])
 
@@ -4003,9 +4003,16 @@ AC_ARG_ENABLE(rjit,
 )
 
 AS_CASE(["$RJIT_SUPPORT"],
-[yes|dev], [
+[yes|dev|disasm], [
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
+        # Link libcapstone for --rjit-dump-disasm
+        AC_CHECK_LIB([capstone], [cs_disasm])
+
+        # Enable extra stats (vm_insns_count, ratio_in_rjit)
+        AC_DEFINE(RJIT_STATS, 1)
+    ],
+    [disasm], [
         # Link libcapstone for --rjit-dump-disasm
         AC_CHECK_LIB([capstone], [cs_disasm])
     ])

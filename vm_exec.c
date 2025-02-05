@@ -11,11 +11,6 @@
 
 #include <math.h>
 
-#if USE_YJIT || USE_RJIT
-// The number of instructions executed on vm_exec_core. --yjit-stats uses this.
-RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count = 0;
-#endif
-
 #if VM_COLLECT_USAGE_DETAILS
 static void vm_analysis_insn(int insn);
 #endif

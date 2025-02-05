@@ -558,6 +558,7 @@ make_counters! {
     binding_allocations,
     binding_set,
 
+    vm_insns_count,
     compiled_iseq_entry,
     cold_iseq_entry,
     compiled_iseq_count,
@@ -756,6 +757,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         }
     }
 
+    // CodeBlock stats
     unsafe {
         // Get the inline and outlined code blocks
         let cb = CodegenGlobals::get_inline_cb();
@@ -787,9 +789,6 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         let context_data = CodegenGlobals::get_context_data();
         set_stat_usize!(hash, "context_data_bytes", context_data.num_bytes());
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
-
-        // VM instructions count
-        set_stat_usize!(hash, "vm_insns_count", rb_yjit_vm_insns_count() as usize);
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
@@ -823,6 +822,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 
         // For each counter we track
         for counter_name in COUNTER_NAMES {
+            #[cfg(not(feature = "stats"))]
+            if counter_name == &"vm_insns_count" {
+                // If the stats feature is disabled, we don't have vm_insns_count
+                // so we are going to exclude the key
+                continue;
+            }
+
             // Get the counter value
             let counter_ptr = get_counter_ptr(counter_name);
             let counter_val = *counter_ptr;
@@ -858,12 +864,16 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         };
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
-        // Proportion of instructions that retire in YJIT
-        let total_insns_count = retired_in_yjit + rb_yjit_vm_insns_count();
-        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
+        #[cfg(feature = "stats")]
+        {
+            let rb_vm_insns_count = *get_counter_ptr("vm_insns_count");
+            // Proportion of instructions that retire in YJIT
+            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+            set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
-        let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+            let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
+            set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+        }
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(
@@ -1048,6 +1058,12 @@ pub extern "C" fn rb_yjit_reset_stats_bang(_ec: EcPtr, _ruby_self: VALUE) -> VAL
     }
 
     return Qnil;
+}
+
+/// Increment the number of instructions executed by the interpreter
+#[no_mangle]
+pub extern "C" fn rb_yjit_collect_vm_usage_insn() {
+    incr_counter!(vm_insns_count);
 }
 
 #[no_mangle]

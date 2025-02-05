@@ -16,13 +16,20 @@ RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-#if USE_YJIT || USE_RJIT // We want vm_insns_count on any JIT-enabled build.
-// Increment vm_insns_count for --yjit-stats. We increment this even when
-// --yjit or --yjit-stats is not used because branching to skip it is slower.
-// We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.
-#define JIT_COLLECT_USAGE_INSN(insn) rb_vm_insns_count++
+#ifndef RJIT_STATS
+# define RJIT_STATS RUBY_DEBUG
+#endif
+
+#if YJIT_STATS
+#define JIT_COLLECT_USAGE_INSN(insn) rb_yjit_collect_vm_usage_insn(insn)
 #else
 #define JIT_COLLECT_USAGE_INSN(insn) // none
+#endif
+
+#if RJIT_STATS
+#define RJIT_COLLECT_USAGE_INSN(insn) rb_rjit_collect_vm_usage_insn(insn)
+#else
+#define RJIT_COLLECT_USAGE_INSN(insn) // none
 #endif
 
 #if VM_COLLECT_USAGE_DETAILS
@@ -30,7 +37,7 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 #define COLLECT_USAGE_OPERAND(insn, n, op) vm_collect_usage_operand((insn), (n), ((VALUE)(op)))
 #define COLLECT_USAGE_REGISTER(reg, s)     vm_collect_usage_register((reg), (s))
 #else
-#define COLLECT_USAGE_INSN(insn)           JIT_COLLECT_USAGE_INSN(insn)
+#define COLLECT_USAGE_INSN(insn)           JIT_COLLECT_USAGE_INSN(insn); RJIT_COLLECT_USAGE_INSN(insn)
 #define COLLECT_USAGE_OPERAND(insn, n, op) // none
 #define COLLECT_USAGE_REGISTER(reg, s)     // none
 #endif
