@@ -260,6 +260,50 @@ class2path(VALUE klass)
     return path;
 }
 
+/* Marshaled objects registry */
+static const rb_float_value_type *
+embedded_float_ptr(VALUE x)
+{
+    if (RB_SPECIAL_CONST_P(x)) return 0;
+    if (RB_BUILTIN_TYPE(x) != RUBY_T_FLOAT) return 0;
+    return &RFLOAT(x)->float_value;
+}
+
+static int
+marshal_cmp(st_data_t x, st_data_t y)
+{
+    const rb_float_value_type *xp = embedded_float_ptr((VALUE)x);
+    const rb_float_value_type *yp = embedded_float_ptr((VALUE)y);
+    if (xp && yp) {
+        /* compare bytewise for non-finite numbers */
+        return memcmp(xp, yp, sizeof(*xp));
+    }
+    return x != y;
+}
+
+extern const struct st_hash_type rb_hashtype_ident;
+
+static st_index_t
+marshal_hash(st_data_t x)
+{
+    const rb_float_value_type *xp = embedded_float_ptr((VALUE)x);
+    if (xp) {
+        return rb_memhash(xp, sizeof(*xp));
+    }
+    return rb_hashtype_ident.hash(x);
+}
+
+static const struct st_hash_type marshal_obj_hashtype = {
+    marshal_cmp,
+    marshal_hash,
+};
+
+static st_table *
+init_marshal_table(void)
+{
+    return st_init_table(&marshal_obj_hashtype);
+}
+
 int ruby_marshal_write_long(long x, char *buf);
 static void w_long(long, struct dump_arg*);
 static int w_encoding(VALUE encname, struct dump_call_arg *arg);
@@ -1183,7 +1227,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
-    arg->data    = rb_init_identtable();
+    arg->data = init_marshal_table();
     arg->num_entries = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
@@ -1213,6 +1257,13 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     return port;
 }
 
+#ifndef MARSHAL_LOAD_DEDUPLICATE
+# define MARSHAL_LOAD_DEDUPLICATE 0
+#elif !(MARSHAL_LOAD_DEDUPLICATE + 0)
+# undef MARSHAL_LOAD_DEDUPLICATE
+# define MARSHAL_LOAD_DEDUPLICATE 0
+#endif
+
 struct load_arg {
     VALUE src;
     char *buf;
@@ -1224,6 +1275,9 @@ struct load_arg {
     st_table *partial_objects;
     VALUE proc;
     st_table *compat_tbl;
+#if MARSHAL_LOAD_DEDUPLICATE
+    VALUE deduplicate;
+#endif
     bool freeze;
 };
 
@@ -1251,6 +1305,9 @@ mark_load_arg(void *ptr)
     rb_mark_tbl(p->data);
     rb_mark_tbl(p->partial_objects);
     rb_mark_hash(p->compat_tbl);
+#if MARSHAL_LOAD_DEDUPLICATE
+    if (p->deduplicate) rb_gc_mark(p->deduplicate);
+#endif
 }
 
 static void
@@ -1268,6 +1325,9 @@ memsize_load_arg(const void *ptr)
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
     if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+#if MARSHAL_LOAD_DEDUPLICATE
+    if (p->deduplicate) memsize += rb_obj_memsize_of(p->deduplicate);
+#endif
     return memsize;
 }
 
@@ -1639,9 +1699,36 @@ r_post_proc(VALUE v, struct load_arg *arg)
 }
 
 static VALUE
+r_deduplicate(VALUE v, struct load_arg *arg)
+{
+#if MARSHAL_LOAD_DEDUPLICATE
+    if (SPECIAL_CONST_P(v)) return v;
+    switch (RB_BUILTIN_TYPE(v)) {
+      case RUBY_T_BIGNUM:
+      case RUBY_T_FLOAT:
+        break;
+      default:
+        return v;
+    }
+
+    VALUE n = Qnil;
+    if (arg->deduplicate) {
+        n = rb_hash_lookup(arg->deduplicate, v);
+        if (!NIL_P(n)) return n;
+    }
+    else {
+        arg->deduplicate = rb_obj_hide(rb_hash_new());
+    }
+    rb_hash_aset(arg->deduplicate, v, v);
+#endif
+    return v;
+}
+
+static VALUE
 r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
+    v = r_deduplicate(v, arg);
     if (!partial) {
         st_data_t data;
         st_data_t key = (st_data_t)v;
@@ -2302,6 +2389,12 @@ clear_load_arg(struct load_arg *arg)
         st_free_table(arg->compat_tbl);
         arg->compat_tbl = 0;
     }
+#if MARSHAL_LOAD_DEDUPLICATE
+    if (arg->deduplicate) {
+        rb_hash_clear(arg->deduplicate);
+        arg->deduplicate = 0;
+    }
+#endif
 }
 
 VALUE
@@ -2330,6 +2423,9 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->partial_objects = rb_init_identtable();
     arg->compat_tbl = 0;
     arg->proc = 0;
+#if MARSHAL_LOAD_DEDUPLICATE
+    arg->deduplicate = 0;
+#endif
     arg->readable = 0;
     arg->freeze = freeze;
 
