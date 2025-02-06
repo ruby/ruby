@@ -104,7 +104,7 @@ impl FrameState {
     }
 
     fn pop(&mut self) -> Opnd {
-        self.stack.pop().expect("Bytecode stack mismatch")
+        self.stack.pop().expect("Bytecode stack mismatch (underflow)")
     }
 
     fn setlocal(&mut self, idx: usize, opnd: Opnd) {
@@ -218,7 +218,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
-            _ => eprintln!("zjit: unknown opcode {opcode}"),
+            _ => panic!("zjit: unknown opcode `{}'", insn_name(opcode as usize)),
         }
 
         // Move to the next instruction to compile
