@@ -35,7 +35,7 @@ $(ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	+$(Q)$(CHDIR) $(top_srcdir)/zjit && \
 	        CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
-	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
+	        $(CARGO) $(CARGO_VERBOSE) build $(ZJIT_CARGO_BUILD_ARGS)
 	$(ZJIT_LIB_TOUCH)
 else
 endif

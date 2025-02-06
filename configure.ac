@@ -3986,11 +3986,11 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--profile dev'
+	ZJIT_CARGO_BUILD_ARGS='--profile dev --features disasm'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ])
 
-    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
+    AS_IF([test -n "${ZJIT_CARGO_BUILD_ARGS}"], [
              AC_CHECK_TOOL(CARGO, [cargo], [no])
              AS_IF([test x"$CARGO" = "xno"],
                 AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
@@ -4015,6 +4015,7 @@ AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
 AC_SUBST(RUSTC)dnl Rust compiler command
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
+AC_SUBST(ZJIT_CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
