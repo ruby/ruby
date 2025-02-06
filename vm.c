@@ -419,7 +419,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 #define rb_yjit_threshold_hit(iseq, entry_calls) false
 #endif
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
 //     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
@@ -433,12 +433,27 @@ jit_compile(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    bool yjit_enabled = rb_yjit_enabled_p;
+    extern bool rb_zjit_enabled_p;
+    bool zjit_enabled = rb_zjit_enabled_p;
+    if (!(yjit_enabled || zjit_enabled || rb_rjit_call_p)) {
+        return NULL;
+    }
 
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_entry == NULL && rb_yjit_enabled_p) {
         body->jit_entry_calls++;
-        if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
-            rb_yjit_compile_iseq(iseq, ec, false);
+        if (zjit_enabled) {
+            extern void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
+            rb_zjit_compile_iseq(iseq, ec, false);
+        }
+        else if (yjit_enabled) {
+            if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
+                rb_yjit_compile_iseq(iseq, ec, false);
+            }
+        }
+        else if (body->jit_entry_calls == rb_rjit_call_threshold()) {
+            rb_rjit_compile(iseq);
         }
     }
     return body->jit_entry;
