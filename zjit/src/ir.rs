@@ -110,18 +110,24 @@ impl Block {
 
 #[derive(Debug, PartialEq)]
 pub struct Function {
-    // TODO:
     // ISEQ this function refers to
-    //iseq: *const iseqptr_t,
+    iseq: *const rb_iseq_t,
 
-    entry_block: BlockId,
+    // TODO: get method name and source location from the ISEQ
+
     insns: Vec<Insn>,
     blocks: Vec<Block>,
+    entry_block: BlockId,
 }
 
 impl Function {
-    fn new() -> Function {
-        Function { blocks: vec![Block::default()], insns: vec![], entry_block: BlockId(0) }
+    fn new(iseq: *const rb_iseq_t) -> Function {
+        Function {
+            iseq,
+            insns: vec![],
+            blocks: vec![Block::default()],
+            entry_block: BlockId(0)
+        }
     }
 
     // Add an instruction to an SSA block
@@ -240,7 +246,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
 }
 
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
-    let mut fun = Function::new();
+    let mut fun = Function::new(iseq);
     let mut state = FrameState::new();
     let mut block = fun.entry_block;
 
