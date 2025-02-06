@@ -32,7 +32,7 @@ enum Opnd {
 impl std::fmt::Display for Opnd {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            Opnd::Const(val) => write!(f, "{:?}", val.as_ptr::<u8>()),
+            Opnd::Const(val) => write!(f, "Const({:?})", val.as_ptr::<u8>()),
             Opnd::Insn(insn_id) => write!(f, "{insn_id}"),
         }
     }
@@ -137,6 +137,8 @@ impl std::fmt::Display for Function {
                 match &self.insns[insn_id.0] {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target:?}")?; }
+                    Insn::Return { val } => { write!(f, "Return {val}")?; }
+                    Insn::Add { v0, v1 } => { write!(f, "Add {v0}, {v1}")?; }
                     _ => { write!(f, "idk")?; }
                 }
                 writeln!(f, "");
