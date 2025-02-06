@@ -1639,12 +1639,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_npn_advertised_protocol_too_long
     return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
-    ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["a" * 256] }
-    start_server_version(:TLSv1_2, ctx_proc) { |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.npn_select_cb = -> (protocols) { protocols.first }
-      assert_handshake_error { server_connect(port, ctx) }
-    }
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_raise(OpenSSL::SSL::SSLError) do
+      ctx.npn_protocols = ["a" * 256]
+      ctx.setup
+    end
   end
 
   def test_npn_selected_protocol_too_long
