@@ -31,16 +31,7 @@ if RubyVM::RJIT.enabled?
     require 'fiddle'
     require 'fiddle/import'
   rescue LoadError
-    # Find fiddle from artifacts of bundled gems for make test-all
-    fiddle_paths = %w[.bundle/gems/fiddle-*/lib .bundle/extensions/*/*/fiddle-*].map do |dir|
-      Dir.glob("#{File.expand_path("..", __FILE__)}/#{dir}").first
-    end.compact
-    if fiddle_paths.empty?
-      return # miniruby doesn't support RJIT
-    else
-      $LOAD_PATH.unshift(*fiddle_paths)
-      retry
-    end
+    return # miniruby doesn't support RJIT
   end
 
   require 'ruby_vm/rjit/c_type'
