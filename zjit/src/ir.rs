@@ -21,6 +21,14 @@ enum Insn {
 
     // Control flow instructions
     Return { val: Opnd },
+
+    // Unconditional jump
+    // Jump { target: BlockId },
+
+    // TODO:
+    // Conditional branch instructions
+    // IfTrue { val: Opnd, target: BlockId, }
+    // IfFalse { val: Opnd, target: BlockId, }
 }
 
 #[derive(Default, Debug, PartialEq)]
@@ -34,6 +42,9 @@ impl Block {
 
 #[derive(Debug, PartialEq)]
 struct Function {
+    // TODO:
+    // ISEQ this function refers to
+
     entry_block: BlockId,
     insns: Vec<Insn>,
     blocks: Vec<Block>,
@@ -65,7 +76,7 @@ enum RubyOpcode {
 struct FrameState {
     // TODO:
     // Ruby bytecode instruction pointer
-    // pc:
+    // pc: *mut VALUE,
 
     stack: Vec<Opnd>,
     locals: Vec<Opnd>,
