@@ -209,6 +209,12 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             }
             YARVINSN_pop => { state.pop(); }
             YARVINSN_dup => { state.push(state.top()); }
+            YARVINSN_swap => {
+                let right = state.pop();
+                let left = state.pop();
+                state.push(right);
+                state.push(left);
+            }
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
