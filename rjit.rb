@@ -24,18 +24,17 @@ module RubyVM::RJIT
       dump_trace_exits
     end
   end
-end
 
-if RubyVM::RJIT.enabled?
-  begin
+  # Load RJIT::Compiler
+  def self.init
     require 'fiddle'
     require 'fiddle/import'
   rescue LoadError
     return # miniruby doesn't support RJIT
+  else
+    require 'ruby_vm/rjit/c_type'
+    require 'ruby_vm/rjit/compiler'
+    require 'ruby_vm/rjit/hooks'
+    require 'ruby_vm/rjit/stats'
   end
-
-  require 'ruby_vm/rjit/c_type'
-  require 'ruby_vm/rjit/compiler'
-  require 'ruby_vm/rjit/hooks'
-  require 'ruby_vm/rjit/stats'
 end

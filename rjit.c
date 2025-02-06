@@ -444,6 +444,7 @@ rb_rjit_init(const struct rb_rjit_options *opts)
 
     // RJIT doesn't support miniruby, but it might reach here by RJIT_FORCE_ENABLE.
     rb_mRJIT = rb_const_get(rb_cRubyVM, rb_intern("RJIT"));
+    rb_funcall(rb_mRJIT, rb_intern("init"), 0);
     if (!rb_const_defined(rb_mRJIT, rb_intern("Compiler"))) {
         rb_warn("Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
         rb_rjit_enabled = false;
