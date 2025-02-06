@@ -1111,7 +1111,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
             ssl.connect
             ssl.puts "abc"; assert_equal "abc\n", ssl.gets
           else
-            assert_handshake_error { ssl.connect }
+            assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
           end
         ensure
           ssl.close if ssl
@@ -1149,7 +1149,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         sock = TCPSocket.new("127.0.0.1", port)
         ssl = OpenSSL::SSL::SSLSocket.new(sock, ctx)
         ssl.hostname = "b.example.com"
-        assert_handshake_error { ssl.connect }
+        assert_raise(OpenSSL::SSL::SSLError) { ssl.connect }
         assert_equal false, verify_callback_ok
         assert_equal OpenSSL::X509::V_ERR_HOSTNAME_MISMATCH, verify_callback_err
       ensure
@@ -1250,7 +1250,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       start_server(ctx_proc: ctx_proc, ignore_listener_error: true) { |port|
         ctx = OpenSSL::SSL::SSLContext.new
         ctx.set_params(cert_store: store, verify_hostname: false)
-        assert_handshake_error { server_connect(port, ctx) { } }
+        assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
       }
     end
   end
@@ -1283,7 +1283,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
               ssl.puts "abc"; assert_equal "abc\n", ssl.gets
             }
           else
-            assert_handshake_error { server_connect(port, ctx1) { } }
+            assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
           end
 
           # There is no version-specific SSL methods for TLS 1.3
@@ -1297,7 +1297,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
                 ssl.puts "abc"; assert_equal "abc\n", ssl.gets
               }
             else
-              assert_handshake_error { server_connect(port, ctx2) { } }
+              assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx2) }
             end
           end
         end
@@ -1338,7 +1338,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
             ssl.puts "abc"; assert_equal "abc\n", ssl.gets
           }
         else
-          assert_handshake_error { server_connect(port, ctx2) { } }
+          assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx2) }
         end
       end
     }
@@ -1357,7 +1357,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
             ssl.puts "abc"; assert_equal "abc\n", ssl.gets
           }
         else
-          assert_handshake_error { server_connect(port, ctx1) { } }
+          assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
         end
 
         # Client sets max_version
@@ -1489,7 +1489,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       # Client only supports TLS 1.2
       ctx1 = OpenSSL::SSL::SSLContext.new
       ctx1.min_version = ctx1.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      assert_handshake_error { server_connect(port, ctx1) { } }
+      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
 
       # Client only supports TLS 1.3
       ctx2 = OpenSSL::SSL::SSLContext.new
@@ -1505,7 +1505,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       # Client doesn't support TLS 1.2
       ctx1 = OpenSSL::SSL::SSLContext.new
       ctx1.options |= OpenSSL::SSL::OP_NO_TLSv1_2
-      assert_handshake_error { server_connect(port, ctx1) { } }
+      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
 
       # Client supports TLS 1.2 by default
       ctx2 = OpenSSL::SSL::SSLContext.new
@@ -1654,7 +1654,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.max_version = :TLS1_2
       ctx.npn_select_cb = -> (protocols) { "a" * 256 }
-      assert_handshake_error { server_connect(port, ctx) }
+      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
   end
 
