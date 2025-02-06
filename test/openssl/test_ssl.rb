@@ -348,27 +348,27 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       empty_store = OpenSSL::X509::Store.new
 
       # Valid certificate, SSL_VERIFY_PEER
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.cert_store = populated_store
       assert_nothing_raised {
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
-        ctx.cert_store = populated_store
         server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
       }
 
       # Invalid certificate, SSL_VERIFY_NONE
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+      ctx.cert_store = empty_store
       assert_nothing_raised {
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        ctx.cert_store = empty_store
         server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
       }
 
       # Invalid certificate, SSL_VERIFY_PEER
-      assert_handshake_error {
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
-        ctx.cert_store = empty_store
-        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+      ctx.cert_store = empty_store
+      assert_raise(OpenSSL::SSL::SSLError) {
+        server_connect(port, ctx)
       }
     }
   end
