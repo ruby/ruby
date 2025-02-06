@@ -30,7 +30,7 @@ enum Insn {
     StringCopy { val: Opnd },
     StringIntern { val: Opnd },
 
-    AllocArray { count: usize },
+    NewArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
 
     //NewObject?
@@ -151,7 +151,7 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
                 state.push(Opnd::Insn(insn_id));
             }
             RubyOpcode::Newarray(count) => {
-                let insn_id = result.push_insn(block, Insn::AllocArray { count: *count });
+                let insn_id = result.push_insn(block, Insn::NewArray { count: *count });
                 for idx in (0..*count).rev() {
                     result.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
                 }
@@ -204,7 +204,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             }
             YARVINSN_newarray => {
                 let count = get_arg(pc, 0).as_usize();
-                let insn_id = result.push_insn(block, Insn::AllocArray { count });
+                let insn_id = result.push_insn(block, Insn::NewArray { count });
                 for idx in (0..count).rev() {
                     result.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
                 }
@@ -303,7 +303,7 @@ mod tests {
         assert_eq!(function, Function {
             entry_block: BlockId(0),
             insns: vec![
-                Insn::AllocArray { count: 0 },
+                Insn::NewArray { count: 0 },
                 Insn::Return { val: Opnd::Insn(InsnId(0)) }
             ],
             blocks: vec![
@@ -323,7 +323,7 @@ mod tests {
         assert_eq!(function, Function {
             entry_block: BlockId(0),
             insns: vec![
-                Insn::AllocArray { count: 1 },
+                Insn::NewArray { count: 1 },
                 Insn::ArraySet { idx: 0, val: Opnd::Const(Qnil) },
                 Insn::Return { val: Opnd::Insn(InsnId(0)) }
             ],
@@ -347,7 +347,7 @@ mod tests {
         assert_eq!(function, Function {
             entry_block: BlockId(0),
             insns: vec![
-                Insn::AllocArray { count: 2 },
+                Insn::NewArray { count: 2 },
                 Insn::ArraySet { idx: 1, val: Opnd::Const(four) },
                 Insn::ArraySet { idx: 0, val: Opnd::Const(three) },
                 Insn::Return { val: Opnd::Insn(InsnId(0)) }
