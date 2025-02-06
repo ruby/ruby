@@ -37,22 +37,29 @@ enum Insn {
     //SetIvar {},
     //GetIvar {},
 
+    // Operators
+    Add { v0: Opnd, v1: Opnd },
+
+    // Comparison operators
+    Lt { v0: Opnd, v1: Opnd },
+
+    // Unconditional jump
+    Jump(BranchEdge),
+
+    // Conditional branch instructions
+    IfTrue { val: Opnd, branch: BranchEdge },
+    IfFalse { val: Opnd, target: BranchEdge },
+
+    // Call a C function
+    // TODO: should we store the C function name?
+    CCall { cfun: *const u8, args: Vec<Opnd> },
+
     // Send with dynamic dispatch
     // Ignoring keyword arguments etc for now
     Send { self_val: Opnd, args: Vec<Opnd> },
 
     // Control flow instructions
     Return { val: Opnd },
-
-    // Unconditional jump
-    Jump(BranchEdge),
-
-    // Operators
-    Add { v0: Opnd, v1: Opnd },
-
-    // Conditional branch instructions
-    IfTrue { val: Opnd, branch: BranchEdge },
-    IfFalse { val: Opnd, target: BranchEdge },
 }
 
 #[derive(Default, Debug, PartialEq)]
