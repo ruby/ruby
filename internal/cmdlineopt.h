@@ -39,6 +39,7 @@ typedef struct ruby_cmdline_options {
 #if USE_YJIT
     unsigned int yjit: 1;
 #endif
+    unsigned int zjit: 1;
 } ruby_cmdline_options_t;
 
 struct ruby_opt_message {

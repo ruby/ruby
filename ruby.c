@@ -106,6 +106,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     X(frozen_string_literal) \
     SEP \
     X(yjit) \
+    SEP \
+    X(zjit) \
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -342,9 +344,10 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
         M("--yjit",        "",                     "Enable in-process JIT compiler."),
 #endif
+        M("--zjit",        "",                     "Enable in-process JIT compiler."),
         M("-h",		   "",			   "Print this help message; use --help for longer message."),
     };
-    STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 25);
+    STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 26);
 
     static const struct ruby_opt_message help_msg[] = {
         M("--backtrace-limit=num",        "",            "Set backtrace limit."),
@@ -1449,6 +1452,10 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         rb_warn("Ruby was built without YJIT support."
                 " You may need to install rustc to build Ruby with YJIT.");
 #endif
+    }
+    else if (is_option_with_optarg("zjit", '-', true, false, false)) {
+        FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+        // TODO
     }
     else if (strcmp("yydebug", s) == 0) {
         if (envopt) goto noenvopt_long;
