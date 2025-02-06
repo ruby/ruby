@@ -1797,6 +1797,13 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
+#if USE_ZJIT
+    if (opt->zjit) {
+        fprintf(stderr, "test test\n");
+        extern void rb_zjit_init();
+        rb_zjit_init();
+    }
+#endif
 
     // Call yjit_hook.rb after rb_yjit_init() to use `RubyVM::YJIT.enabled?`
     void Init_builtin_yjit_hook();
@@ -2329,6 +2336,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     if (FEATURE_SET_P(opt->features, yjit)) {
         bool rb_yjit_option_disable(void);
         opt->yjit = !rb_yjit_option_disable(); // set opt->yjit for Init_ruby_description() and calling rb_yjit_init()
+    }
+#endif
+#if USE_ZJIT
+    if (FEATURE_SET_P(opt->features, zjit)) {
+        opt->zjit = true;
     }
 #endif
 
