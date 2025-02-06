@@ -180,3 +180,9 @@ rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
     VALUE *pc = &encoded[insn_idx];
     return pc;
 }
+
+const char *
+rb_insn_name(VALUE insn)
+{
+    return insn_name(insn);
+}
