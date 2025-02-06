@@ -2,6 +2,7 @@
 
 mod cruby;
 mod stats;
+use cruby::{VALUE, Qnil};
 
 extern "C" fn zjit_init() {
     println!("zjit_init");
@@ -18,16 +19,10 @@ pub struct InsnId(usize);
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(usize);
 
-// TODO: replace with VALUE
-#[derive(Debug, PartialEq)]
-enum RubyValue {
-    Nil,
-}
-
 #[derive(Debug, PartialEq)]
 enum Insn {
     Param { idx: usize },
-    Const { val: RubyValue },
+    Const { val: VALUE },
     Return { val: InsnId },
 }
 
@@ -94,7 +89,7 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     for opcode in opcodes {
         match opcode {
             RubyOpcode::Putnil => {
-                state.push(result.push_insn(block, Insn::Const { val: RubyValue::Nil }));
+                state.push(result.push_insn(block, Insn::Const { val: Qnil }));
             },
             RubyOpcode::Leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
