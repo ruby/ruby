@@ -62,5 +62,16 @@ impl ZJITState {
 
             CodeBlock::new(mem_block.clone())
         };
+
+        #[cfg(not(test))]
+        let zjit_state = ZJITState {
+            inline_cb: cb,
+        };
+
+        // Initialize the codegen globals instance
+        #[cfg(not(test))]
+        unsafe {
+            ZJIT_STATE = Some(zjit_state);
+        }
     }
 }

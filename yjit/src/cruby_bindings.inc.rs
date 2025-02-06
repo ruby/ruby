@@ -1139,8 +1139,12 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_yjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
+    pub fn rb_zjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
     pub fn rb_yjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+    pub fn rb_zjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+    pub fn rb_yjit_vm_insns_count() -> u64;
     pub fn rb_yjit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
+    pub fn rb_zjit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
     pub fn rb_yjit_array_len(a: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_yjit_icache_invalidate(
         start: *mut ::std::os::raw::c_void,
@@ -1152,7 +1156,9 @@ extern "C" {
         samples_len: ::std::os::raw::c_int,
     ) -> VALUE;
     pub fn rb_yjit_get_page_size() -> u32;
+    pub fn rb_zjit_get_page_size() -> u32;
     pub fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
+    pub fn rb_zjit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_c_method_tracing_currently_enabled(ec: *const rb_execution_context_t) -> bool;
     pub fn rb_full_cfunc_return(ec: *mut rb_execution_context_t, return_value: VALUE);
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
