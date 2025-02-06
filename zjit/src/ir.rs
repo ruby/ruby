@@ -17,6 +17,9 @@ enum Opnd {
 enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
+    StringCopy { val: Opnd },
+
+    // Control flow instructions
     Return { val: Opnd },
 }
 
@@ -53,6 +56,7 @@ impl Function {
 enum RubyOpcode {
     Putnil,
     Putobject(VALUE),
+    Putstring(VALUE),
     Setlocal(usize),
     Getlocal(usize),
     Leave,
@@ -103,6 +107,10 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
         match opcode {
             RubyOpcode::Putnil => { state.push(Opnd::Const(Qnil)); },
             RubyOpcode::Putobject(val) => { state.push(Opnd::Const(*val)); },
+            RubyOpcode::Putstring(val) => {
+                let insn_id = Opnd::Insn(result.push_insn(block, Insn::StringCopy { val: Opnd::Const(*val) }));
+                state.push(insn_id);
+            }
             RubyOpcode::Setlocal(idx) => {
                 let val = state.pop();
                 state.setlocal(*idx, val);
