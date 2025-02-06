@@ -10,5 +10,6 @@ extern "C" fn zjit_init() {
 
 #[no_mangle]
 pub extern "C" fn rb_zjit_parse_option() -> bool {
+    println!("parsing zjit");
     false
 }

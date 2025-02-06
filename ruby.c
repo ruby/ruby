@@ -1455,7 +1455,8 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
         FEATURE_SET(opt->features, FEATURE_BIT(yjit));
-        // TODO
+        extern bool rb_zjit_parse_option();
+        rb_zjit_parse_option();
     }
     else if (strcmp("yydebug", s) == 0) {
         if (envopt) goto noenvopt_long;
