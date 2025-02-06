@@ -23,7 +23,7 @@ pub fn x86_emit(cb: &mut CodeBlock) { // TODO: take our backend IR
         scale_exp: 0,
         disp: RUBY_OFFSET_EC_CFP,
     };
-    mov(cb, Mem(ec_cfp), Reg(RSI_REG));
+    mov(cb, Mem(ec_cfp), Reg(cfp));
 
     // Return Qnil
     mov(cb, Reg(RAX_REG), UImm(X86UImm { num_bits: 64, value: Qnil.as_u64() }));
