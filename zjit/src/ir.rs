@@ -199,6 +199,12 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 }
                 state.push(Opnd::Insn(insn_id));
             }
+            YARVINSN_putobject_INT2FIX_0_ => {
+                state.push(Opnd::Const(VALUE::fixnum_from_usize(0)));
+            }
+            YARVINSN_putobject_INT2FIX_1_ => {
+                state.push(Opnd::Const(VALUE::fixnum_from_usize(1)));
+            }
             YARVINSN_setlocal_WC_0 => {
                 let val = state.pop();
                 state.setlocal(0, val);
@@ -218,7 +224,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
-            _ => panic!("zjit: unknown opcode `{}'", insn_name(opcode as usize)),
+            _ => eprintln!("zjit: unknown opcode `{}'", insn_name(opcode as usize)),
         }
 
         // Move to the next instruction to compile
