@@ -80,10 +80,17 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
     ir::iseq_to_ssa(iseq);
 
-    let cb = ZJITState::get_code_block();
-    let start_ptr = cb.get_write_ptr();
-    x86_emit(cb);
+    #[cfg(target_arch = "x86_64")]
+    {
+        let cb = ZJITState::get_code_block();
 
-    // TODO: use std::ptr::null() if compilation fails
-    start_ptr.raw_ptr(cb)
+        let start_ptr = cb.get_write_ptr();
+        x86_emit(cb);
+
+        // TODO: use std::ptr::null() if compilation fails
+        start_ptr.raw_ptr(cb)
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    std::ptr::null()
 }
