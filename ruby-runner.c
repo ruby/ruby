@@ -60,6 +60,9 @@ insert_env_path(const char *envname, const char *paths, size_t size, int prepend
     setenv(envname, env, 1);
 }
 
+#define insert_env_path_lit(env, path, prep) \
+    insert_env_path(env, path, sizeof(path), prep)
+
 #define EXTOUT_DIR BUILDDIR"/"EXTOUT
 int
 main(int argc, char **argv)
@@ -80,6 +83,10 @@ main(int argc, char **argv)
 
     insert_env_path(LIBPATHENV, builddir, dirsize, 1);
     insert_env_path("RUBYLIB", rubylib, sizeof(rubylib), 0);
+
+    insert_env_path_lit("GEM_PATH", ABS_SRCDIR"/.bundle", 1);
+    insert_env_path_lit("GEM_PATH", BUILDDIR"/.bundle", 1);
+    if (!getenv("GEM_HOME")) setenv("GEM_HOME", ABS_SRCDIR"/.bundle", 1);
 
     if (!(p = strrchr(arg0, '/'))) p = arg0; else p++;
     if (strlen(p) < namesize - 1) {

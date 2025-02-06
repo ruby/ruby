@@ -275,7 +275,7 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB RJIT_SEARCH_BUILD_DIR]
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
