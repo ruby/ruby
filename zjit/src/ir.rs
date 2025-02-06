@@ -6,6 +6,7 @@ pub struct InsnId(usize);
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(usize);
 
+/// Instruction operand
 #[derive(Debug, PartialEq)]
 enum Opnd {
     Const(VALUE),
@@ -14,20 +15,18 @@ enum Opnd {
 
 #[derive(Debug, PartialEq)]
 enum Insn {
+    // SSA block parameter
     Param { idx: usize },
     Return { val: Opnd },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Default, Debug, PartialEq)]
 struct Block {
     params: Vec<InsnId>,
     insns: Vec<InsnId>,
 }
 
 impl Block {
-    fn new() -> Block {
-        Block { params: vec![], insns: vec![] }
-    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -39,13 +38,13 @@ struct Function {
 
 impl Function {
     fn new() -> Function {
-        Function { blocks: vec![Block::new()], insns: vec![], entry_block: BlockId(0) }
+        Function { blocks: vec![Block::default()], insns: vec![], entry_block: BlockId(0) }
     }
 
+    // Add an instruction to an SSA block
     fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
         let id = InsnId(self.insns.len());
         self.insns.push(insn);
-        // Add the insn to the block
         self.blocks[block.0].insns.push(id);
         id
     }
@@ -58,6 +57,10 @@ enum RubyOpcode {
 }
 
 struct FrameState {
+    // TODO:
+    // Ruby bytecode instruction pointer
+    // pc:
+
     stack: Vec<Opnd>,
 }
 
