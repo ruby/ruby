@@ -66,6 +66,7 @@ impl Function {
 
 enum RubyOpcode {
     Putnil,
+    Putobject(VALUE),
     Leave,
 }
 
@@ -93,9 +94,8 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     let block = result.entry_block;
     for opcode in opcodes {
         match opcode {
-            RubyOpcode::Putnil => {
-                state.push(Opnd::Const(Qnil));
-            },
+            RubyOpcode::Putnil => { state.push(Opnd::Const(Qnil)); },
+            RubyOpcode::Putobject(val) => { state.push(Opnd::Const(*val)); },
             RubyOpcode::Leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             },
