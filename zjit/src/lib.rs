@@ -9,8 +9,8 @@ mod utils;
 mod virtualmem;
 mod asm;
 mod backend;
+mod disasm;
 
-#[cfg(target_arch = "x86_64")]
 use backend::x86_emit;
 use codegen::ZJITState;
 use crate::cruby::*;
@@ -81,17 +81,19 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
     ir::iseq_to_ssa(iseq);
 
-    #[cfg(target_arch = "x86_64")]
+    let cb = ZJITState::get_code_block();
+    let start_ptr = cb.get_write_ptr();
+    x86_emit(cb);
+    let _end_ptr = cb.get_write_ptr();
+
+    #[cfg(feature = "disasm")]
     {
-        let cb = ZJITState::get_code_block();
-
-        let start_ptr = cb.get_write_ptr();
-        x86_emit(cb);
-
-        // TODO: use std::ptr::null() if compilation fails
-        start_ptr.raw_ptr(cb)
+        let _disasm = disasm_addr_range();
     }
 
-    #[cfg(target_arch = "aarch64")]
-    std::ptr::null()
+    if cfg!(target_arch = "x86_64") {
+        start_ptr.raw_ptr(cb)
+    } else {
+        std::ptr::null()
+    }
 }
