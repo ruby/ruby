@@ -200,57 +200,6 @@ impl FrameState {
     }
 }
 
-// TODO: get rid of this, currently used for testing only
-enum RubyOpcode {
-    Putnil,
-    Putobject(VALUE),
-    Putstring(VALUE),
-    Intern,
-    Setlocal(usize),
-    Getlocal(usize),
-    Newarray(usize),
-    Leave,
-}
-fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
-    let mut result = Function::new();
-    let mut state = FrameState::new();
-    let block = result.entry_block;
-    for opcode in opcodes {
-        match opcode {
-            RubyOpcode::Putnil => { state.push(Opnd::Const(Qnil)); },
-            RubyOpcode::Putobject(val) => { state.push(Opnd::Const(*val)); },
-            RubyOpcode::Putstring(val) => {
-                let insn_id = result.push_insn(block, Insn::StringCopy { val: Opnd::Const(*val) });
-                state.push(Opnd::Insn(insn_id));
-            }
-            RubyOpcode::Intern => {
-                let val = state.pop();
-                let insn_id = result.push_insn(block, Insn::StringIntern { val });
-                state.push(Opnd::Insn(insn_id));
-            }
-            RubyOpcode::Newarray(count) => {
-                let insn_id = result.push_insn(block, Insn::NewArray { count: *count });
-                for idx in (0..*count).rev() {
-                    result.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
-                }
-                state.push(Opnd::Insn(insn_id));
-            }
-            RubyOpcode::Setlocal(idx) => {
-                let val = state.pop();
-                state.setlocal(*idx, val);
-            }
-            RubyOpcode::Getlocal(idx) => {
-                let val = state.getlocal(*idx);
-                state.push(val);
-            }
-            RubyOpcode::Leave => {
-                result.push_insn(block, Insn::Return { val: state.pop() });
-            },
-        }
-    }
-    result
-}
-
 /// Get instruction argument
 fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
     unsafe { *(pc.offset(arg_idx + 1)) }
@@ -303,7 +252,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
     }
 
     while insn_idx < iseq_size {
-        // Switch blocks
+        // Get the block id for this instruction
         if let Some(block_id) = insn_idx_to_block.get(&insn_idx) {
             block = *block_id;
         }
@@ -425,6 +374,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
 mod tests {
     use super::*;
 
+    /*
     #[test]
     fn test() {
         let opcodes = vec![
@@ -528,4 +478,5 @@ mod tests {
             ],
         });
     }
+    */
 }
