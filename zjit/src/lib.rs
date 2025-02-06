@@ -7,6 +7,7 @@ mod ir;
 mod stats;
 mod utils;
 mod virtualmem;
+mod asm;
 
 use codegen::ZJITState;
 use crate::cruby::*;

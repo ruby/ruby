@@ -17,6 +17,12 @@ enum Opnd {
 }
 
 #[derive(Debug, PartialEq)]
+struct BranchEdge {
+    target: BlockId,
+    args: Vec<Opnd>,
+}
+
+#[derive(Debug, PartialEq)]
 enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
@@ -25,16 +31,19 @@ enum Insn {
     AllocArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
 
+    //NewObject?
+    //SetIvar {},
+    //GetIvar {},
+
     // Control flow instructions
     Return { val: Opnd },
 
     // Unconditional jump
-    // Jump { target: BlockId },
+    Jump(BranchEdge),
 
-    // TODO:
     // Conditional branch instructions
-    // IfTrue { val: Opnd, target: BlockId, }
-    // IfFalse { val: Opnd, target: BlockId, }
+    IfTrue { val: Opnd, branch: BranchEdge },
+    IfFalse { val: Opnd, target: BranchEdge },
 }
 
 #[derive(Default, Debug, PartialEq)]
