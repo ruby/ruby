@@ -1,3 +1,8 @@
+#![allow(dead_code)]
+
+mod cruby;
+mod stats;
+
 extern "C" fn zjit_init() {
     println!("zjit_init");
 }
@@ -9,6 +14,7 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(usize);
 
