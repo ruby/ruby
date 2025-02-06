@@ -8,6 +8,7 @@ use std::env;
 use std::path::PathBuf;
 
 const SRC_ROOT_ENV: &str = "YJIT_SRC_ROOT_PATH";
+const GLUE_C_FILE: &str = "BINDGEN_GLUE_C_FILE";
 
 fn main() {
     // Path to repo is a required input for supporting running `configure`
@@ -20,6 +21,8 @@ fn main() {
         .as_ref(),
     );
     let src_root = PathBuf::from(src_root);
+
+    let c_file = env::var(GLUE_C_FILE).expect(GLUE_C_FILE);
 
     assert!(
         src_root.is_dir(),
@@ -46,7 +49,7 @@ fn main() {
         .header("vm_callinfo.h")
 
         // Our C file for glue code
-        .header(src_root.join("yjit.c").to_str().unwrap())
+        .header(src_root.join(c_file).to_str().unwrap())
 
         // Don't want to copy over C comment
         .generate_comments(false)
