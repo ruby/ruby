@@ -1,3 +1,5 @@
+mod cruby;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
