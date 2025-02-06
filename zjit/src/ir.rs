@@ -177,6 +177,24 @@ fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
         match opcode {
             YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
             YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
+            YARVINSN_putstring => {
+                let val = Opnd::Const(get_arg(pc, 0));
+                let insn_id = result.push_insn(block, Insn::StringCopy { val });
+                state.push(Opnd::Insn(insn_id));
+            }
+            YARVINSN_intern => {
+                let val = state.pop();
+                let insn_id = result.push_insn(block, Insn::StringIntern { val });
+                state.push(Opnd::Insn(insn_id));
+            }
+            YARVINSN_newarray => {
+                let count = get_arg(pc, 0).as_usize();
+                let insn_id = result.push_insn(block, Insn::AllocArray { count });
+                for idx in (0..count).rev() {
+                    result.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
+                }
+                state.push(Opnd::Insn(insn_id));
+            }
             YARVINSN_setlocal_WC_0 => {
                 let val = state.pop();
                 state.setlocal(0, val);
