@@ -8,7 +8,9 @@ mod stats;
 mod utils;
 mod virtualmem;
 mod asm;
+mod backend;
 
+use backend::x86_emit;
 use codegen::ZJITState;
 use crate::cruby::*;
 
@@ -79,7 +81,9 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     ir::iseq_to_ssa(iseq);
 
     let cb = ZJITState::get_code_block();
-    let _start_ptr = cb.get_write_ptr();
+    let start_ptr = cb.get_write_ptr();
+    x86_emit(cb);
 
-    std::ptr::null()
+    // TODO: use std::ptr::null() if compilation fails
+    start_ptr.raw_ptr(cb)
 }

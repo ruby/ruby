@@ -11,6 +11,11 @@ pub struct CodeBlock {
 
     // Current writing position
     write_pos: usize,
+
+    // Set if the CodeBlock is unable to output some instructions,
+    // for example, when there is not enough space or when a jump
+    // target is too far away.
+    dropped_bytes: bool,
 }
 
 
@@ -20,6 +25,7 @@ impl CodeBlock {
         Self {
             mem_block,
             write_pos: 0,
+            dropped_bytes: false,
         }
     }
 
@@ -31,6 +37,74 @@ impl CodeBlock {
     /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         self.mem_block.borrow().start_ptr().add_bytes(offset)
+    }
+
+    /// Write a single byte at the current position.
+    pub fn write_byte(&mut self, byte: u8) {
+        let write_ptr = self.get_write_ptr();
+        // TODO: check has_capacity()
+        if self.mem_block.borrow_mut().write_byte(write_ptr, byte).is_ok() {
+            self.write_pos += 1;
+        } else {
+            self.dropped_bytes = true;
+        }
+    }
+
+    /// Write multiple bytes starting from the current position.
+    pub fn write_bytes(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.write_byte(*byte);
+        }
+    }
+
+    /// Write an integer over the given number of bits at the current position.
+    pub fn write_int(&mut self, val: u64, num_bits: u32) {
+        assert!(num_bits > 0);
+        assert!(num_bits % 8 == 0);
+
+        // Switch on the number of bits
+        match num_bits {
+            8 => self.write_byte(val as u8),
+            16 => self.write_bytes(&[(val & 0xff) as u8, ((val >> 8) & 0xff) as u8]),
+            32 => self.write_bytes(&[
+                (val & 0xff) as u8,
+                ((val >> 8) & 0xff) as u8,
+                ((val >> 16) & 0xff) as u8,
+                ((val >> 24) & 0xff) as u8,
+            ]),
+            _ => {
+                let mut cur = val;
+
+                // Write out the bytes
+                for _byte in 0..(num_bits / 8) {
+                    self.write_byte((cur & 0xff) as u8);
+                    cur >>= 8;
+                }
+            }
+        }
+    }
+
+    // Add a label reference at the current write position
+    pub fn label_ref(&mut self, _label_idx: usize, _num_bytes: usize, _encode: fn(&mut CodeBlock, i64, i64)) {
+        // TODO: copy labels
+
+        //assert!(label_idx < self.label_addrs.len());
+
+        //// Keep track of the reference
+        //self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
+
+        //// Move past however many bytes the instruction takes up
+        //if self.has_capacity(num_bytes) {
+        //    self.write_pos += num_bytes;
+        //} else {
+        //    self.dropped_bytes = true; // retry emitting the Insn after next_page
+        //}
+    }
+}
+
+impl crate::virtualmem::CodePtrBase for CodeBlock {
+    fn base_ptr(&self) -> std::ptr::NonNull<u8> {
+        self.mem_block.borrow().base_ptr()
     }
 }
 
