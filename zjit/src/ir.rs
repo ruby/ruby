@@ -24,7 +24,7 @@ impl std::fmt::Display for BlockId {
 
 /// Instruction operand
 #[derive(Debug, PartialEq, Clone, Copy)]
-enum Opnd {
+pub enum Opnd {
     Const(VALUE),
     Insn(InsnId),
 }
@@ -40,13 +40,13 @@ impl std::fmt::Display for Opnd {
 }
 
 #[derive(Debug, PartialEq)]
-struct BranchEdge {
+pub struct BranchEdge {
     target: BlockId,
     args: Vec<Opnd>,
 }
 
 #[derive(Debug, PartialEq)]
-enum Insn {
+pub enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
@@ -89,7 +89,7 @@ enum Insn {
 }
 
 #[derive(Default, Debug, PartialEq)]
-struct Block {
+pub struct Block {
     params: Vec<InsnId>,
     insns: Vec<InsnId>,
 }
@@ -98,7 +98,7 @@ impl Block {
 }
 
 #[derive(Debug, PartialEq)]
-struct Function {
+pub struct Function {
     // TODO:
     // ISEQ this function refers to
     //iseq: *const iseqptr_t,
@@ -240,6 +240,7 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     result
 }
 
+/// Get instruction argument
 fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
     unsafe { *(pc.offset(arg_idx + 1)) }
 }
@@ -272,10 +273,10 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     jump_targets
 }
 
-pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
-    let mut result = Function::new();
+pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
+    let mut fun = Function::new();
     let mut state = FrameState::new();
-    let mut block = result.entry_block;
+    let mut block = fun.entry_block;
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
@@ -287,7 +288,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
         if insn_idx == 0 {
             todo!("Separate entry block for param/self/...");
         }
-        insn_idx_to_block.insert(insn_idx, result.new_block());
+        insn_idx_to_block.insert(insn_idx, fun.new_block());
     }
 
     while insn_idx < iseq_size {
@@ -310,19 +311,19 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
             YARVINSN_putstring => {
                 let val = Opnd::Const(get_arg(pc, 0));
-                let insn_id = result.push_insn(block, Insn::StringCopy { val });
+                let insn_id = fun.push_insn(block, Insn::StringCopy { val });
                 state.push(Opnd::Insn(insn_id));
             }
             YARVINSN_intern => {
                 let val = state.pop();
-                let insn_id = result.push_insn(block, Insn::StringIntern { val });
+                let insn_id = fun.push_insn(block, Insn::StringIntern { val });
                 state.push(Opnd::Insn(insn_id));
             }
             YARVINSN_newarray => {
                 let count = get_arg(pc, 0).as_usize();
-                let insn_id = result.push_insn(block, Insn::NewArray { count });
+                let insn_id = fun.push_insn(block, Insn::NewArray { count });
                 for idx in (0..count).rev() {
-                    result.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
+                    fun.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
                 }
                 state.push(Opnd::Insn(insn_id));
             }
@@ -341,18 +342,18 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 let obj = get_arg(pc, 0);
                 let pushval = get_arg(pc, 0);
                 let v = state.pop();
-                state.push(Opnd::Insn(result.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
             }
             YARVINSN_opt_getconstant_path => {
                 let ic = get_arg(pc, 0).as_ptr::<u8>();
-                state.push(Opnd::Insn(result.push_insn(block, Insn::GetConstantPath { ic })));
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::GetConstantPath { ic })));
             }
             YARVINSN_branchunless => {
                 let offset = get_arg(pc, 0).as_i64();
                 let val = state.pop();
-                let test_id = result.push_insn(block, Insn::Test { val });
+                let test_id = fun.push_insn(block, Insn::Test { val });
                 // TODO(max): Check interrupts
-                let branch_id = result.push_insn(block,
+                let branch_id = fun.push_insn(block,
                     Insn::IfFalse {
                         val: Opnd::Insn(test_id),
                         target: BranchEdge {
@@ -378,7 +379,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 // TODO: we need to add a BOP not redefined check here
                 let v0 = state.pop();
                 let v1 = state.pop();
-                let add_id = result.push_insn(block, Insn::Add { v0, v1 });
+                let add_id = fun.push_insn(block, Insn::Add { v0, v1 });
                 state.push(Opnd::Insn(add_id));
             }
 
@@ -386,18 +387,19 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 // TODO: we need to add a BOP not redefined check here
                 let v0 = state.pop();
                 let v1 = state.pop();
-                let lt_id = result.push_insn(block, Insn::Lt { v0, v1 });
+                let lt_id = fun.push_insn(block, Insn::Lt { v0, v1 });
                 state.push(Opnd::Insn(lt_id));
             }
 
             YARVINSN_leave => {
-                result.push_insn(block, Insn::Return { val: state.pop() });
+                fun.push_insn(block, Insn::Return { val: state.pop() });
             }
             _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
         }
     }
-    print!("SSA:\n{result}");
-    return;
+
+    print!("SSA:\n{fun}");
+    return fun;
 }
 
 #[cfg(test)]
