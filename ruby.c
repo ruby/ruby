@@ -120,7 +120,7 @@ enum feature_flag_bits {
     DEFINE_FEATURE(frozen_string_literal_set),
     feature_debug_flag_first,
     DEFINE_FEATURE(jit) = feature_yjit,
-    feature_jit_mask = FEATURE_BIT(yjit),
+    feature_jit_mask = FEATURE_BIT(yjit) | FEATURE_BIT(zjit),
 
     feature_debug_flag_begin = feature_debug_flag_first - 1,
     EACH_DEBUG_FEATURES(DEFINE_DEBUG_FEATURE, COMMA),
@@ -1454,7 +1454,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
 #endif
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
-        FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+        FEATURE_SET(opt->features, FEATURE_BIT(zjit));
         extern bool rb_zjit_parse_option();
         rb_zjit_parse_option();
     }
