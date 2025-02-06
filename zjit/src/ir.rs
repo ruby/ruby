@@ -32,6 +32,7 @@ enum Opnd {
 impl std::fmt::Display for Opnd {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            Opnd::Const(val) if val.fixnum_p() => write!(f, "Fixnum({})", val.as_fixnum()),
             Opnd::Const(val) => write!(f, "Const({:?})", val.as_ptr::<u8>()),
             Opnd::Insn(insn_id) => write!(f, "{insn_id}"),
         }

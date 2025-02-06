@@ -466,6 +466,11 @@ impl VALUE {
         }
     }
 
+    pub fn as_fixnum(self) -> i64 {
+        assert!(self.fixnum_p());
+        (self.0 >> 1) as i64
+    }
+
     pub fn as_isize(self) -> isize {
         let VALUE(is) = self;
         is as isize
