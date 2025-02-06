@@ -20,10 +20,15 @@ pub struct InsnId(usize);
 pub struct BlockId(usize);
 
 #[derive(Debug, PartialEq)]
+enum Opnd {
+    Const(VALUE),
+    Insn(InsnId),
+}
+
+#[derive(Debug, PartialEq)]
 enum Insn {
     Param { idx: usize },
-    Const { val: VALUE },
-    Return { val: InsnId },
+    Return { val: Opnd },
 }
 
 #[derive(Debug, PartialEq)]
@@ -65,7 +70,7 @@ enum RubyOpcode {
 }
 
 struct FrameState {
-    stack: Vec<InsnId>,
+    stack: Vec<Opnd>,
 }
 
 impl FrameState {
@@ -73,11 +78,11 @@ impl FrameState {
         FrameState { stack: vec![] }
     }
 
-    fn push(&mut self, val: InsnId) {
-        self.stack.push(val);
+    fn push(&mut self, opnd: Opnd) {
+        self.stack.push(opnd);
     }
 
-    fn pop(&mut self) -> InsnId {
+    fn pop(&mut self) -> Opnd {
         self.stack.pop().expect("Bytecode stack mismatch")
     }
 }
@@ -89,7 +94,7 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     for opcode in opcodes {
         match opcode {
             RubyOpcode::Putnil => {
-                state.push(result.push_insn(block, Insn::Const { val: Qnil }));
+                state.push(Opnd::Const(Qnil));
             },
             RubyOpcode::Leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
@@ -113,10 +118,10 @@ mod tests {
         assert_eq!(function, Function {
             entry_block: BlockId(0),
             insns: vec![
-                Insn::Const { val: RubyValue::Nil },
-                Insn::Return { val: InsnId(0) }],
+                Insn::Return { val: Opnd::Const(Qnil) }
+            ],
             blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0), InsnId(1)] }
+                Block { params: vec![], insns: vec![InsnId(0)] }
             ],
         });
     }
