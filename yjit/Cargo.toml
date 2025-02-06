@@ -22,6 +22,7 @@ capstone = { version = "0.13.0", optional = true }
 [features]
 # Support --yjit-dump-disasm and RubyVM::YJIT.disasm using libcapstone.
 disasm = ["capstone"]
+stats = []
 # Modify generated code for runtime checks, e.g. poison value in PC
 # for C method calls, and stack canary. This is managed separately
 # from cfg!(debug_assertions) so that we can see disasm of the code

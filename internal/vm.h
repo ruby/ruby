@@ -79,11 +79,6 @@ void rb_check_stack_overflow(void);
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
 
-#if USE_YJIT
-/* vm_exec.c */
-extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
-#endif
-
 extern bool rb_free_at_exit;
 
 /* miniinit.c and builtin.c */
