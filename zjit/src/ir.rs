@@ -2,6 +2,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::cruby::*;
+use std::collections::HashMap;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
@@ -32,6 +33,9 @@ enum Insn {
 
     NewArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
+    Test { val: Opnd },
+    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: Opnd },
+    GetConstantPath { ic: *const u8 },
 
     //NewObject?
     //SetIvar {},
@@ -92,6 +96,12 @@ impl Function {
         let id = InsnId(self.insns.len());
         self.insns.push(insn);
         self.blocks[block.0].insns.push(id);
+        id
+    }
+
+    fn new_block(&mut self) -> BlockId {
+        let id = BlockId(self.blocks.len());
+        self.blocks.push(Block::default());
         id
     }
 }
@@ -187,23 +197,69 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     result
 }
 
-pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
-    let mut result = Function::new();
-    let mut state = FrameState::new();
-    let block = result.entry_block;
+fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
+    unsafe { *(pc.offset(arg_idx + 1)) }
+}
 
+fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
+    ((idx as isize) + (offset as isize)) as u32
+}
+
+fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
-
+    let mut jump_targets = vec![];
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
-        state.pc = pc;
 
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
             .unwrap();
+        insn_idx += insn_len(opcode as usize);
+        match opcode {
+            YARVINSN_branchunless => {
+                let offset = get_arg(pc, 0).as_i64();
+                jump_targets.push(insn_idx_at_offset(insn_idx, offset));
+            }
+            _ => eprintln!("zjit: compute_jump_targets: unknown opcode `{}'", insn_name(opcode as usize)),
+        }
+    }
+    jump_targets
+}
+
+pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
+    let mut result = Function::new();
+    let mut state = FrameState::new();
+    let mut block = result.entry_block;
+
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    let mut insn_idx = 0;
+
+    // Compute a map of PC->Block by finding jump targets
+    let jump_targets = compute_jump_targets(iseq);
+    let mut insn_idx_to_block = HashMap::new();
+    for insn_idx in jump_targets {
+        if insn_idx == 0 {
+            todo!("Separate entry block for param/self/...");
+        }
+        insn_idx_to_block.insert(insn_idx, result.new_block());
+    }
+
+    while insn_idx < iseq_size {
+        // Switch blocks
+        if let Some(block_id) = insn_idx_to_block.get(&insn_idx) {
+            block = *block_id;
+        }
+        // Get the current pc and opcode
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+        // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
+        let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+            .try_into()
+            .unwrap();
+        // Move to the next instruction to compile
+        insn_idx += insn_len(opcode as usize);
 
         match opcode {
             YARVINSN_nop => {},
@@ -237,6 +293,31 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 let val = state.pop();
                 state.setlocal(0, val);
             }
+            YARVINSN_defined => {
+                let op_type = get_arg(pc, 0).as_usize();
+                let obj = get_arg(pc, 0);
+                let pushval = get_arg(pc, 0);
+                let v = state.pop();
+                state.push(Opnd::Insn(result.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
+            }
+            YARVINSN_opt_getconstant_path => {
+                let ic = get_arg(pc, 0).as_ptr::<u8>();
+                state.push(Opnd::Insn(result.push_insn(block, Insn::GetConstantPath { ic })));
+            }
+            YARVINSN_branchunless => {
+                let offset = get_arg(pc, 0).as_i64();
+                let val = state.pop();
+                let test_id = result.push_insn(block, Insn::Test { val });
+                // TODO(max): Check interrupts
+                let branch_id = result.push_insn(block,
+                    Insn::IfFalse {
+                        val: Opnd::Insn(test_id),
+                        target: BranchEdge {
+                            target: insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)],
+                            args: vec![],
+                        }
+                    });
+            }
             YARVINSN_getlocal_WC_0 => {
                 let val = state.getlocal(0);
                 state.push(val);
@@ -269,19 +350,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
-            _ => eprintln!("zjit: unknown opcode `{}'", insn_name(opcode as usize)),
+            _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
         }
-
-        // Move to the next instruction to compile
-        insn_idx += insn_len(opcode as usize);
     }
     dbg!(result);
     return;
-
-    fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
-        unsafe { *(pc.offset(arg_idx + 1)) }
-
-    }
 }
 
 #[cfg(test)]
