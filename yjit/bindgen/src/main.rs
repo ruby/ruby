@@ -8,7 +8,7 @@ use std::env;
 use std::path::PathBuf;
 
 const SRC_ROOT_ENV: &str = "YJIT_SRC_ROOT_PATH";
-const GLUE_C_FILE: &str = "BINDGEN_GLUE_C_FILE";
+const JIT_NAME: &str = "BINDGEN_JIT_NAME";
 
 fn main() {
     // Path to repo is a required input for supporting running `configure`
@@ -22,7 +22,8 @@ fn main() {
     );
     let src_root = PathBuf::from(src_root);
 
-    let c_file = env::var(GLUE_C_FILE).expect(GLUE_C_FILE);
+    let jit_name = env::var(JIT_NAME).expect(JIT_NAME);
+    let c_file = format!("{}.c", jit_name);
 
     assert!(
         src_root.is_dir(),
@@ -313,13 +314,14 @@ fn main() {
         .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
-        .allowlist_function("rb_yjit_reserve_addr_space")
-        .allowlist_function("rb_yjit_mark_writable")
-        .allowlist_function("rb_yjit_mark_executable")
-        .allowlist_function("rb_yjit_mark_unused")
-        .allowlist_function("rb_yjit_get_page_size")
-        .allowlist_function("rb_yjit_iseq_builtin_attrs")
-        .allowlist_function("rb_yjit_iseq_inspect")
+        .allowlist_function("rb_(yjit|zjit)_reserve_addr_space")
+        .allowlist_function("rb_(yjit|zjit)_mark_writable")
+        .allowlist_function("rb_(yjit|zjit)_mark_executable")
+        .allowlist_function("rb_(yjit|zjit)_mark_unused")
+        .allowlist_function("rb_(yjit|zjit)_get_page_size")
+        .allowlist_function("rb_(yjit|zjit)_iseq_builtin_attrs")
+        .allowlist_function("rb_(yjit|zjit)_iseq_inspect")
+        .allowlist_function("rb_yjit_vm_insns_count")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -491,7 +493,7 @@ fn main() {
         .expect("Unable to generate bindings");
 
     let mut out_path: PathBuf = src_root;
-    out_path.push("yjit");
+    out_path.push(jit_name);
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
 

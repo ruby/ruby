@@ -186,3 +186,420 @@ rb_insn_name(VALUE insn)
 {
     return insn_name(insn);
 }
+
+struct rb_control_frame_struct *
+rb_get_ec_cfp(const rb_execution_context_t *ec)
+{
+    return ec->cfp;
+}
+
+const rb_iseq_t *
+rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
+{
+    return cfp->iseq;
+}
+
+VALUE *
+rb_get_cfp_pc(struct rb_control_frame_struct *cfp)
+{
+    return (VALUE*)cfp->pc;
+}
+
+VALUE *
+rb_get_cfp_sp(struct rb_control_frame_struct *cfp)
+{
+    return cfp->sp;
+}
+
+VALUE
+rb_get_cfp_self(struct rb_control_frame_struct *cfp)
+{
+    return cfp->self;
+}
+
+VALUE *
+rb_get_cfp_ep(struct rb_control_frame_struct *cfp)
+{
+    return (VALUE*)cfp->ep;
+}
+
+const VALUE *
+rb_get_cfp_ep_level(struct rb_control_frame_struct *cfp, uint32_t lv)
+{
+    uint32_t i;
+    const VALUE *ep = (VALUE*)cfp->ep;
+    for (i = 0; i < lv; i++) {
+        ep = VM_ENV_PREV_EP(ep);
+    }
+    return ep;
+}
+
+extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
+
+rb_method_type_t
+rb_get_cme_def_type(const rb_callable_method_entry_t *cme)
+{
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) {
+        return VM_METHOD_TYPE_UNDEF;
+    }
+    else {
+        return cme->def->type;
+    }
+}
+
+ID
+rb_get_cme_def_body_attr_id(const rb_callable_method_entry_t *cme)
+{
+    return cme->def->body.attr.id;
+}
+
+enum method_optimized_type
+rb_get_cme_def_body_optimized_type(const rb_callable_method_entry_t *cme)
+{
+    return cme->def->body.optimized.type;
+}
+
+unsigned int
+rb_get_cme_def_body_optimized_index(const rb_callable_method_entry_t *cme)
+{
+    return cme->def->body.optimized.index;
+}
+
+rb_method_cfunc_t *
+rb_get_cme_def_body_cfunc(const rb_callable_method_entry_t *cme)
+{
+    return UNALIGNED_MEMBER_PTR(cme->def, body.cfunc);
+}
+
+uintptr_t
+rb_get_def_method_serial(const rb_method_definition_t *def)
+{
+    return def->method_serial;
+}
+
+ID
+rb_get_def_original_id(const rb_method_definition_t *def)
+{
+    return def->original_id;
+}
+
+int
+rb_get_mct_argc(const rb_method_cfunc_t *mct)
+{
+    return mct->argc;
+}
+
+void *
+rb_get_mct_func(const rb_method_cfunc_t *mct)
+{
+    return (void*)(uintptr_t)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
+}
+
+const rb_iseq_t *
+rb_get_def_iseq_ptr(rb_method_definition_t *def)
+{
+    return def_iseq_ptr(def);
+}
+
+const rb_iseq_t *
+rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
+{
+    return iseq->body->local_iseq;
+}
+
+VALUE *
+rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
+{
+    return iseq->body->iseq_encoded;
+}
+
+unsigned
+rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
+{
+    return iseq->body->stack_max;
+}
+
+enum rb_iseq_type
+rb_get_iseq_body_type(const rb_iseq_t *iseq)
+{
+    return iseq->body->type;
+}
+
+bool
+rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_lead;
+}
+
+bool
+rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_opt;
+}
+
+bool
+rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_kw;
+}
+
+bool
+rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_post;
+}
+
+bool
+rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_kwrest;
+}
+
+bool
+rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.anon_kwrest;
+}
+
+bool
+rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_rest;
+}
+
+bool
+rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ruby2_keywords;
+}
+
+bool
+rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.has_block;
+}
+
+bool
+rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.ambiguous_param0;
+}
+
+bool
+rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.accepts_no_kwarg;
+}
+
+bool
+rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.forwardable;
+}
+
+// This is defined only as a named struct inside rb_iseq_constant_body.
+// By giving it a separate typedef, we make it nameable by rust-bindgen.
+// Bindgen's temp/anon name isn't guaranteed stable.
+typedef struct rb_iseq_param_keyword rb_iseq_param_keyword_struct;
+
+const rb_iseq_param_keyword_struct *
+rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.keyword;
+}
+
+unsigned
+rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.size;
+}
+
+int
+rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.lead_num;
+}
+
+int
+rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.opt_num;
+}
+
+const VALUE *
+rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.opt_table;
+}
+
+unsigned int
+rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
+{
+    return iseq->body->local_table_size;
+}
+
+int
+rb_get_cikw_keyword_len(const struct rb_callinfo_kwarg *cikw)
+{
+    return cikw->keyword_len;
+}
+
+VALUE
+rb_get_cikw_keywords_idx(const struct rb_callinfo_kwarg *cikw, int idx)
+{
+    return cikw->keywords[idx];
+}
+
+const struct rb_callinfo *
+rb_get_call_data_ci(const struct rb_call_data *cd)
+{
+    return cd->ci;
+}
+
+// The FL_TEST() macro
+VALUE
+rb_FL_TEST(VALUE obj, VALUE flags)
+{
+    return RB_FL_TEST(obj, flags);
+}
+
+// The FL_TEST_RAW() macro, normally an internal implementation detail
+VALUE
+rb_FL_TEST_RAW(VALUE obj, VALUE flags)
+{
+    return FL_TEST_RAW(obj, flags);
+}
+
+// The RB_TYPE_P macro
+bool
+rb_RB_TYPE_P(VALUE obj, enum ruby_value_type t)
+{
+    return RB_TYPE_P(obj, t);
+}
+
+long
+rb_RSTRUCT_LEN(VALUE st)
+{
+    return RSTRUCT_LEN(st);
+}
+
+bool
+rb_BASIC_OP_UNREDEFINED_P(enum ruby_basic_operators bop, uint32_t klass)
+{
+    return BASIC_OP_UNREDEFINED_P(bop, klass);
+}
+
+// For debug builds
+void
+rb_assert_iseq_handle(VALUE handle)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_iseq));
+}
+
+void
+rb_assert_cme_handle(VALUE handle)
+{
+    RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
+}
+
+int
+rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
+{
+    return IMEMO_TYPE_P(imemo, imemo_type);
+}
+
+// Release the VM lock. The lock level must point to the same integer used to
+// acquire the lock.
+void
+rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
+{
+    rb_vm_lock_leave(recursive_lock_level, file, line);
+}
+
+bool
+rb_zjit_mark_writable(void *mem_block, uint32_t mem_size)
+{
+    return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+}
+
+void
+rb_zjit_mark_executable(void *mem_block, uint32_t mem_size)
+{
+    // Do not call mprotect when mem_size is zero. Some platforms may return
+    // an error for it. https://github.com/Shopify/ruby/issues/450
+    if (mem_size == 0) {
+        return;
+    }
+    if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
+            mem_block, (unsigned long)mem_size, strerror(errno));
+    }
+}
+
+// Free the specified memory block.
+bool
+rb_zjit_mark_unused(void *mem_block, uint32_t mem_size)
+{
+    // On Linux, you need to use madvise MADV_DONTNEED to free memory.
+    // We might not need to call this on macOS, but it's not really documented.
+    // We generally prefer to do the same thing on both to ease testing too.
+    madvise(mem_block, mem_size, MADV_DONTNEED);
+
+    // On macOS, mprotect PROT_NONE seems to reduce RSS.
+    // We also call this on Linux to avoid executing unused pages.
+    return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+}
+
+unsigned int
+rb_vm_ci_argc(const struct rb_callinfo *ci)
+{
+    return vm_ci_argc(ci);
+}
+
+ID
+rb_vm_ci_mid(const struct rb_callinfo *ci)
+{
+    return vm_ci_mid(ci);
+}
+
+unsigned int
+rb_vm_ci_flag(const struct rb_callinfo *ci)
+{
+    return vm_ci_flag(ci);
+}
+
+const struct rb_callinfo_kwarg *
+rb_vm_ci_kwarg(const struct rb_callinfo *ci)
+{
+    return vm_ci_kwarg(ci);
+}
+
+rb_method_visibility_t
+rb_METHOD_ENTRY_VISI(const rb_callable_method_entry_t *me)
+{
+    return METHOD_ENTRY_VISI(me);
+}
+
+VALUE
+rb_yarv_class_of(VALUE obj)
+{
+    return rb_class_of(obj);
+}
+
+// Acquire the VM lock and then signal all other Ruby threads (ractors) to
+// contend for the VM lock, putting them to sleep. YJIT uses this to evict
+// threads running inside generated code so among other things, it can
+// safely change memory protection of regions housing generated code.
+void
+rb_yjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
+{
+    rb_vm_lock_enter(recursive_lock_level, file, line);
+    rb_vm_barrier();
+}
+
+VALUE
+rb_RCLASS_ORIGIN(VALUE c)
+{
+    return RCLASS_ORIGIN(c);
+}

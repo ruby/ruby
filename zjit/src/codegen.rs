@@ -13,6 +13,7 @@ pub struct CodeBlock {
     write_pos: usize,
 }
 
+
 impl CodeBlock {
     /// Make a new CodeBlock
     pub fn new(mem_block: Rc<RefCell<VirtualMem>>) -> Self {
