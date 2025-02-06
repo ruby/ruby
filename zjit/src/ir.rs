@@ -43,6 +43,9 @@ enum Insn {
     // Unconditional jump
     Jump(BranchEdge),
 
+    // Operators
+    Add { v0: Opnd, v1: Opnd },
+
     // Conditional branch instructions
     IfTrue { val: Opnd, branch: BranchEdge },
     IfFalse { val: Opnd, target: BranchEdge },
@@ -61,6 +64,7 @@ impl Block {
 struct Function {
     // TODO:
     // ISEQ this function refers to
+    //iseq: *const iseqptr_t,
 
     entry_block: BlockId,
     insns: Vec<Insn>,
@@ -233,6 +237,15 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 state.push(right);
                 state.push(left);
             }
+
+            YARVINSN_opt_plus => {
+                // TODO: we need to add a BOP not redefined check here
+                let v0 = state.pop();
+                let v1 = state.pop();
+                let add_id = result.push_insn(block, Insn::Add { v0, v1 });
+                state.push(Opnd::Insn(add_id));
+            }
+
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
