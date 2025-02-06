@@ -645,7 +645,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_post_connect_check_with_anon_ciphers
     ctx_proc = -> ctx {
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "aNULL"
       ctx.tmp_dh = Fixtures.pkey("dh-1")
       ctx.security_level = 0
@@ -653,7 +653,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
     start_server(ctx_proc: ctx_proc) { |port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "aNULL"
       ctx.security_level = 0
       server_connect(port, ctx) { |ssl|
@@ -1688,12 +1688,12 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_get_ephemeral_key
     # kRSA
     ctx_proc1 = proc { |ctx|
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "kRSA"
     }
     start_server(ctx_proc: ctx_proc1, ignore_listener_error: true) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "kRSA"
       begin
         server_connect(port, ctx) { |ssl| assert_nil ssl.tmp_key }
@@ -1704,15 +1704,15 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
 
     # DHE
-    # TODO: How to test this with TLS 1.3?
+    # TODO: SSL_CTX_set1_groups() is required for testing this with TLS 1.3
     ctx_proc2 = proc { |ctx|
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "EDH"
       ctx.tmp_dh = Fixtures.pkey("dh-1")
     }
     start_server(ctx_proc: ctx_proc2) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "EDH"
       server_connect(port, ctx) { |ssl|
         assert_instance_of OpenSSL::PKey::DH, ssl.tmp_key
