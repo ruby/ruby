@@ -1,6 +1,5 @@
 #![allow(dead_code)]
 
-mod asm;
 mod codegen;
 mod cruby;
 mod ir;

@@ -26,8 +26,10 @@ struct BranchEdge {
 enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
+
     StringCopy { val: Opnd },
     StringIntern { val: Opnd },
+
     AllocArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
 
@@ -79,17 +81,6 @@ impl Function {
     }
 }
 
-enum RubyOpcode {
-    Putnil,
-    Putobject(VALUE),
-    Putstring(VALUE),
-    Intern,
-    Setlocal(usize),
-    Getlocal(usize),
-    Newarray(usize),
-    Leave,
-}
-
 struct FrameState {
     // TODO:
     // Ruby bytecode instruction pointer
@@ -131,6 +122,17 @@ impl FrameState {
     }
 }
 
+// TODO: get rid of this, currently used for testing only
+enum RubyOpcode {
+    Putnil,
+    Putobject(VALUE),
+    Putstring(VALUE),
+    Intern,
+    Setlocal(usize),
+    Getlocal(usize),
+    Newarray(usize),
+    Leave,
+}
 fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     let mut result = Function::new();
     let mut state = FrameState::new();
