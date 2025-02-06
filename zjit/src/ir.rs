@@ -156,6 +156,8 @@ impl std::fmt::Display for Function {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
+                    Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
+                    Insn::ArraySet { idx, val } => { write!(f, "ArraySet {idx}, {val}")?; }
                     Insn::Send { self_val, call_info, args } => {
                         write!(f, "Send {self_val}, :{}", call_info.name)?;
                         for arg in args {
