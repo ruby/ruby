@@ -185,6 +185,8 @@ COMMONOBJS    = array.$(OBJEXT) \
 		$(PRISM_FILES) \
 		$(YJIT_OBJ) \
 		$(YJIT_LIBOBJ) \
+		$(ZJIT_OBJ) \
+		$(ZJIT_LIBOBJ) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \

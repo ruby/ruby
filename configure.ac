@@ -3910,6 +3910,19 @@ AC_ARG_ENABLE(yjit,
     )]
 )
 
+dnl build ZJIT in release mode if rustc >= 1.58.0 is present and we are on a supported platform
+AC_ARG_ENABLE(zjit,
+    AS_HELP_STRING([--enable-zjit],
+    [enable in-process JIT compiler that requires Rust build tools. enabled by default on supported platforms if rustc 1.58.0+ is available]),
+    [ZJIT_SUPPORT=$enableval],
+    [AS_CASE(["$YJIT_TARGET_OK:$YJIT_RUSTC_OK"],
+        [yes:yes], [
+            ZJIT_SUPPORT=yes
+        ],
+        [ZJIT_SUPPORT=no]
+    )]
+)
+
 CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
@@ -3957,6 +3970,43 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AC_DEFINE(USE_YJIT, 1)
 ], [
     AC_DEFINE(USE_YJIT, 0)
+])
+
+ZJIT_LIBS=
+AS_CASE(["${ZJIT_SUPPORT}"],
+[yes|dev], [
+    AS_IF([test x"$RUSTC" = "xno"],
+        AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+    )
+
+    AS_CASE(["${ZJIT_SUPPORT}"],
+    [yes], [
+	rb_rust_target_subdir=release
+    ],
+    [dev], [
+	rb_rust_target_subdir=debug
+	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+	AC_DEFINE(RUBY_DEBUG, 1)
+    ])
+
+    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
+             AC_CHECK_TOOL(CARGO, [cargo], [no])
+             AS_IF([test x"$CARGO" = "xno"],
+                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
+             ]))
+
+    ZJIT_LIBS="zjit/target/${rb_rust_target_subdir}/libzjit.a"
+    AS_CASE(["$target_os"],[openbsd*],[
+        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
+        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
+    ])
+    ZJIT_OBJ='zjit.$(OBJEXT)'
+    AS_IF([test x"$ZJIT_SUPPORT" != "xyes" ], [
+        AC_DEFINE_UNQUOTED(ZJIT_SUPPORT, [$ZJIT_SUPPORT])
+    ])
+    AC_DEFINE(USE_ZJIT, 1)
+], [
+    AC_DEFINE(USE_ZJIT, 0)
 ])
 
 dnl These variables end up in ::RbConfig::CONFIG
