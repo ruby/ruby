@@ -10,6 +10,7 @@ mod virtualmem;
 mod asm;
 mod backend;
 
+#[cfg(target_arch = "x86_64")]
 use backend::x86_emit;
 use codegen::ZJITState;
 use crate::cruby::*;

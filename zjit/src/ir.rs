@@ -142,7 +142,7 @@ impl std::fmt::Display for Function {
                     Insn::Add { v0, v1 } => { write!(f, "Add {v0}, {v1}")?; }
                     insn => { write!(f, "{insn:?}")?; }
                 }
-                writeln!(f, "");
+                writeln!(f, "")?;
             }
         }
         Ok(())
@@ -353,7 +353,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let val = state.pop();
                 let test_id = fun.push_insn(block, Insn::Test { val });
                 // TODO(max): Check interrupts
-                let branch_id = fun.push_insn(block,
+                let _branch_id = fun.push_insn(block,
                     Insn::IfFalse {
                         val: Opnd::Insn(test_id),
                         target: BranchEdge {
