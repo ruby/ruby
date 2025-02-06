@@ -190,6 +190,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             .unwrap();
 
         match opcode {
+            YARVINSN_nop => {},
             YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
             YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
             YARVINSN_putstring => {
