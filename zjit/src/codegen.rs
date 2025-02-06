@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use crate::cruby::*;
 use crate::virtualmem::*;
-use crate::{utils::IntoUsize};
 
 /// Block of memory into which instructions can be assembled
 pub struct CodeBlock {
@@ -135,7 +134,7 @@ impl ZJITState {
             // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
             let page_size = unsafe { rb_zjit_get_page_size() };
             assert_eq!(
-                virt_block as usize % page_size.as_usize(), 0,
+                virt_block as usize % page_size as usize, 0,
                 "Start of virtual address block should be page-aligned",
             );
 

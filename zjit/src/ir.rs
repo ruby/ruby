@@ -258,6 +258,14 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 state.push(Opnd::Insn(add_id));
             }
 
+            YARVINSN_opt_lt => {
+                // TODO: we need to add a BOP not redefined check here
+                let v0 = state.pop();
+                let v1 = state.pop();
+                let lt_id = result.push_insn(block, Insn::Lt { v0, v1 });
+                state.push(Opnd::Insn(lt_id));
+            }
+
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }

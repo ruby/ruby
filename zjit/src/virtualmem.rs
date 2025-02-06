@@ -5,7 +5,7 @@
 
 use std::ptr::NonNull;
 
-use crate::{stats::zjit_alloc_size, utils::IntoUsize};
+use crate::{stats::zjit_alloc_size};
 
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
@@ -78,7 +78,7 @@ impl CodePtr {
     /// been any writes to it through the [VirtualMemory] yet.
     pub fn raw_ptr(self, base: &impl CodePtrBase) -> *const u8 {
         let CodePtr(offset) = self;
-        return base.base_ptr().as_ptr().wrapping_add(offset.as_usize())
+        return base.base_ptr().as_ptr().wrapping_add(offset as usize)
     }
 
     /// Get the address of the code pointer.
@@ -113,7 +113,7 @@ impl<A: Allocator> VirtualMemory<A> {
         memory_limit_bytes: usize,
     ) -> Self {
         assert_ne!(0, page_size);
-        let page_size_bytes = page_size.as_usize();
+        let page_size_bytes = page_size as usize;
 
         Self {
             region_start: virt_region_start,
@@ -246,7 +246,7 @@ impl<A: Allocator> VirtualMemory<A> {
         // Bounds check the request. We should only free memory we manage.
         let mapped_region = self.start_ptr().raw_ptr(self)..self.mapped_end_ptr().raw_ptr(self);
         let virtual_region = self.start_ptr().raw_ptr(self)..self.virtual_end_ptr().raw_ptr(self);
-        let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1).as_usize()).raw_ptr(self);
+        let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1) as usize).raw_ptr(self);
         assert!(mapped_region.contains(&start_ptr.raw_ptr(self)));
         // On platforms where code page size != memory page size (e.g. Linux), we often need
         // to free code pages that contain unmapped memory pages. When it happens on the last
@@ -328,7 +328,7 @@ pub mod tests {
             let index = ptr as usize - mem_start;
 
             assert!(index < self.memory.len());
-            assert!(index + size.as_usize() <= self.memory.len());
+            assert!(index + size as usize <= self.memory.len());
 
             index
         }
@@ -338,14 +338,14 @@ pub mod tests {
     impl super::Allocator for TestingAllocator {
         fn mark_writable(&mut self, ptr: *const u8, length: u32) -> bool {
             let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkWritable { start_idx: index, length: length.as_usize() });
+            self.requests.push(MarkWritable { start_idx: index, length: length as usize });
 
             true
         }
 
         fn mark_executable(&mut self, ptr: *const u8, length: u32) {
             let index = self.bounds_check_request(ptr, length);
-            self.requests.push(MarkExecutable { start_idx: index, length: length.as_usize() });
+            self.requests.push(MarkExecutable { start_idx: index, length: length as usize });
 
             // We don't try to execute generated code in cfg(test)
             // so no need to actually request executable memory.
