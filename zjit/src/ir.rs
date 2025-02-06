@@ -301,12 +301,16 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
         if let Some(block_id) = insn_idx_to_block.get(&insn_idx) {
             block = *block_id;
         }
+
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+        state.pc = pc;
+
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
             .unwrap();
+
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode as usize);
 
