@@ -46,6 +46,11 @@ pub struct BranchEdge {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct CallInfo {
+    name: String,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
@@ -82,7 +87,7 @@ pub enum Insn {
 
     // Send with dynamic dispatch
     // Ignoring keyword arguments etc for now
-    Send { self_val: Opnd, args: Vec<Opnd> },
+    Send { self_val: Opnd, call_info: CallInfo, args: Vec<Opnd> },
 
     // Control flow instructions
     Return { val: Opnd },
@@ -361,6 +366,10 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                             args: vec![],
                         }
                     });
+            }
+            YARVINSN_opt_nil_p => {
+                let recv = state.pop();
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
             }
             YARVINSN_getlocal_WC_0 => {
                 let val = state.getlocal(0);
