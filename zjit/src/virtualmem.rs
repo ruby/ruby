@@ -270,7 +270,7 @@ impl<A: Allocator> CodePtrBase for VirtualMemory<A> {
 
 /// Requires linking with CRuby to work
 #[cfg(not(test))]
-mod sys {
+pub mod sys {
     use crate::cruby::*;
 
     /// Zero size! This just groups together syscalls that require linking with CRuby.
