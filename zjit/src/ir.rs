@@ -45,6 +45,18 @@ pub struct BranchEdge {
     args: Vec<Opnd>,
 }
 
+impl std::fmt::Display for BranchEdge {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}(", self.target)?;
+        let mut prefix = "";
+        for arg in &self.args {
+            write!(f, "{prefix}{arg}")?;
+            prefix = ", ";
+        }
+        write!(f, ")")
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct CallInfo {
     name: String,
@@ -142,7 +154,7 @@ impl std::fmt::Display for Function {
                 write!(f, "  {insn_id} = ")?;
                 match &self.insns[insn_id.0] {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
-                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target:?}")?; }
+                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
                     Insn::Add { v0, v1 } => { write!(f, "Add {v0}, {v1}")?; }
                     Insn::Send { self_val, call_info, args } => {
@@ -151,6 +163,7 @@ impl std::fmt::Display for Function {
                             write!(f, ", {arg}")?;
                         }
                     }
+                    Insn::Test { val } => { write!(f, "Test {val}")?; }
                     insn => { write!(f, "{insn:?}")?; }
                 }
                 writeln!(f, "")?;
