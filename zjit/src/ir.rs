@@ -18,6 +18,7 @@ enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
     StringCopy { val: Opnd },
+    StringIntern { val: Opnd },
 
     // Control flow instructions
     Return { val: Opnd },
@@ -68,6 +69,7 @@ enum RubyOpcode {
     Putnil,
     Putobject(VALUE),
     Putstring(VALUE),
+    Intern,
     Setlocal(usize),
     Getlocal(usize),
     Leave,
@@ -119,8 +121,13 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
             RubyOpcode::Putnil => { state.push(Opnd::Const(Qnil)); },
             RubyOpcode::Putobject(val) => { state.push(Opnd::Const(*val)); },
             RubyOpcode::Putstring(val) => {
-                let insn_id = Opnd::Insn(result.push_insn(block, Insn::StringCopy { val: Opnd::Const(*val) }));
-                state.push(insn_id);
+                let insn_id = result.push_insn(block, Insn::StringCopy { val: Opnd::Const(*val) });
+                state.push(Opnd::Insn(insn_id));
+            }
+            RubyOpcode::Intern => {
+                let val = state.pop();
+                let insn_id = result.push_insn(block, Insn::StringIntern { val });
+                state.push(Opnd::Insn(insn_id));
             }
             RubyOpcode::Setlocal(idx) => {
                 let val = state.pop();
@@ -156,6 +163,27 @@ mod tests {
             ],
             blocks: vec![
                 Block { params: vec![], insns: vec![InsnId(0)] }
+            ],
+        });
+    }
+
+    #[test]
+    fn test_intern() {
+        let opcodes = vec![
+            RubyOpcode::Putstring(Qnil),
+            RubyOpcode::Intern,
+            RubyOpcode::Leave,
+        ];
+        let function = to_ssa(&opcodes);
+        assert_eq!(function, Function {
+            entry_block: BlockId(0),
+            insns: vec![
+                Insn::StringCopy { val: Opnd::Const(Qnil) },
+                Insn::StringIntern { val: Opnd::Insn(InsnId(0)) },
+                Insn::Return { val: Opnd::Insn(InsnId(1)) }
+            ],
+            blocks: vec![
+                Block { params: vec![], insns: vec![InsnId(0), InsnId(1), InsnId(2)] }
             ],
         });
     }
