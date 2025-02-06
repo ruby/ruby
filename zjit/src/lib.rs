@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod asm;
 mod codegen;
 mod cruby;
 mod ir;
@@ -13,7 +14,6 @@ use crate::cruby::*;
 #[allow(non_upper_case_globals)]
 #[no_mangle]
 pub static mut rb_zjit_enabled_p: bool = false;
-mod asm;
 
 #[no_mangle]
 pub extern "C" fn rb_zjit_init() {
