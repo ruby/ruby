@@ -86,9 +86,8 @@ impl Function {
 }
 
 struct FrameState {
-    // TODO:
     // Ruby bytecode instruction pointer
-    // pc: *mut VALUE,
+    pc: *mut VALUE,
 
     stack: Vec<Opnd>,
     locals: Vec<Opnd>,
@@ -96,7 +95,7 @@ struct FrameState {
 
 impl FrameState {
     fn new() -> FrameState {
-        FrameState { stack: vec![], locals: vec![] }
+        FrameState { pc: 0 as *mut VALUE, stack: vec![], locals: vec![] }
     }
 
     fn push(&mut self, opnd: Opnd) {
@@ -188,6 +187,8 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+        state.pc = pc;
+
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
