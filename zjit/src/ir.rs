@@ -145,6 +145,12 @@ impl std::fmt::Display for Function {
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target:?}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
                     Insn::Add { v0, v1 } => { write!(f, "Add {v0}, {v1}")?; }
+                    Insn::Send { self_val, call_info, args } => {
+                        write!(f, "Send {self_val}, {}", call_info.name)?;
+                        for arg in args {
+                            write!(f, ", {arg}")?;
+                        }
+                    }
                     insn => { write!(f, "{insn:?}")?; }
                 }
                 writeln!(f, "")?;
