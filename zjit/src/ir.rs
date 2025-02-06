@@ -37,6 +37,10 @@ enum Insn {
     //SetIvar {},
     //GetIvar {},
 
+    // Send with dynamic dispatch
+    // Ignoring keyword arguments etc for now
+    Send { self_val: Opnd, args: Vec<Opnd> },
+
     // Control flow instructions
     Return { val: Opnd },
 
