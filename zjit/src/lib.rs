@@ -19,19 +19,19 @@ pub struct InsnId(usize);
 pub struct BlockId(usize);
 
 // TODO: replace with VALUE
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum RubyValue {
     Nil,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Insn {
     Param { idx: usize },
     Const { val: RubyValue },
     Return { val: InsnId },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Block {
     params: Vec<InsnId>,
     insns: Vec<InsnId>,
@@ -43,7 +43,7 @@ impl Block {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Function {
     entry_block: BlockId,
     insns: Vec<Insn>,
@@ -115,6 +115,14 @@ mod tests {
             RubyOpcode::Leave,
         ];
         let function = to_ssa(&opcodes);
-        println!("zjit {function:?}");
+        assert_eq!(function, Function {
+            entry_block: BlockId(0),
+            insns: vec![
+                Insn::Const { val: RubyValue::Nil },
+                Insn::Return { val: InsnId(0) }],
+            blocks: vec![
+                Block { params: vec![], insns: vec![InsnId(0), InsnId(1)] }
+            ],
+        });
     }
 }
