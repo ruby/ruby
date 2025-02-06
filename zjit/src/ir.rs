@@ -80,12 +80,6 @@ pub enum Insn {
     //SetIvar {},
     //GetIvar {},
 
-    // Operators
-    Add { v0: Opnd, v1: Opnd },
-
-    // Comparison operators
-    Lt { v0: Opnd, v1: Opnd },
-
     // Unconditional jump
     Jump(BranchEdge),
 
@@ -156,7 +150,6 @@ impl std::fmt::Display for Function {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
-                    Insn::Add { v0, v1 } => { write!(f, "Add {v0}, {v1}")?; }
                     Insn::Send { self_val, call_info, args } => {
                         write!(f, "Send {self_val}, {}", call_info.name)?;
                         for arg in args {
@@ -357,19 +350,15 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             }
 
             YARVINSN_opt_plus => {
-                // TODO: we need to add a BOP not redefined check here
                 let v0 = state.pop();
                 let v1 = state.pop();
-                let add_id = fun.push_insn(block, Insn::Add { v0, v1 });
-                state.push(Opnd::Insn(add_id));
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v0, call_info: CallInfo { name: "+".into() }, args: vec![v1] })));
             }
 
             YARVINSN_opt_lt => {
-                // TODO: we need to add a BOP not redefined check here
                 let v0 = state.pop();
                 let v1 = state.pop();
-                let lt_id = fun.push_insn(block, Insn::Lt { v0, v1 });
-                state.push(Opnd::Insn(lt_id));
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v0, call_info: CallInfo { name: "<".into() }, args: vec![v1] })));
             }
 
             YARVINSN_leave => {
