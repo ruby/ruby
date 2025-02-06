@@ -104,6 +104,6 @@ zjit-bindgen: zjit.$(OBJEXT)
 	YJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_GLUE_C_FILE=zjit.c $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(YJIT_BINDGEN_DIFF_OPTS) yjit/src/cruby_bindings.inc.rs; fi
 
-check-yjit-bindgen-unused: yjit.$(OBJEXT)
+check-zjit-bindgen-unused: yjit.$(OBJEXT)
 	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")
 endif
