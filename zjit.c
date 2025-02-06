@@ -49,6 +49,25 @@ rb_zjit_get_page_size(void)
 #endif
 }
 
+#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+// Align the current write position to a multiple of bytes
+static uint8_t *
+align_ptr(uint8_t *ptr, uint32_t multiple)
+{
+    // Compute the pointer modulo the given alignment boundary
+    uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
+
+    // If the pointer is already aligned, stop
+    if (rem == 0)
+        return ptr;
+
+    // Pad the pointer by the necessary amount to align it
+    uint32_t pad = multiple - rem;
+
+    return ptr + pad;
+}
+#endif
+
 // Address space reservation. Memory pages are mapped on an as needed basis.
 // See the Rust mm module for details.
 uint8_t *
