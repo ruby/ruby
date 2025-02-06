@@ -364,6 +364,22 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             YARVINSN_leave => {
                 fun.push_insn(block, Insn::Return { val: state.pop() });
             }
+
+            YARVINSN_opt_send_without_block => {
+                let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                let call_info = unsafe { rb_get_call_data_ci(cd) };
+                let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+
+                let method_name = unsafe {
+                    let mid = rb_vm_ci_mid(call_info);
+                    cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
+                };
+
+                assert_eq!(0, argc, "really, it's pop(argc), and more, but idk how to do that yet");
+                let recv = state.pop();
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args: vec![] })));
+            }
             _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
         }
     }
