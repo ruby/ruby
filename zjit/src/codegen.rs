@@ -8,19 +8,35 @@ use crate::{utils::IntoUsize};
 pub struct CodeBlock {
     // Memory for storing the encoded instructions
     mem_block: Rc<RefCell<VirtualMem>>,
+
+    // Current writing position
+    write_pos: usize,
 }
 
 impl CodeBlock {
     /// Make a new CodeBlock
     pub fn new(mem_block: Rc<RefCell<VirtualMem>>) -> Self {
-        Self { mem_block }
+        Self {
+            mem_block,
+            write_pos: 0,
+        }
+    }
+
+    /// Get a (possibly dangling) direct pointer to the current write position
+    pub fn get_write_ptr(&self) -> CodePtr {
+        self.get_ptr(self.write_pos)
+    }
+
+    /// Get a (possibly dangling) direct pointer into the executable memory block
+    pub fn get_ptr(&self, offset: usize) -> CodePtr {
+        self.mem_block.borrow().start_ptr().add_bytes(offset)
     }
 }
 
 /// Global state needed for code generation
 pub struct ZJITState {
     /// Inline code block (fast path)
-    inline_cb: CodeBlock,
+    code_block: CodeBlock,
 }
 
 /// Private singleton instance of the codegen globals
@@ -65,7 +81,7 @@ impl ZJITState {
 
         #[cfg(not(test))]
         let zjit_state = ZJITState {
-            inline_cb: cb,
+            code_block: cb,
         };
 
         // Initialize the codegen globals instance
@@ -73,5 +89,15 @@ impl ZJITState {
         unsafe {
             ZJIT_STATE = Some(zjit_state);
         }
+    }
+
+    /// Get a mutable reference to the codegen globals instance
+    fn get_instance() -> &'static mut ZJITState {
+        unsafe { ZJIT_STATE.as_mut().unwrap() }
+    }
+
+    /// Get a mutable reference to the inline code block
+    pub fn get_code_block() -> &'static mut CodeBlock {
+        &mut ZJITState::get_instance().code_block
     }
 }

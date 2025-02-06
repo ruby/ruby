@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(static_mut_refs)]
 
 mod codegen;
 mod cruby;
@@ -76,5 +77,9 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 #[no_mangle]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
     ir::iseq_to_ssa(iseq);
+
+    let cb = ZJITState::get_code_block();
+    let _start_ptr = cb.get_write_ptr();
+
     std::ptr::null()
 }
