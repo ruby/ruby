@@ -1,4 +1,7 @@
-use crate::cruby::{VALUE, Qnil};
+// We use the YARV bytecode constants which have a CRuby-style name
+#![allow(non_upper_case_globals)]
+
+use crate::cruby::*;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
@@ -153,6 +156,50 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
         }
     }
     result
+}
+
+fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
+    let mut result = Function::new();
+    let mut state = FrameState::new();
+    let block = result.entry_block;
+
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    let mut insn_idx = 0;
+
+    while insn_idx < iseq_size {
+        // Get the current pc and opcode
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+        // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
+        let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+            .try_into()
+            .unwrap();
+
+        match opcode {
+            YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
+            YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
+            YARVINSN_setlocal_WC_0 => {
+                let val = state.pop();
+                state.setlocal(0, val);
+            }
+            YARVINSN_getlocal_WC_0 => {
+                let val = state.getlocal(0);
+                state.push(val);
+            }
+            YARVINSN_leave => {
+                result.push_insn(block, Insn::Return { val: state.pop() });
+            }
+            _ => todo!(),
+        }
+
+        // Move to the next instruction to compile
+        insn_idx += insn_len(opcode as usize);
+    }
+    return result;
+
+    fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
+        unsafe { *(pc.offset(arg_idx + 1)) }
+
+    }
 }
 
 #[cfg(test)]
