@@ -62,7 +62,7 @@ pub struct CallInfo {
     name: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
@@ -79,6 +79,8 @@ pub enum Insn {
     //NewObject?
     //SetIvar {},
     //GetIvar {},
+
+    Snapshot { state: FrameState },
 
     // Unconditional jump
     Jump(BranchEdge),
@@ -99,7 +101,7 @@ pub enum Insn {
     Return { val: Opnd },
 }
 
-#[derive(Default, Debug, PartialEq)]
+#[derive(Default, Debug)]
 pub struct Block {
     params: Vec<InsnId>,
     insns: Vec<InsnId>,
@@ -108,7 +110,22 @@ pub struct Block {
 impl Block {
 }
 
-#[derive(Debug, PartialEq)]
+struct FunctionPrinter<'a> {
+    fun: &'a Function,
+    display_snapshot: bool,
+}
+
+impl<'a> FunctionPrinter<'a> {
+    fn from(fun: &'a Function) -> FunctionPrinter {
+        FunctionPrinter { fun, display_snapshot: false }
+    }
+
+    fn with_snapshot(fun: &'a Function) -> FunctionPrinter {
+        FunctionPrinter { fun, display_snapshot: true }
+    }
+}
+
+#[derive(Debug)]
 pub struct Function {
     // ISEQ this function refers to
     iseq: *const rb_iseq_t,
@@ -145,14 +162,18 @@ impl Function {
     }
 }
 
-impl std::fmt::Display for Function {
+impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        for (block_id, block) in self.blocks.iter().enumerate() {
+        let fun = &self.fun;
+        for (block_id, block) in fun.blocks.iter().enumerate() {
             let block_id = BlockId(block_id);
             writeln!(f, "{block_id}:")?;
             for insn_id in &block.insns {
+                if !self.display_snapshot && matches!(fun.insns[insn_id.0], Insn::Snapshot {..}) {
+                    continue;
+                }
                 write!(f, "  {insn_id} = ")?;
-                match &self.insns[insn_id.0] {
+                match &fun.insns[insn_id.0] {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
@@ -174,7 +195,8 @@ impl std::fmt::Display for Function {
     }
 }
 
-struct FrameState {
+#[derive(Debug, Clone)]
+pub struct FrameState {
     // Ruby bytecode instruction pointer
     pc: *mut VALUE,
 
@@ -274,6 +296,8 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
         state.pc = pc;
+
+        fun.push_insn(block, Insn::Snapshot { state: state.clone() });
 
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
@@ -392,7 +416,8 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
         }
     }
 
-    print!("SSA:\n{fun}");
+    let formatter = FunctionPrinter::from(&fun);
+    print!("SSA:\n{formatter}");
     return fun;
 }
 
