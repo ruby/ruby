@@ -7,14 +7,35 @@ use std::collections::HashMap;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
 
+impl std::fmt::Display for InsnId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "v{}", self.0)
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct BlockId(usize);
+
+impl std::fmt::Display for BlockId {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "bb{}", self.0)
+    }
+}
 
 /// Instruction operand
 #[derive(Debug, PartialEq, Clone, Copy)]
 enum Opnd {
     Const(VALUE),
     Insn(InsnId),
+}
+
+impl std::fmt::Display for Opnd {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Opnd::Const(val) => write!(f, "{:?}", val.as_ptr::<u8>()),
+            Opnd::Insn(insn_id) => write!(f, "{insn_id}"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -103,6 +124,25 @@ impl Function {
         let id = BlockId(self.blocks.len());
         self.blocks.push(Block::default());
         id
+    }
+}
+
+impl std::fmt::Display for Function {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        for (block_id, block) in self.blocks.iter().enumerate() {
+            let block_id = BlockId(block_id);
+            writeln!(f, "{block_id}:")?;
+            for insn_id in &block.insns {
+                write!(f, "  {insn_id} = ")?;
+                match &self.insns[insn_id.0] {
+                    Insn::Param { idx } => { write!(f, "Param {idx}")?; }
+                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target:?}")?; }
+                    _ => { write!(f, "idk")?; }
+                }
+                writeln!(f, "");
+            }
+        }
+        Ok(())
     }
 }
 
@@ -353,7 +393,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
             _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
         }
     }
-    dbg!(result);
+    print!("SSA:\n{result}");
     return;
 }
 
