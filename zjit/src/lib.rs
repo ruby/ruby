@@ -1,8 +1,11 @@
 #![allow(dead_code)]
 
+mod codegen;
 mod cruby;
-mod stats;
 mod ir;
+mod stats;
+mod utils;
+mod virtualmem;
 use crate::cruby::*;
 
 #[allow(non_upper_case_globals)]

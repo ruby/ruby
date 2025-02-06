@@ -31,6 +31,94 @@
 
 #include <errno.h>
 
+// Address space reservation. Memory pages are mapped on an as needed basis.
+// See the Rust mm module for details.
+uint8_t *
+rb_zjit_reserve_addr_space(uint32_t mem_size)
+{
+#ifndef _WIN32
+    uint8_t *mem_block;
+
+    // On Linux
+    #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+        uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
+        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_zjit_reserve_addr_space;
+        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
+        // Align the requested address to page size
+        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+
+        // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
+        // to improve odds of being in range for 32-bit relative call instructions.
+        do {
+            mem_block = mmap(
+                req_addr,
+                mem_size,
+                PROT_NONE,
+                MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE,
+                -1,
+                0
+            );
+
+            // If we succeeded, stop
+            if (mem_block != MAP_FAILED) {
+                ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_zjit_reserve_addr_space");
+                break;
+            }
+
+            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
+            // main_code_addr < heap_addr, and in case we are in a shared
+            // library mapped higher than the heap, downwards is still better
+            // since it's towards the end of the heap rather than the stack.)
+            req_addr -= 4 * 1024 * 1024;
+        } while (req_addr < probe_region_end);
+
+    // On MacOS and other platforms
+    #else
+        // Try to map a chunk of memory as executable
+        mem_block = mmap(
+            (void *)rb_zjit_reserve_addr_space,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+    #endif
+
+    // Fallback
+    if (mem_block == MAP_FAILED) {
+        // Try again without the address hint (e.g., valgrind)
+        mem_block = mmap(
+            NULL,
+            mem_size,
+            PROT_NONE,
+            MAP_PRIVATE | MAP_ANONYMOUS,
+            -1,
+            0
+        );
+
+        if (mem_block != MAP_FAILED) {
+            ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_zjit_reserve_addr_space:fallback");
+        }
+    }
+
+    // Check that the memory mapping was successful
+    if (mem_block == MAP_FAILED) {
+        perror("ruby: zjit: mmap:");
+        if(errno == ENOMEM) {
+            // No crash report if it's only insufficient memory
+            exit(EXIT_FAILURE);
+        }
+        rb_bug("mmap failed");
+    }
+
+    return mem_block;
+#else
+    // Windows not supported for now
+    return NULL;
+#endif
+}
+
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
