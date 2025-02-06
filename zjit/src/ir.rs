@@ -99,6 +99,10 @@ impl FrameState {
         self.stack.push(opnd);
     }
 
+    fn top(&self) -> Opnd {
+        *self.stack.last().unwrap()
+    }
+
     fn pop(&mut self) -> Opnd {
         self.stack.pop().expect("Bytecode stack mismatch")
     }
@@ -203,6 +207,8 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
                 let val = state.getlocal(0);
                 state.push(val);
             }
+            YARVINSN_pop => { state.pop(); }
+            YARVINSN_dup => { state.push(state.top()); }
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
