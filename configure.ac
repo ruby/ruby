@@ -3986,11 +3986,11 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     ],
     [dev], [
 	rb_rust_target_subdir=debug
-	ZJIT_CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+	CARGO_BUILD_ARGS='--profile dev'
 	AC_DEFINE(RUBY_DEBUG, 1)
     ])
 
-    AS_IF([test -n "${ZJIT_CARGO_BUILD_ARGS}"], [
+    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
              AC_CHECK_TOOL(CARGO, [cargo], [no])
              AS_IF([test x"$CARGO" = "xno"],
                 AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
