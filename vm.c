@@ -496,6 +496,9 @@ jit_compile_exception(rb_execution_context_t *ec)
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
+
+
+
     }
     return body->jit_exception;
 }

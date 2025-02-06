@@ -25,7 +25,7 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 }
 
 #[no_mangle]
-pub extern "C" fn rb_zjit_iseq_gen_entry_point(_iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
-    println!("compiling zjit");
+pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+    ir::iseq_to_ssa(iseq);
     std::ptr::null()
 }

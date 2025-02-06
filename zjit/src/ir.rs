@@ -158,7 +158,7 @@ fn to_ssa(opcodes: &Vec<RubyOpcode>) -> Function {
     result
 }
 
-fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
+pub fn iseq_to_ssa(iseq: *const rb_iseq_t) {
     let mut result = Function::new();
     let mut state = FrameState::new();
     let block = result.entry_block;
@@ -206,13 +206,14 @@ fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             YARVINSN_leave => {
                 result.push_insn(block, Insn::Return { val: state.pop() });
             }
-            _ => todo!(),
+            _ => eprintln!("zjit: unknown opcode {opcode}"),
         }
 
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode as usize);
     }
-    return result;
+    dbg!(result);
+    return;
 
     fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
         unsafe { *(pc.offset(arg_idx + 1)) }

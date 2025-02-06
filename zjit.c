@@ -134,3 +134,31 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 
     RB_VM_LOCK_LEAVE();
 }
+
+unsigned int
+rb_iseq_encoded_size(const rb_iseq_t *iseq)
+{
+    return iseq->body->iseq_size;
+}
+
+// Get the opcode given a program counter. Can return trace opcode variants.
+int
+rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    // YJIT should only use iseqs after AST to bytecode compilation
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
+
+    const VALUE at_pc = *pc;
+    return rb_vm_insn_addr2opcode((const void *)at_pc);
+}
+
+// Get the PC for a given index in an iseq
+VALUE *
+rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(insn_idx < iseq->body->iseq_size);
+    VALUE *encoded = iseq->body->iseq_encoded;
+    VALUE *pc = &encoded[insn_idx];
+    return pc;
+}
