@@ -1927,6 +1927,20 @@ typedef enum {
 } console_platform_t;
 
 #ifdef HAVE_RB_PREPEND_MODULE
+/*
+ * call-seq:
+ *   io.tty?([mode])	-> true or false
+ *
+ * Returns +true+ if the stream is associated with a terminal device (tty),
+ * +false+ otherwise.
+ *
+ * If non-nil +mode+ is given, platform dependent tty is also checked
+ * in addition to the default tty.
+ *
+ * - +:any+ : Returns +true+ for any known kind of tty.
+ * - +:cygwin+ : Returns +true+ for cygwin tty, on Windows.
+ * - +:msys+ : Returns +true+ for msys2 tty, on Windows.
+ */
 static VALUE
 console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 {
@@ -2060,9 +2074,14 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
 #ifdef HAVE_RB_PREPEND_MODULE
     {
+	/* :stopdoc: */
 	VALUE platform = rb_define_module_under(rb_cIO, "platform_tty");
-	rb_define_method(platform, "tty?", console_platform_tty_p, -1);
-	rb_define_method(platform, "isatty", console_platform_tty_p, -1);
+	/* :startdoc: */
+	{
+	    VALUE rb_cIO = platform;
+	    rb_define_method(rb_cIO, "tty?", console_platform_tty_p, -1);
+	    rb_define_method(rb_cIO, "isatty", console_platform_tty_p, -1);
+	}
 	rb_prepend_module(rb_cIO, platform);
     }
 #endif
