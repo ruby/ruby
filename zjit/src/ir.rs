@@ -379,10 +379,6 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             YARVINSN_putobject_INT2FIX_1_ => {
                 state.push(Opnd::Const(VALUE::fixnum_from_usize(1)));
             }
-            YARVINSN_setlocal_WC_0 => {
-                let val = state.pop();
-                state.setlocal(0, val);
-            }
             YARVINSN_defined => {
                 let op_type = get_arg(pc, 0).as_usize();
                 let obj = get_arg(pc, 0);
@@ -414,8 +410,14 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
             }
             YARVINSN_getlocal_WC_0 => {
-                let val = state.getlocal(0);
+                let idx = get_arg(pc, 0).as_usize();
+                let val = state.getlocal(idx);
                 state.push(val);
+            }
+            YARVINSN_setlocal_WC_0 => {
+                let idx = get_arg(pc, 0).as_usize();
+                let val = state.pop();
+                state.setlocal(idx, val);
             }
             YARVINSN_pop => { state.pop(); }
             YARVINSN_dup => { state.push(state.top()); }
