@@ -235,6 +235,11 @@ impl FrameState {
         self.stack.pop().expect("Bytecode stack mismatch (underflow)")
     }
 
+    fn setn(&mut self, n: usize, opnd: Opnd) {
+        let idx = self.stack.len() - n - 1;
+        self.stack[idx] = opnd;
+    }
+
     fn setlocal(&mut self, idx: usize, opnd: Opnd) {
         if idx >= self.locals.len() {
             self.locals.resize(idx+1, Opnd::Const(Qnil));
@@ -419,6 +424,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let left = state.pop();
                 state.push(right);
                 state.push(left);
+            }
+            YARVINSN_setn => {
+                let n = get_arg(pc, 0).as_usize();
+                let top = state.top();
+                state.setn(n, top);
             }
 
             YARVINSN_opt_plus => {
