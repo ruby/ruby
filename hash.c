@@ -3808,19 +3808,23 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *
  *  Returns whether +self+ and +object+ are equal.
  *
- *  Returns +true+ if +object+ is a hash (or can be converted to a hash),
- *  and hashes +self+ and +object+ are equal;
- *  otherwise, returns +false+:
+ *  Returns +true+ if all of the following are true:
  *
- *    h =  {'foo' => 'zero', 'bar' => 'one'}
- *    h == {'foo' => 'zero', 'bar' => 'one'} # => true   # Equal entries (same order)
- *    h == {'bar' => 'one', 'foo' => 'zero'} # => true   # Equal entries (different order).
- *    h == 1                                 # => false  # Object not a hash.
- *    h == {}                                # => false  # Different number of entries.
- *    h == {'FOO' => 'zero', 'bar' => 'one'} # => false  # Different key.
- *    h == {'foo' => 'ZERO', 'bar' => 'one'} # => false  # Different value.
+ *  - +object+ is a +Hash+ object (or can be converted to one).
+ *  - +self+ and +object+ have the same keys (regardless of order).
+ *  - For each key +key+, <tt>self[key] == object[key]</tt>.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
+ *  Otherwise, returns +false+.
+ *
+ *  Examples:
+ *
+ *    h =  {foo: 0, bar: 1}
+ *    h == {foo: 0, bar: 1} # => true   # Equal entries (same order)
+ *    h == {bar: 1, foo: 0} # => true   # Equal entries (different order).
+ *    h == 1                            # => false  # Object not a hash.
+ *    h == {}                           # => false  # Different number of entries.
+ *    h == {foo: 0, bar: 1} # => false  # Different key.
+ *    h == {foo: 0, bar: 1} # => false  # Different value.
  *
  *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
@@ -4649,7 +4653,7 @@ hash_le(VALUE hash1, VALUE hash2)
  *    h0 <= h1 # => true
  *    h1 <= h0 # => false
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4670,15 +4674,15 @@ rb_hash_le(VALUE hash, VALUE other)
  *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
  *  +false+ otherwise:
  *
- *    h = {'foo' => 'zero', 'bar' => 'one'}
- *    h < {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => true   # Proper subset.
- *    h < {'baz' => 'two', 'bar' => 'one', 'foo' => 'zero'} # => true   # Order may differ.
- *    h < h                                                 # => false  # Not a proper subset.
- *    h < {'bar' => 'one', 'foo' => 'zero'}                 # => false  # Not a proper subset.
- *    h < {'FOO' => 'zero', 'bar' => 'one', 'baz' => 'two'} # => false  # Different key.
- *    h < {'foo' => 'ZERO', 'bar' => 'one', 'baz' => 'two'} # => false  # Different value.
+ *    h = {foo: 0, bar: 1}
+ *    h < {foo: 0, bar: 1, baz: 2} # => true   # Proper subset.
+ *    h < {baz: 2, bar: 1, foo: 0} # => true   # Order may differ.
+ *    h < h                        # => false  # Not a proper subset.
+ *    h < {bar: 1, foo: 0}         # => false  # Not a proper subset.
+ *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
+ *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4705,7 +4709,7 @@ rb_hash_lt(VALUE hash, VALUE other)
  *    h0 >= h0 # => true
  *    h1 >= h0 # => false
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
@@ -4726,15 +4730,15 @@ rb_hash_ge(VALUE hash, VALUE other)
  *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
  *  +false+ otherwise:
  *
- *    h = {'foo' => 'zero', 'bar' => 'one', 'baz' => 'two'}
- *    h > {'foo' => 'zero', 'bar' => 'one'}                 # => true   # Proper superset.
- *    h > {'bar' => 'one', 'foo' => 'zero'}                 # => true   # Order may differ.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h > {foo: 0, bar: 1}         # => true   # Proper superset.
+ *    h > {bar: 1, foo: 0}         # => true   # Order may differ.
  *    h > h                                                 # => false  # Not a proper superset.
- *    h > {'baz' => 'two', 'bar' => 'one', 'foo' => 'zero'} # => false  # Not a proper superset.
- *    h > {'FOO' => 'zero', 'bar' => 'one'}                 # => false  # Different key.
- *    h > {'foo' => 'ZERO', 'bar' => 'one'}                 # => false  # Different value.
+ *    h > {baz: 2, bar: 1, foo: 0} # => false  # Not a proper superset.
+ *    h > {foo: 0, bar: 1}         # => false  # Different key.
+ *    h > {foo: 0, bar: 1}         # => false  # Different value.
  *
- *  See {Hash Equality and Inclusion}[rdoc-ref:hash_equality_and_inclusion.rdoc].
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
  *
  *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
  *
