@@ -1138,8 +1138,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     next unless /^(\S+)\s+(\S+).*/ =~ name
     gem = $1
     gem_name = "#$1-#$2"
-    path = nil
-    [
+    path = [
       # gemspec that removed duplicated dependencies of bundled gems
       "#{srcdir}/.bundle/gems/#{gem_name}/#{gem}.gemspec",
       # gemspec for C ext gems, It has the original dependencies
