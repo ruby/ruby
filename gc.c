@@ -2650,6 +2650,9 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
     MARK_CHECKPOINT("machine_context");
     mark_current_machine_context(ec);
 
+    MARK_CHECKPOINT("global_symbols");
+    rb_sym_global_symbols_mark();
+
     MARK_CHECKPOINT("finish");
 
 #undef MARK_CHECKPOINT
