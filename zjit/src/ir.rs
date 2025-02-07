@@ -75,6 +75,7 @@ pub struct CallInfo {
 #[derive(Debug)]
 pub enum Insn {
     // SSA block parameter. Also used for function parameters in the function's entry block.
+    PutSelf,
     Param { idx: usize },
 
     StringCopy { val: Opnd },
@@ -346,6 +347,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let insn_id = fun.push_insn(block, Insn::StringCopy { val });
                 state.push(Opnd::Insn(insn_id));
             }
+            YARVINSN_putself => { state.push(Opnd::Insn(fun.push_insn(block, Insn::PutSelf))); }
             YARVINSN_intern => {
                 let val = state.pop();
                 let insn_id = fun.push_insn(block, Insn::StringIntern { val });
