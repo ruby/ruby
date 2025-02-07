@@ -29,6 +29,16 @@ pub enum Opnd {
     Insn(InsnId),
 }
 
+fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
+    write!(f, "[")?;
+    let mut prefix = "";
+    for obj in objs {
+        write!(f, "{prefix}{obj}")?;
+        prefix = ", ";
+    }
+    write!(f, "]")
+}
+
 impl std::fmt::Display for Opnd {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
@@ -186,6 +196,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         }
                     }
                     Insn::Test { val } => { write!(f, "Test {val}")?; }
+                    Insn::Snapshot { state } => { write!(f, "Snapshot {state}")?; }
                     insn => { write!(f, "{insn:?}")?; }
                 }
                 writeln!(f, "")?;
@@ -198,7 +209,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
 #[derive(Debug, Clone)]
 pub struct FrameState {
     // Ruby bytecode instruction pointer
-    pc: *mut VALUE,
+    pc: VALUE,
 
     stack: Vec<Opnd>,
     locals: Vec<Opnd>,
@@ -206,7 +217,7 @@ pub struct FrameState {
 
 impl FrameState {
     fn new() -> FrameState {
-        FrameState { pc: 0 as *mut VALUE, stack: vec![], locals: vec![] }
+        FrameState { pc: VALUE(0), stack: vec![], locals: vec![] }
     }
 
     fn push(&mut self, opnd: Opnd) {
@@ -233,6 +244,16 @@ impl FrameState {
             self.locals.resize(idx+1, Opnd::Const(Qnil));
         }
         self.locals[idx]
+    }
+}
+
+impl std::fmt::Display for FrameState {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "FrameState {{ pc: {:?}, stack: ", self.pc.as_ptr::<u8>())?;
+        write_vec(f, &self.stack)?;
+        write!(f, ", locals: ")?;
+        write_vec(f, &self.locals)?;
+        write!(f, " }}")
     }
 }
 
@@ -271,6 +292,8 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
 
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
     let mut fun = Function::new(iseq);
+    // TODO(max): Queue TranslationContexts so that we can assign states to basic blocks instead of
+    // flowing one state through the linear iseq
     let mut state = FrameState::new();
     let mut block = fun.entry_block;
 
@@ -295,7 +318,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
 
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
-        state.pc = pc;
+        state.pc = unsafe { *pc };
 
         fun.push_insn(block, Insn::Snapshot { state: state.clone() });
 
