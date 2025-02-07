@@ -229,11 +229,11 @@ impl FrameState {
     }
 
     fn top(&self) -> Result<Opnd, ParseError> {
-        self.stack.last().ok_or(ParseError::StackUnderflow).copied()
+        self.stack.last().ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
 
     fn pop(&mut self) -> Result<Opnd, ParseError> {
-        self.stack.pop().ok_or(ParseError::StackUnderflow)
+        self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
     }
 
     fn setn(&mut self, n: usize, opnd: Opnd) {
@@ -308,7 +308,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
 
 #[derive(Debug)]
 pub enum ParseError {
-    StackUnderflow,
+    StackUnderflow(FrameState),
 }
 
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
