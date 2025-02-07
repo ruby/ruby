@@ -772,7 +772,7 @@ def load_gemspec(file, base = nil)
     next if File.directory?(File.join(base, n))
     files << n.dump
   end if base
-  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split\([^\)]*\)/m) do
+  code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split(\([^\)]*\))?/m) do
     "[" + files.join(", ") + "]"
   end
   code.gsub!(/IO\.popen\(.*git.*?\)/) do
