@@ -83,6 +83,7 @@ pub enum Insn {
 
     NewArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
+    ArrayDup { val: Opnd },
     Test { val: Opnd },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: Opnd },
     GetConstantPath { ic: *const u8 },
@@ -190,6 +191,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
                     Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
                     Insn::ArraySet { idx, val } => { write!(f, "ArraySet {idx}, {val}")?; }
+                    Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}")?; }
                     Insn::Send { self_val, call_info, args } => {
                         write!(f, "Send {self_val}, :{}", call_info.name)?;
                         for arg in args {
@@ -361,6 +363,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 }
                 state.push(Opnd::Insn(insn_id));
             }
+            YARVINSN_duparray => {
+                let val = Opnd::Const(get_arg(pc, 0));
+                let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
+                state.push(Opnd::Insn(insn_id));
+            }
             YARVINSN_putobject_INT2FIX_0_ => {
                 state.push(Opnd::Const(VALUE::fixnum_from_usize(0)));
             }
@@ -424,6 +431,13 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let v0 = state.pop();
                 let v1 = state.pop();
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v0, call_info: CallInfo { name: "<".into() }, args: vec![v1] })));
+            }
+            YARVINSN_opt_aset => {
+                let set = state.pop();
+                let obj = state.pop();
+                let recv = state.pop();
+                fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
+                state.push(set);
             }
 
             YARVINSN_leave => {
