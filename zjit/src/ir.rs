@@ -285,7 +285,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
                 let offset = get_arg(pc, 0).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
-            YARVINSN_leave => {
+            YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave => {
                 if insn_idx < iseq_size {
                     jump_targets.insert(insn_idx);
                 }
@@ -440,10 +440,14 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                     let mid = rb_vm_ci_mid(call_info);
                     cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
                 };
+                let mut args = vec![];
+                for _ in 0..argc {
+                    args.push(state.pop());
+                }
+                args.reverse();
 
-                assert_eq!(0, argc, "really, it's pop(argc), and more, but idk how to do that yet");
                 let recv = state.pop();
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args: vec![] })));
+                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args })));
             }
             _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
         }
