@@ -1917,6 +1917,7 @@ console_ttyname(VALUE io)
 typedef enum {
     platform_none,
 #ifdef HAVE_RB_PREPEND_MODULE
+    platform_any,
 #if defined _WIN32 || defined __CYGWIN__
     platform_cygwin,
     platform_msys,
@@ -1925,6 +1926,7 @@ typedef enum {
     platform_max
 } console_platform_t;
 
+#ifdef HAVE_RB_PREPEND_MODULE
 static VALUE
 console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 {
@@ -1935,21 +1937,24 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	VALUE m = argv[0];
 	if (!NIL_P(m)) {
 	    Check_Type(m, T_SYMBOL);
-#ifdef HAVE_RB_PREPEND_MODULE
+	    if (m == ID2SYM(rb_intern("any"))) {
+		mode = platform_any;
+	    }
 #if defined _WIN32 || defined __CYGWIN__
-	    if (m == ID2SYM(rb_intern("cygwin"))) {
+	    else if (m == ID2SYM(rb_intern("cygwin"))) {
 		mode = platform_cygwin;
 	    }
 	    else if (m == ID2SYM(rb_intern("msys"))) {
 		mode = platform_msys;
 	    }
 #endif
-#endif
+	    else {
+		rb_raise(rb_eArgError, "unknown tty type: %+" PRIsVALUE, m);
+	    }
 	}
     }
     ret = rb_call_super(0, 0);
     if (mode != platform_none && !RTEST(ret)) {
-#ifdef HAVE_RB_PREPEND_MODULE
 #if defined _WIN32 || defined __CYGWIN__
 	HANDLE h;
 	union {
@@ -1959,29 +1964,31 @@ console_platform_tty_p(int argc, VALUE *argv, VALUE io)
 	WCHAR *const name = buffer.info.FileName;
 	const WCHAR *ptr;
 	DWORD len;
-	static const WCHAR msys_prefix[] = L"\\msys-";
-	static const WCHAR cygwin_prefix[] = L"\\cygwin-";
 
 	h = (HANDLE)rb_w32_get_osfhandle(GetReadFD(io));
 	if (GetFileType(h) != FILE_TYPE_PIPE) return Qfalse;
 	if (!GetFileInformationByHandleEx(h, FileNameInfo, &buffer, sizeof(buffer))) return Qfalse;
 	len = buffer.info.FileNameLength / sizeof(WCHAR);
 	name[len] = L'\0';
-	if (memcmp(name, cygwin_prefix, sizeof(cygwin_prefix)-sizeof(WCHAR)) == 0) {
-	    ptr = name + sizeof(cygwin_prefix)/sizeof(WCHAR) - 1;
+# define skip_platform_tty_prefix(type) \
+	(memcmp(name, L"\\" #type "-", sizeof(L"\\" #type)) == 0 ? \
+	 &name[rb_strlen_lit(L"\\" #type "-")] : 0)
+	if (mode == platform_cygwin || mode == platform_any) {
+	    ptr = skip_platform_tty_prefix(cygwin);
 	}
-	else if (mode == platform_msys && memcmp(name, msys_prefix, sizeof(msys_prefix)-sizeof(WCHAR)) == 0) {
-	    ptr = name + sizeof(msys_prefix)/sizeof(WCHAR) - 1;
+	else if (mode == platform_msys || mode == platform_any) {
+	    ptr = skip_platform_tty_prefix(msys);
 	}
 	else {
 	    return Qfalse;
 	}
+	if (!ptr) return Qfalse;
 	if (wcsstr(ptr, L"-pty")) ret = Qtrue;
-#endif
 #endif
     }
     return ret;
 }
+#endif
 
 /*
  * IO console methods
