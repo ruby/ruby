@@ -280,7 +280,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
             .unwrap();
         insn_idx += insn_len(opcode as usize);
         match opcode {
-            YARVINSN_branchunless => {
+            YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil => {
                 let offset = get_arg(pc, 0).as_i64();
                 jump_targets.push(insn_idx_at_offset(insn_idx, offset));
             }
