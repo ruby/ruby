@@ -79,7 +79,7 @@ pub extern "C" fn rb_zjit_parse_option() -> bool {
 
 #[no_mangle]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
-    ir::iseq_to_ssa(iseq);
+    ir::iseq_to_ssa(iseq).unwrap();
 
     let cb = ZJITState::get_code_block();
     let start_ptr = cb.get_write_ptr();

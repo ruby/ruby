@@ -228,12 +228,12 @@ impl FrameState {
         self.stack.push(opnd);
     }
 
-    fn top(&self) -> Opnd {
-        *self.stack.last().unwrap()
+    fn top(&self) -> Result<Opnd, ParseError> {
+        self.stack.last().ok_or(ParseError::StackUnderflow).copied()
     }
 
-    fn pop(&mut self) -> Opnd {
-        self.stack.pop().expect("Bytecode stack mismatch (underflow)")
+    fn pop(&mut self) -> Result<Opnd, ParseError> {
+        self.stack.pop().ok_or(ParseError::StackUnderflow)
     }
 
     fn setn(&mut self, n: usize, opnd: Opnd) {
@@ -306,7 +306,12 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     result
 }
 
-pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
+#[derive(Debug)]
+pub enum ParseError {
+    StackUnderflow,
+}
+
+pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // TODO(max): Queue TranslationContexts so that we can assign states to basic blocks instead of
     // flowing one state through the linear iseq
@@ -357,7 +362,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             }
             YARVINSN_putself => { state.push(Opnd::Insn(fun.push_insn(block, Insn::PutSelf))); }
             YARVINSN_intern => {
-                let val = state.pop();
+                let val = state.pop()?;
                 let insn_id = fun.push_insn(block, Insn::StringIntern { val });
                 state.push(Opnd::Insn(insn_id));
             }
@@ -365,7 +370,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let count = get_arg(pc, 0).as_usize();
                 let insn_id = fun.push_insn(block, Insn::NewArray { count });
                 for idx in (0..count).rev() {
-                    fun.push_insn(block, Insn::ArraySet { idx, val: state.pop() });
+                    fun.push_insn(block, Insn::ArraySet { idx, val: state.pop()? });
                 }
                 state.push(Opnd::Insn(insn_id));
             }
@@ -384,7 +389,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 let op_type = get_arg(pc, 0).as_usize();
                 let obj = get_arg(pc, 0);
                 let pushval = get_arg(pc, 0);
-                let v = state.pop();
+                let v = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
             }
             YARVINSN_opt_getconstant_path => {
@@ -393,7 +398,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             }
             YARVINSN_branchunless => {
                 let offset = get_arg(pc, 0).as_i64();
-                let val = state.pop();
+                let val = state.pop()?;
                 let test_id = fun.push_insn(block, Insn::Test { val });
                 // TODO(max): Check interrupts
                 let _branch_id = fun.push_insn(block,
@@ -407,7 +412,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                     });
             }
             YARVINSN_opt_nil_p => {
-                let recv = state.pop();
+                let recv = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
             }
             YARVINSN_getlocal_WC_0 => {
@@ -417,49 +422,49 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
             }
             YARVINSN_setlocal_WC_0 => {
                 let idx = get_arg(pc, 0).as_usize();
-                let val = state.pop();
+                let val = state.pop()?;
                 state.setlocal(idx, val);
             }
-            YARVINSN_pop => { state.pop(); }
-            YARVINSN_dup => { state.push(state.top()); }
+            YARVINSN_pop => { state.pop()?; }
+            YARVINSN_dup => { state.push(state.top()?); }
             YARVINSN_swap => {
-                let right = state.pop();
-                let left = state.pop();
+                let right = state.pop()?;
+                let left = state.pop()?;
                 state.push(right);
                 state.push(left);
             }
             YARVINSN_setn => {
                 let n = get_arg(pc, 0).as_usize();
-                let top = state.top();
+                let top = state.top()?;
                 state.setn(n, top);
             }
 
             YARVINSN_opt_plus => {
-                let v0 = state.pop();
-                let v1 = state.pop();
+                let v0 = state.pop()?;
+                let v1 = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "+".into() }, args: vec![v0] })));
             }
 
             YARVINSN_opt_lt => {
-                let v0 = state.pop();
-                let v1 = state.pop();
+                let v0 = state.pop()?;
+                let v1 = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<".into() }, args: vec![v0] })));
             }
             YARVINSN_opt_ltlt => {
-                let v0 = state.pop();
-                let v1 = state.pop();
+                let v0 = state.pop()?;
+                let v1 = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<<".into() }, args: vec![v0] })));
             }
             YARVINSN_opt_aset => {
-                let set = state.pop();
-                let obj = state.pop();
-                let recv = state.pop();
+                let set = state.pop()?;
+                let obj = state.pop()?;
+                let recv = state.pop()?;
                 fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
                 state.push(set);
             }
 
             YARVINSN_leave => {
-                fun.push_insn(block, Insn::Return { val: state.pop() });
+                fun.push_insn(block, Insn::Return { val: state.pop()? });
             }
 
             YARVINSN_opt_send_without_block => {
@@ -474,11 +479,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
                 };
                 let mut args = vec![];
                 for _ in 0..argc {
-                    args.push(state.pop());
+                    args.push(state.pop()?);
                 }
                 args.reverse();
 
-                let recv = state.pop();
+                let recv = state.pop()?;
                 state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args })));
             }
             _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
@@ -487,7 +492,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
 
     let formatter = FunctionPrinter::from(&fun);
     print!("SSA:\n{formatter}");
-    return fun;
+    Ok(fun)
 }
 
 #[cfg(test)]
