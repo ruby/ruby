@@ -284,6 +284,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
                 let offset = get_arg(pc, 0).as_i64();
                 jump_targets.push(insn_idx_at_offset(insn_idx, offset));
             }
+            YARVINSN_leave => { jump_targets.push(insn_idx); }
             _ => eprintln!("zjit: compute_jump_targets: unknown opcode `{}'", insn_name(opcode as usize)),
         }
     }
