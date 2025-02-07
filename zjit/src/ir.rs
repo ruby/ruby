@@ -269,7 +269,7 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
-    let mut jump_targets = vec![];
+    let mut jump_targets = std::collections::HashSet::new();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -282,13 +282,15 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
         match opcode {
             YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil => {
                 let offset = get_arg(pc, 0).as_i64();
-                jump_targets.push(insn_idx_at_offset(insn_idx, offset));
+                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
-            YARVINSN_leave => { jump_targets.push(insn_idx); }
+            YARVINSN_leave => { jump_targets.insert(insn_idx); }
             _ => eprintln!("zjit: compute_jump_targets: unknown opcode `{}'", insn_name(opcode as usize)),
         }
     }
-    jump_targets
+    let mut result = jump_targets.into_iter().collect::<Vec<_>>();
+    result.sort();
+    result
 }
 
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Function {
