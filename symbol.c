@@ -113,6 +113,15 @@ rb_sym_global_symbols_mark(void)
     rb_gc_mark_movable(symbols->dsymbol_fstr_hash);
 }
 
+void
+rb_sym_global_symbols_update_references(void)
+{
+    rb_symbols_t *symbols = &ruby_global_symbols;
+
+    symbols->ids = rb_gc_location(symbols->ids);
+    symbols->dsymbol_fstr_hash = rb_gc_location(symbols->dsymbol_fstr_hash);
+}
+
 WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_encoding *const enc, const ID type));
 WARN_UNUSED_RESULT(static VALUE dsymbol_check(rb_symbols_t *symbols, const VALUE sym));
 WARN_UNUSED_RESULT(static ID lookup_str_id(VALUE str));
