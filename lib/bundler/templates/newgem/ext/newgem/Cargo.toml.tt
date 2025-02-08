@@ -16,7 +16,7 @@ magnus = { version = "0.8.2" }
 rb-sys = { version = "0.9", features = ["stable-api-compiled-fallback"] }
 
 [build-dependencies]
-rb-sys-env = "0.1.2"
+rb-sys-env = "0.2.2"
 
 [dev-dependencies]
-rb-sys-test-helpers = { version = "0.2.0" }
+rb-sys-test-helpers = { version = "0.2.2" }
