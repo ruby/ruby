@@ -1286,7 +1286,6 @@ typedef struct rb_parser_config_struct {
     rb_encoding* (*enc_get)(VALUE obj);
     int (*enc_asciicompat)(rb_encoding *enc);
     rb_encoding *(*utf8_encoding)(void);
-    VALUE (*enc_associate)(VALUE obj, rb_encoding *enc);
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
