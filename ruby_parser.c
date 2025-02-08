@@ -138,12 +138,6 @@ utf8_encoding(void)
     return rb_utf8_encoding();
 }
 
-static VALUE
-enc_associate(VALUE obj, parser_encoding *enc)
-{
-    return rb_enc_associate(obj, enc);
-}
-
 static parser_encoding *
 ascii8bit_encoding(void)
 {
@@ -390,7 +384,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_get = enc_get,
     .enc_asciicompat = enc_asciicompat,
     .utf8_encoding = utf8_encoding,
-    .enc_associate = enc_associate,
     .ascii8bit_encoding = ascii8bit_encoding,
     .enc_codelen = enc_codelen,
     .enc_mbcput = enc_mbcput,
