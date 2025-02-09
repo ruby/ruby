@@ -110,13 +110,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Set MMTk environment variables
         run: |
-          if [[ ${{ matrix.gc.mmtk_build }} == debug ]]; then
-            echo 'RUST_LOG=' >> $GITHUB_ENV
-            # Debug builds run much slower so we should increase the timeout
-            echo 'RUBY_TEST_TIMEOUT_SCALE=10' >> $GITHUB_ENV
-            # SYNTAX_SUGGEST_TIMEOUT defaults to 1 second
-            echo 'SYNTAX_SUGGEST_TIMEOUT=60' >> $GITHUB_ENV
-          fi
           echo 'MMTK_PLAN=${{ matrix.gc.mmtk_plan }}' >> $GITHUB_ENV
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
