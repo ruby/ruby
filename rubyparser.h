@@ -1323,7 +1323,6 @@ typedef struct rb_parser_config_struct {
 
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);
-    VALUE (*reg_check_preprocess)(VALUE str);
     int (*memcicmp)(const void *x, const void *y, long len);
 
     /* Error */

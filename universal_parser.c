@@ -175,7 +175,6 @@
 #define rb_gc_mark p->config->gc_mark
 
 #define rb_reg_compile          p->config->reg_compile
-#define rb_reg_check_preprocess p->config->reg_check_preprocess
 #define rb_memcicmp p->config->memcicmp
 
 #define rb_compile_warn    p->config->compile_warn
