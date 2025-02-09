@@ -27,7 +27,6 @@ jobs:
         gc:
           - name: default
           - name: mmtk
-            mmtk_plan: MarkSweep
             mmtk_build: release
         os: [macos-latest, ubuntu-latest]
         include:
@@ -110,7 +109,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Set MMTk environment variables
         run: |
-          echo 'MMTK_PLAN=${{ matrix.gc.mmtk_plan }}' >> $GITHUB_ENV
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
