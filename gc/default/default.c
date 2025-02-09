@@ -2404,7 +2404,6 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
 
     if (!vm_locked) {
         lev = rb_gc_cr_lock();
-        vm_locked = true;
         unlock_vm = true;
     }
 
