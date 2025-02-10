@@ -93,7 +93,7 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
 
 fn mmtk_builder_default_parse_plan() -> PlanSelector {
     let plan_str = std::env::var("MMTK_PLAN")
-        .unwrap_or("MarkSweep".to_string());
+        .unwrap_or("Immix".to_string());
 
     match plan_str.as_str() {
         "NoGC" => PlanSelector::NoGC,
