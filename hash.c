@@ -2845,9 +2845,9 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
 
 /*
  *  call-seq:
- *    hash.clear -> self
+ *    clear -> self
  *
- *  Removes all hash entries; returns +self+.
+ *  Removes all entries from +self+; returns emptied +self+.
  */
 
 VALUE
