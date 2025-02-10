@@ -14,6 +14,7 @@ mod options;
 
 use backend::x86_emit;
 use codegen::ZJITState;
+use options::get_option;
 use crate::cruby::*;
 
 #[allow(non_upper_case_globals)]
@@ -87,7 +88,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
         use disasm::disasm_addr_range;
         let disasm = disasm_addr_range(start_ptr.raw_ptr(cb) as usize, end_ptr.raw_ptr(cb) as usize);
-        if false { // TODO: implement the option
+        if get_option!(dump_disasm) {
             println!("{}", disasm);
         }
     }

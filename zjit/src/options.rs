@@ -6,6 +6,19 @@ pub struct Options {
     pub dump_disasm: bool,
 }
 
+/// Macro to get an option value by name
+macro_rules! get_option {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($option_name:ident) => {
+        {
+            use crate::codegen::ZJITState;
+            ZJITState::get_options().$option_name
+        }
+    };
+}
+pub(crate) use get_option;
+
 /// Allocate Options on the heap, initialize it, and return the address of it.
 /// The return value will be modified by rb_zjit_parse_option() and then
 /// passed to rb_zjit_init() for initialization.
