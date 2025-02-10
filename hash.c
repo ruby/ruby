@@ -2037,7 +2037,7 @@ call_default_proc(VALUE proc, VALUE hash, VALUE key)
     return rb_proc_call_with_block(proc, 2, args, Qnil);
 }
 
-static bool
+bool
 rb_hash_default_unredefined(VALUE hash)
 {
     VALUE klass = RBASIC_CLASS(hash);

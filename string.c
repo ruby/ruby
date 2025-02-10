@@ -31,6 +31,7 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/gc.h"
+#include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -6295,7 +6296,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     VALUE pat, val = Qnil, repl, match0 = Qnil, dest, hash = Qnil;
     long beg, beg0, end0;
     long offset, blen, slen, len, last;
-    enum {STR, ITER, MAP} mode = STR;
+    enum {STR, ITER, FAST_MAP, MAP} mode = STR;
     char *sp, *cp;
     int need_backref = -1;
     rb_encoding *str_enc;
@@ -6310,6 +6311,9 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         hash = rb_check_hash_type(argv[1]);
         if (NIL_P(hash)) {
             StringValue(repl);
+        }
+        else if (rb_hash_default_unredefined(hash) && !FL_TEST_RAW(hash, RHASH_PROC_DEFAULT)) {
+            mode = FAST_MAP;
         }
         else {
             mode = MAP;
@@ -6355,7 +6359,18 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
                 val = rb_obj_as_string(rb_yield(match0));
             }
             else {
-                val = rb_hash_aref(hash, rb_str_subseq(str, beg0, end0 - beg0));
+                struct RString fake_str;
+                VALUE key;
+                if (mode == FAST_MAP) {
+                    // It is safe to use a fake_str here because we established that it won't escape,
+                    // as it's only used for `rb_hash_aref` and we checked the hash doesn't have a
+                    // default proc.
+                    key = setup_fake_str(&fake_str, sp + beg0, end0 - beg0, ENCODING_GET_INLINED(str));
+                }
+                else {
+                    key = rb_str_subseq(str, beg0, end0 - beg0);
+                }
+                val = rb_hash_aref(hash, key);
                 val = rb_obj_as_string(val);
             }
             str_mod_check(str, sp, slen);
