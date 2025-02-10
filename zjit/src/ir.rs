@@ -129,11 +129,11 @@ struct FunctionPrinter<'a> {
 }
 
 impl<'a> FunctionPrinter<'a> {
-    fn from(fun: &'a Function) -> FunctionPrinter {
+    fn from(fun: &'a Function) -> FunctionPrinter<'a> {
         FunctionPrinter { fun, display_snapshot: false }
     }
 
-    fn with_snapshot(fun: &'a Function) -> FunctionPrinter {
+    fn with_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
         FunctionPrinter { fun, display_snapshot: true }
     }
 }
