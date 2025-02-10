@@ -440,7 +440,7 @@ module Bundler
         changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
       end
 
-      reason = nothing_changed? ? "some dependencies were deleted from your gemfile" : change_reason
+      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
       msg = String.new
       msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because frozen mode is set"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
@@ -456,7 +456,7 @@ module Bundler
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 
-      raise ProductionError, msg if added.any? || deleted.any? || changed.any? || !nothing_changed?
+      raise ProductionError, msg if added.any? || deleted.any? || changed.any? || resolve_needed?
     end
 
     def validate_runtime!
@@ -859,8 +859,6 @@ module Bundler
     end
 
     def check_lockfile
-      @missing_lockfile_dep = nil
-
       @locked_spec_with_invalid_deps = nil
       @locked_spec_with_missing_deps = nil
 
@@ -878,10 +876,6 @@ module Bundler
         @locked_specs.delete(missing)
 
         @locked_spec_with_missing_deps = missing.first.name
-      elsif !@dependency_changes
-        @missing_lockfile_dep = current_dependencies.find do |d|
-          @locked_specs[d.name].empty? && d.name != "bundler"
-        end&.name
       end
 
       if invalid.any?
@@ -942,21 +936,29 @@ module Bundler
     end
 
     def converge_dependencies
+      @missing_lockfile_dep = nil
       changes = false
 
-      @dependencies.each do |dep|
+      current_dependencies.each do |dep|
         if dep.source
           dep.source = sources.get(dep.source)
         end
 
-        unless locked_dep = @locked_deps[dep.name]
-          changes = true
-          next
+        name = dep.name
+
+        dep_changed = @locked_deps[name].nil?
+
+        unless name == "bundler"
+          locked_specs = @originally_locked_specs[name]
+
+          if locked_specs.any? && !dep.matches_spec?(locked_specs.first)
+            dep_changed = true
+          elsif locked_specs.empty? && dep_changed == false
+            @missing_lockfile_dep = name
+          end
         end
 
-        # We already know the name matches from the hash lookup
-        # so we only need to check the requirement now
-        changes ||= dep.requirement != locked_dep.requirement
+        changes ||= dep_changed
       end
 
       changes
