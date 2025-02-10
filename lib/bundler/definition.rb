@@ -93,17 +93,15 @@ module Bundler
         @platforms = @locked_platforms.dup
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
-        @originally_locked_deps = @locked_gems.dependencies
+        @locked_deps = @locked_gems.dependencies
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
         @locked_checksums = @locked_gems.checksums
 
         if unlock != true
-          @locked_deps    = @originally_locked_deps
           @locked_specs   = @originally_locked_specs
           @locked_sources = @locked_gems.sources
         else
           @unlock         = {}
-          @locked_deps    = {}
           @locked_specs   = SpecSet.new([])
           @locked_sources = []
         end
@@ -115,7 +113,6 @@ module Bundler
         @platforms      = []
         @locked_deps    = {}
         @locked_specs   = SpecSet.new([])
-        @originally_locked_deps = {}
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_checksums = Bundler.feature_flag.lockfile_checksums?
@@ -443,13 +440,13 @@ module Bundler
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n"
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
 
       unless explicit_flag
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
           "bundle config set frozen false"
         end
-        msg << "If this is a development machine, remove the #{SharedHelpers.relative_lockfile_path} " \
+        msg << "\n\nIf this is a development machine, remove the #{SharedHelpers.relative_lockfile_path} " \
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 
@@ -944,7 +941,7 @@ module Bundler
           dep.source = sources.get(dep.source)
         end
 
-        unless locked_dep = @originally_locked_deps[dep.name]
+        unless locked_dep = @locked_deps[dep.name]
           changes = true
           next
         end

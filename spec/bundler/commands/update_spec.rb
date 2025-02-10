@@ -694,28 +694,36 @@ RSpec.describe "bundle update" do
       bundle "update", all: true, raise_on_error: false
 
       expect(last_command).to be_failure
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
-      expect(err).to match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should fail loudly when frozen is set globally" do
       bundle "config set --global frozen 1"
       bundle "update", all: true, raise_on_error: false
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
-        and match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should fail loudly when deployment is set globally" do
       bundle "config set --global deployment true"
       bundle "update", all: true, raise_on_error: false
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
-        and match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should not suggest any command to unfreeze bundler if frozen is set through ENV" do
       bundle "update", all: true, raise_on_error: false, env: { "BUNDLE_FROZEN" => "true" }
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
-      expect(err).not_to match(/by running/)
+      expect(err).to eq("Bundler is unlocking, but the lockfile can't be updated because frozen mode is set")
     end
   end
 
