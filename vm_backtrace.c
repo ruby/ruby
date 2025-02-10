@@ -31,9 +31,6 @@ id2str(ID id)
 }
 #define rb_id2str(id) id2str(id)
 
-#define BACKTRACE_START 0
-#define ALL_BACKTRACE_LINES -1
-
 inline static int
 calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
