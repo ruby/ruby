@@ -53,17 +53,15 @@ RSpec.describe "bundle install" do
     end
   end
 
-  context "with deprecated features" do
-    it "reports that lib is an invalid option" do
-      gemfile <<-G
-        source "https://gem.repo1"
+  it "reports that lib is an invalid option" do
+    gemfile <<-G
+      source "https://gem.repo1"
 
-        gem "myrack", :lib => "myrack"
-      G
+      gem "myrack", :lib => "myrack"
+    G
 
-      bundle :install, raise_on_error: false
-      expect(err).to match(/You passed :lib as an option for gem 'myrack', but it is invalid/)
-    end
+    bundle :install, raise_on_error: false
+    expect(err).to match(/You passed :lib as an option for gem 'myrack', but it is invalid/)
   end
 
   context "when an internal error happens" do
