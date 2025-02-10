@@ -185,8 +185,33 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE, mem_size: VALUE, call_threshold: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
+
+        if !mem_size.nil_p() {
+            assert!(mem_size.fixnum_p(), "mem_size must be a Fixnum");
+            let mem_size_mb = mem_size.as_isize() >> 1;
+            assert!((1..=2048).contains(&mem_size_mb), "mem_size must be between 1 and 2048 MB");
+
+            let mem_size_bytes = mem_size_mb * 1024 * 1024;
+            unsafe {
+                OPTIONS.mem_size = mem_size_bytes as usize;
+            }
+            println!("mem_size set to: {} MB ({} bytes)", mem_size_mb, mem_size_bytes);
+        }
+
+        if !call_threshold.nil_p() {
+            assert!(call_threshold.fixnum_p(), "call_threshold must be a Fixnum");
+            let threshold = call_threshold.as_isize() >> 1;
+            assert!(threshold >= 1, "call_threshold must be a positive integer");
+
+            unsafe {
+                rb_yjit_call_threshold = threshold as u64;
+            }
+            println!("rb_yjit_call_threshold set to: {}", threshold);
+        }
+
+
         // Initialize and enable YJIT
         if gen_stats.test() {
             unsafe {
