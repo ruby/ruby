@@ -4158,13 +4158,15 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.assoc(key) -> new_array or nil
+ *    assoc(key) -> entry or nil
  *
- *  If the given +key+ is found, returns a 2-element Array containing that key and its value:
+ *  If the given +key+ is found, returns its entry as a 2-element array
+ *  containing that key and its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.assoc(:bar) # => [:bar, 1]
  *
- *  Returns +nil+ if key +key+ is not found.
+ *  Returns +nil+ if the key is not found.
  */
 
 static VALUE
