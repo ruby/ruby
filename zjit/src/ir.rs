@@ -99,7 +99,7 @@ pub enum Insn {
     Jump(BranchEdge),
 
     // Conditional branch instructions
-    IfTrue { val: Opnd, branch: BranchEdge },
+    IfTrue { val: Opnd, target: BranchEdge },
     IfFalse { val: Opnd, target: BranchEdge },
 
     // Call a C function
@@ -393,15 +393,24 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     // TODO(max): Check interrupts
-                    let _branch_id = fun.push_insn(block,
-                        Insn::IfFalse {
-                            val: Opnd::Insn(test_id),
-                            target: BranchEdge {
-                                target: insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)],
-                                // TODO(max): Merge locals/stack for bb arguments
-                                args: vec![],
-                            }
-                        });
+                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    // TODO(max): Merge locals/stack for bb arguments
+                    let _branch_id = fun.push_insn(block, Insn::IfFalse { val: Opnd::Insn(test_id), target: BranchEdge { target, args: vec![] } });
+                }
+                YARVINSN_branchif => {
+                    let offset = get_arg(pc, 0).as_i64();
+                    let val = state.pop()?;
+                    let test_id = fun.push_insn(block, Insn::Test { val });
+                    // TODO(max): Check interrupts
+                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    // TODO(max): Merge locals/stack for bb arguments
+                    let _branch_id = fun.push_insn(block, Insn::IfTrue { val: Opnd::Insn(test_id), target: BranchEdge { target, args: vec![] } });
+                }
+                YARVINSN_jump => {
+                    let offset = get_arg(pc, 0).as_i64();
+                    // TODO(max): Check interrupts
+                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    let _branch_id = fun.push_insn(block, Insn::Jump(BranchEdge { target, args: vec![] }));
                 }
                 YARVINSN_opt_nil_p => {
                     let recv = state.pop()?;
