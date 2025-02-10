@@ -1986,7 +1986,7 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *     hash.rehash -> self
+ *     rehash -> self
  *
  *  Rebuilds the hash table by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
@@ -2136,9 +2136,9 @@ rb_hash_lookup(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.fetch(key) -> object
- *    hash.fetch(key, default_value) -> object
- *    hash.fetch(key) {|key| ... } -> object
+ *    fetch(key) -> object
+ *    fetch(key, default_value) -> object
+ *    fetch(key) {|key| ... } -> object
  *
  *  Returns the value for the given +key+, if found.
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2201,8 +2201,8 @@ rb_hash_fetch(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.default -> object
- *    hash.default(key) -> object
+ *    default -> object
+ *    default(key) -> object
  *
  *  Returns the default value for the given +key+.
  *  The returned value will be determined either by the default proc or by the default value.
@@ -2235,7 +2235,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.default = value -> object
+ *    default = value -> object
  *
  *  Sets the default value to +value+; returns +value+:
  *    h = {}
@@ -2256,7 +2256,7 @@ rb_hash_set_default(VALUE hash, VALUE ifnone)
 
 /*
  *  call-seq:
- *    hash.default_proc -> proc or nil
+ *    default_proc -> proc or nil
  *
  *  Returns the default proc for +self+
  *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
@@ -2277,7 +2277,7 @@ rb_hash_default_proc(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.default_proc = proc -> proc
+ *    default_proc = proc -> proc
  *
  *  Sets the default proc for +self+ to +proc+
  *  (see {Hash Default}[rdoc-ref:Hash@Hash+Default]):
@@ -2324,7 +2324,7 @@ key_i(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.key(value) -> key or nil
+ *    key(value) -> key or nil
  *
  *  Returns the key for the first-found entry with the given +value+
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
@@ -2397,8 +2397,8 @@ rb_hash_delete(VALUE hash, VALUE key)
 
 /*
  *  call-seq:
- *    hash.delete(key) -> value or nil
- *    hash.delete(key) {|key| ... } -> object
+ *    delete(key) -> value or nil
+ *    delete(key) {|key| ... } -> object
  *
  *  Deletes the entry for the given +key+ and returns its associated value.
  *
@@ -2461,7 +2461,7 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.shift -> [key, value] or nil
+ *    shift -> [key, value] or nil
  *
  *  Removes the first hash entry
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]);
@@ -2530,8 +2530,8 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
 
 /*
  *  call-seq:
- *    hash.delete_if {|key, value| ... } -> self
- *    hash.delete_if -> new_enumerator
+ *    delete_if {|key, value| ... } -> self
+ *    delete_if -> new_enumerator
  *
  *  If a block given, calls the block with each key-value pair;
  *  deletes each entry for which the block returns a truthy value;
@@ -2559,8 +2559,8 @@ rb_hash_delete_if(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.reject! {|key, value| ... } -> self or nil
- *    hash.reject! -> new_enumerator
+ *    reject! {|key, value| ... } -> self or nil
+ *    reject! -> new_enumerator
  *
  *  Returns +self+, whose remaining entries are those
  *  for which the block returns +false+ or +nil+:
@@ -2591,8 +2591,8 @@ rb_hash_reject_bang(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.reject {|key, value| ... } -> new_hash
- *    hash.reject -> new_enumerator
+ *    reject {|key, value| ... } -> new_hash
+ *    reject -> new_enumerator
  *
  *  Returns a new +Hash+ object whose entries are all those
  *  from +self+ for which the block returns +false+ or +nil+:
@@ -2623,7 +2623,7 @@ rb_hash_reject(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.slice(*keys) -> new_hash
+ *    slice(*keys) -> new_hash
  *
  *  Returns a new +Hash+ object containing the entries for the given +keys+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2683,7 +2683,7 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.values_at(*keys) -> new_array
+ *    values_at(*keys) -> new_array
  *
  *  Returns a new Array containing values for the given +keys+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2708,8 +2708,8 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.fetch_values(*keys) -> new_array
- *    hash.fetch_values(*keys) {|key| ... } -> new_array
+ *    fetch_values(*keys) -> new_array
+ *    fetch_values(*keys) {|key| ... } -> new_array
  *
  *  Returns a new Array containing the values associated with the given keys *keys:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2750,8 +2750,8 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.select {|key, value| ... } -> new_hash
- *    hash.select -> new_enumerator
+ *    select {|key, value| ... } -> new_hash
+ *    select -> new_enumerator
  *
  *  Returns a new +Hash+ object whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2779,8 +2779,8 @@ rb_hash_select(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.select! {|key, value| ... } -> self or nil
- *    hash.select! -> new_enumerator
+ *    select! {|key, value| ... } -> self or nil
+ *    select! -> new_enumerator
  *
  *  Returns +self+, whose entries are those for which the block returns a truthy value:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -2810,8 +2810,8 @@ rb_hash_select_bang(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.keep_if {|key, value| ... } -> self
- *    hash.keep_if -> new_enumerator
+ *    keep_if {|key, value| ... } -> self
+ *    keep_if -> new_enumerator
  *
  *  Calls the block for each key-value pair;
  *  retains the entry if the block returns a truthy value;
@@ -2901,7 +2901,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 /*
  *  call-seq:
  *    hash[key] = value -> value
- *    hash.store(key, value)
+ *    store(key, value)
  *
  *  Associates the given +value+ with the given +key+; returns +value+.
  *
@@ -2940,7 +2940,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 
 /*
  *  call-seq:
- *    hash.replace(other_hash) -> self
+ *    replace(other_hash) -> self
  *
  *  Replaces the entire contents of +self+ with the contents of +other_hash+;
  *  returns +self+:
@@ -2974,8 +2974,8 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     hash.length -> integer
- *     hash.size -> integer
+ *     length -> integer
+ *     size -> integer
  *
  *  Returns the count of entries in +self+:
  *
@@ -2997,7 +2997,7 @@ rb_hash_size_num(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.empty? -> true or false
+ *    empty? -> true or false
  *
  *  Returns +true+ if there are no hash entries, +false+ otherwise:
  *    {}.empty? # => true
@@ -3019,8 +3019,8 @@ each_value_i(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *    hash.each_value {|value| ... } -> self
- *    hash.each_value -> new_enumerator
+ *    each_value {|value| ... } -> self
+ *    each_value -> new_enumerator
  *
  *  Calls the given block with each value; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3058,8 +3058,8 @@ each_key_i(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *    hash.each_key {|key| ... } -> self
- *    hash.each_key -> new_enumerator
+ *    each_key {|key| ... } -> self
+ *    each_key -> new_enumerator
  *
  *  Calls the given block with each key; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3106,10 +3106,10 @@ each_pair_i_fast(VALUE key, VALUE value, VALUE _)
 
 /*
  *  call-seq:
- *    hash.each {|key, value| ... } -> self
- *    hash.each_pair {|key, value| ... } -> self
- *    hash.each -> new_enumerator
- *    hash.each_pair -> new_enumerator
+ *    each {|key, value| ... } -> self
+ *    each_pair {|key, value| ... } -> self
+ *    each -> new_enumerator
+ *    each_pair -> new_enumerator
  *
  *  Calls the given block with each key-value pair; returns +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3173,10 +3173,10 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *    hash.transform_keys {|key| ... } -> new_hash
- *    hash.transform_keys(hash2) -> new_hash
- *    hash.transform_keys(hash2) {|other_key| ...} -> new_hash
- *    hash.transform_keys -> new_enumerator
+ *    transform_keys {|key| ... } -> new_hash
+ *    transform_keys(hash2) -> new_hash
+ *    transform_keys(hash2) {|other_key| ...} -> new_hash
+ *    transform_keys -> new_enumerator
  *
  *  Returns a new +Hash+ object; each entry has:
  *  * A key provided by the block.
@@ -3240,10 +3240,10 @@ static int flatten_i(VALUE key, VALUE val, VALUE ary);
 
 /*
  *  call-seq:
- *    hash.transform_keys! {|key| ... } -> self
- *    hash.transform_keys!(hash2) -> self
- *    hash.transform_keys!(hash2) {|other_key| ...} -> self
- *    hash.transform_keys! -> new_enumerator
+ *    transform_keys! {|key| ... } -> self
+ *    transform_keys!(hash2) -> self
+ *    transform_keys!(hash2) {|other_key| ...} -> self
+ *    transform_keys! -> new_enumerator
  *
  *  Same as Hash#transform_keys but modifies the receiver in place
  *  instead of returning a new hash.
@@ -3315,8 +3315,8 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
 
 /*
  *  call-seq:
- *    hash.transform_values {|value| ... } -> new_hash
- *    hash.transform_values -> new_enumerator
+ *    transform_values {|value| ... } -> new_hash
+ *    transform_values -> new_enumerator
  *
  *  Returns a new +Hash+ object; each entry has:
  *  * A key from +self+.
@@ -3352,8 +3352,8 @@ rb_hash_transform_values(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.transform_values! {|value| ... } -> self
- *    hash.transform_values! -> new_enumerator
+ *    transform_values! {|value| ... } -> self
+ *    transform_values! -> new_enumerator
  *
  *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3387,7 +3387,7 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *    hash.to_a -> new_array
+ *    to_a -> new_array
  *
  *  Returns a new Array of 2-element Array objects;
  *  each nested Array contains a key-value pair from +self+:
@@ -3486,7 +3486,7 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *    hash.inspect -> new_string
+ *    inspect -> new_string
  *
  *  Returns a new String containing the hash entries:
 
@@ -3505,7 +3505,7 @@ rb_hash_inspect(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.to_hash -> self
+ *    to_hash -> self
  *
  *  Returns +self+.
  */
@@ -3550,8 +3550,8 @@ rb_hash_to_h_block(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.to_h -> self or new_hash
- *    hash.to_h {|key, value| ... } -> new_hash
+ *    to_h -> self or new_hash
+ *    to_h {|key, value| ... } -> new_hash
  *
  *  For an instance of +Hash+, returns +self+.
  *
@@ -3589,7 +3589,7 @@ keys_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *    hash.keys -> new_array
+ *    keys -> new_array
  *
  *  Returns a new Array containing all keys in +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3633,7 +3633,7 @@ values_i(VALUE key, VALUE value, VALUE ary)
 
 /*
  *  call-seq:
- *    hash.values -> new_array
+ *    values -> new_array
  *
  *  Returns a new Array containing all values in +self+:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3675,10 +3675,10 @@ rb_hash_values(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.include?(key) -> true or false
- *    hash.has_key?(key) -> true or false
- *    hash.key?(key) -> true or false
- *    hash.member?(key) -> true or false
+ *    include?(key) -> true or false
+ *    has_key?(key) -> true or false
+ *    key?(key) -> true or false
+ *    member?(key) -> true or false
  *
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
@@ -3703,8 +3703,8 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.has_value?(value) -> true or false
- *    hash.value?(value) -> true or false
+ *    has_value?(value) -> true or false
+ *    value?(value) -> true or false
  *
  *  Returns +true+ if +value+ is a value in +self+, otherwise +false+.
  */
@@ -3836,7 +3836,7 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash.eql?(object) -> true or false
+ *    eql?(object) -> true or false
  *
  *  Returns +true+ if all of the following are true:
  *  * +object+ is a +Hash+ object.
@@ -3872,7 +3872,7 @@ hash_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.hash -> an_integer
+ *    hash -> an_integer
  *
  *  Returns the Integer hash-code for the hash.
  *
@@ -3906,7 +3906,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.invert -> new_hash
+ *    invert -> new_hash
  *
  *  Returns a new +Hash+ object with the each key-value pair inverted:
  *    h = {foo: 0, bar: 1, baz: 2}
@@ -3961,9 +3961,9 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.merge! -> self
- *    hash.merge!(*other_hashes) -> self
- *    hash.merge!(*other_hashes) { |key, old_value, new_value| ... } -> self
+ *    merge! -> self
+ *    merge!(*other_hashes) -> self
+ *    merge!(*other_hashes) { |key, old_value, new_value| ... } -> self
  *
  *  Merges each of +other_hashes+ into +self+; returns +self+.
  *
@@ -4077,9 +4077,9 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 
 /*
  *  call-seq:
- *    hash.merge -> copy_of_self
- *    hash.merge(*other_hashes) -> new_hash
- *    hash.merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
+ *    merge -> copy_of_self
+ *    merge(*other_hashes) -> new_hash
+ *    merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
  *
  *  Returns the new +Hash+ formed by merging each of +other_hashes+
  *  into a copy of +self+.
@@ -4227,7 +4227,7 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.rassoc(value) -> new_array or nil
+ *    rassoc(value) -> new_array or nil
  *
  *  Returns a new 2-element Array consisting of the key and value
  *  of the first-found entry whose value is <tt>==</tt> to value
@@ -4263,8 +4263,8 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
 
 /*
  *  call-seq:
- *     hash.flatten -> new_array
- *     hash.flatten(level) -> new_array
+ *     flatten -> new_array
+ *     flatten(level) -> new_array
  *
  *  Returns a new Array object that is a 1-dimensional flattening of +self+.
  *
@@ -4336,7 +4336,7 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.compact -> new_hash
+ *    compact -> new_hash
  *
  *  Returns a copy of +self+ with all +nil+-valued entries removed:
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
@@ -4360,7 +4360,7 @@ rb_hash_compact(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.compact! -> self or nil
+ *    compact! -> self or nil
  *
  *  Returns +self+ with all its +nil+-valued entries removed (in place):
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
@@ -4385,7 +4385,7 @@ rb_hash_compact_bang(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.compare_by_identity -> self
+ *    compare_by_identity -> self
  *
  *  Sets +self+ to consider only identity in comparing keys;
  *  two keys are considered the same only if they are the same object;
@@ -4453,7 +4453,7 @@ rb_hash_compare_by_id(VALUE hash)
 
 /*
  *  call-seq:
- *    hash.compare_by_identity? -> true or false
+ *    compare_by_identity? -> true or false
  *
  *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise.
  */
@@ -4521,9 +4521,9 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.any? -> true or false
- *    hash.any?(entry) -> true or false
- *    hash.any? {|key, value| ... } -> true or false
+ *    any? -> true or false
+ *    any?(entry) -> true or false
+ *    any? {|key, value| ... } -> true or false
  *
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
@@ -4589,7 +4589,7 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
 
 /*
  *  call-seq:
- *    hash.dig(key, *identifiers) -> object
+ *    dig(key, *identifiers) -> object
  *
  *  Finds and returns the object in nested objects
  *  that is specified by +key+ and +identifiers+.
@@ -4767,7 +4767,7 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
 
 /*
  *  call-seq:
- *    hash.to_proc -> proc
+ *    to_proc -> proc
  *
  *  Returns a Proc object that maps a key to its value:
  *    h = {foo: 0, bar: 1, baz: 2}
