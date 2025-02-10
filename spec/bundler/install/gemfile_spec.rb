@@ -64,6 +64,28 @@ RSpec.describe "bundle install" do
     expect(err).to match(/You passed :lib as an option for gem 'myrack', but it is invalid/)
   end
 
+  it "reports that type is an invalid option" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", :type => "development"
+    G
+
+    bundle :install, raise_on_error: false
+    expect(err).to match(/You passed :type as an option for gem 'myrack', but it is invalid/)
+  end
+
+  it "reports that gemfile is an invalid option" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "myrack", :gemfile => "foo"
+    G
+
+    bundle :install, raise_on_error: false
+    expect(err).to match(/You passed :gemfile as an option for gem 'myrack', but it is invalid/)
+  end
+
   context "when an internal error happens" do
     let(:bundler_bug) do
       create_file("bundler_bug.rb", <<~RUBY)
