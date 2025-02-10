@@ -4527,7 +4527,7 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *
  *  With argument +entry+ and no block,
  *  returns +true+ if for any key +key+
- *  <tt>h.assoc(key) == entry</tt>, +false+ otherwise:
+ *  <tt>self.assoc(key) == entry</tt>, +false+ otherwise:
  *
  *   h = {foo: 0, bar: 1, baz: 2}
  *   h.assoc(:bar)     # => [:bar, 1]
