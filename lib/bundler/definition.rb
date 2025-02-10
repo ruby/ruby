@@ -58,17 +58,28 @@ module Bundler
     # @param ruby_version [Bundler::RubyVersion, nil] Requested Ruby Version
     # @param optional_groups [Array(String)] A list of optional groups
     def initialize(lockfile, dependencies, sources, unlock, ruby_version = nil, optional_groups = [], gemfiles = [])
-      if [true, false].include?(unlock)
+      unlock ||= {}
+
+      if unlock == true
+        @unlocking_all = true
         @unlocking_bundler = false
         @unlocking = unlock
+        @sources_to_unlock = []
+        @unlocking_ruby = false
+        @explicit_unlocks = []
+        conservative = false
       else
+        @unlocking_all = false
         @unlocking_bundler = unlock.delete(:bundler)
         @unlocking = unlock.any? {|_k, v| !Array(v).empty? }
+        @sources_to_unlock = unlock.delete(:sources) || []
+        @unlocking_ruby = unlock.delete(:ruby)
+        @explicit_unlocks = unlock.delete(:gems) || []
+        conservative = unlock.delete(:conservative)
       end
 
       @dependencies    = dependencies
       @sources         = sources
-      @unlock          = unlock
       @optional_groups = optional_groups
       @prefer_local    = false
       @specs           = nil
@@ -97,17 +108,15 @@ module Bundler
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
         @locked_checksums = @locked_gems.checksums
 
-        if unlock != true
-          @locked_specs   = @originally_locked_specs
-          @locked_sources = @locked_gems.sources
-        else
-          @unlock         = {}
+        if @unlocking_all
           @locked_specs   = SpecSet.new([])
           @locked_sources = []
+        else
+          @locked_specs   = @originally_locked_specs
+          @locked_sources = @locked_gems.sources
         end
       else
-        @unlock         = {}
-        @locked_gems    = nil
+        @locked_gems = nil
         @locked_platforms = []
         @most_specific_locked_platform = nil
         @platforms      = []
@@ -131,11 +140,10 @@ module Bundler
         @sources.merged_gem_lockfile_sections!(locked_gem_sources.first)
       end
 
-      @sources_to_unlock = @unlock.delete(:sources) || []
-      @unlock[:ruby] ||= if @ruby_version && locked_ruby_version_object
+      @unlocking_ruby ||= if @ruby_version && locked_ruby_version_object
         @ruby_version.diff(locked_ruby_version_object)
       end
-      @unlocking ||= @unlock[:ruby] ||= (!@locked_ruby_version ^ !@ruby_version)
+      @unlocking ||= @unlocking_ruby ||= (!@locked_ruby_version ^ !@ruby_version)
 
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
 
@@ -143,9 +151,7 @@ module Bundler
       @path_changes = converge_paths
       @source_changes = converge_sources
 
-      @explicit_unlocks = @unlock.delete(:gems) || []
-
-      if @unlock[:conservative]
+      if conservative
         @gems_to_unlock = @explicit_unlocks.any? ? @explicit_unlocks : @dependencies.map(&:name)
       else
         eager_unlock = @explicit_unlocks.map {|name| Dependency.new(name, ">= 0") }
@@ -373,7 +379,7 @@ module Bundler
 
     def locked_ruby_version
       return unless ruby_version
-      if @unlock[:ruby] || !@locked_ruby_version
+      if @unlocking_ruby || !@locked_ruby_version
         Bundler::RubyVersion.system
       else
         @locked_ruby_version
@@ -783,7 +789,7 @@ module Bundler
         unlock_reason = if unlock_targets
           "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
         else
-          @unlock[:ruby] ? "ruby" : ""
+          @unlocking_ruby ? "ruby" : ""
         end
 
         return "bundler is unlocking #{unlock_reason}"
