@@ -2101,10 +2101,8 @@ rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval)
  *    {foo: 0, bar: 1, baz: 2}
  *    h[:bar] # => 1
  *
- *  Otherwise, returns a default value (or raises an exception);
- *  see {Hash Default}[rdoc-ref:Hash@Hash+Default]:
- *
- *    h[:nosuch] # => nil
+ *  Otherwise, returns a default value or raises an exception,
+ *  depending on the {hash default}[rdoc-ref:Hash@Hash+Default].
  *
  *  Related: #[]=; see also {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
