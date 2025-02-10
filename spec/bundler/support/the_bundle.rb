@@ -32,6 +32,10 @@ module Spec
       Bundler::LockfileParser.new(lockfile.read)
     end
 
+    def locked_specs
+      locked_gems.specs.map(&:full_name)
+    end
+
     def locked_platforms
       locked_gems.platforms.map(&:to_s)
     end

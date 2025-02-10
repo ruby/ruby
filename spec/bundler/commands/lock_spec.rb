@@ -645,13 +645,13 @@ RSpec.describe "bundle lock" do
     it "single gem updates dependent gem to minor" do
       bundle "lock --update foo --patch"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.1 qux-1.0.0].sort)
+      expect(the_bundle.locked_specs).to eq(%w[foo-1.4.5 bar-2.1.1 qux-1.0.0].sort)
     end
 
     it "minor preferred with strict" do
       bundle "lock --update --minor --strict"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
+      expect(the_bundle.locked_specs).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
 
     it "shows proper error when Gemfile changes forbid patch upgrades, and --patch --strict is given" do
@@ -674,25 +674,25 @@ RSpec.describe "bundle lock" do
       it "defaults to major" do
         bundle "lock --update --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
       end
 
       it "patch preferred" do
         bundle "lock --update --patch --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
       end
 
       it "minor preferred" do
         bundle "lock --update --minor --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
       end
 
       it "major preferred" do
         bundle "lock --update --major --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
       end
     end
   end
@@ -734,7 +734,7 @@ RSpec.describe "bundle lock" do
     it "adds the latest version of the new dependency" do
       bundle "lock --minor --update sequel"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
+      expect(the_bundle.locked_specs).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
     end
   end
 
