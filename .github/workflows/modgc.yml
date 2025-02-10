@@ -111,6 +111,7 @@ jobs:
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
+          echo 'MMTK_HEAP_MIN=100MiB' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
 
       - run: $SETARCH make
