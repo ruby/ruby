@@ -2844,9 +2844,9 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
 
 /*
  *  call-seq:
- *    hash.clear -> self
+ *    clear -> self
  *
- *  Removes all hash entries; returns +self+.
+ *  Removes all entries from +self+; returns emptied +self+.
  */
 
 VALUE
@@ -3803,21 +3803,29 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
 
 /*
  *  call-seq:
- *    hash == object -> true or false
+ *    self == object -> true or false
+ *
+ *  Returns whether +self+ and +object+ are equal.
  *
  *  Returns +true+ if all of the following are true:
- *  * +object+ is a +Hash+ object.
- *  * +hash+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>hash[key] == object[key]</tt>.
+ *
+ *  - +object+ is a +Hash+ object (or can be converted to one).
+ *  - +self+ and +object+ have the same keys (regardless of order).
+ *  - For each key +key+, <tt>self[key] == object[key]</tt>.
  *
  *  Otherwise, returns +false+.
  *
- *  Equal:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 == h2 # => true
- *    h3 = {baz: 2, bar: 1, foo: 0}
- *    h1 == h3 # => true
+ *  Examples:
+ *
+ *    h =  {foo: 0, bar: 1}
+ *    h == {foo: 0, bar: 1} # => true   # Equal entries (same order)
+ *    h == {bar: 1, foo: 0} # => true   # Equal entries (different order).
+ *    h == 1                            # => false  # Object not a hash.
+ *    h == {}                           # => false  # Different number of entries.
+ *    h == {foo: 0, bar: 1} # => false  # Different key.
+ *    h == {foo: 0, bar: 1} # => false  # Different value.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 
 static VALUE
@@ -4158,13 +4166,15 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
 
 /*
  *  call-seq:
- *    hash.assoc(key) -> new_array or nil
+ *    assoc(key) -> entry or nil
  *
- *  If the given +key+ is found, returns a 2-element Array containing that key and its value:
+ *  If the given +key+ is found, returns its entry as a 2-element array
+ *  containing that key and its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.assoc(:bar) # => [:bar, 1]
  *
- *  Returns +nil+ if key +key+ is not found.
+ *  Returns +nil+ if the key is not found.
  */
 
 static VALUE
@@ -4512,35 +4522,40 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
 /*
  *  call-seq:
  *    hash.any? -> true or false
- *    hash.any?(object) -> true or false
+ *    hash.any?(entry) -> true or false
  *    hash.any? {|key, value| ... } -> true or false
  *
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
  *
- *  If +self+ has no element, returns +false+ and argument or block
- *  are not used.
+ *  If +self+ has no element, returns +false+ and argument or block are not used;
+ *  otherwise behaves as below.
  *
  *  With no argument and no block,
- *  returns +true+ if +self+ is non-empty; +false+ if empty.
+ *  returns +true+ if +self+ is non-empty, +false+ otherwise.
  *
- *  With argument +object+ and no block,
+ *  With argument +entry+ and no block,
  *  returns +true+ if for any key +key+
- *  <tt>h.assoc(key) == object</tt>:
+ *  <tt>self.assoc(key) == entry</tt>, +false+ otherwise:
+ *
  *   h = {foo: 0, bar: 1, baz: 2}
+ *   h.assoc(:bar)     # => [:bar, 1]
  *   h.any?([:bar, 1]) # => true
  *   h.any?([:bar, 0]) # => false
- *   h.any?([:baz, 1]) # => false
  *
- *  With no argument and a block,
+ *  With no argument and a block given,
  *  calls the block with each key-value pair;
- *  returns +true+ if the block returns any truthy value,
+ *  returns +true+ if the block returns a truthy value,
  *  +false+ otherwise:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.any? {|key, value| value < 3 } # => true
  *    h.any? {|key, value| value > 3 } # => false
  *
- *  Related: Enumerable#any?
+ *  With both argument +entry+ and a block given,
+ *  issues a warning and ignores the block.
+ *
+ *  Related: Enumerable#any? (which this method overrides).
  */
 
 static VALUE
@@ -4633,14 +4648,22 @@ hash_le(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash <= other_hash -> true or false
+ *    self <= other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a subset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 <= h2 # => true
- *    h2 <= h1 # => false
- *    h1 <= h1 # => true
+ *  Returns +true+ if the entries of +self+ are a subset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h0 = {foo: 0, bar: 1}
+ *    h1 = {foo: 0, bar: 1, baz: 2}
+ *    h0 <= h0 # => true
+ *    h0 <= h1 # => true
+ *    h1 <= h0 # => false
+ *
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_le(VALUE hash, VALUE other)
@@ -4652,14 +4675,24 @@ rb_hash_le(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash < other_hash -> true or false
+ *    self < other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a proper subset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1}
- *    h2 = {foo: 0, bar: 1, baz: 2}
- *    h1 < h2 # => true
- *    h2 < h1 # => false
- *    h1 < h1 # => false
+ *  Returns +true+ if the entries of +self+ are a proper subset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h = {foo: 0, bar: 1}
+ *    h < {foo: 0, bar: 1, baz: 2} # => true   # Proper subset.
+ *    h < {baz: 2, bar: 1, foo: 0} # => true   # Order may differ.
+ *    h < h                        # => false  # Not a proper subset.
+ *    h < {bar: 1, foo: 0}         # => false  # Not a proper subset.
+ *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
+ *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
+ *
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_lt(VALUE hash, VALUE other)
@@ -4671,14 +4704,22 @@ rb_hash_lt(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash >= other_hash -> true or false
+ *    self >= other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a superset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1}
- *    h1 >= h2 # => true
- *    h2 >= h1 # => false
- *    h1 >= h1 # => true
+ *  Returns +true+ if the entries of +self+ are a superset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h0 = {foo: 0, bar: 1, baz: 2}
+ *    h1 = {foo: 0, bar: 1}
+ *    h0 >= h1 # => true
+ *    h0 >= h0 # => true
+ *    h1 >= h0 # => false
+ *
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_ge(VALUE hash, VALUE other)
@@ -4690,14 +4731,24 @@ rb_hash_ge(VALUE hash, VALUE other)
 
 /*
  *  call-seq:
- *    hash > other_hash -> true or false
+ *    self > other_hash -> true or false
  *
- *  Returns +true+ if +hash+ is a proper superset of +other_hash+, +false+ otherwise:
- *    h1 = {foo: 0, bar: 1, baz: 2}
- *    h2 = {foo: 0, bar: 1}
- *    h1 > h2 # => true
- *    h2 > h1 # => false
- *    h1 > h1 # => false
+ *  Returns +true+ if the entries of +self+ are a proper superset of the entries of +other_hash+,
+ *  +false+ otherwise:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h > {foo: 0, bar: 1}         # => true   # Proper superset.
+ *    h > {bar: 1, foo: 0}         # => true   # Order may differ.
+ *    h > h                        # => false  # Not a proper superset.
+ *    h > {baz: 2, bar: 1, foo: 0} # => false  # Not a proper superset.
+ *    h > {foo: 0, bar: 1}         # => false  # Different key.
+ *    h > {foo: 0, bar: 1}         # => false  # Different value.
+ *
+ *  See {Hash Inclusion}[rdoc-ref:hash_inclusion.rdoc].
+ *
+ *  Raises TypeError if +other_hash+ is not a hash and cannot be converted to a hash.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 static VALUE
 rb_hash_gt(VALUE hash, VALUE other)
