@@ -4733,7 +4733,7 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h > {foo: 0, bar: 1}         # => true   # Proper superset.
  *    h > {bar: 1, foo: 0}         # => true   # Order may differ.
- *    h > h                                                 # => false  # Not a proper superset.
+ *    h > h                        # => false  # Not a proper superset.
  *    h > {baz: 2, bar: 1, foo: 0} # => false  # Not a proper superset.
  *    h > {foo: 0, bar: 1}         # => false  # Different key.
  *    h > {foo: 0, bar: 1}         # => false  # Different value.
