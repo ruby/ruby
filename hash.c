@@ -4512,35 +4512,40 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
 /*
  *  call-seq:
  *    hash.any? -> true or false
- *    hash.any?(object) -> true or false
+ *    hash.any?(entry) -> true or false
  *    hash.any? {|key, value| ... } -> true or false
  *
  *  Returns +true+ if any element satisfies a given criterion;
  *  +false+ otherwise.
  *
- *  If +self+ has no element, returns +false+ and argument or block
- *  are not used.
+ *  If +self+ has no element, returns +false+ and argument or block are not used;
+ *  otherwise behaves as below.
  *
  *  With no argument and no block,
- *  returns +true+ if +self+ is non-empty; +false+ if empty.
+ *  returns +true+ if +self+ is non-empty, +false+ otherwise.
  *
- *  With argument +object+ and no block,
+ *  With argument +entry+ and no block,
  *  returns +true+ if for any key +key+
- *  <tt>h.assoc(key) == object</tt>:
+ *  <tt>self.assoc(key) == entry</tt>, +false+ otherwise:
+ *
  *   h = {foo: 0, bar: 1, baz: 2}
+ *   h.assoc(:bar)     # => [:bar, 1]
  *   h.any?([:bar, 1]) # => true
  *   h.any?([:bar, 0]) # => false
- *   h.any?([:baz, 1]) # => false
  *
- *  With no argument and a block,
+ *  With no argument and a block given,
  *  calls the block with each key-value pair;
- *  returns +true+ if the block returns any truthy value,
+ *  returns +true+ if the block returns a truthy value,
  *  +false+ otherwise:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.any? {|key, value| value < 3 } # => true
  *    h.any? {|key, value| value > 3 } # => false
  *
- *  Related: Enumerable#any?
+ *  With both argument +entry+ and a block given,
+ *  issues a warning and ignores the block.
+ *
+ *  Related: Enumerable#any? (which this method overrides).
  */
 
 static VALUE
