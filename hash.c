@@ -2916,7 +2916,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
  *    h[:foo] = 2 # => 2
  *    h[:foo]     # => 2
  *
- *  If the key is not found, creates a new entry for the given +key+ and +object+;
+ *  If +key+ is not found, creates a new entry for the given +key+ and +object+;
  *  the new entry is last in the order
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
  *
