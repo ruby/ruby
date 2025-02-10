@@ -581,7 +581,7 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle :install, raise_on_error: false
 
-      expect(err).to include("Two gemspecs have conflicting requirements on the same gem: rubocop (~> 1.36.0, development) and rubocop (~> 2.0, development). Bundler cannot continue.")
+      expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
     end
 
     it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do

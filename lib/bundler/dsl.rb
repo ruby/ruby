@@ -82,7 +82,7 @@ module Bundler
         end
 
         spec.development_dependencies.each do |dep|
-          add_dependency dep.name, dep.requirement.as_list, "type" => :development, "group" => development_group
+          add_dependency dep.name, dep.requirement.as_list, "gemspec_dev_dep" => true, "group" => development_group
         end
       when 0
         raise InvalidOption, "There are no gemspecs at #{expanded_path}"
@@ -247,7 +247,7 @@ module Bundler
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            gemfile_dep = [dep, current].find(&:runtime?)
+            gemfile_dep = [dep, current].find(&:gemfile_dep?)
 
             if gemfile_dep && !current_requirement_open
               Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
@@ -264,7 +264,7 @@ module Bundler
               if current_gemspec_range.intersects?(next_gemspec_range)
                 dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
               else
-                raise GemfileError, "Two gemspecs have conflicting requirements on the same gem: #{dep} and #{current}"
+                raise GemfileError, "Two gemspec development dependencies have conflicting requirements on the same gem: #{dep} and #{current}"
               end
             end
           else

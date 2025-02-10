@@ -948,14 +948,6 @@ module Bundler
           next
         end
 
-        # Gem::Dependency#== matches Gem::Dependency#type. As the lockfile
-        # doesn't carry a notion of the dependency type, if you use
-        # add_development_dependency in a gemspec that's loaded with the gemspec
-        # directive, the lockfile dependencies and resolved dependencies end up
-        # with a mismatch on #type. Work around that by setting the type on the
-        # dep from the lockfile.
-        locked_dep.instance_variable_set(:@type, dep.type)
-
         # We already know the name matches from the hash lookup
         # so we only need to check the requirement now
         changes ||= dep.requirement != locked_dep.requirement
