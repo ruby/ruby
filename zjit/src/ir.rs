@@ -313,14 +313,6 @@ pub enum ParseError {
 
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
-    // TODO(max): Queue TranslationContexts so that we can assign states to basic blocks instead of
-    // flowing one state through the linear iseq
-    let mut state = FrameState::new();
-    let mut block = fun.entry_block;
-
-    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let mut insn_idx = 0;
-
     // Compute a map of PC->Block by finding jump targets
     let jump_targets = compute_jump_targets(iseq);
     let mut insn_idx_to_block = HashMap::new();
@@ -331,162 +323,168 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         insn_idx_to_block.insert(insn_idx, fun.new_block());
     }
 
-    while insn_idx < iseq_size {
-        // Get the block id for this instruction
-        if let Some(block_id) = insn_idx_to_block.get(&insn_idx) {
-            block = *block_id;
-        }
+    // Iteratively fill out basic blocks using a queue
+    // TODO(max): Basic block arguments at edges
+    let mut queue = std::collections::VecDeque::new();
+    queue.push_back((FrameState::new(), fun.entry_block, /*insn_idx=*/0 as u32));
 
-        // Get the current pc and opcode
-        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
-        state.pc = unsafe { *pc };
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    while let Some((mut state, block, mut insn_idx)) = queue.pop_front() {
+        while insn_idx < iseq_size {
+            // Get the current pc and opcode
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+            state.pc = unsafe { *pc };
+            fun.push_insn(block, Insn::Snapshot { state: state.clone() });
 
-        fun.push_insn(block, Insn::Snapshot { state: state.clone() });
-
-        // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
-        let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+            // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
+            let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
             .try_into()
-            .unwrap();
+                .unwrap();
+            // Move to the next instruction to compile
+            insn_idx += insn_len(opcode as usize);
 
-        // Move to the next instruction to compile
-        insn_idx += insn_len(opcode as usize);
-
-        match opcode {
-            YARVINSN_nop => {},
-            YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
-            YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
-            YARVINSN_putstring => {
-                let val = Opnd::Const(get_arg(pc, 0));
-                let insn_id = fun.push_insn(block, Insn::StringCopy { val });
-                state.push(Opnd::Insn(insn_id));
-            }
-            YARVINSN_putself => { state.push(Opnd::Insn(fun.push_insn(block, Insn::PutSelf))); }
-            YARVINSN_intern => {
-                let val = state.pop()?;
-                let insn_id = fun.push_insn(block, Insn::StringIntern { val });
-                state.push(Opnd::Insn(insn_id));
-            }
-            YARVINSN_newarray => {
-                let count = get_arg(pc, 0).as_usize();
-                let insn_id = fun.push_insn(block, Insn::NewArray { count });
-                for idx in (0..count).rev() {
-                    fun.push_insn(block, Insn::ArraySet { idx, val: state.pop()? });
+            match opcode {
+                YARVINSN_nop => {},
+                YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
+                YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
+                YARVINSN_putstring => {
+                    let val = Opnd::Const(get_arg(pc, 0));
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val });
+                    state.push(Opnd::Insn(insn_id));
                 }
-                state.push(Opnd::Insn(insn_id));
-            }
-            YARVINSN_duparray => {
-                let val = Opnd::Const(get_arg(pc, 0));
-                let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
-                state.push(Opnd::Insn(insn_id));
-            }
-            YARVINSN_putobject_INT2FIX_0_ => {
-                state.push(Opnd::Const(VALUE::fixnum_from_usize(0)));
-            }
-            YARVINSN_putobject_INT2FIX_1_ => {
-                state.push(Opnd::Const(VALUE::fixnum_from_usize(1)));
-            }
-            YARVINSN_defined => {
-                let op_type = get_arg(pc, 0).as_usize();
-                let obj = get_arg(pc, 0);
-                let pushval = get_arg(pc, 0);
-                let v = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
-            }
-            YARVINSN_opt_getconstant_path => {
-                let ic = get_arg(pc, 0).as_ptr::<u8>();
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::GetConstantPath { ic })));
-            }
-            YARVINSN_branchunless => {
-                let offset = get_arg(pc, 0).as_i64();
-                let val = state.pop()?;
-                let test_id = fun.push_insn(block, Insn::Test { val });
-                // TODO(max): Check interrupts
-                let _branch_id = fun.push_insn(block,
-                    Insn::IfFalse {
-                        val: Opnd::Insn(test_id),
-                        target: BranchEdge {
-                            target: insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)],
-                            // TODO(max): Merge locals/stack for bb arguments
-                            args: vec![],
-                        }
-                    });
-            }
-            YARVINSN_opt_nil_p => {
-                let recv = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
-            }
-            YARVINSN_getlocal_WC_0 => {
-                let idx = get_arg(pc, 0).as_usize();
-                let val = state.getlocal(idx);
-                state.push(val);
-            }
-            YARVINSN_setlocal_WC_0 => {
-                let idx = get_arg(pc, 0).as_usize();
-                let val = state.pop()?;
-                state.setlocal(idx, val);
-            }
-            YARVINSN_pop => { state.pop()?; }
-            YARVINSN_dup => { state.push(state.top()?); }
-            YARVINSN_swap => {
-                let right = state.pop()?;
-                let left = state.pop()?;
-                state.push(right);
-                state.push(left);
-            }
-            YARVINSN_setn => {
-                let n = get_arg(pc, 0).as_usize();
-                let top = state.top()?;
-                state.setn(n, top);
-            }
-
-            YARVINSN_opt_plus => {
-                let v0 = state.pop()?;
-                let v1 = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "+".into() }, args: vec![v0] })));
-            }
-
-            YARVINSN_opt_lt => {
-                let v0 = state.pop()?;
-                let v1 = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<".into() }, args: vec![v0] })));
-            }
-            YARVINSN_opt_ltlt => {
-                let v0 = state.pop()?;
-                let v1 = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<<".into() }, args: vec![v0] })));
-            }
-            YARVINSN_opt_aset => {
-                let set = state.pop()?;
-                let obj = state.pop()?;
-                let recv = state.pop()?;
-                fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
-                state.push(set);
-            }
-
-            YARVINSN_leave => {
-                fun.push_insn(block, Insn::Return { val: state.pop()? });
-            }
-
-            YARVINSN_opt_send_without_block => {
-                let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                let call_info = unsafe { rb_get_call_data_ci(cd) };
-                let argc = unsafe { vm_ci_argc((*cd).ci) };
-
-
-                let method_name = unsafe {
-                    let mid = rb_vm_ci_mid(call_info);
-                    cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
-                };
-                let mut args = vec![];
-                for _ in 0..argc {
-                    args.push(state.pop()?);
+                YARVINSN_putself => { state.push(Opnd::Insn(fun.push_insn(block, Insn::PutSelf))); }
+                YARVINSN_intern => {
+                    let val = state.pop()?;
+                    let insn_id = fun.push_insn(block, Insn::StringIntern { val });
+                    state.push(Opnd::Insn(insn_id));
                 }
-                args.reverse();
+                YARVINSN_newarray => {
+                    let count = get_arg(pc, 0).as_usize();
+                    let insn_id = fun.push_insn(block, Insn::NewArray { count });
+                    for idx in (0..count).rev() {
+                        fun.push_insn(block, Insn::ArraySet { idx, val: state.pop()? });
+                    }
+                    state.push(Opnd::Insn(insn_id));
+                }
+                YARVINSN_duparray => {
+                    let val = Opnd::Const(get_arg(pc, 0));
+                    let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
+                    state.push(Opnd::Insn(insn_id));
+                }
+                YARVINSN_putobject_INT2FIX_0_ => {
+                    state.push(Opnd::Const(VALUE::fixnum_from_usize(0)));
+                }
+                YARVINSN_putobject_INT2FIX_1_ => {
+                    state.push(Opnd::Const(VALUE::fixnum_from_usize(1)));
+                }
+                YARVINSN_defined => {
+                    let op_type = get_arg(pc, 0).as_usize();
+                    let obj = get_arg(pc, 0);
+                    let pushval = get_arg(pc, 0);
+                    let v = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v })));
+                }
+                YARVINSN_opt_getconstant_path => {
+                    let ic = get_arg(pc, 0).as_ptr::<u8>();
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::GetConstantPath { ic })));
+                }
+                YARVINSN_branchunless => {
+                    let offset = get_arg(pc, 0).as_i64();
+                    let val = state.pop()?;
+                    let test_id = fun.push_insn(block, Insn::Test { val });
+                    // TODO(max): Check interrupts
+                    let _branch_id = fun.push_insn(block,
+                        Insn::IfFalse {
+                            val: Opnd::Insn(test_id),
+                            target: BranchEdge {
+                                target: insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)],
+                                // TODO(max): Merge locals/stack for bb arguments
+                                args: vec![],
+                            }
+                        });
+                }
+                YARVINSN_opt_nil_p => {
+                    let recv = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
+                }
+                YARVINSN_getlocal_WC_0 => {
+                    let idx = get_arg(pc, 0).as_usize();
+                    let val = state.getlocal(idx);
+                    state.push(val);
+                }
+                YARVINSN_setlocal_WC_0 => {
+                    let idx = get_arg(pc, 0).as_usize();
+                    let val = state.pop()?;
+                    state.setlocal(idx, val);
+                }
+                YARVINSN_pop => { state.pop()?; }
+                YARVINSN_dup => { state.push(state.top()?); }
+                YARVINSN_swap => {
+                    let right = state.pop()?;
+                    let left = state.pop()?;
+                    state.push(right);
+                    state.push(left);
+                }
+                YARVINSN_setn => {
+                    let n = get_arg(pc, 0).as_usize();
+                    let top = state.top()?;
+                    state.setn(n, top);
+                }
 
-                let recv = state.pop()?;
-                state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args })));
+                YARVINSN_opt_plus => {
+                    let v0 = state.pop()?;
+                    let v1 = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "+".into() }, args: vec![v0] })));
+                }
+
+                YARVINSN_opt_lt => {
+                    let v0 = state.pop()?;
+                    let v1 = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<".into() }, args: vec![v0] })));
+                }
+                YARVINSN_opt_ltlt => {
+                    let v0 = state.pop()?;
+                    let v1 = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<<".into() }, args: vec![v0] })));
+                }
+                YARVINSN_opt_aset => {
+                    let set = state.pop()?;
+                    let obj = state.pop()?;
+                    let recv = state.pop()?;
+                    fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
+                    state.push(set);
+                }
+
+                YARVINSN_leave => {
+                    fun.push_insn(block, Insn::Return { val: state.pop()? });
+                }
+
+                YARVINSN_opt_send_without_block => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+
+                    let method_name = unsafe {
+                        let mid = rb_vm_ci_mid(call_info);
+                        cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
+                    };
+                    let mut args = vec![];
+                    for _ in 0..argc {
+                        args.push(state.pop()?);
+                    }
+                    args.reverse();
+
+                    let recv = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args })));
+                }
+                _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
             }
-            _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
+
+            if insn_idx_to_block.contains_key(&insn_idx) {
+                queue.push_back((state, insn_idx_to_block[&insn_idx], insn_idx));
+                break;
+            }
         }
     }
 
