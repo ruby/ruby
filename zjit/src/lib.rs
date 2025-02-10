@@ -83,14 +83,10 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     x86_emit(cb);
 
     #[cfg(feature = "disasm")]
-    {
+    if get_option!(dump_disasm) {
         let end_ptr = cb.get_write_ptr();
-
-        use disasm::disasm_addr_range;
-        let disasm = disasm_addr_range(start_ptr.raw_ptr(cb) as usize, end_ptr.raw_ptr(cb) as usize);
-        if get_option!(dump_disasm) {
-            println!("{}", disasm);
-        }
+        let disasm = disasm::disasm_addr_range(start_ptr.raw_ptr(cb) as usize, end_ptr.raw_ptr(cb) as usize);
+        println!("{}", disasm);
     }
 
     if cfg!(target_arch = "x86_64") {
