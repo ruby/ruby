@@ -1184,6 +1184,21 @@ setup_yjit_options(const char *s)
 }
 #endif
 
+#if USE_ZJIT
+static void
+setup_zjit_options(ruby_cmdline_options_t *opt, const char *s)
+{
+    // The option parsing is done in zjit/src/options.rs
+    extern void *rb_zjit_init_options(void);
+    extern bool rb_zjit_parse_option(void *options, const char *s);
+
+    if (!opt->zjit) opt->zjit = rb_zjit_init_options();
+    if (!rb_zjit_parse_option(opt->zjit, s)) {
+        rb_raise(rb_eRuntimeError, "invalid ZJIT option '%s' (--help will show valid zjit options)", s);
+    }
+}
+#endif
+
 /*
  * Following proc_*_option functions are tree kinds:
  *
@@ -1454,9 +1469,13 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
 #endif
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
+#if USE_ZJIT
         FEATURE_SET(opt->features, FEATURE_BIT(zjit));
-        extern bool rb_zjit_parse_option();
-        rb_zjit_parse_option();
+        setup_zjit_options(opt, s);
+#else
+        rb_warn("Ruby was built without ZJIT support."
+                " You may need to install rustc to build Ruby with ZJIT.");
+#endif
     }
     else if (strcmp("yydebug", s) == 0) {
         if (envopt) goto noenvopt_long;
@@ -1799,9 +1818,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #endif
 #if USE_ZJIT
     if (opt->zjit) {
-        fprintf(stderr, "test test\n");
-        extern void rb_zjit_init();
-        rb_zjit_init();
+        extern void rb_zjit_init(void *options);
+        rb_zjit_init(opt->zjit);
     }
 #endif
 
@@ -2339,8 +2357,9 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
 #endif
 #if USE_ZJIT
-    if (FEATURE_SET_P(opt->features, zjit)) {
-        opt->zjit = true;
+    if (FEATURE_SET_P(opt->features, zjit) && !opt->zjit) {
+        extern void *rb_zjit_init_options(void);
+        opt->zjit = rb_zjit_init_options();
     }
 #endif
 

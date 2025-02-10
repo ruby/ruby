@@ -10,6 +10,7 @@ mod virtualmem;
 mod asm;
 mod backend;
 mod disasm;
+mod options;
 
 use backend::x86_emit;
 use codegen::ZJITState;
@@ -19,12 +20,13 @@ use crate::cruby::*;
 #[no_mangle]
 pub static mut rb_zjit_enabled_p: bool = false;
 
+/// Initialize ZJIT, given options allocated by rb_zjit_init_options()
 #[no_mangle]
-pub extern "C" fn rb_zjit_init() {
+pub extern "C" fn rb_zjit_init(options: *const u8) {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
-        ZJITState::init();
+        ZJITState::init(options);
 
         rb_bug_panic_hook();
 
@@ -69,12 +71,6 @@ fn rb_bug_panic_hook() {
         //let len = std::cmp::min(0x100, panic_message.len()) as c_int;
         //unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
     }));
-}
-
-#[no_mangle]
-pub extern "C" fn rb_zjit_parse_option() -> bool {
-    println!("parsing zjit options");
-    false
 }
 
 #[no_mangle]

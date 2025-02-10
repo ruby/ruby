@@ -23,6 +23,9 @@ typedef struct ruby_cmdline_options {
     ruby_features_t warn;
     unsigned int dump;
     long backtrace_length_limit;
+#if USE_ZJIT
+    void *zjit;
+#endif
 
     const char *crash_report;
 
@@ -39,7 +42,6 @@ typedef struct ruby_cmdline_options {
 #if USE_YJIT
     unsigned int yjit: 1;
 #endif
-    unsigned int zjit: 1;
 } ruby_cmdline_options_t;
 
 struct ruby_opt_message {

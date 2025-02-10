@@ -1,7 +1,9 @@
+use std::mem;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::cruby::*;
 use crate::virtualmem::*;
+use crate::options::Options;
 
 /// Block of memory into which instructions can be assembled
 pub struct CodeBlock {
@@ -111,18 +113,20 @@ impl crate::virtualmem::CodePtrBase for CodeBlock {
 pub struct ZJITState {
     /// Inline code block (fast path)
     code_block: CodeBlock,
+
+    /// ZJIT command-line options
+    options: Options,
 }
 
 /// Private singleton instance of the codegen globals
 static mut ZJIT_STATE: Option<ZJITState> = None;
 
 impl ZJITState {
-    /// Initialize the ZJIT globals
-    pub fn init() {
-        let exec_mem_size: usize = 64 * 1024 * 1024; // TODO: support the option
-
+    /// Initialize the ZJIT globals, given options allocated by rb_zjit_init_options()
+    pub fn init(options: *const u8) {
         #[cfg(not(test))]
         let cb = {
+            let exec_mem_size: usize = 64 * 1024 * 1024; // TODO: implement the option
             let virt_block: *mut u8 = unsafe { rb_zjit_reserve_addr_space(64 * 1024 * 1024) };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
@@ -153,16 +157,18 @@ impl ZJITState {
             CodeBlock::new(mem_block.clone())
         };
 
-        #[cfg(not(test))]
-        let zjit_state = ZJITState {
-            code_block: cb,
-        };
+        let options = unsafe { Box::from_raw(options as *mut Options) };
+        #[cfg(not(test))] // TODO: can we get rid of this #[cfg]?
+        {
+            let zjit_state = ZJITState {
+                code_block: cb,
+                options: *options,
+            };
 
-        // Initialize the codegen globals instance
-        #[cfg(not(test))]
-        unsafe {
-            ZJIT_STATE = Some(zjit_state);
+            // Initialize the codegen globals instance
+            unsafe { ZJIT_STATE = Some(zjit_state); }
         }
+        mem::drop(options);
     }
 
     /// Get a mutable reference to the codegen globals instance
@@ -173,5 +179,10 @@ impl ZJITState {
     /// Get a mutable reference to the inline code block
     pub fn get_code_block() -> &'static mut CodeBlock {
         &mut ZJITState::get_instance().code_block
+    }
+
+    // Get a mutable reference to the options
+    pub fn get_options() -> &'static mut Options {
+        &mut ZJITState::get_instance().options
     }
 }
