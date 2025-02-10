@@ -1000,7 +1000,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       gem "nokogiri"
 
-      gem "tzinfo", "~> 1.2", platforms: %i[mingw mswin x64_mingw jruby]
+      gem "tzinfo", "~> 1.2", platforms: %i[windows jruby]
     G
 
     checksums = checksums_section_when_enabled do |c|
