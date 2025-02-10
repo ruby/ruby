@@ -399,6 +399,11 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal :bar, state_hash[:foo]
   end
 
+  def test_json_state_to_h_roundtrip
+    state = JSON.state.new
+    assert_equal state.to_h, JSON.state.new(state.to_h).to_h
+  end
+
   def test_json_generate
     assert_raise JSON::GeneratorError do
       generate(["\xea"])

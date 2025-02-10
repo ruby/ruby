@@ -1626,7 +1626,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
-    else if (key == sym_as_json)               { state->as_json = rb_convert_type(val, T_DATA, "Proc", "to_proc"); }
+    else if (key == sym_as_json)               { state->as_json = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse; }
     return ST_CONTINUE;
 }
 
