@@ -30,11 +30,14 @@ $(ZJIT_LIBS):
 	$(ECHO) 'Error: Tried to build ZJIT without configuring it first. Check `make showconfig`?'
 	@false
 else ifeq ($(ZJIT_SUPPORT),$(filter dev dev_nodebug stats,$(ZJIT_SUPPORT)))
+# TODO: Remove MACOSX_DEPLOYMENT_TARGET or properly specify the target version while supressing the warning:
+# ld: warning: object file (zjit/target/debug/libzjit.a(...)) was built for newer macOS version (15.2) than being linked (15.0)
 $(ZJIT_LIBS): $(ZJIT_SRC_FILES)
 	$(ECHO) 'building Rust ZJIT ($(ZJIT_SUPPORT) mode)'
 	+$(Q)$(CHDIR) $(top_srcdir)/zjit && \
 	        CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
+	        MACOSX_DEPLOYMENT_TARGET=15.0 \
 	        $(CARGO) $(CARGO_VERBOSE) build $(ZJIT_CARGO_BUILD_ARGS)
 	$(ZJIT_LIB_TOUCH)
 else
