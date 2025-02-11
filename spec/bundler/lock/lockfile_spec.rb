@@ -1587,6 +1587,32 @@ RSpec.describe "the lockfile format" do
     L
   end
 
+  it "raises a clear error when frozen mode is set and lockfile is missing deps, and does not install any gems" do
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack_middleware (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      source "https://gem.repo2"
+      gem "myrack_middleware"
+    G
+
+    expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
+  end
+
   it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
     build_repo4 do
       build_gem "other_dep", "0.9"

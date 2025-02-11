@@ -638,6 +638,8 @@ module Bundler
       specs = begin
         resolve.materialize(dependencies)
       rescue IncorrectLockfileDependencies => e
+        raise if Bundler.frozen_bundle?
+
         spec = e.spec
         raise "Infinite loop while fixing lockfile dependencies" if incorrect_spec == spec
 
