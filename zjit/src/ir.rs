@@ -424,7 +424,10 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     // TODO(max): Merge locals/stack for bb arguments
-                    let _branch_id = fun.push_insn(block, Insn::IfFalse { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
+                    let _branch_id = fun.push_insn(block, Insn::IfFalse {
+                        val: Opnd::Insn(test_id),
+                        target: BranchEdge { target, args: state.as_args() }
+                    });
                     queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchif => {
@@ -435,7 +438,10 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     // TODO(max): Merge locals/stack for bb arguments
-                    let _branch_id = fun.push_insn(block, Insn::IfTrue { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
+                    let _branch_id = fun.push_insn(block, Insn::IfTrue {
+                        val: Opnd::Insn(test_id),
+                        target: BranchEdge { target, args: state.as_args() }
+                    });
                     queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_jump => {
@@ -443,7 +449,9 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    let _branch_id = fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args() }));
+                    let _branch_id = fun.push_insn(block, Insn::Jump(
+                        BranchEdge { target, args: state.as_args() }
+                    ));
                     queue.push_back((state.clone(), target, target_idx));
                     break;  // Don't enqueue the next block as a successor
                 }
