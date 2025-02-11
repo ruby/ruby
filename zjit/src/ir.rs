@@ -256,6 +256,10 @@ impl FrameState {
         }
         self.locals[idx]
     }
+
+    fn as_args(&self) -> Vec<Opnd> {
+        self.locals.iter().chain(self.stack.iter()).map(|op| op.clone()).collect()
+    }
 }
 
 impl std::fmt::Display for FrameState {
@@ -415,7 +419,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // TODO(max): Check interrupts
                     let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
                     // TODO(max): Merge locals/stack for bb arguments
-                    let _branch_id = fun.push_insn(block, Insn::IfFalse { val: Opnd::Insn(test_id), target: BranchEdge { target, args: vec![] } });
+                    let _branch_id = fun.push_insn(block, Insn::IfFalse { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
                 }
                 YARVINSN_branchif => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -424,13 +428,13 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // TODO(max): Check interrupts
                     let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
                     // TODO(max): Merge locals/stack for bb arguments
-                    let _branch_id = fun.push_insn(block, Insn::IfTrue { val: Opnd::Insn(test_id), target: BranchEdge { target, args: vec![] } });
+                    let _branch_id = fun.push_insn(block, Insn::IfTrue { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
                 }
                 YARVINSN_jump => {
                     let offset = get_arg(pc, 0).as_i64();
                     // TODO(max): Check interrupts
                     let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
-                    let _branch_id = fun.push_insn(block, Insn::Jump(BranchEdge { target, args: vec![] }));
+                    let _branch_id = fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args() }));
                 }
                 YARVINSN_opt_nil_p => {
                     let recv = state.pop()?;
