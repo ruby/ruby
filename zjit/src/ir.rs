@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::cruby::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
@@ -284,7 +284,7 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
-    let mut jump_targets = std::collections::HashSet::new();
+    let mut jump_targets = HashSet::new();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -339,8 +339,12 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut queue = std::collections::VecDeque::new();
     queue.push_back((FrameState::new(), fun.entry_block, /*insn_idx=*/0 as u32));
 
+    let mut visited = HashSet::new();
+
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
+        if visited.contains(&block) { continue; }
+        visited.insert(block);
         let mut state = {
             let mut result = FrameState::new();
             let mut idx = 0;
