@@ -1,4 +1,4 @@
-use crate::{asm::x86_64::{add, mov, ret, RAX_REG, RDI_REG, RSI_REG}, codegen::CodeBlock, cruby::{Qnil, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME}};
+use crate::{asm::x86_64::{add, mov, ret, RAX_REG, RDI_REG, RSI_REG}, asm::CodeBlock, cruby::{Qnil, RUBY_OFFSET_EC_CFP, RUBY_SIZEOF_CONTROL_FRAME}};
 use crate::asm::x86_64::X86Opnd::Mem;
 use crate::asm::x86_64::X86Opnd::Reg;
 use crate::asm::x86_64::X86Opnd::UImm;
