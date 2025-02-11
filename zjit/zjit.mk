@@ -80,10 +80,22 @@ zjit-bench: install update-zjit-bench PHONY
 		./run_once.sh $(ZJIT_BENCH_OPTS) $(ZJIT_BENCH)
 
 
-# TODO rm: In YJIT builds, merge libyjit.a with libruby_static.a
+# We need `cargo nextest` for its one-process-per execution execution model
+# since we can only boot the VM once per process. Normal `cargo test`
+# runs tests in threads and can't handle this.
+#
+# On darwin, it's available through `brew install cargo-nextest`. See
+# https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
+zjit-test: libminiruby.a
+	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
+	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
+	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
+	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 
 
-#$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(OUTFLAG)$@
+# A library for booting miniruby in tests explain why not use libruby-static.a
+#  - more complicated linking
+#  - initit
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
 	echo exe $(EXE_LDFLAGS)

@@ -1,12 +1,22 @@
 fn main() {
-    // TODO search for the .a. On else path, print hint to use make instead
-    let ruby_build_dir = "/Users/alan/ruby/build-O0";
+    use std::env;
 
-    println!("cargo:rustc-link-lib=static:-bundle=miniruby");
-    println!("cargo:rerun-if-changed={}/libminiruby.a", ruby_build_dir);
-    println!("cargo:rustc-link-lib=framework=CoreFoundation");
-    println!("cargo:rustc-link-lib=dl");
-    println!("cargo:rustc-link-lib=objc");
-    println!("cargo:rustc-link-lib=pthread");
-    println!("cargo:rustc-link-search=native={ruby_build_dir}");
+    // TODO search for the .a. On else path, print hint to use make instead
+    if let Ok(ruby_build_dir) = env::var("RUBY_BUILD_DIR") {
+        let link_flags = env::var("RUBY_LD_FLAGS").unwrap();
+
+        let mut split_iter = link_flags.split(" ");
+        while let Some(token) = split_iter.next() {
+            if token == "-framework" {
+                if let Some(framework) = split_iter.next() {
+                    println!("cargo:rustc-link-lib=framework={framework}");
+                }
+            } else if let Some(lib_name) = token.strip_prefix("-l") {
+                println!("cargo:rustc-link-lib={lib_name}");
+            }
+        }
+
+        println!("cargo:rustc-link-lib=static:-bundle=miniruby");
+        println!("cargo:rustc-link-search=native={ruby_build_dir}");
+    }
 }
