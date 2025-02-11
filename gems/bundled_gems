@@ -13,9 +13,9 @@ test-unit           3.6.7   https://github.com/test-unit/test-unit
 rexml               3.4.0   https://github.com/ruby/rexml
 rss                 0.3.1   https://github.com/ruby/rss
 net-ftp             0.3.8   https://github.com/ruby/net-ftp
-net-imap            0.5.5   https://github.com/ruby/net-imap
+net-imap            0.5.6   https://github.com/ruby/net-imap
 net-pop             0.1.2   https://github.com/ruby/net-pop
-net-smtp            0.5.0   https://github.com/ruby/net-smtp
+net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.2   https://github.com/ruby/matrix
 prime               0.1.3   https://github.com/ruby/prime
 rbs                 3.8.1   https://github.com/ruby/rbs
@@ -32,12 +32,16 @@ resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
 rinda               0.2.0   https://github.com/ruby/rinda
 drb                 2.2.1   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
-syslog              0.2.0   https://github.com/ruby/syslog
+syslog              0.2.0   https://github.com/ruby/syslog f2b9e75a8e016502607a3a20695cef57956150c2
 csv                 3.3.2   https://github.com/ruby/csv
 repl_type_completor 0.1.10  https://github.com/ruby/repl_type_completor
 ostruct             0.6.1   https://github.com/ruby/ostruct
 pstore              0.1.4   https://github.com/ruby/pstore b563c4d354615e12a6fa54ffaa4ed711c3d1ba9f
 benchmark           0.4.0   https://github.com/ruby/benchmark
 logger              1.6.5   https://github.com/ruby/logger
-rdoc                6.11.0  https://github.com/ruby/rdoc
+rdoc                6.12.0  https://github.com/ruby/rdoc
 win32ole            1.9.1   https://github.com/ruby/win32ole
+irb                 1.15.1  https://github.com/ruby/irb 6bb53630c3398b2042fb99d5232c68399491d338
+reline              0.6.0   https://github.com/ruby/reline defcd36c0b6e6648333d4b9ab5923eb4e543615e
+readline            0.0.4   https://github.com/ruby/readline
+fiddle              1.1.6   https://github.com/ruby/fiddle

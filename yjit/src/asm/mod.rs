@@ -145,6 +145,7 @@ impl CodeBlock {
 
     /// Move the CodeBlock to the next page. If it's on the furthest page,
     /// move the other CodeBlock to the next page as well.
+    #[must_use]
     pub fn next_page<F: Fn(&mut CodeBlock, CodePtr)>(&mut self, base_ptr: CodePtr, jmp_ptr: F) -> bool {
         let old_write_ptr = self.get_write_ptr();
         self.set_write_ptr(base_ptr);
@@ -823,7 +824,7 @@ mod tests
         assert_eq!(cb.code_size(), 4);
 
         // Moving to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        assert!(cb.next_page(cb.get_write_ptr(), |_, _| {}));
         assert_eq!(cb.code_size(), 4);
 
         // Write 4 bytes in the second page
@@ -836,7 +837,7 @@ mod tests
         cb.write_bytes(&[1, 1, 1, 1]);
 
         // Moving from an old page to the next page should not increase code_size
-        cb.next_page(cb.get_write_ptr(), |_, _| {});
+        assert!(cb.next_page(cb.get_write_ptr(), |_, _| {}));
         cb.set_pos(old_write_pos);
         assert_eq!(cb.code_size(), 8);
     }

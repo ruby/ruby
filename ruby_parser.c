@@ -180,12 +180,6 @@ intern3(const char *name, long len, parser_encoding *enc)
     return rb_intern3(name, len, enc);
 }
 
-static parser_encoding *
-usascii_encoding(void)
-{
-    return rb_usascii_encoding();
-}
-
 static int
 enc_symname_type(const char *name, long len, parser_encoding *enc, unsigned int allowed_attrset)
 {
@@ -405,7 +399,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isspace = enc_isspace,
     .enc_coderange_7bit = ENC_CODERANGE_7BIT,
     .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
-    .usascii_encoding = usascii_encoding,
     .enc_mbminlen = enc_mbminlen,
     .enc_isascii = enc_isascii,
     .enc_mbc_to_codepoint = enc_mbc_to_codepoint,
@@ -419,7 +412,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .errinfo = rb_errinfo,
     .set_errinfo = rb_set_errinfo,
-    .exc_raise = rb_exc_raise,
     .make_exception = rb_make_exception,
 
     .sized_xfree = ruby_sized_xfree,

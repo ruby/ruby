@@ -182,7 +182,7 @@ class Resolv
   class Hosts
     if WINDOWS
       begin
-        require 'win32/resolv'
+        require 'win32/resolv' unless defined?(Win32::Resolv)
         DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
@@ -1023,7 +1023,7 @@ class Resolv
           config_hash = Config.parse_resolv_conf(filename)
         else
           if WINDOWS
-            require 'win32/resolv'
+            require 'win32/resolv' unless defined?(Win32::Resolv)
             search, nameserver = Win32::Resolv.get_resolv_info
             config_hash = {}
             config_hash[:nameserver] = nameserver if nameserver

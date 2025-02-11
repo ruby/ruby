@@ -29,12 +29,10 @@ module SyncDefaultGems
     error_highlight: "ruby/error_highlight",
     etc: 'ruby/etc',
     fcntl: 'ruby/fcntl',
-    fiddle: 'ruby/fiddle',
     fileutils: 'ruby/fileutils',
     find: "ruby/find",
     forwardable: "ruby/forwardable",
     ipaddr: 'ruby/ipaddr',
-    irb: 'ruby/irb',
     json: 'ruby/json',
     mmtk: ['ruby/mmtk', "main"],
     open3: "ruby/open3",
@@ -45,8 +43,6 @@ module SyncDefaultGems
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
     psych: 'ruby/psych',
-    readline: "ruby/readline",
-    reline: 'ruby/reline',
     resolv: "ruby/resolv",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
@@ -146,18 +142,6 @@ module SyncDefaultGems
       end
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
-    when "reline"
-      rm_rf(%w[lib/reline lib/reline.rb test/reline])
-      cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-      cp_r("#{upstream}/test/reline", "test")
-      cp_r("#{upstream}/reline.gemspec", "lib/reline")
-    when "irb"
-      rm_rf(%w[lib/irb lib/irb.rb test/irb])
-      cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
-      rm_rf(%w[lib/irb/.document])
-      cp_r("#{upstream}/test/irb", "test")
-      cp_r("#{upstream}/irb.gemspec", "lib/irb")
-      cp_r("#{upstream}/man/irb.1", "man/irb.1")
     when "json"
       rm_rf(%w[ext/json lib/json test/json])
       cp_r("#{upstream}/ext/json/ext", "ext/json")
@@ -179,14 +163,6 @@ module SyncDefaultGems
       rm_rf(["ext/psych/yaml/LICENSE"])
       cp_r("#{upstream}/psych.gemspec", "ext/psych")
       `git checkout ext/psych/depend ext/psych/.gitignore`
-    when "fiddle"
-      rm_rf(%w[ext/fiddle test/fiddle])
-      cp_r("#{upstream}/ext/fiddle", "ext")
-      cp_r("#{upstream}/lib", "ext/fiddle")
-      cp_r("#{upstream}/test/fiddle", "test")
-      cp_r("#{upstream}/fiddle.gemspec", "ext/fiddle")
-      `git checkout ext/fiddle/depend`
-      rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
     when "stringio"
       rm_rf(%w[ext/stringio test/stringio])
       cp_r("#{upstream}/ext/stringio", "ext")

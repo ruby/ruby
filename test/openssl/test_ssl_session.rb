@@ -5,7 +5,9 @@ if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
   def test_session
-    ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
+    ctx_proc = proc { |ctx|
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    }
     start_server(ctx_proc: ctx_proc) do |port|
       server_connect_with_session(port, nil, nil) { |ssl|
         session = ssl.session
@@ -143,7 +145,7 @@ __EOS__
 
   def test_server_session_cache
     ctx_proc = Proc.new do |ctx|
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.options |= OpenSSL::SSL::OP_NO_TICKET
     end
 
@@ -197,7 +199,7 @@ __EOS__
       10.times do |i|
         connections = i
         cctx = OpenSSL::SSL::SSLContext.new
-        cctx.ssl_version = :TLSv1_2
+        cctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
         server_connect_with_session(port, cctx, first_session) { |ssl|
           ssl.puts("abc"); assert_equal "abc\n", ssl.gets
           first_session ||= ssl.session
@@ -299,11 +301,11 @@ __EOS__
     connections = nil
     called = {}
     cctx = OpenSSL::SSL::SSLContext.new
-    cctx.ssl_version = :TLSv1_2
+    cctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
     sctx = nil
     ctx_proc = Proc.new { |ctx|
       sctx = ctx
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
       # get_cb is called whenever a client proposed to resume a session but

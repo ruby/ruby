@@ -2311,7 +2311,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
         if ((!RB_TYPE_P(klass, T_MODULE)) ||
             (orig_me = search_method(rb_cObject, original_name, &defined_class),
              UNDEFINED_METHOD_ENTRY_P(orig_me))) {
-            rb_print_undef(klass, original_name, METHOD_VISI_UNDEF);
+            rb_print_undef(target_klass, original_name, METHOD_VISI_UNDEF);
         }
     }
 

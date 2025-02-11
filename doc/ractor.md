@@ -334,7 +334,7 @@ as << obj
 as.sort == ['r1', 'r2'] #=> true
 ```
 
-Complex example:
+\Complex example:
 
 ```ruby
 pipe = Ractor.new do

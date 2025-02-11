@@ -283,7 +283,7 @@ int ruby_rgengc_debug;
 #endif
 
 #ifndef GC_DEBUG_STRESS_TO_CLASS
-# define GC_DEBUG_STRESS_TO_CLASS RUBY_DEBUG
+# define GC_DEBUG_STRESS_TO_CLASS 1
 #endif
 
 typedef enum {
@@ -850,8 +850,8 @@ RVALUE_AGE_SET(VALUE obj, int age)
 #define stress_to_class         objspace->stress_to_class
 #define set_stress_to_class(c)  (stress_to_class = (c))
 #else
-#define stress_to_class         (objspace, 0)
-#define set_stress_to_class(c)  (objspace, (c))
+#define stress_to_class         ((void)objspace, 0)
+#define set_stress_to_class(c)  ((void)objspace, (c))
 #endif
 
 #if 0
@@ -2404,7 +2404,6 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
 
     if (!vm_locked) {
         lev = rb_gc_cr_lock();
-        vm_locked = true;
         unlock_vm = true;
     }
 
@@ -2517,9 +2516,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     (void)RB_DEBUG_COUNTER_INC_IF(obj_newobj_wb_unprotected, !wb_protected);
 
     if (RB_UNLIKELY(stress_to_class)) {
-        long cnt = RARRAY_LEN(stress_to_class);
-        for (long i = 0; i < cnt; i++) {
-            if (klass == RARRAY_AREF(stress_to_class, i)) rb_memerror();
+        if (RTEST(rb_hash_has_key(stress_to_class, klass))) {
+            rb_memerror();
         }
     }
 
@@ -7110,6 +7108,24 @@ gc_ref_update(void *vstart, void *vend, size_t stride, rb_objspace_t *objspace, 
     return 0;
 }
 
+static int
+gc_update_references_weak_table_i(VALUE obj, void *data)
+{
+    int ret;
+    asan_unpoisoning_object(obj) {
+        ret = BUILTIN_TYPE(obj) == T_MOVED ? ST_REPLACE : ST_CONTINUE;
+    }
+    return ret;
+}
+
+static int
+gc_update_references_weak_table_replace_i(VALUE *obj, void *data)
+{
+    *obj = rb_gc_location(*obj);
+
+    return ST_CONTINUE;
+}
+
 static void
 gc_update_references(rb_objspace_t *objspace)
 {
@@ -7139,6 +7155,16 @@ gc_update_references(rb_objspace_t *objspace)
     gc_update_table_refs(finalizer_table);
 
     rb_gc_update_vm_references((void *)objspace);
+
+    for (int table = 0; table < RB_GC_VM_WEAK_TABLE_COUNT; table++) {
+        rb_gc_vm_weak_table_foreach(
+            gc_update_references_weak_table_i,
+            gc_update_references_weak_table_replace_i,
+            NULL,
+            false,
+            table
+        );
+    }
 
     objspace->flags.during_reference_updating = false;
 }
@@ -9287,6 +9313,56 @@ gc_malloc_allocations(VALUE self)
 void rb_gc_impl_before_fork(void *objspace_ptr) { /* no-op */ }
 void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) { /* no-op */ }
 
+/*
+ *  call-seq:
+ *    GC.add_stress_to_class(class[, ...])
+ *
+ *  Raises NoMemoryError when allocating an instance of the given classes.
+ *
+ */
+static VALUE
+rb_gcdebug_add_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (!stress_to_class) {
+        set_stress_to_class(rb_ident_hash_new_with_size(argc));
+    }
+
+    for (int i = 0; i < argc; i++) {
+        VALUE klass = argv[i];
+        rb_hash_aset(stress_to_class, klass, Qtrue);
+    }
+
+    return self;
+}
+
+/*
+ *  call-seq:
+ *    GC.remove_stress_to_class(class[, ...])
+ *
+ *  No longer raises NoMemoryError when allocating an instance of the
+ *  given classes.
+ *
+ */
+static VALUE
+rb_gcdebug_remove_stress_to_class(int argc, VALUE *argv, VALUE self)
+{
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+
+    if (stress_to_class) {
+        for (int i = 0; i < argc; ++i) {
+            rb_hash_delete(stress_to_class, argv[i]);
+        }
+
+        if (rb_hash_size(stress_to_class) == 0) {
+            stress_to_class = 0;
+        }
+    }
+
+    return Qnil;
+}
+
 void *
 rb_gc_impl_objspace_alloc(void)
 {
@@ -9380,6 +9456,11 @@ rb_gc_impl_init(void)
         rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
         rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
         rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
+    }
+
+    if (GC_DEBUG_STRESS_TO_CLASS) {
+        rb_define_singleton_method(rb_mGC, "add_stress_to_class", rb_gcdebug_add_stress_to_class, -1);
+        rb_define_singleton_method(rb_mGC, "remove_stress_to_class", rb_gcdebug_remove_stress_to_class, -1);
     }
 
     /* internal methods */

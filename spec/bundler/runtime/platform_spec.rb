@@ -370,7 +370,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   end
 
   it "allows specifying only-ruby-platform on windows with dependency platforms" do
-    simulate_windows do
+    simulate_platform "x86-mswin32" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "nokogiri", :platforms => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
@@ -397,7 +397,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     G
     bundle :lock
 
-    simulate_windows do
+    simulate_platform "x86-mswin32" do
       bundle "config set force_ruby_platform true"
       bundle "install"
 
@@ -411,7 +411,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
         s.add_dependency "platform_specific"
       end
     end
-    simulate_windows x64_mingw32 do
+    simulate_platform "x64-mingw32" do
       lockfile <<-L
         GEM
           remote: https://gem.repo2/
@@ -438,11 +438,9 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
   end
 
-  %w[x86-mswin32 x64-mswin64 x86-mingw32 x64-mingw32 x64-mingw-ucrt].each do |arch|
-    it "allows specifying platform windows on #{arch} arch" do
-      platform = send(arch.tr("-", "_"))
-
-      simulate_windows platform do
+  %w[x86-mswin32 x64-mswin64 x86-mingw32 x64-mingw32 x64-mingw-ucrt aarch64-mingw-ucrt].each do |platform|
+    it "allows specifying platform windows on #{platform} platform" do
+      simulate_platform platform do
         lockfile <<-L
           GEM
             remote: https://gem.repo1/
@@ -462,8 +460,6 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           source "https://gem.repo1"
           gem "platform_specific", :platforms => [:windows]
         G
-
-        bundle "install"
 
         expect(the_bundle).to include_gems "platform_specific 1.0 #{platform}"
       end

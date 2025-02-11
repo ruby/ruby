@@ -60,11 +60,9 @@ RSpec.describe "bundled_gems.rb" do
       Gem::BUNDLED_GEMS.send(:remove_const, :LIBDIR)
       Gem::BUNDLED_GEMS.send(:remove_const, :ARCHDIR)
       Gem::BUNDLED_GEMS.send(:remove_const, :SINCE)
-      Gem::BUNDLED_GEMS.send(:remove_const, :SINCE_FAST_PATH)
       Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
-      Gem::BUNDLED_GEMS.const_set(:SINCE, { "fiddle" => "3.5.0", "irb" => "3.5.0", "csv" => "3.4.0", "net-smtp" => "3.1.0", "erb" => RUBY_VERSION })
-      Gem::BUNDLED_GEMS.const_set(:SINCE_FAST_PATH, Gem::BUNDLED_GEMS::SINCE.transform_keys { |g| g.sub(/\A.*\-/, "") } )
+      Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "csv" => "3.4.0", "net-smtp" => "3.1.0" })
     STUB
   }
 
@@ -89,18 +87,18 @@ RSpec.describe "bundled_gems.rb" do
         require "csv"
       rescue LoadError
       end
-      require "erb"
+      require "openssl"
     RUBY
 
-    expect(err).to include(/csv was loaded from (.*) from Ruby 3.4.0/)
-    expect(err).to include(/-e:17/)
-    expect(err).to include(/erb was loaded from (.*) from Ruby #{RUBY_VERSION}/)
-    expect(err).to include(/-e:20/)
+    expect(err).to include(/csv used to be loaded from (.*) since Ruby 3.4.0/)
+    expect(err).to include(/-e:15/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/-e:18/)
   end
 
   it "Show warning when bundled gems called as dependency" do
     build_lib "activesupport", "7.0.7.2" do |s|
-      s.write "lib/active_support/all.rb", "require 'erb'"
+      s.write "lib/active_support/all.rb", "require 'openssl'"
     end
 
     script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
@@ -114,7 +112,7 @@ RSpec.describe "bundled_gems.rb" do
       require "active_support/all"
     RUBY
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
@@ -130,12 +128,12 @@ RSpec.describe "bundled_gems.rb" do
       end
     RUBY
 
-    expect(err).to include(/net\/smtp was loaded from (.*) from Ruby 3.1.0/)
-    expect(err).to include(/-e:17/)
+    expect(err).to include(/net\/smtp used to be loaded from (.*) since Ruby 3.1.0/)
+    expect(err).to include(/-e:15/)
     expect(err).to include("You can add net-smtp")
   end
 
-  it "Show warning sub-feature like fiddle/import" do
+  it "Show warning sub-feature like openssl/bn" do
     skip "This test is not working on Windows" if Gem.win_platform?
 
     script <<-RUBY
@@ -143,25 +141,25 @@ RSpec.describe "bundled_gems.rb" do
         source "https://rubygems.org"
       end
 
-      require "fiddle/import"
+      require "openssl/bn"
     RUBY
 
-    expect(err).to include(/fiddle\/import is found in fiddle, (.*) part of the default gems starting from Ruby 3\.5\.0/)
-    expect(err).to include(/-e:16/)
+    expect(err).to include(/openssl\/bn is found in openssl, (.*) part of the default gems since Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/-e:14/)
   end
 
   it "Show warning when bundle exec with ruby and script" do
     code = <<-RUBY
       #{stub_code}
-      require "erb"
+      require "openssl"
     RUBY
     create_file("script.rb", code)
     create_file("Gemfile", "source 'https://rubygems.org'")
 
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/script\.rb:10/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/script\.rb:8/)
   end
 
   it "Show warning when bundle exec with shebang's script" do
@@ -170,7 +168,7 @@ RSpec.describe "bundled_gems.rb" do
     code = <<-RUBY
       #!/usr/bin/env ruby
       #{stub_code}
-      require "erb"
+      require "openssl"
     RUBY
     create_file("script.rb", code)
     FileUtils.chmod(0o777, bundled_app("script.rb"))
@@ -178,16 +176,16 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ./script.rb"
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/script\.rb:11/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/script\.rb:9/)
   end
 
   it "Show warning when bundle exec with -r option" do
     create_file("stub.rb", stub_code)
     create_file("Gemfile", "source 'https://rubygems.org'")
-    bundle "exec ruby -r./stub -rerb -e ''"
+    bundle "exec ruby -r./stub -ropenssl -e ''"
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
   end
 
   it "Show warning when warn is not the standard one in the current scope" do
@@ -201,7 +199,7 @@ RSpec.describe "bundled_gems.rb" do
             source "https://rubygems.org"
           end
 
-          require "erb"
+          require "openssl"
         end
 
         extend self
@@ -210,16 +208,16 @@ RSpec.describe "bundled_gems.rb" do
       My.my
     RUBY
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/-e:21/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/-e:19/)
   end
 
   it "Don't show warning when bundled gems called as dependency" do
     build_lib "activesupport", "7.0.7.2" do |s|
-      s.write "lib/active_support/all.rb", "require 'erb'"
+      s.write "lib/active_support/all.rb", "require 'openssl'"
     end
-    build_lib "erb", "1.0.0" do |s|
-      s.write "lib/erb.rb", "puts 'erb'"
+    build_lib "openssl", "1.0.0" do |s|
+      s.write "lib/openssl.rb", "puts 'openssl'"
     end
 
     script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
@@ -227,7 +225,7 @@ RSpec.describe "bundled_gems.rb" do
         source "https://gem.repo1"
         path "#{lib_path}" do
           gem "activesupport", "7.0.7.2"
-          gem "erb"
+          gem "openssl"
         end
       end
 
@@ -248,11 +246,11 @@ RSpec.describe "bundled_gems.rb" do
       # Bootsnap.setup(cache_dir: 'tmp/cache')
 
       # bootsnap expand required feature to full path
-      # require 'csv'
-      require Gem::BUNDLED_GEMS::LIBDIR + 'erb'
+      # require 'openssl'
+      require Gem::BUNDLED_GEMS::ARCHDIR + 'openssl'
     RUBY
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap.rb:14: warning: ...
   end
@@ -268,21 +266,21 @@ RSpec.describe "bundled_gems.rb" do
       # Bootsnap.setup(cache_dir: 'tmp/cache')
 
       # bootsnap expand required feature to full path
-      # require 'fiddle'
-      require Gem::BUNDLED_GEMS::ARCHDIR + "fiddle"
+      # require 'openssl'
+      require Gem::BUNDLED_GEMS::ARCHDIR + "openssl"
     RUBY
 
-    expect(err).to include(/fiddle was loaded from (.*) from Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap_rubyarchdir_gem.rb:14: warning: ...
   end
 
   it "Show warning with bootsnap and some gem in Gemfile" do
     # Original issue is childprocess 5.0.0 and logger.
-    build_lib "erb2", "5.0.0" do |s|
+    build_lib "fileutils2", "5.0.0" do |s|
       # bootsnap expand required feature to full path
       rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
-      s.write "lib/erb2.rb", "require '#{rubylibpath}/erb'"
+      s.write "lib/fileutils2.rb", "require '#{rubylibpath}/fileutils'"
     end
 
     script <<-RUBY
@@ -290,7 +288,7 @@ RSpec.describe "bundled_gems.rb" do
         source "https://rubygems.org"
         # gem "bootsnap", require: false
         path "#{lib_path}" do
-          gem "erb2", "5.0.0"
+          gem "fileutils2", "5.0.0"
         end
       end
 
@@ -298,10 +296,10 @@ RSpec.describe "bundled_gems.rb" do
       # Bootsnap.setup(cache_dir: 'tmp/cache')
 
       # bootsnap expand required feature to full path
-      require Gem.loaded_specs["erb2"].full_gem_path + '/lib/erb2'
+      require Gem.loaded_specs["fileutils2"].full_gem_path + '/lib/fileutils2'
     RUBY
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby #{RUBY_VERSION}/)
+    expect(err).to include(/fileutils used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # $GEM_HOME/gems/childprocess-5.0.0/lib/childprocess.rb:7: warning:
   end
@@ -315,31 +313,31 @@ RSpec.describe "bundled_gems.rb" do
       loader = Zeitwerk::Loader.for_gem(warn_on_extra_files: false)
       loader.setup
 
-      require 'erb'
+      require 'openssl'
     RUBY
     create_file("script.rb", code)
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/erb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to include(/script\.rb:15/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/script\.rb:13/)
   end
 
-  it "Don't show warning fiddle/import when fiddle on Gemfile" do
-    build_lib "fiddle", "1.0.0" do |s|
-      s.write "lib/fiddle.rb", "puts 'fiddle'"
-      s.write "lib/fiddle/import.rb", "puts 'fiddle/import'"
+  it "Don't show warning openssl/bn when openssl on Gemfile" do
+    build_lib "openssl", "1.0.0" do |s|
+      s.write "lib/openssl.rb", "puts 'openssl'"
+      s.write "lib/openssl/bn.rb", "puts 'openssl/bn'"
     end
 
     script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
       gemfile do
         source "https://gem.repo1"
         path "#{lib_path}" do
-          gem "fiddle"
+          gem "openssl"
         end
       end
 
-      require "fiddle/import"
+      require "openssl/bn"
     RUBY
 
     expect(err).to be_empty
@@ -362,14 +360,5 @@ RSpec.describe "bundled_gems.rb" do
     RUBY
 
     expect(err).to be_empty
-  end
-
-  it "Don't show warning for reline when using irb from standard library" do
-    create_file("stub.rb", stub_code)
-    create_file("Gemfile", "source 'https://rubygems.org'")
-    bundle "exec ruby -r./stub -rirb -e ''"
-
-    expect(err).to include(/irb was loaded from (.*) from Ruby 3.5.0/)
-    expect(err).to_not include(/reline was loaded from (.*) from Ruby 3.5.0/)
   end
 end

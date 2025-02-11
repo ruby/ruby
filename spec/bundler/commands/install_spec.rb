@@ -100,12 +100,23 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      FileUtils.rm_rf(default_bundle_path("gems/myrack-1.0.0"))
+      gem_dir = default_bundle_path("gems/myrack-1.0.0")
+
+      FileUtils.rm_rf(gem_dir)
 
       bundle "install --verbose"
 
       expect(out).to include("Installing myrack 1.0.0")
-      expect(default_bundle_path("gems/myrack-1.0.0")).to exist
+      expect(gem_dir).to exist
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+
+      FileUtils.rm_rf(gem_dir)
+      Dir.mkdir(gem_dir)
+
+      bundle "install --verbose"
+
+      expect(out).to include("Installing myrack 1.0.0")
+      expect(gem_dir).to exist
       expect(the_bundle).to include_gems("myrack 1.0.0")
     end
 
@@ -281,7 +292,7 @@ RSpec.describe "bundle install with gem sources" do
       end
 
       it "installs gems for windows" do
-        simulate_platform x86_mswin32 do
+        simulate_platform "x86-mswin32" do
           install_gemfile <<-G
             source "https://gem.repo1"
             gem "platform_specific"
@@ -289,6 +300,17 @@ RSpec.describe "bundle install with gem sources" do
 
           expect(the_bundle).to include_gems("platform_specific 1.0 x86-mswin32")
         end
+      end
+
+      it "installs gems for aarch64-mingw-ucrt" do
+        simulate_platform "aarch64-mingw-ucrt" do
+          install_gemfile <<-G
+            source "https://gem.repo1"
+            gem "platform_specific"
+          G
+        end
+
+        expect(out).to include("Installing platform_specific 1.0 (aarch64-mingw-ucrt)")
       end
     end
 

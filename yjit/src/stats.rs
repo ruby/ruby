@@ -1,7 +1,5 @@
 //! Everything related to the collection of runtime stats in YJIT
-//! See the stats feature and the --yjit-stats command-line option
-
-#![allow(dead_code)] // Counters are only used with the stats features
+//! See the --yjit-stats command-line option
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
@@ -670,8 +668,7 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, key: VALUE) -
 
 /// Primitive called in yjit.rb
 ///
-/// Check if trace_exits generation is enabled. Requires the stats feature
-/// to be enabled.
+/// Check if trace_exits generation is enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     if get_option!(trace_exits).is_some() {
@@ -695,7 +692,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
         return Qnil;
     }
 
-    // If the stats feature is enabled, pass yjit_raw_samples and yjit_line_samples
+    // Pass yjit_raw_samples and yjit_line_samples
     // to the C function called rb_yjit_exit_locations_dict for parsing.
     let yjit_raw_samples = YjitExitLocations::get_raw_samples();
     let yjit_line_samples = YjitExitLocations::get_line_samples();
@@ -917,7 +914,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 }
 
 /// Record the backtrace when a YJIT exit occurs. This functionality requires
-/// that the stats feature is enabled as well as the --yjit-trace-exits option.
+/// the --yjit-trace-exits option.
 ///
 /// This function will fill two Vec's in YjitExitLocations to record the raw samples
 /// and line samples. Their length should be the same, however the data stored in

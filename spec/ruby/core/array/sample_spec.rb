@@ -114,6 +114,13 @@ describe "Array#sample" do
 
         -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
       end
+
+      it "raises a RangeError if the value is greater than the Array size" do
+        random = mock("array_sample_random")
+        random.should_receive(:rand).and_return(3)
+
+        -> { [1, 2].sample(random: random) }.should raise_error(RangeError)
+      end
     end
   end
 

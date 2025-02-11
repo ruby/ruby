@@ -5700,7 +5700,6 @@ time_load(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *
  *   Time::tm.from_time(t) -> tm
  *
  * Creates new Time::tm object from a Time object.
@@ -5731,7 +5730,6 @@ tm_from_time(VALUE klass, VALUE time)
 
 /*
  * call-seq:
- *
  *   Time::tm.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, zone=nil) -> tm
  *
  * Creates new Time::tm object.
@@ -5755,7 +5753,6 @@ tm_initialize(int argc, VALUE *argv, VALUE time)
 }
 
 /* call-seq:
- *
  *   tm.to_time -> time
  *
  * Returns a new Time object.

@@ -737,12 +737,12 @@ module URI
     end
     private :check_registry
 
-    def set_registry(v) #:nodoc:
+    def set_registry(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
     protected :set_registry
 
-    def registry=(v)
+    def registry=(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
 
@@ -1392,10 +1392,12 @@ module URI
       end
     end
 
+    # Returns the hash value.
     def hash
       self.component_ary.hash
     end
 
+    # Compares with _oth_ for Hash.
     def eql?(oth)
       self.class == oth.class &&
       parser == oth.parser &&
@@ -1438,7 +1440,7 @@ module URI
       end
     end
 
-    def inspect
+    def inspect # :nodoc:
       "#<#{self.class} #{self}>"
     end
 

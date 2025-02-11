@@ -5679,7 +5679,6 @@ rb_stat_s_alloc(VALUE klass)
 
 /*
  * call-seq:
- *
  *   File::Stat.new(file_name)  -> stat
  *
  * Create a File::Stat object for the given file name (raising an

@@ -9,7 +9,16 @@ module MMTk
 
     def setup
       omit "Not running on MMTk" unless using_mmtk?
+
+      @original_timeout_scale = EnvUtil.timeout_scale
+      timeout_scale = ENV["RUBY_TEST_TIMEOUT_SCALE"].to_f
+      EnvUtil.timeout_scale = timeout_scale if timeout_scale > 0
+
       super
+    end
+
+    def teardown
+      EnvUtil.timeout_scale = @original_timeout_scale
     end
 
     private

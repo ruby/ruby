@@ -12,6 +12,7 @@ typedef struct JSON_Generator_StateStruct {
     VALUE space_before;
     VALUE object_nl;
     VALUE array_nl;
+    VALUE as_json;
 
     long max_nesting;
     long depth;
@@ -30,8 +31,8 @@ typedef struct JSON_Generator_StateStruct {
 static VALUE mJSON, cState, cFragment, mString_Extend, eGeneratorError, eNestingError, Encoding_UTF_8;
 
 static ID i_to_s, i_to_json, i_new, i_pack, i_unpack, i_create_id, i_extend, i_encode;
-static ID sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan,
-          sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict;
+static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan,
+             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
 
 
 #define GET_STATE_TO(self, state) \
@@ -100,8 +101,22 @@ static void raise_generator_error(VALUE invalid_object, const char *fmt, ...)
 // 0 - single byte char that don't need to be escaped.
 // (x | 8) - char that needs to be escaped.
 static const unsigned char CHAR_LENGTH_MASK = 7;
+static const unsigned char ESCAPE_MASK = 8;
 
-static const unsigned char escape_table[256] = {
+typedef struct _search_state {
+    const char *ptr;
+    const char *end;
+    const char *cursor;
+    FBuffer *buffer;
+} search_state;
+
+static inline void search_flush(search_state *search)
+{
+    fbuffer_append(search->buffer, search->cursor, search->ptr - search->cursor);
+    search->cursor = search->ptr;
+}
+
+static const unsigned char escape_table_basic[256] = {
     // ASCII Control Characters
      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
      9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
@@ -114,30 +129,102 @@ static const unsigned char escape_table[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
-static const unsigned char ascii_only_escape_table[256] = {
-    // ASCII Control Characters
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
-    // ASCII Characters
-     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    // Continuation byte
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    // First byte of a  2-byte code point
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-    // First byte of a 3-byte code point
-     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-    //First byte of a 4+ byte code point
-     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
-};
+static inline unsigned char search_escape_basic(search_state *search)
+{
+    while (search->ptr < search->end) {
+        if (RB_UNLIKELY(escape_table_basic[(const unsigned char)*search->ptr])) {
+            search_flush(search);
+            return 1;
+        } else {
+            search->ptr++;
+        }
+    }
+    search_flush(search);
+    return 0;
+}
+
+static inline void escape_UTF8_char_basic(search_state *search) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch) {
+        case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+        case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+        case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+        case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+        case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+        case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+        case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+        case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
+        default: {
+            const char *hexdig = "0123456789abcdef";
+            char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+            scratch[4] = hexdig[(ch >> 4) & 0xf];
+            scratch[5] = hexdig[ch & 0xf];
+            fbuffer_append(search->buffer, scratch, 6);
+            break;
+        }
+    }
+    search->ptr++;
+    search->cursor = search->ptr;
+}
+
+/* Converts in_string to a JSON string (without the wrapping '"'
+ * characters) in FBuffer out_buffer.
+ *
+ * Character are JSON-escaped according to:
+ *
+ * - Always: ASCII control characters (0x00-0x1F), dquote, and
+ *   backslash.
+ *
+ * - If out_ascii_only: non-ASCII characters (>0x7F)
+ *
+ * - If script_safe: forwardslash (/), line separator (U+2028), and
+ *   paragraph separator (U+2029)
+ *
+ * Everything else (should be UTF-8) is just passed through and
+ * appended to the result.
+ */
+static inline void convert_UTF8_to_JSON(search_state *search)
+{
+    while (search_escape_basic(search)) {
+        escape_UTF8_char_basic(search);
+    }
+}
+
+static inline void escape_UTF8_char(search_state *search, unsigned char ch_len) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch_len) {
+        case 1: {
+            switch (ch) {
+                case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+                case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+                case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+                case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+                case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+                case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+                case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+                case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
+                default: {
+                    const char *hexdig = "0123456789abcdef";
+                    char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+                    scratch[4] = hexdig[(ch >> 4) & 0xf];
+                    scratch[5] = hexdig[ch & 0xf];
+                    fbuffer_append(search->buffer, scratch, 6);
+                    break;
+                }
+            }
+            break;
+        }
+        case 3: {
+            if (search->ptr[2] & 1) {
+                fbuffer_append(search->buffer, "\\u2029", 6);
+            } else {
+                fbuffer_append(search->buffer, "\\u2028", 6);
+            }
+            break;
+        }
+    }
+    search->cursor = (search->ptr += ch_len);
+}
 
 static const unsigned char script_safe_escape_table[256] = {
     // ASCII Control Characters
@@ -164,198 +251,167 @@ static const unsigned char script_safe_escape_table[256] = {
      4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
 };
 
-/* Converts in_string to a JSON string (without the wrapping '"'
- * characters) in FBuffer out_buffer.
- *
- * Character are JSON-escaped according to:
- *
- * - Always: ASCII control characters (0x00-0x1F), dquote, and
- *   backslash.
- *
- * - If out_ascii_only: non-ASCII characters (>0x7F)
- *
- * - If script_safe: forwardslash (/), line separator (U+2028), and
- *   paragraph separator (U+2029)
- *
- * Everything else (should be UTF-8) is just passed through and
- * appended to the result.
- */
-static inline void convert_UTF8_to_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
+static inline unsigned char search_script_safe_escape(search_state *search)
 {
-    const char *hexdig = "0123456789abcdef";
-    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
-
-    const char *ptr = RSTRING_PTR(str);
-    unsigned long len = RSTRING_LEN(str);
-
-    unsigned long beg = 0, pos = 0;
-
-#define FLUSH_POS(bytes) if (pos > beg) { fbuffer_append(out_buffer, &ptr[beg], pos - beg); } pos += bytes; beg = pos;
-
-    while (pos < len) {
-        unsigned char ch = ptr[pos];
-        unsigned char ch_len = escape_table[ch];
-        /* JSON encoding */
+    while (search->ptr < search->end) {
+        unsigned char ch = (unsigned char)*search->ptr;
+        unsigned char ch_len = script_safe_escape_table[ch];
 
         if (RB_UNLIKELY(ch_len)) {
-            switch (ch_len) {
-                case 9: {
-                    FLUSH_POS(1);
-                    switch (ch) {
-                        case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                        case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                        case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                        case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                        case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                        case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                        case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                        case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                        default: {
-                            scratch[2] = '0';
-                            scratch[3] = '0';
-                            scratch[4] = hexdig[(ch >> 4) & 0xf];
-                            scratch[5] = hexdig[ch & 0xf];
-                            fbuffer_append(out_buffer, scratch, 6);
-                            break;
-                        }
+            if (ch_len & ESCAPE_MASK) {
+                if (RB_UNLIKELY(ch_len == 11)) {
+                    const unsigned char *uptr = (const unsigned char *)search->ptr;
+                    if (!(uptr[1] == 0x80 && (uptr[2] >> 1) == 0x54)) {
+                        search->ptr += 3;
+                        continue;
                     }
-                    break;
                 }
-                case 11: {
-                    unsigned char b2 = ptr[pos + 1];
-                    if (RB_UNLIKELY(b2 == 0x80)) {
-                        unsigned char b3 = ptr[pos + 2];
-                        if (b3 == 0xA8) {
-                            FLUSH_POS(3);
-                            fbuffer_append(out_buffer, "\\u2028", 6);
-                            break;
-                        } else if (b3 == 0xA9) {
-                            FLUSH_POS(3);
-                            fbuffer_append(out_buffer, "\\u2029", 6);
-                            break;
-                        }
-                    }
-                    ch_len = 3;
-                    // fallthrough
-                }
-                default:
-                    pos += ch_len;
-                    break;
+                search_flush(search);
+                return ch_len & CHAR_LENGTH_MASK;
+            } else {
+                search->ptr += ch_len;
             }
         } else {
-            pos++;
+            search->ptr++;
         }
     }
-#undef FLUSH_POS
-
-    if (beg < len) {
-        fbuffer_append(out_buffer, &ptr[beg], len - beg);
-    }
-
-    RB_GC_GUARD(str);
+    search_flush(search);
+    return 0;
 }
 
-static void convert_UTF8_to_ASCII_only_JSON(FBuffer *out_buffer, VALUE str, const unsigned char escape_table[256])
+static void convert_UTF8_to_script_safe_JSON(search_state *search)
 {
-    const char *hexdig = "0123456789abcdef";
-    char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
+    unsigned char ch_len;
+    while ((ch_len = search_script_safe_escape(search))) {
+        escape_UTF8_char(search, ch_len);
+    }
+}
 
-    const char *ptr = RSTRING_PTR(str);
-    unsigned long len = RSTRING_LEN(str);
+static const unsigned char ascii_only_escape_table[256] = {
+    // ASCII Control Characters
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+     9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
+    // ASCII Characters
+     0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // '"'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, // '\\'
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    // Continuation byte
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    // First byte of a  2-byte code point
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+     2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    // First byte of a 3-byte code point
+     3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    //First byte of a 4+ byte code point
+     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 9, 9,
+};
 
-    unsigned long beg = 0, pos = 0;
-
-#define FLUSH_POS(bytes) if (pos > beg) { fbuffer_append(out_buffer, &ptr[beg], pos - beg); } pos += bytes; beg = pos;
-
-    while (pos < len) {
-        unsigned char ch = ptr[pos];
+static inline unsigned char search_ascii_only_escape(search_state *search, const unsigned char escape_table[256])
+{
+    while (search->ptr < search->end) {
+        unsigned char ch = (unsigned char)*search->ptr;
         unsigned char ch_len = escape_table[ch];
 
         if (RB_UNLIKELY(ch_len)) {
-            switch (ch_len) {
-                case 9: {
-                    FLUSH_POS(1);
-                    switch (ch) {
-                        case '"':  fbuffer_append(out_buffer, "\\\"", 2); break;
-                        case '\\': fbuffer_append(out_buffer, "\\\\", 2); break;
-                        case '/':  fbuffer_append(out_buffer, "\\/", 2); break;
-                        case '\b': fbuffer_append(out_buffer, "\\b", 2); break;
-                        case '\f': fbuffer_append(out_buffer, "\\f", 2); break;
-                        case '\n': fbuffer_append(out_buffer, "\\n", 2); break;
-                        case '\r': fbuffer_append(out_buffer, "\\r", 2); break;
-                        case '\t': fbuffer_append(out_buffer, "\\t", 2); break;
-                        default: {
-                            scratch[2] = '0';
-                            scratch[3] = '0';
-                            scratch[4] = hexdig[(ch >> 4) & 0xf];
-                            scratch[5] = hexdig[ch & 0xf];
-                            fbuffer_append(out_buffer, scratch, 6);
-                            break;
-                        }
-                    }
-                    break;
-                }
+            search_flush(search);
+            return ch_len & CHAR_LENGTH_MASK;
+        } else {
+            search->ptr++;
+        }
+    }
+    search_flush(search);
+    return 0;
+}
+
+static inline void full_escape_UTF8_char(search_state *search, unsigned char ch_len) {
+    const unsigned char ch = (unsigned char)*search->ptr;
+    switch (ch_len) {
+        case 1: {
+            switch (ch) {
+                case '"':  fbuffer_append(search->buffer, "\\\"", 2); break;
+                case '\\': fbuffer_append(search->buffer, "\\\\", 2); break;
+                case '/':  fbuffer_append(search->buffer, "\\/", 2);  break;
+                case '\b': fbuffer_append(search->buffer, "\\b", 2);  break;
+                case '\f': fbuffer_append(search->buffer, "\\f", 2);  break;
+                case '\n': fbuffer_append(search->buffer, "\\n", 2);  break;
+                case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
+                case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
                 default: {
-                    uint32_t wchar = 0;
-                    ch_len = ch_len & CHAR_LENGTH_MASK;
-
-                    switch(ch_len) {
-                        case 2:
-                            wchar = ptr[pos] & 0x1F;
-                            break;
-                        case 3:
-                            wchar = ptr[pos] & 0x0F;
-                            break;
-                        case 4:
-                            wchar = ptr[pos] & 0x07;
-                            break;
-                    }
-
-                    for (short i = 1; i < ch_len; i++) {
-                        wchar = (wchar << 6) | (ptr[pos+i] & 0x3F);
-                    }
-
-                    FLUSH_POS(ch_len);
-
-                    if (wchar <= 0xFFFF) {
-                        scratch[2] = hexdig[wchar >> 12];
-                        scratch[3] = hexdig[(wchar >> 8) & 0xf];
-                        scratch[4] = hexdig[(wchar >> 4) & 0xf];
-                        scratch[5] = hexdig[wchar & 0xf];
-                        fbuffer_append(out_buffer, scratch, 6);
-                    } else {
-                        uint16_t hi, lo;
-                        wchar -= 0x10000;
-                        hi = 0xD800 + (uint16_t)(wchar >> 10);
-                        lo = 0xDC00 + (uint16_t)(wchar & 0x3FF);
-
-                        scratch[2] = hexdig[hi >> 12];
-                        scratch[3] = hexdig[(hi >> 8) & 0xf];
-                        scratch[4] = hexdig[(hi >> 4) & 0xf];
-                        scratch[5] = hexdig[hi & 0xf];
-
-                        scratch[8] = hexdig[lo >> 12];
-                        scratch[9] = hexdig[(lo >> 8) & 0xf];
-                        scratch[10] = hexdig[(lo >> 4) & 0xf];
-                        scratch[11] = hexdig[lo & 0xf];
-
-                        fbuffer_append(out_buffer, scratch, 12);
-                    }
-
+                    const char *hexdig = "0123456789abcdef";
+                    char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+                    scratch[4] = hexdig[(ch >> 4) & 0xf];
+                    scratch[5] = hexdig[ch & 0xf];
+                    fbuffer_append(search->buffer, scratch, 6);
                     break;
                 }
             }
-        } else {
-            pos++;
+            break;
+        }
+        default: {
+            const char *hexdig = "0123456789abcdef";
+            char scratch[12] = { '\\', 'u', 0, 0, 0, 0, '\\', 'u' };
+
+            uint32_t wchar = 0;
+
+            switch(ch_len) {
+                case 2:
+                    wchar = ch & 0x1F;
+                    break;
+                case 3:
+                    wchar = ch & 0x0F;
+                    break;
+                case 4:
+                    wchar = ch & 0x07;
+                    break;
+            }
+
+            for (short i = 1; i < ch_len; i++) {
+                wchar = (wchar << 6) | (search->ptr[i] & 0x3F);
+            }
+
+            if (wchar <= 0xFFFF) {
+                scratch[2] = hexdig[wchar >> 12];
+                scratch[3] = hexdig[(wchar >> 8) & 0xf];
+                scratch[4] = hexdig[(wchar >> 4) & 0xf];
+                scratch[5] = hexdig[wchar & 0xf];
+                fbuffer_append(search->buffer, scratch, 6);
+            } else {
+                uint16_t hi, lo;
+                wchar -= 0x10000;
+                hi = 0xD800 + (uint16_t)(wchar >> 10);
+                lo = 0xDC00 + (uint16_t)(wchar & 0x3FF);
+
+                scratch[2] = hexdig[hi >> 12];
+                scratch[3] = hexdig[(hi >> 8) & 0xf];
+                scratch[4] = hexdig[(hi >> 4) & 0xf];
+                scratch[5] = hexdig[hi & 0xf];
+
+                scratch[8] = hexdig[lo >> 12];
+                scratch[9] = hexdig[(lo >> 8) & 0xf];
+                scratch[10] = hexdig[(lo >> 4) & 0xf];
+                scratch[11] = hexdig[lo & 0xf];
+
+                fbuffer_append(search->buffer, scratch, 12);
+            }
+
+            break;
         }
     }
-#undef FLUSH_POS
+    search->cursor = (search->ptr += ch_len);
+}
 
-    if (beg < len) {
-        fbuffer_append(out_buffer, &ptr[beg], len - beg);
+static void convert_UTF8_to_ASCII_only_JSON(search_state *search, const unsigned char escape_table[256])
+{
+    unsigned char ch_len;
+    while ((ch_len = search_ascii_only_escape(search, escape_table))) {
+        full_escape_UTF8_char(search, ch_len);
     }
-
-    RB_GC_GUARD(str);
 }
 
 /*
@@ -648,6 +704,7 @@ static void State_mark(void *ptr)
     rb_gc_mark_movable(state->space_before);
     rb_gc_mark_movable(state->object_nl);
     rb_gc_mark_movable(state->array_nl);
+    rb_gc_mark_movable(state->as_json);
 }
 
 static void State_compact(void *ptr)
@@ -658,6 +715,7 @@ static void State_compact(void *ptr)
     state->space_before = rb_gc_location(state->space_before);
     state->object_nl = rb_gc_location(state->object_nl);
     state->array_nl = rb_gc_location(state->array_nl);
+    state->as_json = rb_gc_location(state->as_json);
 }
 
 static void State_free(void *ptr)
@@ -714,6 +772,7 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->space_before);
     RB_OBJ_WRITTEN(vstate, Qundef, state->object_nl);
     RB_OBJ_WRITTEN(vstate, Qundef, state->array_nl);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
 }
 
 static inline VALUE vstate_get(struct generate_json_data *data)
@@ -782,15 +841,19 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     return ST_CONTINUE;
 }
 
-static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static inline long increase_depth(JSON_Generator_State *state)
 {
-    long max_nesting = state->max_nesting;
     long depth = ++state->depth;
-    int j;
-
-    if (max_nesting != 0 && depth > max_nesting) {
+    if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
+    return depth;
+}
+
+static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+{
+    int j;
+    long depth = increase_depth(state);
 
     if (RHASH_SIZE(obj) == 0) {
         fbuffer_append(buffer, "{}", 2);
@@ -820,12 +883,8 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
 
 static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
-    long max_nesting = state->max_nesting;
-    long depth = ++state->depth;
     int i, j;
-    if (max_nesting != 0 && depth > max_nesting) {
-        rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
-    }
+    long depth = increase_depth(state);
 
     if (RARRAY_LEN(obj) == 0) {
         fbuffer_append(buffer, "[]", 2);
@@ -907,13 +966,22 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
 
     fbuffer_append_char(buffer, '"');
 
+    long len;
+    search_state search;
+    search.buffer = buffer;
+    RSTRING_GETMEM(obj, search.ptr, len);
+    search.cursor = search.ptr;
+    search.end = search.ptr + len;
+
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+                convert_UTF8_to_ASCII_only_JSON(&search, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+            } else if (RB_UNLIKELY(state->script_safe)) {
+                convert_UTF8_to_script_safe_JSON(&search);
             } else {
-                convert_UTF8_to_JSON(buffer, obj, state->script_safe ? script_safe_escape_table : escape_table);
+                convert_UTF8_to_JSON(&search);
             }
             break;
         default:
@@ -921,6 +989,29 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
             break;
     }
     fbuffer_append_char(buffer, '"');
+}
+
+static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+{
+    VALUE tmp;
+    if (rb_respond_to(obj, i_to_json)) {
+        tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
+        Check_Type(tmp, T_STRING);
+        fbuffer_append_str(buffer, tmp);
+    } else {
+        tmp = rb_funcall(obj, i_to_s, 0);
+        Check_Type(tmp, T_STRING);
+        generate_json_string(buffer, data, state, tmp);
+    }
+}
+
+static inline void generate_json_symbol(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+{
+    if (state->strict) {
+        generate_json_string(buffer, data, state, rb_sym2str(obj));
+    } else {
+        generate_json_fallback(buffer, data, state, obj);
+    }
 }
 
 static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
@@ -963,13 +1054,21 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
 {
     double value = RFLOAT_VALUE(obj);
     char allow_nan = state->allow_nan;
-    VALUE tmp = rb_funcall(obj, i_to_s, 0);
     if (!allow_nan) {
         if (isinf(value) || isnan(value)) {
-            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", tmp);
+            if (state->strict && state->as_json) {
+                VALUE casted_obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
+                if (casted_obj != obj) {
+                    increase_depth(state);
+                    generate_json(buffer, data, state, casted_obj);
+                    state->depth--;
+                    return;
+                }
+            }
+            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", rb_funcall(obj, i_to_s, 0));
         }
     }
-    fbuffer_append_str(buffer, tmp);
+    fbuffer_append_str(buffer, rb_funcall(obj, i_to_s, 0));
 }
 
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
@@ -981,7 +1080,8 @@ static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *d
 
 static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
-    VALUE tmp;
+    bool as_json_called = false;
+start:
     if (obj == Qnil) {
         generate_json_null(buffer, data, state, obj);
     } else if (obj == Qfalse) {
@@ -993,6 +1093,8 @@ static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON
             generate_json_fixnum(buffer, data, state, obj);
         } else if (RB_FLONUM_P(obj)) {
             generate_json_float(buffer, data, state, obj);
+        } else if (RB_STATIC_SYM_P(obj)) {
+            generate_json_symbol(buffer, data, state, obj);
         } else {
             goto general;
         }
@@ -1014,6 +1116,9 @@ static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON
                 if (klass != rb_cString) goto general;
                 generate_json_string(buffer, data, state, obj);
                 break;
+            case T_SYMBOL:
+                generate_json_symbol(buffer, data, state, obj);
+                break;
             case T_FLOAT:
                 if (klass != rb_cFloat) goto general;
                 generate_json_float(buffer, data, state, obj);
@@ -1025,15 +1130,15 @@ static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON
             default:
             general:
                 if (state->strict) {
-                    raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
-                } else if (rb_respond_to(obj, i_to_json)) {
-                    tmp = rb_funcall(obj, i_to_json, 1, vstate_get(data));
-                    Check_Type(tmp, T_STRING);
-                    fbuffer_append_str(buffer, tmp);
+                    if (RTEST(state->as_json) && !as_json_called) {
+                        obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
+                        as_json_called = true;
+                        goto start;
+                    } else {
+                        raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
+                    }
                 } else {
-                    tmp = rb_funcall(obj, i_to_s, 0);
-                    Check_Type(tmp, T_STRING);
-                    generate_json_string(buffer, data, state, tmp);
+                    generate_json_fallback(buffer, data, state, obj);
                 }
         }
     }
@@ -1126,6 +1231,7 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     objState->space_before = origState->space_before;
     objState->object_nl = origState->object_nl;
     objState->array_nl = origState->array_nl;
+    objState->as_json = origState->as_json;
     return obj;
 }
 
@@ -1277,6 +1383,28 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
     return Qnil;
 }
 
+/*
+ * call-seq: as_json()
+ *
+ * This string is put at the end of a line that holds a JSON array.
+ */
+static VALUE cState_as_json(VALUE self)
+{
+    GET_STATE(self);
+    return state->as_json;
+}
+
+/*
+ * call-seq: as_json=(as_json)
+ *
+ * This string is put at the end of a line that holds a JSON array.
+ */
+static VALUE cState_as_json_set(VALUE self, VALUE as_json)
+{
+    GET_STATE(self);
+    RB_OBJ_WRITE(self, &state->as_json, rb_convert_type(as_json, T_DATA, "Proc", "to_proc"));
+    return Qnil;
+}
 
 /*
 * call-seq: check_circular?
@@ -1498,6 +1626,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
     else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
+    else if (key == sym_as_json)               { state->as_json = rb_convert_type(val, T_DATA, "Proc", "to_proc"); }
     return ST_CONTINUE;
 }
 
@@ -1589,6 +1718,8 @@ void Init_generator(void)
     rb_define_method(cState, "object_nl=", cState_object_nl_set, 1);
     rb_define_method(cState, "array_nl", cState_array_nl, 0);
     rb_define_method(cState, "array_nl=", cState_array_nl_set, 1);
+    rb_define_method(cState, "as_json", cState_as_json, 0);
+    rb_define_method(cState, "as_json=", cState_as_json_set, 1);
     rb_define_method(cState, "max_nesting", cState_max_nesting, 0);
     rb_define_method(cState, "max_nesting=", cState_max_nesting_set, 1);
     rb_define_method(cState, "script_safe", cState_script_safe, 0);
@@ -1610,6 +1741,7 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length", cState_buffer_initial_length, 0);
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
+    rb_define_alias(cState, "generate_new", "generate"); // :nodoc:
 
     rb_define_singleton_method(cState, "generate", cState_m_generate, 3);
 
@@ -1680,6 +1812,7 @@ void Init_generator(void)
     sym_script_safe = ID2SYM(rb_intern("script_safe"));
     sym_escape_slash = ID2SYM(rb_intern("escape_slash"));
     sym_strict = ID2SYM(rb_intern("strict"));
+    sym_as_json = ID2SYM(rb_intern("as_json"));
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();

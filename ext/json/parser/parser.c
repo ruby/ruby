@@ -135,7 +135,7 @@ static VALUE rstring_cache_fetch(rvalue_cache *cache, const char *str, const lon
         return Qfalse;
     }
 
-    if (RB_UNLIKELY(!isalpha(str[0]))) {
+    if (RB_UNLIKELY(!isalpha((unsigned char)str[0]))) {
         // Simple heuristic, if the first character isn't a letter,
         // we're much less likely to see this string again.
         // We mostly want to cache strings that are likely to be repeated.
@@ -187,7 +187,7 @@ static VALUE rsymbol_cache_fetch(rvalue_cache *cache, const char *str, const lon
         return Qfalse;
     }
 
-    if (RB_UNLIKELY(!isalpha(str[0]))) {
+    if (RB_UNLIKELY(!isalpha((unsigned char)str[0]))) {
         // Simple heuristic, if the first character isn't a letter,
         // we're much less likely to see this string again.
         // We mostly want to cache strings that are likely to be repeated.

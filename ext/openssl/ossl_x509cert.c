@@ -619,10 +619,7 @@ ossl_x509_get_extensions(VALUE self)
 
     GetX509(self, x509);
     count = X509_get_ext_count(x509);
-    if (count < 0) {
-	return rb_ary_new();
-    }
-    ary = rb_ary_new2(count);
+    ary = rb_ary_new_capa(count);
     for (i=0; i<count; i++) {
 	ext = X509_get_ext(x509, i); /* NO DUP - don't free! */
 	rb_ary_push(ary, ossl_x509ext_new(ext));

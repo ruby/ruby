@@ -328,4 +328,17 @@ class TestAlias < Test::Unit::TestCase
       }
     end;
   end
+
+  def test_undef_method_error_message_with_zsuper_method
+    modules = [
+      Module.new { private :class },
+      Module.new { prepend Module.new { private :class } },
+    ]
+    message = "undefined method 'class' for module '%s'"
+    modules.each do |mod|
+      assert_raise_with_message(NameError, message % mod) do
+        mod.alias_method :xyz, :class
+      end
+    end
+  end
 end

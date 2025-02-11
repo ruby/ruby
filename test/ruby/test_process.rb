@@ -275,7 +275,7 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB RJIT_SEARCH_BUILD_DIR]
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RJIT_SEARCH_BUILD_DIR]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
@@ -1693,7 +1693,7 @@ class TestProcess < Test::Unit::TestCase
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
       end
-      exc = assert_raise(ArgumentError, SystemCallError) do
+      exc = assert_raise_kind_of(ArgumentError, SystemCallError) do
         Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
       end
       assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)

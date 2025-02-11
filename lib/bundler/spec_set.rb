@@ -212,6 +212,10 @@ module Bundler
       s.matches_current_metadata? && valid_dependencies?(s)
     end
 
+    def to_s
+      map(&:full_name).to_s
+    end
+
     private
 
     def materialize_dependencies(dependencies, platforms = [nil], skips: [])

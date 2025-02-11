@@ -4,62 +4,14 @@ module Spec
   module Platforms
     include Bundler::GemHelpers
 
-    def rb
-      Gem::Platform::RUBY
-    end
-
-    def mac
-      Gem::Platform.new("x86-darwin-10")
-    end
-
-    def x64_mac
-      Gem::Platform.new("x86_64-darwin-15")
-    end
-
-    def java
-      Gem::Platform.new([nil, "java", nil])
-    end
-
-    def linux
-      Gem::Platform.new("x86_64-linux")
-    end
-
-    def x86_mswin32
-      Gem::Platform.new(["x86", "mswin32", nil])
-    end
-
-    def x64_mswin64
-      Gem::Platform.new(["x64", "mswin64", nil])
-    end
-
-    def x86_mingw32
-      Gem::Platform.new(["x86", "mingw32", nil])
-    end
-
-    def x64_mingw32
-      Gem::Platform.new(["x64", "mingw32", nil])
-    end
-
-    def x64_mingw_ucrt
-      Gem::Platform.new(["x64", "mingw", "ucrt"])
-    end
-
-    def windows_platforms
-      [x86_mswin32, x64_mswin64, x86_mingw32, x64_mingw32, x64_mingw_ucrt]
-    end
-
-    def all_platforms
-      [rb, java, linux, windows_platforms].flatten
-    end
-
     def not_local
-      all_platforms.find {|p| p != generic_local_platform }
+      generic_local_platform == Gem::Platform::RUBY ? "java" : Gem::Platform::RUBY
     end
 
     def local_tag
-      if RUBY_PLATFORM == "java"
+      if Gem.java_platform?
         :jruby
-      elsif ["x64-mingw32", "x64-mingw-ucrt"].include?(RUBY_PLATFORM)
+      elsif Gem.win_platform?
         :windows
       else
         :ruby
@@ -96,16 +48,22 @@ module Spec
     end
 
     def default_platform_list(*extra, defaults: default_locked_platforms)
-      defaults.concat(extra).uniq
+      defaults.concat(extra).map(&:to_s).uniq
     end
 
     def lockfile_platforms(*extra, defaults: default_locked_platforms)
       platforms = default_platform_list(*extra, defaults: defaults)
-      platforms.map(&:to_s).sort.join("\n  ")
+      platforms.sort.join("\n  ")
     end
 
     def default_locked_platforms
-      [local_platform, generic_local_platform]
+      [local_platform, generic_default_locked_platform].compact
+    end
+
+    def generic_default_locked_platform
+      return unless generic_local_platform_is_ruby?
+
+      Gem::Platform::RUBY
     end
   end
 end

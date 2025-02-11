@@ -415,6 +415,11 @@ describe "Time.new with a timezone argument" do
 
         time.utc_offset.should == -9*60*60
         time.zone.should == nil
+
+        time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00:01")
+
+        time.utc_offset.should == -(9*60*60 + 1)
+        time.zone.should == nil
       end
 
       it "could be UTC offset as a number of seconds" do
@@ -659,12 +664,34 @@ describe "Time.new with a timezone argument" do
 
         -> {
           Time.new("2020-12-25 00:56:17 +23:61")
-        }.should raise_error(ArgumentError, /utc_offset|can't parse:/)
+        }.should raise_error(ArgumentError, /utc_offset/)
 
         ruby_bug '#20797', ''...'3.4' do
           -> {
             Time.new("2020-12-25 00:56:17 +00:23:61")
           }.should raise_error(ArgumentError, /utc_offset/)
+        end
+      end
+
+      it "raises ArgumentError if utc offset parts are not valid" do
+        -> { Time.new("2020-12-25 00:56:17 +24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+        -> { Time.new("2020-12-25 00:56:17 +2400") }.should raise_error(ArgumentError, "utc_offset out of range")
+
+        -> { Time.new("2020-12-25 00:56:17 +99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+        -> { Time.new("2020-12-25 00:56:17 +9900") }.should raise_error(ArgumentError, "utc_offset out of range")
+
+        -> { Time.new("2020-12-25 00:56:17 +00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
+        -> { Time.new("2020-12-25 00:56:17 +0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
+
+        -> { Time.new("2020-12-25 00:56:17 +00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
+        -> { Time.new("2020-12-25 00:56:17 +0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
+
+        ruby_bug '#20797', ''...'3.4' do
+          -> { Time.new("2020-12-25 00:56:17 +00:00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:60')
+          -> { Time.new("2020-12-25 00:56:17 +000060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000060')
+
+          -> { Time.new("2020-12-25 00:56:17 +00:00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:00:99')
+          -> { Time.new("2020-12-25 00:56:17 +000099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +000099')
         end
       end
 

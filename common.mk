@@ -1608,7 +1608,7 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 	$(XRUBY) -C "$(srcdir)" -r./tool/lib/gem_env.rb bin/gem \
 		install --no-document --conservative \
 		"hoe" "json-schema:5.1.0" "test-unit-rr" "simplecov" "simplecov-html" "simplecov-json" "rspec" "zeitwerk" \
-		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg"
+		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
 yes-test-bundled-gems-fetch:
@@ -1628,13 +1628,13 @@ yes-test-bundled-gems-precheck: Preparing-test-bundled-gems
 yes-install-for-test-bundled-gems: Preparing-test-bundled-gems
 yes-test-bundled-gems-fetch: Preparing-test-bundled-gems
 
-
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
 test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(DOT_WAIT) $(TEST_RUNNABLE)-test-bundled-gems-spec
+yes-test-bundled-gems: test-bundled-gems-run
+no-test-bundled-gems:
+
 bundled_gems_spec-run: install-for-test-bundled-gems
 	$(XRUBY) -C $(srcdir) .bundle/bin/rspec spec/bundled_gems_spec.rb
-yes-test-bundled-gems: bundled_gems_spec-run $(DOT_WAIT) test-bundled-gems-run
-no-test-bundled-gems:
 
 # Override this to allow failure of specific gems on CI
 # TEST_BUNDLED_GEMS_ALLOW_FAILURES =
@@ -1903,6 +1903,7 @@ info-arch: PHONY
 
 exam: check
 exam: $(DOT_WAIT) test-bundler-parallel
+exam: $(DOT_WAIT) bundled_gems_spec-run
 exam: $(DOT_WAIT) test-bundled-gems
 
 love: sudo-precheck up all test exam install
@@ -7555,6 +7556,7 @@ gc.$(OBJEXT): {$(VPATH)}thread.h
 gc.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 gc.$(OBJEXT): {$(VPATH)}thread_native.h
 gc.$(OBJEXT): {$(VPATH)}util.h
+gc.$(OBJEXT): {$(VPATH)}variable.h
 gc.$(OBJEXT): {$(VPATH)}vm.h
 gc.$(OBJEXT): {$(VPATH)}vm_callinfo.h
 gc.$(OBJEXT): {$(VPATH)}vm_core.h

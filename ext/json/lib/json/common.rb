@@ -167,7 +167,25 @@ module JSON
   # system. Usually this means that the iconv library is not installed.
   class MissingUnicodeSupport < JSONError; end
 
+  # Fragment of JSON document that is to be included as is:
+  #   fragment = JSON::Fragment.new("[1, 2, 3]")
+  #   JSON.generate({ count: 3, items: fragments })
+  #
+  # This allows to easily assemble multiple JSON fragments that have
+  # been persisted somewhere without having to parse them nor resorting
+  # to string interpolation.
+  #
+  # Note: no validation is performed on the provided string. It is the
+  # responsability of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
+    def initialize(json)
+      unless string = String.try_convert(json)
+        raise TypeError, " no implicit conversion of #{json.class} into String"
+      end
+
+      super(string)
+    end
+
     def to_json(state = nil, *)
       json
     end
@@ -843,6 +861,82 @@ module JSON
 
   class << self
     private :merge_dump_options
+  end
+
+  # JSON::Coder holds a parser and generator configuration.
+  #
+  #   module MyApp
+  #     JSONC_CODER = JSON::Coder.new(
+  #       allow_trailing_comma: true
+  #     )
+  #   end
+  #
+  #   MyApp::JSONC_CODER.load(document)
+  #
+  class Coder
+    # :call-seq:
+    #   JSON.new(options = nil, &block)
+    #
+    # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
+    # See {Parsing Options}[#module-JSON-label-Parsing+Options], and {Generating Options}[#module-JSON-label-Generating+Options].
+    #
+    # For generation, the <tt>strict: true</tt> option is always set. When a Ruby object with no native \JSON counterpart is
+    # encoutered, the block provided to the initialize method is invoked, and must return a Ruby object that has a native
+    # \JSON counterpart:
+    #
+    #  module MyApp
+    #    API_JSON_CODER = JSON::Coder.new do |object|
+    #      case object
+    #      when Time
+    #        object.iso8601(3)
+    #      else
+    #        object # Unknown type, will raise
+    #      end
+    #    end
+    #  end
+    #
+    #  puts MyApp::API_JSON_CODER.dump(Time.now.utc) # => "2025-01-21T08:41:44.286Z"
+    #
+    def initialize(options = nil, &as_json)
+      if options.nil?
+        options = { strict: true }
+      else
+        options = options.dup
+        options[:strict] = true
+      end
+      options[:as_json] = as_json if as_json
+      options[:create_additions] = false unless options.key?(:create_additions)
+
+      @state = State.new(options).freeze
+      @parser_config = Ext::Parser::Config.new(options)
+    end
+
+    # call-seq:
+    #   dump(object) -> String
+    #   dump(object, io) -> io
+    #
+    # Serialize the given object into a \JSON document.
+    def dump(object, io = nil)
+      @state.generate_new(object, io)
+    end
+    alias_method :generate, :dump
+
+    # call-seq:
+    #   load(string) -> Object
+    #
+    # Parse the given \JSON document and return an equivalent Ruby object.
+    def load(source)
+      @parser_config.parse(source)
+    end
+    alias_method :parse, :load
+
+    # call-seq:
+    #   load(path) -> Object
+    #
+    # Parse the given \JSON document and return an equivalent Ruby object.
+    def load_file(path)
+      load(File.read(path, encoding: Encoding::UTF_8))
+    end
   end
 end
 

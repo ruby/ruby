@@ -16,7 +16,7 @@ describe :method_dup, shared: true do
     end
 
     it "copies the finalizer" do
-      code = <<-RUBY
+      code = <<-'RUBY'
         obj = Object.new.method(:method)
 
         ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })

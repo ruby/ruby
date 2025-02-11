@@ -174,15 +174,6 @@ have commit right, others don't.
 * https://github.com/ruby/ipaddr
 * https://rubygems.org/gems/ipaddr
 
-#### lib/irb.rb, lib/irb/*
-
-* Stan Lo ([st0012])
-* Tomoya Ishida ([tompng])
-* Mari Imaizumi ([ima1zumi])
-* Hitoshi Hasumi ([hasumikin])
-* https://github.com/ruby/irb
-* https://rubygems.org/gems/irb
-
 #### lib/optparse.rb, lib/optparse/*
 
 * Nobuyuki Nakada ([nobu])
@@ -231,26 +222,11 @@ have commit right, others don't.
 * https://github.com/ruby/prism
 * https://rubygems.org/gems/prism
 
-#### lib/readline.rb
-
-* aycabta
-* https://github.com/ruby/readline
-* https://rubygems.org/gems/readline
-
 #### lib/resolv.rb
 
 * Tanaka Akira ([akr])
 * https://github.com/ruby/resolv
 * https://rubygems.org/gems/resolv
-
-#### lib/reline.rb, lib/reline/*
-
-* Tomoya Ishida ([tompng])
-* Mari Imaizumi ([ima1zumi])
-* Stan Lo ([st0012])
-* Hitoshi Hasumi ([hasumikin])
-* https://github.com/ruby/reline
-* https://rubygems.org/gems/reline
 
 #### lib/securerandom.rb
 
@@ -363,12 +339,6 @@ have commit right, others don't.
 * https://github.com/ruby/fcntl
 * https://rubygems.org/gems/fcntl
 
-#### ext/fiddle
-
-* Aaron Patterson ([tenderlove])
-* https://github.com/ruby/fiddle
-* https://rubygems.org/gems/fiddle
-
 #### ext/io/console
 
 * Nobuyuki Nakada ([nobu])
@@ -425,12 +395,6 @@ have commit right, others don't.
 * Kouhei Sutou ([kou])
 * https://github.com/ruby/strscan
 * https://rubygems.org/gems/strscan
-
-#### ext/win32ole
-
-* Masaki Suketa ([suketa])
-* https://github.com/ruby/win32ole
-* https://rubygems.org/gems/win32ole
 
 #### ext/zlib
 
@@ -571,6 +535,26 @@ have commit right, others don't.
 #### rdoc
 
 * https://github.com/ruby/rdoc
+
+#### win32ole
+
+* https://github.com/ruby/win32ole
+
+#### irb
+
+* https://github.com/ruby/irb
+
+#### reline
+
+* https://github.com/ruby/reline
+
+#### readline
+
+* https://github.com/ruby/readline
+
+#### fiddle
+
+* https://github.com/ruby/fiddle
 
 ## Platform Maintainers
 

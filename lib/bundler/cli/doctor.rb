@@ -2,7 +2,6 @@
 
 require "rbconfig"
 require "shellwords"
-require "fiddle"
 
 module Bundler
   class CLI::Doctor
@@ -57,6 +56,14 @@ module Bundler
       Dir.glob("#{spec.full_gem_path}/**/*.bundle")
     end
 
+    def lookup_with_fiddle(path)
+      require "fiddle"
+      Fiddle.dlopen(path)
+      false
+    rescue Fiddle::DLError
+      true
+    end
+
     def check!
       require_relative "check"
       Bundler::CLI::Check.new({}).run
@@ -73,10 +80,7 @@ module Bundler
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
           bad_paths = dylibs(bundle).select do |f|
-            Fiddle.dlopen(f)
-            false
-          rescue Fiddle::DLError
-            true
+            lookup_with_fiddle(f)
           end
           if bad_paths.any?
             broken_links[spec] ||= []

@@ -27,7 +27,6 @@ jobs:
         gc:
           - name: default
           - name: mmtk
-            mmtk_plan: MarkSweep
             mmtk_build: release
         os: [macos-latest, ubuntu-latest]
         include:
@@ -110,14 +109,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - name: Set MMTk environment variables
         run: |
-          if [[ ${{ matrix.gc.mmtk_build }} == debug ]]; then
-            echo 'RUST_LOG=' >> $GITHUB_ENV
-            # Debug builds run much slower so we should increase the timeout
-            echo 'RUBY_TEST_TIMEOUT_SCALE=10' >> $GITHUB_ENV
-            # SYNTAX_SUGGEST_TIMEOUT defaults to 1 second
-            echo 'SYNTAX_SUGGEST_TIMEOUT=60' >> $GITHUB_ENV
-          fi
-          echo 'MMTK_PLAN=${{ matrix.gc.mmtk_plan }}' >> $GITHUB_ENV
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
@@ -174,16 +165,6 @@ jobs:
           label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
-
-  result:
-    if: ${{ always() }}
-    name: ${{ github.workflow }} result
-    runs-on: ubuntu-latest
-    needs: [check]
-    steps:
-      - run: exit 1
-        working-directory:
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:

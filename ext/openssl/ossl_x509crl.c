@@ -276,21 +276,19 @@ ossl_x509crl_get_revoked(VALUE self)
 {
     X509_CRL *crl;
     int i, num;
-    X509_REVOKED *rev;
-    VALUE ary, revoked;
+    STACK_OF(X509_REVOKED) *sk;
+    VALUE ary;
 
     GetX509CRL(self, crl);
-    num = sk_X509_REVOKED_num(X509_CRL_get_REVOKED(crl));
-    if (num < 0) {
-	OSSL_Debug("num < 0???");
-	return rb_ary_new();
-    }
-    ary = rb_ary_new2(num);
+    sk = X509_CRL_get_REVOKED(crl);
+    if (!sk)
+        return rb_ary_new();
+
+    num = sk_X509_REVOKED_num(sk);
+    ary = rb_ary_new_capa(num);
     for(i=0; i<num; i++) {
-	/* NO DUP - don't free! */
-	rev = sk_X509_REVOKED_value(X509_CRL_get_REVOKED(crl), i);
-	revoked = ossl_x509revoked_new(rev);
-	rb_ary_push(ary, revoked);
+	X509_REVOKED *rev = sk_X509_REVOKED_value(sk, i);
+	rb_ary_push(ary, ossl_x509revoked_new(rev));
     }
 
     return ary;
@@ -451,11 +449,7 @@ ossl_x509crl_get_extensions(VALUE self)
 
     GetX509CRL(self, crl);
     count = X509_CRL_get_ext_count(crl);
-    if (count < 0) {
-	OSSL_Debug("count < 0???");
-	return rb_ary_new();
-    }
-    ary = rb_ary_new2(count);
+    ary = rb_ary_new_capa(count);
     for (i=0; i<count; i++) {
 	ext = X509_CRL_get_ext(crl, i); /* NO DUP - don't free! */
 	rb_ary_push(ary, ossl_x509ext_new(ext));
