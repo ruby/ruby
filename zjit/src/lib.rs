@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 #![allow(static_mut_refs)]
 
-mod codegen;
+mod state;
 mod cruby;
 mod ir;
 mod stats;
@@ -12,7 +12,7 @@ mod backend;
 mod disasm;
 mod options;
 
-use codegen::ZJITState;
+use state::ZJITState;
 #[cfg(feature = "disasm")]
 use options::get_option;
 use crate::cruby::*;

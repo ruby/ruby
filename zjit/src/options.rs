@@ -13,7 +13,7 @@ macro_rules! get_option {
     // once before any Ruby code executes
     ($option_name:ident) => {
         {
-            use crate::codegen::ZJITState;
+            use crate::state::ZJITState;
             ZJITState::get_options().$option_name
         }
     };
