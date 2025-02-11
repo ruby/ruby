@@ -75,8 +75,8 @@ pub struct CallInfo {
 
 #[derive(Debug)]
 pub enum Insn {
-    // SSA block parameter. Also used for function parameters in the function's entry block.
     PutSelf,
+    // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
     StringCopy { val: Opnd },
@@ -311,6 +311,11 @@ pub enum ParseError {
     StackUnderflow(FrameState),
 }
 
+/// Return the number of locals in the given ISEQ
+fn num_locals(iseq: *const rb_iseq_t) -> u32 {
+    unsafe { get_iseq_body_local_table_size(iseq) }
+}
+
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
@@ -329,7 +334,20 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     queue.push_back((FrameState::new(), fun.entry_block, /*insn_idx=*/0 as u32));
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    while let Some((mut state, block, mut insn_idx)) = queue.pop_front() {
+    while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
+        let mut state = {
+            let mut result = FrameState::new();
+            let mut idx = 0;
+            for _ in 0..num_locals(iseq) {
+                result.locals.push(Opnd::Insn(fun.push_insn(block, Insn::Param { idx })));
+                idx += 1;
+            }
+            for _ in incoming_state.stack {
+                result.stack.push(Opnd::Insn(fun.push_insn(block, Insn::Param { idx })));
+                idx += 1;
+            }
+            result
+        };
         while insn_idx < iseq_size {
             // Get the current pc and opcode
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
@@ -466,6 +484,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::Return { val: state.pop()? });
+                    break;  // Don't add an edge to the queue
                 }
 
                 YARVINSN_opt_send_without_block => {
