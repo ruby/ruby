@@ -13,6 +13,7 @@ mod disasm;
 mod options;
 
 use codegen::ZJITState;
+#[cfg(feature = "disasm")]
 use options::get_option;
 use crate::cruby::*;
 

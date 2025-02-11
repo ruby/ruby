@@ -550,9 +550,9 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
 #[cfg(test)]
 mod tests {
+    /*
     use super::*;
 
-    /*
     #[test]
     fn test() {
         let opcodes = vec![

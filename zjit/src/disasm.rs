@@ -1,7 +1,7 @@
-use std::fmt::Write;
-
 #[cfg(feature = "disasm")]
 pub fn disasm_addr_range(start_addr: usize, end_addr: usize) -> String {
+    use std::fmt::Write;
+
     let mut out = String::from("");
 
     // Initialize capstone

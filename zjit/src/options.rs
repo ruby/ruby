@@ -7,6 +7,7 @@ pub struct Options {
 }
 
 /// Macro to get an option value by name
+#[cfg(feature = "disasm")]
 macro_rules! get_option {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
@@ -17,6 +18,7 @@ macro_rules! get_option {
         }
     };
 }
+#[cfg(feature = "disasm")]
 pub(crate) use get_option;
 
 /// Allocate Options on the heap, initialize it, and return the address of it.

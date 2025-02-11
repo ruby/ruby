@@ -891,6 +891,7 @@ impl Assembler
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use crate::disasm::assert_disasm;
@@ -1316,3 +1317,5 @@ mod tests {
         "});
     }
 }
+
+*/

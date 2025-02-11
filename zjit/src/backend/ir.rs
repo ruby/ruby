@@ -7,6 +7,7 @@ use crate::cruby::VALUE;
 use crate::virtualmem::CodePtr;
 //use crate::asm::{CodeBlock, OutlinedCb};
 //use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_TEMPS};
+#[cfg(feature = "disasm")]
 use crate::options::*;
 //use crate::stats::*;
 
@@ -1642,10 +1643,12 @@ impl Assembler
     #[must_use]
     pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
     {
+        #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
         let ret = self.compile_with_regs(cb, alloc_regs);
 
+        #[cfg(feature = "disasm")]
         if get_option!(dump_disasm) {
             let end_addr = cb.get_write_ptr();
             let disasm = crate::disasm::disasm_addr_range(start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
