@@ -2,10 +2,9 @@ use std::mem::take;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
-use crate::codegen::CodePtr;
+use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::ir::*;
-use crate::options::*;
 use crate::utils::*;
 
 // Use the x86 register type for this platform
@@ -112,7 +111,7 @@ impl Assembler
     fn x86_split(mut self) -> Assembler
     {
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_unmapped() {
@@ -143,9 +142,9 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                if let Opnd::Stack { .. } = opnd {
-                    *opnd = asm.lower_stack_opnd(opnd);
-                }
+                //if let Opnd::Stack { .. } = opnd {
+                //    *opnd = asm.lower_stack_opnd(opnd);
+                //}
                 unmapped_opnds.push(*opnd);
 
                 *opnd = match opnd {
@@ -186,11 +185,12 @@ impl Assembler
                             // We want to do `dest == left`, but `left` has already gone
                             // through lower_stack_opnd() while `dest` has not. So we
                             // lower `dest` before comparing.
-                            let lowered_dest = if let Opnd::Stack { .. } = dest {
-                                asm.lower_stack_opnd(dest)
-                            } else {
-                                *dest
-                            };
+                            //let lowered_dest = if let Opnd::Stack { .. } = dest {
+                            //    asm.lower_stack_opnd(dest)
+                            //} else {
+                            //    *dest
+                            //};
+                            let lowered_dest = *dest;
                             lowered_dest == *left
                         } => {
                             *out = *dest;
@@ -402,7 +402,7 @@ impl Assembler
     }
 
     /// Emit platform-specific machine code
-    pub fn x86_emit(&mut self, cb: &mut CodeBlock, ocb: &mut Option<&mut OutlinedCb>) -> Option<Vec<u32>>
+    pub fn x86_emit(&mut self, cb: &mut CodeBlock) -> Option<Vec<u32>>
     {
         /// For some instructions, we want to be able to lower a 64-bit operand
         /// without requiring more registers to be available in the register
@@ -429,20 +429,6 @@ impl Assembler
                     }
                 },
                 _ => opnd.into()
-            }
-        }
-
-        /// Compile a side exit if Target::SideExit is given.
-        fn compile_side_exit(
-            target: Target,
-            asm: &mut Assembler,
-            ocb: &mut Option<&mut OutlinedCb>,
-        ) -> Option<Target> {
-            if let Target::SideExit { counter, context } = target {
-                let side_exit = asm.get_side_exit(&context.unwrap(), Some(counter), ocb.as_mut().unwrap());
-                Some(Target::SideExitPtr(side_exit?))
-            } else {
-                Some(target)
             }
         }
 
@@ -482,22 +468,24 @@ impl Assembler
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
 
         // For each instruction
-        let start_write_pos = cb.get_write_pos();
+        //let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            let src_ptr = cb.get_write_ptr();
+            //let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
-            let old_label_state = cb.get_label_state();
+            //let old_label_state = cb.get_label_state();
             let mut insn_gc_offsets: Vec<u32> = Vec::new();
 
             match insn {
-                Insn::Comment(text) => {
-                    cb.add_comment(text);
+                Insn::Comment(_text) => {
+                    unimplemented!("comments are not supported yet");
+                    //cb.add_comment(text);
                 },
 
                 // Write the label at the current position
-                Insn::Label(target) => {
-                    cb.write_label(target.unwrap_label_idx());
+                Insn::Label(_target) => {
+                    unimplemented!("labels are not supported yet");
+                    //cb.write_label(target.unwrap_label_idx());
                 },
 
                 // Report back the current position in the generated code
@@ -518,17 +506,23 @@ impl Assembler
                 // Set up RBP to work with frame pointer unwinding
                 // (e.g. with Linux `perf record --call-graph fp`)
                 Insn::FrameSetup => {
+                    unimplemented!("frames are not supported yet");
+                    /*
                     if get_option!(frame_pointer) {
                         push(cb, RBP);
                         mov(cb, RBP, RSP);
                         push(cb, RBP);
                     }
+                    */
                 },
                 Insn::FrameTeardown => {
+                    unimplemented!("frames are not supported yet");
+                    /*
                     if get_option!(frame_pointer) {
                         pop(cb, RBP);
                         pop(cb, RBP);
                     }
+                    */
                 },
 
                 Insn::Add { left, right, .. } => {
@@ -706,91 +700,91 @@ impl Assembler
 
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Je(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jne(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jl(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jg(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jg_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jge(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jge_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jbe(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jb(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jb_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 },
 
                 Insn::Jz(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jnz(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
                 Insn::Jo(target) |
                 Insn::JoMul(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
                     }
                 }
 
@@ -832,17 +826,20 @@ impl Assembler
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
+                    unimplemented!("we don't need padding yet");
+                    /*
                     let code_size = cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()));
                     if code_size < cb.jmp_ptr_bytes() {
                         nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
                     }
+                    */
                 }
             };
 
             // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, jmp_ptr) {
+            if !had_dropped_bytes && cb.has_dropped_bytes() {
                 // Reset cb states before retrying the current Insn
-                cb.set_label_state(old_label_state);
+                //cb.set_label_state(old_label_state);
             } else {
                 insn_idx += 1;
                 gc_offsets.append(&mut insn_gc_offsets);
@@ -867,26 +864,27 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
+        /*
         for (idx, name) in asm.label_names.iter().enumerate() {
             let label_idx = cb.new_label(name.to_string());
             assert!(label_idx == idx);
         }
+        */
 
-        let mut ocb = ocb; // for &mut
         let start_ptr = cb.get_write_ptr();
-        let gc_offsets = asm.x86_emit(cb, &mut ocb);
+        let gc_offsets = asm.x86_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            //cb.link_labels();
 
             Some((start_ptr, gc_offsets))
         } else {
-            cb.clear_labels();
+            //cb.clear_labels();
 
             None
         }

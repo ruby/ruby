@@ -1,14 +1,14 @@
-use std::collections::HashMap;
 use std::fmt;
 use std::convert::From;
 use std::mem::take;
-use crate::codegen::{gen_counted_exit, gen_outlined_exit};
-use crate::cruby::{vm_stack_canary, SIZEOF_VALUE_I32, VALUE, VM_ENV_DATA_SIZE};
+use crate::asm::CodeBlock;
+//use crate::codegen::{gen_counted_exit, gen_outlined_exit};
+use crate::cruby::VALUE;
 use crate::virtualmem::CodePtr;
-use crate::asm::{CodeBlock, OutlinedCb};
-use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_TEMPS};
+//use crate::asm::{CodeBlock, OutlinedCb};
+//use crate::core::{Context, RegMapping, RegOpnd, MAX_CTX_TEMPS};
 use crate::options::*;
-use crate::stats::*;
+//use crate::stats::*;
 
 use crate::backend::current::*;
 
@@ -70,6 +70,7 @@ pub enum Opnd
     InsnOut{ idx: usize, num_bits: u8 },
 
     /// Pointer to a slot on the VM stack
+    /*
     Stack {
         /// Index from stack top. Used for conversion to StackOpnd.
         idx: i32,
@@ -84,6 +85,7 @@ pub enum Opnd
         /// ctx.reg_mapping when this operand is read. Used for register allocation.
         reg_mapping: Option<RegMapping>
     },
+    */
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -99,7 +101,7 @@ impl fmt::Debug for Opnd {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
             CArg(reg) => write!(fmt, "CArg({reg:?})"),
-            Stack { idx, sp_offset, .. } => write!(fmt, "SP[{}]", *sp_offset as i32 - idx - 1),
+            //Stack { idx, sp_offset, .. } => write!(fmt, "SP[{}]", *sp_offset as i32 - idx - 1),
             InsnOut { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
@@ -174,7 +176,7 @@ impl Opnd
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
             Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
-            Opnd::Stack { idx, stack_size, num_locals, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping }),
+            //Opnd::Stack { idx, stack_size, num_locals, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping }),
             _ => None,
         }
     }
@@ -229,6 +231,7 @@ impl Opnd
         Self::match_num_bits_iter(opnds.iter())
     }
 
+    /*
     /// Convert Opnd::Stack into RegMapping
     pub fn reg_opnd(&self) -> RegOpnd {
         self.get_reg_opnd().unwrap()
@@ -251,6 +254,7 @@ impl Opnd
             _ => None,
         }
     }
+    */
 }
 
 impl From<usize> for Opnd {
@@ -296,8 +300,8 @@ pub enum Target
 {
     /// Pointer to a piece of YJIT-generated code
     CodePtr(CodePtr),
-    /// Side exit with a counter
-    SideExit { counter: Counter, context: Option<SideExitContext> },
+    // Side exit with a counter
+    //SideExit { counter: Counter, context: Option<SideExitContext> },
     /// Pointer to a side exit code
     SideExitPtr(CodePtr),
     /// A label within the generated code
@@ -306,9 +310,11 @@ pub enum Target
 
 impl Target
 {
+    /*
     pub fn side_exit(counter: Counter) -> Target {
         Target::SideExit { counter, context: None }
     }
+    */
 
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
@@ -966,6 +972,7 @@ impl fmt::Debug for Insn {
 }
 
 /// Set of variables used for generating side exits
+/*
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitContext {
     /// PC of the instruction being compiled
@@ -1012,6 +1019,7 @@ impl SideExitContext {
         ctx
     }
 }
+*/
 
 /// Initial capacity for asm.insns vector
 const ASSEMBLER_INSNS_CAPACITY: usize = 256;
@@ -1028,6 +1036,7 @@ pub struct Assembler {
     /// Names of labels
     pub(super) label_names: Vec<String>,
 
+    /*
     /// Context for generating the current insn
     pub ctx: Context,
 
@@ -1049,10 +1058,17 @@ pub struct Assembler {
 
     /// If true, the next ccall() should verify its leafness
     leaf_ccall: bool,
+    */
 }
 
 impl Assembler
 {
+    /// Create an Assembler
+    pub fn new() -> Self {
+        Self::new_with_label_names(Vec::default())
+    }
+
+    /*
     /// Create an Assembler for ISEQ-specific code.
     /// It includes all inline code and some outlined code like side exits and stubs.
     pub fn new(num_locals: u32) -> Self {
@@ -1064,27 +1080,19 @@ impl Assembler
     pub fn new_without_iseq() -> Self {
         Self::new_with_label_names(Vec::default(), HashMap::default(), None)
     }
+    */
 
     /// Create an Assembler with parameters that are populated by another Assembler instance.
     /// This API is used for copying an Assembler for the next compiler pass.
-    pub fn new_with_label_names(
-        label_names: Vec<String>,
-        side_exits: HashMap<SideExitContext, CodePtr>,
-        num_locals: Option<u32>
-    ) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
         Self {
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
             label_names,
-            ctx: Context::default(),
-            num_locals,
-            side_exits,
-            side_exit_pc: None,
-            side_exit_stack_size: None,
-            leaf_ccall: false,
         }
     }
 
+    /*
     /// Get the list of registers that can be used for stack temps.
     pub fn get_temp_regs2() -> &'static [Reg] {
         let num_regs = get_option!(num_temp_regs);
@@ -1101,6 +1109,7 @@ impl Assembler
         self.side_exit_pc = Some(pc);
         self.side_exit_stack_size = Some(stack_size);
     }
+    */
 
     /// Build an Opnd::InsnOut from the current index of the assembler and the
     /// given number of bits.
@@ -1129,6 +1138,7 @@ impl Assembler
                     self.live_ranges[idx] = insn_idx;
                 }
                 // Set current ctx.reg_mapping to Opnd::Stack.
+                /*
                 Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping: None } => {
                     assert_eq!(
                         self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
@@ -1145,11 +1155,13 @@ impl Assembler
                         reg_mapping: Some(self.ctx.get_reg_mapping()),
                     };
                 }
+                */
                 _ => {}
             }
         }
 
         // Set a side exit context to Target::SideExit
+        /*
         if let Some(Target::SideExit { context, .. }) = insn.target_mut() {
             // We should skip this when this instruction is being copied from another Assembler.
             if context.is_none() {
@@ -1159,11 +1171,13 @@ impl Assembler
                 ));
             }
         }
+        */
 
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
     }
 
+    /*
     /// Get a cached side exit, wrapping a counter if specified
     pub fn get_side_exit(&mut self, side_exit_context: &SideExitContext, counter: Option<Counter>, ocb: &mut OutlinedCb) -> Option<CodePtr> {
         // Get a cached side exit
@@ -1179,6 +1193,7 @@ impl Assembler
         // Wrap a counter if needed
         gen_counted_exit(side_exit_context.pc, side_exit, ocb, counter)
     }
+    */
 
     /// Create a new label instance that we can jump to
     pub fn new_label(&mut self, name: &str) -> Target
@@ -1190,6 +1205,7 @@ impl Assembler
         Target::Label(label_idx)
     }
 
+    /*
     /// Convert Opnd::Stack to Opnd::Mem or Opnd::Reg
     pub fn lower_stack_opnd(&self, opnd: &Opnd) -> Opnd {
         // Convert Opnd::Stack to Opnd::Mem
@@ -1345,6 +1361,7 @@ impl Assembler
             self.ctx.set_reg_mapping(reg_mapping);
         }
     }
+    */
 
     // Shuffle register moves, sometimes adding extra moves using SCRATCH_REG,
     // so that they will not rewrite each other before they are used.
@@ -1471,7 +1488,7 @@ impl Assembler
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
         // shifted_live_ranges is indexed by mapped indexes in insn operands.
         let mut shifted_live_ranges: Vec<usize> = live_ranges.clone();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
         let mut iterator = self.into_draining_iter();
 
         while let Some((index, mut insn)) = iterator.next_mapped() {
@@ -1623,20 +1640,21 @@ impl Assembler
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     #[must_use]
-    pub fn compile(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>) -> Option<(CodePtr, Vec<u32>)>
+    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
     {
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
-        let ret = self.compile_with_regs(cb, ocb, alloc_regs);
+        let ret = self.compile_with_regs(cb, alloc_regs);
 
-        if let Some(dump_disasm) = get_option_ref!(dump_disasm) {
-            use crate::disasm::dump_disasm_addr_range;
+        if get_option!(dump_disasm) {
             let end_addr = cb.get_write_ptr();
-            dump_disasm_addr_range(cb, start_addr, end_addr, dump_disasm)
+            let disasm = crate::disasm::disasm_addr_range(start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
+            println!("{}", disasm);
         }
         ret
     }
 
+    /*
     /// Compile with a limited number of registers. Used only for unit tests.
     #[cfg(test)]
     pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<u32>)
@@ -1645,12 +1663,14 @@ impl Assembler
         let alloc_regs = alloc_regs.drain(0..num_regs).collect();
         self.compile_with_regs(cb, None, alloc_regs).unwrap()
     }
+    */
 
     /// Consume the assembler by creating a new draining iterator.
     pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
         AssemblerDrainingIterator::new(self)
     }
 
+    /*
     /// Return true if the next ccall() is expected to be leaf.
     pub fn get_leaf_ccall(&mut self) -> bool {
         self.leaf_ccall
@@ -1660,6 +1680,7 @@ impl Assembler
     pub fn expect_leaf_ccall(&mut self) {
         self.leaf_ccall = true;
     }
+    */
 }
 
 /// A struct that allows iterating through an assembler's instructions and
@@ -1760,6 +1781,7 @@ impl Assembler {
     }
 
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
+        /*
         // Let vm_check_canary() assert this ccall's leafness if leaf_ccall is set
         let canary_opnd = self.set_stack_canary(&opnds);
 
@@ -1773,11 +1795,13 @@ impl Assembler {
         // Temporarily manipulate RegMappings so that we can use registers
         // to pass stack operands that are already spilled above.
         self.ctx.set_reg_mapping(old_temps);
+        */
 
         // Call a C function
         let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, out });
 
+        /*
         // Registers in old_temps may be clobbered by the above C call,
         // so rollback the manipulated RegMappings to a spilled version.
         self.ctx.set_reg_mapping(new_temps);
@@ -1786,10 +1810,12 @@ impl Assembler {
         if let Some(canary_opnd) = canary_opnd {
             self.mov(canary_opnd, 0.into());
         }
+        */
 
         out
     }
 
+    /*
     /// Let vm_check_canary() assert the leafness of this ccall if leaf_ccall is set
     fn set_stack_canary(&mut self, opnds: &Vec<Opnd>) -> Option<Opnd> {
         // Use the slot right above the stack top for verifying leafness.
@@ -1812,6 +1838,7 @@ impl Assembler {
 
         canary_opnd
     }
+    */
 
     pub fn cmp(&mut self, left: Opnd, right: Opnd) {
         self.push_insn(Insn::Cmp { left, right });
@@ -1829,7 +1856,7 @@ impl Assembler {
 
         // Re-enable ccall's RegMappings assertion disabled by cpush_all.
         // cpush_all + cpop_all preserve all stack temp registers, so it's safe.
-        self.set_reg_mapping(self.ctx.get_reg_mapping());
+        //self.set_reg_mapping(self.ctx.get_reg_mapping());
     }
 
     pub fn cpop_into(&mut self, opnd: Opnd) {
@@ -1847,7 +1874,7 @@ impl Assembler {
         // Temps will be marked back as being in registers by cpop_all.
         // We assume that cpush_all + cpop_all are used for C functions in utils.rs
         // that don't require spill_regs for GC.
-        self.set_reg_mapping(RegMapping::default());
+        //self.set_reg_mapping(RegMapping::default());
     }
 
     pub fn cret(&mut self, opnd: Opnd) {
@@ -2089,6 +2116,7 @@ impl Assembler {
         out
     }
 
+    /*
     /// Verify the leafness of the given block
     pub fn with_leaf_ccall<F, R>(&mut self, mut block: F) -> R
     where F: FnMut(&mut Self) -> R {
@@ -2098,6 +2126,7 @@ impl Assembler {
         self.leaf_ccall = old_leaf_ccall;
         ret
     }
+    */
 
     /// Add a label at the current position
     pub fn write_label(&mut self, target: Target) {
@@ -2115,6 +2144,7 @@ impl Assembler {
 
 /// Macro to use format! for Insn::Comment, which skips a format! call
 /// when not dumping disassembly.
+/*
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
         if $crate::options::get_option_ref!(dump_disasm).is_some() {
@@ -2123,6 +2153,7 @@ macro_rules! asm_comment {
     };
 }
 pub(crate) use asm_comment;
+*/
 
 #[cfg(test)]
 mod tests {

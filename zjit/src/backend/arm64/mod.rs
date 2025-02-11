@@ -1,6 +1,6 @@
 use std::mem::take;
 
-use crate::asm::{CodeBlock, OutlinedCb};
+use crate::asm::{CodeBlock};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::ir::*;
@@ -39,11 +39,14 @@ impl CodeBlock {
     pub fn jmp_ptr_bytes(&self) -> usize {
         // b instruction's offset is encoded as imm26 times 4. It can jump to
         // +/-128MiB, so this can be used when --yjit-exec-mem-size <= 128.
+        /*
         let num_insns = if b_offset_fits_bits(self.virtual_region_size() as i64 / 4) {
             1 // b instruction
         } else {
             5 // 4 instructions to load a 64-bit absolute address + br instruction
         };
+        */
+        let num_insns = 5; // TODO: support virtual_region_size() check
         num_insns * 4
     }
 
@@ -70,7 +73,7 @@ impl From<Opnd> for A64Opnd {
             Opnd::CArg(_) => panic!("attempted to lower an Opnd::CArg"),
             Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
-            Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
+            //Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
@@ -92,14 +95,18 @@ impl From<&Opnd> for A64Opnd {
 /// more than necessary when other_cb jumps from a position early in the page.
 /// This invalidates a small range of cb twice, but we accept the small cost.
 fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
+    /*
     #[cfg(not(test))]
     let start = cb.get_write_ptr();
+    */
     emit_jmp_ptr(cb, dst_ptr, true);
+    /*
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
         unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
     }
+    */
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -280,7 +287,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Stack { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } /*| Opnd::Stack { .. }*/ => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -327,7 +334,7 @@ impl Assembler
                         asm.load(opnd)
                     }
                 },
-                Opnd::None | Opnd::Value(_) | Opnd::Stack { .. } => unreachable!()
+                Opnd::None | Opnd::Value(_) /*| Opnd::Stack { .. }*/ => unreachable!()
             }
         }
 
@@ -381,7 +388,7 @@ impl Assembler
         }
 
         let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), take(&mut self.side_exits), self.num_locals);
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names));
         let asm = &mut asm_local;
         let mut iterator = self.into_draining_iter();
 
@@ -403,9 +410,9 @@ impl Assembler
                             *opnd = asm.load(*opnd);
                         }
                     },
-                    Opnd::Stack { .. } => {
-                        *opnd = asm.lower_stack_opnd(opnd);
-                    }
+                    //Opnd::Stack { .. } => {
+                    //    *opnd = asm.lower_stack_opnd(opnd);
+                    //}
                     _ => {}
                 };
             }
@@ -445,11 +452,12 @@ impl Assembler
                     if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek()) {
                         if live_ranges[index] == index + 1 {
                             // Check after potentially lowering a stack operand to a register operand
-                            let lowered_dest = if let Opnd::Stack { .. } = dest {
-                                asm.lower_stack_opnd(dest)
-                            } else {
-                                *dest
-                            };
+                            //let lowered_dest = if let Opnd::Stack { .. } = dest {
+                            //    asm.lower_stack_opnd(dest)
+                            //} else {
+                            //    *dest
+                            //};
+                            let lowered_dest = *dest;
                             if out == src && matches!(lowered_dest, Opnd::Reg(_)) {
                                 *out = lowered_dest;
                                 iterator.map_insn_index(asm);
@@ -460,6 +468,7 @@ impl Assembler
 
                     asm.push_insn(insn);
                 }
+                /*
                 // Lower to Joz and Jonz for generating CBZ/CBNZ for compare-with-0-and-branch.
                 ref insn @ Insn::Cmp { ref left, right: ref right @ (Opnd::UImm(0) | Opnd::Imm(0)) } |
                 ref insn @ Insn::Test { ref left, right: ref right @ (Opnd::InsnOut { .. } | Opnd::Reg(_)) } if {
@@ -487,6 +496,7 @@ impl Assembler
                     iterator.map_insn_index(asm);
                     iterator.next_unmapped(); // Pop merged jump instruction
                 }
+                */
                 Insn::CCall { opnds, fptr, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
@@ -743,7 +753,7 @@ impl Assembler
 
     /// Emit platform-specific machine code
     /// Returns a list of GC offsets. Can return failure to signal caller to retry.
-    fn arm64_emit(&mut self, cb: &mut CodeBlock, ocb: &mut Option<&mut OutlinedCb>) -> Result<Vec<u32>, EmitError> {
+    fn arm64_emit(&mut self, cb: &mut CodeBlock) -> Result<Vec<u32>, EmitError> {
         /// Determine how many instructions it will take to represent moving
         /// this value into a register. Note that the return value of this
         /// function must correspond to how many instructions are used to
@@ -833,9 +843,9 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
-                Target::SideExit { .. } => {
-                    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
-                },
+                //Target::SideExit { .. } => {
+                //    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
+                //},
             };
         }
 
@@ -845,7 +855,7 @@ impl Assembler
                 let dst_addr = dst_ptr.as_offset();
                 let src_addr = cb.get_write_ptr().as_offset();
 
-                if cmp_branch_offset_fits_bits((dst_addr - src_addr) / 4) {
+                if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                     // If the offset fits in one instruction, generate cbz or cbnz
                     let bytes = (dst_addr - src_addr) as i32;
                     if branch_if_zero {
@@ -890,6 +900,7 @@ impl Assembler
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
 
+        /*
         /// Compile a side exit if Target::SideExit is given.
         fn compile_side_exit(
             target: Target,
@@ -904,6 +915,7 @@ impl Assembler
                 Ok(target)
             }
         }
+        */
 
         // dbg!(&self.insns);
 
@@ -914,20 +926,22 @@ impl Assembler
         let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
 
         // For each instruction
-        let start_write_pos = cb.get_write_pos();
+        //let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
         while let Some(insn) = self.insns.get(insn_idx) {
-            let src_ptr = cb.get_write_ptr();
+            //let src_ptr = cb.get_write_ptr();
             let had_dropped_bytes = cb.has_dropped_bytes();
-            let old_label_state = cb.get_label_state();
+            //let old_label_state = cb.get_label_state();
             let mut insn_gc_offsets: Vec<u32> = Vec::new();
 
             match insn {
-                Insn::Comment(text) => {
-                    cb.add_comment(text);
+                Insn::Comment(_text) => {
+                    //cb.add_comment(text);
+                    unimplemented!("comments are not supported yet");
                 },
-                Insn::Label(target) => {
-                    cb.write_label(target.unwrap_label_idx());
+                Insn::Label(_target) => {
+                    //cb.write_label(target.unwrap_label_idx());
+                    unimplemented!("labels are not supported yet");
                 },
                 // Report back the current position in the generated code
                 Insn::PosMarker(..) => {
@@ -1065,9 +1079,9 @@ impl Assembler
                         Opnd::CArg { .. } => {
                             unreachable!("C argument operand was not lowered before arm64_emit");
                         }
-                        Opnd::Stack { .. } => {
-                            unreachable!("Stack operand was not lowered before arm64_emit");
-                        }
+                        //Opnd::Stack { .. } => {
+                        //    unreachable!("Stack operand was not lowered before arm64_emit");
+                        //}
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
@@ -1189,7 +1203,7 @@ impl Assembler
                     br(cb, opnd.into());
                 },
                 Insn::Jmp(target) => {
-                    match compile_side_exit(*target, self, ocb)? {
+                    match *target {
                         Target::CodePtr(dst_ptr) => {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
@@ -1207,42 +1221,43 @@ impl Assembler
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
-                        Target::SideExit { .. } => {
-                            unreachable!("Target::SideExit should have been compiled by compile_side_exit")
-                        },
+                        //Target::SideExit { .. } => {
+                        //    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
+                        //},
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
                 },
                 Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::LT}>(cb, *target);
                 },
                 Insn::Jg(target) => {
-                    emit_conditional_jump::<{Condition::GT}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::GT}>(cb, *target);
                 },
                 Insn::Jge(target) => {
-                    emit_conditional_jump::<{Condition::GE}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::GE}>(cb, *target);
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::LS}>(cb, *target);
                 },
                 Insn::Jb(target) => {
-                    emit_conditional_jump::<{Condition::CC}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::CC}>(cb, *target);
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, compile_side_exit(*target, self, ocb)?);
+                    emit_conditional_jump::<{Condition::VS}>(cb, *target);
                 },
                 Insn::Joz(opnd, target) => {
-                    emit_cmp_zero_jump(cb, opnd.into(), true, compile_side_exit(*target, self, ocb)?);
+                    emit_cmp_zero_jump(cb, opnd.into(), true, *target);
                 },
                 Insn::Jonz(opnd, target) => {
-                    emit_cmp_zero_jump(cb, opnd.into(), false, compile_side_exit(*target, self, ocb)?);
+                    emit_cmp_zero_jump(cb, opnd.into(), false, *target);
                 },
-                Insn::IncrCounter { mem, value } => {
+                Insn::IncrCounter { mem: _, value: _ } => {
+                    /*
                     let label = cb.new_label("incr_counter_loop".to_string());
                     cb.write_label(label);
 
@@ -1258,6 +1273,8 @@ impl Assembler
 
                     cmp(cb, Self::SCRATCH1, A64Opnd::new_uimm(0));
                     emit_conditional_jump::<{Condition::NE}>(cb, Target::Label(label));
+                    */
+                    unimplemented!("labels are not supported yet");
                 },
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
@@ -1284,16 +1301,14 @@ impl Assembler
                 }
                 Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
                 Insn::PadInvalPatch => {
-                    while (cb.get_write_pos().saturating_sub(std::cmp::max(start_write_pos, cb.page_start_pos()))) < cb.jmp_ptr_bytes() && !cb.has_dropped_bytes() {
-                        nop(cb);
-                    }
+                    unimplemented!("we haven't needed padding in ZJIT yet");
                 }
             };
 
             // On failure, jump to the next page and retry the current insn
-            if !had_dropped_bytes && cb.has_dropped_bytes() && cb.next_page(src_ptr, emit_jmp_ptr_with_invalidation) {
+            if !had_dropped_bytes && cb.has_dropped_bytes() {
                 // Reset cb states before retrying the current Insn
-                cb.set_label_state(old_label_state);
+                //cb.set_label_state(old_label_state);
 
                 // We don't want label references to cross page boundaries. Signal caller for
                 // retry.
@@ -1324,19 +1339,21 @@ impl Assembler
     }
 
     /// Optimize and compile the stored instructions
-    pub fn compile_with_regs(self, cb: &mut CodeBlock, ocb: Option<&mut OutlinedCb>, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
+    pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
+        /*
         for (idx, name) in asm.label_names.iter().enumerate() {
             let label_idx = cb.new_label(name.to_string());
             assert!(label_idx == idx);
         }
+        */
 
         let start_ptr = cb.get_write_ptr();
+        /*
         let starting_label_state = cb.get_label_state();
-        let mut ocb = ocb; // for &mut
         let emit_result = match asm.arm64_emit(cb, &mut ocb) {
             Err(EmitError::RetryOnNextPage) => {
                 // we want to lower jumps to labels to b.cond instructions, which have a 1 MiB
@@ -1351,29 +1368,32 @@ impl Assembler
             }
             result => result
         };
+        */
+        let emit_result = asm.arm64_emit(cb);
 
         if let (Ok(gc_offsets), false) = (emit_result, cb.has_dropped_bytes()) {
-            cb.link_labels();
+            //cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
             // It should invalidate only the code ranges of the current cb because the code
             // ranges of the other cb might have a memory region that is still PROT_NONE.
-            #[cfg(not(test))]
-            cb.without_page_end_reserve(|cb| {
-                for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
-                    unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
-                }
-            });
+            //#[cfg(not(test))]
+            //cb.without_page_end_reserve(|cb| {
+            //    for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
+            //        unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
+            //    }
+            //});
 
             Some((start_ptr, gc_offsets))
         } else {
-            cb.clear_labels();
+            //cb.clear_labels();
 
             None
         }
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1828,3 +1848,4 @@ mod tests {
         "});
     }
 }
+*/

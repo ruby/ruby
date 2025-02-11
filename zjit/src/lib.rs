@@ -12,7 +12,6 @@ mod backend;
 mod disasm;
 mod options;
 
-use backend::x86_emit;
 use codegen::ZJITState;
 use options::get_option;
 use crate::cruby::*;
@@ -80,7 +79,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
     let cb = ZJITState::get_code_block();
     let start_ptr = cb.get_write_ptr();
-    x86_emit(cb);
+    //x86_emit(cb);
 
     #[cfg(feature = "disasm")]
     if get_option!(dump_disasm) {

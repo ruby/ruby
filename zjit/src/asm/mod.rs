@@ -50,6 +50,10 @@ impl CodeBlock {
         }
     }
 
+    pub fn get_write_pos(&self) -> usize {
+        self.write_pos
+    }
+
     /// Get a (possibly dangling) direct pointer to the current write position
     pub fn get_write_ptr(&self) -> CodePtr {
         self.get_ptr(self.write_pos)
@@ -103,6 +107,11 @@ impl CodeBlock {
                 }
             }
         }
+    }
+
+    /// Check if bytes have been dropped (unwritten because of insufficient space)
+    pub fn has_dropped_bytes(&self) -> bool {
+        self.dropped_bytes
     }
 
     // Add a label reference at the current write position
