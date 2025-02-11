@@ -188,7 +188,9 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 write!(f, "  {insn_id} = ")?;
                 match &fun.insns[insn_id.0] {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
+                    Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
+                    Insn::Jump(target) => { write!(f, "Jump {target}")?; }
                     Insn::Return { val } => { write!(f, "Return {val}")?; }
                     Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
                     Insn::ArraySet { idx, val } => { write!(f, "ArraySet {idx}, {val}")?; }
