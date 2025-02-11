@@ -1,5 +1,3 @@
-//! this links against libruby.a
-//! workaround for https://github.com/rust-lang/cargo/issues/1581#issuecomment-1216924878
 fn main() {
     // TODO search for the .a. On else path, print hint to use make instead
     let ruby_build_dir = "/Users/alan/ruby/build-O0";
