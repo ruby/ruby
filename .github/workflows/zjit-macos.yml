@@ -1,4 +1,4 @@
-name: ZJIT Ubuntu
+name: ZJIT macOS Arm64
 on:
   push:
     paths-ignore:
@@ -24,13 +24,14 @@ jobs:
   cargo:
     name: cargo test
 
-    # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-22.04
+    runs-on: macos-14
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
@@ -54,26 +55,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: 'zjit-bindgen'
-            hint: 'To fix: use patch in logs'
-            configure: '--enable-zjit=dev --disable-yjit --with-gcc=clang-14'
-            libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
-
           - test_task: 'check'
-            configure: '--enable-zjit=dev --disable-yjit'
+            configure: '--enable-yjit=dev --disable-yjit'
             # Test without ZJIT for now
-            #zjit_opts: '--zjit-call-threshold=1'
+            #yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      RUN_OPTS: ${{ matrix.zjit_opts }}
-      YJIT_BENCH_OPTS: ${{ matrix.yjit_bench_opts }}
+      RUN_OPTS: ${{ matrix.yjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
-      RUBY_DEBUG: ci
-      BUNDLE_JOBS: 8 # for yjit-bench
-      RUST_BACKTRACE: 1
 
-    runs-on: ubuntu-22.04
+    runs-on: macos-14
 
     if: >-
       ${{!(false
@@ -91,12 +83,8 @@ jobs:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
 
-      - uses: ./.github/actions/setup/ubuntu
-
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
-        with:
-          ruby-version: '3.0'
-          bundler: none
+      - name: Install libraries
+        uses: ./.github/actions/setup/macos
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -107,42 +95,30 @@ jobs:
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
-      - name: Install Rust
-        if: ${{ matrix.rust_version }}
-        run: rustup install ${{ matrix.rust_version }} --profile minimal
-
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}
-
-      - run: make incs
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
 
-      # Check that the binary was built with ZJIT
-      - name: Check ZJIT enabled
-        run: ./miniruby --zjit -v | grep "+ZJIT"
-
       - name: make ${{ matrix.test_task }}
         run: >-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
-          YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
-        timeout-minutes: 90
+          RUN_OPTS="$RUN_OPTS"
+          SPECOPTS="$SPECOPTS"
+        timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
-          PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
-          YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
-          LIBCLANG_PATH: ${{ matrix.libclang_path }}
+          PRECHECK_BUNDLED_GEMS: 'no'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }}
+          label: ${{ matrix.test_task }} ${{ matrix.configure }} ${{ matrix.yjit_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
