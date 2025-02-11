@@ -227,12 +227,7 @@ pub fn insn_name(opcode: usize) -> String {
     }
 }
 
-#[allow(unused_variables)]
 pub fn insn_len(opcode: usize) -> u32 {
-    #[cfg(test)]
-    panic!("insn_len is a CRuby function, and we don't link against CRuby for Rust testing!");
-
-    #[cfg(not(test))]
     unsafe {
         rb_insn_len(VALUE(opcode)).try_into().unwrap()
     }
@@ -793,6 +788,48 @@ mod manual_defs {
     pub const RUBY_OFFSET_ICE_VALUE: i32 = 8;
 }
 pub use manual_defs::*;
+
+#[cfg(test)]
+pub mod test_utils {
+    use super::*;
+
+    pub fn with_rubyvm(mut func: impl FnMut()) {
+        // Boot the VM
+        unsafe {
+            let mut var: VALUE = Qnil;
+            ruby_init_stack(&mut var as *mut VALUE as *mut _);
+            ruby_init();
+            crate::cruby::ids::init(); // for ID! usages in tests
+        }
+
+        // Invoke callback through rb_protect() so exceptions don't crash the process.
+        // "Fun" double pointer dance to get a thin function pointer to pass through C
+        let mut data: &mut dyn FnMut() = &mut func;
+        unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
+            // SAFETY: shorter lifetime than the data local in the caller frame
+            let callback: &mut &mut dyn FnMut() -> bool = unsafe { std::mem::transmute(data) };
+            callback();
+            Qnil
+        }
+
+        let mut state: c_int = 0;
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
+        // TODO(alan): there should be a way to print the exception instead of swallowing it
+        assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
+    }
+
+    /// Compile an ISeq via `RubyVM::InstructionSequence.compile`.
+    pub fn compile_to_iseq(program: &str) -> *const rb_iseq_t {
+        let bytes = program.as_bytes().as_ptr() as *const c_char;
+        unsafe {
+            let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
+            let wrapped_iseq = rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str);
+            rb_iseqw_to_iseq(wrapped_iseq)
+        }
+    }
+}
+#[cfg(test)]
+pub use test_utils::*;
 
 /// Interned ID values for Ruby symbols and method names.
 /// See [type@crate::cruby::ID] and usages outside of YJIT.

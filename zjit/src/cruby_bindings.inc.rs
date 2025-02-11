@@ -745,6 +745,12 @@ extern "C" {
     pub fn rb_gc_location(obj: VALUE) -> VALUE;
     pub fn rb_gc_writebarrier(old: VALUE, young: VALUE);
     pub fn rb_class_get_superclass(klass: VALUE) -> VALUE;
+    pub fn rb_funcallv(
+        recv: VALUE,
+        mid: ID,
+        argc: ::std::os::raw::c_int,
+        argv: *const VALUE,
+    ) -> VALUE;
     pub static mut rb_mKernel: VALUE;
     pub static mut rb_cBasicObject: VALUE;
     pub static mut rb_cArray: VALUE;
@@ -761,6 +767,8 @@ extern "C" {
     pub static mut rb_cSymbol: VALUE;
     pub static mut rb_cThread: VALUE;
     pub static mut rb_cTrueClass: VALUE;
+    pub fn ruby_init();
+    pub fn ruby_init_stack(addr: *mut ::std::os::raw::c_void);
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
     pub fn rb_ary_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_ary_store(ary: VALUE, key: ::std::os::raw::c_long, val: VALUE);
@@ -774,6 +782,11 @@ extern "C" {
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
     pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;
+    pub fn rb_protect(
+        func: ::std::option::Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
+        args: VALUE,
+        state: *mut ::std::os::raw::c_int,
+    ) -> VALUE;
     pub fn rb_sym2id(obj: VALUE) -> ID;
     pub fn rb_id2sym(id: ID) -> VALUE;
     pub fn rb_intern(name: *const ::std::os::raw::c_char) -> ID;
@@ -821,6 +834,7 @@ extern "C" {
         klass: VALUE,
         id: ID,
     ) -> *const rb_callable_method_entry_t;
+    pub static mut rb_cISeq: VALUE;
     pub static mut rb_mRubyVMFrozenCore: VALUE;
     pub static mut rb_block_param_proxy: VALUE;
     pub fn rb_vm_ep_local_ep(ep: *const VALUE) -> *const VALUE;

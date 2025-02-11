@@ -553,35 +553,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sdfsdf() {
-        use std::ffi::*;
-        extern "C" {
-            fn ruby_init();
-            fn ruby_init_stack(stack_bottom: *const c_void);
-            fn ruby_setup();
-            fn rb_p(arg: VALUE);
-            static mut rb_cISeq: VALUE;
-            fn rb_funcallv(recv: VALUE, mid: ID, argc: c_int, argv: *const VALUE) -> VALUE;
-            fn ruby_process_options(argc: c_int, argv: *const *const c_char);
-        }
-
-        let program = "p nil.itself";
-        let var: VALUE = Qnil;
-        unsafe {
-            ruby_init_stack(&var as *const VALUE as *const _);
-            ruby_init();
-
-
-            // without this ISeq.compile, defined in ruby, won't work
-            // and we crash.
-            // ruby_process_options(0, std::ptr::null());
-            rb_p(rb_cISeq);
-
-            if false {
-                let program_str = rb_utf8_str_new(program.as_bytes() as *const _ as *const std::ffi::c_char, program.len() as _);
-                rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str);
-            }
-        }
+    fn boot_vm() {
+        crate::cruby::with_rubyvm(|| {
+            let program = "nil.itself";
+            let iseq = compile_to_iseq(program);
+            let function = iseq_to_ssa(iseq).unwrap();
+            assert!(matches!(function.insns.get(0), Some(Insn::Snapshot { .. })));
+        });
     }
 
 

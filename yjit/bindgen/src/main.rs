@@ -93,6 +93,12 @@ fn main() {
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
 
+        // For testing
+        .allowlist_function("ruby_init")
+        .allowlist_function("ruby_init_stack")
+        .allowlist_function("rb_funcallv")
+        .allowlist_function("rb_protect")
+
         // For crashing
         .allowlist_function("rb_bug")
 
@@ -177,6 +183,7 @@ fn main() {
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cClass")
+        .allowlist_var("rb_cISeq")
 
         // From include/ruby/internal/fl_type.h
         .allowlist_type("ruby_fl_type")

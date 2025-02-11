@@ -79,6 +79,19 @@ zjit-bench: install update-zjit-bench PHONY
 	$(Q) cd $(srcdir)/zjit-bench && PATH=$(prefix)/bin:$$PATH \
 		./run_once.sh $(ZJIT_BENCH_OPTS) $(ZJIT_BENCH)
 
+
+# TODO rm: In YJIT builds, merge libyjit.a with libruby_static.a
+
+
+#$(Q) $(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(NORMALMAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(MAINLIBS) $(OUTFLAG)$@
+libminiruby.a: miniruby$(EXEEXT)
+	$(ECHO) linking static-library $@
+	echo exe $(EXE_LDFLAGS)
+	echo ld $(LDFLAGS)
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+
+libminiruby: libminiruby.a
+
 update-zjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
