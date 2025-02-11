@@ -24,8 +24,8 @@ module Bundler
       # deprecated
       mswin: [Gem::Platform::MSWIN, CurrentRuby::ALL_RUBY_VERSIONS],
       mswin64: [Gem::Platform::MSWIN64, CurrentRuby::ALL_RUBY_VERSIONS - [18]],
-      mingw: [Gem::Platform::MINGW, CurrentRuby::ALL_RUBY_VERSIONS],
-      x64_mingw: [Gem::Platform::X64_MINGW, CurrentRuby::ALL_RUBY_VERSIONS - [18, 19]],
+      mingw: [Gem::Platform::UNIVERSAL_MINGW, CurrentRuby::ALL_RUBY_VERSIONS],
+      x64_mingw: [Gem::Platform::UNIVERSAL_MINGW, CurrentRuby::ALL_RUBY_VERSIONS - [18, 19]],
     }.each_with_object({}) do |(platform, spec), hash|
       hash[platform] = spec[0]
       spec[1]&.each {|version| hash[:"#{platform}_#{version}"] = spec[0] }
