@@ -421,24 +421,31 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     // TODO(max): Check interrupts
-                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
                     // TODO(max): Merge locals/stack for bb arguments
                     let _branch_id = fun.push_insn(block, Insn::IfFalse { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchif => {
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     // TODO(max): Check interrupts
-                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
                     // TODO(max): Merge locals/stack for bb arguments
                     let _branch_id = fun.push_insn(block, Insn::IfTrue { val: Opnd::Insn(test_id), target: BranchEdge { target, args: state.as_args() } });
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_jump => {
                     let offset = get_arg(pc, 0).as_i64();
                     // TODO(max): Check interrupts
-                    let target = insn_idx_to_block[&insn_idx_at_offset(insn_idx, offset)];
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args() }));
+                    queue.push_back((state.clone(), target, target_idx));
+                    break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_opt_nil_p => {
                     let recv = state.pop()?;
@@ -494,7 +501,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::Return { val: state.pop()? });
-                    break;  // Don't add an edge to the queue
+                    break;  // Don't enqueue the next block as a successor
                 }
 
                 YARVINSN_opt_send_without_block => {
@@ -520,8 +527,10 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
 
             if insn_idx_to_block.contains_key(&insn_idx) {
-                queue.push_back((state, insn_idx_to_block[&insn_idx], insn_idx));
-                break;
+                let target = insn_idx_to_block[&insn_idx];
+                fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args() }));
+                queue.push_back((state, target, insn_idx));
+                break;  // End the block
             }
         }
     }
