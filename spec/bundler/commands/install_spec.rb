@@ -1606,6 +1606,26 @@ RSpec.describe "bundle install with gem sources" do
       expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
       expect(last_command).to be_success
     end
+
+    it "resolves to the latest version if no gems are available locally" do
+      build_repo4 do
+        build_gem "myreline", "0.3.8"
+        build_gem "debug", "0.2.1"
+
+        build_gem "debug", "1.10.0" do |s|
+          s.add_dependency "myreline"
+        end
+      end
+
+      install_gemfile <<~G, "prefer-local": true, verbose: true
+        source "https://gem.repo4"
+
+        gem "debug"
+      G
+
+      expect(out).to include("Fetching debug 1.10.0").and include("Installing debug 1.10.0").and include("Fetching myreline 0.3.8").and include("Installing myreline 0.3.8")
+      expect(last_command).to be_success
+    end
   end
 
   context "with a symlinked configured as bundle path and a gem with symlinks" do
