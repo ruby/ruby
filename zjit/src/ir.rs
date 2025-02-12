@@ -317,11 +317,6 @@ pub enum ParseError {
     StackUnderflow(FrameState),
 }
 
-/// Return the number of locals in the given ISEQ
-fn num_locals(iseq: *const rb_iseq_t) -> u32 {
-    unsafe { get_iseq_body_local_table_size(iseq) }
-}
-
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
