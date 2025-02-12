@@ -625,7 +625,7 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local)
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: @new_platforms)
         packages = additional_base_requirements_to_prevent_downgrades(packages, last_resolve)
         packages = additional_base_requirements_to_force_updates(packages)
         packages
@@ -768,6 +768,7 @@ module Bundler
       @most_specific_non_local_locked_ruby_platform = find_most_specific_locked_ruby_platform
       return if @most_specific_non_local_locked_ruby_platform
 
+      @new_platforms << local_platform
       @platforms << local_platform
       true
     end
@@ -952,6 +953,7 @@ module Bundler
           locked_specs = @originally_locked_specs[name]
 
           if locked_specs.any? && !dep.matches_spec?(locked_specs.first)
+            @gems_to_unlock << name
             dep_changed = true
           elsif locked_specs.empty? && dep_changed == false
             @missing_lockfile_dep = name
@@ -1021,11 +1023,6 @@ module Bundler
             # commonly happens if the version changed in the gemspec
             @gems_to_unlock << name
           end
-        end
-
-        if dep.nil? && requested_dep = requested_dependencies.find {|d| name == d.name }
-          @gems_to_unlock << name
-          deps << requested_dep
         end
 
         converged << s

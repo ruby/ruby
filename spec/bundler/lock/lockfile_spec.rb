@@ -1875,6 +1875,62 @@ RSpec.describe "the lockfile format" do
     L
   end
 
+  it "automatically fixes the lockfile when it has incorrect deps, keeping the locked version" do
+    build_repo4 do
+      build_gem "net-smtp", "0.5.0" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-smtp", "0.5.1" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-protocol", "0.2.2"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "net-smtp"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+            net-protocol
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   shared_examples_for "a lockfile missing dependent specs" do
     it "auto-heals" do
       build_repo4 do
