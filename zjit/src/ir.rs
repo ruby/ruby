@@ -123,13 +123,13 @@ pub struct Block {
 impl Block {
 }
 
-struct FunctionPrinter<'a> {
+pub struct FunctionPrinter<'a> {
     fun: &'a Function,
     display_snapshot: bool,
 }
 
 impl<'a> FunctionPrinter<'a> {
-    fn from(fun: &'a Function) -> FunctionPrinter<'a> {
+    pub fn from(fun: &'a Function) -> FunctionPrinter<'a> {
         FunctionPrinter { fun, display_snapshot: false }
     }
 
@@ -315,6 +315,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
 #[derive(Debug)]
 pub enum ParseError {
     StackUnderflow(FrameState),
+    UnknownOpcode(String),
 }
 
 fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
@@ -543,7 +544,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let recv = state.pop()?;
                     state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args })));
                 }
-                _ => eprintln!("zjit: to_ssa: unknown opcode `{}'", insn_name(opcode as usize)),
+                _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
 
             if insn_idx_to_block.contains_key(&insn_idx) {
@@ -554,9 +555,6 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
         }
     }
-
-    let formatter = FunctionPrinter::from(&fun);
-    print!("SSA:\n{formatter}");
     Ok(fun)
 }
 

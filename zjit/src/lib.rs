@@ -14,9 +14,9 @@ mod disasm;
 mod options;
 
 use codegen::gen_leave;
-use state::ZJITState;
-#[cfg(feature = "disasm")]
+use ir::FunctionPrinter;
 use options::get_option;
+use state::ZJITState;
 use crate::cruby::*;
 
 #[allow(non_upper_case_globals)]
@@ -76,10 +76,26 @@ fn rb_bug_panic_hook() {
     }));
 }
 
+/// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
 #[no_mangle]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
-    ir::iseq_to_ssa(iseq).unwrap();
+    // Compile ISEQ into SSA IR
+    let _ssa = match ir::iseq_to_ssa(iseq) {
+        Ok(ssa) => {
+            if get_option!(dump_ssa) {
+                print!("SSA:\n{}", FunctionPrinter::from(&ssa));
+            }
+            ssa
+        },
+        Err(err) => {
+            if get_option!(dump_ssa) {
+                eprintln!("zjit: to_ssa: {:?}", err);
+            }
+            return std::ptr::null();
+        }
+    };
 
+    // Compile SSA IR into machine code (TODO)
     let cb = ZJITState::get_code_block();
     let start_ptr = cb.get_write_ptr();
     gen_leave(cb);

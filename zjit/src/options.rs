@@ -2,12 +2,14 @@ use std::{ffi::CStr, os::raw::c_char};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
-    /// Dump all compiled instructions of target cb.
+    /// Dump SSA IR generated from ISEQ.
+    pub dump_ssa: bool,
+
+    /// Dump all compiled machine code.
     pub dump_disasm: bool,
 }
 
 /// Macro to get an option value by name
-#[cfg(feature = "disasm")]
 macro_rules! get_option {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
@@ -18,7 +20,6 @@ macro_rules! get_option {
         }
     };
 }
-#[cfg(feature = "disasm")]
 pub(crate) use get_option;
 
 /// Allocate Options on the heap, initialize it, and return the address of it.
@@ -27,6 +28,7 @@ pub(crate) use get_option;
 #[no_mangle]
 pub extern "C" fn rb_zjit_init_options() -> *const u8 {
     let options = Options {
+        dump_ssa: false,
         dump_disasm: false,
     };
     Box::into_raw(Box::new(options)) as *const u8
@@ -57,13 +59,9 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     // Match on the option name and value strings
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
-
+        ("dump-ssa", "") => options.dump_ssa = true,
         ("dump-disasm", "") => options.dump_disasm = true,
-
-        // Option name not recognized
-        _ => {
-            return None;
-        }
+        _ => return None, // Option name not recognized
     }
 
     // Option successfully parsed
