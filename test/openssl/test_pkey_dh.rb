@@ -19,7 +19,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end if ENV["OSSL_TEST_ALL"]
 
   def test_new_break_on_non_fips
-    omit_on_fips
+    omit_on_fips if !aws_lc?
 
     assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
     assert_raise(RuntimeError) do
@@ -29,6 +29,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_new_break_on_fips
     omit_on_non_fips
+    return unless openssl? # This behavior only applies to OpenSSL.
 
     # The block argument is not executed in FIPS case.
     # See https://github.com/ruby/openssl/issues/692 for details.
