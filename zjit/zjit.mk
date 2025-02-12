@@ -93,9 +93,9 @@ zjit-test: libminiruby.a
 	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 
 
-# A library for booting miniruby in tests explain why not use libruby-static.a
-#  - more complicated linking
-#  - initit
+# A library for booting miniruby in tests. TODO(alan) Explain why not use libruby-static.a
+#  - more complex linking
+#  - init uses install path baked in, so complexity to deal with this pre-`make install`
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
 	echo exe $(EXE_LDFLAGS)
