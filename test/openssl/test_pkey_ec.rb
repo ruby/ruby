@@ -152,19 +152,19 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, data1) }
 
     # Sign by #sign_raw
     sig = key.sign_raw(nil, data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error{ key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3

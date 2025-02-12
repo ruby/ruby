@@ -286,6 +286,14 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
       assert_equal base.send(comp), test.send(comp)
     }
   end
+
+  def assert_sign_verify_false_or_error
+    ret = yield
+  rescue => e
+    assert_kind_of(OpenSSL::PKey::PKeyError, e)
+  else
+    assert_equal(false, ret)
+  end
 end
 
 module OpenSSL::Certs
