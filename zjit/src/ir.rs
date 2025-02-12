@@ -348,7 +348,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         let mut state = {
             let mut result = FrameState::new();
             let mut idx = 0;
-            for _ in 0..num_locals(iseq) {
+            for _ in 0..incoming_state.locals.len() {
                 result.locals.push(Opnd::Insn(fun.push_insn(block, Insn::Param { idx })));
                 idx += 1;
             }
