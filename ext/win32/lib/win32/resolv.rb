@@ -82,7 +82,7 @@ module Win32
           nvdom = get_item_property(TCPIP_NT, 'NV Domain')
 
           unless nvdom.empty?
-            @search = [ nvdom ]
+            search = [ nvdom ]
             udmnd = get_item_property(TCPIP_NT, 'UseDomainNameDevolution').to_i
             if udmnd != 0
               if /^\w+\./ =~ nvdom
