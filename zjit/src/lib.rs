@@ -4,6 +4,7 @@
 mod state;
 mod cruby;
 mod ir;
+mod codegen;
 mod stats;
 mod utils;
 mod virtualmem;
@@ -12,6 +13,7 @@ mod backend;
 mod disasm;
 mod options;
 
+use codegen::gen_leave;
 use state::ZJITState;
 #[cfg(feature = "disasm")]
 use options::get_option;
@@ -80,7 +82,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
     let cb = ZJITState::get_code_block();
     let start_ptr = cb.get_write_ptr();
-    //x86_emit(cb);
+    gen_leave(cb);
 
     #[cfg(feature = "disasm")]
     if get_option!(dump_disasm) {
@@ -89,9 +91,5 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         println!("{}", disasm);
     }
 
-    if cfg!(target_arch = "x86_64") {
-        start_ptr.raw_ptr(cb)
-    } else {
-        std::ptr::null()
-    }
+    start_ptr.raw_ptr(cb)
 }

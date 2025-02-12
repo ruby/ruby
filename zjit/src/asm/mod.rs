@@ -130,6 +130,11 @@ impl CodeBlock {
         //    self.dropped_bytes = true; // retry emitting the Insn after next_page
         //}
     }
+
+    /// Make all the code in the region executable. Call this at the end of a write session.
+    pub fn mark_all_executable(&mut self) {
+        self.mem_block.borrow_mut().mark_all_executable();
+    }
 }
 
 impl crate::virtualmem::CodePtrBase for CodeBlock {
