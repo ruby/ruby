@@ -42,7 +42,6 @@
 // Field offsets for the RObject struct
 enum robject_offsets {
     ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr),
-    ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 };
 

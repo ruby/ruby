@@ -806,7 +806,6 @@ module RubyVM::RJIT # :nodoc: all
         heap: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct RObject *)NULL)->as.heap)"),
           ivptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, ivptr)")],
-          iv_index_tbl: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, iv_index_tbl)")],
         ),
         ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), as)")],
