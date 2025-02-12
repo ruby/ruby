@@ -552,6 +552,19 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 mod tests {
     use super::*;
 
+    #[macro_export]
+    macro_rules! assert_matches {
+        ( $x:expr, $pat:pat ) => {
+            {
+                let val = $x;
+                if (!matches!(val, $pat)) {
+                    eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
+                    assert!(false);
+                }
+            }
+        };
+    }
+
     #[test]
     fn boot_vm() {
         crate::cruby::with_rubyvm(|| {
@@ -562,6 +575,27 @@ mod tests {
         });
     }
 
+    #[test]
+    fn test_putobject() {
+        crate::cruby::with_rubyvm(|| {
+            let program = "123";
+            let iseq = compile_to_iseq(program);
+            let function = iseq_to_ssa(iseq).unwrap();
+            assert_matches!(function.insns.get(2), Some(Insn::Return { val: Opnd::Const(VALUE(247)) }));
+        });
+    }
+
+    #[test]
+    fn test_opt_plus() {
+        crate::cruby::with_rubyvm(|| {
+            let program = "1+2";
+            let iseq = compile_to_iseq(program);
+            let function = iseq_to_ssa(iseq).unwrap();
+            // TODO(max): Figure out a clean way to match against String
+            // TODO(max): Figure out a clean way to match against args vec
+            assert_matches!(function.insns.get(3), Some(Insn::Send { self_val: Opnd::Const(VALUE(3)), .. }));
+        });
+    }
 
     /*
     #[test]
