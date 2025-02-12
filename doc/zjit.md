@@ -26,3 +26,6 @@ To run code snippets with ZJIT:
 ```
 ./miniruby --zjit --e0
 ```
+
+You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
+in a way that can be easily shared with other team members.
