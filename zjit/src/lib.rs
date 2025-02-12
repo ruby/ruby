@@ -14,7 +14,6 @@ mod disasm;
 mod options;
 
 use codegen::gen_leave;
-use ir::FunctionPrinter;
 use options::get_option;
 use state::ZJITState;
 use crate::cruby::*;
@@ -83,7 +82,8 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     let _ssa = match ir::iseq_to_ssa(iseq) {
         Ok(ssa) => {
             if get_option!(dump_ssa) {
-                print!("SSA:\n{}", FunctionPrinter::from(&ssa));
+                print!("SSA:\n{}", ir::FunctionPrinter::from(&ssa));
+                //println!("{:#?}", ssa);
             }
             ssa
         },
