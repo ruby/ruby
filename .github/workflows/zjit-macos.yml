@@ -32,11 +32,11 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev --disable-yjit'
             # Test without ZJIT for now
-            #yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+            #zjit_opts: '--zjit-call-threshold=1'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      RUN_OPTS: ${{ matrix.yjit_opts }}
+      RUN_OPTS: ${{ matrix.zjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
 
     runs-on: macos-14
@@ -97,7 +97,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }} ${{ matrix.yjit_opts }}
+          label: ${{ matrix.test_task }} ${{ matrix.configure }} ${{ matrix.zjit_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
