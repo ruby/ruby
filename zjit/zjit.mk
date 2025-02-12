@@ -79,17 +79,6 @@ zjit-bench: install update-zjit-bench PHONY
 	$(Q) cd $(srcdir)/zjit-bench && PATH=$(prefix)/bin:$$PATH \
 		./run_once.sh $(ZJIT_BENCH_OPTS) $(ZJIT_BENCH)
 
-# A library for booting miniruby in tests. TODO(alan) Explain why not use libruby-static.a
-#  - more complex linking
-#  - init uses install path baked in, so complexity to deal with this pre-`make install`
-libminiruby.a: miniruby$(EXEEXT)
-	$(ECHO) linking static-library $@
-	echo exe $(EXE_LDFLAGS)
-	echo ld $(LDFLAGS)
-	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
-
-libminiruby: libminiruby.a
-
 update-zjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
@@ -129,4 +118,15 @@ zjit-test: libminiruby.a
 	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
 	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
 	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
+
+# A library for booting miniruby in tests. TODO(alan) Explain why not use libruby-static.a
+#  - more complex linking
+#  - init uses install path baked in, so complexity to deal with this pre-`make install`
+libminiruby.a: miniruby$(EXEEXT)
+	$(ECHO) linking static-library $@
+	echo exe $(EXE_LDFLAGS)
+	echo ld $(LDFLAGS)
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+
+libminiruby: libminiruby.a
 endif
