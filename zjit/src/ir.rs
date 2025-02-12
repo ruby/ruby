@@ -597,109 +597,13 @@ mod tests {
         });
     }
 
-    /*
     #[test]
-    fn test() {
-        let opcodes = vec![
-            RubyOpcode::Putnil,
-            RubyOpcode::Leave,
-        ];
-        let function = to_ssa(&opcodes);
-        assert_eq!(function, Function {
-            entry_block: BlockId(0),
-            insns: vec![
-                Insn::Return { val: Opnd::Const(Qnil) }
-            ],
-            blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0)] }
-            ],
+    fn test_setlocal_getlocal() {
+        crate::cruby::with_rubyvm(|| {
+            let program = "a = 1; a";
+            let iseq = compile_to_iseq(program);
+            let function = iseq_to_ssa(iseq).unwrap();
+            assert_matches!(function.insns.get(5), Some(Insn::Return { val: Opnd::Const(VALUE(3)) }));
         });
     }
-
-    #[test]
-    fn test_intern() {
-        let opcodes = vec![
-            RubyOpcode::Putstring(Qnil),
-            RubyOpcode::Intern,
-            RubyOpcode::Leave,
-        ];
-        let function = to_ssa(&opcodes);
-        assert_eq!(function, Function {
-            entry_block: BlockId(0),
-            insns: vec![
-                Insn::StringCopy { val: Opnd::Const(Qnil) },
-                Insn::StringIntern { val: Opnd::Insn(InsnId(0)) },
-                Insn::Return { val: Opnd::Insn(InsnId(1)) }
-            ],
-            blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0), InsnId(1), InsnId(2)] }
-            ],
-        });
-    }
-
-    #[test]
-    fn test_newarray0() {
-        let opcodes = vec![
-            RubyOpcode::Newarray(0),
-            RubyOpcode::Leave,
-        ];
-        let function = to_ssa(&opcodes);
-        assert_eq!(function, Function {
-            entry_block: BlockId(0),
-            insns: vec![
-                Insn::NewArray { count: 0 },
-                Insn::Return { val: Opnd::Insn(InsnId(0)) }
-            ],
-            blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0), InsnId(1)] }
-            ],
-        });
-    }
-
-    #[test]
-    fn test_newarray1() {
-        let opcodes = vec![
-            RubyOpcode::Putnil,
-            RubyOpcode::Newarray(1),
-            RubyOpcode::Leave,
-        ];
-        let function = to_ssa(&opcodes);
-        assert_eq!(function, Function {
-            entry_block: BlockId(0),
-            insns: vec![
-                Insn::NewArray { count: 1 },
-                Insn::ArraySet { idx: 0, val: Opnd::Const(Qnil) },
-                Insn::Return { val: Opnd::Insn(InsnId(0)) }
-            ],
-            blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0), InsnId(1), InsnId(2)] }
-            ],
-        });
-    }
-
-    #[test]
-    fn test_newarray2() {
-        let three: VALUE = VALUE::fixnum_from_usize(3);
-        let four: VALUE = VALUE::fixnum_from_usize(4);
-        let opcodes = vec![
-            RubyOpcode::Putobject(three),
-            RubyOpcode::Putobject(four),
-            RubyOpcode::Newarray(2),
-            RubyOpcode::Leave,
-        ];
-        let function = to_ssa(&opcodes);
-        assert_eq!(function, Function {
-            entry_block: BlockId(0),
-            insns: vec![
-                Insn::NewArray { count: 2 },
-                Insn::ArraySet { idx: 1, val: Opnd::Const(four) },
-                Insn::ArraySet { idx: 0, val: Opnd::Const(three) },
-                Insn::Return { val: Opnd::Insn(InsnId(0)) }
-            ],
-            blocks: vec![
-                Block { params: vec![], insns: vec![InsnId(0), InsnId(1), InsnId(2), InsnId(3)] }
-            ],
-        });
-    }
-    */
 }
