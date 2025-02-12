@@ -27,13 +27,15 @@ module RubyVM::RJIT
 end
 
 if RubyVM::RJIT.enabled?
+  fiddle_paths = nil
   begin
     require 'fiddle'
     require 'fiddle/import'
   rescue LoadError
+    return if fiddle_paths
     # Find fiddle from artifacts of bundled gems for make test-all
-    fiddle_paths = %w[.bundle/gems/fiddle-*/lib .bundle/extensions/*/*/fiddle-*].map do |dir|
-      Dir.glob("#{File.expand_path("..", __FILE__)}/#{dir}").first
+    fiddle_paths = %W[#{__dir__}/.bundle/gems/fiddle-*/lib .bundle/extensions/*/*/fiddle-*].map do |dir|
+      Dir.glob(dir).first
     end.compact
     if fiddle_paths.empty?
       return # miniruby doesn't support RJIT
