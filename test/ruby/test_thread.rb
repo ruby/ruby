@@ -1553,4 +1553,37 @@ q.pop
     assert_equal(true, t.pending_interrupt?(Exception))
     assert_equal(false, t.pending_interrupt?(ArgumentError))
   end
+
+  def test_deadlock_backtrace
+    bug21127 = '[ruby-core:120930] [Bug #21127]'
+
+
+    expected_stderr = [
+      /-:12:in 'Thread#join': No live threads left. Deadlock\? \(fatal\)\n/,
+      /2 threads, 2 sleeps current:\w+ main thread:\w+\n/,
+      /\* #<Thread:\w+ sleep_forever>\n/,
+      :*,
+      /^\s*-:6:in 'Object#frame_for_deadlock_test_2'/,
+      :*,
+      /\* #<Thread:\w+ -:10 sleep_forever>\n/,
+      :*,
+      /^\s*-:2:in 'Object#frame_for_deadlock_test_1'/,
+      :*,
+    ]
+
+    assert_in_out_err([], <<-INPUT, [], expected_stderr, bug21127)
+      def frame_for_deadlock_test_1
+        yield
+      end
+
+      def frame_for_deadlock_test_2
+        yield
+      end
+
+      q = Thread::Queue.new
+      t = Thread.new { frame_for_deadlock_test_1 { q.pop } }
+
+      frame_for_deadlock_test_2 { t.join }
+    INPUT
+  end
 end
