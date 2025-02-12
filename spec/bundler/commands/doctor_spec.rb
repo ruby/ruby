@@ -46,7 +46,9 @@ RSpec.describe "bundle doctor" do
     end
 
     it "exits with no message if the installed gem has no C extensions" do
-      expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+      doctor = Bundler::CLI::Doctor.new({})
+      allow(doctor).to receive(:lookup_with_fiddle).and_return(false)
+      expect { doctor.run }.not_to raise_error
       expect(@stdout.string).to be_empty
     end
 
@@ -58,10 +60,6 @@ RSpec.describe "bundle doctor" do
       expect { doctor.run }.not_to raise_error
       expect(@stdout.string).to be_empty
     end
-
-    class Fiddle
-      class DLError < StandardError; end
-    end unless defined?(Fiddle)
 
     it "exits with a message if one of the linked libraries is missing" do
       doctor = Bundler::CLI::Doctor.new({})
@@ -86,7 +84,9 @@ RSpec.describe "bundle doctor" do
     end
 
     it "exits with an error if home contains files that are not readable/writable" do
-      expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+      doctor = Bundler::CLI::Doctor.new({})
+      allow(doctor).to receive(:lookup_with_fiddle).and_return(false)
+      expect { doctor.run }.not_to raise_error
       expect(@stdout.string).to include(
         "Broken links exist in the Bundler home. Please report them to the offending gem's upstream repo. These files are:\n - #{@broken_symlink}"
       )
@@ -106,10 +106,12 @@ RSpec.describe "bundle doctor" do
     end
 
     it "exits with an error if home contains files that are not readable/writable" do
+      doctor = Bundler::CLI::Doctor.new({})
+      allow(doctor).to receive(:lookup_with_fiddle).and_return(false)
       allow(@stat).to receive(:uid) { Process.uid }
       allow(File).to receive(:writable?).with(@unwritable_file) { false }
       allow(File).to receive(:readable?).with(@unwritable_file) { false }
-      expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+      expect { doctor.run }.not_to raise_error
       expect(@stdout.string).to include(
         "Files exist in the Bundler home that are not readable/writable by the current user. These files are:\n - #{@unwritable_file}"
       )
@@ -122,9 +124,11 @@ RSpec.describe "bundle doctor" do
       end
 
       it "exits with an error if home contains files that are not readable/writable and are not owned by the current user" do
+        doctor = Bundler::CLI::Doctor.new({})
+        allow(doctor).to receive(:lookup_with_fiddle).and_return(false)
         allow(File).to receive(:writable?).with(@unwritable_file) { false }
         allow(File).to receive(:readable?).with(@unwritable_file) { false }
-        expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+        expect { doctor.run }.not_to raise_error
         expect(@stdout.string).to include(
           "Files exist in the Bundler home that are owned by another user, and are not readable/writable. These files are:\n - #{@unwritable_file}"
         )
@@ -132,9 +136,11 @@ RSpec.describe "bundle doctor" do
       end
 
       it "exits with a warning if home contains files that are read/write but not owned by current user" do
+        doctor = Bundler::CLI::Doctor.new({})
+        allow(doctor).to receive(:lookup_with_fiddle).and_return(false)
         allow(File).to receive(:writable?).with(@unwritable_file) { true }
         allow(File).to receive(:readable?).with(@unwritable_file) { true }
-        expect { Bundler::CLI::Doctor.new({}).run }.not_to raise_error
+        expect { doctor.run }.not_to raise_error
         expect(@stdout.string).to include(
           "Files exist in the Bundler home that are owned by another user, but are still readable/writable. These files are:\n - #{@unwritable_file}"
         )
