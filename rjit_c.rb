@@ -1523,10 +1523,6 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
-  def C.rb_id_table
-    CType::Stub.new(:rb_id_table)
-  end
-
   def C.vm_call_handler
     CType::Stub.new(:vm_call_handler)
   end
@@ -1557,6 +1553,10 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_fiber_t
     CType::Stub.new(:rb_fiber_t)
+  end
+
+  def C.rb_id_table
+    CType::Stub.new(:rb_id_table)
   end
 
   def C.rb_trace_arg_struct
