@@ -39,7 +39,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_ctx_options_config
-    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+    omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
     Tempfile.create("openssl.cnf") { |f|
       f.puts(<<~EOF)
@@ -680,6 +680,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_post_connect_check_with_anon_ciphers
+    omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
+
     ctx_proc = -> ctx {
       ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.ciphers = "aNULL"
@@ -1410,7 +1412,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_minmax_version_system_default
-    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+    omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
     Tempfile.create("openssl.cnf") { |f|
       f.puts(<<~EOF)
@@ -1454,7 +1456,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_respect_system_default_min
-    omit "LibreSSL does not support OPENSSL_CONF" if libressl?
+    omit "LibreSSL and AWS-LC do not support OPENSSL_CONF" if libressl? || aws_lc?
 
     Tempfile.create("openssl.cnf") { |f|
       f.puts(<<~EOF)
@@ -1737,20 +1739,22 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       end
     end
 
-    # DHE
-    # TODO: SSL_CTX_set1_groups() is required for testing this with TLS 1.3
-    ctx_proc2 = proc { |ctx|
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      ctx.ciphers = "EDH"
-      ctx.tmp_dh = Fixtures.pkey("dh-1")
-    }
-    start_server(ctx_proc: ctx_proc2) do |port|
-      ctx = OpenSSL::SSL::SSLContext.new
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      ctx.ciphers = "EDH"
-      server_connect(port, ctx) { |ssl|
-        assert_instance_of OpenSSL::PKey::DH, ssl.tmp_key
+    if !aws_lc? # AWS-LC does not support DHE ciphersuites.
+      # DHE
+      # TODO: SSL_CTX_set1_groups() is required for testing this with TLS 1.3
+      ctx_proc2 = proc { |ctx|
+        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+        ctx.ciphers = "EDH"
+        ctx.tmp_dh = Fixtures.pkey("dh-1")
       }
+      start_server(ctx_proc: ctx_proc2) do |port|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+        ctx.ciphers = "EDH"
+        server_connect(port, ctx) { |ssl|
+          assert_instance_of OpenSSL::PKey::DH, ssl.tmp_key
+        }
+      end
     end
 
     # ECDHE
@@ -1814,12 +1818,13 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx2.enable_fallback_scsv
       ctx2.max_version = OpenSSL::SSL::TLS1_1_VERSION
       s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+      # AWS-LC has slightly different error messages in all-caps.
       t = Thread.new {
-        assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+        assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback|INAPPROPRIATE_FALLBACK/) {
           s2.connect
         }
       }
-      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback/) {
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /inappropriate fallback|INAPPROPRIATE_FALLBACK/) {
         s1.accept
       }
       t.join
@@ -1830,6 +1835,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_tmp_dh_callback
+    omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
+
     dh = Fixtures.pkey("dh-1")
     called = false
     ctx_proc = -> ctx {
@@ -1880,9 +1887,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_ciphersuites_method_bogus_csuite
     ssl_ctx = OpenSSL::SSL::SSLContext.new
+    # AWS-LC has slightly different error messages in all-caps.
     assert_raise_with_message(
       OpenSSL::SSL::SSLError,
-      /SSL_CTX_set_ciphersuites: no cipher match/i
+      /SSL_CTX_set_ciphersuites: (no cipher match|NO_CIPHER_MATCH)/i
     ) { ssl_ctx.ciphersuites = 'BOGUS' }
   end
 
@@ -1920,13 +1928,16 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_ciphers_method_bogus_csuite
     ssl_ctx = OpenSSL::SSL::SSLContext.new
 
+    # AWS-LC has slightly different error messages in all-caps.
     assert_raise_with_message(
       OpenSSL::SSL::SSLError,
-      /SSL_CTX_set_cipher_list: no cipher match/i
+      /SSL_CTX_set_cipher_list: (no cipher match|NO_CIPHER_MATCH)/i
     ) { ssl_ctx.ciphers = 'BOGUS' }
   end
 
   def test_connect_works_when_setting_dh_callback_to_nil
+    omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
+
     ctx_proc = -> ctx {
       ctx.max_version = :TLS1_2
       ctx.ciphers = "DH:!NULL" # use DH
@@ -1942,6 +1953,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_tmp_dh
+    omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
+
     dh = Fixtures.pkey("dh-1")
     ctx_proc = -> ctx {
       ctx.max_version = :TLS1_2
@@ -2009,9 +2022,8 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
 
   def test_security_level
     ctx = OpenSSL::SSL::SSLContext.new
-    begin
-      ctx.security_level = 1
-    rescue NotImplementedError
+    ctx.security_level = 1
+    if aws_lc? # AWS-LC does not support security levels.
       assert_equal(0, ctx.security_level)
       return
     end
