@@ -94,6 +94,12 @@ jobs:
           ruby-version: '3.0'
           bundler: none
 
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: nextest@0.9
+        if: ${{ matrix.test_task == 'test-zjit' }}
+
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src
