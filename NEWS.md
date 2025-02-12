@@ -38,6 +38,7 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
+* json 2.10.1
 * prism 1.3.0
 * psych 5.2.3
 * stringio 3.1.3.dev
