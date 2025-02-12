@@ -105,6 +105,11 @@ jobs:
           ruby-version: '3.0'
           bundler: none
 
+      - uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
+        with:
+          name: src-before-build-baseruby
+          path: ${{ github.workspace }}/src
+
       - name: Build baseruby
         run: |
           set -ex
@@ -114,11 +119,22 @@ jobs:
           make
           make install
 
+      - uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
+        with:
+          name: src-after-build-baseruby
+          path: ${{ github.workspace }}/src
+
+      - uses: mxschmitt/action-tmate@v3
       - name: Download config.guess with wasi version
         run: |
           rm tool/config.guess tool/config.sub
           ruby tool/downloader.rb -d tool -e gnu config.guess config.sub
         working-directory: src
+
+      - uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
+        with:
+          name: src-after-downloader
+          path: ${{ github.workspace }}/src
 
       - name: Run configure
         run: |
