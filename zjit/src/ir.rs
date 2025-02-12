@@ -484,20 +484,20 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
 
                 YARVINSN_opt_plus => {
-                    let v0 = state.pop()?;
-                    let v1 = state.pop()?;
-                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "+".into() }, args: vec![v0] })));
+                    let right = state.pop()?;
+                    let left = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] })));
                 }
 
                 YARVINSN_opt_lt => {
-                    let v0 = state.pop()?;
-                    let v1 = state.pop()?;
-                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<".into() }, args: vec![v0] })));
+                    let right = state.pop()?;
+                    let left = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] })));
                 }
                 YARVINSN_opt_ltlt => {
-                    let v0 = state.pop()?;
-                    let v1 = state.pop()?;
-                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: v1, call_info: CallInfo { name: "<<".into() }, args: vec![v0] })));
+                    let right = state.pop()?;
+                    let left = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<<".into() }, args: vec![right] })));
                 }
                 YARVINSN_opt_aset => {
                     let set = state.pop()?;
