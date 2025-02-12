@@ -28,6 +28,8 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   end
 
   def test_fips_mode_is_reentrant
+    return if aws_lc? # AWS-LC's FIPS mode is decided at compile time.
+
     assert_separately(["-ropenssl"], <<~"end;")
       OpenSSL.fips_mode = false
       OpenSSL.fips_mode = false
@@ -35,7 +37,7 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   end
 
   def test_fips_mode_get_with_fips_mode_set
-    omit('OpenSSL is not FIPS-capable') unless OpenSSL::OPENSSL_FIPS
+    omit('OpenSSL is not FIPS-capable') unless OpenSSL::OPENSSL_FIPS and !aws_lc? # AWS-LC's FIPS mode is decided at compile time.
 
     assert_separately(["-ropenssl"], <<~"end;")
       begin
