@@ -104,6 +104,16 @@ struct iseq_compile_data {
     const VALUE err_info;
     const VALUE catch_table_ary;	/* Array */
 
+    /* Mirror fields from ISEQ_BODY so they are accessible during iseq setup */
+    unsigned int iseq_size;
+    VALUE *iseq_encoded; /* half-encoded iseq (insn addr and operands) */
+    bool is_single_mark_bit; /* identifies whether mark bits are single or a list */
+
+    union {
+        iseq_bits_t * list; /* Find references for GC */
+        iseq_bits_t single;
+    } mark_bits;
+
     /* GC is not needed */
     struct iseq_label_data *start_label;
     struct iseq_label_data *end_label;
@@ -194,7 +204,7 @@ VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
                             VALUE locals, VALUE args,
                             VALUE exception, VALUE body);
-void rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *arena);
+void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
