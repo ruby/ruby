@@ -52,7 +52,7 @@ jobs:
             configure: '--enable-zjit=dev --disable-yjit --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
-          - test_task: 'test-zjit'
+          - test_task: 'zjit-test'
             configure: '--enable-zjit=dev --disable-yjit'
 
           - test_task: 'check'
@@ -97,7 +97,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'test-zjit' }}
+        if: ${{ matrix.test_task == 'zjit-test' }}
 
 
       - uses: ./.github/actions/setup/directories

@@ -51,7 +51,7 @@ jobs:
           - test_task: 'check'
             configure: '--enable-zjit=dev --disable-yjit'
 
-          - test_task: 'test-zjit'
+          - test_task: 'zjit-test'
             configure: '--enable-zjit=dev --disable-yjit'
             # Test without ZJIT for now
             #yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
@@ -94,7 +94,7 @@ jobs:
       - uses: taiki-e/install-action@v2
         with:
           tool: nextest@0.9
-        if: ${{ matrix.test_task == 'test-zjit' }}
+        if: ${{ matrix.test_task == 'zjit-test' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
