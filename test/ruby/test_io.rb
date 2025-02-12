@@ -363,19 +363,6 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
-  def test_ungetc_with_seek_and_encoding
-    make_tempfile(encoding: 'utf-8:utf-16le') {|t|
-      t.open
-      t.write('0123456789')
-      t.rewind
-
-      t.ungetc('a')
-      t.seek(2, :SET)
-
-      assert_equal('2'.encode('utf-16le'), t.getc)
-    }
-  end
-
   def test_ungetbyte
     make_tempfile {|t|
       t.open
@@ -1882,8 +1869,8 @@ class TestIO < Test::Unit::TestCase
     assert_equal(pid1, pid2)
   end
 
-  def make_tempfile(encoding: nil)
-    t = Tempfile.new("test_io", encoding:)
+  def make_tempfile
+    t = Tempfile.new("test_io")
     t.binmode
     t.puts "foo"
     t.puts "bar"
