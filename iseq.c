@@ -232,7 +232,30 @@ iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original
 }
 
 static void
-rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
+rb_iseq_mark_and_move_each_compile_data_value(const rb_iseq_t *iseq, VALUE *original_iseq)
+{
+    unsigned int size;
+    VALUE *code;
+    const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
+
+    size = compile_data->iseq_size;
+    code = compile_data->iseq_encoded;
+
+    // Embedded VALUEs
+    if (compile_data->mark_bits.list) {
+        if(compile_data->is_single_mark_bit) {
+            iseq_scan_bits(0, compile_data->mark_bits.single, code, original_iseq);
+        }
+        else {
+            for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+                iseq_bits_t bits = compile_data->mark_bits.list[i];
+                iseq_scan_bits(i, bits, code, original_iseq);
+            }
+        }
+    }
+}
+static void
+rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_iseq)
 {
     unsigned int size;
     VALUE *code;
@@ -280,11 +303,9 @@ rb_iseq_mark_and_move_each_value(const rb_iseq_t *iseq, VALUE *original_iseq)
             iseq_scan_bits(0, body->mark_bits.single, code, original_iseq);
         }
         else {
-            if (body->mark_bits.list) {
-                for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
-                    iseq_bits_t bits = body->mark_bits.list[i];
-                    iseq_scan_bits(i, bits, code, original_iseq);
-                }
+            for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
+                iseq_bits_t bits = body->mark_bits.list[i];
+                iseq_scan_bits(i, bits, code, original_iseq);
             }
         }
     }
@@ -327,7 +348,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        rb_iseq_mark_and_move_each_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+        rb_iseq_mark_and_move_each_body_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
         rb_gc_mark_and_move(&body->variable.coverage);
         rb_gc_mark_and_move(&body->variable.pc2branchindex);
@@ -394,14 +415,8 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
         const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-        if (!reference_updating) {
-            /* The operands in each instruction needs to be pinned because
-             * if auto-compaction runs in iseq_set_sequence, then the objects
-             * could exist on the generated_iseq buffer, which would not be
-             * reference updated which can lead to T_MOVED (and subsequently
-             * T_NONE) objects on the iseq. */
-            rb_iseq_mark_and_pin_insn_storage(compile_data->insn.storage_head);
-        }
+        rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
+        rb_iseq_mark_and_move_each_compile_data_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
         rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
         rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
