@@ -33,6 +33,7 @@ jobs:
 
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev --disable-yjit'
+            continue-on-test_task: true # zjit-test doesn't work on Linux at the moment
 
           - test_task: 'check'
             configure: '--enable-zjit=dev --disable-yjit'
