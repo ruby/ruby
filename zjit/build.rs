@@ -1,8 +1,13 @@
 fn main() {
     use std::env;
 
-    // TODO search for the .a. On else path, print hint to use make instead
     if let Ok(ruby_build_dir) = env::var("RUBY_BUILD_DIR") {
+        // Link against libminiruby
+        println!("cargo:rustc-link-search=native={ruby_build_dir}");
+        println!("cargo:rustc-link-lib=static:-bundle=miniruby");
+
+        // System libraries that libminiruby needs. Has to be
+        // ordered after -lminiruby above.
         let link_flags = env::var("RUBY_LD_FLAGS").unwrap();
 
         let mut split_iter = link_flags.split(" ");
@@ -15,8 +20,5 @@ fn main() {
                 println!("cargo:rustc-link-lib={lib_name}");
             }
         }
-
-        println!("cargo:rustc-link-lib=static:-bundle=miniruby");
-        println!("cargo:rustc-link-search=native={ruby_build_dir}");
     }
 }
