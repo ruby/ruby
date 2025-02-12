@@ -91,5 +91,9 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         println!("{}", disasm);
     }
 
-    start_ptr.raw_ptr(cb)
+    if false {
+        start_ptr.raw_ptr(cb)
+    } else {
+        std::ptr::null()
+    }
 }
