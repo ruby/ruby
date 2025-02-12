@@ -39,13 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
-      - run: RUST_BACKTRACE=1 cargo test
-        working-directory: zjit
-
-      # Also compile and test with all features enabled
-      - run: RUST_BACKTRACE=1 cargo test --all-features
-        working-directory: zjit
-
       # Check that we can build in release mode too
       - run: cargo build --release
         working-directory: zjit
@@ -57,6 +50,9 @@ jobs:
         include:
           - test_task: 'check'
             configure: '--enable-yjit=dev --disable-yjit'
+
+          - test_task: 'test-zjit'
+            configure: '--enable-zjit=dev --disable-yjit'
             # Test without ZJIT for now
             #yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
 
