@@ -309,7 +309,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.to_der, group2.to_der
     assert_equal group1, group2
     group2.asn1_flag ^=OpenSSL::PKey::EC::NAMED_CURVE
-    assert_not_equal group1.to_der, group2.to_der
+    # AWS-LC does not support serializing explicit curves.
+    unless aws_lc?
+      assert_not_equal group1.to_der, group2.to_der
+    end
     assert_equal group1, group2
 
     group3 = group1.dup
