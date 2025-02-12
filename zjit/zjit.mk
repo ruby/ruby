@@ -79,20 +79,6 @@ zjit-bench: install update-zjit-bench PHONY
 	$(Q) cd $(srcdir)/zjit-bench && PATH=$(prefix)/bin:$$PATH \
 		./run_once.sh $(ZJIT_BENCH_OPTS) $(ZJIT_BENCH)
 
-
-# We need `cargo nextest` for its one-process-per execution execution model
-# since we can only boot the VM once per process. Normal `cargo test`
-# runs tests in threads and can't handle this.
-#
-# On darwin, it's available through `brew install cargo-nextest`. See
-# https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
-zjit-test: libminiruby.a
-	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
-	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
-	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
-	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
-
-
 # A library for booting miniruby in tests. TODO(alan) Explain why not use libruby-static.a
 #  - more complex linking
 #  - init uses install path baked in, so complexity to deal with this pre-`make install`
@@ -131,4 +117,16 @@ zjit-bindgen: zjit.$(OBJEXT)
 
 check-zjit-bindgen-unused: yjit.$(OBJEXT)
 	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")
+
+# We need `cargo nextest` for its one-process-per execution execution model
+# since we can only boot the VM once per process. Normal `cargo test`
+# runs tests in threads and can't handle this.
+#
+# On darwin, it's available through `brew install cargo-nextest`. See
+# https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
+zjit-test: libminiruby.a
+	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
+	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
+	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
+	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
 endif
