@@ -218,9 +218,6 @@ class Downloader
         $stdout.puts "#{file} already exists"
         $stdout.flush
       end
-      if cache_save
-        save_cache(cache, file, name)
-      end
       return file.to_path
     end
     if dryrun
