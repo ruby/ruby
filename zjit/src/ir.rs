@@ -598,14 +598,13 @@ mod tests {
         });
     }
 
-    #[ignore] // TODO: remove this once the test passes
     #[test]
     fn test_setlocal_getlocal() {
         crate::cruby::with_rubyvm(|| {
             let program = "a = 1; a";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_ssa(iseq).unwrap();
-            assert_matches!(function.insns.get(5), Some(Insn::Return { val: Opnd::Const(VALUE(3)) }));
+            assert_matches!(function.insns.get(4), Some(Insn::Return { val: Opnd::Const(VALUE(3)) }));
         });
     }
 }
