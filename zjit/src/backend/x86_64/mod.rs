@@ -506,23 +506,17 @@ impl Assembler
                 // Set up RBP to work with frame pointer unwinding
                 // (e.g. with Linux `perf record --call-graph fp`)
                 Insn::FrameSetup => {
-                    unimplemented!("frames are not supported yet");
-                    /*
-                    if get_option!(frame_pointer) {
+                    if false { // We don't support --zjit-perf yet
                         push(cb, RBP);
                         mov(cb, RBP, RSP);
                         push(cb, RBP);
                     }
-                    */
                 },
                 Insn::FrameTeardown => {
-                    unimplemented!("frames are not supported yet");
-                    /*
-                    if get_option!(frame_pointer) {
+                    if false { // We don't support --zjit-perf yet
                         pop(cb, RBP);
                         pop(cb, RBP);
                     }
-                    */
                 },
 
                 Insn::Add { left, right, .. } => {

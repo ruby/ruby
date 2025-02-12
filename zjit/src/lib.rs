@@ -13,7 +13,7 @@ mod backend;
 mod disasm;
 mod options;
 
-use codegen::gen_leave;
+use codegen::gen_function;
 use options::get_option;
 use state::ZJITState;
 use crate::cruby::*;
@@ -78,15 +78,11 @@ fn rb_bug_panic_hook() {
 /// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
 #[no_mangle]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+    // TODO: acquire the VM barrier
+
     // Compile ISEQ into SSA IR
-    let _ssa = match ir::iseq_to_ssa(iseq) {
-        Ok(ssa) => {
-            if get_option!(dump_ssa) {
-                print!("SSA:\n{}", ir::FunctionPrinter::from(&ssa));
-                //println!("{:#?}", ssa);
-            }
-            ssa
-        },
+    let ssa = match ir::iseq_to_ssa(iseq) {
+        Ok(ssa) => ssa,
         Err(err) => {
             if get_option!(dump_ssa) {
                 eprintln!("zjit: to_ssa: {:?}", err);
@@ -97,19 +93,8 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
     // Compile SSA IR into machine code (TODO)
     let cb = ZJITState::get_code_block();
-    let start_ptr = cb.get_write_ptr();
-    gen_leave(cb);
-
-    #[cfg(feature = "disasm")]
-    if get_option!(dump_disasm) {
-        let end_ptr = cb.get_write_ptr();
-        let disasm = disasm::disasm_addr_range(start_ptr.raw_ptr(cb) as usize, end_ptr.raw_ptr(cb) as usize);
-        println!("{}", disasm);
-    }
-
-    if false {
-        start_ptr.raw_ptr(cb)
-    } else {
-        std::ptr::null()
+    match gen_function(cb, &ssa) {
+        Some(start_ptr) => start_ptr.raw_ptr(cb),
+        None => std::ptr::null(),
     }
 }

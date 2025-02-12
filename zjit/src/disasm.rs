@@ -7,13 +7,21 @@ pub fn disasm_addr_range(start_addr: usize, end_addr: usize) -> String {
     // Initialize capstone
     use capstone::prelude::*;
 
-    // TODO: switch the architecture once we support Arm
+    #[cfg(target_arch = "x86_64")]
     let mut cs = Capstone::new()
         .x86()
         .mode(arch::x86::ArchMode::Mode64)
         .syntax(arch::x86::ArchSyntax::Intel)
         .build()
         .unwrap();
+    #[cfg(target_arch = "aarch64")]
+    let mut cs = Capstone::new()
+        .arm64()
+        .mode(arch::arm64::ArchMode::Arm)
+        .detail(true)
+        .build()
+        .unwrap();
+
     cs.set_skipdata(true).unwrap();
 
     // Disassemble the instructions

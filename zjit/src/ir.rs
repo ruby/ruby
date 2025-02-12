@@ -1,7 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::cruby::*;
+use crate::{cruby::*, get_option};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -123,13 +123,13 @@ pub struct Block {
 impl Block {
 }
 
-pub struct FunctionPrinter<'a> {
+struct FunctionPrinter<'a> {
     fun: &'a Function,
     display_snapshot: bool,
 }
 
 impl<'a> FunctionPrinter<'a> {
-    pub fn from(fun: &'a Function) -> FunctionPrinter<'a> {
+    fn from(fun: &'a Function) -> FunctionPrinter<'a> {
         FunctionPrinter { fun, display_snapshot: false }
     }
 
@@ -145,7 +145,7 @@ pub struct Function {
 
     // TODO: get method name and source location from the ISEQ
 
-    insns: Vec<Insn>,
+    pub insns: Vec<Insn>,
     blocks: Vec<Block>,
     entry_block: BlockId,
 }
@@ -555,6 +555,12 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
         }
     }
+
+    if get_option!(dump_ssa) {
+        let formatter = FunctionPrinter::from(&fun);
+        print!("SSA:\n{formatter}");
+    }
+
     Ok(fun)
 }
 
