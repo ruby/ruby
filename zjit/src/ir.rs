@@ -317,6 +317,12 @@ pub enum ParseError {
     StackUnderflow(FrameState),
 }
 
+fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
+    let result = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
+    assert!(result >= 0, "Can't have negative # of parameters");
+    result as usize
+}
+
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
@@ -332,7 +338,12 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
     let mut queue = std::collections::VecDeque::new();
-    queue.push_back((FrameState::new(), fun.entry_block, /*insn_idx=*/0 as u32));
+    let mut entry_state = FrameState::new();
+    for idx in 0..num_lead_params(iseq) {
+        // TODO(max): Figure out where these need to start in the frame. It's not local index 0
+        entry_state.locals.push(Opnd::Insn(fun.push_insn(fun.entry_block, Insn::Param { idx })));
+    }
+    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0 as u32));
 
     let mut visited = HashSet::new();
 
@@ -340,7 +351,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
-        let mut state = {
+        let mut state = if insn_idx == 0 { incoming_state.clone() } else {
             let mut result = FrameState::new();
             let mut idx = 0;
             for _ in 0..incoming_state.locals.len() {
