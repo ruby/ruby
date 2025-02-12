@@ -370,7 +370,8 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_nop => {},
                 YARVINSN_putnil => { state.push(Opnd::Const(Qnil)); },
                 YARVINSN_putobject => { state.push(Opnd::Const(get_arg(pc, 0))); },
-                YARVINSN_putstring => {
+                YARVINSN_putstring | YARVINSN_putchilledstring => {
+                    // TODO(max): Do something different for chilled string
                     let val = Opnd::Const(get_arg(pc, 0));
                     let insn_id = fun.push_insn(block, Insn::StringCopy { val });
                     state.push(Opnd::Insn(insn_id));
@@ -482,6 +483,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let right = state.pop()?;
                     let left = state.pop()?;
                     state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] })));
+                }
+                YARVINSN_opt_div => {
+                    let right = state.pop()?;
+                    let left = state.pop()?;
+                    state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] })));
                 }
 
                 YARVINSN_opt_lt => {
