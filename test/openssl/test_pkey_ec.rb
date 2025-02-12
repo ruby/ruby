@@ -89,14 +89,19 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
     # Behavior of EVP_PKEY_public_check changes between OpenSSL 1.1.1 and 3.0
     # The public key does not match the private key
-    key4 = OpenSSL::PKey.read(<<~EOF)
+    ec_key_data = <<~EOF
     -----BEGIN EC PRIVATE KEY-----
     MHcCAQEEIP+TT0V8Fndsnacji9tyf6hmhHywcOWTee9XkiBeJoVloAoGCCqGSM49
     AwEHoUQDQgAEBkhhJIU/2/YdPSlY2I1k25xjK4trr5OXSgXvBC21PtY0HQ7lor7A
     jzT0giJITqmcd81fwGw5+96zLcdxTF1hVQ==
     -----END EC PRIVATE KEY-----
     EOF
-    assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+    if aws_lc? # AWS-LC automatically does key checks on the parsed key.
+      assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(ec_key_data) }
+    else
+      key4 = OpenSSL::PKey.read(ec_key_data)
+      assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+    end
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)

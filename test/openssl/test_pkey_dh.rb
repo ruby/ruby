@@ -123,11 +123,22 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ]))
     assert_equal(true, dh1.params_ok?)
 
-    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh0.p + 1),
-      OpenSSL::ASN1::Integer(dh0.g)
-    ]))
-    assert_equal(false, dh2.params_ok?)
+    # AWS-LC automatically does parameter checks on the parsed params.
+    if aws_lc?
+      assert_raise(OpenSSL::PKey::DHError) {
+        OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(dh0.p + 1),
+          OpenSSL::ASN1::Integer(dh0.g)
+        ]))
+      }
+    else
+      dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::Integer(dh0.p + 1),
+        OpenSSL::ASN1::Integer(dh0.g)
+      ]))
+      assert_equal(false, dh2.params_ok?)
+    end
+
   end
 
   def test_params
