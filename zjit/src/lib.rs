@@ -14,7 +14,7 @@ mod disasm;
 mod options;
 
 use codegen::gen_function;
-use options::get_option;
+use options::{get_option, Options};
 use state::ZJITState;
 use crate::cruby::*;
 
@@ -23,13 +23,14 @@ use crate::cruby::*;
 pub static mut rb_zjit_enabled_p: bool = false;
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
-#[cfg(not(test))]
 #[no_mangle]
 pub extern "C" fn rb_zjit_init(options: *const u8) {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
-        ZJITState::init(options);
+        let options = unsafe { Box::from_raw(options as *mut Options) };
+        ZJITState::init(*options);
+        std::mem::drop(options);
 
         rb_bug_panic_hook();
 

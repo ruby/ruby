@@ -15,8 +15,8 @@ static mut ZJIT_STATE: Option<ZJITState> = None;
 
 impl ZJITState {
     /// Initialize the ZJIT globals, given options allocated by rb_zjit_init_options()
-    #[cfg(not(test))]
-    pub fn init(options: *const u8) {
+    pub fn init(options: Options) {
+        #[cfg(not(test))]
         let cb = {
             use crate::cruby::*;
 
@@ -52,25 +52,13 @@ impl ZJITState {
 
             CodeBlock::new(mem_block.clone())
         };
-
-        let options = unsafe { Box::from_raw(options as *mut Options) };
-        let zjit_state = ZJITState {
-            code_block: cb,
-            options: *options,
-        };
+        #[cfg(test)]
+        let cb = CodeBlock::new_dummy();
 
         // Initialize the codegen globals instance
-        unsafe { ZJIT_STATE = Some(zjit_state); }
-        std::mem::drop(options);
-    }
-
-    /// Initialize the ZJIT globals for tests
-    #[cfg(test)]
-    pub fn init() {
-        use crate::options::init_options;
         let zjit_state = ZJITState {
-            code_block: CodeBlock::new_dummy(),
-            options: init_options(),
+            code_block: cb,
+            options,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }

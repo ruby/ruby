@@ -791,7 +791,7 @@ pub use manual_defs::*;
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::state::ZJITState;
+    use crate::{options::init_options, state::ZJITState};
 
     use super::*;
 
@@ -815,7 +815,7 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        ZJITState::init();
+        ZJITState::init(init_options());
 
         let mut state: c_int = 0;
         unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
