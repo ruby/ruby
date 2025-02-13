@@ -5,7 +5,7 @@ use crate::asm::x86_64::*;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
 use crate::backend::ir::*;
-use crate::utils::*;
+use crate::cast::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;

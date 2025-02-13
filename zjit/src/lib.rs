@@ -6,7 +6,7 @@ mod cruby;
 mod ir;
 mod codegen;
 mod stats;
-mod utils;
+mod cast;
 mod virtualmem;
 mod asm;
 mod backend;

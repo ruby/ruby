@@ -5,7 +5,7 @@ use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::virtualmem::CodePtr;
-use crate::utils::*;
+use crate::cast::*;
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
