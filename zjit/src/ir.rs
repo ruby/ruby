@@ -1,7 +1,7 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, get_option};
+use crate::{cruby::*, get_option, options::DumpSSA};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -129,7 +129,7 @@ struct FunctionPrinter<'a> {
 }
 
 impl<'a> FunctionPrinter<'a> {
-    fn from(fun: &'a Function) -> FunctionPrinter<'a> {
+    fn without_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
         FunctionPrinter { fun, display_snapshot: false }
     }
 
@@ -556,9 +556,11 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
-    if get_option!(dump_ssa) {
-        let formatter = FunctionPrinter::from(&fun);
-        print!("SSA:\n{formatter}");
+    match get_option!(dump_ssa) {
+        Some(DumpSSA::WithoutSnapshot) => print!("SSA:\n{}", FunctionPrinter::without_snapshot(&fun)),
+        Some(DumpSSA::All) => print!("SSA:\n{}", FunctionPrinter::with_snapshot(&fun)),
+        Some(DumpSSA::Raw) => print!("SSA:\n{:#?}", &fun),
+        None => {},
     }
 
     Ok(fun)

@@ -3,10 +3,20 @@ use std::{ffi::CStr, os::raw::c_char};
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
     /// Dump SSA IR generated from ISEQ.
-    pub dump_ssa: bool,
+    pub dump_ssa: Option<DumpSSA>,
 
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum DumpSSA {
+    // Dump SSA without Snapshot
+    WithoutSnapshot,
+    // Dump SSA with Snapshot
+    All,
+    // Pretty-print bare SSA structs
+    Raw,
 }
 
 /// Macro to get an option value by name
@@ -34,7 +44,7 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 /// Return an Options with default values
 pub fn init_options() -> Options {
     Options {
-        dump_ssa: false,
+        dump_ssa: None,
         dump_disasm: false,
     }
 }
@@ -64,7 +74,11 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     // Match on the option name and value strings
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
-        ("dump-ssa", "") => options.dump_ssa = true,
+
+        ("dump-ssa", "") => options.dump_ssa = Some(DumpSSA::WithoutSnapshot),
+        ("dump-ssa", "all") => options.dump_ssa = Some(DumpSSA::All),
+        ("dump-ssa", "raw") => options.dump_ssa = Some(DumpSSA::Raw),
+
         ("dump-disasm", "") => options.dump_disasm = true,
         _ => return None, // Option name not recognized
     }

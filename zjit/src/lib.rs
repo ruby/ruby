@@ -86,7 +86,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     let ssa = match ir::iseq_to_ssa(iseq) {
         Ok(ssa) => ssa,
         Err(err) => {
-            if get_option!(dump_ssa) {
+            if get_option!(dump_ssa).is_some() {
                 eprintln!("zjit: to_ssa: {:?}", err);
             }
             return std::ptr::null();
