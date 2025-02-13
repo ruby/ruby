@@ -92,12 +92,14 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS"
           SPECOPTS="$SPECOPTS"
+          BTESTS="$BTESTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
+          BTESTS: ${{ matrix.btests }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - uses: ./.github/actions/slack
