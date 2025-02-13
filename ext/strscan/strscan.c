@@ -1292,6 +1292,10 @@ strscan_parse_integer(struct strscanner *p, int base, long len)
     integer = rb_cstr2inum(buffer, base);
     RB_ALLOCV_END(buffer_v);
     p->curr += len;
+
+    MATCHED(p);
+    adjust_registers_to_matched(p);
+    
     return integer;
 }
 
@@ -1341,7 +1345,6 @@ strscan_scan_base10_integer(VALUE self)
         return Qnil;
     }
 
-    MATCHED(p);
     p->prev = p->curr;
 
     while (len < remaining_len && rb_isdigit(ptr[len])) {
@@ -1383,7 +1386,6 @@ strscan_scan_base16_integer(VALUE self)
         return Qnil;
     }
 
-    MATCHED(p);
     p->prev = p->curr;
 
     while (len < remaining_len && rb_isxdigit(ptr[len])) {

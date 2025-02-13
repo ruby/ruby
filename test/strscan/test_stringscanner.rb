@@ -946,6 +946,18 @@ module StringScannerTests
     end
   end
 
+  def test_scan_integer_matched
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+
+    s = create_string_scanner("42abc")
+    assert_equal(42, s.scan_integer)
+    assert_equal("42", s.matched)
+
+    s = create_string_scanner("42abc")
+    assert_equal(0x42abc, s.scan_integer(base: 16))
+    assert_equal("42abc", s.matched)
+  end
+
   def test_scan_integer_base_16
     omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
 
