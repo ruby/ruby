@@ -3607,8 +3607,10 @@ rb_ary_sort_by_bang(VALUE ary)
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
-    rb_ary_replace(ary, sorted);
+    if (RARRAY_LEN(ary) > 1) {
+        sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
+        rb_ary_replace(ary, sorted);
+    }
     return ary;
 }
 
