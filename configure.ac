@@ -1297,11 +1297,6 @@ main()
 		AS_CASE(["$target_cpu"], [powerpc64*|arm64|aarch64], [
 			ac_cv_func___builtin_setjmp=no
 		])
-		# With gcc-8's -fcf-protection, RJIT's __builtin_longjmp fails.
-		AS_CASE(["$CC $CFLAGS "], [*" -fcf-protection "*], [cf_protection=yes], [cf_protection=no])
-		AS_IF([test "$cf_protection" = yes], [
-			ac_cv_func___builtin_setjmp=no
-		])
 		],
 [emscripten*], [LIBS="-lm -lc $LIBS"
 		RUBY_APPEND_OPTIONS(LDFLAGS, "-sALLOW_MEMORY_GROWTH=1")
@@ -3971,51 +3966,6 @@ AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
-
-dnl RJIT supports only x86_64 platforms, but allows arm64/aarch64 for custom JITs.
-RJIT_TARGET_OK=no
-AS_IF([test "$cross_compiling" = no],
-    AS_CASE(["$target_cpu-$target_os"],
-        [*android*], [
-            RJIT_TARGET_OK=no
-        ],
-        [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
-            RJIT_TARGET_OK=yes
-        ],
-        [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
-            RJIT_TARGET_OK=yes
-        ],
-        [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
-            RJIT_TARGET_OK=yes
-        ]
-    )
-)
-
-dnl Build RJIT on supported platforms or if --enable-rjit is specified.
-AC_ARG_ENABLE(rjit,
-    AS_HELP_STRING([--enable-rjit],
-    [enable pure-Ruby JIT compiler. enabled by default on Unix x86_64 platforms]),
-    [RJIT_SUPPORT=$enableval],
-    [AS_CASE(["$RJIT_TARGET_OK"],
-        [yes], [RJIT_SUPPORT=yes],
-        [RJIT_SUPPORT=no]
-    )]
-)
-
-AS_CASE(["$RJIT_SUPPORT"],
-[yes|dev], [
-    AS_CASE(["$RJIT_SUPPORT"],
-    [dev], [
-        # Link libcapstone for --rjit-dump-disasm
-        AC_CHECK_LIB([capstone], [cs_disasm])
-    ])
-
-    AC_DEFINE(USE_RJIT, 1)
-], [
-    AC_DEFINE(USE_RJIT, 0)
-])
-
-AC_SUBST(RJIT_SUPPORT)
 }
 
 [begin]_group "build section" && {
@@ -4738,7 +4688,6 @@ config_summary "hardenflags"         "$hardenflags"
 config_summary "strip command"       "$STRIP"
 config_summary "install doc"         "$DOCTARGETS"
 config_summary "YJIT support"        "$YJIT_SUPPORT"
-config_summary "RJIT support"        "$RJIT_SUPPORT"
 config_summary "man page type"       "$MANTYPE"
 config_summary "search path"         "$search_path"
 config_summary "static-linked-ext"   ${EXTSTATIC:+"yes"}

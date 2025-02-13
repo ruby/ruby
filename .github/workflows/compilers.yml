@@ -193,7 +193,7 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-rjit' } }
+      - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit' } }
       - { uses: './.github/actions/compilers', name: 'disable-dln',         with: { append_configure: '--disable-dln' } }
       - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' } }
       - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' } }
@@ -295,10 +295,8 @@ jobs:
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
-      - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit --disable-rjit' } }
-      - { uses: './.github/actions/compilers', name: 'enable-rjit',                    with: { append_configure: '--enable-rjit --disable-yjit' } }
+      - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit' } }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' } }
-      - { uses: './.github/actions/compilers', name: 'RJIT_FORCE_ENABLE',              with: { cppflags: '-DRJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' } }
 
   compilemax:

@@ -19,7 +19,6 @@ hash.rb
 io.rb
 kernel.rb
 marshal.rb
-rjit.rb
 numeric.rb
 nilclass.rb
 pack.rb

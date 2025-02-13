@@ -108,7 +108,6 @@
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
-#include "rjit.h"
 #include "probes.h"
 #include "regint.h"
 #include "ruby/debug.h"

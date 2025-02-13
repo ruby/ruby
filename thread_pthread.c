@@ -13,7 +13,6 @@
 
 #include "internal/gc.h"
 #include "internal/sanitizers.h"
-#include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>

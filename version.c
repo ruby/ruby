@@ -15,7 +15,6 @@
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
-#include "rjit.h"
 #include "yjit.h"
 #include <stdio.h>
 
@@ -157,12 +156,6 @@ Init_version(void)
     rb_provide("ruby2_keywords.rb");
 }
 
-#if USE_RJIT
-#define RJIT_OPTS_ON opt->rjit.on
-#else
-#define RJIT_OPTS_ON 0
-#endif
-
 #if USE_YJIT
 #define YJIT_OPTS_ON opt->yjit
 #else
@@ -238,7 +231,6 @@ void
 Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     const char *const jit_opt =
-        RJIT_OPTS_ON ? " +RJIT" :
         YJIT_OPTS_ON ? YJIT_DESCRIPTION :
         "";
     define_ruby_description(jit_opt);

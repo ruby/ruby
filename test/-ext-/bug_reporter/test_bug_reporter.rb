@@ -8,10 +8,8 @@ class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
     pend "macOS 15 is not working with this test" if macos?(15)
 
-    omit "flaky with RJIT" if JITSupport.rjit_enabled?
     description = RUBY_DESCRIPTION
     description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
-    description = description.sub(/\+RJIT /, '') unless JITSupport.rjit_force_enabled?
     expected_stderr = [
       :*,
       /\[BUG\]\sSegmentation\sfault.*\n/,

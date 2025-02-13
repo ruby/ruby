@@ -163,7 +163,7 @@ def main
   BT.tty = nil
   BT.quiet = false
   BT.timeout = 180
-  BT.timeout_scale = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 3 : 1) # for --jit-wait
+  BT.timeout_scale = 1
   if (ts = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_i) > 1
     BT.timeout_scale *= ts
   end
@@ -889,11 +889,6 @@ end
 
 def yjit_enabled?
   ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
-end
-
-def rjit_enabled?
-  # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
-  ENV.fetch('RUN_OPTS', '').include?('rjit')
 end
 
 exit main

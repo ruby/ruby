@@ -363,9 +363,6 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
-!ifndef RJIT_SUPPORT
-RJIT_SUPPORT = no
-!endif
 
 POSTLINK =
 DLDFLAGS = $(LDFLAGS) -dll
@@ -966,7 +963,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define USE_RJIT 0
 #endif /* $(guard) */
 <<
 
@@ -1166,7 +1162,6 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
-s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 

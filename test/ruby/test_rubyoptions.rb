@@ -8,7 +8,6 @@ require_relative '../lib/jit_support'
 require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
-  def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
   def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
@@ -22,9 +21,8 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
   NO_JIT_DESCRIPTION =
-    if rjit_enabled?
-      RUBY_DESCRIPTION.sub(/\+RJIT /, '')
-    elsif yjit_enabled?
+    case
+    when yjit_enabled?
       RUBY_DESCRIPTION.sub(/\+YJIT( (dev|dev_nodebug|stats))? /, '')
     else
       RUBY_DESCRIPTION
@@ -173,21 +171,10 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   private_constant :VERSION_PATTERN
 
-  VERSION_PATTERN_WITH_RJIT =
-    case RUBY_ENGINE
-    when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?(\+GC)?(\[\w+\]\s|\s)?\[#{q[RUBY_PLATFORM]}\]$/
-    else
-      VERSION_PATTERN
-    end
-  private_constant :VERSION_PATTERN_WITH_RJIT
-
   def test_verbose
     assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if self.class.rjit_enabled? && !JITSupport.rjit_force_enabled?
-        assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif self.class.yjit_enabled? && !JITSupport.yjit_force_enabled?
+      if self.class.yjit_enabled? && !JITSupport.yjit_force_enabled?
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -212,11 +199,6 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
-    elsif JITSupport.rjit_supported?
-      # Avoid failing tests by RJIT warnings
-      assert_in_out_err(%w(--enable all --disable rjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable-all --disable-rjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable=all --disable=rjit -e) + [""], "", [], [])
     end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: 'foobarbazqux'/)
@@ -258,52 +240,12 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(VERSION_PATTERN, r[0])
       if ENV['RUBY_YJIT_ENABLE'] == '1'
         assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif self.class.rjit_enabled? || self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
+      elsif self.class.yjit_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
       end
       assert_equal([], e)
-    end
-  end
-
-  def test_rjit_disabled_version
-    return unless JITSupport.rjit_supported?
-    return if JITSupport.yjit_force_enabled?
-
-    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
-    [
-      %w(--version --rjit --disable=rjit),
-      %w(--version --enable=rjit --disable=rjit),
-      %w(--version --enable-rjit --disable-rjit),
-    ].each do |args|
-      assert_in_out_err([env] + args) do |r, e|
-        assert_match(VERSION_PATTERN, r[0])
-        assert_match(NO_JIT_DESCRIPTION, r[0])
-        assert_equal([], e)
-      end
-    end
-  end
-
-  def test_rjit_version
-    return unless JITSupport.rjit_supported?
-    return if JITSupport.yjit_force_enabled?
-
-    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
-    [
-      %w(--version --rjit),
-      %w(--version --enable=rjit),
-      %w(--version --enable-rjit),
-    ].each do |args|
-      assert_in_out_err([env] + args) do |r, e|
-        assert_match(VERSION_PATTERN_WITH_RJIT, r[0])
-        if JITSupport.rjit_force_enabled?
-          assert_equal(RUBY_DESCRIPTION, r[0])
-        else
-          assert_equal(EnvUtil.invoke_ruby([env, '--rjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
-        end
-        assert_equal([], e)
-      end
     end
   end
 
@@ -850,7 +792,7 @@ class TestRubyOptions < Test::Unit::TestCase
         -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
       )x,
       %r(
-        #{ Regexp.quote((TestRubyOptions.rjit_enabled? && !JITSupport.rjit_force_enabled?) ? NO_JIT_DESCRIPTION : RUBY_DESCRIPTION) }\n\n
+        #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
       )x,
       %r(
         (?:--\s(?:.+\n)*\n)?

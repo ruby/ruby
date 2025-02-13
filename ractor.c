@@ -18,7 +18,6 @@
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
-#include "rjit.h"
 
 VALUE rb_cRactor;
 static VALUE rb_cRactorSelector;
@@ -39,7 +38,6 @@ static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    // GET_EC is NULL in an RJIT worker
     if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
         rb_bug("recursive ractor locking");
     }
@@ -50,7 +48,6 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    // GET_EC is NULL in an RJIT worker
     if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
         rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
@@ -67,7 +64,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     rb_native_mutex_lock(&r->sync.lock);
 
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL) { // GET_EC is NULL in an RJIT worker
+    if (rb_current_execution_context(false) != NULL) {
         rb_ractor_t *cr = rb_current_ractor_raw(false);
         r->sync.locked_by = cr ? rb_ractor_self(cr) : Qundef;
     }
@@ -2165,7 +2162,6 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     r->debug = cr->debug;
 
     rb_yjit_before_ractor_spawn();
-    rb_rjit_before_ractor_spawn();
     rb_thread_create_ractor(r, args, block);
 
     RB_GC_GUARD(rv);

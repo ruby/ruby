@@ -103,8 +103,6 @@ rb_call_builtin_inits(void)
     BUILTIN(thread_sync);
     BUILTIN(nilclass);
     BUILTIN(marshal);
-    BUILTIN(rjit_c);
-    BUILTIN(rjit);
     Init_builtin_prelude();
 }
 #undef CALL

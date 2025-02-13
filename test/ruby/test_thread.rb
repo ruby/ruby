@@ -323,7 +323,6 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -1478,9 +1477,6 @@ q.pop
 
   def test_thread_interrupt_for_killed_thread
     opts = { timeout: 5, timeout_error: nil }
-
-    # prevent SIGABRT from slow shutdown with RJIT
-    opts[:reprieve] = 3 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false

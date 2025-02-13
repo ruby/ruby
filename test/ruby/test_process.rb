@@ -275,7 +275,7 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RJIT_SEARCH_BUILD_DIR]
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
@@ -1748,11 +1748,7 @@ class TestProcess < Test::Unit::TestCase
       end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
-      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
-    else
-      assert_equal [true], signal_received, "[ruby-core:19744]"
-    end
+    assert_equal [true], signal_received, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
