@@ -31,7 +31,7 @@ $(ZJIT_LIBS):
 	@false
 else ifeq ($(ZJIT_SUPPORT),$(filter dev dev_nodebug stats,$(ZJIT_SUPPORT)))
 # NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
-#    ld: warning: object file (zjit/target/debug/libzjit.a(...)) was built for
+#    ld: warning: object file (zjit/target/debug/libzjit.a(<libcapstone object>)) was built for
 #    newer macOS version (15.2) than being linked (15.0)
 # We don't use newer macOS feature as of yet.
 $(ZJIT_LIBS): $(ZJIT_SRC_FILES)
