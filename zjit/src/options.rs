@@ -27,11 +27,16 @@ pub(crate) use get_option;
 /// passed to rb_zjit_init() for initialization.
 #[no_mangle]
 pub extern "C" fn rb_zjit_init_options() -> *const u8 {
-    let options = Options {
+    let options = init_options();
+    Box::into_raw(Box::new(options)) as *const u8
+}
+
+/// Return an Options with default values
+pub fn init_options() -> Options {
+    Options {
         dump_ssa: false,
         dump_disasm: false,
-    };
-    Box::into_raw(Box::new(options)) as *const u8
+    }
 }
 
 /// Parse a --zjit* command-line flag

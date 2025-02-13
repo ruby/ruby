@@ -137,6 +137,23 @@ impl CodeBlock {
     }
 }
 
+#[cfg(test)]
+impl CodeBlock {
+    /// Stubbed CodeBlock for testing. Can't execute generated code.
+    pub fn new_dummy() -> Self {
+        use std::ptr::NonNull;
+        use crate::virtualmem::*;
+        use crate::virtualmem::tests::TestingAllocator;
+
+        let mem_size = 1024;
+        let alloc = TestingAllocator::new(mem_size);
+        let mem_start: *const u8 = alloc.mem_start();
+        let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
+
+        Self::new(Rc::new(RefCell::new(virt_mem)))
+    }
+}
+
 impl crate::virtualmem::CodePtrBase for CodeBlock {
     fn base_ptr(&self) -> std::ptr::NonNull<u8> {
         self.mem_block.borrow().base_ptr()

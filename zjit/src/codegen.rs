@@ -1,4 +1,6 @@
-use crate::{asm::CodeBlock, backend::ir::*, cruby::*, get_option, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
+use crate::{asm::CodeBlock, backend::ir::*, cruby::*, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
+#[cfg(feature = "disasm")]
+use crate::get_option;
 
 /// Compile SSA IR into machine code
 pub fn gen_function(cb: &mut CodeBlock, function: &Function) -> Option<CodePtr> {

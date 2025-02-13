@@ -23,6 +23,7 @@ use crate::cruby::*;
 pub static mut rb_zjit_enabled_p: bool = false;
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
+#[cfg(not(test))]
 #[no_mangle]
 pub extern "C" fn rb_zjit_init(options: *const u8) {
     // Catch panics to avoid UB for unwinding into C frames.

@@ -791,6 +791,8 @@ pub use manual_defs::*;
 
 #[cfg(test)]
 pub mod test_utils {
+    use crate::state::ZJITState;
+
     use super::*;
 
     pub fn with_rubyvm(mut func: impl FnMut()) {
@@ -811,6 +813,9 @@ pub mod test_utils {
             callback();
             Qnil
         }
+
+        // Set up globals for convenience
+        ZJITState::init();
 
         let mut state: c_int = 0;
         unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
