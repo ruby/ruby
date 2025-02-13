@@ -26,13 +26,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test_task: 'check'
-            configure: '--enable-zjit=dev --disable-yjit'
-
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev --disable-yjit'
+            configure: '--enable-zjit=dev'
             # Test without ZJIT for now
             #zjit_opts: '--zjit-call-threshold=1'
+
+          - test_task: 'check'
+            configure: '--enable-zjit'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}

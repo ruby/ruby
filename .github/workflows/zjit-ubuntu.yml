@@ -28,14 +28,14 @@ jobs:
         include:
           - test_task: 'zjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--enable-zjit=dev --disable-yjit --with-gcc=clang-14'
+            configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev --disable-yjit'
+            configure: '--enable-zjit=dev'
 
           - test_task: 'check'
-            configure: '--enable-zjit=dev --disable-yjit'
+            configure: '--enable-zjit'
             # Test without ZJIT for now
             #zjit_opts: '--zjit-call-threshold=1'
 
