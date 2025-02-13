@@ -34,6 +34,11 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev'
 
+          - test_task: 'btest-bruby'
+            configure: '--enable-zjit=dev'
+            zjit_opts: '--zjit'
+            btests: 'bootstraptest/test_zjit.rb'
+
           - test_task: 'check'
             configure: '--enable-zjit'
             # Test without ZJIT for now
@@ -119,6 +124,7 @@ jobs:
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
           LIBCLANG_PATH: ${{ matrix.libclang_path }}
+          BTESTS: ${{ matrix.btests }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - uses: ./.github/actions/slack
