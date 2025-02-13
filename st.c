@@ -2309,20 +2309,6 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
         st_insert_generic(tab, argc, argv, hash);
 }
 
-// to iterate iv_index_tbl
-st_data_t
-rb_st_nth_key(st_table *tab, st_index_t index)
-{
-    if (LIKELY(tab->entries_start == 0 &&
-               tab->num_entries == tab->entries_bound &&
-               index < tab->num_entries)) {
-        return tab->entries[index].key;
-    }
-    else {
-        rb_bug("unreachable");
-    }
-}
-
 void
 rb_st_compact_table(st_table *tab)
 {
