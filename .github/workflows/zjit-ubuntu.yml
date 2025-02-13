@@ -37,7 +37,7 @@ jobs:
           - test_task: 'btest-bruby'
             configure: '--enable-zjit=dev'
             zjit_opts: '--zjit'
-            btests: 'bootstraptest/test_zjit.rb'
+            btests: '../bootstraptest/test_zjit.rb'
 
           - test_task: 'check'
             configure: '--enable-zjit'
