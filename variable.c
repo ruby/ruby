@@ -1897,7 +1897,6 @@ rb_ivar_defined(VALUE obj, ID id)
 }
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
-st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
 struct iv_itr_data {
     VALUE obj;
