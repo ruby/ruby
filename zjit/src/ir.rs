@@ -85,6 +85,8 @@ pub enum Insn {
     NewArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
     ArrayDup { val: Opnd },
+    // Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
+    // with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: Opnd },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: Opnd },
     GetConstantPath { ic: *const u8 },
@@ -93,6 +95,9 @@ pub enum Insn {
     //SetIvar {},
     //GetIvar {},
 
+    // Own a FrameState so that instructions can look up their dominating FrameState when
+    // generating deopt side-exits and frame reconstruction metadata. Does not directly generate
+    // any code.
     Snapshot { state: FrameState },
 
     // Unconditional jump
