@@ -12,7 +12,9 @@ class TestBundlerGem < Gem::TestCase
   end
 
   def test_warning
-    assert Gem::BUNDLED_GEMS.warning?("csv", specs: {})
+    warning_info = Gem::BUNDLED_GEMS.warning?("csv", specs: {})
+    assert warning_info
+    Gem::BUNDLED_GEMS.build_message(warning_info)
     assert_nil Gem::BUNDLED_GEMS.warning?("csv", specs: {})
   end
 
@@ -23,13 +25,17 @@ class TestBundlerGem < Gem::TestCase
 
   def test_warning_libdir
     path = File.join(::RbConfig::CONFIG.fetch("rubylibdir"), "csv.rb")
-    assert Gem::BUNDLED_GEMS.warning?(path, specs: {})
+    warning_info = Gem::BUNDLED_GEMS.warning?(path, specs: {})
+    assert warning_info
+    Gem::BUNDLED_GEMS.build_message(warning_info)
     assert_nil Gem::BUNDLED_GEMS.warning?(path, specs: {})
   end
 
   def test_warning_archdir
     path = File.join(::RbConfig::CONFIG.fetch("rubyarchdir"), "syslog.so")
-    assert Gem::BUNDLED_GEMS.warning?(path, specs: {})
+    warning_info = Gem::BUNDLED_GEMS.warning?(path, specs: {})
+    assert warning_info
+    Gem::BUNDLED_GEMS.build_message(warning_info)
     assert_nil Gem::BUNDLED_GEMS.warning?(path, specs: {})
   end
 end
