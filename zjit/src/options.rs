@@ -2,6 +2,9 @@ use std::{ffi::CStr, os::raw::c_char};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
+    /// Enable debug logging
+    pub debug: bool,
+
     /// Dump SSA IR generated from ISEQ.
     pub dump_ssa: Option<DumpSSA>,
 
@@ -44,6 +47,7 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 /// Return an Options with default values
 pub fn init_options() -> Options {
     Options {
+        debug: false,
         dump_ssa: None,
         dump_disasm: false,
     }
@@ -75,14 +79,27 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
 
+        ("debug", "") => options.debug = true,
+
         ("dump-ssa", "") => options.dump_ssa = Some(DumpSSA::WithoutSnapshot),
         ("dump-ssa", "all") => options.dump_ssa = Some(DumpSSA::All),
         ("dump-ssa", "raw") => options.dump_ssa = Some(DumpSSA::Raw),
 
         ("dump-disasm", "") => options.dump_disasm = true,
+
         _ => return None, // Option name not recognized
     }
 
     // Option successfully parsed
     return Some(());
 }
+
+/// Macro to print a message only when --zjit-debug is given
+macro_rules! debug {
+    ($($msg:tt)*) => {
+        if get_option!(debug) {
+            eprintln!($($msg)*);
+        }
+    };
+}
+pub(crate) use debug;

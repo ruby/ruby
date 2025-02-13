@@ -14,7 +14,7 @@ mod disasm;
 mod options;
 
 use codegen::gen_function;
-use options::{get_option, Options};
+use options::{debug, get_option, Options};
 use state::ZJITState;
 use crate::cruby::*;
 
@@ -86,9 +86,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     let ssa = match ir::iseq_to_ssa(iseq) {
         Ok(ssa) => ssa,
         Err(err) => {
-            if get_option!(dump_ssa).is_some() {
-                eprintln!("zjit: to_ssa: {:?}", err);
-            }
+            debug!("ZJIT: to_ssa: {:?}", err);
             return std::ptr::null();
         }
     };

@@ -1,4 +1,4 @@
-use crate::{asm::CodeBlock, backend::*, cruby::*, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
+use crate::{asm::CodeBlock, backend::*, cruby::*, debug, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
 #[cfg(feature = "disasm")]
 use crate::get_option;
 
@@ -13,7 +13,10 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function) -> Option<CodePtr> 
         match *insn {
             Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
             Return { val } => gen_return(&mut asm, val)?,
-            _ => return None,
+            _ => {
+                debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
+                return None;
+            }
         }
     }
 
