@@ -428,6 +428,72 @@ RSpec.describe "bundle update" do
       expect(out).to include("Installing sneakers 2.11.0").and include("Installing rake 13.0.6")
     end
 
+    it "does not downgrade direct dependencies unnecessarily" do
+      build_repo4 do
+        build_gem "redis", "4.8.1"
+        build_gem "redis", "5.3.0"
+
+        build_gem "sidekiq", "6.5.5" do |s|
+          s.add_dependency "redis", ">= 4.5.0"
+        end
+
+        build_gem "sidekiq", "6.5.12" do |s|
+          s.add_dependency "redis", ">= 4.5.0", "< 5"
+        end
+
+        # one version of sidekiq above Gemfile's range is needed to make the
+        # resolver choose `redis` first and trying to upgrade it, reproducing
+        # the accidental sidekiq downgrade as a result
+        build_gem "sidekiq", "7.0.0 " do |s|
+          s.add_dependency "redis", ">= 4.2.0"
+        end
+
+        build_gem "sentry-sidekiq", "5.22.0" do |s|
+          s.add_dependency "sidekiq", ">= 3.0"
+        end
+
+        build_gem "sentry-sidekiq", "5.22.4" do |s|
+          s.add_dependency "sidekiq", ">= 3.0"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "redis"
+        gem "sidekiq", "~> 6.5"
+        gem "sentry-sidekiq"
+      G
+
+      original_lockfile = <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            redis (4.8.1)
+            sentry-sidekiq (5.22.0)
+              sidekiq (>= 3.0)
+            sidekiq (6.5.12)
+              redis (>= 4.5.0, < 5)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          redis
+          sentry-sidekiq
+          sidekiq (~> 6.5)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      lockfile original_lockfile
+
+      bundle "lock --update sentry-sidekiq"
+
+      expect(lockfile).to eq(original_lockfile.sub("sentry-sidekiq (5.22.0)", "sentry-sidekiq (5.22.4)"))
+    end
+
     it "does not downgrade indirect dependencies unnecessarily" do
       build_repo4 do
         build_gem "a" do |s|

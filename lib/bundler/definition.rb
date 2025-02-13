@@ -938,7 +938,7 @@ module Bundler
 
     def converge_dependencies
       @missing_lockfile_dep = nil
-      changes = false
+      @changed_dependencies = []
 
       current_dependencies.each do |dep|
         if dep.source
@@ -960,10 +960,10 @@ module Bundler
           end
         end
 
-        changes ||= dep_changed
+        @changed_dependencies << name if dep_changed
       end
 
-      changes
+      @changed_dependencies.any?
     end
 
     # Remove elements from the locked specs that are expired. This will most
@@ -1095,9 +1095,13 @@ module Bundler
 
     def additional_base_requirements_to_prevent_downgrades(resolution_packages)
       return resolution_packages unless @locked_gems && !sources.expired_sources?(@locked_gems.sources)
-      converge_specs(@originally_locked_specs).each do |locked_spec|
+      @originally_locked_specs.each do |locked_spec|
         next if locked_spec.source.is_a?(Source::Path)
-        resolution_packages.base_requirements[locked_spec.name] = Gem::Requirement.new(">= #{locked_spec.version}")
+
+        name = locked_spec.name
+        next if @changed_dependencies.include?(name)
+
+        resolution_packages.base_requirements[name] = Gem::Requirement.new(">= #{locked_spec.version}")
       end
       resolution_packages
     end
