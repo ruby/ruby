@@ -38,7 +38,6 @@ jobs:
             zjit_opts: '--zjit'
             configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
-            continue-on-test_task: true
 
           - test_task: 'check'
             # Test without ZJIT for now
