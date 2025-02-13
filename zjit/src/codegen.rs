@@ -1,4 +1,4 @@
-use crate::{asm::CodeBlock, backend::ir::*, cruby::*, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
+use crate::{asm::CodeBlock, backend::*, cruby::*, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
 #[cfg(feature = "disasm")]
 use crate::get_option;
 
