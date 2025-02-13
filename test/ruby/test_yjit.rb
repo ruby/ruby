@@ -1637,7 +1637,7 @@ class TestYJIT < Test::Unit::TestCase
 
       [
         stats[:object_shape_count].is_a?(Integer),
-        stats[:ratio_in_yjit].is_a?(Float),
+        stats[:ratio_in_yjit].nil? || stats[:ratio_in_yjit].is_a?(Float),
       ].all?
     RUBY
   end
@@ -1648,7 +1648,7 @@ class TestYJIT < Test::Unit::TestCase
       3.times { test }
 
       # Collect single stat.
-      stat = RubyVM::YJIT.runtime_stats(:ratio_in_yjit)
+      stat = RubyVM::YJIT.runtime_stats(:yjit_alloc_size)
 
       # Ensure this invocation had stats.
       return true unless RubyVM::YJIT.runtime_stats[:all_stats]

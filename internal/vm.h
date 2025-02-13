@@ -81,7 +81,7 @@ struct vm_ifunc *rb_current_ifunc(void);
 
 #if USE_YJIT
 /* vm_exec.c */
-extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
+extern uint64_t rb_vm_insns_count;
 #endif
 
 extern bool rb_free_at_exit;
