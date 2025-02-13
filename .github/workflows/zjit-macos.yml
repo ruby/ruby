@@ -29,15 +29,16 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev'
 
-          - test_task: 'btest-bruby'
-            configure: '--enable-zjit=dev'
+          - test_task: 'btest'
             zjit_opts: '--zjit'
+            configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
+            continue-on-test_task: true
 
           - test_task: 'check'
-            configure: '--enable-zjit'
             # Test without ZJIT for now
             #zjit_opts: '--zjit-call-threshold=1'
+            configure: '--enable-zjit'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
