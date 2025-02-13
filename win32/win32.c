@@ -2179,7 +2179,6 @@ rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 WCHAR *
 rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
-    /* This is used by RJIT worker. Do not trigger GC or call Ruby method here. */
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
     if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;
