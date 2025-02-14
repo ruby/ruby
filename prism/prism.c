@@ -21058,6 +21058,11 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
+                    if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
+                        PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
+                        parse_target_implicit_parameter(parser, node);
+                    }
+
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
@@ -21176,6 +21181,11 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
+                    if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
+                        PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
+                        parse_target_implicit_parameter(parser, node);
+                    }
+
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
@@ -21304,6 +21314,11 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     return result;
                 }
                 case PM_LOCAL_VARIABLE_READ_NODE: {
+                    if (pm_token_is_numbered_parameter(node->location.start, node->location.end)) {
+                        PM_PARSER_ERR_FORMAT(parser, node->location.start, node->location.end, PM_ERR_PARAMETER_NUMBERED_RESERVED, node->location.start);
+                        parse_target_implicit_parameter(parser, node);
+                    }
+
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
