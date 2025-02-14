@@ -95,6 +95,8 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     let cb = ZJITState::get_code_block();
     match gen_function(cb, &ssa) {
         Some(start_ptr) => start_ptr.raw_ptr(cb),
+
+        // Compilation failed, continue executing in the interpreter only
         None => std::ptr::null(),
     }
 }

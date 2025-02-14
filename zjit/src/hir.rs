@@ -1,7 +1,11 @@
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
-use crate::{cruby::*, get_option, options::DumpSSA};
+use crate::{
+    cruby::*,
+    get_option,
+    options::DumpSSA
+};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -85,6 +89,7 @@ pub enum Insn {
     NewArray { count: usize },
     ArraySet { idx: usize, val: Opnd },
     ArrayDup { val: Opnd },
+
     // Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     // with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: Opnd },
@@ -108,7 +113,8 @@ pub enum Insn {
     IfFalse { val: Opnd, target: BranchEdge },
 
     // Call a C function
-    // TODO: should we store the C function name?
+    // NOTE: should we store the C function name for pretty-printing?
+    //       or can we backtranslate the function pointer into a name string?
     CCall { cfun: *const u8, args: Vec<Opnd> },
 
     // Send with dynamic dispatch
@@ -277,11 +283,12 @@ impl std::fmt::Display for FrameState {
     }
 }
 
-/// Get instruction argument
+/// Get YARV instruction argument
 fn get_arg(pc: *const VALUE, arg_idx: isize) -> VALUE {
     unsafe { *(pc.offset(arg_idx + 1)) }
 }
 
+/// Compute YARV instruction index at relative offset
 fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
     ((idx as isize) + (offset as isize)) as u32
 }
