@@ -995,6 +995,28 @@ class TestSocket < Test::Unit::TestCase
     RUBY
   end
 
+  def test_tcp_socket_hostname_resolution_failed_after_connection_failure
+    opts = %w[-rsocket -W1]
+    assert_separately opts, <<~RUBY
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+
+    Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
+      case family
+      when Socket::AF_INET6 then sleep(0.1); raise Socket::ResolutionError
+      when Socket::AF_INET then [Addrinfo.tcp("127.0.0.1", port)]
+      end
+    end
+
+    server.close
+
+    # SystemCallError is a workaround for Windows environment
+    assert_raise(Errno::ECONNREFUSED, SystemCallError) do
+      Socket.tcp("localhost", port)
+    end
+    RUBY
+  end
+
   def test_tcp_socket_v6_address_passed
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY

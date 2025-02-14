@@ -833,7 +833,7 @@ class Socket < BasicSocket
       if except_sockets&.any?
         except_sockets.each do |except_socket|
           failed_ai = connecting_sockets.delete except_socket
-          sockopt = except_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_CONNECT_TIME)
+          sockopt = except_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
           except_socket.close
           ip_address = failed_ai.ipv6? ? "[#{failed_ai.ip_address}]" : failed_ai.ip_address
           last_error = SystemCallError.new("connect(2) for #{ip_address}:#{failed_ai.ip_port}", sockopt.int)
@@ -862,7 +862,10 @@ class Socket < BasicSocket
             unless (Socket.const_defined?(:EAI_ADDRFAMILY)) &&
               (result.is_a?(Socket::ResolutionError)) &&
               (result.error_code == Socket::EAI_ADDRFAMILY)
-              last_error = result
+              other = family_name == :ipv6 ? :ipv4 : :ipv6
+              if !resolution_store.resolved?(other) || !resolution_store.resolved_successfully?(other)
+                last_error = result
+              end
             end
           else
             resolution_store.add_resolved(family_name, result)
@@ -1068,7 +1071,7 @@ class Socket < BasicSocket
     end
 
     def resolved_successfully?(family)
-      resolved?(family) && !!@error_dict[family]
+      resolved?(family) && !@error_dict[family]
     end
 
     def resolved_all_families?
