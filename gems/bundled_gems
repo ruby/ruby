@@ -38,7 +38,7 @@ repl_type_completor 0.1.10  https://github.com/ruby/repl_type_completor
 ostruct             0.6.1   https://github.com/ruby/ostruct
 pstore              0.1.4   https://github.com/ruby/pstore b563c4d354615e12a6fa54ffaa4ed711c3d1ba9f
 benchmark           0.4.0   https://github.com/ruby/benchmark
-logger              1.6.5   https://github.com/ruby/logger
+logger              1.6.6   https://github.com/ruby/logger
 rdoc                6.12.0  https://github.com/ruby/rdoc
 win32ole            1.9.1   https://github.com/ruby/win32ole
 irb                 1.15.1  https://github.com/ruby/irb 6bb53630c3398b2042fb99d5232c68399491d338
