@@ -86,7 +86,7 @@ jobs:
 
       - name: Store the latest LTS version of OpenSSL
         run: |
-          echo 'OPENSSL_VERSION=`curl -s https://api.github.com/repos/openssl/openssl/releases | jq -r '.[].tag_name | select(startswith("openssl-3.0"))' | sort -Vr | head -n1 | cut -d'-' -f2`' >> $GITHUB_ENV
+          echo "OPENSSL_VERSION=`curl -s https://api.github.com/repos/openssl/openssl/releases | jq -r '.[].tag_name | select(startswith("openssl-3.0"))' | sort -Vr | head -n1 | cut -d'-' -f2`" >> $GITHUB_ENV
 
       - name: Update ruby-build definition
         run: |
