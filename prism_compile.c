@@ -6482,7 +6482,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
       case ISEQ_TYPE_BLOCK: {
         LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
         LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
-        const pm_node_location_t block_location = { .line = body->location.first_lineno, .node_id = -1 };
+        const pm_node_location_t block_location = { .line = body->location.first_lineno, .node_id = scope_node->ast_node->node_id };
 
         start->rescued = LABEL_RESCUE_BEG;
         end->rescued = LABEL_RESCUE_END;
@@ -6608,7 +6608,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     }
 
     if (!PM_NODE_TYPE_P(scope_node->ast_node, PM_ENSURE_NODE)) {
-        const pm_node_location_t location = { .line = ISEQ_COMPILE_DATA(iseq)->last_line, .node_id = -1 };
+        const pm_node_location_t location = { .line = ISEQ_COMPILE_DATA(iseq)->last_line, .node_id = scope_node->ast_node->node_id };
         PUSH_INSN(ret, location, leave);
     }
 }
