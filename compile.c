@@ -10176,7 +10176,8 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     /* optimization shortcut
      *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
      */
-    if (mid == idASET && !private_recv_p(node) && RNODE_ATTRASGN(node)->nd_args &&
+    if (!ISEQ_COMPILE_DATA(iseq)->in_masgn &&
+        mid == idASET && !private_recv_p(node) && RNODE_ATTRASGN(node)->nd_args &&
         nd_type_p(RNODE_ATTRASGN(node)->nd_args, NODE_LIST) && RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->as.nd_alen == 2 &&
         (nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_STR) || nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_FILE)) &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
@@ -10729,7 +10730,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
 
       case NODE_MASGN:{
+        bool prev_in_masgn = ISEQ_COMPILE_DATA(iseq)->in_masgn;
+        ISEQ_COMPILE_DATA(iseq)->in_masgn = true;
         compile_massign(iseq, ret, node, popped);
+        ISEQ_COMPILE_DATA(iseq)->in_masgn = prev_in_masgn;
         break;
       }
 
