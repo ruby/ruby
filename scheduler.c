@@ -412,7 +412,15 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
     RUBY_ASSERT(rb_obj_is_fiber(fiber));
 
-    return rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    // `rb_fiber_scheduler_unblock` can be called from points where `errno` is expected to be preserved. Therefore, we should save and restore it. For example `io_binwrite` calls `rb_fiber_scheduler_unblock` and if `errno` is reset to 0 by user code, it will break the error handling in `io_write`.
+    // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
+    int saved_errno = errno;
+
+    VALUE result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+
+    errno = saved_errno;
+
+    return result;
 }
 
 /*
