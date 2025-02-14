@@ -5588,7 +5588,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
             }
         }
         rb_str_catf(msg, "\n   ");
-        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, 0, 0), sep));
+        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES), sep));
         rb_str_catf(msg, "\n");
     }
 }
