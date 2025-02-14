@@ -31,7 +31,7 @@
  * specifying a maximum depth to which we are allowed to recurse.
  */
 #ifndef PRISM_DEPTH_MAXIMUM
-    #define PRISM_DEPTH_MAXIMUM 1000
+    #define PRISM_DEPTH_MAXIMUM 10000
 #endif
 
 /**
