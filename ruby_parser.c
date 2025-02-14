@@ -420,7 +420,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .gc_mark = rb_gc_mark,
 
     .reg_compile = rb_reg_compile,
-    .reg_check_preprocess = rb_reg_check_preprocess,
     .memcicmp = rb_memcicmp,
 
     .compile_warn = rb_compile_warn,
