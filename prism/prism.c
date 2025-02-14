@@ -22373,7 +22373,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 
             // Scopes given from the outside are not allowed to have numbered
             // parameters.
-            parser->current_scope->parameters |= PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED;
+            parser->current_scope->parameters = ((pm_scope_parameters_t) scope->forwarding) | PM_SCOPE_PARAMETERS_IMPLICIT_DISALLOWED;
 
             for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
                 const pm_string_t *local = pm_options_scope_local_get(scope, local_index);

@@ -163,6 +163,7 @@ PRISM_EXPORTED_FUNCTION bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
+    scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
     return scope->locals != NULL;
 }
 
@@ -172,6 +173,14 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
 PRISM_EXPORTED_FUNCTION const pm_string_t *
 pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
+}
+
+/**
+ * Set the forwarding option on the given scope struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
+    scope->forwarding = forwarding;
 }
 
 /**
@@ -280,6 +289,9 @@ pm_options_read(pm_options_t *options, const char *data) {
                 pm_options_free(options);
                 return;
             }
+
+            uint8_t forwarding = (uint8_t) *data++;
+            pm_options_scope_forwarding_set(&options->scopes[scope_index], forwarding);
 
             for (size_t local_index = 0; local_index < locals_count; local_index++) {
                 uint32_t local_length = pm_options_read_u32(data);

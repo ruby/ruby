@@ -139,6 +139,11 @@ class TestSyntax < Test::Unit::TestCase
         inner(&)
       end
       assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
+
+      def evaled(&)
+        eval("inner(&)")
+      end
+      assert_equal(1, evaled{1})
     end;
   end
 
@@ -156,8 +161,10 @@ class TestSyntax < Test::Unit::TestCase
       def b(*); c(*) end
       def c(*a); a end
       def d(*); b(*, *) end
+      def e(*); eval("b(*)") end
       assert_equal([1, 2], b(1, 2))
       assert_equal([1, 2, 1, 2], d(1, 2))
+      assert_equal([1, 2], e(1, 2))
     end;
   end
 
@@ -177,10 +184,12 @@ class TestSyntax < Test::Unit::TestCase
       def d(**); b(k: 1, **) end
       def e(**); b(**, k: 1) end
       def f(a: nil, **); b(**) end
+      def g(**); eval("b(**)") end
       assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
       assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
       assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
       assert_equal({k: 3}, f(a: 1, k: 3))
+      assert_equal({a: 1, k: 3}, g(a: 1, k: 3))
     end;
   end
 
@@ -2010,6 +2019,7 @@ eom
     obj4 = obj1.clone
     obj5 = obj1.clone
     obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
+    obj1.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
     obj4.instance_eval("def foo ...\n  bar(...)\n""end", __FILE__, __LINE__)
     obj5.instance_eval("def foo ...; bar(...); end", __FILE__, __LINE__)
 
