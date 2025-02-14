@@ -1,6 +1,6 @@
 [package]
 name = "zjit"
-version = "0.0.0"
+version = "0.0.1"
 edition = "2021"        # Rust 2021 edition to compile with
 rust-version = "1.77.0" # Minimally supported rust version
 publish = false         # Don't publish to crates.io

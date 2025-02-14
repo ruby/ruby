@@ -3,7 +3,7 @@
 
 mod state;
 mod cruby;
-mod ir;
+mod hir;
 mod codegen;
 mod stats;
 mod cast;
@@ -83,7 +83,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     // TODO: acquire the VM barrier
 
     // Compile ISEQ into SSA IR
-    let ssa = match ir::iseq_to_ssa(iseq) {
+    let ssa = match hir::iseq_to_ssa(iseq) {
         Ok(ssa) => ssa,
         Err(err) => {
             debug!("ZJIT: to_ssa: {:?}", err);
@@ -91,7 +91,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         }
     };
 
-    // Compile SSA IR into machine code (TODO)
+    // Compile SSA IR into machine code
     let cb = ZJITState::get_code_block();
     match gen_function(cb, &ssa) {
         Some(start_ptr) => start_ptr.raw_ptr(cb),

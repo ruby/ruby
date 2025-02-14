@@ -1,4 +1,11 @@
-use crate::{asm::CodeBlock, backend::*, cruby::*, debug, ir::{self, Function, Insn::*}, virtualmem::CodePtr};
+use crate::{
+    asm::CodeBlock,
+    backend::*,
+    cruby::*,
+    debug,
+    hir::{self, Function, Insn::*},
+    virtualmem::CodePtr
+};
 #[cfg(feature = "disasm")]
 use crate::get_option;
 
@@ -55,7 +62,7 @@ fn gen_entry_prologue(asm: &mut Assembler) {
 }
 
 /// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, val: ir::Opnd) -> Option<()> {
+fn gen_return(asm: &mut Assembler, val: hir::Opnd) -> Option<()> {
     // Pop frame: CFP = CFP + RUBY_SIZEOF_CONTROL_FRAME
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
@@ -71,7 +78,7 @@ fn gen_return(asm: &mut Assembler, val: ir::Opnd) -> Option<()> {
 
     // Return a value
     let val = match val {
-        ir::Opnd::Const(val) => val,
+        hir::Opnd::Const(val) => val,
         _ => return None, // TODO: Support Opnd::Insn
     };
     asm.cret(val.into());
