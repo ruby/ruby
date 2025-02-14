@@ -1189,6 +1189,27 @@ a
 
         res
       RUBY
+
+      # Bug #21001
+      assert_prism_eval(<<~RUBY)
+        RUN_ARRAY = [1,2]
+
+        MAP_PROC = Proc.new do |&blk|
+          block_results = []
+          RUN_ARRAY.each do |value|
+            block_value = blk.call(value)
+            block_results.push block_value
+          end
+          block_results
+        ensure
+          next block_results
+        end
+
+        MAP_PROC.call do |value|
+          break if value > 1
+          next value
+        end
+      RUBY
     end
 
     def test_NextNode
