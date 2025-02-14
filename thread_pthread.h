@@ -133,8 +133,8 @@ struct rb_thread_sched {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
 
-  # ifdef __APPLE__
-    // on Darwin, TLS can not be accessed across .so
+  # if defined(__arm64__) || defined(__aarch64__)
+    // on Arm64, TLS can not be accessed across .so
     NOINLINE(struct rb_execution_context_struct *rb_current_ec(void));
   # else
     RUBY_EXTERN RB_THREAD_LOCAL_SPECIFIER struct rb_execution_context_struct *ruby_current_ec;
