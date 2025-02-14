@@ -603,6 +603,14 @@ class TestHash < Test::Unit::TestCase
     assert_equal([], expected - keys)
   end
 
+  def test_key_set
+    key_set = @h.key_set
+    keys = @h.keys
+    expected = Set.new(keys)
+
+    assert_equal(key_set, expected)
+  end
+
   def test_length
     assert_equal(0, @cls[].length)
     assert_equal(7, @h.length)
