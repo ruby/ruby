@@ -1731,9 +1731,10 @@ char_is_global_name_punctuation(const uint8_t b) {
 static inline bool
 token_is_setter_name(pm_token_t *token) {
     return (
-        (token->type == PM_TOKEN_IDENTIFIER) &&
+        (token->type == PM_TOKEN_BRACKET_LEFT_RIGHT_EQUAL) ||
+        ((token->type == PM_TOKEN_IDENTIFIER) &&
         (token->end - token->start >= 2) &&
-        (token->end[-1] == '=')
+        (token->end[-1] == '='))
     );
 }
 
