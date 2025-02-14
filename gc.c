@@ -1619,6 +1619,12 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 static VALUE
 undefine_final(VALUE os, VALUE obj)
 {
+    return rb_undefine_finalizer(obj);
+}
+
+VALUE
+rb_undefine_finalizer(VALUE obj)
+{
     rb_check_frozen(obj);
 
     rb_gc_impl_undefine_finalizer(rb_gc_get_objspace(), obj);
