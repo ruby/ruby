@@ -1557,7 +1557,6 @@ q.pop
   def test_deadlock_backtrace
     bug21127 = '[ruby-core:120930] [Bug #21127]'
 
-
     expected_stderr = [
       /-:12:in 'Thread#join': No live threads left. Deadlock\? \(fatal\)\n/,
       /2 threads, 2 sleeps current:\w+ main thread:\w+\n/,
