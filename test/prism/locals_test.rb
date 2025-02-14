@@ -147,7 +147,7 @@ module Prism
           elsif node.parameters.is_a?(NumberedParametersNode)
             # nothing
           elsif node.parameters.is_a?(ItParametersNode)
-            names << AnonymousLocal
+            names.unshift(AnonymousLocal)
           else
             params = node.parameters&.parameters
           end
