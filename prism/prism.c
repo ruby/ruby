@@ -22036,6 +22036,10 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
 static pm_statements_node_t *
 wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
     if (PM_PARSER_COMMAND_LINE_OPTION_P(parser)) {
+        if (statements == NULL) {
+            statements = pm_statements_node_create(parser);
+        }
+
         pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
         pm_arguments_node_arguments_append(
             arguments,
@@ -22051,6 +22055,10 @@ wrap_statements(pm_parser_t *parser, pm_statements_node_t *statements) {
 
     if (PM_PARSER_COMMAND_LINE_OPTION_N(parser)) {
         if (PM_PARSER_COMMAND_LINE_OPTION_A(parser)) {
+            if (statements == NULL) {
+                statements = pm_statements_node_create(parser);
+            }
+
             pm_arguments_node_t *arguments = pm_arguments_node_create(parser);
             pm_arguments_node_arguments_append(
                 arguments,
@@ -22119,9 +22127,7 @@ parse_program(pm_parser_t *parser) {
     parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN, 0);
 
-    if (statements == NULL) {
-        statements = pm_statements_node_create(parser);
-    } else if (!parser->parsing_eval) {
+    if (statements != NULL && !parser->parsing_eval) {
         // If we have statements, then the top-level statement should be
         // explicitly checked as well. We have to do this here because
         // everywhere else we check all but the last statement.
@@ -22133,13 +22139,6 @@ parse_program(pm_parser_t *parser) {
     pm_locals_order(parser, &parser->current_scope->locals, &locals, true);
     pm_parser_scope_pop(parser);
 
-    // If this is an empty file, then we're still going to parse all of the
-    // statements in order to gather up all of the comments and such. Here we'll
-    // correct the location information.
-    if (pm_statements_node_body_length(statements) == 0) {
-        pm_statements_node_location_set(statements, parser->start, parser->start);
-    }
-
     // At the top level, see if we need to wrap the statements in a program
     // node with a while loop based on the options.
     if (parser->command_line & (PM_OPTIONS_COMMAND_LINE_P | PM_OPTIONS_COMMAND_LINE_N)) {
@@ -22147,6 +22146,14 @@ parse_program(pm_parser_t *parser) {
     } else {
         flush_block_exits(parser, previous_block_exits);
         pm_node_list_free(&current_block_exits);
+    }
+
+    // If this is an empty file, then we're still going to parse all of the
+    // statements in order to gather up all of the comments and such. Here we'll
+    // correct the location information.
+    if (statements == NULL) {
+        statements = pm_statements_node_create(parser);
+        pm_statements_node_location_set(statements, parser->start, parser->start);
     }
 
     return (pm_node_t *) pm_program_node_create(parser, &locals, statements);
