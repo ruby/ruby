@@ -1,0 +1,230 @@
+@ ProgramNode (location: (1,0)-(7,23))
+├── flags: ∅
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(7,23))
+    ├── flags: ∅
+    └── body: (length: 4)
+        ├── @ IfNode (location: (1,0)-(1,15))
+        │   ├── flags: newline
+        │   ├── if_keyword_loc: (1,11)-(1,13) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (1,14)-(1,15))
+        │   │   ├── flags: variable_call, ignore_visibility
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :c
+        │   │   ├── message_loc: (1,14)-(1,15) = "c"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── block: ∅
+        │   ├── then_keyword_loc: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (1,0)-(1,10))
+        │   │   ├── flags: ∅
+        │   │   └── body: (length: 1)
+        │   │       └── @ RescueModifierNode (location: (1,0)-(1,10))
+        │   │           ├── flags: newline
+        │   │           ├── expression:
+        │   │           │   @ CallNode (location: (1,0)-(1,1))
+        │   │           │   ├── flags: variable_call, ignore_visibility
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── name: :a
+        │   │           │   ├── message_loc: (1,0)-(1,1) = "a"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   └── block: ∅
+        │   │           ├── keyword_loc: (1,2)-(1,8) = "rescue"
+        │   │           └── rescue_expression:
+        │   │               @ CallNode (location: (1,9)-(1,10))
+        │   │               ├── flags: variable_call, ignore_visibility
+        │   │               ├── receiver: ∅
+        │   │               ├── call_operator_loc: ∅
+        │   │               ├── name: :b
+        │   │               ├── message_loc: (1,9)-(1,10) = "b"
+        │   │               ├── opening_loc: ∅
+        │   │               ├── arguments: ∅
+        │   │               ├── closing_loc: ∅
+        │   │               └── block: ∅
+        │   ├── subsequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (3,0)-(3,19))
+        │   ├── flags: newline
+        │   ├── if_keyword_loc: (3,15)-(3,17) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (3,18)-(3,19))
+        │   │   ├── flags: variable_call, ignore_visibility
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :d
+        │   │   ├── message_loc: (3,18)-(3,19) = "d"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── block: ∅
+        │   ├── then_keyword_loc: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (3,0)-(3,14))
+        │   │   ├── flags: ∅
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableWriteNode (location: (3,0)-(3,14))
+        │   │           ├── flags: newline
+        │   │           ├── name: :a
+        │   │           ├── depth: 0
+        │   │           ├── name_loc: (3,0)-(3,1) = "a"
+        │   │           ├── value:
+        │   │           │   @ RescueModifierNode (location: (3,4)-(3,14))
+        │   │           │   ├── flags: ∅
+        │   │           │   ├── expression:
+        │   │           │   │   @ CallNode (location: (3,4)-(3,5))
+        │   │           │   │   ├── flags: variable_call, ignore_visibility
+        │   │           │   │   ├── receiver: ∅
+        │   │           │   │   ├── call_operator_loc: ∅
+        │   │           │   │   ├── name: :b
+        │   │           │   │   ├── message_loc: (3,4)-(3,5) = "b"
+        │   │           │   │   ├── opening_loc: ∅
+        │   │           │   │   ├── arguments: ∅
+        │   │           │   │   ├── closing_loc: ∅
+        │   │           │   │   └── block: ∅
+        │   │           │   ├── keyword_loc: (3,6)-(3,12) = "rescue"
+        │   │           │   └── rescue_expression:
+        │   │           │       @ CallNode (location: (3,13)-(3,14))
+        │   │           │       ├── flags: variable_call, ignore_visibility
+        │   │           │       ├── receiver: ∅
+        │   │           │       ├── call_operator_loc: ∅
+        │   │           │       ├── name: :c
+        │   │           │       ├── message_loc: (3,13)-(3,14) = "c"
+        │   │           │       ├── opening_loc: ∅
+        │   │           │       ├── arguments: ∅
+        │   │           │       ├── closing_loc: ∅
+        │   │           │       └── block: ∅
+        │   │           └── operator_loc: (3,2)-(3,3) = "="
+        │   ├── subsequent: ∅
+        │   └── end_keyword_loc: ∅
+        ├── @ IfNode (location: (5,0)-(5,20))
+        │   ├── flags: newline
+        │   ├── if_keyword_loc: (5,16)-(5,18) = "if"
+        │   ├── predicate:
+        │   │   @ CallNode (location: (5,19)-(5,20))
+        │   │   ├── flags: variable_call, ignore_visibility
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :d
+        │   │   ├── message_loc: (5,19)-(5,20) = "d"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── block: ∅
+        │   ├── then_keyword_loc: ∅
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (5,0)-(5,15))
+        │   │   ├── flags: ∅
+        │   │   └── body: (length: 1)
+        │   │       └── @ MultiWriteNode (location: (5,0)-(5,15))
+        │   │           ├── flags: newline
+        │   │           ├── lefts: (length: 1)
+        │   │           │   └── @ LocalVariableTargetNode (location: (5,0)-(5,1))
+        │   │           │       ├── flags: ∅
+        │   │           │       ├── name: :a
+        │   │           │       └── depth: 0
+        │   │           ├── rest:
+        │   │           │   @ ImplicitRestNode (location: (5,1)-(5,2))
+        │   │           │   └── flags: ∅
+        │   │           ├── rights: (length: 0)
+        │   │           ├── lparen_loc: ∅
+        │   │           ├── rparen_loc: ∅
+        │   │           ├── operator_loc: (5,3)-(5,4) = "="
+        │   │           └── value:
+        │   │               @ RescueModifierNode (location: (5,5)-(5,15))
+        │   │               ├── flags: ∅
+        │   │               ├── expression:
+        │   │               │   @ CallNode (location: (5,5)-(5,6))
+        │   │               │   ├── flags: variable_call, ignore_visibility
+        │   │               │   ├── receiver: ∅
+        │   │               │   ├── call_operator_loc: ∅
+        │   │               │   ├── name: :b
+        │   │               │   ├── message_loc: (5,5)-(5,6) = "b"
+        │   │               │   ├── opening_loc: ∅
+        │   │               │   ├── arguments: ∅
+        │   │               │   ├── closing_loc: ∅
+        │   │               │   └── block: ∅
+        │   │               ├── keyword_loc: (5,7)-(5,13) = "rescue"
+        │   │               └── rescue_expression:
+        │   │                   @ CallNode (location: (5,14)-(5,15))
+        │   │                   ├── flags: variable_call, ignore_visibility
+        │   │                   ├── receiver: ∅
+        │   │                   ├── call_operator_loc: ∅
+        │   │                   ├── name: :c
+        │   │                   ├── message_loc: (5,14)-(5,15) = "c"
+        │   │                   ├── opening_loc: ∅
+        │   │                   ├── arguments: ∅
+        │   │                   ├── closing_loc: ∅
+        │   │                   └── block: ∅
+        │   ├── subsequent: ∅
+        │   └── end_keyword_loc: ∅
+        └── @ IfNode (location: (7,0)-(7,23))
+            ├── flags: newline
+            ├── if_keyword_loc: (7,19)-(7,21) = "if"
+            ├── predicate:
+            │   @ CallNode (location: (7,22)-(7,23))
+            │   ├── flags: variable_call, ignore_visibility
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── name: :d
+            │   ├── message_loc: (7,22)-(7,23) = "d"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   └── block: ∅
+            ├── then_keyword_loc: ∅
+            ├── statements:
+            │   @ StatementsNode (location: (7,0)-(7,18))
+            │   ├── flags: ∅
+            │   └── body: (length: 1)
+            │       └── @ DefNode (location: (7,0)-(7,18))
+            │           ├── flags: newline
+            │           ├── name: :a
+            │           ├── name_loc: (7,4)-(7,5) = "a"
+            │           ├── receiver: ∅
+            │           ├── parameters: ∅
+            │           ├── body:
+            │           │   @ StatementsNode (location: (7,8)-(7,18))
+            │           │   ├── flags: ∅
+            │           │   └── body: (length: 1)
+            │           │       └── @ RescueModifierNode (location: (7,8)-(7,18))
+            │           │           ├── flags: ∅
+            │           │           ├── expression:
+            │           │           │   @ CallNode (location: (7,8)-(7,9))
+            │           │           │   ├── flags: variable_call, ignore_visibility
+            │           │           │   ├── receiver: ∅
+            │           │           │   ├── call_operator_loc: ∅
+            │           │           │   ├── name: :b
+            │           │           │   ├── message_loc: (7,8)-(7,9) = "b"
+            │           │           │   ├── opening_loc: ∅
+            │           │           │   ├── arguments: ∅
+            │           │           │   ├── closing_loc: ∅
+            │           │           │   └── block: ∅
+            │           │           ├── keyword_loc: (7,10)-(7,16) = "rescue"
+            │           │           └── rescue_expression:
+            │           │               @ CallNode (location: (7,17)-(7,18))
+            │           │               ├── flags: variable_call, ignore_visibility
+            │           │               ├── receiver: ∅
+            │           │               ├── call_operator_loc: ∅
+            │           │               ├── name: :c
+            │           │               ├── message_loc: (7,17)-(7,18) = "c"
+            │           │               ├── opening_loc: ∅
+            │           │               ├── arguments: ∅
+            │           │               ├── closing_loc: ∅
+            │           │               └── block: ∅
+            │           ├── locals: []
+            │           ├── def_keyword_loc: (7,0)-(7,3) = "def"
+            │           ├── operator_loc: ∅
+            │           ├── lparen_loc: ∅
+            │           ├── rparen_loc: ∅
+            │           ├── equal_loc: (7,6)-(7,7) = "="
+            │           └── end_keyword_loc: ∅
+            ├── subsequent: ∅
+            └── end_keyword_loc: ∅
