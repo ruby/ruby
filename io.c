@@ -8038,7 +8038,7 @@ popen_finish(VALUE port, VALUE klass)
     if (NIL_P(port)) {
         /* child */
         if (rb_block_given_p()) {
-            rb_yield(Qnil);
+            rb_protect(rb_yield, Qnil, NULL);
             rb_io_flush(rb_ractor_stdout());
             rb_io_flush(rb_ractor_stderr());
             _exit(0);
