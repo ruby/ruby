@@ -404,9 +404,8 @@ bind_eval(int argc, VALUE *argv, VALUE bindval)
 }
 
 static const VALUE *
-get_local_variable_ptr(const rb_env_t **envp, ID lid)
+get_local_variable_ptr(const rb_env_t *env, ID lid)
 {
-    const rb_env_t *env = *envp;
     do {
         if (!VM_ENV_FLAGS(env->ep, VM_FRAME_FLAG_CFRAME)) {
             if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) {
@@ -430,7 +429,6 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
                         }
                     }
 
-                    *envp = env;
                     unsigned int last_lvar = env->env_size+VM_ENV_INDEX_LAST_LVAR
                         - 1 /* errinfo */;
                     return &env->env[last_lvar - (local_table_size - i)];
@@ -438,12 +436,10 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             }
         }
         else {
-            *envp = NULL;
             return NULL;
         }
     } while ((env = rb_vm_env_prev_env(env)) != NULL);
 
-    *envp = NULL;
     return NULL;
 }
 
@@ -503,6 +499,12 @@ bind_local_variables(VALUE bindval)
     return rb_vm_env_local_variables(env);
 }
 
+static int
+numparam_id_p(ID id)
+{
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT);
+}
+
 /*
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
@@ -529,11 +531,15 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) goto undefined;
+    if (numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
 
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) != NULL) {
+    if ((ptr = get_local_variable_ptr(env, lid)) != NULL) {
         return *ptr;
     }
 
@@ -578,10 +584,14 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     const rb_env_t *env;
 
     if (!lid) lid = rb_intern_str(sym);
+    if (numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    if ((ptr = get_local_variable_ptr(&env, lid)) == NULL) {
+    if ((ptr = get_local_variable_ptr(env, lid)) == NULL) {
         /* not found. create new env */
         ptr = rb_binding_add_dynavars(bindval, bind, 1, &lid);
         env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -624,7 +634,7 @@ bind_local_variable_defined_p(VALUE bindval, VALUE sym)
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
-    return RBOOL(get_local_variable_ptr(&env, lid));
+    return RBOOL(get_local_variable_ptr(env, lid));
 }
 
 /*
