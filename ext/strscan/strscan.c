@@ -1295,7 +1295,7 @@ strscan_parse_integer(struct strscanner *p, int base, long len)
 
     MATCHED(p);
     adjust_registers_to_matched(p);
-    
+
     return integer;
 }
 
