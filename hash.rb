@@ -37,4 +37,16 @@ class Hash
   def initialize(ifnone = (ifnone_unset = true), capacity: 0, &block)
     Primitive.rb_hash_init(capacity, ifnone_unset, ifnone, block)
   end
+
+  # call-seq:
+  #   h = {a: 1, b: 3}
+  #   h.key_set #=> Set[:a, :b]
+  #
+  #
+  # Returns a new Set containing keys from the Hash
+  def key_set
+    set = Set.new
+    set.instance_variable_set(:@hash, transform_values { true })
+    set
+  end
 end
