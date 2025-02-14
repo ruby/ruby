@@ -39,7 +39,25 @@ typedef struct pm_options_scope {
 
     /** The names of the locals in the scope. */
     pm_string_t *locals;
+
+    /** Flags for the set of forwarding parameters in this scope. */
+    uint8_t forwarding;
 } pm_options_scope_t;
+
+/** The default value for parameters. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_NONE = 0x0;
+
+/** When the scope is fowarding with the * parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS = 0x1;
+
+/** When the scope is fowarding with the ** parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS = 0x2;
+
+/** When the scope is fowarding with the & parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_BLOCK = 0x4;
+
+/** When the scope is fowarding with the ... parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_ALL = 0x8;
 
 // Forward declaration needed by the callback typedef.
 struct pm_options;
@@ -320,6 +338,14 @@ PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, si
 PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index);
 
 /**
+ * Set the forwarding option on the given scope struct.
+ *
+ * @param scope The scope struct to set the forwarding on.
+ * @param forwarding The forwarding value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding);
+
+/**
  * Free the internal memory associated with the options.
  *
  * @param options The options struct whose internal memory should be freed.
@@ -367,6 +393,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |
+ * | `1`     | the forwarding flags       |
  * | ...     | the locals                 |
  *
  * Each local is laid out as follows:
