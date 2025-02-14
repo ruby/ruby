@@ -34,6 +34,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       VCVARS: ${{ matrix.vcvars }}
       PATCH: C:\msys64\usr\bin\patch.exe
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
     steps:
       - run: md build
         working-directory:
@@ -46,16 +47,18 @@ jobs:
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/cache@v3
+      - name: Export GitHub Actions cache environment variables
+        uses: actions/github-script@v7
         with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-download-
-      - name: Install libraries with vcpkg
+          script: |
+            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+      - name: Install libraries with scoop
         run: |
-          vcpkg --triplet x64-windows install openssl readline zlib
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install vcpkg
+        shell: pwsh
       - name: git config
         run: |
           git config --global core.autocrlf false
@@ -69,6 +72,12 @@ jobs:
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
+      - name: Install libraries with vcpkg
+        run: |
+          vcpkg install
+        working-directory: src
+        env:
+          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
       - name: setup env
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
@@ -85,7 +94,7 @@ jobs:
           del *.env
       - name: link libraries
         run: |
-          for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
+          for %%I in (D:\a\ruby\ruby\src\vcpkg_installed\%VCPKG_DEFAULT_TRIPLET%\bin\*.dll) do (
             if not %%~nI == readline mklink %%~nxI %%I
           )
           for %%I in (libcrypto-1_1-x64 libssl-1_1-x64) do (
@@ -95,7 +104,7 @@ jobs:
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --enable-bundled-libffi
-          --with-opt-dir=C:/vcpkg/installed/x64-windows
+          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
       - run: nmake incs
       - run: nmake extract-extlibs
       - run: nmake
