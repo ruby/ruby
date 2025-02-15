@@ -437,9 +437,10 @@ jit_compile(rb_execution_context_t *ec)
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
 #if USE_ZJIT
     extern bool rb_zjit_enabled_p;
+    extern uint64_t rb_zjit_call_threshold;
     if (body->jit_entry == NULL && rb_zjit_enabled_p) {
         body->jit_entry_calls++;
-        if (body->jit_entry_calls == 1) {
+        if (body->jit_entry_calls == rb_zjit_call_threshold) {
             extern void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
             rb_zjit_compile_iseq(iseq, ec, false);
         }

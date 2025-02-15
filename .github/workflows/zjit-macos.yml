@@ -30,7 +30,7 @@ jobs:
             configure: '--enable-zjit=dev'
 
           - test_task: 'btest'
-            zjit_opts: '--zjit'
+            zjit_opts: '--zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
 

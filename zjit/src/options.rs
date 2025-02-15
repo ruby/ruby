@@ -1,5 +1,12 @@
 use std::{ffi::CStr, os::raw::c_char};
 
+// This option is exposed to the C side in a global variable for performance, see vm.c
+// Number of method calls after which to start generating code
+// Threshold==1 means compile on first execution
+#[no_mangle]
+#[allow(non_upper_case_globals)]
+pub static mut rb_zjit_call_threshold: u64 = 1;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
     /// Enable debug logging
@@ -78,6 +85,11 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     // Match on the option name and value strings
     match (opt_name, opt_val) {
         ("", "") => {}, // Simply --zjit
+
+        ("call-threshold", _) => match opt_val.parse() {
+            Ok(n) => unsafe { rb_zjit_call_threshold = n },
+            Err(_) => return None,
+        },
 
         ("debug", "") => options.debug = true,
 
