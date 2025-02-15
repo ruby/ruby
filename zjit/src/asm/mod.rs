@@ -180,7 +180,7 @@ impl CodeBlock {
         let mem_start: *const u8 = alloc.mem_start();
         let virt_mem = VirtualMem::new(alloc, 1, NonNull::new(mem_start as *mut u8).unwrap(), mem_size, 128 * 1024 * 1024);
 
-        Self::new(Rc::new(RefCell::new(virt_mem)))
+        Self::new(Rc::new(RefCell::new(virt_mem)), false)
     }
 }
 
