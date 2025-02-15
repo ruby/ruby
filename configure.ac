@@ -187,6 +187,24 @@ AS_CASE(["${build_os}"],
     # Clang on Solaris is largely untested.
     # https://bugs.ruby-lang.org/issues/17949
     AC_CHECK_TOOLS([CC], [cc gcc])
+],
+[darwin*], [
+    # /usr/bin/clang is always available as long as Command Line Tools or Xcode is installed.
+    # Prefer absolute path to avoid PATH lookup, which may lead to unaligned tool selection.
+    rb_darwin_default_CC=/usr/bin/clang
+    AC_MSG_CHECKING([for darwin default CC $rb_darwin_default_CC])
+    AS_IF([test -z "$CC" -a -x "$rb_darwin_default_CC"],
+        [
+            AC_MSG_RESULT([yes])
+            CC=$rb_darwin_default_CC
+        ],
+        [
+            AC_MSG_RESULT([no])
+            # Fall back to PATH lookup just in case the /usr/bin/clang is not
+            # available for some reason.
+            AC_CHECK_TOOLS([CC], [clang cc gcc c99])
+        ]
+    )
 ], [
     # OpenBSD wants to prefer cc over gcc.
     # See https://github.com/ruby/ruby/pull/2443
@@ -209,7 +227,31 @@ set rb_dummy ${CC}
 rb_CC=$2
 AC_DEFUN([RUBY_CHECK_PROG_FOR_CC], [
     rb_prog=`echo "${rb_CC}" | sed "$2"`
-    AC_CHECK_PROG([$1], [$rb_prog], [$rb_prog])
+    rb_prog_optional="$3"
+    rb_prog_found=no
+    # If the tool is not explicitly specified and the compiler
+    # is absolute, check the one next to the compiler.
+    AS_IF([test -z "$$1"], [
+        AS_CASE(["${rb_prog}"],
+        [/*], [
+            AC_MSG_CHECKING([for ${rb_prog}])
+            AS_IF([test -x "${rb_prog}"], [
+                rb_prog_found=yes
+                $1=${rb_prog}
+            ], [
+                # Abort if the tool is required and expected to be next
+                # to the compiler but not found.
+                AS_IF([test "x${rb_prog_optional}" != xyes], [
+                    AC_MSG_ERROR("executable ${rb_prog} is not found")
+                ])
+            ])
+            AC_MSG_RESULT([$rb_prog_found])
+        ], [
+            # Otherwise, try to find it in PATH with given program name
+            rb_prog=`echo "${rb_prog}" | sed 's,.*/,,'`
+            AC_CHECK_PROG([$1], [$rb_prog], [$rb_prog])
+        ])
+    ])
 ])
 AS_CASE(["/${rb_CC} "],
 [*@<:@\ /@:>@"cc "*], [
@@ -247,7 +289,7 @@ AS_CASE(["/${rb_CC} "],
 #   RUBY_CHECK_PROG_FOR_CC([AS],      [s/clang/${llvm_prefix}as/])
     RUBY_CHECK_PROG_FOR_CC([CXX],     [s/clang/clang++/])
     RUBY_CHECK_PROG_FOR_CC([NM],      [s/clang/${llvm_prefix}nm/])
-    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/${llvm_prefix}objcopy/])
+    RUBY_CHECK_PROG_FOR_CC([OBJCOPY], [s/clang/${llvm_prefix}objcopy/], [yes]) # optional
     RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [s/clang/${llvm_prefix}objdump/])
     RUBY_CHECK_PROG_FOR_CC([RANLIB],  [s/clang/${llvm_prefix}ranlib/])
     RUBY_CHECK_PROG_FOR_CC([STRIP],   [s/clang/${llvm_prefix}strip/])
