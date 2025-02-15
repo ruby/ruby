@@ -534,7 +534,7 @@ struct rb_iseq_constant_body {
 
     const rb_iseq_t *mandatory_only_iseq;
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
     // Number of calls on jit_exec()
@@ -543,10 +543,18 @@ struct rb_iseq_constant_body {
     rb_jit_func_t jit_exception;
     // Number of calls on jit_exec_exception()
     long unsigned jit_exception_calls;
+#endif
+
+#if USE_YJIT
     // YJIT stores some data on each iseq.
     void *yjit_payload;
     // Used to estimate how frequently this ISEQ gets called
     uint64_t yjit_calls_at_interv;
+#endif
+
+#if USE_ZJIT
+    // ZJIT stores some data on each iseq.
+    void *zjit_payload;
 #endif
 };
 
