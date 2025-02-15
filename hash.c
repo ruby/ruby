@@ -2850,6 +2850,8 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
  *    clear -> self
  *
  *  Removes all entries from +self+; returns emptied +self+.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 VALUE
@@ -4183,6 +4185,8 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
  *    h.assoc(:bar) # => [:bar, 1]
  *
  *  Returns +nil+ if the key is not found.
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
@@ -4565,7 +4569,8 @@ any_p_i_pattern(VALUE key, VALUE value, VALUE arg)
  *  With both argument +entry+ and a block given,
  *  issues a warning and ignores the block.
  *
- *  Related: Enumerable#any? (which this method overrides).
+ *  Related: Enumerable#any? (which this method overrides);
+ *  see also {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
