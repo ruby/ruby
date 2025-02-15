@@ -630,6 +630,44 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     }
 }
 
+// Location is the file defining the method, colon, method name.
+// Filenames are sometimes internal strings supplied to eval,
+// so be careful with them.
+pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
+    let iseq_label = unsafe { rb_iseq_label(iseq) };
+    let iseq_path = unsafe { rb_iseq_path(iseq) };
+    let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
+
+    let mut s = if iseq_label == Qnil {
+        "None".to_string()
+    } else {
+        ruby_str_to_rust(iseq_label)
+    };
+    s.push_str("@");
+    if iseq_path == Qnil {
+        s.push_str("None");
+    } else {
+        s.push_str(&ruby_str_to_rust(iseq_path));
+    }
+    s.push_str(":");
+    s.push_str(&iseq_lineno.to_string());
+    s
+}
+
+
+// Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
+// This should work fine on ASCII strings and anything else
+// that is considered legal UTF-8, including embedded nulls.
+fn ruby_str_to_rust(v: VALUE) -> String {
+    let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
+    let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
+    let str_slice: &[u8] = unsafe { std::slice::from_raw_parts(str_ptr, str_len) };
+    match String::from_utf8(str_slice.to_vec()) {
+        Ok(utf8) => utf8,
+        Err(_) => String::new(),
+    }
+}
+
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {

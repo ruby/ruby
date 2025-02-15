@@ -1657,7 +1657,7 @@ impl Assembler
         #[cfg(feature = "disasm")]
         if get_option!(dump_disasm) {
             let end_addr = cb.get_write_ptr();
-            let disasm = crate::disasm::disasm_addr_range(start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
+            let disasm = crate::disasm::disasm_addr_range(cb, start_addr.raw_ptr(cb) as usize, end_addr.raw_ptr(cb) as usize);
             println!("{}", disasm);
         }
         ret
@@ -2153,16 +2153,14 @@ impl Assembler {
 
 /// Macro to use format! for Insn::Comment, which skips a format! call
 /// when not dumping disassembly.
-/*
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        if $crate::options::get_option_ref!(dump_disasm).is_some() {
+        if $crate::options::get_option!(dump_disasm) {
             $asm.push_insn(Insn::Comment(format!($($fmt)*)));
         }
     };
 }
 pub(crate) use asm_comment;
-*/
 
 #[cfg(test)]
 mod tests {

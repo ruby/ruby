@@ -477,9 +477,8 @@ impl Assembler
             let mut insn_gc_offsets: Vec<u32> = Vec::new();
 
             match insn {
-                Insn::Comment(_text) => {
-                    unimplemented!("comments are not supported yet");
-                    //cb.add_comment(text);
+                Insn::Comment(text) => {
+                    cb.add_comment(text);
                 },
 
                 // Write the label at the current position

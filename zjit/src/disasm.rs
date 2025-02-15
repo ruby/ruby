@@ -1,5 +1,9 @@
-#[cfg(feature = "disasm")]
-pub fn disasm_addr_range(start_addr: usize, end_addr: usize) -> String {
+use crate::asm::CodeBlock;
+
+pub const BOLD_BEGIN: &str = "\x1b[1m";
+pub const BOLD_END: &str = "\x1b[22m";
+
+pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> String {
     use std::fmt::Write;
 
     let mut out = String::from("");
@@ -34,7 +38,12 @@ pub fn disasm_addr_range(start_addr: usize, end_addr: usize) -> String {
 
     // For each instruction in this block
     for insn in insns.as_ref() {
-        // TODO: support comments
+        // Comments for this block
+        if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
+            for comment in comment_list {
+                writeln!(&mut out, "  {BOLD_BEGIN}# {comment}{BOLD_END}").unwrap();
+            }
+        }
         writeln!(&mut out, "  {insn}").unwrap();
     }
 

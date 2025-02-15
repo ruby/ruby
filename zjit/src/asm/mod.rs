@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 //use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -34,6 +35,12 @@ pub struct CodeBlock {
     // Current writing position
     write_pos: usize,
 
+    // A switch for keeping comments. They take up memory.
+    keep_comments: bool,
+
+    // Comments for assembly instructions, if that feature is enabled
+    asm_comments: BTreeMap<usize, Vec<String>>,
+
     // Set if the CodeBlock is unable to output some instructions,
     // for example, when there is not enough space or when a jump
     // target is too far away.
@@ -42,12 +49,35 @@ pub struct CodeBlock {
 
 impl CodeBlock {
     /// Make a new CodeBlock
-    pub fn new(mem_block: Rc<RefCell<VirtualMem>>) -> Self {
+    pub fn new(mem_block: Rc<RefCell<VirtualMem>>, keep_comments: bool) -> Self {
         Self {
             mem_block,
             write_pos: 0,
+            keep_comments,
+            asm_comments: BTreeMap::new(),
             dropped_bytes: false,
         }
+    }
+
+    /// Add an assembly comment if the feature is on.
+    pub fn add_comment(&mut self, comment: &str) {
+        if !self.keep_comments {
+            return;
+        }
+
+        let cur_ptr = self.get_write_ptr().raw_addr(self);
+
+        // If there's no current list of comments for this line number, add one.
+        let this_line_comments = self.asm_comments.entry(cur_ptr).or_default();
+
+        // Unless this comment is the same as the last one at this same line, add it.
+        if this_line_comments.last().map(String::as_str) != Some(comment) {
+            this_line_comments.push(comment.to_string());
+        }
+    }
+
+    pub fn comments_at(&self, pos: usize) -> Option<&Vec<String>> {
+        self.asm_comments.get(&pos)
     }
 
     pub fn get_write_pos(&self) -> usize {

@@ -10,6 +10,7 @@ mod cast;
 mod virtualmem;
 mod asm;
 mod backend;
+#[cfg(feature = "disasm")]
 mod disasm;
 mod options;
 
@@ -93,7 +94,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 
     // Compile SSA IR into machine code
     let cb = ZJITState::get_code_block();
-    match gen_function(cb, &ssa) {
+    match gen_function(cb, &ssa, iseq) {
         Some(start_ptr) => start_ptr.raw_ptr(cb),
 
         // Compilation failed, continue executing in the interpreter only

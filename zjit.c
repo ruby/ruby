@@ -156,6 +156,18 @@ rb_zjit_reserve_addr_space(uint32_t mem_size)
 #endif
 }
 
+unsigned long
+rb_RSTRING_LEN(VALUE str)
+{
+    return RSTRING_LEN(str);
+}
+
+char *
+rb_RSTRING_PTR(VALUE str)
+{
+    return RSTRING_PTR(str);
+}
+
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {

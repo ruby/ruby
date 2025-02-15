@@ -10,10 +10,10 @@ use crate::{
 use crate::get_option;
 
 /// Compile SSA IR into machine code
-pub fn gen_function(cb: &mut CodeBlock, function: &Function) -> Option<CodePtr> {
+pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
     // Set up special registers
     let mut asm = Assembler::new();
-    gen_entry_prologue(&mut asm);
+    gen_entry_prologue(&mut asm, iseq);
 
     // Compile each instruction in the IR
     for insn in function.insns.iter() {
@@ -28,22 +28,15 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function) -> Option<CodePtr> 
     }
 
     // Generate code if everything can be compiled
-    let start_ptr = cb.get_write_ptr();
-    asm.compile_with_regs(cb, Assembler::get_alloc_regs()); // TODO: resurrect cache busting for arm64
+    let start_ptr = asm.compile(cb).map(|(start_ptr, _)| start_ptr);
     cb.mark_all_executable();
 
-    #[cfg(feature = "disasm")]
-    if get_option!(dump_disasm) {
-        let end_ptr = cb.get_write_ptr();
-        let disasm = crate::disasm::disasm_addr_range(start_ptr.raw_ptr(cb) as usize, end_ptr.raw_ptr(cb) as usize);
-        println!("{}", disasm);
-    }
-
-    Some(start_ptr)
+    start_ptr
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
-fn gen_entry_prologue(asm: &mut Assembler) {
+fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
+    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
     asm.frame_setup();
 
     // Save the registers we'll use for CFP, EP, SP

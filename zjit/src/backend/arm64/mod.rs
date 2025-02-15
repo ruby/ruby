@@ -935,9 +935,8 @@ impl Assembler
             let mut insn_gc_offsets: Vec<u32> = Vec::new();
 
             match insn {
-                Insn::Comment(_text) => {
-                    //cb.add_comment(text);
-                    unimplemented!("comments are not supported yet");
+                Insn::Comment(text) => {
+                    cb.add_comment(text);
                 },
                 Insn::Label(_target) => {
                     //cb.write_label(target.unwrap_label_idx());
