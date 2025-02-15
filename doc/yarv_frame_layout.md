@@ -1,11 +1,11 @@
 # YARV Frame Layout
 
-This document is an introduction to the layout of the VM stack as calls happen.
-The code holds the ultimate truth for this subject, so beware that this
-document can become stale.
+This document is an introduction to what happens on the VM stack as the VM
+services calls. The code holds the ultimate truth for this subject, so beware
+that this document can become stale.
 
 We'll walk through the following program, with explanation at selected points
-in execution and abridged instruction sequence disassembly listings:
+in execution and abridged disassembly listings:
 
 ```ruby
 def foo(x, y)
@@ -58,7 +58,7 @@ When accessing variables in the immediate scope, where `level=0`, it's
 essentially `val = cfp->ep[-idx];`.
 
 Note that this EP-relative index has a different basis the index that comes
-after "@" in disassembly listings. The `@` index is relative to the 0th local
+after "@" in disassembly listings. The "@" index is relative to the 0th local
 (`x` in this case).
 
 ## Q&A
@@ -73,11 +73,5 @@ A: Not all calls put the `self` in the callee on the stack. Two
 
 Q: Why have `cfp->ep` when it seems that everything is below `cfp->sp`?
 
-A: In the example, EP points to the stack, but it can also point to the GC heap.
-   Blocks can capture and evacuate their environment to the heap.
-
-
-
-
-
-
+A: In the example, `cfp->ep` points to the stack, but it can also point to the
+   GC heap. Blocks can capture and evacuate their environment to the heap.
