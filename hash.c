@@ -4370,11 +4370,16 @@ rb_hash_compact(VALUE hash)
  *  call-seq:
  *    compact! -> self or nil
  *
- *  Returns +self+ with all its +nil+-valued entries removed (in place):
- *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
- *    h.compact! # => {foo: 0, baz: 2}
+ *  If +self+ contains any +nil+valued entries,
+ *  returns +self+ with all +nil+-valued entries removed;
+ *  returns +nil+ otherwise:
  *
- *  Returns +nil+ if no entries were removed.
+ *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
+ *    h.compact!
+ *    h          # => {foo: 0, baz: 2}
+ *    h.compact! # => nil
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
