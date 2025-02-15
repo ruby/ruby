@@ -4347,9 +4347,11 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
  *    compact -> new_hash
  *
  *  Returns a copy of +self+ with all +nil+-valued entries removed:
+ *
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
- *    h1 = h.compact
- *    h1 # => {foo: 0, baz: 2}
+ *    h.compact # => {foo: 0, baz: 2}
+ *
+ * Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
