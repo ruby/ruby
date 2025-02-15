@@ -17,6 +17,9 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
 
     // Compile each instruction in the IR
     for insn in function.insns.iter() {
+        if !matches!(*insn, Snapshot { .. }) {
+            asm_comment!(asm, "Insn: {:?}", insn);
+        }
         match *insn {
             Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
             Return { val } => gen_return(&mut asm, val)?,
@@ -56,14 +59,14 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 
 /// Compile code that exits from JIT code with a return value
 fn gen_return(asm: &mut Assembler, val: hir::Opnd) -> Option<()> {
-    // Pop frame: CFP = CFP + RUBY_SIZEOF_CONTROL_FRAME
+    // Pop the current frame (ec->cfp++)
+    // Note: the return PC is already in the previous CFP
+    asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
-
-    // Set ec->cfp: *(EC + RUBY_OFFSET_EC_CFP) = CFP
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
-    // Tear down the frame
+    asm_comment!(asm, "exit from leave");
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
