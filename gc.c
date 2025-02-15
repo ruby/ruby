@@ -3850,9 +3850,12 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 {
     struct classext_foreach_args args;
 
+    /*
+     * TODO: check this is not needed now or not
     if (FL_TEST(obj, FL_EXIVAR)) {
         rb_ref_update_generic_ivar(obj);
     }
+    */
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
