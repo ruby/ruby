@@ -4370,7 +4370,7 @@ rb_hash_compact(VALUE hash)
  *  call-seq:
  *    compact! -> self or nil
  *
- *  If +self+ contains any +nil+valued entries,
+ *  If +self+ contains any +nil+-valued entries,
  *  returns +self+ with all +nil+-valued entries removed;
  *  returns +nil+ otherwise:
  *
