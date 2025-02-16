@@ -942,12 +942,14 @@ zone_str(const char *zone)
         return rb_fstring_lit("(NO-TIMEZONE-ABBREVIATION)");
     }
 
-    for (p = zone; *p; p++)
+    for (p = zone; *p; p++) {
         if (!ISASCII(*p)) {
             ascii_only = 0;
+            p += strlen(p);
             break;
         }
-    len = p - zone + strlen(p);
+    }
+    len = p - zone;
     if (ascii_only) {
         str = rb_usascii_str_new(zone, len);
     }
@@ -1442,7 +1444,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     if (lt(vtm_utc->year, INT2FIX(1916))) {
         VALUE off = INT2FIX(0);
         int isdst = 0;
-        zone = rb_fstring_lit("UTC");
+        zone = str_utc;
 
 # if defined(NEGATIVE_TIME_T)
 #  if SIZEOF_TIME_T <= 4
