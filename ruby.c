@@ -61,6 +61,7 @@
 #include "ruby/util.h"
 #include "ruby/version.h"
 #include "ruby/internal/error.h"
+#include "rjit.h"
 
 #define singlebit_only_p(x) !((x) & ((x)-1))
 STATIC_ASSERT(Qnil_1bit_from_Qfalse, singlebit_only_p(Qnil^Qfalse));
@@ -1789,6 +1790,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
+    rb_rjit_init();
 
     // Call yjit_hook.rb after rb_yjit_init() to use `RubyVM::YJIT.enabled?`
     void Init_builtin_yjit_hook();
