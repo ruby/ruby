@@ -571,19 +571,20 @@ match_target(struct strscanner *p)
 }
 
 static inline void
-set_registers(struct strscanner *p, size_t length)
+set_registers(struct strscanner *p, size_t pos, size_t length)
 {
     const int at = 0;
     OnigRegion *regs = &(p->regs);
     onig_region_clear(regs);
     if (onig_region_set(regs, at, 0, 0)) return;
     if (p->fixed_anchor_p) {
-        regs->beg[at] = p->curr;
-        regs->end[at] = p->curr + length;
+        regs->beg[at] = pos + p->curr;
+        regs->end[at] = pos + p->curr + length;
     }
     else
     {
-        regs->end[at] = length;
+        regs->beg[at] = pos;
+        regs->end[at] = pos + length;
     }
 }
 
@@ -731,7 +732,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
             if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern));
+            set_registers(p, 0, RSTRING_LEN(pattern));
         }
         else {
             rb_encoding *enc = rb_enc_check(p->str, pattern);
@@ -740,7 +741,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
             if (pos == -1) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern) + pos);
+            set_registers(p, pos, RSTRING_LEN(pattern));
         }
     }
 

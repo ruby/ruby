@@ -409,12 +409,8 @@ module StringScannerTests
     s = create_string_scanner('stra strb strc')
     s.scan(/\w+/)
     assert_equal('stra', s.matched)
-    s.scan(/\s+/)
-    assert_equal(' ', s.matched)
-    s.scan('st')
-    assert_equal('st', s.matched)
-    s.scan(/\w+/)
-    assert_equal('rb', s.matched)
+    s.scan_until(/\w+/)
+    assert_equal('strb', s.matched)
     s.scan(/\s+/)
     assert_equal(' ', s.matched)
     s.scan(/\w+/)
@@ -430,6 +426,23 @@ module StringScannerTests
     s.get_byte
     assert_equal('t', s.matched)
     assert_equal('t', s.matched)
+  end
+
+  def test_matched_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner('stra strb strc')
+    s.scan('stra')
+    assert_equal('stra', s.matched)
+    s.scan_until('strb')
+    assert_equal('strb', s.matched)
+    s.scan(' ')
+    assert_equal(' ', s.matched)
+    s.scan('strc')
+    assert_equal('strc', s.matched)
+    s.scan('c')
+    assert_nil(s.matched)
+    s.getch
+    assert_nil(s.matched)
   end
 
   def test_AREF
@@ -522,6 +535,27 @@ module StringScannerTests
     assert_nil(s.pre_match)
   end
 
+  def test_pre_match_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner('a b c d e')
+    s.scan('a')
+    assert_equal('', s.pre_match)
+    s.skip(' ')
+    assert_equal('a', s.pre_match)
+    s.scan('b')
+    assert_equal('a ', s.pre_match)
+    s.scan_until('c')
+    assert_equal('a b ', s.pre_match)
+    s.getch
+    assert_equal('a b c', s.pre_match)
+    s.get_byte
+    assert_equal('a b c ', s.pre_match)
+    s.get_byte
+    assert_equal('a b c d', s.pre_match)
+    s.scan('never match')
+    assert_nil(s.pre_match)
+  end
+
   def test_post_match
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)
@@ -543,6 +577,27 @@ module StringScannerTests
     s.scan(/./)
     assert_equal('', s.post_match)
     s.scan(/./)
+    assert_nil(s.post_match)
+  end
+
+  def test_post_match_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner('a b c d e')
+    s.scan('a')
+    assert_equal(' b c d e', s.post_match)
+    s.skip(' ')
+    assert_equal('b c d e', s.post_match)
+    s.scan('b')
+    assert_equal(' c d e', s.post_match)
+    s.scan_until('c')
+    assert_equal(' d e', s.post_match)
+    s.getch
+    assert_equal('d e', s.post_match)
+    s.get_byte
+    assert_equal(' e', s.post_match)
+    s.get_byte
+    assert_equal('e', s.post_match)
+    s.scan('never match')
     assert_nil(s.post_match)
   end
 
