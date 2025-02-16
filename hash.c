@@ -4401,28 +4401,26 @@ rb_hash_compact_bang(VALUE hash)
  *  call-seq:
  *    compare_by_identity -> self
  *
- *  Sets +self+ to consider only identity in comparing keys;
- *  two keys are considered the same only if they are the same object;
- *  returns +self+.
+ *  Sets +self+ to compare keys using _identity_ (rather than mere _equality_);
+ *  returns +self+:
  *
- *  By default, these two object are considered to be the same key,
- *  so +s1+ will overwrite +s0+:
- *    s0 = 'x'
- *    s1 = 'x'
+ *  By default, two keys are considered to be the same key
+ *  if and only if they are _equal_ objects (per method #==):
+ *
  *    h = {}
- *    h.compare_by_identity? # => false
- *    h[s0] = 0
- *    h[s1] = 1
+ *    h['x'] = 0
+ *    h['x'] = 1 # Overwrites.
  *    h # => {"x"=>1}
  *
- *  After calling \#compare_by_identity, the keys are considered to be different,
- *  and therefore do not overwrite each other:
- *    h = {}
- *    h.compare_by_identity # => {}
- *    h.compare_by_identity? # => true
- *    h[s0] = 0
- *    h[s1] = 1
- *    h # => {"x"=>0, "x"=>1}
+ *  When this method has been called, two keys are considered to be the same key
+ *  if and only if they are the _same_ object:
+ *
+ *    h.compare_by_identity
+ *    h['x'] = 2 # Does not overwrite.
+ *    h # => {"x"=>1, "x"=>2}
+ *
+ *  Related: #compare_by_identity?;
+ *  see also {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 
 VALUE
@@ -4469,7 +4467,15 @@ rb_hash_compare_by_id(VALUE hash)
  *  call-seq:
  *    compare_by_identity? -> true or false
  *
- *  Returns +true+ if #compare_by_identity has been called, +false+ otherwise.
+ *  Returns whether #compare_by_identity has been called:
+ *
+ *    h = {}
+ *    h.compare_by_identity? # => false
+ *    h.compare_by_identity
+ *    h.compare_by_identity? # => true
+ *
+ *  Related: #compare_by_identity;
+ *  see also {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
 
 VALUE
