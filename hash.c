@@ -2403,26 +2403,33 @@ rb_hash_delete(VALUE hash, VALUE key)
  *    delete(key) -> value or nil
  *    delete(key) {|key| ... } -> object
  *
- *  Deletes the entry for the given +key+ and returns its associated value.
+ *  If an entry for the given +key+ is found,
+ *  deletes the entry and returns its associated value;
+ *  otherwise returns +nil+ or calls the given block.
  *
- *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *  With no block given and +key+ found, deletes the entry and returns its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
  *    h # => {foo: 0, baz: 2}
  *
- *  If no block given and +key+ is not found, returns +nil+.
+ *  With no block given and +key+ not found, returns +nil+.
  *
- *  If a block is given and +key+ is found, ignores the block,
- *  deletes the entry, and returns the associated value:
+ *  With a block given and +key+ found, ignores the block,
+ *  deletes the entry, and returns its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:baz) { |key| raise 'Will never happen'} # => 2
  *    h # => {foo: 0, bar: 1}
  *
- *  If a block is given and +key+ is not found,
+ *  With a block given and +key+ not found,
  *  calls the block and returns the block's return value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:nosuch) { |key| "Key #{key} not found" } # => "Key nosuch not found"
  *    h # => {foo: 0, bar: 1, baz: 2}
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
