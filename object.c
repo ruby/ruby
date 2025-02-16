@@ -1193,6 +1193,30 @@ rb_class_search_ancestor(VALUE cl, VALUE c)
  *
  *   Added :FOO
  *
+ * If we define a class using the <tt>class</tt> keyword, <tt>const_added</tt>
+ * runs before <tt>inherited</tt>:
+ *
+ *   module M
+ *     def self.const_added(const_name)
+ *       super
+ *       p :const_added
+ *     end
+ *
+ *     parent = Class.new do
+ *       def self.inherited(subclass)
+ *         super
+ *         p :inherited
+ *       end
+ *     end
+ *
+ *     class Child < parent
+ *     end
+ *   end
+ *
+ * <em>produces:</em>
+ *
+ *   :const_added
+ *   :inherited
  */
 #define rb_obj_mod_const_added rb_obj_dummy1
 
