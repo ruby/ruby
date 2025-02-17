@@ -4624,29 +4624,35 @@ rb_hash_any_p(int argc, VALUE *argv, VALUE hash)
  *  call-seq:
  *    dig(key, *identifiers) -> object
  *
- *  Finds and returns the object in nested objects
- *  that is specified by +key+ and +identifiers+.
+ *  Finds and returns an object found in nested objects,
+ *  as specified by +key+ and +identifiers+.
+ *
  *  The nested objects may be instances of various classes.
  *  See {Dig Methods}[rdoc-ref:dig_methods.rdoc].
  *
- *  Nested Hashes:
+ *  Nested hashes:
+ *
  *    h = {foo: {bar: {baz: 2}}}
  *    h.dig(:foo) # => {bar: {baz: 2}}
  *    h.dig(:foo, :bar) # => {baz: 2}
  *    h.dig(:foo, :bar, :baz) # => 2
  *    h.dig(:foo, :bar, :BAZ) # => nil
  *
- *  Nested Hashes and Arrays:
+ *  Nested hashes and arrays:
+ *
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:foo, :bar, 2) # => :c
  *
- *  This method will use the {hash default}[rdoc-ref:Hash@Hash+Default]
- *  for keys that are not present:
+ *  If no such object is found,
+ *  returns the {hash default}[rdoc-ref:Hash@Hash+Default]:
+ *
  *    h = {foo: {bar: [:a, :b, :c]}}
  *    h.dig(:hello) # => nil
  *    h.default_proc = -> (hash, _key) { hash }
- *    h.dig(:hello, :world) # => h
- *    h.dig(:hello, :world, :foo, :bar, 2) # => :c
+ *    h.dig(:hello, :world)
+ *    # => {:foo=>{:bar=>[:a, :b, :c]}}
+ *
+ *  Related: {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
