@@ -2543,16 +2543,16 @@ hash_enum_size(VALUE hash, VALUE args, VALUE eobj)
  *    delete_if {|key, value| ... } -> self
  *    delete_if -> new_enumerator
  *
- *  If a block given, calls the block with each key-value pair;
- *  deletes each entry for which the block returns a truthy value;
- *  returns +self+:
+ *  With a block given, calls the block with each key-value pair,
+ *  deletes each entry for which the block returns a truthy value,
+ *  and returns +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete_if {|key, value| value > 0 } # => {foo: 0}
  *
- *  If no block given, returns a new Enumerator:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.delete_if # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:delete_if>
- *    e.each { |key, value| value > 0 } # => {foo: 0}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 VALUE
