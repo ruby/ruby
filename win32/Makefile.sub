@@ -348,7 +348,7 @@ COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
+XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 !if $(MSC_VER) >= 1400
 # Prevents VC++ 2005 (cl ver 14) warnings
 MANIFESTTOOL = mt -nologo
