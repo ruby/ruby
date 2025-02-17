@@ -9770,7 +9770,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
 
                 size_t whitespace;
                 while (true) {
-                    if ((whitespace = pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end)) > 0) {
+                    if ((whitespace = pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end)) > 0) {
                         parser->current.end += whitespace;
                     } else if (peek(parser) == '\\' && peek_offset(parser, 1) == 'n') {
                         // This is super hacky, but it gets us nicer error
@@ -9818,7 +9818,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
-                    parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
                 }
 
                 // ?\u{nnnn} character literal should contain only one codepoint
