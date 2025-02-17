@@ -1418,6 +1418,9 @@ gc_impl.obj: $(BUILTIN_GC_PATH)
 lex.c: {$(srcdir)}lex.c.blt
 	copy $(?:/=\) $@
 
+rjit_funcs.c: {$(srcdir)}rjit_funcs.c.template
+	copy $(?:/=\) $@
+
 $(srcdir)/enc/jis/props.h: {$(srcdir)}enc/jis/props.h.blt
 	@if not exist $(@D:/=\) md $(@D:/=\)
 	$(ECHO) copying $@
