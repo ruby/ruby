@@ -5020,7 +5020,7 @@ env_name(volatile VALUE *s)
 static VALUE env_aset(VALUE nm, VALUE val);
 
 static void
-reset_by_modified_env(const char *nam)
+reset_by_modified_env(const char *nam, const char *val)
 {
     /*
      * ENV['TZ'] = nil has a special meaning.
@@ -5029,7 +5029,7 @@ reset_by_modified_env(const char *nam)
      * This hack might works only on Linux glibc.
      */
     if (ENVMATCH(nam, TZ_ENV)) {
-        ruby_reset_timezone();
+        ruby_reset_timezone(val);
     }
 }
 
@@ -5037,7 +5037,7 @@ static VALUE
 env_delete(VALUE name)
 {
     const char *nam = env_name(name);
-    reset_by_modified_env(nam);
+    reset_by_modified_env(nam, NULL);
     VALUE val = getenv_with_lock(nam);
 
     if (!NIL_P(val)) {
@@ -5443,7 +5443,7 @@ env_aset(VALUE nm, VALUE val)
     get_env_ptr(value, val);
 
     ruby_setenv(name, value);
-    reset_by_modified_env(name);
+    reset_by_modified_env(name, value);
     return val;
 }
 
