@@ -98,6 +98,7 @@ ok = true
     data.sub!(/(?<!\A|\n)\z/, "\n")
     @output.write(data, overwrite: true, create_only: create_only)
   rescue => e
+    next if @suppress_not_found and VCS::NotFoundError === e
     warn "#{File.basename(Program)}: #{e.message}"
     ok = false
   end
