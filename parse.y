@@ -532,7 +532,7 @@ struct parser_params {
     st_table *case_labels;
     rb_node_exits_t *exits;
 
-    VALUE debug_buffer;
+    rb_parser_string_t *debug_buffer;
     VALUE debug_output;
 
     struct {
@@ -13254,11 +13254,12 @@ parser_set_lex_state(struct parser_params *p, enum lex_state_e ls, int line)
 static void
 flush_debug_buffer(struct parser_params *p, VALUE out, VALUE str)
 {
-    VALUE mesg = p->debug_buffer;
+    rb_parser_string_t *debug_buffer = p->debug_buffer;
 
-    if (!NIL_P(mesg) && RSTRING_LEN(mesg)) {
-        p->debug_buffer = Qnil;
+    if (debug_buffer != NULL && PARSER_STRING_LEN(debug_buffer)) {
+        VALUE mesg = rb_str_new_mutable_parser_string(debug_buffer);
         rb_io_puts(1, &mesg, out);
+        p->debug_buffer = NULL;
     }
     if (!NIL_P(str) && RSTRING_LEN(str)) {
         rb_io_write(p->debug_output, str);
@@ -15499,7 +15500,7 @@ parser_initialize(struct parser_params *p)
     p->s_lvalue = Qnil;
     p->s_value_stack = rb_ary_new();
 #endif
-    p->debug_buffer = Qnil;
+    p->debug_buffer = NULL;
     p->debug_output = rb_ractor_stdout();
     p->enc = rb_utf8_encoding();
     p->exits = 0;
@@ -15527,7 +15528,6 @@ rb_ruby_parser_mark(void *ptr)
     rb_gc_mark(p->s_lvalue);
     rb_gc_mark(p->s_value_stack);
 #endif
-    rb_gc_mark(p->debug_buffer);
     rb_gc_mark(p->debug_output);
 }
 
@@ -15851,15 +15851,21 @@ void
 rb_parser_printf(struct parser_params *p, const char *fmt, ...)
 {
     va_list ap;
-    VALUE mesg = p->debug_buffer;
+    VALUE mesg;
 
-    if (NIL_P(mesg)) p->debug_buffer = mesg = rb_str_new(0, 0);
+    if (p->debug_buffer == NULL) {
+        mesg = rb_str_new(0, 0);
+    } else {
+        mesg = rb_str_new_mutable_parser_string(p->debug_buffer);
+    }
+
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
+    p->debug_buffer = rb_str_to_parser_string(p, mesg);
     va_end(ap);
     if (char_at_end(p, mesg, 0) == '\n') {
         rb_io_write(p->debug_output, mesg);
-        p->debug_buffer = Qnil;
+        p->debug_buffer = NULL;
     }
 }
 
