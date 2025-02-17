@@ -162,6 +162,7 @@ jobs:
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          --with-gmp
 
       - run: nmake prepare-vcpkg
 
