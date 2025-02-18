@@ -3,7 +3,7 @@ use std::mem::take;
 use crate::asm::{CodeBlock};
 use crate::asm::arm64::*;
 use crate::cruby::*;
-use crate::backend::*;
+use crate::backend::lir::*;
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 

@@ -1,6 +1,6 @@
 use crate::{
     asm::CodeBlock,
-    backend::*,
+    backend::lir::*,
     cruby::*,
     debug,
     hir::{self, Function, Insn::*},

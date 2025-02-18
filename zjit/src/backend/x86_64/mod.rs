@@ -4,7 +4,7 @@ use crate::asm::*;
 use crate::asm::x86_64::*;
 use crate::virtualmem::CodePtr;
 use crate::cruby::*;
-use crate::backend::*;
+use crate::backend::lir::*;
 use crate::cast::*;
 
 // Use the x86 register type for this platform
