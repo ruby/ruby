@@ -9,8 +9,6 @@ end
 
 require "test/unit"
 
-ENV["JARS_SKIP"] = "true" if Gem.java_platform? # avoid unnecessary and noisy `jar-dependencies` post install hook
-
 require "fileutils"
 require "pathname"
 require "pp"
