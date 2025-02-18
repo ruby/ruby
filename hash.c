@@ -3017,8 +3017,11 @@ rb_hash_size_num(VALUE hash)
  *    empty? -> true or false
  *
  *  Returns +true+ if there are no hash entries, +false+ otherwise:
+ *
  *    {}.empty? # => true
- *    {foo: 0, bar: 1, baz: 2}.empty? # => false
+ *    {foo: 0}.empty? # => false
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 VALUE
