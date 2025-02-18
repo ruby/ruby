@@ -639,7 +639,7 @@ module Spec
         elsif opts[:skip_validation]
           @context.gem_command "build --force #{@spec.name}", dir: lib_path
         else
-          @context.gem_command "build #{@spec.name}", dir: lib_path
+          @context.gem_command "build #{@spec.name}", dir: lib_path, allowed_warning: opts[:allowed_warning]
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
