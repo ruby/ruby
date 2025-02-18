@@ -3857,9 +3857,9 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *
  *  Returns +true+ if all of the following are true:
  *
- *  * The given +object+ is a +Hash+ object.
- *  * +self+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>self[key].eql?(object[key])</tt>.
+ *  - The given +object+ is a +Hash+ object.
+ *  - +self+ and +object+ have the same keys (regardless of order).
+ *  - For each key +key+, <tt>self[key].eql?(object[key])</tt>.
  *
  *  Otherwise, returns +false+.
  *
