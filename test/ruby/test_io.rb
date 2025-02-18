@@ -1141,6 +1141,34 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_copy_stream_dup_buffer
+    bug21131 = '[ruby-core:120961] [Bug #21131]'
+    mkcdtmpdir do
+      dst_class = Class.new do
+        def initialize(&block)
+          @block = block
+        end
+
+        def write(data)
+          @block.call(data.dup)
+          data.bytesize
+        end
+      end
+
+      rng = Random.new(42)
+      body = Tempfile.new("ruby-bug", binmode: true)
+      body.write(rng.bytes(16_385))
+      body.rewind
+
+      payload = []
+      IO.copy_stream(body, dst_class.new{payload << it})
+      body.rewind
+      assert_equal(body.read, payload.join, bug21131)
+    ensure
+      body&.close
+    end
+  end
+
   def test_copy_stream_write_in_binmode
     bug8767 = '[ruby-core:56518] [Bug #8767]'
     mkcdtmpdir {
