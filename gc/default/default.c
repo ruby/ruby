@@ -3199,6 +3199,10 @@ protect_page_body(struct heap_page_body *body, DWORD protect)
     DWORD old_protect;
     return VirtualProtect(body, HEAP_PAGE_SIZE, protect, &old_protect) != 0;
 }
+#elif defined(__wasi__)
+// wasi-libc's mprotect emulation does not support PROT_NONE
+enum {HEAP_PAGE_LOCK, HEAP_PAGE_UNLOCK};
+#define protect_page_body(body, protect) 1
 #else
 enum {HEAP_PAGE_LOCK = PROT_NONE, HEAP_PAGE_UNLOCK = PROT_READ | PROT_WRITE};
 #define protect_page_body(body, protect) !mprotect((body), HEAP_PAGE_SIZE, (protect))
