@@ -2143,21 +2143,24 @@ rb_hash_lookup(VALUE hash, VALUE key)
  *    fetch(key, default_value) -> object
  *    fetch(key) {|key| ... } -> object
  *
- *  Returns the value for the given +key+, if found.
+ *  With no block given, returns the value for the given +key+, if found;
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h.fetch(:bar) # => 1
+ *    h.fetch(:bar)  # => 1
  *
- *  If +key+ is not found and no block was given,
- *  returns +default_value+:
- *    {}.fetch(:nosuch, :default) # => :default
+ *  If the key is not found, returns +default_value+, if given,
+ *  or raises KeyError otherwise:
  *
- *  If +key+ is not found and a block was given,
- *  yields +key+ to the block and returns the block's return value:
+ *    h.fetch(:nosuch, :default) # => :default
+ *    h.fetch(:nosuch)           # Raises KeyError.
+ *
+ *  With a block given, calls the block with +key+ and returns the block's return value:
+ *
  *    {}.fetch(:nosuch) {|key| "No key #{key}"} # => "No key nosuch"
  *
- *  Raises KeyError if neither +default_value+ nor a block was given.
- *
  *  Note that this method does not use the values of either #default or #default_proc.
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
