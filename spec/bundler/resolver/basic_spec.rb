@@ -379,4 +379,44 @@ RSpec.describe "Resolving" do
 
     should_resolve_without_dependency_api %w[myrack-3.0.0 standalone_migrations-2.0.4]
   end
+
+  it "resolves fine cases that need joining unbounded disjoint ranges" do
+    @index = build_index do
+      gem "inspec", "5.22.3" do
+        dep "ruby", ">= 3.2.2"
+        dep "train-kubernetes", ">= 0.1.7"
+      end
+
+      gem "ruby", "3.2.2"
+
+      gem "train-kubernetes", "0.1.12" do
+        dep "k8s-ruby", ">= 0.14.0"
+      end
+
+      gem "train-kubernetes", "0.1.10" do
+        dep "k8s-ruby", "= 0.10.5"
+      end
+
+      gem "train-kubernetes", "0.1.7" do
+        dep "k8s-ruby", ">= 0.10.5"
+      end
+
+      gem "k8s-ruby", "0.10.5" do
+        dep "ruby","< 3.2.2"
+      end
+
+      gem "k8s-ruby", "0.11.0" do
+        dep "ruby", ">= 3.2.2"
+      end
+
+      gem "k8s-ruby", "0.14.0" do
+        dep "ruby", "< 3.2.2"
+      end
+    end
+
+    dep "inspec", "5.22.3"
+    dep "ruby", "3.2.2"
+
+    should_resolve_as %w[inspec-5.22.3 ruby-3.2.2 train-kubernetes-0.1.7 k8s-ruby-0.11.0]
+  end
 end
