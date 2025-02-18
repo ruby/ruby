@@ -3078,23 +3078,19 @@ each_key_i(VALUE key, VALUE value, VALUE _)
  *    each_key {|key| ... } -> self
  *    each_key -> new_enumerator
  *
- *  Calls the given block with each key; returns +self+:
+ *  With a block given, calls the block with each key; returns +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.each_key {|key| puts key }  # => {foo: 0, bar: 1, baz: 2}
+ *
  *  Output:
  *    foo
  *    bar
  *    baz
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.each_key # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:each_key>
- *    h1 = e.each {|key| puts key }
- *    h1 # => {foo: 0, bar: 1, baz: 2}
- *  Output:
- *    foo
- *    bar
- *    baz
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Iterating}[rdoc-ref:Hash@Methods+for+Iterating].
  */
 static VALUE
 rb_hash_each_key(VALUE hash)
