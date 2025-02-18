@@ -33,6 +33,35 @@ module Prism
 
       Racc_debug_parser = false # :nodoc:
 
+      # By using the `:parser` keyword argument, you can translate in a way that is compatible with
+      # the Parser gem using any parser.
+      #
+      # For example, in RuboCop for Ruby LSP, the following approach can be used to improve performance
+      # by reusing a pre-parsed `Prism::ParseLexResult`:
+      #
+      #   class PrismPreparsed
+      #     def initialize(prism_result)
+      #       @prism_result = prism_result
+      #     end
+      #
+      #     def parse_lex(source, **options)
+      #       @prism_result
+      #     end
+      #   end
+      #
+      #   prism_preparsed = PrismPreparsed.new(prism_result)
+      #
+      #   Prism::Translation::Ruby34.new(builder, parser: prism_preparsed)
+      #
+      # In an object passed to the `:parser` keyword argument, the `parse` and `parse_lex` methods
+      # should be implemented as needed.
+      #
+      def initialize(builder = ::Parser::Builders::Default.new, parser: Prism)
+        @parser = parser
+
+        super(builder)
+      end
+
       def version # :nodoc:
         34
       end
@@ -51,7 +80,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, **prism_options), offset_cache)
+        result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -64,7 +93,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, **prism_options), offset_cache)
+        result = unwrap(@parser.parse(source, **prism_options), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -83,7 +112,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, **prism_options), offset_cache)
+            unwrap(@parser.parse_lex(source, **prism_options), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
