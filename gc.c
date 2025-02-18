@@ -3441,6 +3441,8 @@ vm_weak_table_gen_ivar_foreach_too_complex_i(st_data_t _key, st_data_t value, st
 
     GC_ASSERT(!iter_data->weak_only);
 
+    if (SPECIAL_CONST_P((VALUE)value)) return ST_CONTINUE;
+
     return iter_data->callback((VALUE)value, iter_data->data);
 }
 
