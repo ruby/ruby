@@ -220,9 +220,6 @@ runs:
         test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
-        test_all_subset_input_file: ${{ steps.global.outputs.test_all_subset_input_file }}
-        btest_subset_input_file: ${{ steps.global.outputs.btest_subset_input_file }}
-        test_spec_subset_input_file: ${{ steps.global.outputs.test_spec_subset_input_file }}
 
     - name: Variables to report Launchable
       id: variables
@@ -288,9 +285,6 @@ runs:
           rm -f "${test_report_path}"
           rm -f "${btest_report_path}"
           rm -fr "${test_spec_report_path}"
-          rm -f "${test_all_subset_input_file}"
-          rm -f "${btest_subset_input_file}"
-          rm -f "${test_spec_subset_input_file}"
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
       env:
         test_report_path: ${{ steps.variables.outputs.test_report_path }}
@@ -302,6 +296,3 @@ runs:
         test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
         btest_session_file: ${{ steps.global.outputs.btest_session_file }}
         test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
-        test_all_subset_input_file: ${{ steps.global.outputs.test_all_subset_input_file }}
-        btest_subset_input_file: ${{ steps.global.outputs.btest_subset_input_file }}
-        test_spec_subset_input_file: ${{ steps.global.outputs.test_spec_subset_input_file }}
