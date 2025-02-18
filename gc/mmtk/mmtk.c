@@ -1326,10 +1326,17 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 }
 
 // Miscellaneous
-size_t
-rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
+
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 0
+static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
+
+struct rb_gc_object_metadata_entry *
+rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    return 0;
+    object_metadata_entries[0].name = 0;
+    object_metadata_entries[0].val = 0;
+
+    return object_metadata_entries;
 }
 
 bool
