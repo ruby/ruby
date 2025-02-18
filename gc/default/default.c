@@ -6193,11 +6193,12 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
     size_t n = 0;
-    static ID ID_wb_protected, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned;
+    static ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned;
 
     if (!ID_marked) {
 #define I(s) ID_##s = rb_intern(#s);
         I(wb_protected);
+        I(age);
         I(old);
         I(uncollectible);
         I(marking);
@@ -6214,6 +6215,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 } while (0)
 
     if (!RVALUE_WB_UNPROTECTED(objspace, obj)) SET_ENTRY(wb_protected, Qtrue);
+    SET_ENTRY(age, INT2FIX(RVALUE_AGE_GET(obj)));
     if (RVALUE_OLD_P(objspace, obj)) SET_ENTRY(old, Qtrue);
     if (RVALUE_UNCOLLECTIBLE(objspace, obj)) SET_ENTRY(uncollectible, Qtrue);
     if (RVALUE_MARKING(objspace, obj)) SET_ENTRY(marking, Qtrue);
