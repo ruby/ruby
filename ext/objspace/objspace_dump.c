@@ -385,8 +385,6 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t memsize;
     struct allocation_info *ainfo = objspace_lookup_allocation_info(obj);
     rb_io_t *fptr;
-    ID flags[RB_OBJ_GC_FLAGS_MAX];
-    size_t n, i;
     ID mid;
 
     if (SPECIAL_CONST_P(obj)) {
@@ -643,14 +641,24 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_lu(dc, RB_NUM2ULONG(rb_obj_id(obj)));
     }
 
-    if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
-        dump_append(dc, ", \"flags\":{");
-        for (i=0; i<n; i++) {
-            dump_append(dc, "\"");
-            dump_append(dc, rb_id2name(flags[i]));
-            dump_append(dc, "\":true");
-            if (i != n-1) dump_append(dc, ", ");
+    struct rb_gc_object_metadata_entry *gc_metadata = rb_gc_object_metadata(obj);
+    for (int i = 0; gc_metadata[i].name != 0; i++) {
+        if (i == 0) {
+            dump_append(dc, ", \"flags\":{");
         }
+        else {
+            dump_append(dc, ", ");
+        }
+
+        dump_append(dc, "\"");
+        dump_append(dc, rb_id2name(gc_metadata[i].name));
+        dump_append(dc, "\":");
+        dump_append_special_const(dc, gc_metadata[i].val);
+    }
+
+    /* If rb_gc_object_metadata had any entries, we need to close the opening
+     * `"flags":{`. */
+    if (gc_metadata[0].name != 0) {
         dump_append(dc, "}");
     }
 
@@ -883,7 +891,4 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);
     rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 4);
     rb_define_module_function(rb_mObjSpace, "_dump_shapes", objspace_dump_shapes, 2);
-
-    /* force create static IDs */
-    rb_obj_gc_flags(rb_mObjSpace, 0, 0);
 }

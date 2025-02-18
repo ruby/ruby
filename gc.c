@@ -678,7 +678,7 @@ typedef struct gc_function_map {
     VALUE (*stat_heap)(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym);
     const char *(*active_gc_name)(void);
     // Miscellaneous
-    size_t (*obj_flags)(void *objspace_ptr, VALUE obj, ID* flags, size_t max);
+    struct rb_gc_object_metadata_entry *(*object_metadata)(void *objspace_ptr, VALUE obj);
     bool (*pointer_to_heap_p)(void *objspace_ptr, const void *ptr);
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
@@ -855,7 +855,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(stat_heap);
     load_modular_gc_func(active_gc_name);
     // Miscellaneous
-    load_modular_gc_func(obj_flags);
+    load_modular_gc_func(object_metadata);
     load_modular_gc_func(pointer_to_heap_p);
     load_modular_gc_func(garbage_object_p);
     load_modular_gc_func(set_event_hook);
@@ -938,7 +938,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_stat_heap rb_gc_functions.stat_heap
 # define rb_gc_impl_active_gc_name rb_gc_functions.active_gc_name
 // Miscellaneous
-# define rb_gc_impl_obj_flags rb_gc_functions.obj_flags
+# define rb_gc_impl_object_metadata rb_gc_functions.object_metadata
 # define rb_gc_impl_pointer_to_heap_p rb_gc_functions.pointer_to_heap_p
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
@@ -2955,11 +2955,10 @@ rb_gc_active_gc_name(void)
     return gc_name;
 }
 
-// TODO: rearchitect this function to work for a generic GC
-size_t
-rb_obj_gc_flags(VALUE obj, ID* flags, size_t max)
+struct rb_gc_object_metadata_entry *
+rb_gc_object_metadata(VALUE obj)
 {
-    return rb_gc_impl_obj_flags(rb_gc_get_objspace(), obj, flags, max);
+    return rb_gc_impl_object_metadata(rb_gc_get_objspace(), obj);
 }
 
 /* GC */
