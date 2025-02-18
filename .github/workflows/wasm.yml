@@ -43,7 +43,7 @@ jobs:
     env:
       RUBY_TESTOPTS: '-q --tty=no'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      WASI_SDK_VERSION_MAJOR: 20
+      WASI_SDK_VERSION_MAJOR: 25
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 113
       WASMTIME_VERSION: v15.0.0
@@ -78,7 +78,7 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y ruby make autoconf git wget
 
-          wasi_sdk_deb="wasi-sdk_${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}_amd64.deb"
+          wasi_sdk_deb="wasi-sdk-${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}-x86_64-linux.deb"
           wget "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION_MAJOR}/${wasi_sdk_deb}"
           sudo dpkg -i "$wasi_sdk_deb"
           rm -f "$wasi_sdk_deb"
