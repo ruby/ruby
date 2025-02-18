@@ -6189,33 +6189,46 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     }
 }
 
-// TODO: rearchitect this function to work for a generic GC
-size_t
-rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 5
+static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
+
+struct rb_gc_object_metadata_entry *
+rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
     size_t n = 0;
-    static ID ID_marked;
-    static ID ID_wb_protected, ID_old, ID_marking, ID_uncollectible, ID_pinned;
+    static ID ID_wb_protected, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned;
 
     if (!ID_marked) {
 #define I(s) ID_##s = rb_intern(#s);
-        I(marked);
         I(wb_protected);
         I(old);
-        I(marking);
         I(uncollectible);
+        I(marking);
+        I(marked);
         I(pinned);
 #undef I
     }
 
-    if (RVALUE_WB_UNPROTECTED(objspace, obj) == 0 && n < max)                   flags[n++] = ID_wb_protected;
-    if (RVALUE_OLD_P(objspace, obj) && n < max)                                 flags[n++] = ID_old;
-    if (RVALUE_UNCOLLECTIBLE(objspace, obj) && n < max)                         flags[n++] = ID_uncollectible;
-    if (RVALUE_MARKING(objspace, obj) && n < max) flags[n++] = ID_marking;
-    if (RVALUE_MARKED(objspace, obj) && n < max)    flags[n++] = ID_marked;
-    if (RVALUE_PINNED(objspace, obj) && n < max)  flags[n++] = ID_pinned;
-    return n;
+#define SET_ENTRY(na, v) do { \
+    GC_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    object_metadata_entries[n].name = ID_##na; \
+    object_metadata_entries[n].val = v; \
+    n++; \
+} while (0)
+
+    if (!RVALUE_WB_UNPROTECTED(objspace, obj)) SET_ENTRY(wb_protected, Qtrue);
+    if (RVALUE_OLD_P(objspace, obj)) SET_ENTRY(old, Qtrue);
+    if (RVALUE_UNCOLLECTIBLE(objspace, obj)) SET_ENTRY(uncollectible, Qtrue);
+    if (RVALUE_MARKING(objspace, obj)) SET_ENTRY(marking, Qtrue);
+    if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
+    if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
+
+    object_metadata_entries[n].name = 0;
+    object_metadata_entries[n].val = 0;
+#undef SET_ENTRY
+
+    return object_metadata_entries;
 }
 
 void *
