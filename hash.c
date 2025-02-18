@@ -3856,9 +3856,10 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *    eql?(object) -> true or false
  *
  *  Returns +true+ if all of the following are true:
- *  * +object+ is a +Hash+ object.
- *  * +hash+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>h[key].eql?(object[key])</tt>.
+ *
+ *  * The given +object+ is a +Hash+ object.
+ *  * +self+ and +object+ have the same keys (regardless of order).
+ *  * For each key +key+, <tt>self[key].eql?(object[key])</tt>.
  *
  *  Otherwise, returns +false+.
  *
@@ -3867,6 +3868,8 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *    h1.eql? h2 # => true
  *    h3 = {baz: 2, bar: 1, foo: 0}
  *    h1.eql? h3 # => true
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 static VALUE
