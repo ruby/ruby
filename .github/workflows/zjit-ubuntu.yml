@@ -1,6 +1,8 @@
 name: ZJIT Ubuntu
 on:
   push:
+    branches:
+      - master
     paths-ignore:
       - 'doc/**'
       - '**/man/*'
@@ -9,13 +11,13 @@ on:
       - '**/.document'
       - '.*.yml'
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
-
-concurrency:
-  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
-  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
 permissions:
   contents: read
@@ -128,11 +130,16 @@ jobs:
           BTESTS: ${{ matrix.btests }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
-      - uses: ./.github/actions/slack
-        with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
+  result:
+    if: ${{ always() }}
+    name: ${{ github.workflow }} result
+    runs-on: ubuntu-22.04
+    needs: [make]
+    steps:
+      - name: ${{ github.workflow }} jobs have failed
+        run: exit 1
+        working-directory:
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:
