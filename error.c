@@ -1135,7 +1135,6 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     die();
 }
 
-
 void
 rb_bug_errno(const char *mesg, int errno_arg)
 {
@@ -1196,25 +1195,39 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
                          const char *fmt, ...)
 {
     rb_pid_t pid = -1;
-    FILE *out = bug_report_file(file, line, &pid);
-    if (out) {
-        fputs("Assertion Failed: ", out);
-        if (name) fprintf(out, "%s:", name);
-        fputs(expr, out);
-
-        if (fmt && *fmt) {
-            va_list args;
-            va_start(args, fmt);
-            fputs(": ", out);
-            vfprintf(out, fmt, args);
-            va_end(args);
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    rb_thread_t *cur_th = NULL;
+    // we can't use a mutex if we're in a native signal handler
+    bool can_lock = false;
+    if (ec) {
+        cur_th = rb_ec_thread_ptr(ec);
+        if (cur_th && !cur_th->in_native_sighandler) {
+            can_lock = true;
         }
-        fprintf(out, "\n%s\n\n", rb_dynamic_description);
-
-        preface_dump(out);
-        rb_vm_bugreport(NULL, out);
-        bug_report_end(out, pid);
     }
+    if (can_lock) RB_VM_LOCK_ENTER_NO_BARRIER();
+    {
+        FILE *out = bug_report_file(file, line, &pid);
+        if (out) {
+            fputs("Assertion Failed: ", out);
+            if (name) fprintf(out, "%s:", name);
+            fputs(expr, out);
+
+            if (fmt && *fmt) {
+                va_list args;
+                va_start(args, fmt);
+                fputs(": ", out);
+                vfprintf(out, fmt, args);
+                va_end(args);
+            }
+            fprintf(out, "\n%s\n\n", rb_dynamic_description);
+
+            preface_dump(out);
+            rb_vm_bugreport(NULL, out);
+            bug_report_end(out, pid);
+        }
+    }
+    if (can_lock) RB_VM_LOCK_LEAVE_NO_BARRIER();
 
     die();
 }
