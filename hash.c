@@ -3016,7 +3016,7 @@ rb_hash_size_num(VALUE hash)
  *  call-seq:
  *    empty? -> true or false
  *
- *  Returns whether <tt>self.size == 0</tt>:
+ *  Returns +true+ if there are no hash entries, +false+ otherwise:
  *
  *    {}.empty? # => true
  *    {foo: 0}.empty? # => false
