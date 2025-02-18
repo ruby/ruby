@@ -332,9 +332,23 @@ class TestObjSpace < Test::Unit::TestCase
     # Ensure that the fstring is promoted to old generation
     4.times { GC.start }
     info = ObjectSpace.dump("foo".freeze)
-    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_include(info, '"wb_protected":true')
+    assert_include(info, '"age":3')
+    assert_include(info, '"old":true')
     assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
+  end
+
+  def test_dump_flag_age
+    EnvUtil.without_gc do
+      o = Object.new
+
+      assert_include(ObjectSpace.dump(o), '"age":0')
+
+      GC.start
+
+      assert_include(ObjectSpace.dump(o), '"age":1')
+    end
   end
 
   if defined?(RubyVM::Shape)
