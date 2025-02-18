@@ -530,10 +530,8 @@ module Spec
         when false
           # do nothing
         when :yaml
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_yaml
         else
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_ruby
         end
 
