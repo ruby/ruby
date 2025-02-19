@@ -46,8 +46,10 @@ impl std::fmt::Display for VALUE {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             val if val.fixnum_p() => write!(f, "Fixnum({})", val.as_fixnum()),
-            val if val.nil_p() => write!(f, "nil"),
-            val => write!(f, "VALUE({:?})", val.as_ptr::<u8>()),
+            &Qnil => write!(f, "nil"),
+            &Qtrue => write!(f, "true"),
+            &Qfalse => write!(f, "false"),
+            val => write!(f, "VALUE({:#X?})", val.as_ptr::<u8>()),
         }
     }
 }
@@ -318,6 +320,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 write!(f, "  {insn_id} = ")?;
                 match &fun.insns[insn_id.0] {
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
+                    Insn::Const { val } => { write!(f, "Const {val}")?; }
                     Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Jump(target) => { write!(f, "Jump {target}")?; }
