@@ -58,7 +58,7 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 }
 
 /// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, val: hir::Opnd) -> Option<()> {
+fn gen_return(asm: &mut Assembler, _val: hir::InsnId) -> Option<()> {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
@@ -73,11 +73,5 @@ fn gen_return(asm: &mut Assembler, val: hir::Opnd) -> Option<()> {
     asm.frame_teardown();
 
     // Return a value
-    let val = match val {
-        hir::Opnd::Const(val) => val,
-        _ => return None, // TODO: Support Opnd::Insn
-    };
-    asm.cret(val.into());
-
-    Some(())
+    return None;  // TODO: Support hir::InsnId
 }
