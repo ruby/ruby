@@ -11,6 +11,12 @@ use std::collections::{HashMap, HashSet};
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(usize);
 
+impl Into<usize> for InsnId {
+    fn into(self) -> usize {
+        self.0
+    }
+}
+
 impl std::fmt::Display for InsnId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "v{}", self.0)
@@ -46,7 +52,7 @@ impl std::fmt::Display for VALUE {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct BranchEdge {
     target: BlockId,
     args: Vec<InsnId>,
@@ -64,12 +70,12 @@ impl std::fmt::Display for BranchEdge {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct CallInfo {
     name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Insn {
     PutSelf,
     // TODO(max): We probably want to make this an enum so we are not limited to Ruby heap objects
@@ -143,6 +149,96 @@ impl<'a> FunctionPrinter<'a> {
     }
 }
 
+/// Union-Find (Disjoint-Set) is a data structure for managing disjoint sets that has an interface
+/// of two operations:
+///
+/// * find (what set is this item part of?)
+/// * union (join these two sets)
+///
+/// Union-Find identifies sets by their *representative*, which is some chosen element of the set.
+/// This is implemented by structuring each set as its own graph component with the representative
+/// pointing at nothing. For example:
+///
+/// * A -> B -> C
+/// * D -> E
+///
+/// This represents two sets `C` and `E`, with three and two members, respectively. In this
+/// example, `find(A)=C`, `find(C)=C`, `find(D)=E`, and so on.
+///
+/// To union sets, call `make_equal_to` on any set element. That is, `make_equal_to(A, D)` and
+/// `make_equal_to(B, E)` have the same result: the two sets are joined into the same graph
+/// component. After this operation, calling `find` on any element will return `E`.
+///
+/// This is a useful data structure in compilers because it allows in-place rewriting without
+/// linking/unlinking instructions and without replacing all uses. When calling `make_equal_to` on
+/// any instruction, all of its uses now implicitly point to the replacement.
+///
+/// This does mean that pattern matching and analysis of the instruction graph must be careful to
+/// call `find` whenever it is inspecting an instruction (or its operands). If not, this may result
+/// in missing optimizations.
+#[derive(Debug)]
+struct UnionFind<T: Copy + Into<usize>> {
+    forwarded: Vec<Option<T>>,
+}
+
+impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
+    fn new() -> UnionFind<T> {
+        UnionFind { forwarded: vec![] }
+    }
+
+    /// Private. Return the internal representation of the forwarding pointer for a given element.
+    fn at(&self, idx: T) -> Option<T> {
+        self.forwarded.get(idx.into()).map(|x| *x).flatten()
+    }
+
+    /// Private. Set the internal representation of the forwarding pointer for the given element
+    /// `idx`. Extend the internal vector if necessary.
+    fn set(&mut self, idx: T, value: T) {
+        if idx.into() >= self.forwarded.len() {
+            self.forwarded.resize(idx.into()+1, None);
+        }
+        self.forwarded[idx.into()] = Some(value);
+    }
+
+    /// Find the set representative for `insn`. Perform path compression at the same time to speed
+    /// up further find operations. For example, before:
+    ///
+    /// `A -> B -> C`
+    ///
+    /// and after `find(A)`:
+    ///
+    /// ```
+    /// A -> C
+    /// B ---^
+    /// ```
+    pub fn find(&mut self, insn: T) -> T {
+        let result = self.find_const(insn);
+        if result != insn {
+            // Path compression
+            self.set(insn, result);
+        }
+        result
+    }
+
+    /// Find the set representative for `insn` without doing path compression.
+    pub fn find_const(&self, insn: T) -> T {
+        let mut result = insn;
+        loop {
+            match self.at(result) {
+                None => return result,
+                Some(insn) => result = insn,
+            }
+        }
+    }
+
+    /// Union the two sets containing `insn` and `target` such that every element in `insn`s set is
+    /// now part of `target`'s. Neither argument must be the representative in its set.
+    pub fn make_equal_to(&mut self, insn: T, target: T) {
+        let found = self.find(insn);
+        self.set(found, target);
+    }
+}
+
 #[derive(Debug)]
 pub struct Function {
     // ISEQ this function refers to
@@ -151,6 +247,7 @@ pub struct Function {
     // TODO: get method name and source location from the ISEQ
 
     pub insns: Vec<Insn>,
+    union_find: UnionFind<InsnId>,
     blocks: Vec<Block>,
     entry_block: BlockId,
 }
@@ -160,6 +257,7 @@ impl Function {
         Function {
             iseq,
             insns: vec![],
+            union_find: UnionFind::new(),
             blocks: vec![Block::default()],
             entry_block: BlockId(0)
         }
@@ -177,6 +275,33 @@ impl Function {
         let id = BlockId(self.blocks.len());
         self.blocks.push(Block::default());
         id
+    }
+
+    /// Use for pattern matching over instructions in a union-find-safe way. For example:
+    /// ```rust
+    /// match func.find(insn_id) {
+    ///   IfTrue { val, target } if func.is_truthy(val) => {
+    ///     func.make_equal_to(insn_id, block, Insn::Jump(target));
+    ///   }
+    ///   _ => {}
+    /// }
+    /// ```
+    fn find(&mut self, insn_id: InsnId) -> Insn {
+        let insn_id = self.union_find.find(insn_id);
+        use Insn::*;
+        match &self.insns[insn_id.0] {
+            result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..}) => result.clone(),
+            StringCopy { val } => StringCopy { val: self.union_find.find(*val) },
+            StringIntern { val } => StringIntern { val: self.union_find.find(*val) },
+            Test { val } => Test { val: self.union_find.find(*val) },
+            insn => todo!("find({insn:?})"),
+        }
+    }
+
+    /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
+    fn make_equal_to(&mut self, insn: InsnId, block: BlockId, replacement: Insn) {
+        let new_insn = self.push_insn(block, replacement);
+        self.union_find.make_equal_to(insn, new_insn);
     }
 }
 
@@ -601,6 +726,43 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     }
 
     Ok(fun)
+}
+
+#[cfg(test)]
+mod union_find_tests {
+    use super::UnionFind;
+
+    #[test]
+    fn test_find_returns_self() {
+        let mut uf = UnionFind::new();
+        assert_eq!(uf.find(3usize), 3);
+    }
+
+    #[test]
+    fn test_find_const_returns_target() {
+        let mut uf = UnionFind::new();
+        uf.make_equal_to(3, 4);
+        assert_eq!(uf.find_const(3usize), 4);
+    }
+
+    #[test]
+    fn test_find_const_returns_transitive_target() {
+        let mut uf = UnionFind::new();
+        uf.make_equal_to(3, 4);
+        uf.make_equal_to(4, 5);
+        assert_eq!(uf.find_const(3usize), 5);
+        assert_eq!(uf.find_const(4usize), 5);
+    }
+
+    #[test]
+    fn test_find_compresses_path() {
+        let mut uf = UnionFind::new();
+        uf.make_equal_to(3, 4);
+        uf.make_equal_to(4, 5);
+        assert_eq!(uf.at(3usize), Some(4));
+        assert_eq!(uf.find(3usize), 5);
+        assert_eq!(uf.at(3usize), Some(5));
+    }
 }
 
 #[cfg(test)]
