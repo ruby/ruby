@@ -173,7 +173,49 @@ class TestEtc < Test::Unit::TestCase
     assert_operator(File, :absolute_path?, Etc.sysconfdir)
   end if File.method_defined?(:absolute_path?)
 
-  def test_ractor
+  # All Ractor-safe methods should be tested here
+  def test_ractor_parallel
+    assert_ractor(<<~RUBY, require: 'etc')
+      20.times.map do
+        Ractor.new do
+          1000.times do
+            raise unless String === Etc.sysconfdir
+            raise unless String === Etc.systmpdir
+            raise unless Hash === Etc.uname
+            if defined?(Etc::SC_CLK_TCK)
+              raise unless Integer === Etc.sysconf(Etc::SC_CLK_TCK)
+            end
+            if defined?(Etc::CS_PATH)
+              raise unless String === Etc.confstr(Etc::CS_PATH)
+            end
+            if defined?(Etc::PC_PIPE_BUF)
+              IO.pipe { |r, w|
+                val = w.pathconf(Etc::PC_PIPE_BUF)
+                raise unless val.nil? || val.kind_of?(Integer)
+              }
+            end
+            raise unless Integer === Etc.nprocessors
+          end
+        end
+      end.each(&:take)
+    RUBY
+  end
+
+  def test_ractor_unsafe
+    assert_ractor(<<~RUBY, require: 'etc')
+      r = Ractor.new do
+        begin
+          Etc.passwd
+        rescue => e
+          e.class
+        end
+      end.take
+      assert_equal Ractor::UnsafeError, r
+    RUBY
+  end
+
+  def test_ractor_passwd
+    omit("https://bugs.ruby-lang.org/issues/21115")
     return unless Etc.passwd # => skip test if no platform support
     Etc.endpwent
 
@@ -195,6 +237,20 @@ class TestEtc < Test::Unit::TestCase
         break s.name
       end
       assert_equal(name2, name)
+    RUBY
+  end
+
+  def test_ractor_getgrgid
+    omit("https://bugs.ruby-lang.org/issues/21115")
+
+    assert_ractor(<<~RUBY, require: 'etc')
+      20.times.map do
+        Ractor.new do
+          1000.times do
+            raise unless Etc.getgrgid(Process.gid).gid == Process.gid
+          end
+        end
+      end.each(&:take)
     RUBY
   end
 end
