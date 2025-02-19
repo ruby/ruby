@@ -225,6 +225,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
 
 #[derive(Debug, Clone)]
 pub struct FrameState {
+    iseq: IseqPtr,
     // Ruby bytecode instruction pointer
     pc: VALUE,
 
@@ -232,9 +233,35 @@ pub struct FrameState {
     locals: Vec<Opnd>,
 }
 
+/// Compute the index of a local variable from its slot index
+fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
+    // Layout illustration
+    // This is an array of VALUE
+    //                                           | VM_ENV_DATA_SIZE |
+    //                                           v                  v
+    // low addr <+-------+-------+-------+-------+------------------+
+    //           |local 0|local 1|  ...  |local n|       ....       |
+    //           +-------+-------+-------+-------+------------------+
+    //           ^       ^                       ^                  ^
+    //           +-------+---local_table_size----+         cfp->ep--+
+    //                   |                                          |
+    //                   +------------------ep_offset---------------+
+    //
+    // See usages of local_var_name() from iseq.c for similar calculation.
+
+    // Equivalent of iseq->body->local_table_size
+    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
+        .try_into()
+        .unwrap();
+    let op = (ep_offset - VM_ENV_DATA_SIZE) as i32;
+    let local_idx = local_table_size - op - 1;
+    assert!(local_idx >= 0 && local_idx < local_table_size);
+    local_idx.try_into().unwrap()
+}
+
 impl FrameState {
-    fn new() -> FrameState {
-        FrameState { pc: VALUE(0), stack: vec![], locals: vec![] }
+    fn new(iseq: IseqPtr) -> FrameState {
+        FrameState { iseq, pc: VALUE(0), stack: vec![], locals: vec![] }
     }
 
     fn push(&mut self, opnd: Opnd) {
@@ -254,17 +281,13 @@ impl FrameState {
         self.stack[idx] = opnd;
     }
 
-    fn setlocal(&mut self, idx: usize, opnd: Opnd) {
-        if idx >= self.locals.len() {
-            self.locals.resize(idx+1, Opnd::Const(Qnil));
-        }
+    fn setlocal(&mut self, ep_offset: u32, opnd: Opnd) {
+        let idx = ep_offset_to_local_idx(self.iseq, ep_offset);
         self.locals[idx] = opnd;
     }
 
-    fn getlocal(&mut self, idx: usize) -> Opnd {
-        if idx >= self.locals.len() {
-            self.locals.resize(idx+1, Opnd::Const(Qnil));
-        }
+    fn getlocal(&mut self, ep_offset: u32) -> Opnd {
+        let idx = ep_offset_to_local_idx(self.iseq, ep_offset);
         self.locals[idx]
     }
 
@@ -336,6 +359,11 @@ fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
     result as usize
 }
 
+/// Return the number of locals in the current ISEQ (includes parameters)
+fn num_locals(iseq: *const rb_iseq_t) -> usize {
+    (unsafe { get_iseq_body_local_table_size(iseq) }) as usize
+}
+
 pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
@@ -351,10 +379,13 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
     let mut queue = std::collections::VecDeque::new();
-    let mut entry_state = FrameState::new();
-    for idx in 0..num_lead_params(iseq) {
-        // TODO(max): Figure out where these need to start in the frame. It's not local index 0
-        entry_state.locals.push(Opnd::Insn(fun.push_insn(fun.entry_block, Insn::Param { idx })));
+    let mut entry_state = FrameState::new(iseq);
+    for idx in 0..num_locals(iseq) {
+        if idx < num_lead_params(iseq) {
+            entry_state.locals.push(Opnd::Insn(fun.push_insn(fun.entry_block, Insn::Param { idx })));
+        } else {
+            entry_state.locals.push(Opnd::Const(Qnil));
+        }
     }
     queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0 as u32));
 
@@ -365,7 +396,7 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         if visited.contains(&block) { continue; }
         visited.insert(block);
         let mut state = if insn_idx == 0 { incoming_state.clone() } else {
-            let mut result = FrameState::new();
+            let mut result = FrameState::new(iseq);
             let mut idx = 0;
             for _ in 0..incoming_state.locals.len() {
                 result.locals.push(Opnd::Insn(fun.push_insn(block, Insn::Param { idx })));
@@ -480,14 +511,14 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.push(Opnd::Insn(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] })));
                 }
                 YARVINSN_getlocal_WC_0 => {
-                    let idx = get_arg(pc, 0).as_usize();
-                    let val = state.getlocal(idx);
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let val = state.getlocal(ep_offset);
                     state.push(val);
                 }
                 YARVINSN_setlocal_WC_0 => {
-                    let idx = get_arg(pc, 0).as_usize();
+                    let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.pop()?;
-                    state.setlocal(idx, val);
+                    state.setlocal(ep_offset, val);
                 }
                 YARVINSN_pop => { state.pop()?; }
                 YARVINSN_dup => { state.push(state.top()?); }
