@@ -837,7 +837,7 @@ mod tests {
             let program = "cond = true; if cond; 3; else; 4; end";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_ssa(iseq).unwrap();
-            assert_matches!(function.insns.get(2), Some(Insn::Const { val: VALUE(20) }));
+            assert_matches!(function.insns.get(2), Some(Insn::Const { val: Qtrue }));
             assert_matches!(function.insns.get(6), Some(Insn::Test { val: InsnId(2) }));
             assert_matches!(function.insns.get(7), Some(Insn::IfFalse { val: InsnId(6), target: BranchEdge { target: BlockId(1), .. } }));
             assert_matches!(function.insns.get(9), Some(Insn::Const { val: VALUE(7) }));
