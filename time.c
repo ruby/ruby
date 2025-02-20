@@ -999,7 +999,13 @@ zone_str(const char *zone)
         str = rb_usascii_str_new(zone, len);
     }
     else {
+#ifdef _WIN32
+        str = rb_utf8_str_new(zone, len);
+        /* until we move to UTF-8 on Windows completely */
+        str = rb_str_export_locale(str);
+#else
         str = rb_enc_str_new(zone, len, rb_locale_encoding());
+#endif
     }
     return rb_fstring(str);
 }
