@@ -1379,7 +1379,7 @@ strscan_scan_base16_integer(VALUE self)
         len++;
     }
 
-    if ((remaining_len >= (len + 2)) && ptr[len] == '0' && ptr[len + 1] == 'x') {
+    if ((remaining_len >= (len + 3)) && ptr[len] == '0' && ptr[len + 1] == 'x' && rb_isxdigit(ptr[len + 2])) {
         len += 2;
     }
 

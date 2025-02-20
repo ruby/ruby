@@ -1052,19 +1052,24 @@ module StringScannerTests
     assert_predicate(s, :matched?)
 
     s = create_string_scanner('0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(1, s.pos)
+    assert_predicate(s, :matched?)
+
+    s = create_string_scanner('0xyz')
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(1, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('-0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(2, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('+0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(2, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('-123abc')
     assert_equal(-0x123abc, s.scan_integer(base: 16))
