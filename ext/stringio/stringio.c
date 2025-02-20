@@ -180,6 +180,7 @@ check_modifiable(struct StringIO *ptr)
     else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
     }
+    rb_str_modify(ptr->string);
 }
 
 static VALUE

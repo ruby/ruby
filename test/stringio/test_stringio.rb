@@ -14,6 +14,24 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_do_not_mutate_shared_buffers
+    # Ensure we have two strings that are not embedded but have the same shared
+    # string reference.
+    #
+    # In this case, we must use eval because we need two strings literals that
+    # are long enough they cannot be embedded, but also contain the same bytes.
+
+    a = eval(("x" * 1024).dump)
+    b = eval(("x" * 1024).dump)
+
+    s = StringIO.new(b)
+    s.getc
+    s.ungetc '#'
+
+    # We mutated b, so a should not be mutated
+    assert_equal("x", a[0])
+  end
+
   def test_version
     assert_kind_of(String, StringIO::VERSION)
   end
