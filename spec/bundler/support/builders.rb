@@ -632,7 +632,7 @@ module Spec
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
-        if opts[:gemspec] == :yaml || opts[:gemspec] == false
+        if [:yaml, false].include?(opts[:gemspec])
           Dir.chdir(lib_path) do
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
