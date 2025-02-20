@@ -20,11 +20,11 @@ use state::ZJITState;
 use crate::cruby::*;
 
 #[allow(non_upper_case_globals)]
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub static mut rb_zjit_enabled_p: bool = false;
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_init(options: *const u8) {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
@@ -67,7 +67,7 @@ fn rb_bug_panic_hook() {
         let _ = stderr().write_all(b"ruby: ZJIT has panicked. More info to follow...\n");
 
         // Always show a Rust backtrace.
-        env::set_var("RUST_BACKTRACE", "1");
+        env::set_var("RUST_BACKTRACE", "1"); // TODO(alan) go to init, set force backtrace
         previous_hook(panic_info);
 
         // TODO: enable CRuby's SEGV handler
@@ -79,7 +79,7 @@ fn rb_bug_panic_hook() {
 }
 
 /// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
     // TODO: acquire the VM barrier
 

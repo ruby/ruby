@@ -1363,7 +1363,7 @@ impl Assembler
     pub fn reorder_reg_moves(old_moves: &Vec<(Reg, Opnd)>) -> Vec<(Reg, Opnd)> {
         // Return the index of a move whose destination is not used as a source if any.
         fn find_safe_move(moves: &Vec<(Reg, Opnd)>) -> Option<usize> {
-            moves.iter().enumerate().find(|(_, &(dest_reg, _))| {
+            moves.iter().enumerate().find(|&(_, &(dest_reg, _))| {
                 moves.iter().all(|&(_, src_opnd)| src_opnd != Opnd::Reg(dest_reg))
             }).map(|(index, _)| index)
         }

@@ -3,7 +3,7 @@ use std::{ffi::CStr, os::raw::c_char};
 // This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of method calls after which to start generating code
 // Threshold==1 means compile on first execution
-#[no_mangle]
+#[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: u64 = 1;
 
@@ -45,7 +45,7 @@ pub(crate) use get_option;
 /// Allocate Options on the heap, initialize it, and return the address of it.
 /// The return value will be modified by rb_zjit_parse_option() and then
 /// passed to rb_zjit_init() for initialization.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_init_options() -> *const u8 {
     let options = init_options();
     Box::into_raw(Box::new(options)) as *const u8
@@ -61,7 +61,7 @@ pub fn init_options() -> Options {
 }
 
 /// Parse a --zjit* command-line flag
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_parse_option(options: *const u8, str_ptr: *const c_char) -> bool {
     let options = unsafe { &mut *(options as *mut Options) };
     parse_option(options, str_ptr).is_some()

@@ -117,7 +117,7 @@ pub use autogened::*;
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
-extern "C" {
+unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
