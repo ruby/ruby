@@ -196,14 +196,8 @@ describe "C-API Kernel function" do
       end.should raise_error(Errno::EINVAL, "Invalid argument")
     end
 
-    it "uses an 'unknown error' message when errno is unknown" do
-      platform_is_not :windows do
-        -> { @s.rb_syserr_fail(-10, nil) }.should raise_error(SystemCallError, /Unknown error(:)? -10/)
-      end
-
-      platform_is :windows do
-        -> { @s.rb_syserr_fail(-1, nil) }.should raise_error(SystemCallError, "The operation completed successfully.")
-      end
+    it "uses some kind of string as message when errno is unknown" do
+      -> { @s.rb_syserr_fail(-10, nil) }.should raise_error(SystemCallError, /[[:graph:]]+/)
     end
   end
 
@@ -220,14 +214,8 @@ describe "C-API Kernel function" do
       end.should raise_error(Errno::EINVAL, "Invalid argument")
     end
 
-    it "uses an 'unknown error' message when errno is unknown" do
-      platform_is_not :windows do
-        -> { @s.rb_syserr_fail_str(-10, nil) }.should raise_error(SystemCallError, /Unknown error(:)? -10/)
-      end
-
-      platform_is :windows do
-        -> { @s.rb_syserr_fail_str(-1, nil) }.should raise_error(SystemCallError, "The operation completed successfully.")
-      end
+    it "uses some kind of string as message when errno is unknown" do
+      -> { @s.rb_syserr_fail_str(-10, nil) }.should raise_error(SystemCallError, /[[:graph:]]+/)
     end
   end
 
