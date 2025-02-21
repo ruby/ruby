@@ -174,8 +174,12 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut RubyMutator) {
 // =============== GC ===============
 
 #[no_mangle]
-pub extern "C" fn mmtk_handle_user_collection_request(tls: VMMutatorThread) {
-    memory_manager::handle_user_collection_request::<Ruby>(mmtk(), tls);
+pub extern "C" fn mmtk_handle_user_collection_request(
+    tls: VMMutatorThread,
+    force: bool,
+    exhaustive: bool,
+) {
+    crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
 }
 
 #[no_mangle]
