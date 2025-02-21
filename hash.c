@@ -3894,14 +3894,17 @@ hash_i(VALUE key, VALUE val, VALUE arg)
  *  call-seq:
  *    hash -> an_integer
  *
- *  Returns the Integer hash-code for the hash.
+ *  Returns the integer hash-code for the hash.
  *
- *  Two +Hash+ objects have the same hash-code if their content is the same
+ *  Two hashes have the same hash-code if their content is the same
  *  (regardless of order):
+ *
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h2 = {baz: 2, bar: 1, foo: 0}
  *    h2.hash == h1.hash # => true
  *    h2.eql? h1 # => true
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 static VALUE
