@@ -200,7 +200,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     context "with a configured mirror" do
-      let(:mirror_uri) { Gem::URI("https://rubygems-mirror.org/") }
+      let(:mirror_uri) { Gem::URI("https://example-mirror.rubygems.org/") }
 
       before { settings.set_local "mirror.https://rubygems.org/", mirror_uri.to_s }
 
@@ -277,12 +277,12 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "normalizes HTTP URIs in mirror configuration" do
-      settings.set_local "mirror.http://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.http://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.all).to include("mirror.http://rubygems.org/")
     end
 
     it "normalizes HTTPS URIs in mirror configuration" do
-      settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.https://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.all).to include("mirror.https://rubygems.org/")
     end
 
@@ -297,9 +297,9 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "reads older keys without trailing slashes" do
-      settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.https://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.mirror_for("https://rubygems.org/")).to eq(
-        Gem::URI("http://rubygems-mirror.org/")
+        Gem::URI("http://example-mirror.rubygems.org/")
       )
     end
 
@@ -323,8 +323,8 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "converts older keys without trailing slashes and double underscore" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://rubygems-mirror.org")
-      expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://example-mirror.rubygems.org")
+      expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
     end
 
     it "ignores commented out keys" do
@@ -347,8 +347,8 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "reads newer keys format properly" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://rubygems-mirror.org")
-      expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org")
+      expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
     end
   end
 end

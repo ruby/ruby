@@ -259,7 +259,7 @@ module Gem
     end
 
     def installation_missing?
-      !default_gem? && (!Dir.exist?(full_gem_path) || Dir.empty?(full_gem_path))
+      !default_gem? && !File.directory?(full_gem_path)
     end
 
     unless VALIDATES_FOR_RESOLUTION

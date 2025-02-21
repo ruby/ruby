@@ -112,10 +112,10 @@ RSpec.describe Bundler::YAMLSerializer do
 
     it "handles colon in key/value" do
       yaml = <<~YAML
-        BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: http://rubygems-mirror.org
+        BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: http://example-mirror.rubygems.org
       YAML
 
-      expect(serializer.load(yaml)).to eq("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://rubygems-mirror.org")
+      expect(serializer.load(yaml)).to eq("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org")
     end
 
     it "handles arrays inside hashes" do

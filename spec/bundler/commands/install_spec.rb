@@ -100,24 +100,30 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      gem_dir = default_bundle_path("gems/myrack-1.0.0")
-
-      FileUtils.rm_rf(gem_dir)
+      FileUtils.rm_rf(default_bundle_path("gems/myrack-1.0.0"))
 
       bundle "install --verbose"
 
       expect(out).to include("Installing myrack 1.0.0")
-      expect(gem_dir).to exist
+      expect(default_bundle_path("gems/myrack-1.0.0")).to exist
       expect(the_bundle).to include_gems("myrack 1.0.0")
+    end
 
-      FileUtils.rm_rf(gem_dir)
-      Dir.mkdir(gem_dir)
+    it "does not state that it's constantly reinstalling empty gems" do
+      build_repo4 do
+        build_gem "empty", "1.0.0", no_default: true, allowed_warning: "no files specified"
+      end
+
+      install_gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "empty"
+      G
+      gem_dir = default_bundle_path("gems/empty-1.0.0")
+      expect(gem_dir).to be_empty
 
       bundle "install --verbose"
-
-      expect(out).to include("Installing myrack 1.0.0")
-      expect(gem_dir).to exist
-      expect(the_bundle).to include_gems("myrack 1.0.0")
+      expect(out).not_to include("Installing empty")
     end
 
     it "fetches gems when multiple versions are specified" do
