@@ -4,6 +4,7 @@ GEM
     base64 (0.2.0)
     builder (3.3.0)
     compact_index (0.15.0)
+    fiddle (1.1.6)
     logger (1.6.5)
     mustermann (3.0.3)
       ruby2_keywords (~> 0.0.1)
@@ -46,6 +47,7 @@ PLATFORMS
 DEPENDENCIES
   builder (~> 3.2)
   compact_index (~> 0.15.0)
+  fiddle
   rack (~> 3.0)
   rack-test (~> 2.1)
   rackup (~> 2.1)
@@ -59,6 +61,7 @@ CHECKSUMS
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   builder (3.3.0) sha256=497918d2f9dca528fdca4b88d84e4ef4387256d984b8154e9d5d3fe5a9c8835f
   compact_index (0.15.0) sha256=5c6c404afca8928a7d9f4dde9524f6e1610db17e675330803055db282da84a8b
+  fiddle (1.1.6) sha256=79e8d909e602d979434cf9fccfa6e729cb16432bb00e39c7596abe6bee1249ab
   logger (1.6.5) sha256=c3cfe56d01656490ddd103d38b8993d73d86296adebc5f58cefc9ec03741e56b
   mustermann (3.0.3) sha256=d1f8e9ba2ddaed47150ddf81f6a7ea046826b64c672fbc92d83bce6b70657e88
   rack (3.1.8) sha256=d3fbcbca43dc2b43c9c6d7dfbac01667ae58643c42cea10013d0da970218a1b1
