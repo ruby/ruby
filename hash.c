@@ -4289,7 +4289,7 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
  *
  *  At each level of recursion:
  *
- *  - Each element whose value is an array is “flattened” (that is, replaced by its individual array elements);
+ *  - Each element whose value is an array is "flattened" (that is, replaced by its individual array elements);
  *    see Array#flatten.
  *  - Each element whose value is not an array is unchanged.
  *    even if the value is an object that has instance method flatten (such as a hash).
