@@ -258,8 +258,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ensures bundler's ruby version lib path is in ENV['RUBYLIB']" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths).to include(ruby_lib_path)
+        expect(rubylib).to include(ruby_lib_path)
       end
     end
 
@@ -276,8 +275,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       subject.set_bundle_environment
 
-      paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-      expect(paths.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
+      expect(rubylib.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
     end
 
     it "exits if bundle path contains the unix-like path separator" do
@@ -441,8 +439,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['RUBYLIB'] should only contain one instance of bundler's ruby version lib path" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths.count(ruby_lib_path)).to eq(1)
+        expect(rubylib.count(ruby_lib_path)).to eq(1)
       end
     end
   end

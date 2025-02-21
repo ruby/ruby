@@ -18,7 +18,7 @@ module Bundler
       def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, prefer_local: false, dependency: nil)
         @name = name
         @platforms = platforms
-        @locked_version = locked_specs[name].first&.version
+        @locked_version = locked_specs.version_for(name)
         @unlock = unlock
         @dependency = dependency || Dependency.new(name, @locked_version)
         @top_level = !dependency.nil?

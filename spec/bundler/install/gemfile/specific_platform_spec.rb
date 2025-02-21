@@ -1121,7 +1121,7 @@ RSpec.describe "bundle install with specific platforms" do
     bundle :install
   end
 
-  it "automatically fixes the lockfile if the specific platform is locked and we move to a newer ruby version for which a native package is not available" do
+  it "automatically adds the ruby variant to the lockfile if the specific platform is locked and we move to a newer ruby version for which a native package is not available" do
     #
     # Given an existing application using native gems (e.g., nokogiri)
     # And a lockfile generated with a stable ruby version
@@ -1167,6 +1167,7 @@ RSpec.describe "bundle install with specific platforms" do
 
       checksums = checksums_section_when_enabled do |c|
         c.checksum gem_repo4, "nokogiri", "1.14.0"
+        c.checksum gem_repo4, "nokogiri", "1.14.0", "x86_64-linux"
       end
 
       expect(lockfile).to eq(<<~L)
@@ -1174,6 +1175,7 @@ RSpec.describe "bundle install with specific platforms" do
           remote: https://gem.repo4/
           specs:
             nokogiri (1.14.0)
+            nokogiri (1.14.0-x86_64-linux)
 
         PLATFORMS
           x86_64-linux
@@ -1697,6 +1699,48 @@ RSpec.describe "bundle install with specific platforms" do
 
       expect(lockfile).to eq(original_lockfile)
     end
+  end
+
+  it "does not remove platform specific gems from lockfile when using a ruby version that does not match their ruby requirements, since they may be useful in other rubies" do
+    build_repo4 do
+      build_gem("google-protobuf", "3.25.5")
+      build_gem("google-protobuf", "3.25.5") do |s|
+        s.required_ruby_version = "< #{current_ruby_minor}.dev"
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "google-protobuf", "~> 3.0"
+    G
+
+    original_lockfile = <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          google-protobuf (3.25.5)
+          google-protobuf (3.25.5-x86_64-linux)
+
+      PLATFORMS
+        ruby
+        x86_64-linux
+
+      DEPENDENCIES
+        google-protobuf (~> 3.0)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    lockfile original_lockfile
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --update"
+    end
+
+    expect(lockfile).to eq(original_lockfile)
   end
 
   private

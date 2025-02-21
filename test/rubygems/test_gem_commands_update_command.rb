@@ -506,7 +506,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     a2 = @specs["a-2"]
 
     assert_path_exist File.join(a2.doc_dir, "rdoc")
-  end unless Gem.rdoc_hooks_defined_via_plugin?
+  end if defined?(Gem::RDoc) && !Gem.rdoc_hooks_defined_via_plugin?
 
   def test_execute_named
     spec_fetcher do |fetcher|

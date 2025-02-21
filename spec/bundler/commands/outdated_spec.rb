@@ -526,6 +526,44 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to match(Regexp.new(expected_output))
     end
+
+    it "does not require gems to be installed" do
+      build_repo4 do
+        build_gem "zeitwerk", "1.0.0"
+        build_gem "zeitwerk", "2.0.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "zeitwerk"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            zeitwerk (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          zeitwerk
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated zeitwerk", raise_on_error: false
+
+      expected_output = <<~TABLE.tr(".", "\.").strip
+        Gem       Current  Latest  Requested  Groups
+        zeitwerk  1.0.0    2.0.0   >= 0       default
+      TABLE
+
+      expect(out).to match(Regexp.new(expected_output))
+      expect(err).to be_empty
+    end
   end
 
   describe "pre-release gems" do
