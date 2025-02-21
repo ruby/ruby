@@ -625,7 +625,8 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: @new_platforms)
+        new_resolution_platforms = @current_platform_missing ? @new_platforms.append(local_platform) : @new_platforms
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
         packages = additional_base_requirements_to_prevent_downgrades(packages)
         packages = additional_base_requirements_to_force_updates(packages)
         packages
@@ -768,7 +769,6 @@ module Bundler
       @most_specific_non_local_locked_platform = find_most_specific_locked_platform
       return if @most_specific_non_local_locked_platform
 
-      @new_platforms << local_platform
       @platforms << local_platform
       true
     end
