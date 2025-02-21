@@ -32,19 +32,23 @@ jobs:
             hint: 'To fix: use patch in logs'
             configure: '--enable-zjit=dev --with-gcc=clang-14'
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
+            rust_version: 1.85.0 # TODO(alan): remove when GitHub's images catch up
 
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev'
+            rust_version: 1.85.0
 
           - test_task: 'btest'
             zjit_opts: '--zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
+            rust_version: 1.85.0
 
           - test_task: 'check'
             # Test without ZJIT for now
             #zjit_opts: '--zjit-call-threshold=1'
             configure: '--enable-zjit'
+            rust_version: 1.85.0
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -97,7 +101,11 @@ jobs:
 
       - name: Install Rust
         if: ${{ matrix.rust_version }}
-        run: rustup install ${{ matrix.rust_version }} --profile minimal
+        run: rustup default ${{ matrix.rust_version }}
+
+      - name: Install rustfmt
+        if: ${{ matrix.test_task == 'zjit-bindgen' }}
+        run: rustup component add rustfmt
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc --prefix=$(pwd)/install ${{ matrix.configure }}

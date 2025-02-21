@@ -28,16 +28,19 @@ jobs:
         include:
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev'
+            rust_version: 1.85.0
 
           - test_task: 'btest'
             zjit_opts: '--zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
+            rust_version: 1.85.0
 
           - test_task: 'check'
             # Test without ZJIT for now
             #zjit_opts: '--zjit-call-threshold=1'
             configure: '--enable-zjit'
+            rust_version: 1.85.0
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -78,6 +81,10 @@ jobs:
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-test' }}
+
+      - name: Install Rust # TODO(alan): remove when GitHub images catch up past 1.85.0
+        if: ${{ matrix.rust_version }}
+        run: rustup default ${{ matrix.rust_version }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
