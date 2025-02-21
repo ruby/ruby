@@ -4282,33 +4282,38 @@ flatten_i(VALUE key, VALUE val, VALUE ary)
 
 /*
  *  call-seq:
- *     flatten -> new_array
- *     flatten(level) -> new_array
+ *    flatten(depth = 1) -> new_array
  *
- *  Returns a new Array object that is a 1-dimensional flattening of +self+.
+ *  With positive integer +depth+,
+ *  returns a new array that is a recursive flattening of +self+ to the given +depth+.
  *
- *  ---
+ *  At each level of recursion:
  *
- *  By default, nested Arrays are not flattened:
- *    h = {foo: 0, bar: [:bat, 3], baz: 2}
- *    h.flatten # => [:foo, 0, :bar, [:bat, 3], :baz, 2]
+ *  - Each element whose value is an array is “flattened” (that is, replaced by its individual array elements);
+ *    see Array#flatten.
+ *  - Each element whose value is not an array is unchanged.
+ *    even if the value is an object that has instance method flatten (such as a hash).
  *
- *  Takes the depth of recursive flattening from Integer argument +level+:
- *    h = {foo: 0, bar: [:bat, [:baz, [:bat, ]]]}
- *    h.flatten(1) # => [:foo, 0, :bar, [:bat, [:baz, [:bat]]]]
- *    h.flatten(2) # => [:foo, 0, :bar, :bat, [:baz, [:bat]]]
- *    h.flatten(3) # => [:foo, 0, :bar, :bat, :baz, [:bat]]
- *    h.flatten(4) # => [:foo, 0, :bar, :bat, :baz, :bat]
+ *  Examples; note that entry <tt>foo: {bar: 1, baz: 2}</tt> is never flattened.
  *
- *  When +level+ is negative, flattens all nested Arrays:
- *    h = {foo: 0, bar: [:bat, [:baz, [:bat, ]]]}
- *    h.flatten(-1) # => [:foo, 0, :bar, :bat, :baz, :bat]
- *    h.flatten(-2) # => [:foo, 0, :bar, :bat, :baz, :bat]
+ *   h = {foo: {bar: 1, baz: 2}, bat: [:bam, [:bap, [:bah]]]}
+ *   h.flatten(1) # => [:foo, {:bar=>1, :baz=>2}, :bat, [:bam, [:bap, [:bah]]]]
+ *   h.flatten(2) # => [:foo, {:bar=>1, :baz=>2}, :bat, :bam, [:bap, [:bah]]]
+ *   h.flatten(3) # => [:foo, {:bar=>1, :baz=>2}, :bat, :bam, :bap, [:bah]]
+ *   h.flatten(4) # => [:foo, {:bar=>1, :baz=>2}, :bat, :bam, :bap, :bah]
+ *   h.flatten(5) # => [:foo, {:bar=>1, :baz=>2}, :bat, :bam, :bap, :bah]
  *
- *  When +level+ is zero, returns the equivalent of #to_a :
- *    h = {foo: 0, bar: [:bat, 3], baz: 2}
- *    h.flatten(0) # => [[:foo, 0], [:bar, [:bat, 3]], [:baz, 2]]
- *    h.flatten(0) == h.to_a # => true
+ *  With negative integer +depth+,
+ *  flattens all levels:
+ *
+ *    h.flatten(-1) # => [:foo, {:bar=>1, :baz=>2}, :bat, :bam, :bap, :bah]
+ *
+ *  With +depth+ zero,
+ *  returns the equivalent of #to_a:
+ *
+ *    h.flatten(0) # => [[:foo, {:bar=>1, :baz=>2}], [:bat, [:bam, [:bap, [:bah]]]]]
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 
 static VALUE
@@ -7067,7 +7072,6 @@ static const rb_data_type_t env_data_type = {
  *  - {Iterating}[rdoc-ref:Hash@Methods+for+Iterating]
  *  - {Converting}[rdoc-ref:Hash@Methods+for+Converting]
  *  - {Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values]
- *  - {And more....}[rdoc-ref:Hash@Other+Methods]
  *
  *  Class +Hash+ also includes methods from module Enumerable.
  *
@@ -7155,6 +7159,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Converting
  *
+ *  - #flatten: Returns an array that is a 1-dimensional flattening of +self+.
  *  - #inspect (aliased as #to_s): Returns a new String containing the hash entries.
  *  - #to_a: Returns a new array of 2-element arrays;
  *    each nested array contains a key-value pair from +self+.
@@ -7165,14 +7170,12 @@ static const rb_data_type_t env_data_type = {
  *
  *  ==== Methods for Transforming Keys and Values
  *
+ *  - #flatten!: Returns +self+, flattened.
+ *  - #invert: Returns a hash with the each key-value pair inverted.
  *  - #transform_keys: Returns a copy of +self+ with modified keys.
  *  - #transform_keys!: Modifies keys in +self+
  *  - #transform_values: Returns a copy of +self+ with modified values.
  *  - #transform_values!: Modifies values in +self+.
- *
- *  ==== Other Methods
- *  - #flatten: Returns an array that is a 1-dimensional flattening of +self+.
- *  - #invert: Returns a hash with the each key-value pair inverted.
  *
  */
 
