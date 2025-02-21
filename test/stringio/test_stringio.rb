@@ -483,6 +483,11 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_seek_frozen_string
+    f = StringIO.new(-"1234")
+    assert_equal(0, f.seek(1))
+  end
+
   def test_each_byte
     f = StringIO.new("1234")
     a = []
