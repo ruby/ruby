@@ -606,13 +606,13 @@ RSpec.describe "bundle install with install-time dependencies" do
             s.required_ruby_version = "> 9000"
           end
           build_gem "myrack", "1.2" do |s|
-            s.platform = x86_mingw32
+            s.platform = "x86-mingw32"
             s.required_ruby_version = "> 9000"
           end
           build_gem "myrack", "1.2"
         end
 
-        simulate_platform x86_mingw32 do
+        simulate_platform "x86-mingw32" do
           install_gemfile <<-G, artifice: "compact_index"
             ruby "#{Gem.ruby_version}"
             source "https://gem.repo4"

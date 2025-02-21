@@ -442,16 +442,6 @@ module Spec
       ENV["BUNDLER_SPEC_PLATFORM"] = old if block_given?
     end
 
-    def simulate_windows(platform = x86_mswin32)
-      old = ENV["BUNDLER_SPEC_WINDOWS"]
-      ENV["BUNDLER_SPEC_WINDOWS"] = "true"
-      simulate_platform platform do
-        yield
-      end
-    ensure
-      ENV["BUNDLER_SPEC_WINDOWS"] = old
-    end
-
     def current_ruby_minor
       Gem.ruby_version.segments.tap {|s| s.delete_at(2) }.join(".")
     end

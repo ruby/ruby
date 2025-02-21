@@ -254,6 +254,10 @@ module Bundler
       @spec = spec
     end
 
+    def message
+      "Bundler found incorrect dependencies in the lockfile for #{spec.full_name}"
+    end
+
     status_code(41)
   end
 end

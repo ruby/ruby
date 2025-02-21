@@ -15,7 +15,7 @@ module Bundler
     class Package
       attr_reader :name, :platforms, :dependency, :locked_version
 
-      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, prefer_local: false, dependency: nil)
+      def initialize(name, platforms, locked_specs:, unlock:, prerelease: false, prefer_local: false, dependency: nil, new_platforms: [])
         @name = name
         @platforms = platforms
         @locked_version = locked_specs.version_for(name)
@@ -24,10 +24,14 @@ module Bundler
         @top_level = !dependency.nil?
         @prerelease = @dependency.prerelease? || @locked_version&.prerelease? || prerelease ? :consider_first : :ignore
         @prefer_local = prefer_local
+        @new_platforms = new_platforms
       end
 
       def platform_specs(specs)
-        platforms.map {|platform| GemHelpers.select_best_platform_match(specs, platform, prefer_locked: !unlock?) }
+        platforms.map do |platform|
+          prefer_locked = @new_platforms.include?(platform) ? false : !unlock?
+          GemHelpers.select_best_platform_match(specs, platform, prefer_locked: prefer_locked)
+        end
       end
 
       def to_s
@@ -55,7 +59,7 @@ module Bundler
       end
 
       def unlock?
-        @unlock.empty? || @unlock.include?(name)
+        @unlock == true || @unlock.include?(name)
       end
 
       def ignores_prereleases?

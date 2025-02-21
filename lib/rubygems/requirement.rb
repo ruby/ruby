@@ -106,13 +106,15 @@ class Gem::Requirement
     unless PATTERN =~ obj.to_s
       raise BadRequirementError, "Illformed requirement [#{obj.inspect}]"
     end
+    op = -($1 || "=")
+    version = -$2
 
-    if $1 == ">=" && $2 == "0"
+    if op == ">=" && version == "0"
       DefaultRequirement
-    elsif $1 == ">=" && $2 == "0.a"
+    elsif op == ">=" && version == "0.a"
       DefaultPrereleaseRequirement
     else
-      [-($1 || "="), Gem::Version.new($2)]
+      [op, Gem::Version.new(version)]
     end
   end
 

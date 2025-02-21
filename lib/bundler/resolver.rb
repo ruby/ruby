@@ -389,9 +389,18 @@ module Bundler
     end
 
     def filter_remote_specs(specs, package)
-      return specs unless package.prefer_local?
+      if package.prefer_local?
+        local_specs = specs.select {|s| s.is_a?(StubSpecification) }
 
-      specs.select {|s| s.is_a?(StubSpecification) }
+        if local_specs.empty?
+          package.consider_remote_versions!
+          specs
+        else
+          local_specs
+        end
+      else
+        specs
+      end
     end
 
     # Ignore versions that depend on themselves incorrectly
