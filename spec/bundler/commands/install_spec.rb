@@ -1369,7 +1369,7 @@ RSpec.describe "bundle install with gem sources" do
       bundle "install --verbose"
 
       expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
-      expect(out).not_to include("you added a new platform to your gemfile")
+      expect(out).not_to include("you are adding a new platform to your lockfile")
 
       expect(lockfile).to eq <<~L
         GEM

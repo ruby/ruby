@@ -761,8 +761,18 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to end_with("BUNDLED WITH\n   99\n")
   end
 
-  it "supports adding new platforms" do
-    bundle "lock --add-platform java x86-mingw32"
+  it "supports adding new platforms when there's no previous lockfile" do
+    bundle "lock --add-platform java x86-mingw32 --verbose"
+    expect(out).to include("Resolving dependencies because there's no lockfile")
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+  end
+
+  it "supports adding new platforms when a previous lockfile exists" do
+    bundle "lock"
+    bundle "lock --add-platform java x86-mingw32 --verbose"
+    expect(out).to include("Found changes from the lockfile, re-resolving dependencies because you are adding a new platform to your lockfile")
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))

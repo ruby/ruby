@@ -623,7 +623,7 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        new_resolution_platforms = @current_platform_missing ? @new_platforms.append(local_platform) : @new_platforms
+        new_resolution_platforms = @current_platform_missing ? @new_platforms + [local_platform] : @new_platforms
         packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
         packages = additional_base_requirements_to_prevent_downgrades(packages)
         packages = additional_base_requirements_to_force_updates(packages)
@@ -797,7 +797,7 @@ module Bundler
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
         [@current_platform_missing, "your lockfile does not include the current platform"],
-        [@new_platforms.any?, "you added a new platform to your gemfile"],
+        [@new_platforms.any?, "you are adding a new platform to your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
         [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
