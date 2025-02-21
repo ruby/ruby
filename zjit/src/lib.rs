@@ -55,20 +55,16 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
 /// In case we want to start doing fancier exception handling with panic=unwind,
 /// we can revisit this later. For now, this helps to get us good bug reports.
 fn rb_bug_panic_hook() {
-    use std::env;
     use std::panic;
     use std::io::{stderr, Write};
 
-    // Probably the default hook. We do this very early during process boot.
-    let previous_hook = panic::take_hook();
-
     panic::set_hook(Box::new(move |panic_info| {
         // Not using `eprintln` to avoid double panic.
-        let _ = stderr().write_all(b"ruby: ZJIT has panicked. More info to follow...\n");
-
-        // Always show a Rust backtrace.
-        env::set_var("RUST_BACKTRACE", "1"); // TODO(alan) go to init, set force backtrace
-        previous_hook(panic_info);
+        _ = write!(stderr(),
+"ruby: ZJIT has panicked. More info to follow...
+{panic_info}
+{}",
+            std::backtrace::Backtrace::force_capture());
 
         // TODO: enable CRuby's SEGV handler
         // Abort with rb_bug(). It has a length limit on the message.
