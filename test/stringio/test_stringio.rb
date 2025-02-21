@@ -64,6 +64,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.gets
     io.puts "abc"
     assert_nil io.string
+
+    # Null device StringIO just drop ungot string
+    io.ungetc '#'
+    assert_nil io.getc
   end
 
   def test_truncate
