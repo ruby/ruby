@@ -510,6 +510,15 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <libunwind.h>
 #  include <sys/mman.h>
 #  undef backtrace
+
+static bool
+is_coroutine_start(unw_word_t ip)
+{
+    struct coroutine_context;
+    extern void ruby_coroutine_start(struct coroutine_context *, struct coroutine_context *);
+    return ((void *)(ip) == (void *)ruby_coroutine_start);
+}
+
 int
 backtrace(void **trace, int size)
 {
@@ -617,6 +626,9 @@ darwin_sigtramp:
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
+
+        // Apple's libunwind can't handle our coroutine switching code
+        if (is_coroutine_start(ip)) break;
     }
     return n;
 #  endif
