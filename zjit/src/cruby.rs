@@ -101,8 +101,9 @@ pub type size_t = u64;
 /// shifted 1s but not explicitly an enum.
 pub type RedefinitionFlag = u32;
 
+#[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
-#[allow(clippy::all)]
+#[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
     // Textually include output from rust-bindgen as suggested by its user guide.
