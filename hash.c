@@ -2727,19 +2727,23 @@ rb_hash_values_at(int argc, VALUE *argv, VALUE hash)
  *    fetch_values(*keys) -> new_array
  *    fetch_values(*keys) {|key| ... } -> new_array
  *
- *  Returns a new Array containing the values associated with the given keys *keys:
+ *  When all given +keys+ are found,
+ *  returns a new array containing the values associated with the given +keys+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.fetch_values(:baz, :foo) # => [2, 0]
  *
- *  Returns a new empty Array if no arguments given.
+ *  When any given +keys+ are not found and a block is given,
+ *  calls the block with each unfound key and uses the block's return value
+ *  as the value for that key:
  *
- *  When a block is given, calls the block with each missing key,
- *  treating the block's return value as the value for that key:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    values = h.fetch_values(:bar, :foo, :bad, :bam) {|key| key.to_s}
- *    values # => [1, 0, "bad", "bam"]
+ *    h.fetch_values(:bar, :foo, :bad, :bam) {|key| key.to_s}
+ *    # => [1, 0, "bad", "bam"]
  *
- *  When no block is given, raises an exception if any given key is not found.
+ *  When any given +keys+ are not found and no block is given,
+ *  raises KeyError.
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
