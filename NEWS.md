@@ -47,7 +47,7 @@ The following default gems are updated.
 * json 2.10.1
 * prism 1.3.0
 * psych 5.2.3
-* stringio 3.1.3.dev
+* stringio 3.1.6.dev
 
 The following bundled gems are added.
 
