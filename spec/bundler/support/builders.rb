@@ -119,6 +119,10 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
+          s.platform = "aarch64-mingw-ucrt"
+        end
+
+        build_gem "platform_specific" do |s|
           s.platform = "x86-darwin-100"
         end
 

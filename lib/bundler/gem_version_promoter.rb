@@ -132,8 +132,6 @@ module Bundler
     # Specific version moves can't always reliably be done during sorting
     # as not all elements are compared against each other.
     def post_sort(result, unlock, locked_version)
-      # default :major behavior in Bundler does not do this
-      return result if major?
       if unlock || locked_version.nil?
         result
       else

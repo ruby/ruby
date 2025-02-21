@@ -19,18 +19,19 @@ module Gem
     @default_specifications_dir = nil
   end
 
-  if ENV["BUNDLER_SPEC_WINDOWS"]
-    @@win_platform = true # rubocop:disable Style/ClassVars
-  end
+  spec_platform = ENV["BUNDLER_SPEC_PLATFORM"]
+  if spec_platform
+    if /mingw|mswin/.match?(spec_platform)
+      @@win_platform = nil # rubocop:disable Style/ClassVars
+      RbConfig::CONFIG["host_os"] = spec_platform.gsub(/^[^-]+-/, "").tr("-", "_")
+    end
 
-  if ENV["BUNDLER_SPEC_PLATFORM"]
-    previous_platforms = @platforms
-    previous_local = Platform.local
+    RbConfig::CONFIG["arch"] = spec_platform
 
     class Platform
-      @local = new(ENV["BUNDLER_SPEC_PLATFORM"])
+      @local = nil
     end
-    @platforms = previous_platforms.map {|platform| platform == previous_local ? Platform.local : platform }
+    @platforms = []
   end
 
   if ENV["BUNDLER_SPEC_GEM_SOURCES"]

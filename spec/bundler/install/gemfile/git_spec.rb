@@ -1068,7 +1068,7 @@ RSpec.describe "bundle install with git sources" do
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    expect(exitstatus).to_not eq(0)
+    expect(last_command).to be_failure
     expect(err).to include("Bundler could not install a gem because it " \
                            "needs to create a directory, but a file exists " \
                            "- #{default_bundle_path("bundler")}")

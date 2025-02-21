@@ -428,6 +428,72 @@ RSpec.describe "bundle update" do
       expect(out).to include("Installing sneakers 2.11.0").and include("Installing rake 13.0.6")
     end
 
+    it "does not downgrade direct dependencies unnecessarily" do
+      build_repo4 do
+        build_gem "redis", "4.8.1"
+        build_gem "redis", "5.3.0"
+
+        build_gem "sidekiq", "6.5.5" do |s|
+          s.add_dependency "redis", ">= 4.5.0"
+        end
+
+        build_gem "sidekiq", "6.5.12" do |s|
+          s.add_dependency "redis", ">= 4.5.0", "< 5"
+        end
+
+        # one version of sidekiq above Gemfile's range is needed to make the
+        # resolver choose `redis` first and trying to upgrade it, reproducing
+        # the accidental sidekiq downgrade as a result
+        build_gem "sidekiq", "7.0.0 " do |s|
+          s.add_dependency "redis", ">= 4.2.0"
+        end
+
+        build_gem "sentry-sidekiq", "5.22.0" do |s|
+          s.add_dependency "sidekiq", ">= 3.0"
+        end
+
+        build_gem "sentry-sidekiq", "5.22.4" do |s|
+          s.add_dependency "sidekiq", ">= 3.0"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "redis"
+        gem "sidekiq", "~> 6.5"
+        gem "sentry-sidekiq"
+      G
+
+      original_lockfile = <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            redis (4.8.1)
+            sentry-sidekiq (5.22.0)
+              sidekiq (>= 3.0)
+            sidekiq (6.5.12)
+              redis (>= 4.5.0, < 5)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          redis
+          sentry-sidekiq
+          sidekiq (~> 6.5)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      lockfile original_lockfile
+
+      bundle "lock --update sentry-sidekiq"
+
+      expect(lockfile).to eq(original_lockfile.sub("sentry-sidekiq (5.22.0)", "sentry-sidekiq (5.22.4)"))
+    end
+
     it "does not downgrade indirect dependencies unnecessarily" do
       build_repo4 do
         build_gem "a" do |s|
@@ -694,28 +760,36 @@ RSpec.describe "bundle update" do
       bundle "update", all: true, raise_on_error: false
 
       expect(last_command).to be_failure
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
-      expect(err).to match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should fail loudly when frozen is set globally" do
       bundle "config set --global frozen 1"
       bundle "update", all: true, raise_on_error: false
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
-        and match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should fail loudly when deployment is set globally" do
       bundle "config set --global deployment true"
       bundle "update", all: true, raise_on_error: false
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/).
-        and match(/freeze by running `bundle config set frozen false`./)
+      expect(err).to eq <<~ERROR.strip
+        Bundler is unlocking, but the lockfile can't be updated because frozen mode is set
+
+        If this is a development machine, remove the Gemfile.lock freeze by running `bundle config set frozen false`.
+      ERROR
     end
 
     it "should not suggest any command to unfreeze bundler if frozen is set through ENV" do
       bundle "update", all: true, raise_on_error: false, env: { "BUNDLE_FROZEN" => "true" }
-      expect(err).to match(/Bundler is unlocking, but the lockfile can't be updated because frozen mode is set/)
-      expect(err).not_to match(/by running/)
+      expect(err).to eq("Bundler is unlocking, but the lockfile can't be updated because frozen mode is set")
     end
   end
 
@@ -1132,7 +1206,7 @@ RSpec.describe "bundle update in more complicated situations" do
           a
       L
 
-      simulate_platform linux, &example
+      simulate_platform "x86_64-linux", &example
     end
 
     it "allows updating" do
@@ -1173,7 +1247,7 @@ RSpec.describe "bundle update in more complicated situations" do
     end
 
     it "is not updated because it is not actually included in the bundle" do
-      simulate_platform linux do
+      simulate_platform "x86_64-linux" do
         bundle "update a"
         expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
         expect(the_bundle).to_not include_gem "a"

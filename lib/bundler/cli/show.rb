@@ -24,7 +24,7 @@ module Bundler
           return unless spec
           path = spec.full_gem_path
           unless File.directory?(path)
-            return Bundler.ui.warn "The gem #{gem_name} has been deleted. It was installed at: #{path}"
+            return Bundler.ui.warn "The gem #{gem_name} is missing. It should be installed at #{path}, but was not found"
           end
         end
         return Bundler.ui.info(path)
