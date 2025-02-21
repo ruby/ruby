@@ -21,8 +21,8 @@ class TestStringIO < Test::Unit::TestCase
     # In this case, we must use eval because we need two strings literals that
     # are long enough they cannot be embedded, but also contain the same bytes.
 
-    a = eval(("x" * 1024).dump)
-    b = eval(("x" * 1024).dump)
+    a = eval("+"+("x" * 1024).dump)
+    b = eval("+"+("x" * 1024).dump)
 
     s = StringIO.new(b)
     s.getc
