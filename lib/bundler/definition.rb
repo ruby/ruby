@@ -94,7 +94,7 @@ module Bundler
 
       @locked_ruby_version = nil
       @new_platforms = []
-      @removed_platform = nil
+      @removed_platforms = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -330,7 +330,7 @@ module Bundler
           SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
         else
           Bundler.ui.debug "Found no changes, using resolution from the lockfile"
-          if @removed_platform || @locked_gems.may_include_redundant_platform_specific_gems?
+          if @removed_platforms.any? || @locked_gems.may_include_redundant_platform_specific_gems?
             SpecSet.new(filter_specs(@locked_specs, @dependencies))
           else
             @locked_specs
@@ -416,10 +416,8 @@ module Bundler
       deleted = []
       changed = []
 
-      new_platforms = @platforms - @locked_platforms
-      deleted_platforms = @locked_platforms - @platforms
-      added.concat new_platforms.map {|p| "* platform: #{p}" }
-      deleted.concat deleted_platforms.map {|p| "* platform: #{p}" }
+      added.concat @new_platforms.map {|p| "* platform: #{p}" }
+      deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
 
       added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
       deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
@@ -511,10 +509,10 @@ module Bundler
     end
 
     def remove_platform(platform)
-      removed_platform = @platforms.delete(Gem::Platform.new(platform))
-      @removed_platform ||= removed_platform
-      return if removed_platform
-      raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
+      raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}" unless @platforms.include?(platform)
+
+      @removed_platforms << platform
+      @platforms.delete(platform)
     end
 
     def nothing_changed?
