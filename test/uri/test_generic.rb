@@ -278,6 +278,13 @@ class URI::TestGeneric < Test::Unit::TestCase
     assert_equal(u0, u1)
   end
 
+  def test_merge_authority
+    u = URI.parse('http://user:pass@example.com:8080')
+    u0 = URI.parse('http://new.example.org/path')
+    u1 = u.merge('//new.example.org/path')
+    assert_equal(u0, u1)
+  end
+
   def test_route
     url = URI.parse('http://hoge/a.html').route_to('http://hoge/b.html')
     assert_equal('b.html', url.to_s)
