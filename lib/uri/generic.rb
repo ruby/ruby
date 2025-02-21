@@ -1141,7 +1141,11 @@ module URI
       end
 
       # RFC2396, Section 5.2, 7)
-      base.set_userinfo(rel.userinfo) if rel.userinfo
+      if rel.userinfo
+        base.set_userinfo(rel.userinfo)
+      else
+        base.set_userinfo(nil)
+      end
       base.set_host(rel.host)         if rel.host
       base.set_port(rel.port)         if rel.port
       base.query = rel.query       if rel.query
