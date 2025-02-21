@@ -238,8 +238,7 @@ RSpec.describe "bundle install with gem sources" do
     it "loads env plugins" do
       plugin_msg = "hello from an env plugin!"
       create_file "plugins/rubygems_plugin.rb", "puts '#{plugin_msg}'"
-      rubylib = ENV["RUBYLIB"].to_s.split(File::PATH_SEPARATOR).unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR)
-      install_gemfile <<-G, env: { "RUBYLIB" => rubylib }
+      install_gemfile <<-G, env: { "RUBYLIB" => rubylib.unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR) }
         source "https://gem.repo1"
         gem "myrack"
       G

@@ -311,8 +311,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "does not duplicate already exec'ed RUBYOPT" do
-    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
-
+    create_file("echoopt", "#!/usr/bin/env ruby\nprint ENV['RUBYOPT']")
     install_gemfile <<-G
       source "https://gem.repo1"
       gem "myrack"
@@ -322,16 +321,15 @@ RSpec.describe "bundle exec" do
 
     rubyopt = opt_add(bundler_setup_opt, ENV["RUBYOPT"])
 
-    bundle "exec 'echo $RUBYOPT'"
+    bundle "exec echoopt"
     expect(out.split(" ").count(bundler_setup_opt)).to eq(1)
 
-    bundle "exec 'echo $RUBYOPT'", env: { "RUBYOPT" => rubyopt }
+    bundle "exec echoopt", env: { "RUBYOPT" => rubyopt }
     expect(out.split(" ").count(bundler_setup_opt)).to eq(1)
   end
 
   it "does not duplicate already exec'ed RUBYLIB" do
-    skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
-
+    create_file("echolib", "#!/usr/bin/env ruby\nprint ENV['RUBYLIB']")
     install_gemfile <<-G
       source "https://gem.repo1"
       gem "myrack"
@@ -341,10 +339,10 @@ RSpec.describe "bundle exec" do
     rubylib = rubylib.to_s.split(File::PATH_SEPARATOR).unshift lib_dir.to_s
     rubylib = rubylib.uniq.join(File::PATH_SEPARATOR)
 
-    bundle "exec 'echo $RUBYLIB'"
+    bundle "exec echolib"
     expect(out).to include(rubylib)
 
-    bundle "exec 'echo $RUBYLIB'", env: { "RUBYLIB" => rubylib }
+    bundle "exec echolib", env: { "RUBYLIB" => rubylib }
     expect(out).to include(rubylib)
   end
 
@@ -366,7 +364,7 @@ RSpec.describe "bundle exec" do
       gem "myrack"
     G
 
-    bundle "exec touch foo"
+    bundled_app("foo").write("")
     bundle "exec ./foo", raise_on_error: false
     expect(exitstatus).to eq(126)
     expect(err).to include("bundler: not executable: ./foo")
@@ -405,8 +403,6 @@ RSpec.describe "bundle exec" do
     each_prefix.call("exec") do |exec|
       describe "when #{exec} is used" do
         before(:each) do
-          skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
-
           install_gemfile <<-G
             source "https://gem.repo1"
             gem "myrack"
@@ -416,7 +412,6 @@ RSpec.describe "bundle exec" do
             #!/usr/bin/env ruby
             puts "args: #{ARGV.inspect}"
           RUBY
-          bundled_app("print_args").chmod(0o755)
         end
 
         it "shows executable's man page when --help is after the executable" do
@@ -437,6 +432,7 @@ RSpec.describe "bundle exec" do
 
         it "shows executable's man page when the executable has a -" do
           FileUtils.mv(bundled_app("print_args"), bundled_app("docker-template"))
+          FileUtils.mv(bundled_app("print_args.bat"), bundled_app("docker-template.bat")) if Gem.win_platform?
           bundle "#{exec} docker-template build discourse --help"
           expect(out).to eq('args: ["build", "discourse", "--help"]')
         end
@@ -453,7 +449,7 @@ RSpec.describe "bundle exec" do
 
         it "shows bundle-exec's man page when --help is between exec and the executable" do
           with_fake_man do
-            bundle "#{exec} --help cat"
+            bundle "#{exec} --help echo"
           end
           expect(out).to include(%(["#{man_dir}/bundle-exec.1"]))
         end

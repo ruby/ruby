@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../support/silent_logger"
-
 RSpec.describe "gemcutter's dependency API" do
   context "when Gemcutter API takes too long to respond" do
     before do
@@ -11,6 +9,7 @@ RSpec.describe "gemcutter's dependency API" do
       @server_uri = "http://127.0.0.1:#{port}"
 
       require_relative "../../support/artifice/endpoint_timeout"
+      require_relative "../../support/silent_logger"
 
       require "rackup/server"
 

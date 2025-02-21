@@ -34,6 +34,10 @@ module Bundler
         rescue GenericSystemCallError
           # no need to fail when on a read-only FS, for example
           nil
+        rescue ArgumentError => e
+          # ruby 3.4 checks writability in Dir.tmpdir
+          raise unless e.message&.include?("could not find a temporary directory")
+          nil
         end
         load_index(local_index_file) if SharedHelpers.in_bundle?
       end
