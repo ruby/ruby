@@ -3693,11 +3693,14 @@ rb_hash_values(VALUE hash)
 /*
  *  call-seq:
  *    include?(key) -> true or false
- *    has_key?(key) -> true or false
- *    key?(key) -> true or false
- *    member?(key) -> true or false
  *
- *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
+ *  Returns whether +key+ is a key in +self+:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.include?(:bar) # => true
+ *    h.include?(:BAR) # => false
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 VALUE
