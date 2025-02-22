@@ -3417,6 +3417,93 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, cons
 }
 
 static int
+pm_compile_builtin_dup(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location, int popped)
+{
+    if (arguments == NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "dup!: no argument");
+        return COMPILE_NG;
+    }
+
+    if (arguments->arguments.size != 1) {
+        COMPILE_ERROR(iseq, node_location->line, "dup!: too many argument");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *argument = arguments->arguments.nodes[0];
+
+    PM_COMPILE(argument);
+    PUSH_INSN(ret, *node_location, dup);
+    return COMPILE_OK;
+}
+
+static int
+pm_compile_builtin_pop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location, int popped)
+{
+    if (arguments == NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "pop!: no argument");
+        return COMPILE_NG;
+    }
+
+    if (arguments->arguments.size != 1) {
+        COMPILE_ERROR(iseq, node_location->line, "pop!: too many argument");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *argument = arguments->arguments.nodes[0];
+
+    PM_COMPILE(argument);
+    PUSH_INSN(ret, *node_location, pop);
+    return COMPILE_OK;
+}
+
+static void pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start);
+
+static int
+pm_compile_builtin_send(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location, int popped)
+{
+    if (arguments == NULL) {
+        COMPILE_ERROR(iseq, node_location->line, "send_delegate!: no argument");
+        return COMPILE_NG;
+    }
+
+    if (arguments->arguments.size != 3) {
+        COMPILE_ERROR(iseq, node_location->line, "send_delegate!: wrong arguments");
+        return COMPILE_NG;
+    }
+
+    const pm_node_t *recv = arguments->arguments.nodes[0];
+    const pm_node_t *method = arguments->arguments.nodes[1];
+
+    PM_COMPILE(recv);
+    RUBY_ASSERT(PM_NODE_TYPE_P(method, PM_SYMBOL_NODE));
+    ID method_id = parse_string_symbol(scope_node, (const pm_symbol_node_t *) method);
+
+    pm_arguments_node_t args = {
+        {
+            .type = PM_ARGUMENTS_NODE,
+        },
+        .arguments = {
+            .size = 1,
+            .capacity = 1,
+            .nodes = &arguments->arguments.nodes[2]
+        }
+    };
+    const pm_call_node_t call_node = {
+        {
+            .type = PM_CALL_NODE,
+            .flags = PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY,
+            .location = {
+                .start = scope_node->parser->start,
+                .end = scope_node->parser->start,
+            },
+        },
+        .arguments = &args
+    };
+    pm_compile_call(iseq, &call_node, ret, popped, scope_node, method_id, NULL);
+    return COMPILE_OK;
+}
+
+static int
 pm_compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_scope_node_t *scope_node, const pm_arguments_node_t *arguments, const pm_node_location_t *node_location, int popped)
 {
     if (arguments == NULL) {
@@ -3550,6 +3637,18 @@ retry:;
         }
         else if (strcmp("arg!", builtin_func) == 0) {
             return pm_compile_builtin_arg(iseq, ret, scope_node, arguments, node_location, popped);
+        }
+        else if (strcmp("dup!", builtin_func) == 0) {
+            // add a dup instruction
+            return pm_compile_builtin_dup(iseq, ret, scope_node, arguments, node_location, popped);
+        }
+        else if (strcmp("pop!", builtin_func) == 0) {
+            // add a pop instruction
+            return pm_compile_builtin_pop(iseq, ret, scope_node, arguments, node_location, popped);
+        }
+        else if (strcmp("send_delegate!", builtin_func) == 0) {
+            // pop off first two params
+            return pm_compile_builtin_send(iseq, ret, scope_node, arguments, node_location, popped);
         }
         else if (strcmp("mandatory_only?", builtin_func) == 0) {
             if (popped) {
