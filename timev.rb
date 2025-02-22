@@ -50,7 +50,7 @@
 # Conceptually, Time class uses a Rational value to represent the number of
 # nanoseconds from _Epoch_, 1970-01-01 00:00:00 UTC.
 # There are no boundary or resolution limitations.
-# The value can be obtaind using Time#to_r.
+# The value can be obtained using Time#to_r.
 #
 # The Time class always uses the Gregorian calendar.
 # I.e. the proleptic Gregorian calendar is used.
