@@ -389,6 +389,11 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     ])
     expected.indefinite_length = true
     encode_test B(%w{ 30 80 04 01 00 00 00 }), expected
+
+    # Missing EOC at the end of contents octets
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1.decode(B(%w{ 30 80 01 01 FF }))
+    }
   end
 
   def test_set
