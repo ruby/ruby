@@ -14228,13 +14228,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         break;
 
       case NODE_LINE:
-        SWITCH_BY_COND_TYPE(type, warning, "");
-        break;
-
       case NODE_ENCODING:
-        SWITCH_BY_COND_TYPE(type, warning, "");
-        break;
-
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
