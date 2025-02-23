@@ -22,7 +22,9 @@ module StringScannerTests
   def test_scan_byte
     omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
+    assert_equal(2, s.match?(/(?<a>ab)/)) # set named_captures
     assert_equal(97, s.scan_byte)
+    assert_equal({}, s.named_captures)
     assert_equal(98, s.scan_byte)
     assert_nil(s.scan_byte)
 
@@ -176,11 +178,13 @@ module StringScannerTests
   end
 
   def test_string
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('test string')
     assert_equal('test string', s.string)
-    s.scan(/test/)
+    s.scan(/(?<t>test)/) # set named_captures
     assert_equal('test string', s.string)
     s.string = 'a'
+    assert_equal({}, s.named_captures)
     assert_equal('a', s.string)
     s.scan(/a/)
     s.string = 'b'
@@ -366,8 +370,11 @@ module StringScannerTests
   end
 
   def test_getch
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcde')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.getch)
+    assert_equal({}, s.named_captures)
     assert_equal('b', s.getch)
     assert_equal('c', s.getch)
     assert_equal('d', s.getch)
@@ -385,8 +392,11 @@ module StringScannerTests
   end
 
   def test_get_byte
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcde')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.get_byte)
+    assert_equal({}, s.named_captures)
     assert_equal('b', s.get_byte)
     assert_equal('c', s.get_byte)
     assert_equal('d', s.get_byte)
@@ -602,18 +612,22 @@ module StringScannerTests
   end
 
   def test_terminate
-    s = create_string_scanner('ssss')
-    s.getch
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner('abcd')
+    s.scan(/(?<a>ab)/) # set named_captures
     s.terminate
+    assert_equal({}, s.named_captures)
     assert_equal(true, s.eos?)
     s.terminate
     assert_equal(true, s.eos?)
   end
 
   def test_reset
-    s = create_string_scanner('ssss')
-    s.getch
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
+    s = create_string_scanner('abcd')
+    s.scan(/(?<a>ab)/) # set named_captures
     s.reset
+    assert_equal({}, s.named_captures)
     assert_equal(0, s.pos)
     s.scan(/\w+/)
     s.reset
@@ -848,9 +862,11 @@ module StringScannerTests
   end
 
   def test_unscan
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('test string')
-    assert_equal("test", s.scan(/\w+/))
+    assert_equal(4, s.skip(/(?<t>test)/)) # set named_captures
     s.unscan
+    assert_equal({}, s.named_captures)
     assert_equal("te", s.scan(/../))
     assert_equal(nil, s.scan(/\d/))
     assert_raise(ScanError) { s.unscan }
@@ -939,18 +955,22 @@ module StringScannerTests
   end
 
   def test_named_captures
-    omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
+    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     scan = StringScanner.new("foobarbaz")
     assert_equal({}, scan.named_captures)
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
     assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
+    assert_equal(9, scan.match?("foobarbaz"))
+    assert_equal({}, scan.named_captures)
   end
 
   def test_scan_integer
     omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
 
     s = create_string_scanner('abc')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_nil(s.scan_integer)
+    assert_equal({}, s.named_captures)
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
@@ -1022,7 +1042,9 @@ module StringScannerTests
     assert_predicate(s, :matched?)
 
     s = create_string_scanner('abc')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal(0xabc, s.scan_integer(base: 16))
+    assert_equal({}, s.named_captures)
     assert_equal(3, s.pos)
     assert_predicate(s, :matched?)
 
