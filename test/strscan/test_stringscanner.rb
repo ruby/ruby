@@ -458,7 +458,31 @@ module StringScannerTests
   def test_AREF
     s = create_string_scanner('stra strb strc')
 
-    s.scan(/\w+/)
+    s.scan(/\s+/)
+    assert_nil(          s[-2])
+    assert_nil(          s[-1])
+    assert_nil(          s[0])
+    assert_nil(          s[1])
+    assert_nil(          s[:c])
+    assert_nil(          s['c'])
+
+    s.scan("not match")
+    assert_nil(          s[-2])
+    assert_nil(          s[-1])
+    assert_nil(          s[0])
+    assert_nil(          s[1])
+    assert_nil(          s[:c])
+    assert_nil(          s['c'])
+
+    s.check(/\w+/)
+    assert_nil(          s[-2])
+    assert_equal('stra', s[-1])
+    assert_equal('stra', s[0])
+    assert_nil(          s[1])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
+
+    s.scan("stra")
     assert_nil(          s[-2])
     assert_equal('stra', s[-1])
     assert_equal('stra', s[0])
@@ -903,11 +927,11 @@ module StringScannerTests
 
     s = create_string_scanner('abc')
     s.get_byte
-    assert_nil(s[:c])
-    assert_nil(s["c"])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
     s.getch
-    assert_nil(s[:c])
-    assert_nil(s["c"])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
   end
 
   def test_size
