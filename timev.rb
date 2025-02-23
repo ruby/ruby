@@ -47,8 +47,8 @@
 #
 # == \Time Internal Representation
 #
-# Conceptually, Time class uses a Rational value to represent the number of
-# nanoseconds from _Epoch_, 1970-01-01 00:00:00 UTC.
+# Conceptually, Time class uses a rational value to represent the number of
+# seconds from _Epoch_, 1970-01-01 00:00:00 UTC.
 # There are no boundary or resolution limitations.
 # The value can be obtained using Time#to_r.
 #
@@ -56,11 +56,12 @@
 # I.e. the proleptic Gregorian calendar is used.
 # Other calendars, such as Julian calendar, are not supported.
 #
-# The implementation uses a signed 63 bit integer or Integer (Bignum) to
-# represent the Rational values if possible.
-# (The signed 63 bit integers are used regardless of 32 and 64 bit environments.)
+# The implementation uses a signed 63 bit integer, Integer (Bignum) object or
+# Ratoinal object to represent a rational value.
+# (The signed 63 bit integer is used regardless of 32 and 64 bit environments.)
+# The value represents the number of nanoseconds from _Epoch_.
 # The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
-# When Integer or Rational is used (before 1823, after 2116, under
+# When Integer or Rational object is used (before 1823, after 2116, under
 # nanosecond), Time works slower than when the signed 63 bit integer is used.
 #
 # Ruby uses the C function +localtime+ and +gmtime+ to map between the number
