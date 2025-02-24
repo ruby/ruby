@@ -5950,19 +5950,21 @@ create_node_from_array(int kind, Node **np, Node **node_array)
  * nodes of the source to NULL_NODE, we can overlap the target array
  * as long as we do not override the actual target location.
  *
- * Target       Array name          Index
+ * Target          Array name          Index
  *
- *              node_array          0 1 2 3 4 5 6 7 8 9 A B C D E F
- * top_alts     alts[5]             0 1 2 3 4*
- * alts+1       list[4]                   0 1 2 3*
- * list+1       core_alts[7]                  0 1 2 3 4 5 6*
- * core_alts+0  H_list[4]                       0 1 2 3*
- * H_list+1     H_alt2[4]                           0 1 2 3*
- * h_alt2+1     H_list2[3]                              0 1 2*
- * core_alts+4  XP_list[4]                              0 1 2 3*
- * XP_list+1    Ex_list[4]                                  0 1 2 3*
+ *                 node_array          0 1 2 3 4 5 6 7 8 9 A B C D E F G H
+ * top_alts        alts[5]             0 1 2 3 4*
+ * alts+2          list[4]                   0 1 2 3*
+ * list+1          core_alts[8]                  0 1 2 3 4 5 6 7*
+ * core_alts+0     H_list[4]                       0 1 2 3*
+ * H_list+1        H_alt2[4]                           0 1 2 3*
+ * H_alt2+1        H_list2[3]                              0 1 2*
+ * core_alts+4     XP_list[3]                              0 1 2*
+ * XP_list+1       Ex_list[4]                                  0 1 2 3*
+ * core_alts+5     CC_list[3]                                0 1 2*
+ * CC_list+1       CC_inner_list[5]                              0 1 2 3 4*
  */
-#define NODE_COMMON_SIZE 16
+#define NODE_COMMON_SIZE 18
 
 static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
@@ -6029,9 +6031,10 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       /* core := hangul-syllable
        *       | ri-sequence
        *       | xpicto-sequence
+       *       | conjunctCluster
        *       | [^Control CR LF] */
       {
-        Node **core_alts = list + 2; /* size: 7 */
+        Node **core_alts = list + 2; /* size: 8 */
 
         /* hangul-syllable :=
          *     L* (V+ | LV V* | LVT) T*
@@ -6099,10 +6102,49 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(create_node_from_array(LIST, core_alts+4, XP_list));
         }
 
+        /* conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})+ */
+        {
+          // \p{InCB=Consonant}
+          Node **CC_list = core_alts + 6; /* size: 3 */
+          R_ERR(create_property_node(CC_list+0, env, "InCB=Consonant"));
+
+          {
+            Node **CC_inner_list = CC_list + 2; /* size: 5 */
+            {
+              // [\p{InCB=Extend} \p{InCB=Linker}]*
+              R_ERR(create_property_node(CC_inner_list+0, env, "InCB=Extend"));
+              R_ERR(add_property_to_cc(NCCLASS(CC_inner_list[0]), "InCB=Linker", 0, env));
+              R_ERR(quantify_node(CC_inner_list+0, 0, REPEAT_INFINITE));
+            }
+
+            // \p{InCB=Linker}
+            R_ERR(create_property_node(CC_inner_list+1, env, "InCB=Linker"));
+
+            {
+              // [\p{InCB=Extend} \p{InCB=Linker}]*
+              R_ERR(create_property_node(CC_inner_list+2, env, "InCB=Extend"));
+              R_ERR(add_property_to_cc(NCCLASS(CC_inner_list[2]), "InCB=Linker", 0, env));
+              R_ERR(quantify_node(CC_inner_list+2, 0, REPEAT_INFINITE));
+            }
+
+            // \p{InCB=Consonant}
+            R_ERR(create_property_node(CC_inner_list+3, env, "InCB=Consonant"));
+
+            // ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})
+            R_ERR(create_node_from_array(LIST, CC_list+1, CC_inner_list));
+
+            // (...)+
+            R_ERR(quantify_node(CC_list+1, 1, REPEAT_INFINITE));
+          }
+
+          // \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})+
+          R_ERR(create_node_from_array(LIST, core_alts+5, CC_list));
+        }
+
         /* [^Control CR LF] */
-        core_alts[5] = node_new_cclass();
-        if (IS_NULL(core_alts[5])) goto err;
-        cc = NCCLASS(core_alts[5]);
+        core_alts[6] = node_new_cclass();
+        if (IS_NULL(core_alts[6])) goto err;
+        cc = NCCLASS(core_alts[6]);
         if (ONIGENC_MBC_MINLEN(env->enc) > 1) { /* UTF-16/UTF-32 */
           BBuf *inverted_buf = NULL;
 
