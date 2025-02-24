@@ -478,7 +478,7 @@ typedef struct parser_string_buffer {
     parser_string_buffer_elem_t *last;
 } parser_string_buffer_t;
 
-#define AFTER_HEREDOC_WITHOUT_TERMINTOR ((rb_parser_string_t *)1)
+#define AFTER_HEREDOC_WITHOUT_TERMINATOR ((rb_parser_string_t *)1)
 
 /*
     Structure of Lexer Buffer:
@@ -7686,7 +7686,7 @@ nextline(struct parser_params *p, int set_encoding)
 #endif
         p->cr_seen = FALSE;
     }
-    else if (str == AFTER_HEREDOC_WITHOUT_TERMINTOR) {
+    else if (str == AFTER_HEREDOC_WITHOUT_TERMINATOR) {
         /* after here-document without terminator */
         goto end_of_input;
     }
@@ -7716,7 +7716,7 @@ nextc0(struct parser_params *p, int set_encoding)
 {
     int c;
 
-    if (UNLIKELY(lex_eol_p(p) || p->eofp || p->lex.nextline > AFTER_HEREDOC_WITHOUT_TERMINTOR)) {
+    if (UNLIKELY(lex_eol_p(p) || p->eofp || p->lex.nextline > AFTER_HEREDOC_WITHOUT_TERMINATOR)) {
         if (nextline(p, set_encoding)) return -1;
     }
     c = (unsigned char)*p->lex.pcur++;
@@ -8816,7 +8816,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.ptok = p->lex.pbeg + here->offset - here->quote;
     p->heredoc_end = p->ruby_sourceline;
     p->ruby_sourceline = (int)here->sourceline;
-    if (p->eofp) p->lex.nextline = AFTER_HEREDOC_WITHOUT_TERMINTOR;
+    if (p->eofp) p->lex.nextline = AFTER_HEREDOC_WITHOUT_TERMINATOR;
     p->eofp = 0;
     xfree(term);
 }
