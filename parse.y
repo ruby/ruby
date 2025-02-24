@@ -3272,6 +3272,12 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                         $$ = new_attr_op_assign(p, $1, idCOLON2, $3, $4, $6, &@$, &@2, &@3, &@4);
                     /*% ripper: opassign!(field!($:1, $:2, $:3), $:4, $:6) %*/
                     }
+                | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt command_rhs
+                    {
+                        YYLTYPE loc = code_loc_gen(&@1, &@2);
+                        $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
+                    /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
+                    }
                 | defn_head[head] f_opt_paren_args[args] '=' endless_command[bodystmt]
                     {
                         endless_method_name(p, $head->nd_mid, &@head);
