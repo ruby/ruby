@@ -1813,11 +1813,20 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return ONIG_MISMATCH;
     }
 
-    VALUE match;
-    if (set_match && RTEST(*set_match)) {
+    VALUE match = Qnil;
+    if (set_match) {
         match = *set_match;
     }
-    else {
+
+    if (NIL_P(match)) {
+        match = rb_backref_get();
+    }
+
+    if (!NIL_P(match) && FL_TEST(match, MATCH_BUSY)) {
+        match = Qnil;
+    }
+
+    if (NIL_P(match)) {
         match = match_alloc(rb_cMatch);
     }
 
