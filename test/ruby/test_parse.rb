@@ -186,6 +186,15 @@ class TestParse < Test::Unit::TestCase
       end;
     end
 
+    c = Class.new
+    c.freeze
+    assert_valid_syntax("#{<<~"begin;"}\n#{<<~'end;'}") do
+      begin;
+        c::FOO &= p 1
+        ::FOO &= p 1
+      end;
+    end
+
     assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /Can't set variable/) do
       begin;
         $1 &= 1
