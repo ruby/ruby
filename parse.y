@@ -3037,6 +3037,12 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                         $$ = new_const_op_assign(p, NEW_COLON2($primary_value, $tCONSTANT, &loc), $tOP_ASGN, $rhs, $lex_ctxt, &@$);
                     /*% ripper: opassign!(const_path_field!($:1, $:3), $:4, $:6) %*/
                     }
+                | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt rhs
+                    {
+                        YYLTYPE loc = code_loc_gen(&@tCOLON3, &@tCONSTANT);
+                        $$ = new_const_op_assign(p, NEW_COLON3($tCONSTANT, &loc), $tOP_ASGN, $rhs, $lex_ctxt, &@$);
+                    /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
+                    }
                 | backref tOP_ASGN lex_ctxt rhs
                     {
                         VALUE MAYBE_UNUSED(e) = rb_backref_error(p, $backref);
@@ -3851,12 +3857,6 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
 
 arg		: asgn(lhs, arg_rhs)
                 | op_asgn(arg_rhs)
-                | tCOLON3 tCONSTANT tOP_ASGN lex_ctxt arg_rhs
-                    {
-                        YYLTYPE loc = code_loc_gen(&@1, &@2);
-                        $$ = new_const_op_assign(p, NEW_COLON3($2, &loc), $3, $5, $4, &@$);
-                    /*% ripper: opassign!(top_const_field!($:2), $:3, $:5) %*/
-                    }
                 | arg tDOT2 arg
                     {
                         value_expr($1);
