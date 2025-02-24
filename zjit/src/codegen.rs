@@ -3,26 +3,47 @@ use crate::{
     backend::lir::*,
     cruby::*,
     debug,
-    hir::{self, Function, Insn::*},
+    hir::{Function, Insn::*, InsnId},
     virtualmem::CodePtr
 };
 #[cfg(feature = "disasm")]
 use crate::get_option;
 
+/// Ephemeral code generation state
+struct JITState {
+    /// Instruction sequence for the compiling method
+    iseq: IseqPtr,
+
+    /// Low-level IR Operands indexed by High-level IR's Instruction ID
+    opnds: Vec<Option<Opnd>>,
+}
+
+impl JITState {
+    fn new(iseq: IseqPtr, insn_len: usize) -> Self {
+        JITState {
+            iseq,
+            opnds: vec![None; insn_len],
+        }
+    }
+}
+
 /// Compile High-level IR into machine code
 pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
     // Set up special registers
+    let mut jit = JITState::new(iseq, function.insns.len());
     let mut asm = Assembler::new();
-    gen_entry_prologue(&mut asm, iseq);
+    gen_entry_prologue(&jit, &mut asm);
 
     // Compile each instruction in the IR
-    for insn in function.insns.iter() {
+    for (insn_idx, insn) in function.insns.iter().enumerate() {
+        let insn_id = InsnId(insn_idx);
         if !matches!(*insn, Snapshot { .. }) {
-            asm_comment!(asm, "Insn: {:?}", insn);
+            asm_comment!(asm, "Insn: {:04} {:?}", insn_idx, insn);
         }
         match *insn {
+            Const { val } => gen_const(&mut jit, insn_id, val),
+            Return { val } => gen_return(&jit, &mut asm, val)?,
             Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
-            Return { val } => gen_return(&mut asm, val)?,
             _ => {
                 debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
                 return None;
@@ -38,8 +59,8 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
-fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
-    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
+fn gen_entry_prologue(jit: &JITState, asm: &mut Assembler) {
+    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(jit.iseq, 0));
     asm.frame_setup();
 
     // Save the registers we'll use for CFP, EP, SP
@@ -57,8 +78,14 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     // TODO: Support entry chain guard when ISEQ has_opt
 }
 
+/// Compile a constant
+fn gen_const(jit: &mut JITState, insn_id: InsnId, val: VALUE) {
+    // Just remember the constant value and generate nothing
+    jit.opnds[insn_id.0] = Some(Opnd::Value(val));
+}
+
 /// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, _val: hir::InsnId) -> Option<()> {
+fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
@@ -73,5 +100,8 @@ fn gen_return(asm: &mut Assembler, _val: hir::InsnId) -> Option<()> {
     asm.frame_teardown();
 
     // Return a value
-    return None;  // TODO: Support hir::InsnId
+    let ret_val = jit.opnds[val.0]?;
+    asm.cret(ret_val);
+
+    Some(())
 }

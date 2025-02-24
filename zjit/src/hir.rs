@@ -9,7 +9,7 @@ use crate::{
 use std::collections::{HashMap, HashSet};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct InsnId(usize);
+pub struct InsnId(pub usize);
 
 impl Into<usize> for InsnId {
     fn into(self) -> usize {
