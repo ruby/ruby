@@ -1511,6 +1511,19 @@ class TestRegexp < Test::Unit::TestCase
                        "CJK UNIFIED IDEOGRAPH-31350..CJK UNIFIED IDEOGRAPH-323AF")
   end
 
+  def test_unicode_age_15_1
+    @matches   = %w"15.1"
+    @unmatches = %w"15.0"
+
+    # https://www.unicode.org/Public/15.1.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{2FFC}".."\u{2FFF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SURROUND FROM RIGHT..IDEOGRAPHIC DESCRIPTION CHARACTER ROTATION")
+    assert_unicode_age("\u{31EF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SUBTRACTION")
+    assert_unicode_age("\u{2EBF0}".."\u{2EE5D}",
+                       "CJK UNIFIED IDEOGRAPH-2EBF0..CJK UNIFIED IDEOGRAPH-2EE5D")
+  end
+
   UnicodeAgeRegexps = Hash.new do |h, age|
     h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u].freeze
   end

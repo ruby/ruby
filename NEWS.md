@@ -17,6 +17,11 @@ Note: We're only listing outstanding class updates.
       Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject to handle numbered parameters.
       [[Bug #21049]]
 
+* String
+
+    * Update Unicode to Version 15.1.0 and Emoji Version 15.1. [[Feature #19908]]
+        (also applies to Regexp)
+
 ## Stdlib updates
 
 The following bundled gems are promoted from default gems.
@@ -78,4 +83,5 @@ The following bundled gems are updated.
 
 ## JIT
 
+[Feature #19908]: https://bugs.ruby-lang.org/issues/19908
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
