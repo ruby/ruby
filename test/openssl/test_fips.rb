@@ -37,7 +37,10 @@ class OpenSSL::TestFIPS < OpenSSL::TestCase
   end
 
   def test_fips_mode_get_with_fips_mode_set
-    omit('OpenSSL is not FIPS-capable') unless OpenSSL::OPENSSL_FIPS and !aws_lc? # AWS-LC's FIPS mode is decided at compile time.
+    return if aws_lc? # AWS-LC's FIPS mode is decided at compile time.
+    unless ENV["TEST_RUBY_OPENSSL_FIPS_ENABLED"]
+      omit "Only for FIPS mode environment"
+    end
 
     assert_separately(["-ropenssl"], <<~"end;")
       begin
