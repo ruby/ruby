@@ -9,7 +9,6 @@ require 'test/unit'
 
 module StringScannerTests
   def test_peek_byte
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
     assert_equal(97, s.peek_byte)
     assert_equal(97, s.scan_byte)
@@ -20,7 +19,6 @@ module StringScannerTests
   end
 
   def test_scan_byte
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
     assert_equal(2, s.match?(/(?<a>ab)/)) # set named_captures
     assert_equal(97, s.scan_byte)
@@ -178,7 +176,6 @@ module StringScannerTests
   end
 
   def test_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('test string')
     assert_equal('test string', s.string)
     s.scan(/(?<t>test)/) # set named_captures
@@ -370,7 +367,6 @@ module StringScannerTests
   end
 
   def test_getch
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcde')
     assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.getch)
@@ -392,7 +388,6 @@ module StringScannerTests
   end
 
   def test_get_byte
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcde')
     assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.get_byte)
@@ -439,7 +434,6 @@ module StringScannerTests
   end
 
   def test_matched_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('stra strb strc')
     s.scan('stra')
     assert_equal('stra', s.matched)
@@ -570,7 +564,6 @@ module StringScannerTests
   end
 
   def test_pre_match_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('a b c d e')
     s.scan('a')
     assert_equal('', s.pre_match)
@@ -615,7 +608,6 @@ module StringScannerTests
   end
 
   def test_post_match_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('a b c d e')
     s.scan('a')
     assert_equal(' b c d e', s.post_match)
@@ -636,7 +628,6 @@ module StringScannerTests
   end
 
   def test_terminate
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcd')
     s.scan(/(?<a>ab)/) # set named_captures
     s.terminate
@@ -647,7 +638,6 @@ module StringScannerTests
   end
 
   def test_reset
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('abcd')
     s.scan(/(?<a>ab)/) # set named_captures
     s.reset
@@ -704,8 +694,6 @@ module StringScannerTests
   end
 
   def test_invalid_encoding_string
-    omit("no encoding check on TruffleRuby for scan(String)") if RUBY_ENGINE == "truffleruby"
-
     str = "\xA1\xA2".dup.force_encoding("euc-jp")
     ss = create_string_scanner(str)
     assert_raise(Encoding::CompatibilityError) do
@@ -775,7 +763,6 @@ module StringScannerTests
   end
 
   def test_exist_p_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("test string")
     assert_equal(3, s.exist?("s"))
     assert_equal(0, s.pos)
@@ -797,7 +784,6 @@ module StringScannerTests
   end
 
   def test_scan_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar\0Baz")
     assert_equal("Foo", s.scan_until("Foo"))
     assert_equal(3, s.pos)
@@ -821,7 +807,6 @@ module StringScannerTests
   end
 
   def test_skip_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal(3, s.skip_until("Foo"))
     assert_equal(3, s.pos)
@@ -840,7 +825,6 @@ module StringScannerTests
   end
 
   def test_check_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal("Foo", s.check_until("Foo"))
     assert_equal(0, s.pos)
@@ -862,7 +846,6 @@ module StringScannerTests
   end
 
   def test_search_full_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal(8, s.search_full("Bar ", false, false))
     assert_equal(0, s.pos)
@@ -886,7 +869,6 @@ module StringScannerTests
   end
 
   def test_unscan
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('test string')
     assert_equal(4, s.skip(/(?<t>test)/)) # set named_captures
     s.unscan
@@ -923,8 +905,6 @@ module StringScannerTests
   end
 
   def test_aref_without_regex
-    omit "#[:missing] always raises on TruffleRuby if matched" if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('abc')
     s.get_byte
     assert_raise(IndexError) { s[:c] }
@@ -979,7 +959,6 @@ module StringScannerTests
   end
 
   def test_named_captures
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     scan = StringScanner.new("foobarbaz")
     assert_equal({}, scan.named_captures)
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
@@ -989,8 +968,6 @@ module StringScannerTests
   end
 
   def test_scan_integer
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('abc')
     assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_nil(s.scan_integer)
@@ -1026,8 +1003,6 @@ module StringScannerTests
   end
 
   def test_scan_integer_unmatch
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('123abc')
     assert_equal(123, s.scan_integer)
     assert_equal(3, s.pos)
@@ -1037,8 +1012,6 @@ module StringScannerTests
   end
 
   def test_scan_integer_encoding
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('123abc'.encode(Encoding::UTF_32LE))
     assert_raise(Encoding::CompatibilityError) do
       s.scan_integer
@@ -1046,8 +1019,6 @@ module StringScannerTests
   end
 
   def test_scan_integer_matched
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner("42abc")
     assert_equal(42, s.scan_integer)
     assert_equal("42", s.matched)
@@ -1058,8 +1029,6 @@ module StringScannerTests
   end
 
   def test_scan_integer_base_16
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('0')
     assert_equal(0x0, s.scan_integer(base: 16))
     assert_equal(1, s.pos)
