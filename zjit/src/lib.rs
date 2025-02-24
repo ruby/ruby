@@ -79,16 +79,16 @@ fn rb_bug_panic_hook() {
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
     // TODO: acquire the VM barrier
 
-    // Compile ISEQ into SSA IR
-    let ssa = match hir::iseq_to_ssa(iseq) {
+    // Compile ISEQ into High-level IR
+    let ssa = match hir::iseq_to_hir(iseq) {
         Ok(ssa) => ssa,
         Err(err) => {
-            debug!("ZJIT: to_ssa: {:?}", err);
+            debug!("ZJIT: iseq_to_hir: {:?}", err);
             return std::ptr::null();
         }
     };
 
-    // Compile SSA IR into machine code
+    // Compile High-level IR into machine code
     let cb = ZJITState::get_code_block();
     match gen_function(cb, &ssa, iseq) {
         Some(start_ptr) => start_ptr.raw_ptr(cb),

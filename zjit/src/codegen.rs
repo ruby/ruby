@@ -9,7 +9,7 @@ use crate::{
 #[cfg(feature = "disasm")]
 use crate::get_option;
 
-/// Compile SSA IR into machine code
+/// Compile High-level IR into machine code
 pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
     // Set up special registers
     let mut asm = Assembler::new();

@@ -12,20 +12,20 @@ pub struct Options {
     /// Enable debug logging
     pub debug: bool,
 
-    /// Dump SSA IR generated from ISEQ.
-    pub dump_ssa: Option<DumpSSA>,
+    /// Dump High-level IR generated from ISEQ.
+    pub dump_hir: Option<DumpHIR>,
 
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum DumpSSA {
-    // Dump SSA without Snapshot
+pub enum DumpHIR {
+    // Dump High-level IR without Snapshot
     WithoutSnapshot,
-    // Dump SSA with Snapshot
+    // Dump High-level IR with Snapshot
     All,
-    // Pretty-print bare SSA structs
+    // Pretty-print bare High-level IR structs
     Raw,
 }
 
@@ -55,7 +55,7 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 pub fn init_options() -> Options {
     Options {
         debug: false,
-        dump_ssa: None,
+        dump_hir: None,
         dump_disasm: false,
     }
 }
@@ -93,9 +93,9 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 
         ("debug", "") => options.debug = true,
 
-        ("dump-ssa", "") => options.dump_ssa = Some(DumpSSA::WithoutSnapshot),
-        ("dump-ssa", "all") => options.dump_ssa = Some(DumpSSA::All),
-        ("dump-ssa", "raw") => options.dump_ssa = Some(DumpSSA::Raw),
+        ("dump-hir", "") => options.dump_hir = Some(DumpHIR::WithoutSnapshot),
+        ("dump-hir", "all") => options.dump_hir = Some(DumpHIR::All),
+        ("dump-hir", "raw") => options.dump_hir = Some(DumpHIR::Raw),
 
         ("dump-disasm", "") => options.dump_disasm = true,
 

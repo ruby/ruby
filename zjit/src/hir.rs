@@ -4,7 +4,7 @@
 use crate::{
     cruby::*,
     get_option,
-    options::DumpSSA
+    options::DumpHIR
 };
 use std::collections::{HashMap, HashSet};
 
@@ -486,7 +486,8 @@ fn num_locals(iseq: *const rb_iseq_t) -> usize {
     (unsafe { get_iseq_body_local_table_size(iseq) }) as usize
 }
 
-pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+/// Compile ISEQ into High-level IR
+pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
     let jump_targets = compute_jump_targets(iseq);
@@ -721,10 +722,10 @@ pub fn iseq_to_ssa(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
-    match get_option!(dump_ssa) {
-        Some(DumpSSA::WithoutSnapshot) => print!("SSA:\n{}", FunctionPrinter::without_snapshot(&fun)),
-        Some(DumpSSA::All) => print!("SSA:\n{}", FunctionPrinter::with_snapshot(&fun)),
-        Some(DumpSSA::Raw) => print!("SSA:\n{:#?}", &fun),
+    match get_option!(dump_hir) {
+        Some(DumpHIR::WithoutSnapshot) => print!("HIR:\n{}", FunctionPrinter::without_snapshot(&fun)),
+        Some(DumpHIR::All) => print!("HIR:\n{}", FunctionPrinter::with_snapshot(&fun)),
+        Some(DumpHIR::Raw) => print!("HIR:\n{:#?}", &fun),
         None => {},
     }
 
@@ -790,7 +791,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let program = "nil.itself";
             let iseq = compile_to_iseq(program);
-            let function = iseq_to_ssa(iseq).unwrap();
+            let function = iseq_to_hir(iseq).unwrap();
             assert!(matches!(function.insns.get(0), Some(Insn::Snapshot { .. })));
         });
     }
@@ -800,7 +801,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let program = "123";
             let iseq = compile_to_iseq(program);
-            let function = iseq_to_ssa(iseq).unwrap();
+            let function = iseq_to_hir(iseq).unwrap();
             assert_matches!(function.insns.get(1), Some(Insn::Const { val: VALUE(247) }));
             assert_matches!(function.insns.get(3), Some(Insn::Return { val: InsnId(1) }));
         });
@@ -811,7 +812,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let program = "1+2";
             let iseq = compile_to_iseq(program);
-            let function = iseq_to_ssa(iseq).unwrap();
+            let function = iseq_to_hir(iseq).unwrap();
             // TODO(max): Figure out a clean way to match against String
             // TODO(max): Figure out a clean way to match against args vec
             assert_matches!(function.insns.get(1), Some(Insn::Const { val: VALUE(3) }));
@@ -825,7 +826,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let program = "a = 1; a";
             let iseq = compile_to_iseq(program);
-            let function = iseq_to_ssa(iseq).unwrap();
+            let function = iseq_to_hir(iseq).unwrap();
             assert_matches!(function.insns.get(2), Some(Insn::Const { val: VALUE(3) }));
             assert_matches!(function.insns.get(6), Some(Insn::Return { val: InsnId(2) }));
         });
@@ -836,7 +837,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let program = "cond = true; if cond; 3; else; 4; end";
             let iseq = compile_to_iseq(program);
-            let function = iseq_to_ssa(iseq).unwrap();
+            let function = iseq_to_hir(iseq).unwrap();
             assert_matches!(function.insns.get(2), Some(Insn::Const { val: Qtrue }));
             assert_matches!(function.insns.get(6), Some(Insn::Test { val: InsnId(2) }));
             assert_matches!(function.insns.get(7), Some(Insn::IfFalse { val: InsnId(6), target: BranchEdge { target: BlockId(1), .. } }));
