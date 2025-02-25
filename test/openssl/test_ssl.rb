@@ -835,11 +835,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     #     buzz.example.net, respectively).  ...
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
-
-    # LibreSSL 3.5.0+ doesn't support other wildcard certificates
-    # (it isn't required to, as RFC states MAY, not MUST)
-    return if libressl?
-
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
@@ -923,11 +918,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def create_cert_with_san(san)
-    ef = OpenSSL::X509::ExtensionFactory.new
     cert = OpenSSL::X509::Certificate.new
     cert.subject = OpenSSL::X509::Name.parse("/DC=some/DC=site/CN=Some Site")
-    ext = ef.create_ext('subjectAltName', san)
-    cert.add_extension(ext)
+    v = OpenSSL::ASN1::Sequence(san.split(",").map { |item|
+      type, value = item.split(":", 2)
+      case type
+      when "DNS" then OpenSSL::ASN1::IA5String(value, 2, :IMPLICIT)
+      when "IP" then OpenSSL::ASN1::OctetString(IPAddr.new(value).hton, 7, :IMPLICIT)
+      else raise "unsupported"
+      end
+    })
+    cert.add_extension(OpenSSL::X509::Extension.new("subjectAltName", v))
     cert
   end
 
