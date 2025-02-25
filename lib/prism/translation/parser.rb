@@ -33,6 +33,8 @@ module Prism
 
       Racc_debug_parser = false # :nodoc:
 
+      # The `builder` argument is used to create the parser using our custom builder class by default.
+      #
       # By using the `:parser` keyword argument, you can translate in a way that is compatible with
       # the Parser gem using any parser.
       #
