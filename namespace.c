@@ -32,6 +32,7 @@ static rb_namespace_t * const root_namespace = 0;
 static rb_namespace_t * const builtin_namespace = &builtin_namespace_data;
 static rb_namespace_t * main_namespace = 0;
 static char *tmp_dir;
+static bool tmp_dir_has_dirsep;
 
 #define NAMESPACE_TMP_PREFIX "_ruby_ns_"
 
@@ -644,7 +645,10 @@ system_tmpdir(void)
 static int
 sprint_ext_filename(char *str, size_t size, long namespace_id, const char *prefix, const char *basename)
 {
-    return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"uu_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), namespace_id, basename);
+    if (tmp_dir_has_dirsep) {
+        return snprintf(str, size, "%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, prefix, getpid(), namespace_id, basename);
+    }
+    return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), namespace_id, basename);
 }
 
 #ifdef _WIN32
@@ -756,16 +760,57 @@ copy_ext_file(char *src_path, char *dst_path)
 #endif
 }
 
-VALUE
-rb_namespace_local_extension(VALUE namespace, VALUE path)
-{
-    char ext_path[MAXPATHLEN];
-    int copy_error;
-    char *src_path = RSTRING_PTR(path);
-    rb_namespace_t *ns = rb_get_namespace_t(namespace);
-    VALUE basename = rb_funcall(rb_cFile, rb_intern("basename"), 1, path); // TODO: C impl
+#if defined __CYGWIN__ || defined DOSISH
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define isdirsep(x) ((x) == '/')
+#endif
 
-    int wrote = sprint_ext_filename(ext_path, sizeof(ext_path), ns->ns_id, NAMESPACE_TMP_PREFIX, RSTRING_PTR(basename));
+#define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
+#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
+
+static void
+fname_without_suffix(char *fname, char *rvalue)
+{
+    char *pos;
+    strcpy(rvalue, fname);
+    for (pos = rvalue + strlen(fname); pos > rvalue; pos--) {
+        if (IS_SOEXT(pos) || IS_DLEXT(pos)) {
+            *pos = '\0';
+            return;
+        }
+    }
+}
+
+static void
+escaped_basename(char *path, char *fname, char *rvalue)
+{
+    char *pos, *leaf, *found;
+    leaf = path;
+    // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
+    while ((found = strstr(leaf + 1, fname)) != NULL) {
+        leaf = found; // find the last occurence for the path like /etc/my-crazy-lib-dir/etc.so
+    }
+    strcpy(rvalue, leaf);
+    for (pos = rvalue; *pos; pos++) {
+        if (isdirsep(*pos)) {
+            *pos = '+';
+        }
+    }
+}
+
+VALUE
+rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path)
+{
+    char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
+    int copy_error, wrote;
+    char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
+    rb_namespace_t *ns = rb_get_namespace_t(namespace);
+
+    fname_without_suffix(fname_ptr, fname2);
+    escaped_basename(src_path, fname2, basename);
+
+    wrote = sprint_ext_filename(ext_path, sizeof(ext_path), ns->ns_id, NAMESPACE_TMP_PREFIX, basename);
     if (wrote >= (int)sizeof(ext_path)) {
         rb_bug("Extension file path in namespace was too long");
     }
@@ -1042,6 +1087,7 @@ void
 Init_Namespace(void)
 {
     tmp_dir = system_tmpdir();
+    tmp_dir_has_dirsep = (strcmp(tmp_dir + (strlen(tmp_dir) - strlen(DIRSEP)), DIRSEP) == 0);
 
     rb_cNamespace = rb_define_class("Namespace", rb_cModule);
     rb_define_method(rb_cNamespace, "initialize", namespace_initialize, 0);

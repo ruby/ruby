@@ -71,7 +71,7 @@ VALUE rb_get_namespace_object(rb_namespace_t *ns);
 typedef VALUE namespace_exec_func(VALUE arg);
 VALUE rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg);
 
-VALUE rb_namespace_local_extension(VALUE namespace, VALUE path);
+VALUE rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path);
 
 void rb_initialize_main_namespace(void);
 

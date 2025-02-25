@@ -1286,7 +1286,7 @@ load_ext(VALUE path, VALUE fname)
     VALUE loaded = path;
     GET_loading_vm_ns();
     if (NAMESPACE_USER_P(vm_ns->ns)) {
-        loaded = rb_namespace_local_extension(vm_ns->ns->ns_object, path);
+        loaded = rb_namespace_local_extension(vm_ns->ns->ns_object, fname, path);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     return (VALUE)dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
