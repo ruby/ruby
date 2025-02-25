@@ -31,11 +31,6 @@ module Prism
         end
       end
 
-      # Create the parser with our custom builder class
-      def initialize(builder = Parser::Builder.new)
-        super
-      end
-
       Racc_debug_parser = false # :nodoc:
 
       # The `builder` argument is used to create the parser using our custom builder class by default.
