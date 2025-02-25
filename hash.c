@@ -3505,11 +3505,12 @@ inspect_hash(VALUE hash, VALUE dummy, int recur)
  *  call-seq:
  *    inspect -> new_string
  *
- *  Returns a new String containing the hash entries:
-
+ *  Returns a new string containing the hash entries:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.inspect # => "{foo: 0, bar: 1, baz: 2}"
  *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 
 static VALUE
