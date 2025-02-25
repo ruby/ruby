@@ -28,11 +28,7 @@ module Bundler
   # It may be called concurrently without global interpreter lock in some Rubies.
   # As a result, some methods may look more complex than necessary to save memory or time.
   class CompactIndexClient
-    # NOTE: MD5 is here not because we expect a server to respond with it, but
-    # because we use it to generate the etag on first request during the upgrade
-    # to the compact index client that uses opaque etags saved to files.
-    # Remove once 2.5.0 has been out for a while.
-    SUPPORTED_DIGESTS = { "sha-256" => :SHA256, "md5" => :MD5 }.freeze
+    SUPPORTED_DIGESTS = { "sha-256" => :SHA256 }.freeze
     DEBUG_MUTEX = Thread::Mutex.new
 
     # info returns an Array of INFO Arrays. Each INFO Array has the following indices:
