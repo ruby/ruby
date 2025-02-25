@@ -31,11 +31,6 @@ module Prism
         end
       end
 
-      # Create the parser with our custom builder class
-      def initialize(builder = Parser::Builder.new)
-        super
-      end
-
       Racc_debug_parser = false # :nodoc:
 
       # By using the `:parser` keyword argument, you can translate in a way that is compatible with
@@ -61,7 +56,7 @@ module Prism
       # In an object passed to the `:parser` keyword argument, the `parse` and `parse_lex` methods
       # should be implemented as needed.
       #
-      def initialize(builder = ::Parser::Builders::Default.new, parser: Prism)
+      def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
         @parser = parser
 
         super(builder)
