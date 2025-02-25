@@ -2971,8 +2971,11 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
  *
  *  Replaces the entire contents of +self+ with the contents of +other_hash+;
  *  returns +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.replace({bat: 3, bam: 4}) # => {bat: 3, bam: 4}
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
 static VALUE
