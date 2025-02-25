@@ -3,7 +3,10 @@
 require_relative "helper"
 require "rubygems/ext"
 require "open3"
-require "fiddle"
+begin
+  require "fiddle"
+rescue LoadError
+end
 
 class TestGemExtCargoBuilder < Gem::TestCase
   def setup
@@ -150,6 +153,8 @@ class TestGemExtCargoBuilder < Gem::TestCase
   end
 
   def assert_ffi_handle(bundle, name)
+    return unless defined?(Fiddle)
+
     dylib_handle = Fiddle.dlopen bundle
     assert_nothing_raised { dylib_handle[name] }
   ensure
@@ -157,6 +162,8 @@ class TestGemExtCargoBuilder < Gem::TestCase
   end
 
   def refute_ffi_handle(bundle, name)
+    return unless defined?(Fiddle)
+
     dylib_handle = Fiddle.dlopen bundle
     assert_raise { dylib_handle[name] }
   ensure
