@@ -454,15 +454,24 @@ RBIMPL_ATTR_NORETURN()
 #endif
 static void raise_parse_error(const char *format, const char *start)
 {
-    char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
+    unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
 
     size_t len = start ? strnlen(start, PARSE_ERROR_FRAGMENT_LEN) : 0;
     const char *ptr = start;
 
     if (len == PARSE_ERROR_FRAGMENT_LEN) {
         MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
-        buffer[PARSE_ERROR_FRAGMENT_LEN] = '\0';
-        ptr = buffer;
+
+        while (buffer[len - 1] >= 0x80 && buffer[len - 1] < 0xC0) { // Is continuation byte
+            len--;
+        }
+
+        if (buffer[len - 1] >= 0xC0) { // multibyte character start
+            len--;
+        }
+
+        buffer[len] = '\0';
+        ptr = (const char *)buffer;
     }
 
     rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
