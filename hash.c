@@ -3934,7 +3934,7 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *    invert -> new_hash
  *
- *  Returns a new hash  with each key-value pair inverted:
+ *  Returns a new hash with each key-value pair inverted:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.invert
