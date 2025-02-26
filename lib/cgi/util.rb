@@ -184,7 +184,7 @@ module CGI::Util
   def escapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
-      string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/i) do
+      string.gsub(/<\/?(?:#{elements.join("|")})\b[^<>]*+>?/im) do
         CGI.escapeHTML($&)
       end
     else
@@ -204,7 +204,7 @@ module CGI::Util
   def unescapeElement(string, *elements)
     elements = elements[0] if elements[0].kind_of?(Array)
     unless elements.empty?
-      string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/i) do
+      string.gsub(/&lt;\/?(?:#{elements.join("|")})\b(?>[^&]+|&(?![gl]t;)\w+;)*(?:&gt;)?/im) do
         unescapeHTML($&)
       end
     else
