@@ -25,7 +25,8 @@ Gem::Specification.new do |spec|
   spec.executables   = []
 
   spec.files = [
-    "LICENSE.txt",
+    "COPYING",
+    "BSDL",
     "README.md",
     *Dir["lib{.rb,/**/*.rb}", "bin/*"]  ]
 

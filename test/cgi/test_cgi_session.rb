@@ -91,7 +91,7 @@ class CGISessionTest < Test::Unit::TestCase
     assert_equal(value1,session["key1"])
     assert_equal(value2,session["key2"])
     session.close
-  end
+  end if defined?(::PStore)
   def test_cgi_session_specify_session_id
     update_env(
       'REQUEST_METHOD'  => 'GET',

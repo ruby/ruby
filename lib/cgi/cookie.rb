@@ -190,9 +190,10 @@ class CGI
         values ||= ""
         values = values.split('&').collect{|v| CGI.unescape(v,@@accept_charset) }
         if cookies.has_key?(name)
-          values = cookies[name].value + values
+          cookies[name].concat(values)
+        else
+          cookies[name] = Cookie.new(name, *values)
         end
-        cookies[name] = Cookie.new(name, *values)
       end
 
       cookies
