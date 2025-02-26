@@ -159,10 +159,10 @@ runs:
           launchable record session \
             --build "${build_name}" \
             --observation \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
-            --flavor workflow=${{ github.workflow }} \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_all_test_suite} \
             > "${test_all_session_file}"
           launchable subset \
@@ -177,10 +177,10 @@ runs:
           launchable record session \
             --build "${build_name}" \
             --observation \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
-            --flavor workflow=${{ github.workflow }} \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${btest_test_suite} \
             > "${btest_session_file}"
           launchable subset \
@@ -195,10 +195,10 @@ runs:
           launchable record session \
             --build "${build_name}" \
             --observation \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
-            --flavor workflow=${{ github.workflow }} \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_spec_test_suite} \
             > "${test_spec_session_file}"
           launchable subset \
