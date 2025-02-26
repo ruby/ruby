@@ -3612,9 +3612,12 @@ keys_i(VALUE key, VALUE value, VALUE ary)
  *  call-seq:
  *    keys -> new_array
  *
- *  Returns a new Array containing all keys in +self+:
+ *  Returns a new array containing all keys in +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.keys # => [:foo, :bar, :baz]
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 VALUE
