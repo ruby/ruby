@@ -3938,15 +3938,19 @@ rb_hash_invert_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *    invert -> new_hash
  *
- *  Returns a new +Hash+ object with the each key-value pair inverted:
+ *  Returns a new hash with each key-value pair inverted:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.invert
  *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
  *
- *  Overwrites any repeated new keys:
+ *  Overwrites any repeated new keys
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *
  *    h = {foo: 0, bar: 0, baz: 0}
  *    h.invert # => {0=>:baz}
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 
 static VALUE
