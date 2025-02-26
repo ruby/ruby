@@ -737,12 +737,12 @@ module URI
     end
     private :check_registry
 
-    def set_registry(v) #:nodoc:
+    def set_registry(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
     protected :set_registry
 
-    def registry=(v)
+    def registry=(v) # :nodoc:
       raise InvalidURIError, "cannot set registry"
     end
 
@@ -1133,17 +1133,16 @@ module URI
       base.fragment=(nil)
 
       # RFC2396, Section 5.2, 4)
-      if !authority
-        base.set_path(merge_path(base.path, rel.path)) if base.path && rel.path
-      else
-        # RFC2396, Section 5.2, 4)
-        base.set_path(rel.path) if rel.path
+      if authority
+        base.set_userinfo(rel.userinfo)
+        base.set_host(rel.host)
+        base.set_port(rel.port || base.default_port)
+        base.set_path(rel.path)
+      elsif base.path && rel.path
+        base.set_path(merge_path(base.path, rel.path))
       end
 
       # RFC2396, Section 5.2, 7)
-      base.set_userinfo(rel.userinfo) if rel.userinfo
-      base.set_host(rel.host)         if rel.host
-      base.set_port(rel.port)         if rel.port
       base.query = rel.query       if rel.query
       base.fragment=(rel.fragment) if rel.fragment
 
@@ -1392,10 +1391,12 @@ module URI
       end
     end
 
+    # Returns the hash value.
     def hash
       self.component_ary.hash
     end
 
+    # Compares with _oth_ for Hash.
     def eql?(oth)
       self.class == oth.class &&
       parser == oth.parser &&
@@ -1438,7 +1439,7 @@ module URI
       end
     end
 
-    def inspect
+    def inspect # :nodoc:
       "#<#{self.class} #{self}>"
     end
 
