@@ -2334,11 +2334,14 @@ key_i(VALUE key, VALUE value, VALUE arg)
  *
  *  Returns the key for the first-found entry with the given +value+
  *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *
  *    h = {foo: 0, bar: 2, baz: 2}
  *    h.key(0) # => :foo
  *    h.key(2) # => :bar
  *
  *  Returns +nil+ if no such value is found.
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
