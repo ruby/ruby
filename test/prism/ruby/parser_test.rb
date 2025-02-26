@@ -6,6 +6,7 @@ begin
   verbose, $VERBOSE = $VERBOSE, nil
   require "parser/ruby33"
   require "prism/translation/parser33"
+  require "prism/translation/parser34"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
@@ -148,6 +149,22 @@ module Prism
       end
     end
 
+    def test_it_block_parameter_syntax
+      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
+
+      buffer = Parser::Source::Buffer.new(it_fixture_path)
+      buffer.source = it_fixture_path.read
+      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
+
+      it_block_parameter_sexp = parse_sexp {
+        s(:itblock,
+          s(:send, nil, :x), :it,
+          s(:lvar, :it))
+      }
+
+      assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
+    end
+
     private
 
     def assert_equal_parses(fixture, compare_asts: true, compare_tokens: true, compare_comments: true)
@@ -245,6 +262,10 @@ module Prism
         "expected: #{expected_comments.inspect}\n" \
         "actual: #{actual_comments.inspect}"
       }
+    end
+
+    def parse_sexp(&block)
+      Class.new { extend AST::Sexp }.instance_eval(&block).to_sexp
     end
   end
 end
