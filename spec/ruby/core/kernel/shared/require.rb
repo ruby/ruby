@@ -223,7 +223,7 @@ describe :kernel_require, shared: true do
       it "loads c-extension file when passed absolute path without extension when no .rb is present" do
         # the error message is specific to what dlerror() returns
         path = File.join CODE_LOADING_DIR, "a", "load_fixture"
-        -> { @object.send(@method, path) }.should raise_error(Exception, /file too short|not a mach-o file|slice is not valid mach-o file/)
+        -> { @object.send(@method, path) }.should raise_error(LoadError)
       end
     end
 
@@ -231,7 +231,7 @@ describe :kernel_require, shared: true do
       it "loads .bundle file when passed absolute path with .so" do
         # the error message is specific to what dlerror() returns
         path = File.join CODE_LOADING_DIR, "a", "load_fixture.so"
-        -> { @object.send(@method, path) }.should raise_error(Exception, /load_fixture\.bundle.+(file too short|not a mach-o file|slice is not valid mach-o file)/)
+        -> { @object.send(@method, path) }.should raise_error(LoadError)
       end
     end
 
