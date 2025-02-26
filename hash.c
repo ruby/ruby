@@ -2836,16 +2836,16 @@ rb_hash_select_bang(VALUE hash)
  *    keep_if {|key, value| ... } -> self
  *    keep_if -> new_enumerator
  *
- *  Calls the block for each key-value pair;
+ *  With a block given, calls the block for each key-value pair;
  *  retains the entry if the block returns a truthy value;
- *  otherwise deletes the entry; returns +self+.
+ *  otherwise deletes the entry; returns +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.keep_if { |key, value| key.start_with?('b') } # => {bar: 1, baz: 2}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.keep_if # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:keep_if>
- *    e.each { |key, value| key.start_with?('b') } # => {bar: 1, baz: 2}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
