@@ -658,7 +658,7 @@ RSpec.describe "bundle exec" do
         gem "foo", :path => "#{lib_path("foo-1.0")}"
       G
 
-      bundle "exec syntax_suggest", raise_on_error: false
+      bundle "exec erb", raise_on_error: false
 
       expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
       expect(err).to match(/missing value for attribute rubygems_version|rubygems_version must not be nil/)
