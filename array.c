@@ -3474,6 +3474,9 @@ rb_ary_sort_bang(VALUE ary)
  *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
  *  and may be unstable.
  *
+ *  See an example in Numeric#nonzero? for the idiom to sort more
+ *  complex structure.
+ *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
