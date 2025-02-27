@@ -5669,7 +5669,7 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
     if ((is_in != 0 && !IS_NCCLASS_NOT(cc)) ||
 	(is_in == 0 &&  IS_NCCLASS_NOT(cc))) {
       if (add_flag) {
-	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= SINGLE_BYTE_SIZE) {
+	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
 	  r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
 	  if (r < 0) return r;
 	}
@@ -5681,7 +5681,7 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
 #else
     if (is_in != 0) {
       if (add_flag) {
-	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= SINGLE_BYTE_SIZE) {
+	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
 	  if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
 	  r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
 	  if (r < 0) return r;

@@ -2114,4 +2114,14 @@ class TestRegexp < Test::Unit::TestCase
       re =~ s
     end
   end
+
+  def test_bug_16145_caseinsensitive_small_utf # [Bug#16145]
+    o_acute_lower = 243.chr('UTF-8')
+    o_acute_upper = 211.chr('UTF-8')
+    assert_match(/[x#{o_acute_lower}]/i, "abc#{o_acute_upper}", "should match o acute case insensitive")
+
+    e_acute_lower = 233.chr('UTF-8')
+    e_acute_upper = 201.chr('UTF-8')
+    assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
+  end
 end
