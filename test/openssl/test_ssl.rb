@@ -1244,32 +1244,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       OpenSSL::SSL::TLS1_1_VERSION,
       OpenSSL::SSL::TLS1_2_VERSION,
       OpenSSL::SSL::TLS1_3_VERSION,
-    ].compact
+    ]
 
-    # Prepare for testing & do sanity check
     supported = []
-    possible_versions.each do |ver|
-      catch(:unsupported) {
-        ctx_proc = proc { |ctx|
-          begin
-            ctx.min_version = ctx.max_version = ver
-          rescue ArgumentError, OpenSSL::SSL::SSLError
-            throw :unsupported
-          end
+    ctx_proc = proc { |ctx|
+      # Explicitly reset them to avoid influenced by OPENSSL_CONF
+      ctx.min_version = ctx.max_version = nil
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      possible_versions.each do |ver|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.min_version = ctx.max_version = ver
+        server_connect(port, ctx) { |ssl|
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
-        start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-          begin
-            server_connect(port) { |ssl|
-              ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-            }
-          rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
-          else
-            supported << ver
-          end
-        end
-      }
+        supported << ver
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
+      end
     end
-    assert_not_empty supported
+
+    # Sanity check: in our test suite we assume these are always supported
+    assert_include(supported, OpenSSL::SSL::TLS1_2_VERSION)
+    assert_include(supported, OpenSSL::SSL::TLS1_3_VERSION)
 
     supported
   end
