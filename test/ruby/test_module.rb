@@ -3372,13 +3372,17 @@ class TestModule < Test::Unit::TestCase
     m.const_set(:N, Module.new)
 
     assert_match(/\A#<Module:0x\h+>::N\z/, m::N.name)
-    m::N.set_temporary_name("fake_name_under_M")
+    m::N.set_temporary_name(name = "fake_name_under_M")
+    name.upcase!
     assert_equal("fake_name_under_M", m::N.name)
+    assert_raise(FrozenError) {m::N.name.upcase!}
     m::N.set_temporary_name(nil)
     assert_nil(m::N.name)
 
-    m.set_temporary_name("fake_name")
+    m.set_temporary_name(name = "fake_name")
+    name.upcase!
     assert_equal("fake_name", m.name)
+    assert_raise(FrozenError) {m.name.upcase!}
 
     m.set_temporary_name(nil)
     assert_nil m.name
