@@ -6435,36 +6435,15 @@ args_forward	: tBDOT3
                     }
                 ;
 
-f_bad_arg	: tCONSTANT
+%rule %inline inline_f_bad_arg: tCONSTANT { "formal argument cannot be a constant" }
+                              | tIVAR { "formal argument cannot be an instance variable" }
+                              | tGVAR { "formal argument cannot be a global variable" }
+			      | tCVAR { "formal argument cannot be a class variable" }
+                              ;
+
+f_bad_arg	: inline_f_bad_arg
                     {
-                        static const char mesg[] = "formal argument cannot be a constant";
-                    /*%%%*/
-                        yyerror1(&@1, mesg);
-                    /*% %*/
-                        $$ = 0;
-                    /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
-                    }
-                | tIVAR
-                    {
-                        static const char mesg[] = "formal argument cannot be an instance variable";
-                    /*%%%*/
-                        yyerror1(&@1, mesg);
-                    /*% %*/
-                        $$ = 0;
-                    /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
-                    }
-                | tGVAR
-                    {
-                        static const char mesg[] = "formal argument cannot be a global variable";
-                    /*%%%*/
-                        yyerror1(&@1, mesg);
-                    /*% %*/
-                        $$ = 0;
-                    /*% ripper[error]: param_error!(ERR_MESG(), $:1) %*/
-                    }
-                | tCVAR
-                    {
-                        static const char mesg[] = "formal argument cannot be a class variable";
+                        static const char mesg[] = $1;
                     /*%%%*/
                         yyerror1(&@1, mesg);
                     /*% %*/
