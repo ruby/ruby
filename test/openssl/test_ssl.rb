@@ -835,11 +835,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     #     buzz.example.net, respectively).  ...
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:baz*.example.com'), 'baz1.example.com'))
-
-    # LibreSSL 3.5.0+ doesn't support other wildcard certificates
-    # (it isn't required to, as RFC states MAY, not MUST)
-    return if libressl?
-
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
       create_cert_with_san('DNS:*baz.example.com'), 'foobaz.example.com'))
     assert_equal(true, OpenSSL::SSL.verify_certificate_identity(
@@ -923,11 +918,17 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def create_cert_with_san(san)
-    ef = OpenSSL::X509::ExtensionFactory.new
     cert = OpenSSL::X509::Certificate.new
     cert.subject = OpenSSL::X509::Name.parse("/DC=some/DC=site/CN=Some Site")
-    ext = ef.create_ext('subjectAltName', san)
-    cert.add_extension(ext)
+    v = OpenSSL::ASN1::Sequence(san.split(",").map { |item|
+      type, value = item.split(":", 2)
+      case type
+      when "DNS" then OpenSSL::ASN1::IA5String(value, 2, :IMPLICIT)
+      when "IP" then OpenSSL::ASN1::OctetString(IPAddr.new(value).hton, 7, :IMPLICIT)
+      else raise "unsupported"
+      end
+    })
+    cert.add_extension(OpenSSL::X509::Extension.new("subjectAltName", v))
     cert
   end
 
@@ -1243,32 +1244,28 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       OpenSSL::SSL::TLS1_1_VERSION,
       OpenSSL::SSL::TLS1_2_VERSION,
       OpenSSL::SSL::TLS1_3_VERSION,
-    ].compact
+    ]
 
-    # Prepare for testing & do sanity check
     supported = []
-    possible_versions.each do |ver|
-      catch(:unsupported) {
-        ctx_proc = proc { |ctx|
-          begin
-            ctx.min_version = ctx.max_version = ver
-          rescue ArgumentError, OpenSSL::SSL::SSLError
-            throw :unsupported
-          end
+    ctx_proc = proc { |ctx|
+      # Explicitly reset them to avoid influenced by OPENSSL_CONF
+      ctx.min_version = ctx.max_version = nil
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      possible_versions.each do |ver|
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.min_version = ctx.max_version = ver
+        server_connect(port, ctx) { |ssl|
+          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
         }
-        start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
-          begin
-            server_connect(port) { |ssl|
-              ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-            }
-          rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
-          else
-            supported << ver
-          end
-        end
-      }
+        supported << ver
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNRESET
+      end
     end
-    assert_not_empty supported
+
+    # Sanity check: in our test suite we assume these are always supported
+    assert_include(supported, OpenSSL::SSL::TLS1_2_VERSION)
+    assert_include(supported, OpenSSL::SSL::TLS1_3_VERSION)
 
     supported
   end
