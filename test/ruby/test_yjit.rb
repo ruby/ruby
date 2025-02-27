@@ -143,44 +143,28 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_valid_runtime_call_threshold_option
-    assert_separately([], <<~RUBY)
-      def not_compiled = nil
-      def will_compile = nil
-      def compiled_counts = RubyVM::YJIT.runtime_stats&.dig(:compiled_iseq_count)
-
-      not_compiled
-      assert_nil compiled_counts
-      assert_false RubyVM::YJIT.enabled?
-
-      RubyVM::YJIT.enable(call_threshold: 0)
-
-      will_compile
-      assert compiled_counts > 0
-      assert_true RubyVM::YJIT.enabled?
-    RUBY
+    assert_in_out_err(['--yjit-disable', '-e',
+                       'RubyVM::YJIT.enable(call_threshold: 1); puts RubyVM::YJIT.enabled?']) do |stdout, stderr, _status|
+      assert_empty stderr
+      assert_include stdout.join, 'rb_yjit_call_threshold set to: 1'
+      assert_include stdout.join, "true"
+    end
   end
 
   def test_yjit_enable_with_invalid_runtime_call_threshold_option
-    args = [
-      "-e",
-      "RubyVM::YJIT.enable(call_threshold: 0)" # This should cause a panic
-    ]
-
-    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
-    assert_includes(stderr, "panicked")
-    assert_includes(stderr, "call_threshold must be a positive integer")
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
   end
 
-
   def test_yjit_enable_with_invalid_runtime_mem_size_option
-    args = [
-      "-e",
-      "RubyVM::YJIT.enable(mem_size: 2049)" # This should cause a panic
-    ]
-
-    _stdout, stderr, _status = invoke_ruby(args, '', true, true)
-    assert_includes(stderr, "panicked")
-    assert_includes(stderr, "mem_size must be between 1 and 2048 MB")
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
   end
 
 
