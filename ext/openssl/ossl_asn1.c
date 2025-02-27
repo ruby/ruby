@@ -36,7 +36,7 @@ asn1time_to_time(const ASN1_TIME *time)
 	    ossl_raise(rb_eTypeError, "bad UTCTIME format: \"%s\"",
 		    time->data);
 	}
-	if (tm.tm_year < 69) {
+	if (tm.tm_year < 50) {
 	    tm.tm_year += 2000;
 	} else {
 	    tm.tm_year += 1900;

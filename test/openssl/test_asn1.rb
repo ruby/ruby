@@ -411,13 +411,16 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
   def test_utctime
     encode_decode_test B(%w{ 17 0D }) + "160908234339Z".b,
       OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 39))
-    begin
-      # possible range of UTCTime is 1969-2068 currently
-      encode_decode_test B(%w{ 17 0D }) + "690908234339Z".b,
-        OpenSSL::ASN1::UTCTime.new(Time.utc(1969, 9, 8, 23, 43, 39))
-    rescue OpenSSL::ASN1::ASN1Error
-      pend "No negative time_t support?"
-    end
+
+    # 1950-2049 range is assumed to match RFC 5280's expectation
+    encode_decode_test B(%w{ 17 0D }) + "490908234339Z".b,
+      OpenSSL::ASN1::UTCTime.new(Time.utc(2049, 9, 8, 23, 43, 39))
+    encode_decode_test B(%w{ 17 0D }) + "500908234339Z".b,
+      OpenSSL::ASN1::UTCTime.new(Time.utc(1950, 9, 8, 23, 43, 39))
+    assert_raise(OpenSSL::ASN1::ASN1Error) {
+      OpenSSL::ASN1::UTCTime.new(Time.new(2049, 12, 31, 23, 0, 0, "-04:00")).to_der
+    }
+
     # not implemented
     # decode_test B(%w{ 17 11 }) + "500908234339+0930".b,
     #   OpenSSL::ASN1::UTCTime.new(Time.new(1950, 9, 8, 23, 43, 39, "+09:30"))
