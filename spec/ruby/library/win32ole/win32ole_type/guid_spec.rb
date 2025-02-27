@@ -1,7 +1,5 @@
 require_relative "../../../spec_helper"
 platform_is :windows do
-  verbose, $VERBOSE = $VERBOSE, nil
-
   require 'win32ole'
 
   describe "WIN32OLE_TYPE#guid for Shell Controls" do
@@ -18,6 +16,4 @@ platform_is :windows do
     end
 
   end
-ensure
-  $VERBOSE = verbose
 end

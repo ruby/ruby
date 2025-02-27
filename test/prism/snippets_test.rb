@@ -5,6 +5,7 @@ require_relative "test_helper"
 module Prism
   class SnippetsTest < TestCase
     except = [
+      "encoding_binary.txt",
       "newline_terminated.txt",
       "seattlerb/begin_rescue_else_ensure_no_bodies.txt",
       "seattlerb/case_in.txt",

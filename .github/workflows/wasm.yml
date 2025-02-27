@@ -43,12 +43,12 @@ jobs:
     env:
       RUBY_TESTOPTS: '-q --tty=no'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      WASI_SDK_VERSION_MAJOR: 20
+      WASI_SDK_VERSION_MAJOR: 25
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 113
       WASMTIME_VERSION: v15.0.0
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -78,7 +78,7 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y ruby make autoconf git wget
 
-          wasi_sdk_deb="wasi-sdk_${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}_amd64.deb"
+          wasi_sdk_deb="wasi-sdk-${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}-x86_64-linux.deb"
           wget "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION_MAJOR}/${wasi_sdk_deb}"
           sudo dpkg -i "$wasi_sdk_deb"
           rm -f "$wasi_sdk_deb"
@@ -113,6 +113,12 @@ jobs:
           ../src/configure --prefix=$PWD/install
           make
           make install
+
+      - name: Download config.guess with wasi version
+        run: |
+          rm tool/config.guess tool/config.sub
+          ruby tool/downloader.rb -d tool -e gnu config.guess config.sub
+        working-directory: src
 
       - name: Run configure
         run: |

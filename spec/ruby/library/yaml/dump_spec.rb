@@ -39,7 +39,11 @@ describe "YAML.dump" do
   end
 
   it "dumps an OpenStruct" do
-    require "ostruct"
+    begin
+      require "ostruct"
+    rescue LoadError
+      skip "OpenStruct is not available"
+    end
     os = OpenStruct.new("age" => 20, "name" => "John")
     yaml_dump = YAML.dump(os)
 

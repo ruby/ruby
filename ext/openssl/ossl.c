@@ -10,13 +10,6 @@
 #include "ossl.h"
 #include <stdarg.h> /* for ossl_raise */
 
-/* OpenSSL >= 1.1.0 and LibreSSL >= 2.9.0 */
-#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER >= 0x10100000
-# define HAVE_OPENSSL_110_THREADING_API
-#else
-# include <ruby/thread_native.h>
-#endif
-
 /*
  * Data Conversion
  */
@@ -76,16 +69,9 @@ ossl_##name##_sk2ary(const STACK_OF(type) *sk)	\
     int i, num;					\
     VALUE ary;					\
 						\
-    if (!sk) {					\
-	OSSL_Debug("empty sk!");		\
-	return Qnil;				\
-    }						\
+    RUBY_ASSERT(sk != NULL);			\
     num = sk_##type##_num(sk);			\
-    if (num < 0) {				\
-	OSSL_Debug("items in sk < -1???");	\
-	return rb_ary_new();			\
-    }						\
-    ary = rb_ary_new2(num);			\
+    ary = rb_ary_new_capa(num);			\
 						\
     for (i=0; i<num; i++) {			\
 	t = sk_##type##_value(sk, i);		\
@@ -411,7 +397,7 @@ ossl_fips_mode_get(VALUE self)
     VALUE enabled;
     enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -446,7 +432,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
         }
     }
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -462,97 +448,6 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
     return enabled;
 #endif
 }
-
-#if !defined(HAVE_OPENSSL_110_THREADING_API)
-/**
- * Stores locks needed for OpenSSL thread safety
- */
-struct CRYPTO_dynlock_value {
-    rb_nativethread_lock_t lock;
-    rb_nativethread_id_t owner;
-    size_t count;
-};
-
-static void
-ossl_lock_init(struct CRYPTO_dynlock_value *l)
-{
-    rb_nativethread_lock_initialize(&l->lock);
-    l->count = 0;
-}
-
-static void
-ossl_lock_unlock(int mode, struct CRYPTO_dynlock_value *l)
-{
-    if (mode & CRYPTO_LOCK) {
-	/* TODO: rb_nativethread_id_t is not necessarily compared with ==. */
-	rb_nativethread_id_t tid = rb_nativethread_self();
-	if (l->count && l->owner == tid) {
-	    l->count++;
-	    return;
-	}
-	rb_nativethread_lock_lock(&l->lock);
-	l->owner = tid;
-	l->count = 1;
-    } else {
-	if (!--l->count)
-	    rb_nativethread_lock_unlock(&l->lock);
-    }
-}
-
-static struct CRYPTO_dynlock_value *
-ossl_dyn_create_callback(const char *file, int line)
-{
-    /* Do not use xmalloc() here, since it may raise NoMemoryError */
-    struct CRYPTO_dynlock_value *dynlock =
-	OPENSSL_malloc(sizeof(struct CRYPTO_dynlock_value));
-    if (dynlock)
-	ossl_lock_init(dynlock);
-    return dynlock;
-}
-
-static void
-ossl_dyn_lock_callback(int mode, struct CRYPTO_dynlock_value *l, const char *file, int line)
-{
-    ossl_lock_unlock(mode, l);
-}
-
-static void
-ossl_dyn_destroy_callback(struct CRYPTO_dynlock_value *l, const char *file, int line)
-{
-    rb_nativethread_lock_destroy(&l->lock);
-    OPENSSL_free(l);
-}
-
-static void ossl_threadid_func(CRYPTO_THREADID *id)
-{
-    /* register native thread id */
-    CRYPTO_THREADID_set_pointer(id, (void *)rb_nativethread_self());
-}
-
-static struct CRYPTO_dynlock_value *ossl_locks;
-
-static void
-ossl_lock_callback(int mode, int type, const char *file, int line)
-{
-    ossl_lock_unlock(mode, &ossl_locks[type]);
-}
-
-static void Init_ossl_locks(void)
-{
-    int i;
-    int num_locks = CRYPTO_num_locks();
-
-    ossl_locks = ALLOC_N(struct CRYPTO_dynlock_value, num_locks);
-    for (i = 0; i < num_locks; i++)
-	ossl_lock_init(&ossl_locks[i]);
-
-    CRYPTO_THREADID_set_callback(ossl_threadid_func);
-    CRYPTO_set_locking_callback(ossl_lock_callback);
-    CRYPTO_set_dynlock_create_callback(ossl_dyn_create_callback);
-    CRYPTO_set_dynlock_lock_callback(ossl_dyn_lock_callback);
-    CRYPTO_set_dynlock_destroy_callback(ossl_dyn_destroy_callback);
-}
-#endif /* !HAVE_OPENSSL_110_THREADING_API */
 
 /*
  * call-seq:
@@ -1050,15 +945,8 @@ Init_openssl(void)
     /*
      * Init all digests, ciphers
      */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
     if (!OPENSSL_init_ssl(0, NULL))
         rb_raise(rb_eRuntimeError, "OPENSSL_init_ssl");
-#else
-    OpenSSL_add_ssl_algorithms();
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
-    SSL_load_error_strings();
-#endif
 
     /*
      * Init main module
@@ -1075,11 +963,7 @@ Init_openssl(void)
     /*
      * Version of OpenSSL the ruby OpenSSL extension is running with
      */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
     rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(OpenSSL_version(OPENSSL_VERSION)));
-#else
-    rb_define_const(mOSSL, "OPENSSL_LIBRARY_VERSION", rb_str_new2(SSLeay_version(SSLEAY_VERSION)));
-#endif
 
     /*
      * Version number of OpenSSL the ruby OpenSSL extension was built with
@@ -1113,6 +997,8 @@ Init_openssl(void)
                     Qtrue
 #elif defined(OPENSSL_FIPS)
 		    Qtrue
+#elif defined(OPENSSL_IS_AWSLC) // AWS-LC FIPS can only be enabled during compile time.
+            FIPS_mode() ? Qtrue : Qfalse
 #else
 		    Qfalse
 #endif
@@ -1142,10 +1028,6 @@ Init_openssl(void)
      * Get ID of to_der
      */
     ossl_s_to_der = rb_intern("to_der");
-
-#if !defined(HAVE_OPENSSL_110_THREADING_API)
-    Init_ossl_locks();
-#endif
 
     /*
      * Init components

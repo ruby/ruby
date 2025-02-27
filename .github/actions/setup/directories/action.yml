@@ -93,7 +93,7 @@ runs:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
 
-    - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+    - uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: downloaded-cache
@@ -140,8 +140,15 @@ runs:
       run: |
         sudo chmod -R go-w /usr/share
         chmod -v go-w $HOME $HOME/.config || :
-        SAVE_IFS="$IFS" IFS=:; set $PATH; dirs=() IFS="$SAVE_IFS"
-        for d do [ ! -d "$d" ] || dirs+=("$d"); done
+        declare -a dirs # -A is not supported by old bash, e.g. macos
+        SAVE_IFS="$IFS" IFS=:; set $PATH
+        for d do
+          while [ -d "$d" ]; do
+            case "$IFS${dirs[*]}$IFS" in *"$IFS$d$IFS"*) ;; *) dirs+=("$d");; esac
+            d="${d%/*}"
+          done
+        done
+        IFS="$SAVE_IFS"
         sudo chmod -v go-w "${dirs[@]}" || :
 
     - if: inputs.dummy-files == 'true'
@@ -168,7 +175,7 @@ runs:
         echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
 
     - name: clean
-      uses: gacts/run-and-post-run@4683764dd706df847f57b9bed39d08164bcd2690 # v1.4.1
+      uses: gacts/run-and-post-run@d803f6920adc9a47eeac4cb6c93dbc2e2890c684 # v1.4.2
       with:
         working-directory:
         post: |

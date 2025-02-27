@@ -186,6 +186,15 @@ class TestParse < Test::Unit::TestCase
       end;
     end
 
+    c = Class.new
+    c.freeze
+    assert_valid_syntax("#{<<~"begin;"}\n#{<<~'end;'}") do
+      begin;
+        c::FOO &= p 1
+        ::FOO &= p 1
+      end;
+    end
+
     assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /Can't set variable/) do
       begin;
         $1 &= 1
@@ -1719,6 +1728,15 @@ x = __ENCODING__
       def o.freeze; self; end
       C = [o]
     end;
+  end
+
+  def test_shareable_constant_value_massign
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A, = 1
+    end;
+    assert_equal(1, a)
   end
 
   def test_if_after_class

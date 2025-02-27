@@ -86,6 +86,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
     assert_equal '42', dump(42, strict: true)
     assert_equal 'true', dump(true, strict: true)
+
+    assert_equal '"hello"', dump(:hello, strict: true)
+    assert_equal '"hello"', :hello.to_json(strict: true)
+    assert_equal '"World"', "World".to_json(strict: true)
   end
 
   def test_generate_pretty
@@ -200,6 +204,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "\n",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -218,6 +223,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -236,6 +242,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal({
       :allow_nan             => false,
       :array_nl              => "",
+      :as_json               => false,
       :ascii_only            => false,
       :buffer_initial_length => 1024,
       :depth                 => 0,
@@ -390,6 +397,11 @@ class JSONGeneratorTest < Test::Unit::TestCase
     state_hash = state.to_hash
     assert_kind_of Hash, state_hash
     assert_equal :bar, state_hash[:foo]
+  end
+
+  def test_json_state_to_h_roundtrip
+    state = JSON.state.new
+    assert_equal state.to_h, JSON.state.new(state.to_h).to_h
   end
 
   def test_json_generate
@@ -660,5 +672,22 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
   def test_nonutf8_encoding
     assert_equal("\"5\u{b0}\"", "5\xb0".dup.force_encoding(Encoding::ISO_8859_1).to_json)
+  end
+
+  def test_utf8_multibyte
+    assert_equal('["foßbar"]', JSON.generate(["foßbar"]))
+    assert_equal('"n€ßt€ð2"', JSON.generate("n€ßt€ð2"))
+    assert_equal('"\"\u0000\u001f"', JSON.generate("\"\u0000\u001f"))
+  end
+
+  def test_fragment
+    fragment = JSON::Fragment.new(" 42")
+    assert_equal '{"number": 42}', JSON.generate({ number: fragment })
+    assert_equal '{"number": 42}', JSON.generate({ number: fragment }, strict: true)
+  end
+
+  def test_json_generate_as_json_convert_to_proc
+    object = Object.new
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
   end
 end

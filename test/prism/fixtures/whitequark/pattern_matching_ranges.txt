@@ -1,0 +1,11 @@
+case foo; in ...2 then true; end
+
+case foo; in ..2 then true; end
+
+case foo; in 1.. then true; end
+
+case foo; in 1... then true; end
+
+case foo; in 1...2 then true; end
+
+case foo; in 1..2 then true; end

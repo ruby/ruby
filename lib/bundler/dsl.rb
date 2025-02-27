@@ -13,10 +13,10 @@ module Bundler
       builder.to_definition(lockfile, unlock)
     end
 
-    VALID_PLATFORMS = Bundler::Dependency::PLATFORM_MAP.keys.freeze
+    VALID_PLATFORMS = Bundler::CurrentRuby::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms type source install_if gemfile force_ruby_platform].freeze
+                    platform platforms source install_if force_ruby_platform].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
@@ -77,12 +77,12 @@ module Bundler
 
         @gemspecs << spec
 
-        gem spec.name, name: spec.name, path: path, glob: glob
+        path path, "glob" => glob, "name" => spec.name do
+          add_dependency spec.name
+        end
 
-        group(development_group) do
-          spec.development_dependencies.each do |dep|
-            gem dep.name, *(dep.requirement.as_list + [type: :development])
-          end
+        spec.development_dependencies.each do |dep|
+          add_dependency dep.name, dep.requirement.as_list, "gemspec_dev_dep" => true, "group" => development_group
         end
       when 0
         raise InvalidOption, "There are no gemspecs at #{expanded_path}"
@@ -94,79 +94,11 @@ module Bundler
 
     def gem(name, *args)
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
-      options["gemfile"] = @gemfile
       version = args || [">= 0"]
 
       normalize_options(name, version, options)
 
-      dep = Dependency.new(name, version, options)
-
-      # if there's already a dependency with this name we try to prefer one
-      if current = @dependencies.find {|d| d.name == dep.name }
-        if current.requirement != dep.requirement
-          current_requirement_open = current.requirements_list.include?(">= 0")
-
-          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
-          if gemspec_dep
-            gemfile_dep = [dep, current].find(&:runtime?)
-
-            if gemfile_dep && !current_requirement_open
-              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
-                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
-            elsif gemfile_dep.nil?
-              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
-
-              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
-
-              if current_gemspec_range.intersects?(next_gemspec_range)
-                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
-              else
-                raise GemfileError, "Two gemspecs have conflicting requirements on the same gem: #{dep} and #{current}"
-              end
-            end
-          else
-            update_prompt = ""
-
-            if File.basename(@gemfile) == Injector::INJECTED_GEMS
-              if dep.requirements_list.include?(">= 0") && !current_requirement_open
-                update_prompt = ". Gem already added"
-              else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
-
-                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
-              end
-            end
-
-            raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
-                           "#{update_prompt}"
-          end
-        end
-
-        unless current.gemspec_dev_dep? && dep.gemspec_dev_dep?
-          # Always prefer the dependency from the Gemfile
-          if current.gemspec_dev_dep?
-            @dependencies.delete(current)
-          elsif dep.gemspec_dev_dep?
-            return
-          elsif current.source != dep.source
-            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
-                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
-          else
-            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
-                            "You should probably keep only one of them.\n" \
-                            "Remove any duplicate entries and specify the gem only once.\n" \
-                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
-          end
-        end
-      end
-
-      @dependencies << dep
+      add_dependency(name, version, options)
     end
 
     def source(source, *args, &blk)
@@ -301,6 +233,81 @@ module Bundler
 
     private
 
+    def add_dependency(name, version = nil, options = {})
+      options["gemfile"] = @gemfile
+      options["source"] ||= @source
+      options["env"] ||= @env
+
+      dep = Dependency.new(name, version, options)
+
+      # if there's already a dependency with this name we try to prefer one
+      if current = @dependencies.find {|d| d.name == dep.name }
+        if current.requirement != dep.requirement
+          current_requirement_open = current.requirements_list.include?(">= 0")
+
+          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
+          if gemspec_dep
+            gemfile_dep = [dep, current].find(&:gemfile_dep?)
+
+            if gemfile_dep && !current_requirement_open
+              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
+                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
+            elsif gemfile_dep.nil?
+              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+
+              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+
+              if current_gemspec_range.intersects?(next_gemspec_range)
+                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+              else
+                raise GemfileError, "Two gemspec development dependencies have conflicting requirements on the same gem: #{dep} and #{current}"
+              end
+            end
+          else
+            update_prompt = ""
+
+            if File.basename(@gemfile) == Injector::INJECTED_GEMS
+              if dep.requirements_list.include?(">= 0") && !current_requirement_open
+                update_prompt = ". Gem already added"
+              else
+                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
+
+                update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
+              end
+            end
+
+            raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
+                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "#{update_prompt}"
+          end
+        end
+
+        unless current.gemspec_dev_dep? && dep.gemspec_dev_dep?
+          # Always prefer the dependency from the Gemfile
+          if current.gemspec_dev_dep?
+            @dependencies.delete(current)
+          elsif dep.gemspec_dev_dep?
+            return
+          elsif current.source != dep.source
+            raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
+                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                            "#{current.source || "an unspecified source"} and #{dep.source}\n"
+          else
+            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+                            "You should probably keep only one of them.\n" \
+                            "Remove any duplicate entries and specify the gem only once.\n" \
+                            "While it's not a problem now, it could cause errors if you change the version of one of them later."
+          end
+        end
+      end
+
+      @dependencies << dep
+    end
+
     def with_gemfile(gemfile)
       expanded_gemfile_path = Pathname.new(gemfile).expand_path(@gemfile&.parent)
       original_gemfile = @gemfile
@@ -406,6 +413,7 @@ module Bundler
         next if VALID_PLATFORMS.include?(p)
         raise GemfileError, "`#{p}` is not a valid platform. The available options are: #{VALID_PLATFORMS.inspect}"
       end
+      deprecate_legacy_windows_platforms(platforms)
 
       # Save sources passed in a key
       if opts.key?("source")
@@ -433,8 +441,6 @@ module Bundler
         opts["source"] = source
       end
 
-      opts["source"]         ||= @source
-      opts["env"]            ||= @env
       opts["platforms"]      = platforms.dup
       opts["group"]          = groups
       opts["should_include"] = install_if
@@ -486,6 +492,16 @@ module Bundler
       else
         raise GemfileError, "Unknown source '#{source}'"
       end
+    end
+
+    def deprecate_legacy_windows_platforms(platforms)
+      windows_platforms = platforms.select {|pl| pl.to_s.match?(/mingw|mswin/) }
+      return if windows_platforms.empty?
+
+      windows_platforms = windows_platforms.map! {|pl| ":#{pl}" }.join(", ")
+      message = "Platform #{windows_platforms} is deprecated. Please use platform :windows instead."
+      removed_message = "Platform #{windows_platforms} has been removed. Please use platform :windows instead."
+      Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
     end
 
     def check_path_source_safety

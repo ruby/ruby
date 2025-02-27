@@ -265,6 +265,9 @@ typedef struct RNode_IF {
     struct RNode *nd_cond;
     struct RNode *nd_body;
     struct RNode *nd_else;
+    rb_code_location_t if_keyword_loc;
+    rb_code_location_t then_keyword_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_if_t;
 
 typedef struct RNode_UNLESS {
@@ -338,7 +341,18 @@ typedef struct RNode_ITER {
 
     struct RNode *nd_body;
     struct RNode *nd_iter;
-} rb_node_iter_t, rb_node_for_t;
+} rb_node_iter_t;
+
+typedef struct RNode_FOR {
+    NODE node;
+
+    struct RNode *nd_body;
+    struct RNode *nd_iter;
+    rb_code_location_t for_keyword_loc;
+    rb_code_location_t in_keyword_loc;
+    rb_code_location_t do_keyword_loc;
+    rb_code_location_t end_keyword_loc;
+} rb_node_for_t;
 
 typedef struct RNode_FOR_MASGN {
     NODE node;
@@ -538,6 +552,9 @@ typedef struct RNode_SUPER {
     NODE node;
 
     struct RNode *nd_args;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
 } rb_node_super_t;
 
 typedef struct RNode_ZSUPER {
@@ -587,6 +604,9 @@ typedef struct RNode_YIELD {
     NODE node;
 
     struct RNode *nd_head;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t lparen_loc;
+    rb_code_location_t rparen_loc;
 } rb_node_yield_t;
 
 typedef struct RNode_LVAR {
@@ -719,6 +739,8 @@ typedef struct RNode_EVSTR {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_evstr_t;
 
 typedef struct RNode_REGX {     /* also RNode_MATCH */
@@ -726,6 +748,9 @@ typedef struct RNode_REGX {     /* also RNode_MATCH */
 
     struct rb_parser_string *string;
     int options;
+    rb_code_location_t opening_loc;
+    rb_code_location_t content_loc;
+    rb_code_location_t closing_loc;
 } rb_node_regx_t, rb_node_match_t;
 
 typedef rb_node_dstr_t rb_node_dregx_t;
@@ -901,6 +926,7 @@ typedef struct RNode_DOTS {
 
     struct RNode *nd_beg;
     struct RNode *nd_end;
+    rb_code_location_t operator_loc;
 } rb_node_dot2_t, rb_node_dot3_t, rb_node_flip2_t, rb_node_flip3_t;
 
 typedef struct RNode_SELF {
@@ -957,6 +983,9 @@ typedef struct RNode_LAMBDA {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t operator_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_lambda_t;
 
 typedef struct RNode_ARYPTN {
@@ -1215,7 +1244,6 @@ typedef struct rb_parser_config_struct {
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
-    ID (*sym2id)(VALUE sym);
 
     /* String */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
@@ -1232,7 +1260,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
     long (*rstring_len)(VALUE str);
-    VALUE (*obj_as_string)(VALUE);
 
     /* Numeric */
     VALUE (*int2num)(int v);
@@ -1259,14 +1286,12 @@ typedef struct rb_parser_config_struct {
     rb_encoding* (*enc_get)(VALUE obj);
     int (*enc_asciicompat)(rb_encoding *enc);
     rb_encoding *(*utf8_encoding)(void);
-    VALUE (*enc_associate)(VALUE obj, rb_encoding *enc);
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);
     int (*enc_find_index)(const char *name);
     rb_encoding *(*enc_from_index)(int idx);
     int (*enc_isspace)(OnigCodePoint c, rb_encoding *enc);
-    rb_encoding *(*usascii_encoding)(void);
     int (*enc_mbminlen)(rb_encoding *enc);
     bool (*enc_isascii)(OnigCodePoint c, rb_encoding *enc);
     OnigCodePoint (*enc_mbc_to_codepoint)(const char *p, const char *e, rb_encoding *enc);
@@ -1287,7 +1312,6 @@ typedef struct rb_parser_config_struct {
     /* Eval */
     VALUE (*errinfo)(void);
     void (*set_errinfo)(VALUE err);
-    void (*exc_raise)(VALUE mesg);
     VALUE (*make_exception)(int argc, const VALUE *argv);
 
     /* GC */

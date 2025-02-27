@@ -96,7 +96,7 @@ MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);
 
 void mmtk_destroy_mutator(MMTk_Mutator *mutator);
 
-void mmtk_handle_user_collection_request(MMTk_VMMutatorThread tls);
+void mmtk_handle_user_collection_request(MMTk_VMMutatorThread tls, bool force, bool exhaustive);
 
 void mmtk_set_gc_enabled(bool enable);
 
@@ -144,6 +144,16 @@ size_t mmtk_free_bytes(void);
 MMTk_Address mmtk_starting_heap_address(void);
 
 MMTk_Address mmtk_last_heap_address(void);
+
+size_t mmtk_worker_count(void);
+
+const uint8_t *mmtk_plan(void);
+
+const uint8_t *mmtk_heap_mode(void);
+
+size_t mmtk_heap_min(void);
+
+size_t mmtk_heap_max(void);
 
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 

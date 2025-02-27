@@ -211,7 +211,7 @@ RSpec.describe "bundle cache" do
   end
 
   context "with --all-platforms" do
-    it "puts the gems in vendor/cache even for other rubies", bundler: ">= 2.4.0" do
+    it "puts the gems in vendor/cache even for other rubies" do
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :windows_20]
@@ -221,14 +221,26 @@ RSpec.describe "bundle cache" do
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
-    it "puts the gems in vendor/cache even for legacy windows rubies", bundler: ">= 2.4.0" do
+    it "puts the gems in vendor/cache even for legacy windows rubies, but prints a warning", bundler: "< 3" do
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]
       D
 
       bundle "cache --all-platforms"
+      expect(err).to include("deprecated")
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
+    end
+
+    it "prints an error when using legacy windows rubies", bundler: "3" do
+      gemfile <<-D
+        source "https://gem.repo1"
+        gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]
+      D
+
+      bundle "cache --all-platforms", raise_on_error: false
+      expect(err).to include("removed")
+      expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).not_to exist
     end
 
     it "does not attempt to install gems in without groups" do
@@ -480,6 +492,53 @@ RSpec.describe "bundle install with gem sources" do
         gem "platform_specific"
       G
       expect(the_bundle).to include_gems("platform_specific 1.0 ruby")
+    end
+
+    it "keeps gems that are locked and cached for the current platform, even if incompatible with the current ruby" do
+      build_repo4 do
+        build_gem "bcrypt_pbkdf", "1.1.1"
+        build_gem "bcrypt_pbkdf", "1.1.1" do |s|
+          s.platform = "arm64-darwin"
+          s.required_ruby_version = "< #{current_ruby_minor}"
+        end
+      end
+
+      app_cache = bundled_app("vendor/cache")
+      FileUtils.mkdir_p app_cache
+      FileUtils.cp gem_repo4("gems/bcrypt_pbkdf-1.1.1-arm64-darwin.gem"), app_cache
+      FileUtils.cp gem_repo4("gems/bcrypt_pbkdf-1.1.1.gem"), app_cache
+
+      bundle "config cache_all_platforms true"
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            bcrypt_pbkdf (1.1.1)
+            bcrypt_pbkdf (1.1.1-arm64-darwin)
+
+        PLATFORMS
+          arm64-darwin
+          ruby
+
+        DEPENDENCIES
+          bcrypt_pbkdf
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      simulate_platform "arm64-darwin-23" do
+        install_gemfile <<~G, verbose: true
+          source "https://gem.repo4"
+          gem "bcrypt_pbkdf"
+        G
+
+        expect(out).to include("Updating files in vendor/cache")
+        expect(err).to be_empty
+        expect(app_cache.join("bcrypt_pbkdf-1.1.1-arm64-darwin.gem")).to exist
+        expect(app_cache.join("bcrypt_pbkdf-1.1.1.gem")).to exist
+      end
     end
 
     it "does not update the cache if --no-cache is passed" do

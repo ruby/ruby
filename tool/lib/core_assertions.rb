@@ -514,6 +514,43 @@ eom
         ex
       end
 
+      # :call-seq:
+      #   assert_raise_kind_of(*args, &block)
+      #
+      #Tests if the given block raises one of the given exceptions or
+      #sub exceptions of the given exceptions.  If the last argument
+      #is a String, it will be used as the error message.
+      #
+      #    assert_raise do #Fails, no Exceptions are raised
+      #    end
+      #
+      #    assert_raise SystemCallErr do
+      #      Dir.chdir(__FILE__) #Raises Errno::ENOTDIR, so assertion succeeds
+      #    end
+      def assert_raise_kind_of(*exp, &b)
+        case exp.last
+        when String, Proc
+          msg = exp.pop
+        end
+
+        begin
+          yield
+        rescue Test::Unit::PendedError => e
+          raise e unless exp.include? Test::Unit::PendedError
+        rescue *exp => e
+          pass
+        rescue Exception => e
+          flunk(message(msg) {"#{mu_pp(exp)} family exception expected, not #{mu_pp(e)}"})
+        ensure
+          unless e
+            exp = exp.first if exp.size == 1
+
+            flunk(message(msg) {"#{mu_pp(exp)} family expected but nothing was raised"})
+          end
+        end
+        e
+      end
+
       TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
 
       # :call-seq:

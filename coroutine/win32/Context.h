@@ -16,6 +16,7 @@
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void __fastcall
+#define COROUTINE_DECL void __fastcall
 #define COROUTINE_LIMITED_ADDRESS_SPACE
 
 /* This doesn't include thread information block */

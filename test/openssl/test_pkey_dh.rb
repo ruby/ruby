@@ -19,7 +19,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end if ENV["OSSL_TEST_ALL"]
 
   def test_new_break_on_non_fips
-    omit_on_fips
+    omit_on_fips if !aws_lc?
 
     assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
     assert_raise(RuntimeError) do
@@ -29,6 +29,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_new_break_on_fips
     omit_on_non_fips
+    return unless openssl? # This behavior only applies to OpenSSL.
 
     # The block argument is not executed in FIPS case.
     # See https://github.com/ruby/openssl/issues/692 for details.
@@ -111,7 +112,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
     # function pass the RFC 7919 FFDHE group texts.
     # https://github.com/openssl/openssl/pull/9435
-    unless openssl?(1, 1, 1, 4)
+    if openssl? && !openssl?(1, 1, 1, 4)
       pend 'DH check for RFC 7919 FFDHE group texts is not implemented'
     end
 
@@ -123,11 +124,41 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ]))
     assert_equal(true, dh1.params_ok?)
 
-    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh0.p + 1),
-      OpenSSL::ASN1::Integer(dh0.g)
-    ]))
-    assert_equal(false, dh2.params_ok?)
+    # AWS-LC automatically does parameter checks on the parsed params.
+    if aws_lc?
+      assert_raise(OpenSSL::PKey::DHError) {
+        OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(dh0.p + 1),
+          OpenSSL::ASN1::Integer(dh0.g)
+        ]))
+      }
+    else
+      dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::Integer(dh0.p + 1),
+        OpenSSL::ASN1::Integer(dh0.g)
+      ]))
+      assert_equal(false, dh2.params_ok?)
+    end
+
+  end
+
+  def test_params
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
+    assert_kind_of(OpenSSL::BN, dh.p)
+    assert_equal(dh.p, dh.params["p"])
+    assert_kind_of(OpenSSL::BN, dh.g)
+    assert_equal(dh.g, dh.params["g"])
+    assert_nil(dh.pub_key)
+    assert_nil(dh.params["pub_key"])
+    assert_nil(dh.priv_key)
+    assert_nil(dh.params["priv_key"])
+
+    dhkey = OpenSSL::PKey.generate_key(dh)
+    assert_equal(dh.params["p"], dhkey.params["p"])
+    assert_kind_of(OpenSSL::BN, dhkey.pub_key)
+    assert_equal(dhkey.pub_key, dhkey.params["pub_key"])
+    assert_kind_of(OpenSSL::BN, dhkey.priv_key)
+    assert_equal(dhkey.priv_key, dhkey.params["priv_key"])
   end
 
   def test_dup

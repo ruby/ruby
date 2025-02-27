@@ -5,7 +5,9 @@ if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
   def test_session
-    ctx_proc = proc { |ctx| ctx.ssl_version = :TLSv1_2 }
+    ctx_proc = proc { |ctx|
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    }
     start_server(ctx_proc: ctx_proc) do |port|
       server_connect_with_session(port, nil, nil) { |ssl|
         session = ssl.session
@@ -28,9 +30,10 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
     end
   end
 
+  # PEM file updated to use TLS 1.2 with ECDHE-RSA-AES256-SHA.
   DUMMY_SESSION = <<__EOS__
 -----BEGIN SSL SESSION PARAMETERS-----
-MIIDzQIBAQICAwEEAgA5BCAF219w9ZEV8dNA60cpEGOI34hJtIFbf3bkfzSgMyad
+MIIDzQIBAQICAwMEAsAUBCAF219w9ZEV8dNA60cpEGOI34hJtIFbf3bkfzSgMyad
 MQQwyGLbkCxE4OiMLdKKem+pyh8V7ifoP7tCxhdmwoDlJxI1v6nVCjai+FGYuncy
 NNSWoQYCBE4DDWuiAwIBCqOCAo4wggKKMIIBcqADAgECAgECMA0GCSqGSIb3DQEB
 BQUAMD0xEzARBgoJkiaJk/IsZAEZFgNvcmcxGTAXBgoJkiaJk/IsZAEZFglydWJ5
@@ -54,9 +57,10 @@ j+RBGfCFrrQbBdnkFI/ztgM=
 -----END SSL SESSION PARAMETERS-----
 __EOS__
 
+  # PEM file updated to use TLS 1.1 with ECDHE-RSA-AES256-SHA.
   DUMMY_SESSION_NO_EXT = <<-__EOS__
 -----BEGIN SSL SESSION PARAMETERS-----
-MIIDCAIBAQICAwAEAgA5BCDyAW7rcpzMjDSosH+Tv6sukymeqgq3xQVVMez628A+
+MIIDCAIBAQICAwIEAsAUBCDyAW7rcpzMjDSosH+Tv6sukymeqgq3xQVVMez628A+
 lAQw9TrKzrIqlHEh6ltuQaqv/Aq83AmaAlogYktZgXAjOGnhX7ifJDNLMuCfQq53
 hPAaoQYCBE4iDeeiBAICASyjggKOMIICijCCAXKgAwIBAgIBAjANBgkqhkiG9w0B
 AQUFADA9MRMwEQYKCZImiZPyLGQBGRYDb3JnMRkwFwYKCZImiZPyLGQBGRYJcnVi
@@ -120,7 +124,8 @@ __EOS__
       ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
       # Disable server-side session cache which is enabled by default
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl?(3, 2, 0)
+      # Session tickets must be retrieved via ctx.session_new_cb in TLS 1.3 in AWS-LC.
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl? || aws_lc?
     }
     start_server(ctx_proc: ctx_proc) do |port|
       sess1 = server_connect_with_session(port, nil, nil) { |ssl|
@@ -143,7 +148,7 @@ __EOS__
 
   def test_server_session_cache
     ctx_proc = Proc.new do |ctx|
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.options |= OpenSSL::SSL::OP_NO_TICKET
     end
 
@@ -197,7 +202,7 @@ __EOS__
       10.times do |i|
         connections = i
         cctx = OpenSSL::SSL::SSLContext.new
-        cctx.ssl_version = :TLSv1_2
+        cctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
         server_connect_with_session(port, cctx, first_session) { |ssl|
           ssl.puts("abc"); assert_equal "abc\n", ssl.gets
           first_session ||= ssl.session
@@ -237,21 +242,25 @@ __EOS__
       end
 
       server_connect_with_session(port, ctx, nil) { |ssl|
-        assert_equal(1, ctx.session_cache_stats[:cache_num])
         assert_equal(1, ctx.session_cache_stats[:connect_good])
         assert_equal([ssl, ssl.session], called[:new])
-        assert_equal(true, ctx.session_remove(ssl.session))
-        assert_equal(false, ctx.session_remove(ssl.session))
-        if TEST_SESSION_REMOVE_CB
-          assert_equal([ctx, ssl.session], called[:remove])
+        # AWS-LC doesn't support internal session caching on the client, but
+        # the callback is still enabled as expected.
+        unless aws_lc?
+          assert_equal(1, ctx.session_cache_stats[:cache_num])
+          assert_equal(true, ctx.session_remove(ssl.session))
+          if TEST_SESSION_REMOVE_CB
+            assert_equal([ctx, ssl.session], called[:remove])
+          end
         end
+        assert_equal(false, ctx.session_remove(ssl.session))
       }
     end
   end
 
   def test_ctx_client_session_cb_tls13
-    omit "TLS 1.3 not supported" unless tls13_supported?
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
+    omit "AWS-LC does not support internal session caching on the client" if aws_lc?
 
     start_server do |port|
       called = {}
@@ -274,7 +283,6 @@ __EOS__
   end
 
   def test_ctx_client_session_cb_tls13_exception
-    omit "TLS 1.3 not supported" unless tls13_supported?
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
 
     server_proc = lambda do |ctx, ssl|
@@ -301,11 +309,11 @@ __EOS__
     connections = nil
     called = {}
     cctx = OpenSSL::SSL::SSLContext.new
-    cctx.ssl_version = :TLSv1_2
+    cctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
     sctx = nil
     ctx_proc = Proc.new { |ctx|
       sctx = ctx
-      ctx.ssl_version = :TLSv1_2
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
       ctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
       # get_cb is called whenever a client proposed to resume a session but
@@ -375,11 +383,6 @@ __EOS__
       connections = 2
       sess2 = server_connect_with_session(port, cctx, sess0.dup) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
-        if !ssl.session_reused? && openssl?(1, 1, 0) && !openssl?(1, 1, 0, 7)
-          # OpenSSL >= 1.1.0, < 1.1.0g
-          pend "External session cache is not working; " \
-            "see https://github.com/openssl/openssl/pull/4014"
-        end
         assert_equal true, ssl.session_reused?
         ssl.session
       }

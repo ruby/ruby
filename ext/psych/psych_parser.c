@@ -562,4 +562,3 @@ void Init_psych_parser(void)
     id_end_mapping     = rb_intern("end_mapping");
     id_event_location  = rb_intern("event_location");
 }
-/* vim: set noet sws=4 sw=4: */

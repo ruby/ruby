@@ -3207,7 +3207,6 @@ class TestModule < Test::Unit::TestCase
   end
 
   def test_redefinition_mismatch
-    omit "Investigating trunk-rjit failure on ci.rvm.jp" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     m = Module.new
     m.module_eval "A = 1", __FILE__, line = __LINE__
     e = assert_raise_with_message(TypeError, /is not a module/) {
@@ -3363,6 +3362,44 @@ class TestModule < Test::Unit::TestCase
     PREP
       1_000_000.times(&code)
     CODE
+  end
+
+  def test_set_temporary_name
+    m = Module.new
+    assert_nil m.name
+
+    m.const_set(:N, Module.new)
+
+    assert_match(/\A#<Module:0x\h+>::N\z/, m::N.name)
+    m::N.set_temporary_name(name = "fake_name_under_M")
+    name.upcase!
+    assert_equal("fake_name_under_M", m::N.name)
+    assert_raise(FrozenError) {m::N.name.upcase!}
+    m::N.set_temporary_name(nil)
+    assert_nil(m::N.name)
+
+    m.set_temporary_name(name = "fake_name")
+    name.upcase!
+    assert_equal("fake_name", m.name)
+    assert_raise(FrozenError) {m.name.upcase!}
+
+    m.set_temporary_name(nil)
+    assert_nil m.name
+
+    assert_raise_with_message(ArgumentError, "empty class/module name") do
+      m.set_temporary_name("")
+    end
+    %w[A A::B ::A ::A::B].each do |name|
+      assert_raise_with_message(ArgumentError, /must not be a constant path/) do
+        m.set_temporary_name(name)
+      end
+    end
+
+    [Object, User, AClass].each do |mod|
+      assert_raise_with_message(RuntimeError, /permanent name/) do
+        mod.set_temporary_name("fake_name")
+      end
+    end
   end
 
   private

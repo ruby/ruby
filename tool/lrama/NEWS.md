@@ -1,5 +1,65 @@
 # NEWS for Lrama
 
+## Lrama 0.7.0 (2025-01-21)
+
+## [EXPERIMENTAL] Support the generation of the IELR(1) parser described in this paper
+
+Support the generation of the IELR(1) parser described in this paper.
+https://www.sciencedirect.com/science/article/pii/S0167642309001191
+
+If you use IELR(1) parser, you can write the following directive in your grammar file.
+
+```yacc
+%define lr.type ielr
+```
+
+But, currently IELR(1) parser is experimental feature. If you find any bugs, please report it to us. Thank you.
+
+## Support `-t` option as same as `--debug` option
+
+Support to `-t` option as same as `--debug` option.
+These options align with Bison behavior. So same as `--debug` option.
+
+## Trace only explicit rules
+
+Support to trace only explicit rules.
+If you use `--trace=rules` option, it shows include mid-rule actions. If you want to show only explicit rules, you can use `--trace=only-explicit-rules` option.
+
+Example:
+
+```yacc
+%{
+%}
+%union {
+    int i;
+}
+%token <i> number
+%type <i> program
+%%
+program         : number { printf("%d", $1); } number { $$ = $1 + $3; }
+                ;
+%%
+```
+
+Result of `--trace=rules`:
+
+```console
+$ exe/lrama --trace=rules sample.y
+Grammar rules:
+$accept -> program YYEOF
+$@1 -> ε
+program -> number $@1 number
+```
+
+Result of `--trace=only-explicit-rules`:
+
+```console
+$ exe/lrama --trace=explicit-rules sample.y
+Grammar rules:
+$accept -> program YYEOF
+program -> number number
+```
+
 ## Lrama 0.6.11 (2024-12-23)
 
 ### Add support for %type declarations using %nterm in Nonterminal Symbols

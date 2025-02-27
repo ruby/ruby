@@ -15,7 +15,8 @@ module Prism
     # must align with the build shared library from make/rake.
     libprism_in_build = File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
     libprism_in_libdir = "#{RbConfig::CONFIG["libdir"]}/prism/libprism.#{RbConfig::CONFIG["SOEXT"]}"
-    if File.exist? libprism_in_build
+
+    if File.exist?(libprism_in_build)
       INCLUDE_DIR = File.expand_path("../../include", __dir__)
       ffi_lib libprism_in_build
     else
@@ -279,7 +280,7 @@ module Prism
         # access to the IO object already through the closure of the lambda, we
         # can pass a null pointer here and not worry.
         LibRubyParser.pm_serialize_parse_stream(buffer.pointer, nil, callback, dump_options(options))
-        Prism.load(source, buffer.read)
+        Prism.load(source, buffer.read, options.fetch(:freeze, false))
       end
     end
 
@@ -354,50 +355,37 @@ module Prism
     def dump_common(string, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+
+        dumped = buffer.read
+        dumped.freeze if options.fetch(:freeze, false)
+
+        dumped
       end
     end
 
     def lex_common(string, code, options) # :nodoc:
-      serialized = LibRubyParser::PrismBuffer.with do |buffer|
+      LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-        buffer.read
+        Serialize.load_lex(code, buffer.read, options.fetch(:freeze, false))
       end
-
-      Serialize.load_tokens(Source.for(code), serialized)
     end
 
     def parse_common(string, code, options) # :nodoc:
       serialized = dump_common(string, options)
-      Prism.load(code, serialized)
+      Serialize.load_parse(code, serialized, options.fetch(:freeze, false))
     end
 
     def parse_comments_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_comments(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-
-        loader.load_header
-        loader.load_encoding
-        loader.load_start_line
-        loader.load_comments
+        Serialize.load_parse_comments(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
     def parse_lex_common(string, code, options) # :nodoc:
       LibRubyParser::PrismBuffer.with do |buffer|
         LibRubyParser.pm_serialize_parse_lex(buffer.pointer, string.pointer, string.length, dump_options(options))
-
-        source = Source.for(code)
-        loader = Serialize::Loader.new(source, buffer.read)
-
-        tokens = loader.load_tokens
-        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
-        tokens.each { |token,| token.value.force_encoding(loader.encoding) }
-
-        ParseLexResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
+        Serialize.load_parse_lex(code, buffer.read, options.fetch(:freeze, false))
       end
     end
 
@@ -431,6 +419,8 @@ module Prism
       when /\A3\.3(\.\d+)?\z/
         1
       when /\A3\.4(\.\d+)?\z/
+        2
+      when /\A3\.5(\.\d+)?\z/
         0
       else
         raise ArgumentError, "invalid version: #{version}"
@@ -480,15 +470,43 @@ module Prism
       template << "C"
       values << (options.fetch(:partial_script, false) ? 1 : 0)
 
+      template << "C"
+      values << (options.fetch(:freeze, false) ? 1 : 0)
+
       template << "L"
       if (scopes = options[:scopes])
         values << scopes.length
 
         scopes.each do |scope|
-          template << "L"
-          values << scope.length
+          locals = nil
+          forwarding = 0
 
-          scope.each do |local|
+          case scope
+          when Array
+            locals = scope
+          when Scope
+            locals = scope.locals
+
+            scope.forwarding.each do |forward|
+              case forward
+              when :*     then forwarding |= 0x1
+              when :**    then forwarding |= 0x2
+              when :&     then forwarding |= 0x4
+              when :"..." then forwarding |= 0x8
+              else raise ArgumentError, "invalid forwarding value: #{forward}"
+              end
+            end
+          else
+            raise TypeError, "wrong argument type #{scope.class.inspect} (expected Array or Prism::Scope)"
+          end
+
+          template << "L"
+          values << locals.length
+
+          template << "C"
+          values << forwarding
+
+          locals.each do |local|
             name = local.name
             template << "L"
             values << name.bytesize

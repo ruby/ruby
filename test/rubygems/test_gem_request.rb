@@ -2,7 +2,6 @@
 
 require_relative "helper"
 require "rubygems/request"
-require "ostruct"
 
 unless Gem::HAVE_OPENSSL
   warn "Skipping Gem::Request tests.  openssl not found."
@@ -501,11 +500,20 @@ ERROR:  Certificate  is an invalid CA certificate
 
   def util_stub_net_http(hash)
     old_client = Gem::Request::ConnectionPools.client
-    conn = Conn.new OpenStruct.new(hash)
+    conn = Conn.new Response.new(hash)
     Gem::Request::ConnectionPools.client = conn
     yield conn
   ensure
     Gem::Request::ConnectionPools.client = old_client
+  end
+
+  class Response
+    attr_reader :code, :body, :message
+
+    def initialize(hash)
+      @code = hash[:code]
+      @body = hash[:body]
+    end
   end
 
   class Conn

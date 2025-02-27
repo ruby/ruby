@@ -10,6 +10,8 @@ use mmtk::{Mutator, MutatorContext};
 pub struct VMScanning {}
 
 impl Scanning<Ruby> for VMScanning {
+    const UNIQUE_OBJECT_ENQUEUING: bool = true;
+
     fn support_slot_enqueuing(_tls: VMWorkerThread, _object: ObjectReference) -> bool {
         false
     }

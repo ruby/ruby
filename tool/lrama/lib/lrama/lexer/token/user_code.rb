@@ -1,3 +1,4 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 require "strscan"
@@ -6,14 +7,16 @@ module Lrama
   class Lexer
     class Token
       class UserCode < Token
-        attr_accessor :tag
+        attr_accessor :tag #: Lexer::Token::Tag
 
+        # @rbs () -> Array[Lrama::Grammar::Reference]
         def references
           @references ||= _references
         end
 
         private
 
+        # @rbs () -> Array[Lrama::Grammar::Reference]
         def _references
           scanner = StringScanner.new(s_value)
           references = [] #: Array[Grammar::Reference]
@@ -32,6 +35,7 @@ module Lrama
           references
         end
 
+        # @rbs (StringScanner scanner) -> Lrama::Grammar::Reference?
         def scan_reference(scanner)
           start = scanner.pos
           case

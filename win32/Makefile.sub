@@ -105,8 +105,8 @@ CC = cl -nologo
 !if !defined(CPP) || "$(CPP)" == "cl"
 CPP = $(CC) -E
 !endif
-!if !defined(YACC)
-YACC = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
+!if !defined(LRAMA)
+LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 !endif
 AR = lib -nologo
 PURIFY =
@@ -349,7 +349,7 @@ COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
+XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 !if $(MSC_VER) >= 1800
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
 !elseif $(MSC_VER) >= 1400
@@ -362,9 +362,6 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
-!endif
-!ifndef RJIT_SUPPORT
-RJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -966,7 +963,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define USE_RJIT 0
 #endif /* $(guard) */
 <<
 
@@ -1040,7 +1036,7 @@ s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
 s,@LD@,$$(CC),;t t
-s,@YACC@,$(YACC),;t t
+s,@LRAMA@,$(LRAMA),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
@@ -1166,7 +1162,6 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
-s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 

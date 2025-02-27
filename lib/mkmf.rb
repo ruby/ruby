@@ -2381,6 +2381,19 @@ RULES
   # directory, i.e. the current directory.  It is included as part of the
   # +VPATH+ and added to the list of +INCFLAGS+.
   #
+  # Yields the configuration part of the makefile to be generated, as an array
+  # of strings, if the block is given.  The returned value will be used the
+  # new configuration part.
+  #
+  #   create_makefile('foo') {|conf|
+  #     [
+  #       *conf,
+  #       "MACRO_YOU_NEED = something",
+  #     ]
+  #   }
+  #
+  # If "depend" file exist in the source directory, that content will be
+  # included in the generated makefile, with formatted by depend_rules method.
   def create_makefile(target, srcprefix = nil)
     $target = target
     libpath = $DEFLIBPATH|$LIBPATH

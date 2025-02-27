@@ -25,7 +25,7 @@ jobs:
     name: cargo test
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -57,7 +57,7 @@ jobs:
     name: cargo clippy
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -81,7 +81,8 @@ jobs:
         include:
           - test_task: 'yjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--with-gcc=clang-12 --enable-yjit=dev'
+            configure: '--with-gcc=clang-14 --enable-yjit=dev'
+            libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'check'
             # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
@@ -114,7 +115,7 @@ jobs:
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -172,7 +173,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: ubuntu-20.04
+          os: ubuntu-22.04
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -192,6 +193,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
+          LIBCLANG_PATH: ${{ matrix.libclang_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison

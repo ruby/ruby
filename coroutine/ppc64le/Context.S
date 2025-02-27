@@ -7,7 +7,7 @@
 .type   PREFIXED_SYMBOL(coroutine_transfer), @function
 PREFIXED_SYMBOL(coroutine_transfer):
 	# Make space on the stack for caller registers
-	addi 1,1,-152
+	addi 1,1,-160
 
 	# Save caller registers
 	std 14,0(1)
@@ -32,6 +32,10 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	# Save return address
 	mflr 0
 	std 0,144(1)
+
+        # Save caller special register
+        mfcr 0
+        std 0, 152(1)
 
 	# Save stack pointer to first argument
 	std 1,0(3)
@@ -63,8 +67,14 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	ld 0,144(1)
 	mtlr 0
 
+        # Load special registers
+        ld 0,152(1)
+        # Restore cr register cr2, cr3 and cr4 (field index 3,4,5)
+        # (field index is 1-based, field 1 = cr0) using a mask (32|16|8 = 56)
+        mtcrf 56,0
+
 	# Pop stack frame
-	addi 1,1,152
+	addi 1,1,160
 
 	# Jump to return address
 	blr

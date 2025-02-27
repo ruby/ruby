@@ -13,7 +13,7 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.1.3.dev";
+STRINGIO_VERSION = "3.1.6.dev";
 
 #include <stdbool.h>
 
@@ -179,6 +179,9 @@ check_modifiable(struct StringIO *ptr)
     }
     else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
+    }
+    else {
+	rb_str_modify(ptr->string);
     }
 }
 

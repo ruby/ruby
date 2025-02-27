@@ -195,7 +195,7 @@ RSpec.describe "bundle install across platforms" do
       build_gem("ffi", "1.9.23")
     end
 
-    simulate_platform java do
+    simulate_platform "java" do
       install_gemfile <<-G
         source "https://gem.repo4"
 
@@ -330,7 +330,7 @@ RSpec.describe "bundle install across platforms" do
   end
 
   it "works with gems with platform-specific dependency having different requirements order" do
-    simulate_platform x64_mac do
+    simulate_platform "x86_64-darwin-15" do
       update_repo2 do
         build_gem "fspath", "3"
         build_gem "image_optim_pack", "1.2.3" do |s|
@@ -570,7 +570,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "https://gem.repo1"
 
-      gem "myrack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
+      gem "myrack", :platform => [:windows, :jruby]
     G
 
     bundle "install"
@@ -616,7 +616,7 @@ end
 
 RSpec.describe "when a gem has no architecture" do
   it "still installs correctly" do
-    simulate_platform x86_mswin32 do
+    simulate_platform "x86-mswin32" do
       build_repo2 do
         # The rcov gem is platform mswin32, but has no arch
         build_gem "rcov" do |s|

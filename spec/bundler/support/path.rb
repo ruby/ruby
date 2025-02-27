@@ -113,7 +113,7 @@ module Spec
     # that requires regenerating tmp/.
 
     def test_env_version
-      1
+      2
     end
 
     def scope
@@ -278,6 +278,19 @@ module Spec
 
     def rake_path
       Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
+    end
+
+    def sinatra_dependency_paths
+      deps = %w[
+        mustermann
+        rack
+        tilt
+        sinatra
+        ruby2_keywords
+        base64
+        logger
+      ]
+      Dir[base_system_gem_path.join("gems/{#{deps.join(",")}}-*/lib")].map(&:to_s)
     end
 
     private

@@ -59,17 +59,11 @@ typedef struct FBufferStruct {
 #define FBUFFER_PAIR(fb) FBUFFER_PTR(fb), FBUFFER_LEN(fb)
 
 static void fbuffer_free(FBuffer *fb);
-#ifndef JSON_GENERATOR
 static void fbuffer_clear(FBuffer *fb);
-#endif
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
-#ifdef JSON_GENERATOR
 static void fbuffer_append_long(FBuffer *fb, long number);
-#endif
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
-#ifdef JSON_GENERATOR
 static VALUE fbuffer_finalize(FBuffer *fb);
-#endif
 
 static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *stack_buffer, long stack_buffer_size)
 {
@@ -156,7 +150,6 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
     }
 }
 
-#ifdef JSON_GENERATOR
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
     const char *newstr = StringValuePtr(str);
@@ -166,7 +159,6 @@ static void fbuffer_append_str(FBuffer *fb, VALUE str)
 
     fbuffer_append(fb, newstr, len);
 }
-#endif
 
 static inline void fbuffer_append_char(FBuffer *fb, char newchr)
 {
@@ -175,7 +167,6 @@ static inline void fbuffer_append_char(FBuffer *fb, char newchr)
     fb->len++;
 }
 
-#ifdef JSON_GENERATOR
 static long fltoa(long number, char *buf)
 {
     static const char digits[] = "0123456789";
@@ -210,5 +201,5 @@ static VALUE fbuffer_finalize(FBuffer *fb)
         return result;
     }
 }
-#endif
+
 #endif

@@ -35,7 +35,6 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
-#include "rjit.h"
 #include "yjit.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -552,6 +551,9 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
             VirtualFree(allocation->base, 0, MEM_RELEASE);
             rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
         }
+#elif defined(__wasi__)
+        // wasi-libc's mprotect emulation doesn't support PROT_NONE.
+        (void)page;
 #else
         if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
             munmap(allocation->base, count*stride);
@@ -1595,9 +1597,9 @@ cont_restore_1(rb_context_t *cont)
     cont_restore_thread(cont);
 
     /* restore machine stack */
-#if defined(_M_AMD64) && !defined(__MINGW64__)
+#if (defined(_M_AMD64) && !defined(__MINGW64__)) || defined(_M_ARM64)
     {
-        /* workaround for x64 SEH */
+        /* workaround for x64 and arm64 SEH on Windows */
         jmp_buf buf;
         setjmp(buf);
         _JUMP_BUFFER *bp = (void*)&cont->jmpbuf;
@@ -1896,7 +1898,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  == Non-blocking Fibers
  *
  *  The concept of <em>non-blocking fiber</em> was introduced in Ruby 3.0.
- *  A non-blocking fiber, when reaching a operation that would normally block
+ *  A non-blocking fiber, when reaching an operation that would normally block
  *  the fiber (like <code>sleep</code>, or wait for another process or I/O)
  *  will yield control to other fibers and allow the <em>scheduler</em> to
  *  handle blocking and waking up (resuming) this fiber when it can proceed.

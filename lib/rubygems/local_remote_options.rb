@@ -134,13 +134,13 @@ module Gem::LocalRemoteOptions
   # Is local fetching enabled?
 
   def local?
-    options[:domain] == :local || options[:domain] == :both
+    [:local, :both].include?(options[:domain])
   end
 
   ##
   # Is remote fetching enabled?
 
   def remote?
-    options[:domain] == :remote || options[:domain] == :both
+    [:remote, :both].include?(options[:domain])
   end
 end

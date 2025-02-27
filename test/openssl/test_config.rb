@@ -43,6 +43,9 @@ __EOD__
   end
 
   def test_s_parse_format
+    # AWS-LC removed support for parsing $foo variables.
+    return if aws_lc?
+
     c = OpenSSL::Config.parse(<<__EOC__)
  baz =qx\t                # "baz = qx"
 
@@ -213,13 +216,15 @@ __EOC__
     assert_raise(TypeError) do
       @it.get_value(nil, 'HOME') # not allowed unlike Config#value
     end
-    # fallback to 'default' ugly...
-    assert_equal('.', @it.get_value('unknown', 'HOME'))
+    unless aws_lc? # AWS-LC does not support the fallback
+      # fallback to 'default' ugly...
+      assert_equal('.', @it.get_value('unknown', 'HOME'))
+    end
   end
 
   def test_get_value_ENV
-    # LibreSSL removed support for NCONF_get_string(conf, "ENV", str)
-    return if libressl?
+    # LibreSSL and AWS-LC removed support for NCONF_get_string(conf, "ENV", str)
+    return if libressl? || aws_lc?
 
     key = ENV.keys.first
     assert_not_nil(key) # make sure we have at least one ENV var.

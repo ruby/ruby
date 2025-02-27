@@ -116,6 +116,9 @@ module Prism
       assert Prism.parse_success?("1 + 1", version: "3.4.9")
       assert Prism.parse_success?("1 + 1", version: "3.4.10")
 
+      assert Prism.parse_success?("1 + 1", version: "3.5")
+      assert Prism.parse_success?("1 + 1", version: "3.5.0")
+
       assert Prism.parse_success?("1 + 1", version: "latest")
 
       # Test edge case
@@ -133,8 +136,26 @@ module Prism
 
       # Not supported version (too new)
       assert_raise ArgumentError do
-        Prism.parse("1 + 1", version: "3.5.0")
+        Prism.parse("1 + 1", version: "3.6.0")
       end
+    end
+
+    def test_scopes
+      assert_kind_of Prism::CallNode, Prism.parse_statement("foo")
+      assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [[:foo]])
+      assert_kind_of Prism::LocalVariableReadNode, Prism.parse_statement("foo", scopes: [Prism.scope(locals: [:foo])])
+
+      assert Prism.parse_failure?("foo(*)")
+      assert Prism.parse_success?("foo(*)", scopes: [Prism.scope(forwarding: [:*])])
+
+      assert Prism.parse_failure?("foo(**)")
+      assert Prism.parse_success?("foo(**)", scopes: [Prism.scope(forwarding: [:**])])
+
+      assert Prism.parse_failure?("foo(&)")
+      assert Prism.parse_success?("foo(&)", scopes: [Prism.scope(forwarding: [:&])])
+
+      assert Prism.parse_failure?("foo(...)")
+      assert Prism.parse_success?("foo(...)", scopes: [Prism.scope(forwarding: [:"..."])])
     end
 
     private

@@ -48,9 +48,7 @@ Init_ossl_x509(void)
 
     /* Certificate verification error code */
     DefX509Const(V_OK);
-#if defined(X509_V_ERR_UNSPECIFIED) /* 1.0.1r, 1.0.2f, 1.1.0 */
     DefX509Const(V_ERR_UNSPECIFIED);
-#endif
     DefX509Const(V_ERR_UNABLE_TO_GET_ISSUER_CERT);
     DefX509Const(V_ERR_UNABLE_TO_GET_CRL);
     DefX509Const(V_ERR_UNABLE_TO_DECRYPT_CERT_SIGNATURE);
@@ -104,10 +102,10 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_UNSUPPORTED_CONSTRAINT_SYNTAX);
     DefX509Const(V_ERR_UNSUPPORTED_NAME_SYNTAX);
     DefX509Const(V_ERR_CRL_PATH_VALIDATION_ERROR);
-#if defined(X509_V_ERR_PATH_LOOP)
+#if defined(X509_V_ERR_PATH_LOOP) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_PATH_LOOP);
 #endif
-#if defined(X509_V_ERR_SUITE_B_INVALID_VERSION)
+#if defined(X509_V_ERR_SUITE_B_INVALID_VERSION) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_SUITE_B_INVALID_VERSION);
     DefX509Const(V_ERR_SUITE_B_INVALID_ALGORITHM);
     DefX509Const(V_ERR_SUITE_B_INVALID_CURVE);
@@ -118,27 +116,21 @@ Init_ossl_x509(void)
     DefX509Const(V_ERR_HOSTNAME_MISMATCH);
     DefX509Const(V_ERR_EMAIL_MISMATCH);
     DefX509Const(V_ERR_IP_ADDRESS_MISMATCH);
-#if defined(X509_V_ERR_DANE_NO_MATCH)
+#if defined(X509_V_ERR_DANE_NO_MATCH) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_DANE_NO_MATCH);
 #endif
-#if defined(X509_V_ERR_EE_KEY_TOO_SMALL)
     DefX509Const(V_ERR_EE_KEY_TOO_SMALL);
     DefX509Const(V_ERR_CA_KEY_TOO_SMALL);
     DefX509Const(V_ERR_CA_MD_TOO_WEAK);
-#endif
-#if defined(X509_V_ERR_INVALID_CALL)
     DefX509Const(V_ERR_INVALID_CALL);
-#endif
-#if defined(X509_V_ERR_STORE_LOOKUP)
     DefX509Const(V_ERR_STORE_LOOKUP);
-#endif
-#if defined(X509_V_ERR_NO_VALID_SCTS)
+#if defined(X509_V_ERR_NO_VALID_SCTS) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_NO_VALID_SCTS);
 #endif
-#if defined(X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION)
+#if defined(X509_V_ERR_PROXY_SUBJECT_NAME_VIOLATION) /* OpenSSL 1.1.0, missing in LibreSSL */
     DefX509Const(V_ERR_PROXY_SUBJECT_NAME_VIOLATION);
 #endif
-#if defined(X509_V_ERR_OCSP_VERIFY_NEEDED)
+#if defined(X509_V_ERR_OCSP_VERIFY_NEEDED) /* OpenSSL 1.1.1, missing in LibreSSL */
     DefX509Const(V_ERR_OCSP_VERIFY_NEEDED);
     DefX509Const(V_ERR_OCSP_VERIFY_FAILED);
     DefX509Const(V_ERR_OCSP_CERT_UNKNOWN);
@@ -189,17 +181,13 @@ Init_ossl_x509(void)
      * certificate chain, search the Store first for the issuer certificate.
      * Enabled by default in OpenSSL >= 1.1.0. */
     DefX509Const(V_FLAG_TRUSTED_FIRST);
-#if defined(X509_V_FLAG_SUITEB_128_LOS_ONLY)
+#if defined(X509_V_FLAG_SUITEB_128_LOS_ONLY) /* OpenSSL 1.1.0, missing in LibreSSL */
     /* Set by Store#flags= and StoreContext#flags=.
      * Enables Suite B 128 bit only mode. */
     DefX509Const(V_FLAG_SUITEB_128_LOS_ONLY);
-#endif
-#if defined(X509_V_FLAG_SUITEB_192_LOS)
     /* Set by Store#flags= and StoreContext#flags=.
      * Enables Suite B 192 bit only mode. */
     DefX509Const(V_FLAG_SUITEB_192_LOS);
-#endif
-#if defined(X509_V_FLAG_SUITEB_128_LOS)
     /* Set by Store#flags= and StoreContext#flags=.
      * Enables Suite B 128 bit mode allowing 192 bit algorithms. */
     DefX509Const(V_FLAG_SUITEB_128_LOS);
@@ -207,17 +195,13 @@ Init_ossl_x509(void)
     /* Set by Store#flags= and StoreContext#flags=.
      * Allows partial chains if at least one certificate is in trusted store. */
     DefX509Const(V_FLAG_PARTIAL_CHAIN);
-#if defined(X509_V_FLAG_NO_ALT_CHAINS)
     /* Set by Store#flags= and StoreContext#flags=. Suppresses searching for
      * a alternative chain. No effect in OpenSSL >= 1.1.0. */
     DefX509Const(V_FLAG_NO_ALT_CHAINS);
-#endif
-#if defined(X509_V_FLAG_NO_CHECK_TIME)
     /* Set by Store#flags= and StoreContext#flags=. Suppresses checking the
      * validity period of certificates and CRLs. No effect when the current
      * time is explicitly set by Store#time= or StoreContext#time=. */
     DefX509Const(V_FLAG_NO_CHECK_TIME);
-#endif
 
     /* Set by Store#purpose=. SSL/TLS client. */
     DefX509Const(PURPOSE_SSL_CLIENT);

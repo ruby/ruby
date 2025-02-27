@@ -89,7 +89,6 @@
 #include "internal/time.h"
 #include "internal/warnings.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "ruby/debug.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -99,10 +98,6 @@
 #include "ractor_core.h"
 #include "vm_debug.h"
 #include "vm_sync.h"
-
-#if USE_RJIT && defined(HAVE_SYS_WAIT_H)
-#include <sys/wait.h>
-#endif
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -884,10 +879,10 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 #define threadptr_initialized(th) ((th)->invoke_type != thread_invoke_type_none)
 
 /*
- * call-seq:
- *  Thread.new { ... }			-> thread
- *  Thread.new(*args, &proc)		-> thread
- *  Thread.new(*args) { |args| ... }	-> thread
+ *  call-seq:
+ *    Thread.new { ... }		-> thread
+ *    Thread.new(*args, &proc)		-> thread
+ *    Thread.new(*args) { |args| ... }	-> thread
  *
  *  Creates a new thread executing the given block.
  *
@@ -1811,7 +1806,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     volatile VALUE val = Qundef; /* shouldn't be used */
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
-    bool prev_mn_schedulable = th->mn_schedulable;
+    volatile bool prev_mn_schedulable = th->mn_schedulable;
     th->mn_schedulable = thread_io_mn_schedulable(th, events, NULL);
 
     // `errno` is only valid when there is an actual error - but we can't
@@ -4741,9 +4736,6 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_ractor_atfork(vm, th);
     rb_vm_postponed_job_atfork();
 
-    /* may be held by RJIT threads in parent */
-    rb_native_mutex_initialize(&vm->workqueue_lock);
-
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
     ccan_list_head_init(&th->interrupt_exec_tasks);
@@ -5596,7 +5588,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
             }
         }
         rb_str_catf(msg, "\n   ");
-        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, 0, 0), sep));
+        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES), sep));
         rb_str_catf(msg, "\n");
     }
 }

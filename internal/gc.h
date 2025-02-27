@@ -127,7 +127,13 @@ struct rb_objspace; /* in vm_core.h */
             rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
             rb_wb_unprotected_newobj_of((c), (f), s))
 
-#define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
+#ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+# define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+struct rb_gc_object_metadata_entry {
+    ID name;
+    VALUE val;
+};
+#endif
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
 # define UNALIGNED_MEMBER_ACCESS(expr) (expr)
@@ -244,7 +250,7 @@ const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
-size_t rb_obj_gc_flags(VALUE, ID[], size_t);
+struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
@@ -255,9 +261,6 @@ void ruby_sized_xfree(void *x, size_t size);
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
 
-#if USE_MODULAR_GC
-void ruby_load_modular_gc_from_argv(int argc, char **argv);
-#endif
 RUBY_SYMBOL_EXPORT_END
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);

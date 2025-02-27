@@ -40,7 +40,7 @@ describe :binding_clone, shared: true do
     end
 
     it "copies the finalizer" do
-      code = <<-RUBY
+      code = <<-'RUBY'
         obj = binding
 
         ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })

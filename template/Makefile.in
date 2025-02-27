@@ -29,7 +29,7 @@ CPP = @CPP@
 LD = @LD@
 RUSTC = @RUSTC@
 CARGO = @CARGO@
-YACC = $(BASERUBY) $(tooldir)/lrama/exe/lrama
+LRAMA = $(BASERUBY) $(tooldir)/lrama/exe/lrama
 PURIFY =
 AUTOCONF = autoconf
 CONFIGURE = @CONFIGURE@
@@ -101,7 +101,6 @@ XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1) -Dmodu
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
-RJIT_SUPPORT = @RJIT_SUPPORT@
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
@@ -310,8 +309,6 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
-#
-# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
@@ -474,7 +471,7 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 
 .d.h:
 	@$(ECHO) translating probes $<
-	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) -s $<
+	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) $(CPPFLAGS) -s $<
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
 

@@ -212,10 +212,6 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     GetX509Store(self, store);
     if (argc != 0)
         rb_warn("OpenSSL::X509::Store.new does not take any arguments");
-#if !defined(HAVE_OPAQUE_OPENSSL)
-    /* [Bug #405] [Bug #1678] [Bug #3000]; already fixed? */
-    store->ex_data.sk = NULL;
-#endif
     X509_STORE_set_verify_cb(store, x509store_verify_cb);
     ossl_x509store_set_vfy_cb(self, Qnil);
 
@@ -332,11 +328,7 @@ ossl_x509store_set_time(VALUE self, VALUE time)
     X509_VERIFY_PARAM *param;
 
     GetX509Store(self, store);
-#ifdef HAVE_X509_STORE_GET0_PARAM
     param = X509_STORE_get0_param(store);
-#else
-    param = store->param;
-#endif
     X509_VERIFY_PARAM_set_time(param, NUM2LONG(rb_Integer(time)));
     return time;
 }
@@ -365,15 +357,6 @@ ossl_x509store_add_file(VALUE self, VALUE file)
         ossl_raise(eX509StoreError, "X509_STORE_add_lookup");
     if (X509_LOOKUP_load_file(lookup, path, X509_FILETYPE_PEM) != 1)
         ossl_raise(eX509StoreError, "X509_LOOKUP_load_file");
-#if OPENSSL_VERSION_NUMBER < 0x10101000 || defined(LIBRESSL_VERSION_NUMBER)
-    /*
-     * X509_load_cert_crl_file() which is called from X509_LOOKUP_load_file()
-     * did not check the return value of X509_STORE_add_{cert,crl}(), leaking
-     * "cert already in hash table" errors on the error queue, if duplicate
-     * certificates are found. This will be fixed by OpenSSL 1.1.1.
-     */
-    ossl_clear_error();
-#endif
 
     return self;
 }

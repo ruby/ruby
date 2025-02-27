@@ -134,18 +134,6 @@ module Bundler
       loaded_gem_paths.flatten
     end
 
-    def load_plugins
-      Gem.load_plugins
-    end
-
-    def load_plugin_files(plugin_files)
-      Gem.load_plugin_files(plugin_files)
-    end
-
-    def load_env_plugins
-      Gem.load_env_plugins
-    end
-
     def ui=(obj)
       Gem::DefaultUserInteraction.ui = obj
     end
@@ -189,7 +177,7 @@ module Bundler
       end
     end
 
-    def replace_gem(specs, specs_by_name)
+    def replace_gem(specs_by_name)
       executables = nil
 
       [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
@@ -286,7 +274,7 @@ module Bundler
       else
         Gem::BUNDLED_GEMS.replace_require(specs) if Gem::BUNDLED_GEMS.respond_to?(:replace_require)
       end
-      replace_gem(specs, specs_by_name)
+      replace_gem(specs_by_name)
       stub_rubygems(specs_by_name.values)
       replace_bin_path(specs_by_name)
 
@@ -305,7 +293,6 @@ module Bundler
         default_spec_name = default_spec.name
         next if specs_by_name.key?(default_spec_name)
 
-        specs << default_spec
         specs_by_name[default_spec_name] = default_spec
       end
 

@@ -138,6 +138,16 @@ void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 void pm_buffer_append_double(pm_buffer_t *buffer, double value);
 
 /**
+ * Append a unicode codepoint to the buffer.
+ *
+ * @param buffer The buffer to append to.
+ * @param value The character to append.
+ * @returns True if the codepoint was valid and appended successfully, false
+ *   otherwise.
+ */
+bool pm_buffer_append_unicode_codepoint(pm_buffer_t *buffer, uint32_t value);
+
+/**
  * The different types of escaping that can be performed by the buffer when
  * appending a slice of Ruby source code.
  */

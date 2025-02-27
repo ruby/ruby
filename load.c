@@ -597,7 +597,7 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
 
     loading_tbl = get_loading_table(vm);
     f = 0;
-    if (!expanded) {
+    if (!expanded && !rb_is_absolute_path(feature)) {
         struct loaded_feature_searching fs;
         fs.name = feature;
         fs.len = len;

@@ -152,7 +152,7 @@ obj_to_asn1obj_i(VALUE obj)
 }
 
 static VALUE
-get_asn1obj(ASN1_OBJECT *obj)
+get_asn1obj(const ASN1_OBJECT *obj)
 {
     BIO *out;
     VALUE ret;
@@ -236,11 +236,13 @@ ossl_ts_req_get_algorithm(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algor;
+    const ASN1_OBJECT *obj;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
-    return get_asn1obj(algor->algorithm);
+    X509_ALGOR_get0(&obj, NULL, NULL, algor);
+    return get_asn1obj(obj);
 }
 
 /*
@@ -490,13 +492,15 @@ ossl_ts_req_to_der(VALUE self)
     TS_REQ *req;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algo;
+    const ASN1_OBJECT *obj;
     ASN1_OCTET_STRING *hashed_msg;
 
     GetTSRequest(self, req);
     mi = TS_REQ_get_msg_imprint(req);
 
     algo = TS_MSG_IMPRINT_get_algo(mi);
-    if (OBJ_obj2nid(algo->algorithm) == NID_undef)
+    X509_ALGOR_get0(&obj, NULL, NULL, algo);
+    if (OBJ_obj2nid(obj) == NID_undef)
         ossl_raise(eTimestampError, "Message imprint missing algorithm");
 
     hashed_msg = TS_MSG_IMPRINT_get_msg(mi);
@@ -620,14 +624,7 @@ ossl_ts_resp_get_failure_info(VALUE self)
 {
     TS_RESP *resp;
     TS_STATUS_INFO *si;
-
-    /* The ASN1_BIT_STRING_get_bit changed from 1.0.0. to 1.1.0, making this
-     * const. */
-    #if defined(HAVE_TS_STATUS_INFO_GET0_FAILURE_INFO)
     const ASN1_BIT_STRING *fi;
-    #else
-    ASN1_BIT_STRING *fi;
-    #endif
 
     GetTSResponse(self, resp);
     si = TS_RESP_get_status_info(resp);
@@ -858,16 +855,26 @@ ossl_ts_resp_verify(int argc, VALUE *argv, VALUE self)
         X509_up_ref(cert);
     }
 
+    if (!X509_STORE_up_ref(x509st)) {
+        sk_X509_pop_free(x509inter, X509_free);
+        TS_VERIFY_CTX_free(ctx);
+        ossl_raise(eTimestampError, "X509_STORE_up_ref");
+    }
+
+#ifdef HAVE_TS_VERIFY_CTX_SET0_CERTS
+    TS_VERIFY_CTX_set0_certs(ctx, x509inter);
+    TS_VERIFY_CTX_set0_store(ctx, x509st);
+#else
+# if OSSL_OPENSSL_PREREQ(3, 0, 0) || OSSL_IS_LIBRESSL
     TS_VERIFY_CTX_set_certs(ctx, x509inter);
-    TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
+# else
+    TS_VERIFY_CTS_set_certs(ctx, x509inter);
+# endif
     TS_VERIFY_CTX_set_store(ctx, x509st);
+#endif
+    TS_VERIFY_CTX_add_flags(ctx, TS_VFY_SIGNATURE);
 
     ok = TS_RESP_verify_response(ctx, resp);
-    /*
-     * TS_VERIFY_CTX_set_store() call above does not increment the reference
-     * counter, so it must be unset before TS_VERIFY_CTX_free() is called.
-     */
-    TS_VERIFY_CTX_set_store(ctx, NULL);
     TS_VERIFY_CTX_free(ctx);
 
     if (!ok)
@@ -976,11 +983,13 @@ ossl_ts_token_info_get_algorithm(VALUE self)
     TS_TST_INFO *info;
     TS_MSG_IMPRINT *mi;
     X509_ALGOR *algo;
+    const ASN1_OBJECT *obj;
 
     GetTSTokenInfo(self, info);
     mi = TS_TST_INFO_get_msg_imprint(info);
     algo = TS_MSG_IMPRINT_get_algo(mi);
-    return get_asn1obj(algo->algorithm);
+    X509_ALGOR_get0(&obj, NULL, NULL, algo);
+    return get_asn1obj(obj);
 }
 
 /*

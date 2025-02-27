@@ -7,7 +7,7 @@ in the Ruby core and in the Ruby standard library.
 ## Generating documentation
 
 Most Ruby documentation lives in the source files and is written in
-[RDoc format](rdoc-ref:RDoc::Markup).
+[RDoc format](rdoc-ref:RDoc::MarkupReference).
 
 Some pages live under the `doc` folder and can be written in either
 `.rdoc` or `.md` format, determined by the file extension.
@@ -110,7 +110,7 @@ involving new files `doc/*.rdoc`:
 
 Ruby is documented using RDoc.
 For information on \RDoc syntax and features, see the
-[RDoc Markup Reference](rdoc-ref:RDoc::Markup@RDoc+Markup+Reference).
+[RDoc Markup Reference](rdoc-ref:RDoc::MarkupReference).
 
 ### Output from `irb`
 

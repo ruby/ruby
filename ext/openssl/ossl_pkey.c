@@ -517,8 +517,7 @@ ossl_pkey_check_public_key(const EVP_PKEY *pkey)
     if (EVP_PKEY_missing_parameters(pkey))
 	ossl_raise(ePKeyError, "parameters missing");
 
-    /* OpenSSL < 1.1.0 takes non-const pointer */
-    ptr = EVP_PKEY_get0((EVP_PKEY *)pkey);
+    ptr = EVP_PKEY_get0(pkey);
     switch (EVP_PKEY_base_id(pkey)) {
       case EVP_PKEY_RSA:
 	RSA_get0_key(ptr, &n, &e, NULL);
@@ -635,7 +634,6 @@ ossl_pkey_initialize_copy(VALUE self, VALUE other)
 }
 #endif
 
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
 /*
  *  call-seq:
  *      OpenSSL::PKey.new_raw_private_key(algo, string) -> PKey
@@ -666,9 +664,7 @@ ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
 
     return ossl_pkey_new(pkey);
 }
-#endif
 
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
 /*
  *  call-seq:
  *      OpenSSL::PKey.new_raw_public_key(algo, string) -> PKey
@@ -699,7 +695,6 @@ ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
 
     return ossl_pkey_new(pkey);
 }
-#endif
 
 /*
  * call-seq:
@@ -799,20 +794,9 @@ ossl_pkey_export_traditional(int argc, VALUE *argv, VALUE self, int to_der)
 	}
     }
     else {
-#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_LIBRESSL_PREREQ(3, 5, 0)
 	if (!PEM_write_bio_PrivateKey_traditional(bio, pkey, enc, NULL, 0,
 						  ossl_pem_passwd_cb,
 						  (void *)pass)) {
-#else
-	char pem_str[80];
-	const char *aname;
-
-	EVP_PKEY_asn1_get0_info(NULL, NULL, NULL, NULL, &aname, pkey->ameth);
-	snprintf(pem_str, sizeof(pem_str), "%s PRIVATE KEY", aname);
-	if (!PEM_ASN1_write_bio((i2d_of_void *)i2d_PrivateKey, pem_str, bio,
-				pkey, enc, NULL, 0, ossl_pem_passwd_cb,
-				(void *)pass)) {
-#endif
 	    BIO_free(bio);
 	    ossl_raise(ePKeyError, "PEM_write_bio_PrivateKey_traditional");
 	}
@@ -901,7 +885,6 @@ ossl_pkey_private_to_pem(int argc, VALUE *argv, VALUE self)
     return do_pkcs8_export(argc, argv, self, 0);
 }
 
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
 /*
  *  call-seq:
  *     pkey.raw_private_key   => string
@@ -928,7 +911,6 @@ ossl_pkey_raw_private_key(VALUE self)
 
     return str;
 }
-#endif
 
 VALUE
 ossl_pkey_export_spki(VALUE self, int to_der)
@@ -937,6 +919,7 @@ ossl_pkey_export_spki(VALUE self, int to_der)
     BIO *bio;
 
     GetPKey(self, pkey);
+    ossl_pkey_check_public_key(pkey);
     bio = BIO_new(BIO_s_mem());
     if (!bio)
 	ossl_raise(ePKeyError, "BIO_new");
@@ -985,7 +968,6 @@ ossl_pkey_public_to_pem(VALUE self)
     return ossl_pkey_export_spki(self, 0);
 }
 
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
 /*
  *  call-seq:
  *     pkey.raw_public_key   => string
@@ -1012,7 +994,6 @@ ossl_pkey_raw_public_key(VALUE self)
 
     return str;
 }
-#endif
 
 /*
  *  call-seq:
@@ -1116,7 +1097,6 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     if (EVP_DigestSign(ctx, NULL, &siglen, (unsigned char *)RSTRING_PTR(data),
                        RSTRING_LEN(data)) < 1) {
         EVP_MD_CTX_free(ctx);
@@ -1137,30 +1117,6 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
         EVP_MD_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_DigestSign");
     }
-#else
-    if (EVP_DigestSignUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
-        EVP_MD_CTX_free(ctx);
-        ossl_raise(ePKeyError, "EVP_DigestSignUpdate");
-    }
-    if (EVP_DigestSignFinal(ctx, NULL, &siglen) < 1) {
-        EVP_MD_CTX_free(ctx);
-        ossl_raise(ePKeyError, "EVP_DigestSignFinal");
-    }
-    if (siglen > LONG_MAX) {
-        EVP_MD_CTX_free(ctx);
-        rb_raise(ePKeyError, "signature would be too large");
-    }
-    sig = ossl_str_new(NULL, (long)siglen, &state);
-    if (state) {
-        EVP_MD_CTX_free(ctx);
-        rb_jump_tag(state);
-    }
-    if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(sig),
-                            &siglen) < 1) {
-        EVP_MD_CTX_free(ctx);
-        ossl_raise(ePKeyError, "EVP_DigestSignFinal");
-    }
-#endif
     EVP_MD_CTX_free(ctx);
     rb_str_set_len(sig, siglen);
     return sig;
@@ -1221,24 +1177,12 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
             rb_jump_tag(state);
         }
     }
-#if OSSL_OPENSSL_PREREQ(1, 1, 1) || OSSL_LIBRESSL_PREREQ(3, 4, 0)
     ret = EVP_DigestVerify(ctx, (unsigned char *)RSTRING_PTR(sig),
                            RSTRING_LEN(sig), (unsigned char *)RSTRING_PTR(data),
                            RSTRING_LEN(data));
     EVP_MD_CTX_free(ctx);
     if (ret < 0)
         ossl_raise(ePKeyError, "EVP_DigestVerify");
-#else
-    if (EVP_DigestVerifyUpdate(ctx, RSTRING_PTR(data), RSTRING_LEN(data)) < 1) {
-        EVP_MD_CTX_free(ctx);
-        ossl_raise(ePKeyError, "EVP_DigestVerifyUpdate");
-    }
-    ret = EVP_DigestVerifyFinal(ctx, (unsigned char *)RSTRING_PTR(sig),
-                                RSTRING_LEN(sig));
-    EVP_MD_CTX_free(ctx);
-    if (ret < 0)
-        ossl_raise(ePKeyError, "EVP_DigestVerifyFinal");
-#endif
     if (ret)
         return Qtrue;
     else {
@@ -1751,10 +1695,8 @@ Init_ossl_pkey(void)
     rb_define_module_function(mPKey, "read", ossl_pkey_new_from_data, -1);
     rb_define_module_function(mPKey, "generate_parameters", ossl_pkey_s_generate_parameters, -1);
     rb_define_module_function(mPKey, "generate_key", ossl_pkey_s_generate_key, -1);
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
     rb_define_module_function(mPKey, "new_raw_private_key", ossl_pkey_new_raw_private_key, 2);
     rb_define_module_function(mPKey, "new_raw_public_key", ossl_pkey_new_raw_public_key, 2);
-#endif
 
     rb_define_alloc_func(cPKey, ossl_pkey_alloc);
     rb_define_method(cPKey, "initialize", ossl_pkey_initialize, 0);
@@ -1770,10 +1712,8 @@ Init_ossl_pkey(void)
     rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
     rb_define_method(cPKey, "public_to_der", ossl_pkey_public_to_der, 0);
     rb_define_method(cPKey, "public_to_pem", ossl_pkey_public_to_pem, 0);
-#ifdef HAVE_EVP_PKEY_NEW_RAW_PRIVATE_KEY
     rb_define_method(cPKey, "raw_private_key", ossl_pkey_raw_private_key, 0);
     rb_define_method(cPKey, "raw_public_key", ossl_pkey_raw_public_key, 0);
-#endif
     rb_define_method(cPKey, "compare?", ossl_pkey_compare, 1);
 
     rb_define_method(cPKey, "sign", ossl_pkey_sign, -1);

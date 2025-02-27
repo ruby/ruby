@@ -1,6 +1,7 @@
 #!ruby -W0
 
-$:.unshift(File.expand_path("../lib", __dir__))
+rdoc_path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/rdoc-*").first
+$LOAD_PATH.unshift("#{rdoc_path}/lib")
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.

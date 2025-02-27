@@ -158,31 +158,55 @@ runs:
         if [ "${test_all_enabled}" = "true" ]; then
           launchable record session \
             --build "${build_name}" \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
+            --observation \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_all_test_suite} \
             > "${test_all_session_file}"
+          launchable subset \
+            --get-tests-from-previous-sessions \
+            --non-blocking \
+            --target 90% \
+            --session "$(cat "${test_all_session_file}")" \
+            raw > /dev/null
           echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
         fi
         if [ "${btest_enabled}" = "true" ]; then
           launchable record session \
             --build "${build_name}" \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
+            --observation \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${btest_test_suite} \
             > "${btest_session_file}"
+          launchable subset \
+            --get-tests-from-previous-sessions \
+            --non-blocking \
+            --target 90% \
+            --session "$(cat "${btest_session_file}")" \
+            raw > /dev/null
           echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
         if [ "${test_spec_enabled}" = "true" ]; then
           launchable record session \
             --build "${build_name}" \
-            --flavor os=${{ inputs.os }} \
-            --flavor test_task=${{ inputs.test-task }} \
-            --flavor test_opts=${test_opts} \
+            --observation \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_spec_test_suite} \
             > "${test_spec_session_file}"
+          launchable subset \
+            --get-tests-from-previous-sessions \
+            --non-blocking \
+            --target 90% \
+            --session "$(cat "${test_spec_session_file}")" \
+            raw > /dev/null
           echo "SPECOPTS=${SPECOPTS} --launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
         fi
       if: steps.enable-launchable.outputs.enable-launchable

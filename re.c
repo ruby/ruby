@@ -961,7 +961,7 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
  *  * <code>$'</code> is Regexp.last_match<code>.post_match</code>;
  *  * <code>$+</code> is Regexp.last_match<code>[ -1 ]</code> (the last capture).
  *
- *  See also "Special global variables" section in Regexp documentation.
+ *  See also Regexp@Global+Variables.
  */
 
 VALUE rb_cMatch;
@@ -1521,7 +1521,7 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
     rmatch->regs.end[0] = pos + len;
 }
 
-void
+VALUE
 rb_backref_set_string(VALUE string, long pos, long len)
 {
     VALUE match = rb_backref_get();
@@ -1530,6 +1530,7 @@ rb_backref_set_string(VALUE string, long pos, long len)
     }
     match_set_string(match, string, pos, len);
     rb_backref_set(match);
+    return match;
 }
 
 /*
@@ -1812,12 +1813,29 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return ONIG_MISMATCH;
     }
 
-    VALUE match = match_alloc(rb_cMatch);
+    VALUE match = Qnil;
+    if (set_match) {
+        match = *set_match;
+    }
+
+    if (NIL_P(match)) {
+        match = rb_backref_get();
+    }
+
+    if (!NIL_P(match) && FL_TEST(match, MATCH_BUSY)) {
+        match = Qnil;
+    }
+
+    if (NIL_P(match)) {
+        match = match_alloc(rb_cMatch);
+    }
+
     rb_matchext_t *rm = RMATCH_EXT(match);
     rm->regs = regs;
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
+        rb_obj_reveal(match, rb_cMatch);
     }
     else {
         /* Note that a MatchData object with RMATCH(match)->str == 0 is incomplete!
@@ -1835,15 +1853,15 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
 }
 
 long
-rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str)
+rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, VALUE *match)
 {
-    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, NULL);
+    return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, match);
 }
 
 long
 rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
 {
-    return rb_reg_search0(re, str, pos, reverse, 1);
+    return rb_reg_search_set_match(re, str, pos, reverse, 1, NULL);
 }
 
 static OnigPosition

@@ -1809,7 +1809,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *  If +index+ is out of range, returns +nil+.
  *
  *  When two Integer arguments +start+ and +length+ are given,
- *  returns a new +Array+ of size +length+ containing successive elements beginning at offset +start+:
+ *  returns a new array of size +length+ containing successive elements beginning at offset +start+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[0, 2] # => [:foo, "bar"]
@@ -1824,7 +1824,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[2, 2] # => [2]
  *
  *  If <tt>start == self.size</tt> and <tt>length >= 0</tt>,
- *  returns a new empty +Array+.
+ *  returns a new empty array.
  *
  *  If +length+ is negative, returns +nil+.
  *
@@ -1836,7 +1836,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[0..1] # => [:foo, "bar"]
  *    a[1..2] # => ["bar", 2]
  *
- *  Special case: If <tt>range.start == a.size</tt>, returns a new empty +Array+.
+ *  Special case: If <tt>range.start == a.size</tt>, returns a new empty array.
  *
  *  If <tt>range.end</tt> is negative, calculates the end index from the end:
  *
@@ -1860,7 +1860,7 @@ static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
  *    a[4..-1] # => nil
  *
  *  When a single Enumerator::ArithmeticSequence argument +aseq+ is given,
- *  returns an +Array+ of elements corresponding to the indexes produced by
+ *  returns an array of elements corresponding to the indexes produced by
  *  the sequence.
  *
  *    a = ['--', 'data1', '--', 'data2', '--', 'data3']
@@ -2402,7 +2402,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[-1] = 'two' # => "two"
  *    a # => [:foo, "bar", "two"]
  *
- *  When Integer arguments +start+ and +length+ are given and +object+ is not an +Array+,
+ *  When Integer arguments +start+ and +length+ are given and +object+ is not an array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2437,7 +2437,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[1, 5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
  *
- *  When Range argument +range+ is given and +object+ is not an +Array+,
+ *  When Range argument +range+ is given and +object+ is not an array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2753,7 +2753,7 @@ rb_ary_length(VALUE ary)
 
 /*
  *  call-seq:
- *    array.empty?  -> true or false
+ *    empty?  -> true or false
  *
  *  Returns +true+ if the count of elements in +self+ is zero,
  *  +false+ otherwise.
@@ -2922,7 +2922,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *    array.join(separator = $,) -> new_string
+ *    join(separator = $,) -> new_string
  *
  *  Returns the new string formed by joining the converted elements of +self+;
  *  for each element +element+:
@@ -3013,7 +3013,7 @@ rb_ary_to_s(VALUE ary)
  *  call-seq:
  *    to_a -> self or new_array
  *
- *  When +self+ is an instance of +Array+, returns +self+.
+ *  When +self+ is an instance of \Array, returns +self+.
  *
  *  Otherwise, returns a new array containing the elements of +self+:
  *
@@ -3088,7 +3088,7 @@ rb_ary_to_h(VALUE ary)
 
 /*
  *  call-seq:
- *    array.to_ary -> self
+ *    to_ary -> self
  *
  *  Returns +self+.
  */
@@ -3474,6 +3474,9 @@ rb_ary_sort_bang(VALUE ary)
  *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
  *  and may be unstable.
  *
+ *  See an example in Numeric#nonzero? for the idiom to sort more
+ *  complex structure.
+ *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
@@ -3607,8 +3610,10 @@ rb_ary_sort_by_bang(VALUE ary)
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
-    rb_ary_replace(ary, sorted);
+    if (RARRAY_LEN(ary) > 1) {
+        sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
+        rb_ary_replace(ary, sorted);
+    }
     return ary;
 }
 
@@ -6701,7 +6706,7 @@ rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
     rb_ary_modify(ary);
     i = len = RARRAY_LEN(ary);
     RARRAY_PTR_USE(ary, ptr, {
-        while (i) {
+        while (i > 1) {
             long j = RAND_UPTO(i);
             VALUE tmp;
             if (len != RARRAY_LEN(ary) || ptr != RARRAY_CONST_PTR(ary)) {
@@ -8012,7 +8017,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.dig(index, *identifiers) -> object
+ *    dig(index, *identifiers) -> object
  *
  *  Finds and returns the object in nested object
  *  specified by +index+ and +identifiers+;
@@ -8366,8 +8371,8 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == Example Usage
  *
- *  In addition to the methods it mixes in through the Enumerable module, the
- *  +Array+ class has proprietary methods for accessing, searching and otherwise
+ *  In addition to the methods it mixes in through the Enumerable module,
+ *  class \Array has proprietary methods for accessing, searching and otherwise
  *  manipulating arrays.
  *
  *  Some of the more common ones are illustrated below.
@@ -8415,9 +8420,9 @@ rb_ary_deconstruct(VALUE ary)
  *
  *     arr.drop(3) #=> [4, 5, 6]
  *
- *  == Obtaining Information about an +Array+
+ *  == Obtaining Information about an \Array
  *
- *  Arrays keep track of their own length at all times.  To query an array
+ *  An array keeps track of its own length at all times.  To query an array
  *  about the number of elements it contains, use #length, #count or #size.
  *
  *    browsers = ['Chrome', 'Firefox', 'Safari', 'Opera', 'IE']
@@ -8432,7 +8437,7 @@ rb_ary_deconstruct(VALUE ary)
  *
  *    browsers.include?('Konqueror') #=> false
  *
- *  == Adding Items to Arrays
+ *  == Adding Items to an \Array
  *
  *  Items can be added to the end of an array by using either #push or #<<
  *
@@ -8453,7 +8458,7 @@ rb_ary_deconstruct(VALUE ary)
  *     arr.insert(3, 'orange', 'pear', 'grapefruit')
  *     #=> [0, 1, 2, "orange", "pear", "grapefruit", "apple", 3, 4, 5, 6]
  *
- *  == Removing Items from an +Array+
+ *  == Removing Items from an \Array
  *
  *  The method #pop removes the last element in an array and returns it:
  *
@@ -8493,11 +8498,11 @@ rb_ary_deconstruct(VALUE ary)
  *     arr = [2, 5, 6, 556, 6, 6, 8, 9, 0, 123, 556]
  *     arr.uniq #=> [2, 5, 6, 556, 8, 9, 0, 123]
  *
- *  == Iterating over Arrays
+ *  == Iterating over an \Array
  *
- *  Like all classes that include the Enumerable module, +Array+ has an each
+ *  Like all classes that include the Enumerable module, class \Array has an each
  *  method, which defines what elements should be iterated over and how.  In
- *  case of Array's #each, all elements in the +Array+ instance are yielded to
+ *  case of Array#each, all elements in +self+ are yielded to
  *  the supplied block in sequence.
  *
  *  Note that this operation leaves the array unchanged.
@@ -8524,7 +8529,7 @@ rb_ary_deconstruct(VALUE ary)
  *     arr                   #=> [1, 4, 9, 16, 25]
  *
  *
- *  == Selecting Items from an +Array+
+ *  == Selecting Items from an \Array
  *
  *  Elements can be selected from an array according to criteria defined in a
  *  block.  The selection can happen in a destructive or a non-destructive
@@ -8557,13 +8562,13 @@ rb_ary_deconstruct(VALUE ary)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. Class +Array+:
+ *  First, what's elsewhere. Class \Array:
  *
  *  - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
  *    which provides dozens of additional methods.
  *
- *  Here, class +Array+ provides methods that are useful for:
+ *  Here, class \Array provides methods that are useful for:
  *
  *  - {Creating an Array}[rdoc-ref:Array@Methods+for+Creating+an+Array]
  *  - {Querying}[rdoc-ref:Array@Methods+for+Querying]
@@ -8576,7 +8581,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - {Converting}[rdoc-ref:Array@Methods+for+Converting]
  *  - {And more....}[rdoc-ref:Array@Other+Methods]
  *
- *  === Methods for Creating an +Array+
+ *  === Methods for Creating an \Array
  *
  *  - ::[]: Returns a new array populated with given objects.
  *  - ::new: Returns a new array.

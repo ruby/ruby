@@ -40,6 +40,11 @@
 #
 "bar"
 
+"
+foo\
+b\nar
+"
+
 %q{abc}
 
 %s[abc]
@@ -77,6 +82,11 @@
 '\' foo \' bar'
 
 '\\ foo \\ bar'
+
+'foo\
+bar\\
+baz
+'
 
 "#$foo"
 

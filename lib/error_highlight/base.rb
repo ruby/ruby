@@ -344,6 +344,7 @@ module ErrorHighlight
         end
       elsif mid.to_s =~ /\A\W+\z/ && lines.match(/\G\s*(#{ Regexp.quote(mid) })=.*\n/, nd_recv.last_column)
         @snippet = $` + $&
+        @beg_lineno = @end_lineno = lineno
         @beg_column = $~.begin(1)
         @end_column = $~.end(1)
       end
@@ -582,8 +583,9 @@ module ErrorHighlight
         @beg_column = nd_parent.last_column
         @end_column = @node.last_column
       else
-        @snippet = @fetch[@node.last_lineno]
+        fetch_line(@node.last_lineno)
         if @snippet[...@node.last_column].match(/#{ Regexp.quote(const) }\z/)
+          @beg_lineno = @end_lineno = @node.last_lineno
           @beg_column = $~.begin(0)
           @end_column = $~.end(0)
         end
@@ -597,7 +599,7 @@ module ErrorHighlight
       nd_lhs, op, _nd_rhs = @node.children
       *nd_parent_lhs, _const = nd_lhs.children
       if @name == op
-        @snippet = @fetch[nd_lhs.last_lineno]
+        fetch_line(nd_lhs.last_lineno)
         if @snippet.match(/\G\s*(#{ Regexp.quote(op) })=/, nd_lhs.last_column)
           @beg_column = $~.begin(1)
           @end_column = $~.end(1)
@@ -607,12 +609,12 @@ module ErrorHighlight
         @end_column = nd_lhs.last_column
         if nd_parent_lhs.empty? # example: ::C += 1
           if nd_lhs.first_lineno == nd_lhs.last_lineno
-            @snippet = @fetch[nd_lhs.last_lineno]
+            fetch_line(nd_lhs.last_lineno)
             @beg_column = nd_lhs.first_column
           end
         else # example: Foo::Bar::C += 1
           if nd_parent_lhs.last.last_lineno == nd_lhs.last_lineno
-            @snippet = @fetch[nd_lhs.last_lineno]
+            fetch_line(nd_lhs.last_lineno)
             @beg_column = nd_parent_lhs.last.last_column
           end
         end

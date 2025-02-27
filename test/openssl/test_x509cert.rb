@@ -294,8 +294,6 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   def test_sign_and_verify_ed25519
     # Ed25519 is not FIPS-approved.
     omit_on_fips
-    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
-    omit "Ed25519 not supported" unless openssl?(1, 1, 1) || libressl?(3, 8, 1)
     ed25519 = OpenSSL::PKey::generate_key("ED25519")
     cert = issue_cert(@ca, ed25519, 1, [], nil, nil, digest: nil)
     assert_equal(true, cert.verify(ed25519))
@@ -370,40 +368,57 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_load_file_empty_pem
-    empty_path = Fixtures.file_path("pkey", "empty.pem")
-    assert_raise(OpenSSL::X509::CertificateError) do
-      OpenSSL::X509::Certificate.load_file(empty_path)
+    Tempfile.create("empty.pem") do |f|
+      f.close
+
+      assert_raise(OpenSSL::X509::CertificateError) do
+        OpenSSL::X509::Certificate.load_file(f.path)
+      end
     end
   end
 
   def test_load_file_fullchain_pem
-    fullchain_path = Fixtures.file_path("pkey", "fullchain.pem")
-    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
-    assert_equal 2, certificates.size
-    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
-    assert_equal "/C=US/O=Let's Encrypt/CN=R3", certificates[1].subject.to_s
+    cert1 = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
+    cert2 = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+
+    Tempfile.create("fullchain.pem") do |f|
+      f.puts cert1.to_pem
+      f.puts cert2.to_pem
+      f.close
+
+      certificates = OpenSSL::X509::Certificate.load_file(f.path)
+      assert_equal 2, certificates.size
+      assert_equal @ee1, certificates[0].subject
+      assert_equal @ca, certificates[1].subject
+    end
   end
 
   def test_load_file_certificate_der
-    fullchain_path = Fixtures.file_path("pkey", "certificate.der")
-    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    Tempfile.create("certificate.der", binmode: true) do |f|
+      f.write cert.to_der
+      f.close
 
-    # DER encoding can only contain one certificate:
-    assert_equal 1, certificates.size
-    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
+      certificates = OpenSSL::X509::Certificate.load_file(f.path)
+
+      # DER encoding can only contain one certificate:
+      assert_equal 1, certificates.size
+      assert_equal cert.to_der, certificates[0].to_der
+    end
   end
 
   def test_load_file_fullchain_garbage
-    fullchain_path = Fixtures.file_path("pkey", "garbage.txt")
+    Tempfile.create("garbage.txt") do |f|
+      f.puts "not a certificate"
+      f.close
 
-    assert_raise(OpenSSL::X509::CertificateError) do
-      OpenSSL::X509::Certificate.load_file(fullchain_path)
+      assert_raise(OpenSSL::X509::CertificateError) do
+        OpenSSL::X509::Certificate.load_file(f.path)
+      end
     end
   end
 
   def test_tbs_precert_bytes
-    pend "LibreSSL < 3.5 does not have i2d_re_X509_tbs" if libressl? && !libressl?(3, 5, 0)
-
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     seq = OpenSSL::ASN1.decode(cert.tbs_bytes)
 

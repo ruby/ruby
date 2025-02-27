@@ -37,67 +37,97 @@ pub extern "C" fn mmtk_is_reachable(object: ObjectReference) -> bool {
 
 // =============== Bootup ===============
 
+fn mmtk_builder_default_parse_threads() -> usize {
+    let threads_str = std::env::var("MMTK_THREADS")
+        .unwrap_or("0".to_string());
+
+    threads_str
+        .parse::<usize>()
+        .unwrap_or_else(|_err| {
+            eprintln!("[FATAL] Invalid MMTK_THREADS {}", threads_str);
+            std::process::exit(1);
+        })
+}
+
+fn mmtk_builder_default_parse_heap_min() -> usize {
+    const DEFAULT_HEAP_MIN: usize = 1 << 20;
+
+    let heap_min_str = std::env::var("MMTK_HEAP_MIN")
+        .unwrap_or(DEFAULT_HEAP_MIN.to_string());
+
+    let size = parse_capacity(&heap_min_str, 0);
+    if size == 0 {
+        eprintln!("[FATAL] Invalid MMTK_HEAP_MIN {}", heap_min_str);
+        std::process::exit(1);
+    }
+
+    size
+}
+
+fn mmtk_builder_default_parse_heap_max() -> usize {
+    let heap_max_str = std::env::var("MMTK_HEAP_MAX")
+        .unwrap_or(default_heap_max().to_string());
+
+    let size = parse_capacity(&heap_max_str, 0);
+    if size == 0 {
+        eprintln!("[FATAL] Invalid MMTK_HEAP_MAX {}", heap_max_str);
+        std::process::exit(1);
+    }
+
+    size
+}
+
+fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCTriggerSelector {
+    let heap_mode_str = std::env::var("MMTK_HEAP_MODE")
+        .unwrap_or("dynamic".to_string());
+
+    match heap_mode_str.as_str() {
+        "fixed" => GCTriggerSelector::FixedHeapSize(heap_max),
+        "dynamic" => GCTriggerSelector::DynamicHeapSize(heap_min, heap_max),
+        _ => {
+            eprintln!("[FATAL] Invalid MMTK_HEAP_MODE {}", heap_mode_str);
+            std::process::exit(1);
+        }
+    }
+}
+
+fn mmtk_builder_default_parse_plan() -> PlanSelector {
+    let plan_str = std::env::var("MMTK_PLAN")
+        .unwrap_or("Immix".to_string());
+
+    match plan_str.as_str() {
+        "NoGC" => PlanSelector::NoGC,
+        "MarkSweep" => PlanSelector::MarkSweep,
+        "Immix" => PlanSelector::Immix,
+        _ => {
+            eprintln!("[FATAL] Invalid MMTK_PLAN {}", plan_str);
+            std::process::exit(1);
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
     builder.options.no_finalizer.set(true);
 
-    const DEFAULT_HEAP_MIN: usize = 1 << 20;
-
-    let mmtk_threads: usize = std::env::var("MMTK_THREADS")
-        .unwrap_or("0".to_string())
-        .parse::<usize>()
-        .unwrap_or(0);
-
-    let mut mmtk_heap_min = match std::env::var("MMTK_HEAP_MIN") {
-        Ok(min) => {
-            let capa = parse_capacity(&min, DEFAULT_HEAP_MIN);
-            if capa == DEFAULT_HEAP_MIN {
-                eprintln!("MMTK_HEAP_MIN: value ({}) unusable, Using default.", min)
-            };
-            capa
-        },
-        Err(_) => DEFAULT_HEAP_MIN
-    };
-
-    let mut mmtk_heap_max = match std::env::var("MMTK_HEAP_MAX") {
-        Ok(max) => {
-            let capa = parse_capacity(&max, default_heap_max());
-            if capa == default_heap_max() {
-                eprintln!("MMTK_HEAP_MAX: value ({}) unusable, Using default.", max)
-            };
-            capa
-        },
-        Err(_) => default_heap_max()
-    };
-
-    if mmtk_heap_min >= mmtk_heap_max {
-        println!("MMTK_HEAP_MIN({}) >= MMTK_HEAP_MAX({}). Using default values.", mmtk_heap_min, mmtk_heap_max);
-        mmtk_heap_min = DEFAULT_HEAP_MIN;
-        mmtk_heap_max = default_heap_max();
+    let threads = mmtk_builder_default_parse_threads();
+    if threads > 0 {
+        builder.options.threads.set(threads);
     }
 
-    let mmtk_mode = match std::env::var("MMTK_HEAP_MODE") {
-        Ok(mode) if (mode == "fixed") => GCTriggerSelector::FixedHeapSize(mmtk_heap_max),
-        Ok(_) | Err(_) => GCTriggerSelector::DynamicHeapSize(mmtk_heap_min, mmtk_heap_max)
-    };
+    let heap_min = mmtk_builder_default_parse_heap_min();
 
-    // Parse the env var, if it's not found set the plan name to MarkSweep
-    let plan_name = std::env::var("MMTK_PLAN")
-        .unwrap_or(String::from("MarkSweep"));
+    let heap_max = mmtk_builder_default_parse_heap_max();
 
-    // Parse the plan name into a valid MMTK Plan, if the name is not a valid plan use MarkSweep
-    let plan_selector = plan_name.parse::<PlanSelector>()
-        .unwrap_or("MarkSweep".parse::<PlanSelector>().unwrap());
-
-    builder.options.plan.set(plan_selector);
-
-    // Between 1MiB and 500MiB
-    builder.options.gc_trigger.set(mmtk_mode);
-
-    if mmtk_threads > 0 {
-        builder.options.threads.set(mmtk_threads);
+    if heap_min >= heap_max {
+        eprintln!("[FATAL] MMTK_HEAP_MIN({}) >= MMTK_HEAP_MAX({})", heap_min, heap_max);
+        std::process::exit(1);
     }
+
+    builder.options.gc_trigger.set(mmtk_builder_default_parse_heap_mode(heap_min, heap_max));
+
+    builder.options.plan.set(mmtk_builder_default_parse_plan());
 
     Box::into_raw(Box::new(builder))
 }
@@ -144,8 +174,12 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut RubyMutator) {
 // =============== GC ===============
 
 #[no_mangle]
-pub extern "C" fn mmtk_handle_user_collection_request(tls: VMMutatorThread) {
-    memory_manager::handle_user_collection_request::<Ruby>(mmtk(), tls);
+pub extern "C" fn mmtk_handle_user_collection_request(
+    tls: VMMutatorThread,
+    force: bool,
+    exhaustive: bool,
+) {
+    crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
 }
 
 #[no_mangle]
@@ -296,6 +330,55 @@ pub extern "C" fn mmtk_starting_heap_address() -> Address {
 #[no_mangle]
 pub extern "C" fn mmtk_last_heap_address() -> Address {
     memory_manager::last_heap_address()
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_worker_count() -> usize {
+    memory_manager::num_of_workers(mmtk())
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_plan() -> *const u8 {
+    static NO_GC: &[u8] = b"NoGC\0";
+    static MARK_SWEEP: &[u8] = b"MarkSweep\0";
+    static IMMIX: &[u8] = b"Immix\0";
+
+    match *crate::BINDING.get().unwrap().mmtk.get_options().plan {
+        PlanSelector::NoGC => NO_GC.as_ptr(),
+        PlanSelector::MarkSweep => MARK_SWEEP.as_ptr(),
+        PlanSelector::Immix => IMMIX.as_ptr(),
+        _ => panic!("Unknown plan")
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_heap_mode() -> *const u8 {
+    static FIXED_HEAP: &[u8] = b"fixed\0";
+    static DYNAMIC_HEAP: &[u8] = b"dynamic\0";
+
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(_) => FIXED_HEAP.as_ptr(),
+        GCTriggerSelector::DynamicHeapSize(_, _) => DYNAMIC_HEAP.as_ptr(),
+        _ => panic!("Unknown heap mode")
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_heap_min() -> usize {
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(_) => 0,
+        GCTriggerSelector::DynamicHeapSize(min_size, _) => min_size,
+        _ => panic!("Unknown heap mode")
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn mmtk_heap_max() -> usize {
+    match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
+        GCTriggerSelector::FixedHeapSize(max_size) => max_size,
+        GCTriggerSelector::DynamicHeapSize(_, max_size) => max_size,
+        _ => panic!("Unknown heap mode")
+    }
 }
 
 // =============== Miscellaneous ===============

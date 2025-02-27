@@ -241,7 +241,7 @@ VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE se
 #ifdef RUBY_VERSION_IS_3_0
   VALUE timeout = Qnil;
   if (!NIL_P(secs)) {
-      timeout = rb_float_new((double)FIX2INT(secs) + (0.000001f * FIX2INT(usecs)));
+      timeout = rb_float_new((double)FIX2INT(secs) + (0.000001 * FIX2INT(usecs)));
   }
   VALUE result = rb_io_wait(io, events, timeout);
   if (result == Qfalse) return INT2FIX(0);
@@ -377,16 +377,14 @@ static VALUE io_spec_rb_io_closed_p(VALUE self, VALUE io) {
 }
 
 static VALUE io_spec_rb_io_open_descriptor(VALUE self, VALUE klass, VALUE descriptor, VALUE mode, VALUE path, VALUE timeout, VALUE internal_encoding, VALUE external_encoding, VALUE ecflags, VALUE ecopts) {
-  struct rb_io_encoding *io_encoding;
+  struct rb_io_encoding io_encoding;
 
-  io_encoding = (struct rb_io_encoding *) malloc(sizeof(struct rb_io_encoding));
+  io_encoding.enc = rb_to_encoding(internal_encoding);
+  io_encoding.enc2 = rb_to_encoding(external_encoding);
+  io_encoding.ecflags = FIX2INT(ecflags);
+  io_encoding.ecopts = ecopts;
 
-  io_encoding->enc = rb_to_encoding(internal_encoding);
-  io_encoding->enc2 = rb_to_encoding(external_encoding);
-  io_encoding->ecflags = FIX2INT(ecflags);
-  io_encoding->ecopts = ecopts;
-
-  return rb_io_open_descriptor(klass, FIX2INT(descriptor), FIX2INT(mode), path, timeout, io_encoding);
+  return rb_io_open_descriptor(klass, FIX2INT(descriptor), FIX2INT(mode), path, timeout, &io_encoding);
 }
 
 static VALUE io_spec_rb_io_open_descriptor_without_encoding(VALUE self, VALUE klass, VALUE descriptor, VALUE mode, VALUE path, VALUE timeout) {

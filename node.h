@@ -67,16 +67,27 @@ const struct kwtable *rb_reserved_word(const char *, unsigned int);
 struct parser_params;
 PRINTF_ARGS(void rb_parser_printf(struct parser_params *parser, const char *fmt, ...), 2, 3);
 VALUE rb_node_set_type(NODE *n, enum node_type t);
+enum node_type rb_node_get_type(const NODE *n);
 
 RUBY_SYMBOL_EXPORT_END
 
 #define NODE_LSHIFT (NODE_TYPESHIFT+7)
 #define NODE_LMASK  (((SIGNED_VALUE)1<<(sizeof(VALUE)*CHAR_BIT-NODE_LSHIFT))-1)
 
-#define nd_line(n) (int)(((SIGNED_VALUE)(n)->flags)>>NODE_LSHIFT)
-#define nd_set_line(n,l) \
-    (n)->flags=(((n)->flags&~((VALUE)(-1)<<NODE_LSHIFT))|((VALUE)((l)&NODE_LMASK)<<NODE_LSHIFT))
+static inline int
+nd_line(const NODE *n)
+{
+    if (!n) return -1;
+    SIGNED_VALUE flags = (SIGNED_VALUE)n->flags;
+    return (int)(flags >> NODE_LSHIFT);
+}
 
+static inline void
+nd_set_line(NODE *n, SIGNED_VALUE l)
+{
+    n->flags &= ~(~(VALUE)0 << NODE_LSHIFT);
+    n->flags |= ((VALUE)(l & NODE_LMASK) << NODE_LSHIFT);
+}
 
 #define NODE_SPECIAL_REQUIRED_KEYWORD ((NODE *)-1)
 #define NODE_REQUIRED_KEYWORD_P(node) ((node) == NODE_SPECIAL_REQUIRED_KEYWORD)

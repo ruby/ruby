@@ -13,15 +13,19 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module URI
+  # The default parser instance for RFC 2396.
   RFC2396_PARSER = RFC2396_Parser.new
   Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
+  # The default parser instance for RFC 3986.
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
+  # The default parser instance.
   DEFAULT_PARSER = RFC3986_PARSER
   Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
+  # Set the default parser instance.
   def self.parser=(parser = RFC3986_PARSER)
     remove_const(:Parser) if defined?(::URI::Parser)
     const_set("Parser", parser.class)
@@ -40,15 +44,15 @@ module URI
   end
   self.parser = RFC3986_PARSER
 
-  def self.const_missing(const)
+  def self.const_missing(const) # :nodoc:
     if const == :REGEXP
       warn "URI::REGEXP is obsolete. Use URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
       URI::RFC2396_REGEXP
     elsif value = RFC2396_PARSER.regexp[const]
-      warn "URI::#{const} is obsolete. Use RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      warn "URI::#{const} is obsolete. Use URI::RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
       value
     elsif value = RFC2396_Parser.const_get(const)
-      warn "URI::#{const} is obsolete. Use RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
+      warn "URI::#{const} is obsolete. Use URI::RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
       value
     else
       super
@@ -87,7 +91,7 @@ module URI
     module_function :make_components_hash
   end
 
-  module Schemes
+  module Schemes # :nodoc:
   end
   private_constant :Schemes
 
@@ -305,7 +309,7 @@ module URI
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
-  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze # :nodoc:
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:

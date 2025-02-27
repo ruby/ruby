@@ -37,14 +37,18 @@ assert_equal "ok", %q{
 }
 
 # test discarding extra yield arguments
-assert_equal "2210150001501015", %q{
+assert_equal "22131300500015901015", %q{
   def splat_kw(ary) = yield *ary, a: 1
 
   def splat(ary) = yield *ary
 
-  def kw = yield 1, 2, a: 0
+  def kw = yield 1, 2, a: 3
+
+  def kw_only = yield a: 0
 
   def simple = yield 0, 1
+
+  def none = yield
 
   def calls
     [
@@ -52,12 +56,16 @@ assert_equal "2210150001501015", %q{
       splat([1, 1, 2]) { |y, opt = raise| opt + y},
       splat_kw([0, 1]) { |a:| a },
       kw { |a:| a },
-      kw { |a| a },
+      kw { |one| one },
+      kw { |one, a:| a },
+      kw_only { |a:| a },
+      kw_only { |a: 1| a },
       simple { 5.itself },
       simple { |a| a },
       simple { |opt = raise| opt },
       simple { |*rest| rest },
       simple { |opt_kw: 5| opt_kw },
+      none { |a: 9| a },
       # autosplat ineractions
       [0, 1, 2].yield_self { |a, b| [a, b] },
       [0, 1, 2].yield_self { |a, opt = raise| [a, opt] },
@@ -106,7 +114,7 @@ assert_equal '[:ae, :ae]', %q{
   end
 
   [test(Array.new 5), test([])]
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # regression test for arity check with splat and send
 assert_equal '[:ae, :ae]', %q{
@@ -166,7 +174,7 @@ assert_equal 'ok', %q{
     GC.compact
   end
   :ok
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
@@ -303,7 +311,7 @@ assert_equal '[:ok]', %q{
   # Used to crash due to GC run in rb_ensure_iv_list_size()
   # not marking the newly allocated [:ok].
   RegressionTest.new.extender.itself
-} unless rjit_enabled? # Skip on RJIT since this uncovers a crash
+}
 
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
@@ -2057,7 +2065,7 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   getbyte("a", 0)
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # Basic test for String#setbyte
 assert_equal 'AoZ', %q{
@@ -2755,7 +2763,7 @@ assert_equal '[1, 2]', %q{
 
   expandarray_redefined_nilclass
   expandarray_redefined_nilclass
-} unless rjit_enabled?
+}
 
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
@@ -2867,7 +2875,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2949,7 +2957,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2964,7 +2972,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -4486,7 +4494,7 @@ assert_equal 'true', %q{
   rescue ArgumentError
     true
   end
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # Regression test: register allocator on expandarray
 assert_equal '[]', %q{
@@ -4901,7 +4909,7 @@ assert_equal '0', %q{
   end
 
   foo # try again
-} unless rjit_enabled? # doesn't work on RJIT
+}
 
 # test integer left shift with constant rhs
 assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
@@ -5009,7 +5017,7 @@ assert_equal '[[true, false, false], [true, true, false], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test FalseClass#=== before and after redefining FalseClass#==
 assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
@@ -5044,7 +5052,7 @@ assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test NilClass#=== before and after redefining NilClass#==
 assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
@@ -5079,7 +5087,7 @@ assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test struct accessors fire c_call events
 assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{
@@ -5339,3 +5347,43 @@ assert_equal '["x", "Y", "c", "A", "t", "A", "b", "C", "d"]', <<~'RUBY'
 
   Swap.new("xy").swap + Swap.new("cat").reverse_odd + Swap.new("abcd").reverse_even
 RUBY
+
+assert_normal_exit %{
+  class Bug20997
+    def foo(&) = self.class.name(&)
+
+    new.foo
+  end
+}
+
+# This used to trigger a "try to mark T_NONE"
+# due to an uninitialized local in foo.
+assert_normal_exit %{
+  def foo(...)
+    _local_that_should_nil_on_call = GC.start
+  end
+
+  def test_bug21021
+    puts [], [], [], [], [], []
+    foo []
+  end
+
+  GC.stress = true
+  test_bug21021
+}
+
+assert_equal 'nil', %{
+  def foo(...)
+    _a = _b = _c = binding.local_variable_get(:_c)
+
+    _c
+  end
+
+  # [Bug #21021]
+  def test_local_fill_in_forwardable
+    puts [], [], [], [], []
+    foo []
+  end
+
+  test_local_fill_in_forwardable.inspect
+}

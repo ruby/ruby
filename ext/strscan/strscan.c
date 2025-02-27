@@ -58,8 +58,13 @@ struct strscanner
 };
 
 #define MATCHED_P(s)          ((s)->flags & FLAG_MATCHED)
-#define MATCHED(s)             (s)->flags |= FLAG_MATCHED
-#define CLEAR_MATCH_STATUS(s)  (s)->flags &= ~FLAG_MATCHED
+#define MATCHED(s)            ((s)->flags |= FLAG_MATCHED)
+#define CLEAR_MATCHED(s)      ((s)->flags &= ~FLAG_MATCHED)
+#define CLEAR_NAMED_CAPTURES(s) ((s)->regex = Qnil)
+#define CLEAR_MATCH_STATUS(s) do {\
+    CLEAR_MATCHED(s);\
+    CLEAR_NAMED_CAPTURES(s);\
+} while (0)
 
 #define S_PBEG(s)  (RSTRING_PTR((s)->str))
 #define S_LEN(s)  (RSTRING_LEN((s)->str))
@@ -216,7 +221,6 @@ strscan_s_allocate(VALUE klass)
     CLEAR_MATCH_STATUS(p);
     onig_region_init(&(p->regs));
     p->str = Qnil;
-    p->regex = Qnil;
     return obj;
 }
 
@@ -571,19 +575,20 @@ match_target(struct strscanner *p)
 }
 
 static inline void
-set_registers(struct strscanner *p, size_t length)
+set_registers(struct strscanner *p, size_t pos, size_t length)
 {
     const int at = 0;
     OnigRegion *regs = &(p->regs);
     onig_region_clear(regs);
     if (onig_region_set(regs, at, 0, 0)) return;
     if (p->fixed_anchor_p) {
-        regs->beg[at] = p->curr;
-        regs->end[at] = p->curr + length;
+        regs->beg[at] = pos + p->curr;
+        regs->end[at] = pos + p->curr + length;
     }
     else
     {
-        regs->end[at] = length;
+        regs->beg[at] = pos;
+        regs->end[at] = pos + length;
     }
 }
 
@@ -731,7 +736,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
             if (memcmp(CURPTR(p), RSTRING_PTR(pattern), RSTRING_LEN(pattern)) != 0) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern));
+            set_registers(p, 0, RSTRING_LEN(pattern));
         }
         else {
             rb_encoding *enc = rb_enc_check(p->str, pattern);
@@ -740,7 +745,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
             if (pos == -1) {
                 return Qnil;
             }
-            set_registers(p, RSTRING_LEN(pattern) + pos);
+            set_registers(p, pos, RSTRING_LEN(pattern));
         }
     }
 
@@ -1292,6 +1297,10 @@ strscan_parse_integer(struct strscanner *p, int base, long len)
     integer = rb_cstr2inum(buffer, base);
     RB_ALLOCV_END(buffer_v);
     p->curr += len;
+
+    MATCHED(p);
+    adjust_registers_to_matched(p);
+
     return integer;
 }
 
@@ -1341,7 +1350,6 @@ strscan_scan_base10_integer(VALUE self)
         return Qnil;
     }
 
-    MATCHED(p);
     p->prev = p->curr;
 
     while (len < remaining_len && rb_isdigit(ptr[len])) {
@@ -1375,7 +1383,7 @@ strscan_scan_base16_integer(VALUE self)
         len++;
     }
 
-    if ((remaining_len >= (len + 2)) && ptr[len] == '0' && ptr[len + 1] == 'x') {
+    if ((remaining_len >= (len + 3)) && ptr[len] == '0' && ptr[len + 1] == 'x' && rb_isxdigit(ptr[len + 2])) {
         len += 2;
     }
 
@@ -1383,7 +1391,6 @@ strscan_scan_base16_integer(VALUE self)
         return Qnil;
     }
 
-    MATCHED(p);
     p->prev = p->curr;
 
     while (len < remaining_len && rb_isxdigit(ptr[len])) {
@@ -1660,19 +1667,17 @@ strscan_matched_size(VALUE self)
 static int
 name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name, const char* name_end, rb_encoding *enc)
 {
-    int num;
-
-    num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
-	(const unsigned char* )name, (const unsigned char* )name_end, regs);
-    if (num >= 1) {
-	return num;
+    if (RTEST(regexp)) {
+        int num = onig_name_to_backref_number(RREGEXP_PTR(regexp),
+                                              (const unsigned char* )name,
+                                              (const unsigned char* )name_end,
+                                              regs);
+        if (num >= 1) {
+	        return num;
+        }
     }
-    else {
-	rb_enc_raise(enc, rb_eIndexError, "undefined group name reference: %.*s",
-					  rb_long2int(name_end - name), name);
-    }
-
-    UNREACHABLE;
+    rb_enc_raise(enc, rb_eIndexError, "undefined group name reference: %.*s",
+                 rb_long2int(name_end - name), name);
 }
 
 /*
@@ -1761,7 +1766,6 @@ strscan_aref(VALUE self, VALUE idx)
             idx = rb_sym2str(idx);
             /* fall through */
         case T_STRING:
-            if (!RTEST(p->regex)) return Qnil;
             RSTRING_GETMEM(idx, name, i);
             i = name_to_backref_number(&(p->regs), p->regex, name, name + i, rb_enc_get(idx));
             break;

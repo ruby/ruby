@@ -47,7 +47,6 @@ static VALUE eEngineError;
 /*
  * Private
  */
-#if !defined(LIBRESSL_VERSION_NUMBER) && OPENSSL_VERSION_NUMBER >= 0x10100000
 #define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x) \
 do{\
   if(!strcmp(#engine_name, RSTRING_PTR(name))){\
@@ -57,15 +56,6 @@ do{\
       ossl_raise(eEngineError, "OPENSSL_init_crypto"); \
   }\
 }while(0)
-#else
-#define OSSL_ENGINE_LOAD_IF_MATCH(engine_name, x)  \
-do{\
-  if(!strcmp(#engine_name, RSTRING_PTR(name))){\
-    ENGINE_load_##engine_name();\
-    return Qtrue;\
-  }\
-}while(0)
-#endif
 
 static void
 ossl_engine_free(void *engine)
@@ -102,50 +92,10 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         return Qtrue;
     }
     StringValueCStr(name);
-#ifdef HAVE_ENGINE_LOAD_DYNAMIC
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic, DYNAMIC);
-#endif
-#ifndef OPENSSL_NO_STATIC_ENGINE
-#ifdef HAVE_ENGINE_LOAD_4758CCA
-    OSSL_ENGINE_LOAD_IF_MATCH(4758cca, 4758CCA);
-#endif
-#ifdef HAVE_ENGINE_LOAD_AEP
-    OSSL_ENGINE_LOAD_IF_MATCH(aep, AEP);
-#endif
-#ifdef HAVE_ENGINE_LOAD_ATALLA
-    OSSL_ENGINE_LOAD_IF_MATCH(atalla, ATALLA);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CHIL
-    OSSL_ENGINE_LOAD_IF_MATCH(chil, CHIL);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CSWIFT
-    OSSL_ENGINE_LOAD_IF_MATCH(cswift, CSWIFT);
-#endif
-#ifdef HAVE_ENGINE_LOAD_NURON
-    OSSL_ENGINE_LOAD_IF_MATCH(nuron, NURON);
-#endif
-#ifdef HAVE_ENGINE_LOAD_SUREWARE
-    OSSL_ENGINE_LOAD_IF_MATCH(sureware, SUREWARE);
-#endif
-#ifdef HAVE_ENGINE_LOAD_UBSEC
-    OSSL_ENGINE_LOAD_IF_MATCH(ubsec, UBSEC);
-#endif
-#ifdef HAVE_ENGINE_LOAD_PADLOCK
     OSSL_ENGINE_LOAD_IF_MATCH(padlock, PADLOCK);
-#endif
-#ifdef HAVE_ENGINE_LOAD_CAPI
     OSSL_ENGINE_LOAD_IF_MATCH(capi, CAPI);
-#endif
-#ifdef HAVE_ENGINE_LOAD_GMP
-    OSSL_ENGINE_LOAD_IF_MATCH(gmp, GMP);
-#endif
-#ifdef HAVE_ENGINE_LOAD_GOST
-    OSSL_ENGINE_LOAD_IF_MATCH(gost, GOST);
-#endif
-#endif
-#ifdef HAVE_ENGINE_LOAD_CRYPTODEV
     OSSL_ENGINE_LOAD_IF_MATCH(cryptodev, CRYPTODEV);
-#endif
     OSSL_ENGINE_LOAD_IF_MATCH(openssl, OPENSSL);
     rb_warning("no such builtin loader for `%"PRIsVALUE"'", name);
     return Qnil;
@@ -163,9 +113,6 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 static VALUE
 ossl_engine_s_cleanup(VALUE self)
 {
-#if defined(LIBRESSL_VERSION_NUMBER) || OPENSSL_VERSION_NUMBER < 0x10100000
-    ENGINE_cleanup();
-#endif
     return Qnil;
 }
 
@@ -549,12 +496,6 @@ Init_ossl_engine(void)
     DefEngineConst(METHOD_DSA);
     DefEngineConst(METHOD_DH);
     DefEngineConst(METHOD_RAND);
-#ifdef ENGINE_METHOD_BN_MOD_EXP
-    DefEngineConst(METHOD_BN_MOD_EXP);
-#endif
-#ifdef ENGINE_METHOD_BN_MOD_EXP_CRT
-    DefEngineConst(METHOD_BN_MOD_EXP_CRT);
-#endif
     DefEngineConst(METHOD_CIPHERS);
     DefEngineConst(METHOD_DIGESTS);
     DefEngineConst(METHOD_ALL);

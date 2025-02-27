@@ -173,8 +173,6 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     $mdir = target
     $srcdir = File.join($top_srcdir, basedir, $mdir)
     $preload = nil
-    $objs = []
-    $srcs = []
     $extso = []
     makefile = "./Makefile"
     static = $static
@@ -208,7 +206,7 @@ def extmake(target, basedir = 'ext', maybestatic = true)
       begin
 	$extconf_h = nil
 	ok &&= extract_makefile(makefile)
-	old_objs = $objs
+	old_objs = $objs || []
 	old_cleanfiles = $distcleanfiles | $cleanfiles
 	conf = ["#{$srcdir}/makefile.rb", "#{$srcdir}/extconf.rb"].find {|f| File.exist?(f)}
 	if (!ok || ($extconf_h && !File.exist?($extconf_h)) ||
@@ -271,6 +269,8 @@ def extmake(target, basedir = 'ext', maybestatic = true)
     unless $destdir.to_s.empty? or $mflags.defined?("DESTDIR")
       args += ["DESTDIR=" + relative_from($destdir, "../"+prefix)]
     end
+    $objs ||= []
+    $srcs ||= []
     if $static and ok and !$objs.empty? and !noinstall
       args += ["static"]
       $extlist.push [(maybestatic ? $static : false), target, $target, $preload]
@@ -584,7 +584,8 @@ extend Module.new {
         }
       end
 
-      gemlib = File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/lib")
+      conf = yield conf if block
+
       if conf.any? {|s| /^TARGET *= *\S/ =~ s}
         conf << %{
 gem_platform = #{Gem::Platform.local}
@@ -617,23 +618,25 @@ gemspec: $(gemspec)
 
 clean-gemspec:
 	-$(Q)$(RM) $(gemspec)
-}
-
-        if gemlib
-          conf << %{
-install-rb: gemlib
-clean-rb:: clean-gemlib
 
 LN_S = #{config_string('LN_S')}
 CP_R = #{config_string('CP')} -r
-
-gemlib = $(TARGET_TOPDIR)/gems/$(gem)/lib
-gemlib:#{%{ $(gemlib)\n$(gemlib): $(gem_srcdir)/lib} if $nmake}
-	$(Q) #{@inplace ? '$(NULLCMD) ' : ''}$(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/lib $(gemlib)
-
-clean-gemlib:
-	$(Q) $(#{@inplace ? 'NULLCMD' : 'RM_RF'}) $(gemlib)
 }
+        unless @inplace
+          %w[bin lib].each do |d|
+            next unless File.directory?("#{$top_srcdir}/#{@ext_prefix}/#{@gemname}/#{d}")
+            conf << %{
+install-rb: gem#{d}
+clean-rb:: clean-gem#{d}
+
+gem#{d} = $(TARGET_TOPDIR)/gems/$(gem)/#{d}
+gem#{d}:#{%{ $(gem#{d})\n$(gem#{d}): $(gem_srcdir)/#{d}} if $nmake}
+	$(Q) $(RUBY) $(top_srcdir)/tool/ln_sr.rb -q -f -T $(gem_srcdir)/#{d} $(gem#{d})
+
+clean-gem#{d}:
+	$(Q) $(RM_RF) $(gem#{d})
+}
+          end
         end
       end
 

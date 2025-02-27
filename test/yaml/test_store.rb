@@ -5,8 +5,12 @@ require 'tmpdir'
 
 class YAMLStoreTest < Test::Unit::TestCase
   def setup
-    @yaml_store_file = File.join(Dir.tmpdir, "yaml_store.tmp.#{Process.pid}")
-    @yaml_store = YAML::Store.new(@yaml_store_file)
+    if defined?(::PStore)
+      @yaml_store_file = File.join(Dir.tmpdir, "yaml_store.tmp.#{Process.pid}")
+      @yaml_store = YAML::Store.new(@yaml_store_file)
+    else
+      omit "PStore is not available"
+    end
   end
 
   def teardown
@@ -133,7 +137,7 @@ class YAMLStoreTest < Test::Unit::TestCase
   def test_yaml_store_files_are_accessed_as_binary_files
     bug5311 = '[ruby-core:39503]'
     n = 128
-    assert_in_out_err(["-Eutf-8:utf-8", "-ryaml/store", "-", @yaml_store_file], <<-SRC, [bug5311], [], bug5311, timeout: 60)
+    assert_in_out_err(["-Eutf-8:utf-8", "-rrubygems", "-ryaml/store", "-", @yaml_store_file], <<-SRC, [bug5311], [], bug5311, timeout: 60)
       @yaml_store = YAML::Store.new(ARGV[0])
       (1..#{n}).each do |i|
         @yaml_store.transaction {@yaml_store["Key\#{i}"] = "value \#{i}"}
@@ -177,4 +181,4 @@ class YAMLStoreTest < Test::Unit::TestCase
     end
     assert_equal(indentation_3_yaml, File.read(@yaml_store_file), bug12800)
   end
-end if defined?(::YAML::Store)
+end

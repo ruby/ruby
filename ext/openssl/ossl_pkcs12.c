@@ -134,9 +134,15 @@ ossl_pkcs12_s_create(int argc, VALUE *argv, VALUE self)
     if (!NIL_P(keytype))
         ktype = NUM2INT(keytype);
 
+#if defined(OPENSSL_IS_AWSLC)
+    if (ktype != 0) {
+        ossl_raise(rb_eArgError, "Unknown key usage type %"PRIsVALUE, INT2NUM(ktype));
+    }
+#else
     if (ktype != 0 && ktype != KEY_SIG && ktype != KEY_EX) {
         ossl_raise(rb_eArgError, "Unknown key usage type %"PRIsVALUE, INT2NUM(ktype));
     }
+#endif
 
     obj = NewPKCS12(cPKCS12);
     x509s = NIL_P(ca) ? NULL : ossl_x509_ary2sk(ca);
@@ -201,12 +207,8 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     BIO_free(in);
 
     pkey = cert = ca = Qnil;
-    /* OpenSSL's bug; PKCS12_parse() puts errors even if it succeeds.
-     * Fixed in OpenSSL 1.0.0t, 1.0.1p, 1.0.2d */
-    ERR_set_mark();
     if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
 	ossl_raise(ePKCS12Error, "PKCS12_parse");
-    ERR_pop_to_mark();
     if (key) {
 	pkey = rb_protect(ossl_pkey_new_i, (VALUE)key, &st);
 	if (st) goto err;
@@ -320,7 +322,9 @@ Init_ossl_pkcs12(void)
     rb_define_method(cPKCS12, "to_der", ossl_pkcs12_to_der, 0);
     rb_define_method(cPKCS12, "set_mac", pkcs12_set_mac, -1);
 
+#if !defined(OPENSSL_IS_AWSLC)
     /* MSIE specific PKCS12 key usage extensions */
     rb_define_const(cPKCS12, "KEY_EX", INT2NUM(KEY_EX));
     rb_define_const(cPKCS12, "KEY_SIG", INT2NUM(KEY_SIG));
+#endif
 }

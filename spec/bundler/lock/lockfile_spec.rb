@@ -1587,6 +1587,32 @@ RSpec.describe "the lockfile format" do
     L
   end
 
+  it "raises a clear error when frozen mode is set and lockfile is missing deps, and does not install any gems" do
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack_middleware (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      source "https://gem.repo2"
+      gem "myrack_middleware"
+    G
+
+    expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
+  end
+
   it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
     build_repo4 do
       build_gem "other_dep", "0.9"
@@ -1798,7 +1824,7 @@ RSpec.describe "the lockfile format" do
           indirect_dependency (1.2.3)
 
       PLATFORMS
-        #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
+        #{lockfile_platforms(generic_default_locked_platform || local_platform, defaults: ["ruby"])}
 
       DEPENDENCIES
         direct_dependency
@@ -1843,6 +1869,62 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "automatically fixes the lockfile when it has incorrect deps, keeping the locked version" do
+    build_repo4 do
+      build_gem "net-smtp", "0.5.0" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-smtp", "0.5.1" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-protocol", "0.2.2"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "net-smtp"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+            net-protocol
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
 
       BUNDLED WITH
          #{Bundler::VERSION}

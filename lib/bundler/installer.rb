@@ -79,7 +79,7 @@ module Bundler
 
         if @definition.setup_domain!(options)
           ensure_specs_are_compatible!
-          Bundler.load_plugins(@definition)
+          load_plugins
         end
         install(options)
 
@@ -91,6 +91,11 @@ module Bundler
     end
 
     def generate_bundler_executable_stubs(spec, options = {})
+      if spec.name == "bundler"
+        Bundler.ui.warn "Bundler itself does not use binstubs because its version is selected by RubyGems"
+        return
+      end
+
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
         spec.runtime_dependencies.each do |dep|
@@ -115,10 +120,6 @@ module Bundler
       ruby_command = Thor::Util.ruby_command
       ruby_command = ruby_command
       template_path = File.expand_path("templates/Executable", __dir__)
-      if spec.name == "bundler"
-        template_path += ".bundler"
-        spec.executables = %(bundle)
-      end
       template = File.read(template_path)
 
       exists = []
@@ -193,7 +194,7 @@ module Bundler
     def install(options)
       standalone = options[:standalone]
       force = options[:force]
-      local = options[:local]
+      local = options[:local] || options[:"prefer-local"]
       jobs = installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
@@ -207,6 +208,20 @@ module Bundler
       end
 
       Bundler.settings.processor_count
+    end
+
+    def load_plugins
+      Gem.load_plugins
+
+      requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
+      path_plugin_files = requested_path_gems.flat_map do |spec|
+        spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
+      rescue TypeError
+        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
+        raise Gem::InvalidSpecificationException, error_message
+      end
+      Gem.load_plugin_files(path_plugin_files)
+      Gem.load_env_plugins
     end
 
     def ensure_specs_are_compatible!

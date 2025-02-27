@@ -513,7 +513,7 @@ class TestProc < Test::Unit::TestCase
 
     file, lineno = method(:source_location_test).to_proc.binding.source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test[0], lineno, 'Bug #2427')
   end
 
   def test_binding_error_unless_ruby_frame
@@ -1382,7 +1382,8 @@ class TestProc < Test::Unit::TestCase
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c]], proc {|a, *b, c|}.parameters)
     assert_equal([[:opt, :a], [:rest, :b], [:opt, :c], [:block, :d]], proc {|a, *b, c, &d|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:rest, :c], [:opt, :d], [:block, :e]], proc {|a, b=:b, *c, d, &e|}.parameters)
-    assert_equal([[:opt, nil], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:block, :b]], proc {|(a), &b|a}.parameters)
+    assert_equal([[:opt], [:rest, :_], [:opt]], proc {|(a_), *_, (b_)|}.parameters)
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], proc {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters)
 
     assert_equal([[:req]], method(:putc).parameters)
@@ -1390,6 +1391,8 @@ class TestProc < Test::Unit::TestCase
 
     pr = eval("proc{|"+"(_),"*30+"|}")
     assert_empty(pr.parameters.map{|_,n|n}.compact)
+
+    assert_equal([[:opt]], proc { it }.parameters)
   end
 
   def test_proc_autosplat_with_multiple_args_with_ruby2_keywords_splat_bug_19759
@@ -1438,6 +1441,9 @@ class TestProc < Test::Unit::TestCase
 
     assert_equal([[:opt, :a]], lambda {|a|}.parameters(lambda: false))
     assert_equal([[:opt, :a], [:opt, :b], [:opt, :c], [:opt, :d], [:rest, :e], [:opt, :f], [:opt, :g], [:block, :h]], lambda {|a,b,c=:c,d=:d,*e,f,g,&h|}.parameters(lambda: false))
+
+    assert_equal([[:req]], proc { it }.parameters(lambda: true))
+    assert_equal([[:opt]], lambda { it }.parameters(lambda: false))
   end
 
   def pm0() end
@@ -1493,15 +1499,19 @@ class TestProc < Test::Unit::TestCase
     assert_include(EnvUtil.labeled_class(name, Proc).new {}.to_s, name)
   end
 
-  @@line_of_source_location_test = __LINE__ + 1
+  @@line_of_source_location_test = [__LINE__ + 1, 2, __LINE__ + 3, 5]
   def source_location_test a=1,
     b=2
   end
 
   def test_source_location
-    file, lineno = method(:source_location_test).source_location
+    file, *loc = method(:source_location_test).source_location
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(@@line_of_source_location_test, lineno, 'Bug #2427')
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
+
+    file, *loc = self.class.instance_method(:source_location_test).source_location
+    assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
+    assert_equal(@@line_of_source_location_test, loc, 'Bug #2427')
   end
 
   @@line_of_attr_reader_source_location_test   = __LINE__ + 3
@@ -1534,13 +1544,13 @@ class TestProc < Test::Unit::TestCase
   end
 
   def test_block_source_location
-    exp_lineno = __LINE__ + 3
-    file, lineno = block_source_location_test(1,
+    exp_loc = [__LINE__ + 3, 49, __LINE__ + 4, 49]
+    file, *loc = block_source_location_test(1,
                                               2,
                                               3) do
                                               end
     assert_match(/^#{ Regexp.quote(__FILE__) }$/, file)
-    assert_equal(exp_lineno, lineno)
+    assert_equal(exp_loc, loc)
   end
 
   def test_splat_without_respond_to
@@ -1637,6 +1647,71 @@ class TestProc < Test::Unit::TestCase
     assert_equal(20, b.local_variable_get(:b))
     assert_equal(10, b.eval("a"))
     assert_equal(20, b.eval("b"))
+  end
+
+  def test_numparam_is_not_local_variables
+    "foo".tap do
+      _9
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      "bar".tap do
+        _9
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+    end
+  end
+
+  def test_it_is_not_local_variable
+    "foo".tap do
+      it
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+    end
   end
 
   def test_local_variable_set_wb

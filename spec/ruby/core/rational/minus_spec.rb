@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-require_relative '../../shared/rational/arithmetic_exception_in_coerce'
+require_relative 'shared/arithmetic_exception_in_coerce'
 
 describe "Rational#-" do
   it_behaves_like :rational_arithmetic_exception_in_coerce, :-

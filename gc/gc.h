@@ -19,10 +19,10 @@ struct rb_gc_vm_context {
 
     struct rb_execution_context_struct *ec;
 };
+#endif
 
 typedef int (*vm_table_foreach_callback_func)(VALUE value, void *data);
 typedef int (*vm_table_update_callback_func)(VALUE *value, void *data);
-
 
 enum rb_gc_vm_weak_tables {
     RB_GC_VM_CI_TABLE,
@@ -32,7 +32,6 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT
 };
-#endif
 
 RUBY_SYMBOL_EXPORT_BEGIN
 unsigned int rb_gc_vm_lock(void);
@@ -44,6 +43,7 @@ void rb_gc_vm_unlock_no_barrier(unsigned int lev);
 void rb_gc_vm_barrier(void);
 size_t rb_gc_obj_optimal_size(VALUE obj);
 void rb_gc_mark_children(void *objspace, VALUE obj);
+void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
 void rb_gc_update_object_references(void *objspace, VALUE obj);
 void rb_gc_update_vm_references(void *objspace);
 void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
@@ -77,7 +77,6 @@ void *rb_gc_get_ractor_newobj_cache(void);
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
-void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, enum rb_gc_vm_weak_tables table);
 #endif
 RUBY_SYMBOL_EXPORT_END
 

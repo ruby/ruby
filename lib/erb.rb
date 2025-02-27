@@ -353,7 +353,7 @@ class ERB
     @lineno = 0
     @_init = self.class.singleton_class
   end
-  NOT_GIVEN = Object.new
+  NOT_GIVEN = defined?(Ractor) ? Ractor.make_shareable(Object.new) : Object.new
   private_constant :NOT_GIVEN
 
   ##

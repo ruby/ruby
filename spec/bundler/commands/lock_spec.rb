@@ -645,13 +645,13 @@ RSpec.describe "bundle lock" do
     it "single gem updates dependent gem to minor" do
       bundle "lock --update foo --patch"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.1 qux-1.0.0].sort)
+      expect(the_bundle.locked_specs).to eq(%w[foo-1.4.5 bar-2.1.1 qux-1.0.0].sort)
     end
 
     it "minor preferred with strict" do
       bundle "lock --update --minor --strict"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
+      expect(the_bundle.locked_specs).to eq(%w[foo-1.5.0 bar-2.1.1 qux-1.1.0].sort)
     end
 
     it "shows proper error when Gemfile changes forbid patch upgrades, and --patch --strict is given" do
@@ -674,25 +674,25 @@ RSpec.describe "bundle lock" do
       it "defaults to major" do
         bundle "lock --update --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
       end
 
       it "patch preferred" do
         bundle "lock --update --patch --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-1.4.5 bar-2.1.2.pre qux-1.0.1].sort)
       end
 
       it "minor preferred" do
         bundle "lock --update --minor --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-1.5.1 bar-3.1.0.pre qux-1.1.0].sort)
       end
 
       it "major preferred" do
         bundle "lock --update --major --pre"
 
-        expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
+        expect(the_bundle.locked_specs).to eq(%w[foo-2.0.0.pre bar-4.0.0.pre qux-2.0.0].sort)
       end
     end
   end
@@ -734,7 +734,7 @@ RSpec.describe "bundle lock" do
     it "adds the latest version of the new dependency" do
       bundle "lock --minor --update sequel"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
+      expect(the_bundle.locked_specs).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
     end
   end
 
@@ -761,12 +761,21 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to end_with("BUNDLED WITH\n   99\n")
   end
 
-  it "supports adding new platforms" do
-    bundle "lock --add-platform java x86-mingw32"
+  it "supports adding new platforms when there's no previous lockfile" do
+    bundle "lock --add-platform java x86-mingw32 --verbose"
+    expect(out).to include("Resolving dependencies because there's no lockfile")
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+  end
+
+  it "supports adding new platforms when a previous lockfile exists" do
+    bundle "lock"
+    bundle "lock --add-platform java x86-mingw32 --verbose"
+    expect(out).to include("Found changes from the lockfile, re-resolving dependencies because you are adding a new platform to your lockfile")
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
   end
 
   it "supports adding new platforms, when most specific locked platform is not the current platform, and current resolve is not compatible with the target platform" do
@@ -845,16 +854,14 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to contain_exactly(rb, linux, java, x86_mingw32)
+    expect(the_bundle.locked_platforms).to contain_exactly(Gem::Platform::RUBY, "x86_64-linux", "java", "x86-mingw32")
   end
 
   it "supports adding the `ruby` platform" do
     bundle "lock --add-platform ruby"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list("ruby"))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("ruby"))
   end
 
   it "fails when adding an unknown platform" do
@@ -867,13 +874,11 @@ RSpec.describe "bundle lock" do
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
 
     bundle "lock --remove-platform java"
 
-    lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(default_platform_list(x86_mingw32))
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("x86-mingw32"))
   end
 
   it "also cleans up redundant platform gems when removing platforms" do
@@ -948,7 +953,7 @@ RSpec.describe "bundle lock" do
     build_repo4 do
       build_gem "ffi", "1.9.14"
       build_gem "ffi", "1.9.14" do |s|
-        s.platform = x86_mingw32
+        s.platform = "x86-mingw32"
       end
 
       build_gem "gssapi", "0.1"
@@ -980,7 +985,7 @@ RSpec.describe "bundle lock" do
       gem "gssapi"
     G
 
-    simulate_platform(x86_mingw32) { bundle :lock }
+    simulate_platform("x86-mingw32") { bundle :lock }
 
     checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "ffi", "1.9.14", "x86-mingw32"

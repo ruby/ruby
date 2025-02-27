@@ -104,6 +104,14 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('+23') }
     assert_raise(JSON::ParserError) { parse('.23') }
     assert_raise(JSON::ParserError) { parse('023') }
+    assert_raise(JSON::ParserError) { parse('-023') }
+    assert_raise(JSON::ParserError) { parse('023.12') }
+    assert_raise(JSON::ParserError) { parse('-023.12') }
+    assert_raise(JSON::ParserError) { parse('023e12') }
+    assert_raise(JSON::ParserError) { parse('-023e12') }
+    assert_raise(JSON::ParserError) { parse('-') }
+    assert_raise(JSON::ParserError) { parse('-.1') }
+    assert_raise(JSON::ParserError) { parse('-e0') }
     assert_equal(23, parse('23'))
     assert_equal(-23, parse('-23'))
     assert_equal_float(3.141, parse('3.141'))
@@ -297,6 +305,14 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_invalid_unicode_escape
+    assert_raise(JSON::ParserError) { parse('"\u"') }
+    assert_raise(JSON::ParserError) { parse('"\ua"') }
+    assert_raise(JSON::ParserError) { parse('"\uaa"') }
+    assert_raise(JSON::ParserError) { parse('"\uaaa"') }
+    assert_equal "\uaaaa", parse('"\uaaaa"')
+  end
+
   def test_parse_big_integers
     json1 = JSON(orig = (1 << 31) - 1)
     assert_equal orig, parse(json1)
@@ -393,6 +409,11 @@ class JSONParserTest < Test::Unit::TestCase
       }
     JSON
     assert_equal({ "key1" => "value1" }, parse(json))
+    assert_equal({}, parse('{} /**/'))
+    assert_raise(ParserError) { parse('{} /* comment not closed') }
+    assert_raise(ParserError) { parse('{} /*/') }
+    assert_raise(ParserError) { parse('{} /x wrong comment') }
+    assert_raise(ParserError) { parse('{} /') }
   end
 
   def test_nesting
@@ -620,7 +641,30 @@ class JSONParserTest < Test::Unit::TestCase
       JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
     end
     if RUBY_ENGINE == "ruby"
-      assert_equal %(unexpected token at '{"input":{"firstName":"Bob","las'), error.message
+      assert_equal %(expected ',' or '}' after object value, got: ''), error.message
+    end
+  end
+
+  def test_parse_error_snippet
+    omit "C ext only test" unless RUBY_ENGINE == "ruby"
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'ああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("aあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'aああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abあああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abcあああああああああ'", error.message
+  end
+
+  def test_parse_leading_slash
+    # ref: https://github.com/ruby/ruby/pull/12598
+    assert_raise(JSON::ParserError) do
+      JSON.parse("/foo/bar")
     end
   end
 

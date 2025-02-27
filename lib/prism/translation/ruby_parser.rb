@@ -929,9 +929,9 @@ module Prism
               if result == :space
                 # continue
               elsif result.is_a?(String)
-                results[0] << result
+                results[0] = "#{results[0]}#{result}"
               elsif result.is_a?(Array) && result[0] == :str
-                results[0] << result[1]
+                results[0] = "#{results[0]}#{result[1]}"
               else
                 results << result
                 state = :interpolated_content
@@ -940,7 +940,7 @@ module Prism
               if result == :space
                 # continue
               elsif visited[index - 1] != :space && result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
-                results[-1][1] << result[1]
+                results[-1][1] = "#{results[-1][1]}#{result[1]}"
                 results[-1].line_max = result.line_max
               else
                 results << result
@@ -1440,6 +1440,7 @@ module Prism
           unescaped = node.unescaped
 
           if node.forced_binary_encoding?
+            unescaped = unescaped.dup
             unescaped.force_encoding(Encoding::BINARY)
           end
 
@@ -1558,7 +1559,7 @@ module Prism
           else
             parameters =
               case block.parameters
-              when nil, NumberedParametersNode
+              when nil, ItParametersNode, NumberedParametersNode
                 0
               else
                 visit(block.parameters)

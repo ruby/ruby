@@ -6,7 +6,7 @@ module TestParallel
   PARALLEL_RB = "#{__dir__}/../../lib/test/unit/parallel.rb"
   TESTS = "#{__dir__}/tests_for_parallel"
   # use large timeout for --jit-wait
-  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 100 : 30)
+  TIMEOUT = EnvUtil.apply_timeout_scale(30)
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
@@ -179,7 +179,7 @@ module TestParallel
     end
 
     def test_should_retry_failed_on_workers
-      spawn_runner
+      spawn_runner "--retry"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying\.+$/,buf)
     end
@@ -206,14 +206,14 @@ module TestParallel
     end
 
     def test_hungup
-      spawn_runner "--worker-timeout=1", "test4test_hungup.rb"
+      spawn_runner "--worker-timeout=1", "--retry", "test4test_hungup.rb"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)
     end
 
     def test_retry_workers
-      spawn_runner "--worker-timeout=1", "test4test_slow_0.rb", "test4test_slow_1.rb", jobs: "2"
+      spawn_runner "--worker-timeout=1", "--retry", "test4test_slow_0.rb", "test4test_slow_1.rb", jobs: "2"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)

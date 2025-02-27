@@ -33,7 +33,6 @@ of each.
 
 ## Libraries
 
-- Benchmark ([GitHub][benchmark]): Provides methods to measure and report the time used to execute code
 - Bundler ([GitHub][bundler]): Manage your Ruby application's gem dependencies
 - CGI ([GitHub][cgi]): Support for the Common Gateway Interface protocol
 - Delegator ([GitHub][delegate]): Provides three abilities to delegate method calls to an object
@@ -46,17 +45,12 @@ of each.
 - Forwardable ([GitHub][forwardable]): Provides delegation of specified methods to a designated object
 - IPAddr ([GitHub][ipaddr]): Provides methods to manipulate IPv4 and IPv6 IP addresses
 - OptionParser ([GitHub][optparse]): Ruby-oriented class for command-line option analysis
-- Logger ([GitHub][logger]): Provides a simple logging utility for outputting messages
 - Net::HTTP ([GitHub][net-http]): HTTP client API for Ruby
 - Open3 ([GitHub][open3]): Provides access to stdin, stdout, and stderr when running other programs
-- OpenStruct ([GitHub][ostruct]): A class to build custom data structures, similar to a Hash
 - OpenURI ([GitHub][open-uri]): An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
 - PP ([GitHub][pp]): Provides a PrettyPrinter for Ruby objects
 - PrettyPrint ([GitHub][prettyprint]): Implements a pretty printing algorithm for readable structure
 - Prism ([GitHub][prism]): A portable, error-tolerant Ruby parser
-- PStore ([GitHub][pstore]): Implements a file-based persistence mechanism based on a Hash
-- Readline ([GitHub][readline]): Wrapper for the Readline extension and Reline
-- Reline ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
 - SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
 - [Set](rdoc-ref:Set) ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
@@ -77,7 +71,6 @@ of each.
 - Digest ([GitHub][digest]): Provides a framework for message digest libraries
 - Etc ([GitHub][etc]): Provides access to information typically stored in the UNIX /etc directory
 - Fcntl ([GitHub][fcntl]): Loads constants defined in the OS fcntl.h C header file
-- Fiddle ([GitHub][fiddle]): A libffi wrapper for Ruby
 - IO.console ([GitHub][io-console]): Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
@@ -86,13 +79,7 @@ of each.
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
 - TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
-- WIN32OLE ([GitHub][win32ole]): Provides an interface for OLE Automation in Ruby
 - Zlib ([GitHub][zlib]): Ruby interface for the zlib compression/decompression library
-
-## Tools
-
-- [IRB][irb-doc] ([GitHub][irb]): Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
-- [RDoc][rdoc-doc] ([GitHub][rdoc]): Documentation generator for Ruby
 
 # Bundled gems
 
@@ -131,6 +118,19 @@ of each.
 - [nkf]: Ruby extension for the Network Kanji Filter
 - [syslog]: Ruby interface for the POSIX system logging facility
 - [csv]: Provides an interface to read and write CSV files and data
+- [ostruct]: A class to build custom data structures, similar to a Hash
+- [benchmark]: Provides methods to measure and report the time used to execute code
+- [logger]: Provides a simple logging utility for outputting messages
+- [pstore]: Implements a file-based persistence mechanism based on a Hash
+- [win32ole]: Provides an interface for OLE Automation in Ruby
+- [reline]: GNU Readline and Editline in a pure Ruby implementation
+- [readline]: Wrapper for the Readline extension and Reline
+- [fiddle]: A libffi wrapper for Ruby
+
+## Tools
+
+- [IRB][irb-doc] ([GitHub][irb]): Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
+- [RDoc][rdoc-doc] ([GitHub][rdoc]): Documentation generator for Ruby
 
 [abbrev]: https://github.com/ruby/abbrev
 [base64]: https://github.com/ruby/base64

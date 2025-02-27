@@ -972,7 +972,6 @@ pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: robject_offsets = 16;
-pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: robject_offsets = 24;
 pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
 pub type robject_offsets = u32;
 pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;

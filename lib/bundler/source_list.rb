@@ -141,6 +141,10 @@ module Bundler
       different_sources?(lock_sources, replacement_sources)
     end
 
+    def prefer_local!
+      all_sources.each(&:prefer_local!)
+    end
+
     def local_only!
       all_sources.each(&:local_only!)
     end

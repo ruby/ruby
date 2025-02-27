@@ -45,6 +45,7 @@ module Prism
       "whitequark/dedenting_heredoc.txt",
       "whitequark/parser_drops_truncated_parts_of_squiggly_heredoc.txt",
       "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
+      "whitequark/ruby_bug_18878.txt",
       "whitequark/send_block_chain_cmd.txt",
       "whitequark/slash_newline_in_heredocs.txt"
     ]

@@ -58,7 +58,7 @@ module ErrorHighlight
     def self.terminal_width
       # lazy load io/console, so it's not loaded when 'max_snippet_width' is set
       require "io/console"
-      STDERR.winsize[1] if STDERR.tty?
+      $stderr.winsize[1] if $stderr.tty?
     rescue LoadError, NoMethodError, SystemCallError
       # do not truncate when window size is not available
     end

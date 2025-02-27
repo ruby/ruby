@@ -296,9 +296,11 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
         for (i = 1; i <= file; i++) {
             filename = p;
             if (!*p) {
+#ifndef __APPLE__
                 /* Need to output binary file name? */
                 kprintf("Unexpected file number %d in %s at %tx\n",
                         file, binary_filename, filenames - obj->mapped);
+#endif
                 return;
             }
             while (*p) p++;

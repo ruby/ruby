@@ -1,6 +1,10 @@
 require_relative "../../spec_helper"
-require_relative '../../shared/rational/numerator'
 
 describe "Rational#numerator" do
-  it_behaves_like :rational_numerator, :numerator
+  it "returns the numerator" do
+    Rational(3, 4).numerator.should equal(3)
+    Rational(3, -4).numerator.should equal(-3)
+
+    Rational(bignum_value, 1).numerator.should == bignum_value
+  end
 end

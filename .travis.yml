@@ -55,10 +55,6 @@ env:
         openssl
         zlib1g-dev
       - gcc-11 --version
-  - &arm64-linux
-    name: arm64-linux
-    arch: arm64
-    <<: *gcc-11
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
@@ -75,12 +71,9 @@ env:
 
 matrix:
   include:
-    - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
   allow_failures:
-    # The arm64 is very slow to start the jobs.
-    - name: arm64-linux
     - name: ppc64le-linux
     - name: s390x-linux
   fast_finish: true

@@ -3,6 +3,12 @@
 # This file is organized to match itemization in https://github.com/ruby/prism/issues/1335
 module Prism
   class TestCompilePrism < Test::Unit::TestCase
+    def test_iseq_has_node_id
+      code = "proc { <<END }\n hello\nEND"
+      iseq = RubyVM::InstructionSequence.compile_prism(code)
+      assert_operator iseq.to_a[4][:node_id], :>, -1
+    end
+
     # Subclass is used for tests which need it
     class Subclass; end
     ############################################################################
@@ -209,6 +215,9 @@ module Prism
 
       # method chain with a block on the inside
       assert_prism_eval("defined?(itself { 1 }.itself)")
+
+      # method chain with parenthesized receiver
+      assert_prism_eval("defined?((itself).itself)")
 
       # Method chain on a constant
       assert_prism_eval(<<~RUBY)
@@ -1191,6 +1200,27 @@ a
         end
 
         res
+      RUBY
+
+      # Bug #21001
+      assert_prism_eval(<<~RUBY)
+        RUN_ARRAY = [1,2]
+
+        MAP_PROC = Proc.new do |&blk|
+          block_results = []
+          RUN_ARRAY.each do |value|
+            block_value = blk.call(value)
+            block_results.push block_value
+          end
+          block_results
+        ensure
+          next block_results
+        end
+
+        MAP_PROC.call do |value|
+          break if value > 1
+          next value
+        end
       RUBY
     end
 

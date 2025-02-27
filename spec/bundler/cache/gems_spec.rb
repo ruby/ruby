@@ -113,6 +113,11 @@ RSpec.describe "bundle cache" do
         expect(out).to include("Using json #{default_json_version}")
       end
 
+      it "does not use remote gems when installing with --prefer-local flag" do
+        install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true, "prefer-local": true
+        expect(out).to include("Using json #{default_json_version}")
+      end
+
       it "caches remote and builtin gems" do
         install_gemfile <<-G
           source "https://gem.repo2"
@@ -167,7 +172,7 @@ RSpec.describe "bundle cache" do
         G
 
         bundle :cache, raise_on_error: false
-        expect(exitstatus).to_not eq(0)
+        expect(last_command).to be_failure
         expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
       end
     end

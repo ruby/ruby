@@ -1309,46 +1309,6 @@ is_batch(const char *cmd)
 #define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
-/* License: Ruby's */
-HANDLE
-rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
-{
-    /* NOTE: This function is used by RJIT worker, so it can be used parallelly with
-       Ruby's main thread. So functions touching things shared with main thread can't
-       be used, like `ALLOCV` that may trigger GC or `FindFreeChildSlot` that finds
-       a slot from shared memory without atomic locks. */
-    struct ChildRecord child;
-    char *cmd;
-    size_t len;
-    WCHAR *wcmd = NULL, *wprog = NULL;
-    HANDLE outHandle = NULL;
-
-    if (out_fd) {
-        outHandle = (HANDLE)rb_w32_get_osfhandle(out_fd);
-    }
-
-    len = join_argv(NULL, argv, FALSE, filecp(), 1);
-    cmd = alloca(sizeof(char) * len);
-    join_argv(cmd, argv, FALSE, filecp(), 1);
-
-    if (!(wcmd = mbstr_to_wstr(filecp(), cmd, -1, NULL))) {
-        errno = E2BIG;
-        return NULL;
-    }
-    if (!(wprog = mbstr_to_wstr(filecp(), abspath, -1, NULL))) {
-        errno = E2BIG;
-        return NULL;
-    }
-
-    if (!CreateChild(&child, wcmd, wprog, NULL, outHandle, outHandle, 0)) {
-        return NULL;
-    }
-
-    free(wcmd);
-    free(wprog);
-    return child.hProcess;
-}
-
 /* License: Artistic or GPL */
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
@@ -2179,7 +2139,6 @@ rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 WCHAR *
 rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
-    /* This is used by RJIT worker. Do not trigger GC or call Ruby method here. */
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
     if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;

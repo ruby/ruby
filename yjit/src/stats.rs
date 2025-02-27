@@ -1,7 +1,5 @@
 //! Everything related to the collection of runtime stats in YJIT
-//! See the stats feature and the --yjit-stats command-line option
-
-#![allow(dead_code)] // Counters are only used with the stats features
+//! See the --yjit-stats command-line option
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
@@ -358,6 +356,7 @@ make_counters! {
 
     // Method calls that fallback to dynamic dispatch
     send_singleton_class,
+    send_forwarding,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
@@ -385,7 +384,6 @@ make_counters! {
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
     send_iseq_complex_discard_extras,
-    send_iseq_forwarding,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_mismatch,
@@ -670,8 +668,7 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, key: VALUE) -
 
 /// Primitive called in yjit.rb
 ///
-/// Check if trace_exits generation is enabled. Requires the stats feature
-/// to be enabled.
+/// Check if trace_exits generation is enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     if get_option!(trace_exits).is_some() {
@@ -695,7 +692,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
         return Qnil;
     }
 
-    // If the stats feature is enabled, pass yjit_raw_samples and yjit_line_samples
+    // Pass yjit_raw_samples and yjit_line_samples
     // to the C function called rb_yjit_exit_locations_dict for parsing.
     let yjit_raw_samples = YjitExitLocations::get_raw_samples();
     let yjit_line_samples = YjitExitLocations::get_line_samples();
@@ -792,7 +789,9 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        if rb_vm_insns_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
@@ -862,11 +861,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        let total_insns_count = retired_in_yjit + rb_vm_insns_count;
-        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
+        if rb_vm_insns_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+            set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
-        let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+            let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
+            set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+        }
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(
@@ -917,7 +918,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 }
 
 /// Record the backtrace when a YJIT exit occurs. This functionality requires
-/// that the stats feature is enabled as well as the --yjit-trace-exits option.
+/// the --yjit-trace-exits option.
 ///
 /// This function will fill two Vec's in YjitExitLocations to record the raw samples
 /// and line samples. Their length should be the same, however the data stored in

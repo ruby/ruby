@@ -20,7 +20,6 @@ module SyncDefaultGems
     "open-uri": "ruby/open-uri",
     "win32-registry": "ruby/win32-registry",
     English: "ruby/English",
-    benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
     date: 'ruby/date',
     delegate: "ruby/delegate",
@@ -30,28 +29,20 @@ module SyncDefaultGems
     error_highlight: "ruby/error_highlight",
     etc: 'ruby/etc',
     fcntl: 'ruby/fcntl',
-    fiddle: 'ruby/fiddle',
     fileutils: 'ruby/fileutils',
     find: "ruby/find",
     forwardable: "ruby/forwardable",
     ipaddr: 'ruby/ipaddr',
-    irb: 'ruby/irb',
     json: 'ruby/json',
-    logger: 'ruby/logger',
     mmtk: ['ruby/mmtk', "main"],
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
-    ostruct: 'ruby/ostruct',
     pathname: "ruby/pathname",
     pp: "ruby/pp",
     prettyprint: "ruby/prettyprint",
     prism: ["ruby/prism", "main"],
-    pstore: "ruby/pstore",
     psych: 'ruby/psych',
-    rdoc: 'ruby/rdoc',
-    readline: "ruby/readline",
-    reline: 'ruby/reline',
     resolv: "ruby/resolv",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
@@ -69,7 +60,6 @@ module SyncDefaultGems
     un: "ruby/un",
     uri: "ruby/uri",
     weakref: "ruby/weakref",
-    win32ole: "ruby/win32ole",
     yaml: "ruby/yaml",
     zlib: 'ruby/zlib',
   }.transform_keys(&:to_s)
@@ -146,50 +136,12 @@ module SyncDefaultGems
 
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
       %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
-        cp_r("#{upstream}/tool/bundler/#{gemfile}.rb", "tool/bundler")
+        ["rb.lock", "rb"].each do |ext|
+          cp_r("#{upstream}/tool/bundler/#{gemfile}.#{ext}", "tool/bundler")
+        end
       end
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")
-    when "rdoc"
-      rm_rf(%w[lib/rdoc lib/rdoc.rb test/rdoc libexec/rdoc libexec/ri])
-      cp_r(Dir.glob("#{upstream}/lib/rdoc*"), "lib")
-      cp_r("#{upstream}/doc/rdoc", "doc")
-      cp_r("#{upstream}/test/rdoc", "test")
-      cp_r("#{upstream}/rdoc.gemspec", "lib/rdoc")
-      cp_r("#{upstream}/Gemfile", "lib/rdoc")
-      cp_r("#{upstream}/Rakefile", "lib/rdoc")
-      cp_r("#{upstream}/exe/rdoc", "libexec")
-      cp_r("#{upstream}/exe/ri", "libexec")
-      parser_files = {
-        'lib/rdoc/markdown.kpeg' => 'lib/rdoc/markdown.rb',
-        'lib/rdoc/markdown/literals.kpeg' => 'lib/rdoc/markdown/literals.rb',
-        'lib/rdoc/rd/block_parser.ry' => 'lib/rdoc/rd/block_parser.rb',
-        'lib/rdoc/rd/inline_parser.ry' => 'lib/rdoc/rd/inline_parser.rb'
-      }
-      Dir.chdir(upstream) do
-        `bundle install`
-        parser_files.each_value do |dst|
-          `bundle exec rake #{dst}`
-        end
-      end
-      parser_files.each_pair do |src, dst|
-        rm_rf(src)
-        cp_r("#{upstream}/#{dst}", dst)
-      end
-      `git checkout lib/rdoc/.document`
-      rm_rf(%w[lib/rdoc/Gemfile lib/rdoc/Rakefile])
-    when "reline"
-      rm_rf(%w[lib/reline lib/reline.rb test/reline])
-      cp_r(Dir.glob("#{upstream}/lib/reline*"), "lib")
-      cp_r("#{upstream}/test/reline", "test")
-      cp_r("#{upstream}/reline.gemspec", "lib/reline")
-    when "irb"
-      rm_rf(%w[lib/irb lib/irb.rb test/irb])
-      cp_r(Dir.glob("#{upstream}/lib/irb*"), "lib")
-      rm_rf(%w[lib/irb/.document])
-      cp_r("#{upstream}/test/irb", "test")
-      cp_r("#{upstream}/irb.gemspec", "lib/irb")
-      cp_r("#{upstream}/man/irb.1", "man/irb.1")
     when "json"
       rm_rf(%w[ext/json lib/json test/json])
       cp_r("#{upstream}/ext/json/ext", "ext/json")
@@ -200,7 +152,7 @@ module SyncDefaultGems
       rm_rf(%w[ext/json/lib/json/pure.rb ext/json/lib/json/pure ext/json/lib/json/truffle_ruby/])
       json_files = Dir.glob("ext/json/lib/json/ext/**/*", File::FNM_DOTMATCH).select { |f| File.file?(f) }
       rm_rf(json_files - Dir.glob("ext/json/lib/json/ext/**/*.rb") - Dir.glob("ext/json/lib/json/ext/**/depend"))
-      `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend benchmark/`
+      `git checkout ext/json/extconf.rb ext/json/generator/depend ext/json/parser/depend ext/json/depend benchmark/`
     when "psych"
       rm_rf(%w[ext/psych test/psych])
       cp_r("#{upstream}/ext/psych", "ext")
@@ -211,14 +163,6 @@ module SyncDefaultGems
       rm_rf(["ext/psych/yaml/LICENSE"])
       cp_r("#{upstream}/psych.gemspec", "ext/psych")
       `git checkout ext/psych/depend ext/psych/.gitignore`
-    when "fiddle"
-      rm_rf(%w[ext/fiddle test/fiddle])
-      cp_r("#{upstream}/ext/fiddle", "ext")
-      cp_r("#{upstream}/lib", "ext/fiddle")
-      cp_r("#{upstream}/test/fiddle", "test")
-      cp_r("#{upstream}/fiddle.gemspec", "ext/fiddle")
-      `git checkout ext/fiddle/depend`
-      rm_rf(%w[ext/fiddle/lib/fiddle.{bundle,so}])
     when "stringio"
       rm_rf(%w[ext/stringio test/stringio])
       cp_r("#{upstream}/ext/stringio", "ext")
@@ -358,12 +302,6 @@ module SyncDefaultGems
       cp_r(Dir.glob("#{upstream}/lib/error_highlight*"), "lib")
       cp_r("#{upstream}/error_highlight.gemspec", "lib/error_highlight")
       cp_r("#{upstream}/test", "test/error_highlight")
-    when "win32ole"
-      sync_lib gem, upstream
-      rm_rf(%w[ext/win32ole/lib])
-      Dir.mkdir(*%w[ext/win32ole/lib])
-      move("lib/win32ole/win32ole.gemspec", "ext/win32ole")
-      move(Dir.glob("lib/win32ole*"), "ext/win32ole/lib")
     when "open3"
       sync_lib gem, upstream
       rm_rf("lib/open3/jruby_windows.rb")
@@ -475,6 +413,12 @@ module SyncDefaultGems
   end
 
   def message_filter(repo, sha, input: ARGF)
+    unless repo.count("/") == 1 and /\A\S+\z/ =~ repo
+      raise ArgumentError, "invalid repository: #{repo}"
+    end
+    unless /\A\h{10,40}\z/ =~ sha
+      raise ArgumentError, "invalid commit-hash: #{sha}"
+    end
     log = input.read
     log.delete!("\r")
     log << "\n" if !log.end_with?("\n")

@@ -16,6 +16,7 @@
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void
+#define COROUTINE_DECL void
 
 enum {
     COROUTINE_REGISTERS = 8,

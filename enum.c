@@ -4704,7 +4704,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     }
     else switch (TYPE(memo->v)) {
       default:      sum_iter_some_value(i, memo);    return;
-      case T_FLOAT: sum_iter_Kahan_Babuska(i, memo); return;
+      case T_FLOAT:
       case T_FIXNUM:
       case T_BIGNUM:
       case T_RATIONAL:
@@ -5033,7 +5033,7 @@ enum_compact(VALUE obj)
  * - #flat_map (aliased as #collect_concat): Returns flattened objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
- * - #grep_v: Returns elements selected by a given object
+ * - #grep_v: Returns elements not selected by a given object
  *   or objects returned by a given block.
  * - #inject (aliased as #reduce): Returns the object formed by combining all elements.
  * - #sum: Returns the sum of the elements, using method <tt>+</tt>.

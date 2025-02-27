@@ -33,6 +33,12 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_new_empty
+    key = OpenSSL::PKey::DSA.new
+    assert_nil(key.p)
+    assert_raise(OpenSSL::PKey::PKeyError) { key.to_der }
+  end
+
   def test_generate
     # DSA.generate used to call DSA_generate_parameters_ex(), which adjusts the
     # size of q according to the size of p
@@ -86,19 +92,19 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     sig = key.syssign(digest)
     assert_equal true, key.sysverify(digest, sig)
     assert_equal false, key.sysverify(digest, invalid_sig)
-    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_sign_verify_false_or_error{ key.sysverify(digest, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, digest)
     assert_equal false, key.verify_raw(nil, invalid_sig, digest)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, digest) }
 
     # Sign by #sign_raw
     sig = key.sign_raw(nil, digest)
     assert_equal true, key.sysverify(digest, sig)
     assert_equal false, key.sysverify(digest, invalid_sig)
-    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_sign_verify_false_or_error { key.sysverify(digest, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, digest)
     assert_equal false, key.verify_raw(nil, invalid_sig, digest)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, digest) }
   end
 
   def test_DSAPrivateKey
@@ -228,6 +234,27 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal(g, key.g)
     assert_equal(y, key.pub_key)
     assert_equal(nil, key.priv_key)
+  end
+
+  def test_params
+    key = Fixtures.pkey("dsa2048")
+    assert_kind_of(OpenSSL::BN, key.p)
+    assert_equal(key.p, key.params["p"])
+    assert_kind_of(OpenSSL::BN, key.q)
+    assert_equal(key.q, key.params["q"])
+    assert_kind_of(OpenSSL::BN, key.g)
+    assert_equal(key.g, key.params["g"])
+    assert_kind_of(OpenSSL::BN, key.pub_key)
+    assert_equal(key.pub_key, key.params["pub_key"])
+    assert_kind_of(OpenSSL::BN, key.priv_key)
+    assert_equal(key.priv_key, key.params["priv_key"])
+
+    pubkey = OpenSSL::PKey.read(key.public_to_der)
+    assert_equal(key.params["p"], pubkey.params["p"])
+    assert_equal(key.pub_key, pubkey.pub_key)
+    assert_equal(key.pub_key, pubkey.params["pub_key"])
+    assert_nil(pubkey.priv_key)
+    assert_nil(pubkey.params["priv_key"])
   end
 
   def test_dup

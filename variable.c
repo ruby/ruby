@@ -238,6 +238,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
             rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
+        name = rb_str_new_frozen(name);
+
         // Set the temporary classpath to the given name:
         RCLASS_SET_CLASSPATH(mod, name, FALSE);
     }
@@ -1137,33 +1139,6 @@ rb_mark_generic_ivar(VALUE obj)
 }
 
 void
-rb_ref_update_generic_ivar(VALUE obj)
-{
-    struct gen_ivtbl *ivtbl;
-
-    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-        if (rb_shape_obj_too_complex(obj)) {
-            rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
-        }
-        else {
-            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                ivtbl->as.shape.ivptr[i] = rb_gc_location(ivtbl->as.shape.ivptr[i]);
-            }
-        }
-    }
-}
-
-void
-rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
-{
-    st_data_t key = (st_data_t)rsrc;
-    st_data_t ivtbl;
-
-    if (st_delete(generic_ivtbl_no_ractor_check(rsrc), &key, &ivtbl))
-        st_insert(generic_ivtbl_no_ractor_check(dst), (st_data_t)dst, ivtbl);
-}
-
-void
 rb_free_generic_ivar(VALUE obj)
 {
     st_data_t key = (st_data_t)obj, value;
@@ -1924,7 +1899,6 @@ rb_ivar_defined(VALUE obj, ID id)
 }
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
-st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
 struct iv_itr_data {
     VALUE obj;

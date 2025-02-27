@@ -1759,7 +1759,8 @@ rb_data_define(VALUE super, ...)
  *  important for redefining initialize in order to convert arguments or provide
  *  defaults:
  *
- *     Measure = Data.define(:amount, :unit) do
+ *     Measure = Data.define(:amount, :unit)
+ *     class Measure
  *       NONE = Data.define
  *
  *       def initialize(amount:, unit: NONE.new)
@@ -1768,7 +1769,7 @@ rb_data_define(VALUE super, ...)
  *     end
  *
  *     Measure.new('10', 'km') # => #<data Measure amount=10.0, unit="km">
- *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data NONE>>
+ *     Measure.new(10_000)     # => #<data Measure amount=10000.0, unit=#<data Measure::NONE>>
  *
  */
 

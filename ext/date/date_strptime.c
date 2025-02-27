@@ -122,8 +122,9 @@ do { \
 do { \
     size_t l; \
     l = read_digits(&str[si], slen - si, &n, w); \
-    if (l == 0) \
+    if (l == 0) { \
 	fail();	\
+    } \
     si += l; \
 } while (0)
 

@@ -80,7 +80,8 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -236,7 +237,7 @@ module Bundler
             sorted_versions[high]
           end
 
-        range = PubGrub::VersionRange.new(min: low, max: high, include_min: true)
+        range = PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
         self_constraint = PubGrub::VersionConstraint.new(package, range: range)
 
@@ -388,9 +389,18 @@ module Bundler
     end
 
     def filter_remote_specs(specs, package)
-      return specs unless package.prefer_local?
+      if package.prefer_local?
+        local_specs = specs.select {|s| s.is_a?(StubSpecification) }
 
-      specs.select {|s| s.is_a?(StubSpecification) }
+        if local_specs.empty?
+          package.consider_remote_versions!
+          specs
+        else
+          local_specs
+        end
+      else
+        specs
+      end
     end
 
     # Ignore versions that depend on themselves incorrectly

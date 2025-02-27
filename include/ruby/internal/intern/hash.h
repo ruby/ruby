@@ -284,20 +284,6 @@ typedef VALUE rb_hash_update_func(VALUE newkey, VALUE oldkey, VALUE value);
  */
 VALUE rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func);
 
-/* file.c */
-
-/**
- * This function is mysterious.  What it does is not immediately obvious.  Also
- * what it does seems platform dependent.
- *
- * @param[in]  path       A local path.
- * @retval     0          The "check" succeeded.
- * @retval     otherwise  The "check" failed.
- */
-int rb_path_check(const char *path);
-
-/* hash.c */
-
 /**
  * Destructively removes every environment variables of the running process.
  *

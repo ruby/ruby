@@ -97,6 +97,25 @@ class UserDefinedString
   end
 end
 
+module MarshalSpec
+  class UserDefinedDumpWithIVars
+    attr_reader :string
+
+    def initialize(string, ivar_value)
+      @string = string
+      @string.instance_variable_set(:@foo, ivar_value)
+    end
+
+    def _dump(depth)
+      @string
+    end
+
+    def self._load(data)
+      new(data)
+    end
+  end
+end
+
 class UserPreviouslyDefinedWithInitializedIvar
   attr_accessor :field1, :field2
 end
@@ -136,6 +155,32 @@ class UserMarshalWithIvar
   def ==(other)
     self.class === other and
     @data = other.data
+  end
+end
+
+module MarshalSpec
+  class UserMarshalDumpWithIvar
+    attr_reader :data
+
+    def initialize(data, ivar_value)
+      @data = data
+      @ivar_value = ivar_value
+    end
+
+    def marshal_dump
+      obj = [data]
+      obj.instance_variable_set(:@foo, @ivar_value)
+      obj
+    end
+
+    def marshal_load(o)
+      @data = o[0]
+    end
+
+    def ==(other)
+      self.class === other and
+        @data = other.data
+    end
   end
 end
 

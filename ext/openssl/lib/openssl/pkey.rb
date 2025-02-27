@@ -35,6 +35,18 @@ module OpenSSL::PKey
     end
 
     # :call-seq:
+    #    dh.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
+    def params
+      %w{p q g pub_key priv_key}.map { |name|
+        [name, send(name)]
+      }.to_h
+    end
+
+    # :call-seq:
     #    dh.compute_key(pub_bn) -> string
     #
     # Returns a String containing a shared secret computed from the other
@@ -152,6 +164,18 @@ module OpenSSL::PKey
     # PKey#public_to_der.
     def public_key
       OpenSSL::PKey.read(public_to_der)
+    end
+
+    # :call-seq:
+    #    dsa.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'p', 'q', 'g', 'pub_key', and 'priv_key'.
+    def params
+      %w{p q g pub_key priv_key}.map { |name|
+        [name, send(name)]
+      }.to_h
     end
 
     class << self
@@ -326,6 +350,18 @@ module OpenSSL::PKey
     # PKey#public_to_der.
     def public_key
       OpenSSL::PKey.read(public_to_der)
+    end
+
+    # :call-seq:
+    #    rsa.params -> hash
+    #
+    # Stores all parameters of key to a Hash.
+    #
+    # The hash has keys 'n', 'e', 'd', 'p', 'q', 'dmp1', 'dmq1', and 'iqmp'.
+    def params
+      %w{n e d p q dmp1 dmq1 iqmp}.map { |name|
+        [name, send(name)]
+      }.to_h
     end
 
     class << self

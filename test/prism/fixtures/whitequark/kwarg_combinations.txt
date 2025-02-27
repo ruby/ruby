@@ -1,0 +1,7 @@
+def f (foo: 1, &b); end
+
+def f (foo: 1, bar: 2, **baz, &b); end
+
+def f **baz, &b; end
+
+def f *, **; end

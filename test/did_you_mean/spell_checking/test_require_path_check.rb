@@ -7,11 +7,11 @@ class RequirePathCheckTest < Test::Unit::TestCase
 
   def test_load_error_from_require_has_suggestions
     error = assert_raise LoadError do
-              require 'open_struct'
+              require 'open'
             end
 
-    assert_correction 'ostruct', error.corrections
-    assert_match "Did you mean?  ostruct", get_message(error)
+    assert_correction 'open3', error.corrections
+    assert_match "Did you mean?  open3", get_message(error)
   end
 
   def test_load_error_from_require_for_nested_files_has_suggestions

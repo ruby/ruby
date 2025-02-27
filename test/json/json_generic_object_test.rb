@@ -2,10 +2,13 @@
 require_relative 'test_helper'
 
 class JSONGenericObjectTest < Test::Unit::TestCase
-  include JSON
 
   def setup
-    @go = GenericObject[ :a => 1, :b => 2 ]
+    if defined?(GenericObject)
+      @go = JSON::GenericObject[ :a => 1, :b => 2 ]
+    else
+      omit("JSON::GenericObject is not available")
+    end
   end
 
   def test_attributes
@@ -46,7 +49,7 @@ class JSONGenericObjectTest < Test::Unit::TestCase
   end
 
   def test_from_hash
-    result  = GenericObject.from_hash(
+    result  = JSON::GenericObject.from_hash(
       :foo => { :bar => { :baz => true }, :quux => [ { :foobar => true } ] })
     assert_kind_of GenericObject, result.foo
     assert_kind_of GenericObject, result.foo.bar
@@ -79,4 +82,4 @@ class JSONGenericObjectTest < Test::Unit::TestCase
   ensure
     JSON::GenericObject.json_creatable = false
   end
-end if defined?(JSON::GenericObject)
+end

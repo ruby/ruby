@@ -414,11 +414,11 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
             }
 
             const rb_iseq_t *iseq = env->iseq;
-            unsigned int i;
 
             VM_ASSERT(rb_obj_is_iseq((VALUE)iseq));
 
-            for (i=0; i<ISEQ_BODY(iseq)->local_table_size; i++) {
+            const unsigned int local_table_size = ISEQ_BODY(iseq)->local_table_size;
+            for (unsigned int i=0; i<local_table_size; i++) {
                 if (ISEQ_BODY(iseq)->local_table[i] == lid) {
                     if (ISEQ_BODY(iseq)->local_iseq == iseq &&
                             ISEQ_BODY(iseq)->param.flags.has_block &&
@@ -431,7 +431,9 @@ get_local_variable_ptr(const rb_env_t **envp, ID lid)
                     }
 
                     *envp = env;
-                    return &env->env[i];
+                    unsigned int last_lvar = env->env_size+VM_ENV_INDEX_LAST_LVAR
+                        - 1 /* errinfo */;
+                    return &env->env[last_lvar - (local_table_size - i)];
                 }
             }
         }
@@ -501,6 +503,12 @@ bind_local_variables(VALUE bindval)
     return rb_vm_env_local_variables(env);
 }
 
+int
+rb_numparam_id_p(ID id)
+{
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT);
+}
+
 /*
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
@@ -527,6 +535,10 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) goto undefined;
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
 
@@ -576,6 +588,10 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     const rb_env_t *env;
 
     if (!lid) lid = rb_intern_str(sym);
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -750,13 +766,6 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     ifunc->argc = arity.argc;
 
     return ifunc;
-}
-
-VALUE
-rb_func_proc_new(rb_block_call_func_t func, VALUE val)
-{
-    struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
-    return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
 VALUE
@@ -1364,14 +1373,20 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[2];
+    VALUE loc[5];
+    int i = 0;
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[0] = rb_iseq_path(iseq);
-    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
+    loc[i++] = rb_iseq_path(iseq);
+    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
+    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
+    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
+    loc[i++] = RB_INT2NUM(cl->end_pos.column);
+    RUBY_ASSERT_ALWAYS(i == numberof(loc));
 
-    return rb_ary_new4(2, loc);
+    return rb_ary_new_from_values(i, loc);
 }
 
 VALUE
@@ -4300,7 +4315,7 @@ proc_ruby2_keywords(VALUE procval)
  *      [1, 2, 3].each { |x| p it }
  *      # syntax error found (SyntaxError)
  *      # [1, 2, 3].each { |x| p it }
- *      #                        ^~ `it` is not allowed when an ordinary parameter is defined
+ *      #                        ^~ 'it' is not allowed when an ordinary parameter is defined
  *
  * But if a local name (variable or method) is available, it would be used:
  *
@@ -4317,7 +4332,7 @@ proc_ruby2_keywords(VALUE procval)
  *
  *     p = proc { it**2 }
  *     l = lambda { it**2 }
- *     p.parameters     # => [[:opt, nil]]
+ *     p.parameters     # => [[:opt]]
  *     p.arity          # => 1
  *     l.parameters     # => [[:req]]
  *     l.arity          # => 1
@@ -4348,7 +4363,7 @@ proc_ruby2_keywords(VALUE procval)
  * Numbered parameters can't be mixed with +it+ either:
  *
  *     [10, 20, 30].map { _1 + it }
- *     # SyntaxError: `it` is not allowed when a numbered parameter is already used
+ *     # SyntaxError: 'it' is not allowed when a numbered parameter is already used
  *
  * To avoid conflicts, naming local variables or method
  * arguments +_1+, +_2+ and so on, causes an error.
