@@ -198,7 +198,7 @@ RSpec.describe "bundle exec" do
     context "when not specified in Gemfile" do
       before do
         skip "syntax_suggest isn't a default gem" if default_ss_version.empty?
-        skip "syntax_suggest executable is broken" if default_ss_version <= "1.1.0"
+        skip "syntax_suggest executable is broken" if default_ss_version <= "2.0.1"
 
         install_gemfile "source \"https://gem.repo1\""
       end
