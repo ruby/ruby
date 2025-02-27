@@ -5939,7 +5939,7 @@ create_node_from_array(int kind, Node **np, Node **node_array)
  *
  * Target       Array name          Index
  *
- *              node_array          0 1 2 3 4 5 6 7 8 9 A B C D E F
+ *              node_array          0 1 2 3 4 5 6 7 8 9 A B C D E F G H I
  * top_alts     alts[5]             0 1 2 3 4*
  * alts+1       list[4]                   0 1 2 3*
  * list+1       core_alts[7]                  0 1 2 3 4 5 6*
@@ -5948,8 +5948,10 @@ create_node_from_array(int kind, Node **np, Node **node_array)
  * h_alt2+1     H_list2[3]                              0 1 2*
  * core_alts+4  XP_list[4]                              0 1 2 3*
  * XP_list+1    Ex_list[4]                                  0 1 2 3*
+ * core_alts+6  CC_list[2]                                  0 1*
+ * CC_list1     CC_list1[4]                                     0 1 2 3*
  */
-#define NODE_COMMON_SIZE 16
+#define NODE_COMMON_SIZE 19
 
 static int
 node_extended_grapheme_cluster(Node** np, ScanEnv* env)
@@ -6016,6 +6018,7 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
       /* core := hangul-syllable
        *       | ri-sequence
        *       | xpicto-sequence
+       *       | conjunctCluster
        *       | [^Control CR LF] */
       {
         Node **core_alts = list + 2; /* size: 7 */
@@ -6086,10 +6089,61 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(create_node_from_array(LIST, core_alts+4, XP_list));
         }
 
+        /* conjunctCluster := \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})+ */
+        {
+          // \p{InCB=Consonant}
+          Node **CC_list = core_alts + 6; /* size: 2 */
+          R_ERR(create_property_node(CC_list+0, env, "InCB_Consonant"));
+
+          {
+            Node **CC_list1 = CC_list + 1; /* size: 4 */
+            {
+              // [\p{InCB=Extend} \p{InCB=Linker}]*
+              {
+                Node **CC_alt1 = CC_list1 + 1;
+                R_ERR(create_property_node(CC_alt1+1, env, "InCB_Extend"));
+                R_ERR(create_property_node(CC_alt1+2, env, "InCB_Linker"));
+
+                R_ERR(create_node_from_array(ALT, CC_alt1, CC_alt1+1));
+              }
+
+              R_ERR(quantify_node(CC_list1+1, 0, REPEAT_INFINITE));
+            }
+
+            // \p{InCB=Linker}
+            R_ERR(create_property_node(CC_list1+2, env, "InCB_Linker"));
+
+            {
+              // [\p{InCB=Extend} \p{InCB=Linker}]*
+              {
+                Node **CC_alt2 = CC_list1 + 3;
+                R_ERR(create_property_node(CC_alt2+1, env, "InCB_Extend"));
+                R_ERR(create_property_node(CC_alt2+2, env, "InCB_Linker"));
+
+                R_ERR(create_node_from_array(ALT, CC_alt2, CC_alt2+1));
+              }
+
+              R_ERR(quantify_node(CC_list1+3, 0, REPEAT_INFINITE));
+            }
+
+            // \p{InCB=Consonant}
+            R_ERR(create_property_node(CC_list1+4, env, "InCB_Consonant"));
+
+            // ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})
+            R_ERR(create_node_from_array(LIST, CC_list1, CC_list1+1));
+
+            // (...)+
+            R_ERR(quantify_node(CC_list1, 1, REPEAT_INFINITE));
+          }
+
+          // \p{InCB=Consonant} ([\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Linker} [\p{InCB=Extend} \p{InCB=Linker}]* \p{InCB=Consonant})+
+          R_ERR(create_node_from_array(LIST, core_alts+5, CC_list));
+        }
+
         /* [^Control CR LF] */
-        core_alts[5] = node_new_cclass();
-        if (IS_NULL(core_alts[5])) goto err;
-        cc = NCCLASS(core_alts[5]);
+        core_alts[6] = node_new_cclass();
+        if (IS_NULL(core_alts[6])) goto err;
+        cc = NCCLASS(core_alts[6]);
         if (ONIGENC_MBC_MINLEN(env->enc) > 1) { /* UTF-16/UTF-32 */
           BBuf *inverted_buf = NULL;
 
