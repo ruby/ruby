@@ -56,7 +56,7 @@ Creates a directory (defaults to \fB~/bin\fR) and place any executables from the
 In deployment mode, Bundler will 'roll\-out' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
 .TP
 \fBonly\fR
-A space\-separated list of groups to install only gems of the specified groups\.
+A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, cause they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
 .TP
 \fBpath\fR
 The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
