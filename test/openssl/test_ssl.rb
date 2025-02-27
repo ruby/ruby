@@ -2103,11 +2103,20 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   private
 
   def server_connect(port, ctx = nil)
+    retry_times = 0
     sock = TCPSocket.new("127.0.0.1", port)
     ssl = ctx ? OpenSSL::SSL::SSLSocket.new(sock, ctx) : OpenSSL::SSL::SSLSocket.new(sock)
     ssl.sync_close = true
     ssl.connect
     yield ssl if block_given?
+  rescue Errno::ECONNABORTED
+    # Errno::ECONNABORTED can occur intermittently, especially on Windows.
+    # To mitigate this issue, a retry mechanism is implemented here.
+    if retry_times < 5
+      retry_times += 1
+      retry
+    end
+    raise
   ensure
     if ssl
       ssl.close
