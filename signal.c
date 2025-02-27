@@ -690,9 +690,24 @@ signal_enque(int sig)
     ATOMIC_INC(signal_buff.size);
 }
 
+static rb_thread_t *
+in_native_sighandler(bool *old_in_sighandler)
+{
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    rb_thread_t *cur_th = NULL;
+    if (ec) {
+        cur_th = rb_ec_thread_ptr(ec);
+        if (old_in_sighandler) *old_in_sighandler = cur_th->in_native_sighandler;
+        cur_th->in_native_sighandler = true;
+    }
+    return cur_th;
+}
+
 static void
 sighandler(int sig)
 {
+    bool old_in_sighandler;
+    rb_thread_t *cur_th = in_native_sighandler(&old_in_sighandler);
     int old_errnum = errno;
 
     signal_enque(sig);
@@ -702,6 +717,7 @@ sighandler(int sig)
     ruby_signal(sig, sighandler);
 #endif
 
+    if (cur_th) cur_th->in_native_sighandler = old_in_sighandler;
     errno = old_errnum;
 }
 
@@ -907,6 +923,7 @@ static void
 sigbus(int sig SIGINFO_ARG)
 {
     check_reserved_signal("BUS");
+    in_native_sighandler(NULL);
 /*
  * Mac OS X makes KERN_PROTECTION_FAILURE when thread touch guard page.
  * and it's delivered as SIGBUS instead of SIGSEGV to userland. It's crazy
@@ -929,6 +946,7 @@ static void
 sigsegv(int sig SIGINFO_ARG)
 {
     check_reserved_signal("SEGV");
+    in_native_sighandler(NULL);
     CHECK_STACK_OVERFLOW();
     rb_bug_for_fatal_signal(default_sigsegv_handler, sig, SIGINFO_CTX, "Segmentation fault" MESSAGE_FAULT_ADDRESS);
 }
@@ -943,6 +961,7 @@ static void
 sigill(int sig SIGINFO_ARG)
 {
     check_reserved_signal("ILL");
+    in_native_sighandler(NULL);
 #if defined __APPLE__ || defined __linux__
     CHECK_STACK_OVERFLOW();
 #endif
