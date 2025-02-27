@@ -3004,13 +3004,13 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 
 /*
  *  call-seq:
- *     length -> integer
  *     size -> integer
  *
  *  Returns the count of entries in +self+:
  *
- *    {foo: 0, bar: 1, baz: 2}.length # => 3
+ *    {foo: 0, bar: 1, baz: 2}.size # => 3
  *
+ *  Related: see {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 VALUE
