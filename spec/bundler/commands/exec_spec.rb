@@ -197,6 +197,7 @@ RSpec.describe "bundle exec" do
 
     context "when not specified in Gemfile" do
       before do
+        skip "syntax_suggest executable is not provided on Windows" if Gem.win_platform?
         skip "syntax_suggest isn't a default gem" if default_ss_version.empty?
         skip "syntax_suggest executable is broken" if default_ss_version <= "2.0.1"
 
