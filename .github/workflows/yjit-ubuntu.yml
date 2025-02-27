@@ -183,9 +183,17 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
-          YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
+          MAKE_CMD="make -s ${{ matrix.test_task }} ${TESTS:+TESTS=\"$TESTS\"} \
+            RUN_OPTS=\"$RUN_OPTS\" MSPECOPT=--debug SPECOPTS=\"$SPECOPTS\" \
+            YJIT_BENCH_OPTS=\"$YJIT_BENCH_OPTS\" YJIT_BINDGEN_DIFF_OPTS=\"$YJIT_BINDGEN_DIFF_OPTS\""
+
+          if [ -n "${{ env.LAUNCHABLE_ORGANIZATION }}" ]; then
+            eval "$MAKE_CMD"
+            > >(tee launchable_stdout.log) \
+            2> >(tee launchable_stderr.log)
+          else
+            eval "$MAKE_CMD"
+          fi
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
