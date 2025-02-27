@@ -34,7 +34,8 @@ module RubyVM::YJIT
   end
 
   # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
-  # whether to enable \YJIT compilation logging or not.
+  # whether to enable \YJIT compilation logging or not. Optional `mem_size` and `call_threshold` can be 
+  # provided to override default configuration.
   #
   # * `stats`:
   #     * `false`: Don't enable stats.
@@ -262,6 +263,7 @@ module RubyVM::YJIT
       @yjit_hooks << hook
     end
 
+    # Validates the mem_size and call_threshold options if provided
     def validate_enable_options(mem_size:, call_threshold:)
       if mem_size
         raise ArgumentError, "mem_size must be a Integer" unless mem_size.is_a?(Integer)
