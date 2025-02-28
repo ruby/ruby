@@ -194,7 +194,6 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
             unsafe {
                 OPTIONS.mem_size = mem_size_bytes as usize;
             }
-            println!("mem_size set to: {} MB ({} bytes)", mem_size_mb, mem_size_bytes);
         }
 
         if !call_threshold.nil_p() {
@@ -202,7 +201,6 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
             unsafe {
                 rb_yjit_call_threshold = threshold as u64;
             }
-            println!("rb_yjit_call_threshold set to: {}", threshold);
         }
 
         // Initialize and enable YJIT
