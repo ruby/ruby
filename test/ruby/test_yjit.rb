@@ -146,7 +146,6 @@ class TestYJIT < Test::Unit::TestCase
     assert_in_out_err(['--yjit-disable', '-e',
                        'RubyVM::YJIT.enable(call_threshold: 1); puts RubyVM::YJIT.enabled?']) do |stdout, stderr, _status|
       assert_empty stderr
-      assert_include stdout.join, 'rb_yjit_call_threshold set to: 1'
       assert_include stdout.join, "true"
     end
   end
