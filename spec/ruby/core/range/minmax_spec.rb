@@ -83,7 +83,7 @@ describe 'Range#minmax' do
       range = (...@x)
 
       -> { range.minmax }.should raise_error(RangeError,
-        /cannot get the maximum of beginless range with custom comparison method|cannot get the minimum of beginless range/)
+        /cannot get the maximum of beginless range with|cannot get the minimum of beginless range/)
     end
 
     it 'should return nil pair if beginning and end are equal without iterating the range' do
