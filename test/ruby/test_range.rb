@@ -891,6 +891,8 @@ class TestRange < Test::Unit::TestCase
     assert_raise(RangeError) { (0..nil).last(3) }
     assert_raise(RangeError) { (nil..0).first }
     assert_raise(RangeError) { (nil..0).first(3) }
+    assert_equal([-2,-1,0], (nil..0).last(3))
+    assert_equal([-3,-2,-1], (nil...0).last(3))
 
     assert_equal([0, 1, 2], (0..10).first(3.0))
     assert_equal([8, 9, 10], (0..10).last(3.0))

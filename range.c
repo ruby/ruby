@@ -1410,7 +1410,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 {
     static const VALUE ONE = INT2FIX(1);
 
-    VALUE b, e, len_1, len, nv, ary;
+    VALUE b, e, len_1, len = Qundef, nv, ary;
     int x;
     long n;
 
@@ -1418,21 +1418,26 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT((NIL_P(b) || RB_INTEGER_TYPE_P(b)) && RB_INTEGER_TYPE_P(e));
 
     x = EXCL(range);
 
-    len_1 = rb_int_minus(e, b);
-    if (x) {
-        e = rb_int_minus(e, ONE);
-        len = len_1;
-    }
-    else {
-        len = rb_int_plus(len_1, ONE);
+    if (!NIL_P(b)) {
+        len_1 = rb_int_minus(e, b);
+        if (x) {
+            len = len_1;
+        }
+        else {
+            len = rb_int_plus(len_1, ONE);
+        }
+
+        if (FIXNUM_ZERO_P(len) || rb_num_negative_p(len)) {
+            return rb_ary_new_capa(0);
+        }
     }
 
-    if (FIXNUM_ZERO_P(len) || rb_num_negative_p(len)) {
-        return rb_ary_new_capa(0);
+    if (x) {
+        e = rb_int_minus(e, ONE);
     }
 
     rb_scan_args(argc, argv, "1", &nv);
@@ -1442,7 +1447,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     }
 
     nv = LONG2NUM(n);
-    if (RTEST(rb_int_gt(nv, len))) {
+    if (len != Qundef && RTEST(rb_int_gt(nv, len))) {
         nv = len;
         n = NUM2LONG(nv);
     }
@@ -1505,7 +1510,7 @@ range_last(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    if (RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e) &&
+    if ((NIL_P(b) || RB_INTEGER_TYPE_P(b)) && RB_INTEGER_TYPE_P(e) &&
         RB_LIKELY(rb_method_basic_definition_p(rb_cRange, idEach))) {
         return rb_int_range_last(argc, argv, range);
     }
