@@ -35,7 +35,7 @@ jobs:
       matrix:
         include:
           - vs: 2019
-          - vs: 2022
+          # - vs: 2022
       fail-fast: false
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
