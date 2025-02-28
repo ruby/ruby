@@ -47,8 +47,16 @@ module RubyVM::YJIT
   #     * `:quiet`: Enable the log. Do not print log at exit.
   def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
     return false if enabled?
+    
+    if mem_size
+      raise ArgumentError, "mem_size must be a Integer" unless mem_size.is_a?(Integer)
+      raise ArgumentError, "mem_size must be between 1 and 2048 MB" unless (1..2048).include?(mem_size)
+    end
 
-    validate_enable_options(mem_size: mem_size, call_threshold: call_threshold)
+    if call_threshold
+      raise ArgumentError, "call_threshold must be a Integer" unless call_threshold.is_a?(Integer)
+      raise ArgumentError, "call_threshold must be a positive integer" unless call_threshold.positive?
+    end
 
     at_exit { print_and_dump_stats } if stats
     call_yjit_hooks
@@ -261,19 +269,6 @@ module RubyVM::YJIT
     # Register a block to be called when YJIT is enabled
     def add_yjit_hook(hook)
       @yjit_hooks << hook
-    end
-
-    # Validates the mem_size and call_threshold options if provided
-    def validate_enable_options(mem_size:, call_threshold:)
-      if mem_size
-        raise ArgumentError, "mem_size must be a Integer" unless mem_size.is_a?(Integer)
-        raise ArgumentError, "mem_size must be between 1 and 2048 MB" unless (1..2048).include?(mem_size)
-      end
-
-      if call_threshold
-        raise ArgumentError, "call_threshold must be a Integer" unless call_threshold.is_a?(Integer)
-        raise ArgumentError, "call_threshold must be a positive integer" unless call_threshold.positive?
-      end
     end
 
     # Run YJIT hooks registered by RubyVM::YJIT.with_yjit
