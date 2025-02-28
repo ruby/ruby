@@ -316,8 +316,9 @@ rbimpl_intern_const(ID *ptr, const char *str)
     }
 
 /**
- * Old implementation detail of rb_intern().
- * @deprecated Does anyone use it?  Preserved for backward compat.
+ * Returns  the cached  ID  for  the given  str  in  var, in  compiler
+ * independent manner.   Use this instead of  GCC specific rb_intern()
+ * when you want to cache the ID on all platforms certainly.
  */
 #define RUBY_CONST_ID(var, str) \
     do { \
@@ -326,7 +327,8 @@ rbimpl_intern_const(ID *ptr, const char *str)
     } while (0)
 
 #if defined(HAVE_STMT_AND_DECL_IN_EXPR)
-/* __builtin_constant_p and statement expression is available
+/* GCC specific shorthand for RUBY_CONST_ID().
+ * __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
     (RBIMPL_CONSTANT_P(str) ? \
