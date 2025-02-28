@@ -74,8 +74,8 @@ end
 Bundler provides convenience helpers that wrap \fBsystem\fR and \fBexec\fR, and they can be used like this:
 .IP "" 4
 .nf
-Bundler\.clean_system('brew install wget')
-Bundler\.clean_exec('brew install wget')
+Bundler\.unbundled_system('brew install wget')
+Bundler\.unbundled_exec('brew install wget')
 .fi
 .IP "" 0
 .SH "RUBYGEMS PLUGINS"
