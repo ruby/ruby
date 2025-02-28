@@ -37,7 +37,8 @@ module Bundler
           file.digests = parse_digests(response)
           # server may ignore Range and return the full response
           if response.is_a?(Gem::Net::HTTPPartialContent)
-            break false unless file.append(response.body.byteslice(1..-1))
+            tail = response.body.byteslice(1..-1)
+            break false unless tail && file.append(tail)
           else
             file.write(response.body)
           end
