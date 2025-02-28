@@ -47,7 +47,7 @@ module RubyVM::YJIT
   #     * `:quiet`: Enable the log. Do not print log at exit.
   def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
     return false if enabled?
-    
+
     if mem_size
       raise ArgumentError, "mem_size must be a Integer" unless mem_size.is_a?(Integer)
       raise ArgumentError, "mem_size must be between 1 and 2048 MB" unless (1..2048).include?(mem_size)
