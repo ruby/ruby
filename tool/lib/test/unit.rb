@@ -782,11 +782,11 @@ module Test
           unless rep.empty?
             rep.each do |r|
               if r[:error]
-                puke(*r[:error], Timeout::Error.new)
+                puke(*r[:error], Timeout::Error.new, r[:file])
                 next
               end
               r[:report]&.each do |f|
-                puke(*f) if f
+                puke(*f, r[:file]) if f
               end
             end
             if @options[:retry]
@@ -1384,7 +1384,36 @@ module Test
     end
 
     module LaunchableOption
-      module Nothing
+      module Runner
+        def puke(klass, meth, e, file=nil)
+          if writer = options[:launchable_test_reports]
+            #  # Since `record` method is not called when a timeout occurs while waiting for the worker's response, we need to capture it here.
+            if file && e.is_a?(Timeout::Error)
+              status = 'TEST_FAILED'
+              e = "Timeout:\n#{klass}##{meth}\n"
+              full_path = File.expand_path(file)
+              repo_path = File.expand_path("#{__dir__}/../../../")
+              relative_path = full_path.delete_prefix("#{repo_path}/")
+              # The test path is a URL-encoded representation.
+              # https://github.com/launchableinc/cli/blob/v1.81.0/launchable/testpath.py#L18
+              test_path = {file: relative_path, class: klass, testcase: meth}.map{|key, val|
+                "#{encode_test_path_component(key)}=#{encode_test_path_component(val)}"
+              }.join('#')
+              writer.write_object(
+                {
+                  testPath: test_path,
+                  status: status,
+                  duration: options[:worker_timeout],
+                  createdAt: Time.now.to_s,
+                  stderr: e,
+                  stdout: nil
+                }
+              )
+            end
+          end
+          super
+        end
+
         private
         def setup_options(opts, options)
           super
@@ -1410,9 +1439,6 @@ module Test
                 when Test::Unit::AssertionFailedError
                   status = 'TEST_FAILED'
                   "Failure:\n#{suite.name}##{method} [#{location error}]:\n#{error.message}\n"
-                when Timeout::Error
-                  status = 'TEST_FAILED'
-                  "Timeout:\n#{suite.name}##{method}\n"
                 else
                   status = 'TEST_FAILED'
                   bt = Test::filter_backtrace(error.backtrace).join "\n    "
@@ -1790,7 +1816,7 @@ module Test
       prepend Test::Unit::ExcludesOption
       prepend Test::Unit::TimeoutOption
       prepend Test::Unit::RunCount
-      prepend Test::Unit::LaunchableOption::Nothing
+      prepend Test::Unit::LaunchableOption::Runner
 
       ##
       # Begins the full test run. Delegates to +runner+'s #_run method.
@@ -1816,7 +1842,7 @@ module Test
       alias orig_run_suite _run_suite
 
       # Overriding of Test::Unit::Runner#puke
-      def puke klass, meth, e
+      def puke klass, meth, e, file=nil
         n = report.size
         e = case e
             when Test::Unit::PendedError then
