@@ -9,7 +9,11 @@ class TestABI < Test::Unit::TestCase
     assert_separately [], <<~RUBY
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
-      assert_include err.message, "/-test-/abi."
+      if Namespace.enabled?
+        assert_include err.message, "_-test-+abi."
+      else
+        assert_include err.message, "/-test-/abi."
+      end
     RUBY
   end
 
@@ -27,7 +31,11 @@ class TestABI < Test::Unit::TestCase
     assert_separately [{ "RUBY_ABI_CHECK" => "1" }], <<~RUBY
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
-      assert_include err.message, "/-test-/abi."
+      if Namespace.enabled?
+        assert_include err.message, "_-test-+abi."
+      else
+        assert_include err.message, "/-test-/abi."
+      end
     RUBY
   end
 
