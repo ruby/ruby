@@ -6264,11 +6264,7 @@ superclass	: '<'
                         $$ = $3;
                     /*% ripper: $:3 %*/
                     }
-                | /* none */
-                    {
-                        $$ = 0;
-                    /*% ripper: Qnil %*/
-                    }
+                | none
                 ;
 
 f_opt_paren_args: f_paren_args
@@ -6614,10 +6610,6 @@ opt_f_block_arg	: ',' f_block_arg
                     /*% ripper: $:2 %*/
                     }
                 | none
-                    {
-                        $$ = 0;
-                    /*% ripper: Qnil %*/
-                    }
                 ;
 
 singleton	: value_expr(var_ref)
@@ -6783,6 +6775,7 @@ terms		: term
 none		: /* none */
                     {
                         $$ = 0;
+                    /*% ripper: Qnil %*/
                     }
                 ;
 %%
