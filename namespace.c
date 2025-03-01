@@ -1103,7 +1103,7 @@ Init_Namespace(void)
     namespace_define_loader_method(rb_mNamespaceLoader, "require_relative", rb_namespace_user_loading_func, -1);
     namespace_define_loader_method(rb_mNamespaceLoader, "load", rb_namespace_user_loading_func, -1);
 
-    rb_define_singleton_method(rb_cNamespace, "enabled", rb_namespace_s_getenabled, 0);
+    rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
     rb_define_singleton_method(rb_cNamespace, "enabled=", rb_namespace_s_setenabled, 1);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
     rb_define_singleton_method(rb_cNamespace, "current_details", rb_current_namespace_details, 0);
