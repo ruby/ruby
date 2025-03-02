@@ -1128,6 +1128,7 @@ typedef struct rb_thread_struct {
     unsigned int abort_on_exception: 1;
     unsigned int report_on_exception: 1;
     unsigned int pending_interrupt_queue_checked: 1;
+    unsigned int in_native_sighandler: 1;
     int8_t priority; /* -3 .. 3 (RUBY_THREAD_PRIORITY_{MIN,MAX}) */
     uint32_t running_time_us; /* 12500..800000 */
 
