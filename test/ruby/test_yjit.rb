@@ -142,6 +142,31 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_with_valid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e',
+                       'RubyVM::YJIT.enable(call_threshold: 1); puts RubyVM::YJIT.enabled?']) do |stdout, stderr, _status|
+      assert_empty stderr
+      assert_include stdout.join, "true"
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_mem_size_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
