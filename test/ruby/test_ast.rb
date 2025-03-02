@@ -1570,6 +1570,15 @@ dummy
 
       node = ast_parse("alias $foo $&")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $`")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $'")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $+")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
     def test_when_locations
