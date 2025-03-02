@@ -133,7 +133,15 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           ulimit -c unlimited
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          MAKE_CMD="make -s ${{ matrix.test_task }} ${TESTS:+TESTS=\"$TESTS\"}"
+
+          if [ -n "${{ env.LAUNCHABLE_ORGANIZATION }}" ]; then
+            eval "$MAKE_CMD"
+            > >(tee launchable_stdout.log) \
+            2> >(tee launchable_stderr.log)
+          else
+            eval "$MAKE_CMD"
+          fi
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
