@@ -844,8 +844,8 @@ CODE
     ary = []
     args = nil
     trace = TracePoint.trace(:call){|tp|
-      $stderr.puts "e: #{tp.event}, f: #{tp.path}, l: #{tp.lineno}, i: #{tp.method_id}, d: #{tp.defined_class}"
       next if !target_thread?
+      $stderr.puts "e: #{tp.event}, f: #{tp.path}, l: #{tp.lineno}, i: #{tp.method_id}, d: #{tp.defined_class}"
       ary << tp.method_id
     }
     foo
