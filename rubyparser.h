@@ -961,6 +961,9 @@ typedef struct RNode_POSTEXE {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_postexe_t;
 
 typedef struct RNode_SYM {

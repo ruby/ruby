@@ -79,6 +79,9 @@ The options that can be configured are:
 
 * `only`:
    A space-separated list of groups to install only gems of the specified groups.
+   Please check carefully if you want to install also gems without a group, cause
+   they get put inside `default` group. For example `only test:default` will install
+   all gems specified in test group and without one.
 
 * `path`:
    The location to install the specified gems to. This defaults to Rubygems'

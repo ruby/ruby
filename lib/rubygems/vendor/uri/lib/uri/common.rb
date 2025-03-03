@@ -13,15 +13,19 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module Gem::URI
+  # The default parser instance for RFC 2396.
   RFC2396_PARSER = RFC2396_Parser.new
   Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
+  # The default parser instance for RFC 3986.
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
+  # The default parser instance.
   DEFAULT_PARSER = RFC3986_PARSER
   Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
+  # Set the default parser instance.
   def self.parser=(parser = RFC3986_PARSER)
     remove_const(:Parser) if defined?(::Gem::URI::Parser)
     const_set("Parser", parser.class)
@@ -40,7 +44,7 @@ module Gem::URI
   end
   self.parser = RFC3986_PARSER
 
-  def self.const_missing(const)
+  def self.const_missing(const) # :nodoc:
     if const == :REGEXP
       warn "Gem::URI::REGEXP is obsolete. Use Gem::URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
       Gem::URI::RFC2396_REGEXP
@@ -87,7 +91,7 @@ module Gem::URI
     module_function :make_components_hash
   end
 
-  module Schemes
+  module Schemes # :nodoc:
   end
   private_constant :Schemes
 
@@ -305,7 +309,7 @@ module Gem::URI
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
-  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze # :nodoc:
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:
@@ -424,7 +428,7 @@ module Gem::URI
   private_class_method :_decode_uri_component
 
   # Returns a URL-encoded string derived from the given
-  # {Enumerable}[https://docs.ruby-lang.org/en/master/Enumerable.html#module-Enumerable-label-Enumerable+in+Ruby+Classes]
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
   # +enum+.
   #
   # The result is suitable for use as form data
@@ -493,7 +497,7 @@ module Gem::URI
   # each +key+/+value+ pair is converted to one or more fields:
   #
   # - If +value+ is
-  #   {Array-convertible}[https://docs.ruby-lang.org/en/master/implicit_conversion_rdoc.html#label-Array-Convertible+Objects],
+  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
   #   each element +ele+ in +value+ is paired with +key+ to form a field:
   #
   #     name = Gem::URI.encode_www_form_component(key, enc)
@@ -551,7 +555,7 @@ module Gem::URI
   # each subarray is a name/value pair (both are strings).
   # Each returned string has encoding +enc+,
   # and has had invalid characters removed via
-  # {String#scrub}[https://docs.ruby-lang.org/en/master/String.html#method-i-scrub].
+  # {String#scrub}[rdoc-ref:String#scrub].
   #
   # A simple example:
   #

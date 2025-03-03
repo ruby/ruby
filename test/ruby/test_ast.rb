@@ -1497,6 +1497,14 @@ dummy
       assert_locations(node.children[-1].children[-1].locations, [[1, 4, 1, 15], [1, 8, 1, 9], [1, 9, 1, 10], [1, 11, 1, 13]])
     end
 
+    def test_postexe_locations
+      node = ast_parse("END {  }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 3], [1, 4, 1, 5], [1, 7, 1, 8]])
+
+      node = ast_parse("END { 1 }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 3], [1, 4, 1, 5], [1, 8, 1, 9]])
+    end
+
     def test_redo_locations
       node = ast_parse("loop { redo }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
