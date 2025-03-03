@@ -139,13 +139,15 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
     if (((struct RHash *)($arg0))->basic.flags & RHASH_ST_TABLE_FLAG)
-      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+      set $st = (struct st_table *)((uintptr_t)($arg0) + sizeof(struct RHash))
+      printf "st len=%ld ", $st->num_entries
+      print $st
     else
       printf "li len=%ld bound=%ld ", \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
+	print (struct ar_table_struct *)((uintptr_t)($arg0) + sizeof(struct RHash))
     end
-    print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
     set $len = (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
