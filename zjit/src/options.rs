@@ -5,7 +5,7 @@ use std::{ffi::CStr, os::raw::c_char};
 // Threshold==1 means compile on first execution
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
-pub static mut rb_zjit_call_threshold: u64 = 1;
+pub static mut rb_zjit_call_threshold: u64 = 2;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Options {

@@ -1,0 +1,14 @@
+MAYBE_UNUSED(static int vm_insn_to_zjit_insn(int insn));
+
+static int
+vm_insn_to_zjit_insn(int insn)
+{
+    switch (insn) {
+% RubyVM::ZJITInstructions.to_a.each do |insn|
+      case BIN(<%= insn.jump_destination %>):
+        return <%= insn.bin %>;
+% end
+      default:
+        return insn;
+    }
+}

@@ -318,7 +318,7 @@ fn main() {
 
         // From yjit.c
         .allowlist_function("rb_object_shape_count")
-        .allowlist_function("rb_iseq_(get|set)_yjit_payload")
+        .allowlist_function("rb_iseq_(get|set)_zjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_(yjit|zjit)_reserve_addr_space")

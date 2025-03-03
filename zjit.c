@@ -22,6 +22,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -633,4 +634,46 @@ VALUE
 rb_RCLASS_ORIGIN(VALUE c)
 {
     return RCLASS_ORIGIN(c);
+}
+
+// Convert a given ISEQ's instructions to zjit_* instructions
+void
+rb_zjit_profile_iseq(const rb_iseq_t *iseq)
+{
+    // This table encodes an opcode into the instruction's address
+    const void *const *insn_table = rb_vm_get_insns_address_table();
+
+    unsigned int insn_idx = 0;
+    while (insn_idx < iseq->body->iseq_size) {
+        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[insn_idx]);
+        int zjit_insn = vm_insn_to_zjit_insn(insn);
+        if (insn != zjit_insn) {
+            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
+        }
+        insn_idx += insn_len(insn);
+    }
+}
+
+// Get profiling information for ISEQ
+void *
+rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    if (iseq->body) {
+        return iseq->body->zjit_payload;
+    }
+    else {
+        // Body is NULL when constructing the iseq.
+        return NULL;
+    }
+}
+
+// Set profiling information for ISEQ
+void
+rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(iseq->body);
+    RUBY_ASSERT_ALWAYS(NULL == iseq->body->zjit_payload);
+    iseq->body->zjit_payload = payload;
 }

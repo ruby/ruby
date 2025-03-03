@@ -13,6 +13,7 @@ mod backend;
 #[cfg(feature = "disasm")]
 mod disasm;
 mod options;
+mod profile;
 
 use codegen::gen_function;
 use options::{debug, get_option, Options};

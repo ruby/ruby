@@ -4,7 +4,7 @@
 use crate::{
     cruby::*,
     get_option,
-    options::DumpHIR
+    options::DumpHIR, profile::{get_or_create_iseq_payload, InsnProfile}
 };
 use std::collections::{HashMap, HashSet};
 
@@ -77,6 +77,18 @@ pub struct CallInfo {
     name: String,
 }
 
+/// Invalidation reasons
+#[derive(Debug, Clone)]
+pub enum Invariant {
+    /// Basic operation is redefined
+    BOPRedefined {
+        /// {klass}_REDEFINED_OP_FLAG
+        klass: RedefinitionFlag,
+        /// BOP_{bop}
+        bop: ruby_basic_operators,
+    },
+}
+
 #[derive(Debug, Clone)]
 pub enum Insn {
     PutSelf,
@@ -125,6 +137,17 @@ pub enum Insn {
 
     // Control flow instructions
     Return { val: InsnId },
+
+    /// Fixnum + Fixnum
+    FixnumAdd { recv: InsnId, obj: InsnId },
+
+    /// Side-exist if val doesn't have the expected type.
+    // TODO: Replace is_fixnum with the type lattice
+    GuardType { val: InsnId, is_fixnum: bool },
+
+    /// Generate no code (or padding if necessary) and insert a patch point
+    /// that can be rewritten to a side exit when the Invariant is broken.
+    PatchPoint(Invariant),
 }
 
 #[derive(Default, Debug)]
@@ -515,6 +538,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    let payload = get_or_create_iseq_payload(iseq);
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -657,10 +681,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.setn(n, top);
                 }
 
-                YARVINSN_opt_plus => {
+                YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
                     let right = state.pop()?;
                     let left = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
+                    if let Some(InsnProfile::OptPlus { recv_is_fixnum: true, obj_is_fixnum: true }) = payload.get_insn_profile(insn_idx as usize) {
+                        state.push(fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS })));
+                        let left_fixnum = fun.push_insn(block, Insn::GuardType { val: left, is_fixnum: true });
+                        state.push(left_fixnum);
+                        let right_fixnum = fun.push_insn(block, Insn::GuardType { val: right, is_fixnum: true });
+                        state.push(right_fixnum);
+                        state.push(fun.push_insn(block, Insn::FixnumAdd { recv: left_fixnum, obj: right_fixnum }));
+                    } else {
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
+                    }
                 }
                 YARVINSN_opt_div => {
                     let right = state.pop()?;

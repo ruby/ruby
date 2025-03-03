@@ -12,6 +12,9 @@
     edit: __FILE__,
 } -%>
 
+#ifndef INSNS_INC
+#define INSNS_INC 1
+
 /* BIN : Basic Instruction Name */
 #define BIN(n) YARVINSN_##n
 
@@ -24,3 +27,5 @@ enum ruby_vminsn_type {
 
 #define ASSERT_VM_INSTRUCTION_SIZE(array) \
     STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)
+
+#endif

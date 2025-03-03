@@ -640,6 +640,7 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/models/operands_unifications.rb \
 	  $(tooldir)/ruby_vm/models/trace_instructions.rb \
 	  $(tooldir)/ruby_vm/models/typemap.rb \
+	  $(tooldir)/ruby_vm/models/zjit_instructions.rb \
 	  $(tooldir)/ruby_vm/scripts/converter.rb \
 	  $(tooldir)/ruby_vm/scripts/insns2vm.rb \
 	  $(tooldir)/ruby_vm/views/_attributes.erb \
@@ -655,6 +656,7 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_notice.erb \
 	  $(tooldir)/ruby_vm/views/_sp_inc_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
+	  $(tooldir)/ruby_vm/views/_zjit_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \

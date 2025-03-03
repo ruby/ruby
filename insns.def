@@ -1265,6 +1265,7 @@ opt_plus
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_plus(recv, obj);
 

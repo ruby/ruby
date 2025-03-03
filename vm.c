@@ -44,6 +44,8 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
+#include "insns.inc"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -434,18 +436,26 @@ jit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
 #if USE_ZJIT
-    extern bool rb_zjit_enabled_p;
-    extern uint64_t rb_zjit_call_threshold;
+// Number of calls used to profile a YARV instruction for ZJIT
+#define ZJIT_PROFILE_COUNT 1
+
     if (body->jit_entry == NULL && rb_zjit_enabled_p) {
         body->jit_entry_calls++;
+
+        // At call-threshold - ZJIT_PROFILE_COUNT, rewrite some of the YARV
+        // instructions to zjit_* instructions to profile these instructions.
+        if (body->jit_entry_calls + ZJIT_PROFILE_COUNT == rb_zjit_call_threshold) {
+            rb_zjit_profile_iseq(iseq);
+        }
+
+        // At call-threshold, compile the ISEQ with ZJIT.
         if (body->jit_entry_calls == rb_zjit_call_threshold) {
-            extern void rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
             rb_zjit_compile_iseq(iseq, ec, false);
         }
     }
 #elif USE_YJIT
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_entry == NULL && rb_yjit_enabled_p) {
         body->jit_entry_calls++;
         if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
