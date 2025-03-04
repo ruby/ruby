@@ -18,7 +18,9 @@ module MMTk
     end
 
     def teardown
-      EnvUtil.timeout_scale = @original_timeout_scale
+      if using_mmtk?
+        EnvUtil.timeout_scale = @original_timeout_scale
+      end
     end
 
     private
