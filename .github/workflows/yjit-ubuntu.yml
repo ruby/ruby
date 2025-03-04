@@ -186,7 +186,6 @@ jobs:
           for i in {1..1000}; do
             make test-all TESTS="--seed=39577"
           done
-        timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
