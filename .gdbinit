@@ -523,14 +523,14 @@ document rp_bignum
 end
 
 define rp_class
+  set $class_and_classext = (struct RClass_and_rb_classext_t *)($arg0)
   printf "(struct RClass *) %p", (void*)$arg0
-  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
-    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
+  if $class_and_classext->classext->origin_ != (VALUE)$arg0
+    printf " -> %p", $class_and_classext->classext->origin_
   end
   printf "\n"
   rb_classname $arg0
-  print/x *(struct RClass *)($arg0)
-  print *RCLASS_EXT((struct RClass *)($arg0))
+  print/x *$class_and_classext
 end
 document rp_class
   Print the content of a Class/Module.
@@ -896,10 +896,10 @@ document rb_method_entry
 end
 
 define rb_classname
-  # up to 128bit int
-  set $rb_classname = rb_mod_name($arg0)
-  if $rb_classname != RUBY_Qnil
-    rp $rb_classname
+  set $rb_classname = ((struct RClass_and_rb_classext_t*)$arg0)->classext->classpath
+  if $rb_classname != RUBY_Qfalse
+    print_string $rb_classname
+    printf "\n"
   else
     echo anonymous class/module\n
   end
