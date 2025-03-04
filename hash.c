@@ -4113,7 +4113,6 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
  *  call-seq:
  *    merge(*other_hashes) -> new_hash
  *    merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
- *    merge -> copy_of_self
  *
  *  Each argument +other_hash+ in +other_hashes+ must be a hash.
  *
