@@ -838,6 +838,10 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(15, Float('0xf.p0'))
     assert_equal(15.9375, Float('0xf.f'))
     assert_raise(ArgumentError) { Float('0xf.fp') }
+    assert_equal(0x10a, Float("0x1_0a"))
+    assert_equal(1.625, Float("0x1.a_0"))
+    assert_equal(3.25, Float("0x1.ap0_1"))
+    assert_raise(ArgumentError) { Float("0x1.ap0a") }
     begin
       verbose_bak, $VERBOSE = $VERBOSE, nil
       assert_equal(Float::INFINITY, Float('0xf.fp1000000000000000'))
