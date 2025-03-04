@@ -3999,9 +3999,7 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    update(*other_hashes) { |key, old_value, new_value| ... } -> self
  *    update -> self
  *
- *  Like Hash#merge, but modifies and returns +self+ instead of a new hash.
- *
- *  Useful for implementing an accumulator hash:
+ *  Like Hash#merge, but modifies and returns +self+ instead of a new hash:
  *
  *    season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
  *    today = {AB: 3, H: 1, W: 1}
