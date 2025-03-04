@@ -3397,6 +3397,12 @@ CODE
     assert_same(str, bar, "uminus deduplicates [Feature #13077] str: #{ObjectSpace.dump(str)} bar: #{ObjectSpace.dump(bar)}")
   end
 
+  def test_uminus_dedup_in_place
+    dynamic = "this string is unique and frozen #{rand}".freeze
+    assert_same dynamic, -dynamic
+    assert_same dynamic, -dynamic.dup
+  end
+
   def test_uminus_frozen
     return unless @cls == String
 

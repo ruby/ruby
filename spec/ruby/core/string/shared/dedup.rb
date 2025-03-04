@@ -48,9 +48,4 @@ describe :string_dedup, shared: true do
     dynamic.send(@method).should_not equal("this string is frozen".send(@method).freeze)
     dynamic.send(@method).should equal(dynamic)
   end
-
-  it "interns the provided string if it is frozen" do
-    dynamic = "this string is unique and frozen #{rand}".freeze
-    dynamic.send(@method).should equal(dynamic)
-  end
 end
