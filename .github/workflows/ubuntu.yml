@@ -119,7 +119,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: >-
           for i in {1..1000}; do
-            make test-all TESTS="--seed=39577"
+            make test-all
           done
         env:
           RUBY_TESTOPTS: '-q --tty=no'
