@@ -1,9 +1,9 @@
 use crate::{
     asm::CodeBlock,
-    backend::lir::*,
+    backend::lir::{EC, CFP, SP, C_ARG_OPNDS, Assembler, Opnd, asm_comment},
     cruby::*,
     debug,
-    hir::{Function, Insn::*, InsnId},
+    hir::{Function, InsnId, Insn, Const},
     virtualmem::CodePtr
 };
 #[cfg(feature = "disasm")]
@@ -37,13 +37,13 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
     // Compile each instruction in the IR
     for (insn_idx, insn) in function.insns.iter().enumerate() {
         let insn_id = InsnId(insn_idx);
-        if !matches!(*insn, Snapshot { .. }) {
+        if !matches!(*insn, Insn::Snapshot { .. }) {
             asm_comment!(asm, "Insn: {:04} {:?}", insn_idx, insn);
         }
         match *insn {
-            Const { val } => gen_const(&mut jit, insn_id, val),
-            Return { val } => gen_return(&jit, &mut asm, val)?,
-            Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
+            Insn::Const { val: Const::Value(val) } => gen_const(&mut jit, insn_id, val),
+            Insn::Return { val } => gen_return(&jit, &mut asm, val)?,
+            Insn::Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
             _ => {
                 debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
                 return None;

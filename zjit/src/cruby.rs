@@ -328,6 +328,13 @@ pub struct rb_cref_t {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
+#[derive(PartialEq)]
+pub enum ClassRelationship {
+    Subclass,
+    Superclass,
+    NoRelation,
+}
+
 impl VALUE {
     /// Dump info about the value to the console similarly to rp(VALUE)
     pub fn dump_info(self) {
@@ -430,6 +437,22 @@ impl VALUE {
         }
 
         unsafe { rb_yarv_class_of(self) }
+    }
+
+    /// Check if `self` is a subclass of `other`. Assumes both `self` and `other` are class
+    /// objects. Returns [`ClassRelationship::Subclass`] if `self <= other`,
+    /// [`ClassRelationship::Superclass`] if `other < self`, and [`ClassRelationship::NoRelation`]
+    /// otherwise.
+    pub fn is_subclass_of(self, other: VALUE) -> ClassRelationship {
+        assert!(unsafe { RB_TYPE_P(self, RUBY_T_CLASS) });
+        assert!(unsafe { RB_TYPE_P(other, RUBY_T_CLASS) });
+        match unsafe { rb_class_inherited_p(self, other) } {
+            Qtrue => ClassRelationship::Subclass,
+            Qfalse => ClassRelationship::Superclass,
+            Qnil => ClassRelationship::NoRelation,
+            // The API specifies that it will return Qnil in this case
+            _ => panic!("Unexpected return value from rb_class_inherited_p"),
+        }
     }
 
     pub fn is_frozen(self) -> bool {
@@ -544,7 +567,7 @@ impl VALUE {
         ptr
     }
 
-    pub fn fixnum_from_usize(item: usize) -> Self {
+    pub const fn fixnum_from_usize(item: usize) -> Self {
         assert!(item <= (RUBY_FIXNUM_MAX as usize)); // An unsigned will always be greater than RUBY_FIXNUM_MIN
         let k: usize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k)
@@ -870,6 +893,11 @@ pub mod test_utils {
             let wrapped_iseq = rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str);
             rb_iseqw_to_iseq(wrapped_iseq)
         }
+    }
+
+    pub fn define_class(name: &str, superclass: VALUE) -> VALUE {
+        let name = CString::new(name).unwrap();
+        unsafe { rb_define_class(name.as_ptr(), superclass) }
     }
 }
 #[cfg(test)]

@@ -4,6 +4,7 @@
 mod state;
 mod cruby;
 mod hir;
+mod hir_type;
 mod codegen;
 mod stats;
 mod cast;

@@ -45,7 +45,7 @@ fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -
 impl std::fmt::Display for VALUE {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            val if val.fixnum_p() => write!(f, "Fixnum({})", val.as_fixnum()),
+            val if val.fixnum_p() => write!(f, "{}", val.as_fixnum()),
             &Qnil => write!(f, "nil"),
             &Qtrue => write!(f, "true"),
             &Qfalse => write!(f, "false"),
@@ -89,11 +89,34 @@ pub enum Invariant {
     },
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Const {
+    Value(VALUE),
+    CInt8(i8),
+    CInt16(i16),
+    CInt32(i32),
+    CInt64(i64),
+    CUInt8(u8),
+    CUInt16(u16),
+    CUInt32(u32),
+    CUInt64(u64),
+    CPtr(*mut u8),
+    CDouble(f64),
+}
+
+impl std::fmt::Display for Const {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Const::Value(val) => write!(f, "Value({val})"),
+            _ => write!(f, "{self:?}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum Insn {
     PutSelf,
-    // TODO(max): We probably want to make this an enum so we are not limited to Ruby heap objects
-    Const { val: VALUE },
+    Const { val: Const },
     // SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
@@ -530,7 +553,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         if idx < num_lead_params(iseq) {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Param { idx }));
         } else {
-            entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Qnil }));
+            entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
     queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0 as u32));
@@ -570,11 +593,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             match opcode {
                 YARVINSN_nop => {},
-                YARVINSN_putnil => { state.push(fun.push_insn(block, Insn::Const { val: Qnil })); },
-                YARVINSN_putobject => { state.push(fun.push_insn(block, Insn::Const { val: get_arg(pc, 0) })); },
+                YARVINSN_putnil => { state.push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
+                YARVINSN_putobject => { state.push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
                 YARVINSN_putstring | YARVINSN_putchilledstring => {
                     // TODO(max): Do something different for chilled string
-                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0) });
+                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let insn_id = fun.push_insn(block, Insn::StringCopy { val });
                     state.push(insn_id);
                 }
@@ -593,15 +616,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.push(insn_id);
                 }
                 YARVINSN_duparray => {
-                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0) });
+                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
                     state.push(insn_id);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
-                    state.push(fun.push_insn(block, Insn::Const { val: VALUE::fixnum_from_usize(0) }));
+                    state.push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }));
                 }
                 YARVINSN_putobject_INT2FIX_1_ => {
-                    state.push(fun.push_insn(block, Insn::Const { val: VALUE::fixnum_from_usize(1) }));
+                    state.push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
                 }
                 YARVINSN_defined => {
                     let op_type = get_arg(pc, 0).as_usize();
@@ -829,13 +852,33 @@ mod tests {
         });
     }
 
+    #[track_caller]
+    fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
+        match insn {
+            Some(Insn::Const { val: Const::Value(spec) }) => {
+                assert_eq!(*spec, val);
+            }
+            _ => assert!(false, "Expected Const {val}, found {insn:?}"),
+        }
+    }
+
+    #[track_caller]
+    fn assert_matches_const(insn: Option<&Insn>, expected: Const) {
+        match insn {
+            Some(Insn::Const { val }) => {
+                assert_eq!(*val, expected, "{val:?} does not match {expected:?}");
+            }
+            _ => assert!(false, "Expected Const {expected:?}, found {insn:?}"),
+        }
+    }
+
     #[test]
     fn test_putobject() {
         crate::cruby::with_rubyvm(|| {
             let program = "123";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches!(function.insns.get(1), Some(Insn::Const { val: VALUE(247) }));
+            assert_matches_value(function.insns.get(1), VALUE::fixnum_from_usize(123));
             assert_matches!(function.insns.get(3), Some(Insn::Return { val: InsnId(1) }));
         });
     }
@@ -848,8 +891,8 @@ mod tests {
             let function = iseq_to_hir(iseq).unwrap();
             // TODO(max): Figure out a clean way to match against String
             // TODO(max): Figure out a clean way to match against args vec
-            assert_matches!(function.insns.get(1), Some(Insn::Const { val: VALUE(3) }));
-            assert_matches!(function.insns.get(3), Some(Insn::Const { val: VALUE(5) }));
+            assert_matches_value(function.insns.get(1), VALUE::fixnum_from_usize(1));
+            assert_matches_value(function.insns.get(3), VALUE::fixnum_from_usize(2));
             assert_matches!(function.insns.get(5), Some(Insn::Send { self_val: InsnId(1), .. }));
         });
     }
@@ -860,7 +903,7 @@ mod tests {
             let program = "a = 1; a";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches!(function.insns.get(2), Some(Insn::Const { val: VALUE(3) }));
+            assert_matches_value(function.insns.get(2), VALUE::fixnum_from_usize(1));
             assert_matches!(function.insns.get(6), Some(Insn::Return { val: InsnId(2) }));
         });
     }
@@ -871,12 +914,12 @@ mod tests {
             let program = "cond = true; if cond; 3; else; 4; end";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches!(function.insns.get(2), Some(Insn::Const { val: Qtrue }));
+            assert_matches_const(function.insns.get(2), Const::Value(Qtrue));
             assert_matches!(function.insns.get(6), Some(Insn::Test { val: InsnId(2) }));
             assert_matches!(function.insns.get(7), Some(Insn::IfFalse { val: InsnId(6), target: BranchEdge { target: BlockId(1), .. } }));
-            assert_matches!(function.insns.get(9), Some(Insn::Const { val: VALUE(7) }));
+            assert_matches_const(function.insns.get(9), Const::Value(VALUE::fixnum_from_usize(3)));
             assert_matches!(function.insns.get(11), Some(Insn::Return { val: InsnId(9) }));
-            assert_matches!(function.insns.get(14), Some(Insn::Const { val: VALUE(9) }));
+            assert_matches_const(function.insns.get(14), Const::Value(VALUE::fixnum_from_usize(4)));
             assert_matches!(function.insns.get(16), Some(Insn::Return { val: InsnId(14) }));
         });
     }

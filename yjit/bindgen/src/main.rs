@@ -116,6 +116,7 @@ fn main() {
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
+        .allowlist_function("rb_class_inherited_p")
 
         // From ruby/internal/encoding/encoding.h
         .allowlist_type("ruby_encoding_consts")
@@ -156,6 +157,7 @@ fn main() {
         // From include/ruby/internal/intern/class.h
         .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
+        .allowlist_function("rb_define_class")
 
         // From include/ruby/internal/core/rclass.h
         .allowlist_function("rb_class_get_superclass")
@@ -169,6 +171,7 @@ fn main() {
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
         .allowlist_var("rb_cBasicObject")
+        .allowlist_var("rb_cObject")
         .allowlist_var("rb_cModule")
         .allowlist_var("rb_cNilClass")
         .allowlist_var("rb_cTrueClass")

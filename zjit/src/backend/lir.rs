@@ -2144,7 +2144,7 @@ impl Assembler {
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
         if $crate::options::get_option!(dump_disasm) {
-            $asm.push_insn(Insn::Comment(format!($($fmt)*)));
+            $asm.push_insn(crate::backend::lir::Insn::Comment(format!($($fmt)*)));
         }
     };
 }
