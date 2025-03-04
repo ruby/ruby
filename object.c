@@ -3405,6 +3405,13 @@ rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE base, VALUE
     return rb_convert_to_integer(arg, NUM2INT(base), exc);
 }
 
+static bool
+is_digit_char(unsigned char c, int base)
+{
+    int i = ruby_digit36_to_number_table[c];
+    return (i >= 0 && i < base);
+}
+
 static double
 rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, int *error)
 {
@@ -3446,23 +3453,37 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
         char *e = init_e;
         char prev = 0;
         int dot_seen = FALSE;
+        int base = 10;
+        char exp_letter = 'e';
 
         switch (*p) {case '+': case '-': prev = *n++ = *p++;}
         if (*p == '0') {
             prev = *n++ = '0';
-            while (*++p == '0');
+            switch (*++p) {
+              case 'x': case 'X':
+                prev = *n++ = 'x';
+                base = 16;
+                exp_letter = 'p';
+                if (*++p != '0') break;
+                /* fallthrough */
+              case '0': /* squeeze successive zeros */
+                while (*++p == '0');
+                break;
+            }
         }
         while (p < end && n < e) prev = *n++ = *p++;
         while (*p) {
             if (*p == '_') {
                 /* remove an underscore between digits */
-                if (n == buf || !ISDIGIT(prev) || (++p, !ISDIGIT(*p))) {
+                if (n == buf ||
+                    !is_digit_char(prev, base) ||
+                    !is_digit_char(*++p, base)) {
                     if (badcheck) goto bad;
                     break;
                 }
             }
             prev = *p++;
-            if (e == init_e && (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P')) {
+            if (e == init_e && (rb_tolower(prev) == exp_letter)) {
                 e = buf + sizeof(buf) - 1;
                 *n++ = prev;
                 switch (*p) {case '+': case '-': prev = *n++ = *p++;}
@@ -3470,6 +3491,10 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     prev = *n++ = '0';
                     while (*++p == '0');
                 }
+
+                /* reset base to decimal for underscore check of
+                 * binary exponent part */
+                base = 10;
                 continue;
             }
             else if (ISSPACE(prev)) {
@@ -3479,7 +3504,7 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     break;
                 }
             }
-            else if (prev == '.' ? dot_seen++ : !ISDIGIT(prev)) {
+            else if (prev == '.' ? dot_seen++ : !is_digit_char(prev, base)) {
                 if (badcheck) goto bad;
                 break;
             }
