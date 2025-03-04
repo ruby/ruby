@@ -361,4 +361,17 @@ RSpec.describe "bundled_gems.rb" do
 
     expect(err).to be_empty
   end
+
+  describe ".force_activate" do
+    context "when gem activation fails" do
+      before do
+        allow_any_instance_of(Bundler::Runtime).to receive(:setup).and_raise(Bundler::GemNotFound)
+      end
+
+      it "warns about installation requirement" do
+        expect_any_instance_of(Object).to receive(:warn)
+        Gem::BUNDLED_GEMS.force_activate("csv")
+      end
+    end
+  end
 end
