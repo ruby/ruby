@@ -274,20 +274,4 @@ class TestTimeout < Test::Unit::TestCase
       }.join
     end;
   end
-
-  # TODO: remove it
-  require 'envutil'
-
-  def test_timeout_scale
-    scale = ENV['RUBY_TEST_TIMEOUT_SCALE']&.to_f
-    sec = 5
-
-    if scale
-      assert_equal sec * scale, EnvUtil.apply_timeout_scale(sec)
-    else
-      assert_equal sec, EnvUtil.apply_timeout_scale(sec)
-    end
-
-    STDERR.puts [scale, sec, EnvUtil.apply_timeout_scale(sec)].inspect
-  end
 end
