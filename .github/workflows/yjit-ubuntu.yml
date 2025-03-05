@@ -35,7 +35,7 @@ jobs:
     # GitHub Action's image seems to already contain a Rust 1.58.0.
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
       #- run: cargo test --offline
@@ -101,10 +101,10 @@ jobs:
         run: |
           git config --global advice.detachedHead 0
           git config --global init.defaultBranch garbage
-      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b # v3.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           path: src
-      - uses: actions/cache@c17f4bf4666a8001b1a45c09eb7a485c41aa64c3 # v3.2.0
+      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
         with:
           path: src/.downloaded-cache
           key: downloaded-cache
@@ -149,7 +149,7 @@ jobs:
           BASE_REPO: ${{ github.event.pull_request.base.repo.full_name }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         if: ${{ matrix.test_task == 'yjit-bench' && startsWith(github.event_name, 'pull') }}
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ruby/action-slack@0bd85c72233cdbb6a0fe01d37aaeff1d21b5fce1 # v3.2.1
         with:
           payload: |
             {
