@@ -103,11 +103,13 @@
 #ifdef NOT_RUBY
 #include "regint.h"
 #include "st.h"
+#include <assert.h>
 #else
 #include "internal.h"
 #include "internal/bits.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
+#include "ruby_assert.h"
 #endif
 
 #include <stdio.h>
@@ -115,7 +117,6 @@
 #include <stdlib.h>
 #endif
 #include <string.h>
-#include <assert.h>
 
 #ifdef __GNUC__
 #define PREFETCH(addr, write_p) __builtin_prefetch(addr, write_p)
@@ -313,15 +314,20 @@ static const struct st_features features[] = {
 #define RESERVED_HASH_VAL (~(st_hash_t) 0)
 #define RESERVED_HASH_SUBSTITUTION_VAL ((st_hash_t) 0)
 
+static inline st_hash_t
+normalize_hash_value(st_hash_t hash)
+{
+    /* RESERVED_HASH_VAL is used for a deleted entry.  Map it into
+       another value.  Such mapping should be extremely rare.  */
+    return hash == RESERVED_HASH_VAL ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
+}
+
 /* Return hash value of KEY for table TAB.  */
 static inline st_hash_t
 do_hash(st_data_t key, st_table *tab)
 {
     st_hash_t hash = (st_hash_t)(tab->type->hash)(key);
-
-    /* RESERVED_HASH_VAL is used for a deleted entry.  Map it into
-       another value.  Such mapping should be extremely rare.  */
-    return hash == RESERVED_HASH_VAL ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
+    return normalize_hash_value(hash);
 }
 
 /* Power of 2 defining the minimal number of allocated entries.  */
@@ -764,6 +770,9 @@ rebuild_table_with(st_table *new_tab, st_table *tab)
         new_tab->num_entries++;
         ni++;
     }
+
+    assert(new_tab->num_entries == tab->num_entries);
+
     if (new_tab != tab) {
         tab->entry_power = new_tab->entry_power;
         tab->bin_power = new_tab->bin_power;
@@ -1146,6 +1155,8 @@ st_add_direct_with_hash(st_table *tab,
     st_index_t ind;
     st_index_t bin_ind;
 
+    assert(hash != RESERVED_HASH_VAL);
+
     rebuild_table_if_necessary(tab);
     ind = tab->entries_bound++;
     entry = &tab->entries[ind];
@@ -1163,7 +1174,7 @@ void
 rb_st_add_direct_with_hash(st_table *tab,
                            st_data_t key, st_data_t value, st_hash_t hash)
 {
-    st_add_direct_with_hash(tab, key, value, hash);
+    st_add_direct_with_hash(tab, key, value, normalize_hash_value(hash));
 }
 
 /* Insert (KEY, VALUE) into table TAB.  The table should not have

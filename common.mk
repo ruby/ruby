@@ -14894,6 +14894,7 @@ st.$(OBJEXT): {$(VPATH)}internal/variable.h
 st.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 st.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 st.$(OBJEXT): {$(VPATH)}missing.h
+st.$(OBJEXT): {$(VPATH)}ruby_assert.h
 st.$(OBJEXT): {$(VPATH)}st.c
 st.$(OBJEXT): {$(VPATH)}st.h
 st.$(OBJEXT): {$(VPATH)}subst.h
