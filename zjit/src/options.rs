@@ -109,8 +109,7 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 /// Macro to print a message only when --zjit-debug is given
 macro_rules! debug {
     ($($msg:tt)*) => {
-        use crate::options::get_option;
-        if get_option!(debug) {
+        if $crate::options::get_option!(debug) {
             eprintln!($($msg)*);
         }
     };

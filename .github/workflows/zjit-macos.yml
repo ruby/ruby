@@ -33,14 +33,14 @@ jobs:
             rust_version: 1.85.0
 
           - test_task: 'btest'
-            zjit_opts: '--zjit-call-threshold=1'
+            zjit_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
             btests: '../src/bootstraptest/test_zjit.rb'
             rust_version: 1.85.0
 
           - test_task: 'check'
             # Test without ZJIT for now
-            #zjit_opts: '--zjit-call-threshold=1'
+            #zjit_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit'
             rust_version: 1.85.0
 

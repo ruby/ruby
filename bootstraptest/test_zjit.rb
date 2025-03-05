@@ -3,10 +3,15 @@
 
 assert_equal 'nil', %q{
   def test = nil
-  test.inspect
+  test; test.inspect
 }
 
 assert_equal '1', %q{
   def test = 1
-  test
+  test; test
+}
+
+assert_equal '3', %q{
+  def test = 1 + 2
+  test; test
 }

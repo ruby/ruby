@@ -696,7 +696,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jmp_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 
@@ -704,7 +704,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label_idx) => je_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 
@@ -712,7 +712,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jne_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 
@@ -720,7 +720,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jl_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
 
@@ -728,7 +728,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jg_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
 
@@ -736,7 +736,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jge_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
 
@@ -744,7 +744,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jbe_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
 
@@ -752,7 +752,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jb_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
 
@@ -760,7 +760,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jz_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 
@@ -768,7 +768,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jnz_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 
@@ -777,7 +777,7 @@ impl Assembler
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label_idx) => jo_label(cb, label_idx),
-                        //Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exit"),
+                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
 

@@ -1,13 +1,6 @@
 use crate::{
-    asm::CodeBlock,
-    backend::lir::{EC, CFP, SP, C_ARG_OPNDS, Assembler, Opnd, asm_comment},
-    cruby::*,
-    debug,
-    hir::{Function, InsnId, Insn, Const},
-    virtualmem::CodePtr
+    asm::CodeBlock, backend::lir::{asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP}, cruby::*, debug, hir::{Const, FrameState, Function, Insn, InsnId}, hir_type::{types::Fixnum, Type}, virtualmem::CodePtr
 };
-#[cfg(feature = "disasm")]
-use crate::get_option;
 
 /// Ephemeral code generation state
 struct JITState {
@@ -40,15 +33,19 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
         if !matches!(*insn, Insn::Snapshot { .. }) {
             asm_comment!(asm, "Insn: {:04} {:?}", insn_idx, insn);
         }
-        match *insn {
-            Insn::Const { val: Const::Value(val) } => gen_const(&mut jit, insn_id, val),
-            Insn::Return { val } => gen_return(&jit, &mut asm, val)?,
+        match insn {
+            Insn::Const { val: Const::Value(val) } => gen_const(&mut jit, insn_id, *val),
             Insn::Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
+            Insn::Return { val } => gen_return(&jit, &mut asm, *val)?,
+            Insn::FixnumAdd { left, right, state } => gen_fixnum_add(&mut jit, &mut asm, insn_id, *left, *right, state)?,
+            Insn::GuardType { val, guard_type, state } => gen_guard_type(&mut jit, &mut asm, insn_id, *val, *guard_type, state)?,
+            Insn::PatchPoint(_) => {}, // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
             _ => {
                 debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
                 return None;
             }
         }
+        debug!("Compiled insn: {:04} {:?}", insn_idx, insn);
     }
 
     // Generate code if everything can be compiled
@@ -103,5 +100,46 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
     let ret_val = jit.opnds[val.0]?;
     asm.cret(ret_val);
 
+    Some(())
+}
+
+/// Compile Fixnum + Fixnum
+fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, left: InsnId, right: InsnId, state: &FrameState) -> Option<()> {
+    let left_opnd = jit.opnds[left.0]?;
+    let right_opnd = jit.opnds[right.0]?;
+
+    // Load left into a register if left is a constant. The backend doesn't support sub(imm, imm).
+    let left_reg = match left_opnd {
+        Opnd::Value(_) => asm.load(left_opnd),
+        _ => left_opnd,
+    };
+
+    // Add arg0 + arg1 and test for overflow
+    let left_untag = asm.sub(left_reg, Opnd::Imm(1));
+    let out_val = asm.add(left_untag, right_opnd);
+    asm.jo(Target::SideExit(state.clone()));
+
+    jit.opnds[insn_id.0] = Some(out_val);
+    Some(())
+}
+
+/// Compile a type check with a side exit
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, val: InsnId, guard_type: Type, state: &FrameState) -> Option<()> {
+    let opnd = jit.opnds[val.0]?;
+    if guard_type.is_subtype(Fixnum) {
+        // Load opnd into a register if opnd is a constant. The backend doesn't support test(imm, imm) yet.
+        let opnd_reg = match opnd {
+            Opnd::Value(_) => asm.load(opnd),
+            _ => opnd,
+        };
+
+        // Check if opnd is Fixnum
+        asm.test(opnd_reg, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.jz(Target::SideExit(state.clone()));
+    } else {
+        unimplemented!("unsupported type: {guard_type}");
+    }
+
+    jit.opnds[insn_id.0] = Some(opnd);
     Some(())
 }

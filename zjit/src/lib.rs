@@ -19,6 +19,7 @@ mod backend;
 mod disasm;
 mod options;
 mod profile;
+mod invariants;
 
 use codegen::gen_function;
 use options::{debug, get_option, Options};
@@ -28,6 +29,11 @@ use crate::cruby::*;
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_enabled_p: bool = false;
+
+/// Like rb_zjit_enabled_p, but for Rust code.
+pub fn zjit_enabled_p() -> bool {
+    unsafe { rb_zjit_enabled_p }
+}
 
 /// Initialize ZJIT, given options allocated by rb_zjit_init_options()
 #[unsafe(no_mangle)]

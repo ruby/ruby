@@ -843,9 +843,9 @@ impl Assembler
                         bcond(cb, CONDITION, InstructionOffset::from_bytes(bytes));
                     });
                 },
-                //Target::SideExit { .. } => {
-                //    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
-                //},
+                Target::SideExit { .. } => {
+                    unreachable!("Target::SideExit should have been compiled by compile_side_exits")
+                },
             };
         }
 
@@ -899,23 +899,6 @@ impl Assembler
         fn emit_pop(cb: &mut CodeBlock, opnd: A64Opnd) {
             ldr_post(cb, opnd, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
         }
-
-        /*
-        /// Compile a side exit if Target::SideExit is given.
-        fn compile_side_exit(
-            target: Target,
-            asm: &mut Assembler,
-            ocb: &mut Option<&mut OutlinedCb>,
-        ) -> Result<Target, EmitError> {
-            if let Target::SideExit { counter, context } = target {
-                let side_exit = asm.get_side_exit(&context.unwrap(), Some(counter), ocb.as_mut().unwrap())
-                    .ok_or(EmitError::OutOfMemory)?;
-                Ok(Target::SideExitPtr(side_exit))
-            } else {
-                Ok(target)
-            }
-        }
-        */
 
         // dbg!(&self.insns);
 
@@ -1220,40 +1203,40 @@ impl Assembler
                                 b(cb, InstructionOffset::from_bytes(bytes));
                             });
                         },
-                        //Target::SideExit { .. } => {
-                        //    unreachable!("Target::SideExit should have been compiled by compile_side_exit")
-                        //},
+                        Target::SideExit { .. } => {
+                            unreachable!("Target::SideExit should have been compiled by compile_side_exits")
+                        },
                     };
                 },
                 Insn::Je(target) | Insn::Jz(target) => {
-                    emit_conditional_jump::<{Condition::EQ}>(cb, *target);
+                    emit_conditional_jump::<{Condition::EQ}>(cb, target.clone());
                 },
                 Insn::Jne(target) | Insn::Jnz(target) | Insn::JoMul(target) => {
-                    emit_conditional_jump::<{Condition::NE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::NE}>(cb, target.clone());
                 },
                 Insn::Jl(target) => {
-                    emit_conditional_jump::<{Condition::LT}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LT}>(cb, target.clone());
                 },
                 Insn::Jg(target) => {
-                    emit_conditional_jump::<{Condition::GT}>(cb, *target);
+                    emit_conditional_jump::<{Condition::GT}>(cb, target.clone());
                 },
                 Insn::Jge(target) => {
-                    emit_conditional_jump::<{Condition::GE}>(cb, *target);
+                    emit_conditional_jump::<{Condition::GE}>(cb, target.clone());
                 },
                 Insn::Jbe(target) => {
-                    emit_conditional_jump::<{Condition::LS}>(cb, *target);
+                    emit_conditional_jump::<{Condition::LS}>(cb, target.clone());
                 },
                 Insn::Jb(target) => {
-                    emit_conditional_jump::<{Condition::CC}>(cb, *target);
+                    emit_conditional_jump::<{Condition::CC}>(cb, target.clone());
                 },
                 Insn::Jo(target) => {
-                    emit_conditional_jump::<{Condition::VS}>(cb, *target);
+                    emit_conditional_jump::<{Condition::VS}>(cb, target.clone());
                 },
                 Insn::Joz(opnd, target) => {
-                    emit_cmp_zero_jump(cb, opnd.into(), true, *target);
+                    emit_cmp_zero_jump(cb, opnd.into(), true, target.clone());
                 },
                 Insn::Jonz(opnd, target) => {
-                    emit_cmp_zero_jump(cb, opnd.into(), false, *target);
+                    emit_cmp_zero_jump(cb, opnd.into(), false, target.clone());
                 },
                 Insn::IncrCounter { mem: _, value: _ } => {
                     /*

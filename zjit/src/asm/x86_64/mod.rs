@@ -878,10 +878,7 @@ pub fn jmp_label(cb: &mut CodeBlock, label_idx: usize) {
 }
 
 /// Encode a relative jump to a pointer at a 32-bit offset (direct or conditional)
-fn write_jcc_ptr(_cb: &mut CodeBlock, _op0: u8, _op1: u8, _dst_ptr: CodePtr) {
-    todo!();
-
-    /*
+fn write_jcc_ptr(cb: &mut CodeBlock, op0: u8, op1: u8, dst_ptr: CodePtr) {
     // Write the opcode
     if op0 != 0xFF {
         cb.write_byte(op0);
@@ -904,7 +901,6 @@ fn write_jcc_ptr(_cb: &mut CodeBlock, _op0: u8, _op1: u8, _dst_ptr: CodePtr) {
         //cb.dropped_bytes = true;
         panic!("we should refactor to avoid dropped_bytes");
     }
-    */
 }
 
 /// jcc - relative jumps to a pointer (32-bit offset)

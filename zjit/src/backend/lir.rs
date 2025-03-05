@@ -1,6 +1,6 @@
 use std::fmt;
 use std::mem::take;
-use crate::cruby::VALUE;
+use crate::{cruby::VALUE, hir::FrameState};
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
 use crate::asm::CodeBlock;
@@ -290,13 +290,13 @@ impl From<VALUE> for Opnd {
 
 /// Branch target (something that we can jump to)
 /// for branch instructions
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Debug)]
 pub enum Target
 {
     /// Pointer to a piece of YJIT-generated code
     CodePtr(CodePtr),
     // Side exit with a counter
-    //SideExit { counter: Counter, context: Option<SideExitContext> },
+    SideExit(FrameState),
     /// Pointer to a side exit code
     SideExitPtr(CodePtr),
     /// A label within the generated code
@@ -305,12 +305,6 @@ pub enum Target
 
 impl Target
 {
-    /*
-    pub fn side_exit(counter: Counter) -> Target {
-        Target::SideExit { counter, context: None }
-    }
-    */
-
     pub fn unwrap_label_idx(&self) -> usize {
         match self {
             Target::Label(idx) => *idx,
@@ -966,56 +960,6 @@ impl fmt::Debug for Insn {
     }
 }
 
-/// Set of variables used for generating side exits
-/*
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct SideExitContext {
-    /// PC of the instruction being compiled
-    pub pc: *mut VALUE,
-
-    /// Context fields used by get_generic_ctx()
-    pub stack_size: u8,
-    pub sp_offset: i8,
-    pub reg_mapping: RegMapping,
-    pub is_return_landing: bool,
-    pub is_deferred: bool,
-}
-
-impl SideExitContext {
-    /// Convert PC and Context into SideExitContext
-    pub fn new(pc: *mut VALUE, ctx: Context) -> Self {
-        let exit_ctx = SideExitContext {
-            pc,
-            stack_size: ctx.get_stack_size(),
-            sp_offset: ctx.get_sp_offset(),
-            reg_mapping: ctx.get_reg_mapping(),
-            is_return_landing: ctx.is_return_landing(),
-            is_deferred: ctx.is_deferred(),
-        };
-        if cfg!(debug_assertions) {
-            // Assert that we're not losing any mandatory metadata
-            assert_eq!(exit_ctx.get_ctx(), ctx.get_generic_ctx());
-        }
-        exit_ctx
-    }
-
-    /// Convert SideExitContext to Context
-    fn get_ctx(&self) -> Context {
-        let mut ctx = Context::default();
-        ctx.set_stack_size(self.stack_size);
-        ctx.set_sp_offset(self.sp_offset);
-        ctx.set_reg_mapping(self.reg_mapping);
-        if self.is_return_landing {
-            ctx.set_as_return_landing();
-        }
-        if self.is_deferred {
-            ctx.mark_as_deferred();
-        }
-        ctx
-    }
-}
-*/
-
 /// Initial capacity for asm.insns vector
 const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 
@@ -1154,19 +1098,6 @@ impl Assembler
                 _ => {}
             }
         }
-
-        // Set a side exit context to Target::SideExit
-        /*
-        if let Some(Target::SideExit { context, .. }) = insn.target_mut() {
-            // We should skip this when this instruction is being copied from another Assembler.
-            if context.is_none() {
-                *context = Some(SideExitContext::new(
-                    self.side_exit_pc.unwrap(),
-                    self.ctx.with_stack_size(self.side_exit_stack_size.unwrap()),
-                ));
-            }
-        }
-        */
 
         self.insns.push(insn);
         self.live_ranges.push(insn_idx);
@@ -1635,8 +1566,10 @@ impl Assembler
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     #[must_use]
-    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
+    pub fn compile(mut self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
     {
+        self.compile_side_exits(cb)?;
+
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
@@ -1649,6 +1582,29 @@ impl Assembler
             println!("{}", disasm);
         }
         ret
+    }
+
+    /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
+    #[must_use]
+    pub fn compile_side_exits(&mut self, cb: &mut CodeBlock) -> Option<()> {
+        for insn in self.insns.iter_mut() {
+            if let Some(target) = insn.target_mut() {
+                if let Target::SideExit(state) = target {
+                    let side_exit_ptr = cb.get_write_ptr();
+                    let mut asm = Assembler::new();
+                    asm_comment!(asm, "side exit: {:?}", state);
+                    asm.ccall(Self::rb_zjit_side_exit as *const u8, vec![]);
+                    asm.compile(cb)?;
+                    *target = Target::CodePtr(side_exit_ptr);
+                }
+            }
+        }
+        Some(())
+    }
+
+    #[unsafe(no_mangle)]
+    extern "C" fn rb_zjit_side_exit() {
+        unimplemented!("side exits are not implemented yet");
     }
 
     /*
