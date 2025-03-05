@@ -845,6 +845,9 @@ CODE
     args = nil
     trace = TracePoint.trace(:call){|tp|
       next if !target_thread?
+      # In parallel testing, unexpected events like IO operations may be traced,
+      # so we filter out events here.
+      next unless [__FILE__, "<internal:trace_point>"].include?(tp.path)
       ary << tp.method_id
     }
     foo
