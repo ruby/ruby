@@ -1,4 +1,4 @@
-# Generate src/hir_type_generated.rs. To do this, we build up a DAG that
+# Generate hir_type.inc.rs. To do this, we build up a DAG that
 # represents a slice of the Ruby type hierarchy that we care about optimizing.
 # This also includes primitive values such as C booleans, int32, and so on.
 

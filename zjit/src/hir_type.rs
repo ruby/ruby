@@ -60,8 +60,7 @@ pub struct Type {
     spec: Specialization
 }
 
-// TODO(max): Figure out how to silence the non-upper-case globals warning
-include!("hir_type_generated.rs");
+include!("hir_type.inc.rs");
 
 /// Get class name from a class pointer.
 fn get_class_name(class: Option<VALUE>) -> String {
