@@ -152,10 +152,13 @@ module JSON
     end
 
     def detailed_message(...)
+      # Exception#detailed_message doesn't exist until Ruby 3.2
+      super_message = defined?(super) ? super : message
+
       if @invalid_object.nil?
-        super
+        super_message
       else
-        "#{super}\nInvalid object: #{@invalid_object.inspect}"
+        "#{super_message}\nInvalid object: #{@invalid_object.inspect}"
       end
     end
   end

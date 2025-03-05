@@ -410,6 +410,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_json_generate_error_detailed_message
+    error = assert_raise JSON::GeneratorError do
+      generate(["\xea"])
+    end
+
+    assert_not_nil(error.detailed_message)
+  end
+
   def test_json_generate_unsupported_types
     assert_raise JSON::GeneratorError do
       generate(Object.new, strict: true)
