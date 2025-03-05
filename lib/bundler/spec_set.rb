@@ -179,6 +179,8 @@ module Bundler
     end
 
     def -(other)
+      SharedHelpers.major_deprecation 2, "SpecSet#- has been removed with no replacement"
+
       SpecSet.new(to_a - other.to_a)
     end
 
@@ -210,6 +212,8 @@ module Bundler
     end
 
     def <<(spec)
+      SharedHelpers.major_deprecation 2, "SpecSet#<< has been removed with no replacement"
+
       @specs << spec
     end
 
