@@ -75,34 +75,48 @@ fn get_class_name(class: Option<VALUE>) -> String {
     }).unwrap_or_else(|| "Unknown".to_string())
 }
 
+fn write_spec(f: &mut std::fmt::Formatter, ty: Type) -> std::fmt::Result {
+    match ty.spec {
+        Specialization::Top | Specialization::Bottom => { Ok(()) },
+        Specialization::Object(val) => write!(f, "[{val}]"),
+        Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(Some(val))),
+        Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(Some(val))),
+        Specialization::Int(val) if ty.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
+        Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val as i64) >> 56),
+        Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val as i64) >> 48),
+        Specialization::Int(val) if ty.is_subtype(types::CInt32) => write!(f, "[{}]", (val as i64) >> 32),
+        Specialization::Int(val) if ty.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val >> 56),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val >> 48),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val >> 32),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
+        Specialization::Int(val) => write!(f, "[{val}]"),
+        Specialization::Double(val) => write!(f, "[{val}]"),
+    }
+}
+
 impl std::fmt::Display for Type {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let mut bit_patterns = Vec::from_iter(bits::AllBitPatterns);
-        bit_patterns.sort_by(|(_, left), (_, right)| left.partial_cmp(right).unwrap());
-        for (name, pattern) in bit_patterns {
+        for (name, pattern) in bits::AllBitPatterns {
             if self.bits == pattern {
                 write!(f, "{name}")?;
-                return match self.spec {
-                    Specialization::Top | Specialization::Bottom => { Ok(()) },
-                    Specialization::Object(val) => write!(f, "[{val}]"),
-                    Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(Some(val))),
-                    Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(Some(val))),
-                    Specialization::Int(val) if self.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
-                    Specialization::Int(val) if self.is_subtype(types::CInt8) => write!(f, "[{}]", (val as i64) >> 56),
-                    Specialization::Int(val) if self.is_subtype(types::CInt16) => write!(f, "[{}]", (val as i64) >> 48),
-                    Specialization::Int(val) if self.is_subtype(types::CInt32) => write!(f, "[{}]", (val as i64) >> 32),
-                    Specialization::Int(val) if self.is_subtype(types::CInt64) => write!(f, "[{}]", val as i64),
-                    Specialization::Int(val) if self.is_subtype(types::CUInt8) => write!(f, "[{}]", val >> 56),
-                    Specialization::Int(val) if self.is_subtype(types::CUInt16) => write!(f, "[{}]", val >> 48),
-                    Specialization::Int(val) if self.is_subtype(types::CUInt32) => write!(f, "[{}]", val >> 32),
-                    Specialization::Int(val) if self.is_subtype(types::CUInt64) => write!(f, "[{}]", val),
-                    Specialization::Int(val) => write!(f, "[{val}]"),
-                    Specialization::Double(val) => write!(f, "[{val}]"),
-                }
-            };
+                return write_spec(f, *self);
+            }
         }
-        // TODO(max): Add a prettier string representation
-        write!(f, "{:x?}", self)
+        let mut bit_patterns = Vec::from_iter(bits::AllBitPatterns);
+        bit_patterns.sort_by(|(_, left), (_, right)| left.partial_cmp(right).unwrap());
+        let mut bits = self.bits;
+        let mut sep = "";
+        for (name, pattern) in bit_patterns {
+            if bits == 0 { break; }
+            if (bits & pattern) != 0 {
+                write!(f, "{sep}{name}")?;
+                sep = "|";
+                bits &= !pattern;
+            }
+        }
+        assert_eq!(bits, 0, "Should have eliminated all bits by iterating over all patterns");
+        write_spec(f, *self)
     }
 }
 
@@ -457,6 +471,13 @@ mod tests {
         assert_eq!(format!("{}", types::Fixnum), "Fixnum");
         assert_eq!(format!("{}", types::Integer), "Integer");
         assert_eq!(format!("{}", types::IntegerExact), "IntegerExact");
+    }
+
+    #[test]
+    fn display_multiple_bits() {
+        assert_eq!(format!("{}", types::CSigned), "CSigned");
+        assert_eq!(format!("{}", types::CUInt8.union(types::CInt32)), "CInt32|CUInt8");
+        assert_eq!(format!("{}", types::HashExact.union(types::HashUser)), "Hash");
     }
 
     #[test]
