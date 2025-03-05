@@ -3166,16 +3166,16 @@ ruby_process_options(int argc, char **argv)
     ruby_init_setproctitle(argc, argv);
 #endif
 
+    if (getenv("RUBY_FREE_AT_EXIT")) {
+        rb_free_at_exit = true;
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
+    }
+
     iseq = process_options(argc, argv, cmdline_options_init(&opt));
 
     if (opt.crash_report && *opt.crash_report) {
         void ruby_set_crash_report(const char *template);
         ruby_set_crash_report(opt.crash_report);
-    }
-
-    if (getenv("RUBY_FREE_AT_EXIT")) {
-        rb_free_at_exit = true;
-        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL, "Free at exit is experimental and may be unstable");
     }
 
     return (void*)(struct RData*)iseq;
