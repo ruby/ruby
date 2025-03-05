@@ -33,7 +33,7 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `log` decides
   # whether to enable \YJIT compilation logging or not.
   #
   # * `stats`:
