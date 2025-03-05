@@ -14,7 +14,7 @@ class Type
   end
 
   def all_subtypes
-    subtypes + subtypes.flat_map { |subtype| subtype.all_subtypes }
+    subtypes.flat_map { |subtype| subtype.all_subtypes } + subtypes
   end
 
   def subtype name
@@ -102,15 +102,23 @@ unsigned = primitive_int.subtype "CUnsigned"
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
 bits = {"Bottom" => ["0u64"]}
+numeric_bits = {"Bottom" => 0}
 Set[top, *top.all_subtypes].sort_by(&:name).each {|type|
   subtypes = type.subtypes
   if subtypes.empty?
     # Assign bits for leaves
     bits[type.name] = ["1u64 << #{num_bits}"]
+    numeric_bits[type.name] = 1 << num_bits
     num_bits += 1
   else
     # Assign bits for unions
     bits[type.name] = subtypes.map(&:name).sort
+  end
+}
+[*top.all_subtypes, top].each {|type|
+  subtypes = type.subtypes
+  unless subtypes.empty?
+    numeric_bits[type.name] = subtypes.map {|ty| numeric_bits[ty.name]}.reduce(&:|)
   end
 }
 
@@ -123,7 +131,10 @@ bits.keys.sort.map {|type_name|
   puts "  pub const #{type_name}: u64 = #{subtypes};"
 }
 puts "  pub const AllBitPatterns: [(&'static str, u64); #{bits.size}] = ["
-bits.keys.sort.map {|type_name|
+# Sort the bit patterns by decreasing value so that we can print the densest
+# possible to-string representation of a Type. For example, CSigned instead of
+# CInt8|CInt16|...
+numeric_bits.sort_by {|key, val| -val}.each {|type_name, _|
   puts "    (\"#{type_name}\", #{type_name}),"
 }
 puts "  ];"

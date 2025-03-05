@@ -102,13 +102,12 @@ impl std::fmt::Display for Type {
                 return write_spec(f, *self);
             }
         }
-        let mut bit_patterns = Vec::from_iter(bits::AllBitPatterns);
-        bit_patterns.sort_by(|(_, left), (_, right)| left.partial_cmp(right).unwrap());
+        assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
         let mut bits = self.bits;
         let mut sep = "";
-        for (name, pattern) in bit_patterns {
+        for (name, pattern) in bits::AllBitPatterns {
             if bits == 0 { break; }
-            if (bits & pattern) != 0 {
+            if (bits & pattern) == pattern {
                 write!(f, "{sep}{name}")?;
                 sep = "|";
                 bits &= !pattern;
@@ -475,7 +474,7 @@ mod tests {
     #[test]
     fn display_multiple_bits() {
         assert_eq!(format!("{}", types::CSigned), "CSigned");
-        assert_eq!(format!("{}", types::CUInt8.union(types::CInt32)), "CInt32|CUInt8");
+        assert_eq!(format!("{}", types::CUInt8.union(types::CInt32)), "CUInt8|CInt32");
         assert_eq!(format!("{}", types::HashExact.union(types::HashUser)), "Hash");
     }
 
