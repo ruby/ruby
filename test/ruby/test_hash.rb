@@ -2352,4 +2352,18 @@ class TestHashOnly < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_ar_to_st_reserved_value
+    klass = Class.new do
+      attr_reader :hash
+      def initialize(val) = @hash = val
+    end
+
+    values = 0.downto(-16).to_a
+    hash = {}
+    values.each do |val|
+      hash[klass.new(val)] = val
+    end
+    assert_equal values, hash.values, "[ruby-core:121239] [Bug #21170]"
+  end
 end
