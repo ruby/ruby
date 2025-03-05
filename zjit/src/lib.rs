@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 #![allow(static_mut_refs)]
 
+// Add std docs to cargo doc.
+#[doc(inline)]
+pub use std;
+
 mod state;
 mod cruby;
 mod hir;
