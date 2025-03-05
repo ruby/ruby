@@ -853,7 +853,9 @@ pub use manual_defs::*;
 
 #[cfg(test)]
 pub mod test_utils {
-    use crate::{options::init_options, state::ZJITState};
+    use std::ptr::null;
+
+    use crate::{options::init_options, rb_zjit_enabled_p, state::ZJITState};
 
     use super::*;
 
@@ -879,6 +881,9 @@ pub mod test_utils {
         // Set up globals for convenience
         ZJITState::init(init_options());
 
+        // Enable zjit_* instructions
+        unsafe { rb_zjit_enabled_p = true; }
+
         let mut state: c_int = 0;
         unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
         // TODO(alan): there should be a way to print the exception instead of swallowing it
@@ -887,17 +892,65 @@ pub mod test_utils {
 
     /// Compile an ISeq via `RubyVM::InstructionSequence.compile`.
     pub fn compile_to_iseq(program: &str) -> *const rb_iseq_t {
-        let bytes = program.as_bytes().as_ptr() as *const c_char;
-        unsafe {
-            let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
-            let wrapped_iseq = rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str);
-            rb_iseqw_to_iseq(wrapped_iseq)
-        }
+        let wrapped_iseq = compile_to_wrapped_iseq(program);
+        unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
     }
 
     pub fn define_class(name: &str, superclass: VALUE) -> VALUE {
         let name = CString::new(name).unwrap();
         unsafe { rb_define_class(name.as_ptr(), superclass) }
+    }
+
+    /// Evaluate a given Ruby program
+    pub fn eval(program: &str) -> VALUE {
+        let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
+        unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+    }
+
+    /// Get the ISeq of a specified method
+    pub fn get_method_iseq(name: &str) -> *const rb_iseq_t {
+        let wrapped_iseq = eval(&format!("RubyVM::InstructionSequence.of(method(:{}))", name));
+        unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
+    }
+
+    /// Remove the minimum indent from every line, skipping the first and last lines if `trim_lines`.
+    pub fn unindent(string: &str, trim_lines: bool) -> String {
+        // Break up a string into multiple lines
+        let mut lines: Vec<String> = string.split_inclusive("\n").map(|s| s.to_string()).collect();
+        if trim_lines { // raw string literals come with extra lines
+            lines.remove(0);
+            lines.remove(lines.len() - 1);
+        }
+
+        // Count the minimum number of spaces
+        let spaces = lines.iter().filter_map(|line| {
+            for (i, ch) in line.as_bytes().iter().enumerate() {
+                if *ch != b' ' {
+                    return Some(i);
+                }
+            }
+            None
+        }).min().unwrap_or(0);
+
+        // Join lines, removing spaces
+        let mut unindented: Vec<u8> = vec![];
+        for line in lines.iter() {
+            if line.len() > spaces {
+                unindented.extend_from_slice(&line.as_bytes()[spaces..]);
+            } else {
+                unindented.extend_from_slice(&line.as_bytes());
+            }
+        }
+        String::from_utf8(unindented).unwrap()
+    }
+
+    /// Compile a program into a RubyVM::InstructionSequence object
+    fn compile_to_wrapped_iseq(program: &str) -> VALUE {
+        let bytes = program.as_bytes().as_ptr() as *const c_char;
+        unsafe {
+            let program_str = rb_utf8_str_new(bytes, program.len().try_into().unwrap());
+            rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
+        }
     }
 }
 #[cfg(test)]
@@ -941,6 +994,7 @@ pub(crate) mod ids {
         name: eq                 content: b"=="
         name: include_p          content: b"include?"
         name: compile            content: b"compile"
+        name: eval               content: b"eval"
     }
 }
 

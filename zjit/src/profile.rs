@@ -4,7 +4,7 @@
 use core::ffi::c_void;
 use std::collections::HashMap;
 
-use crate::cruby::*;
+use crate::{cruby::*, hir_type::{types::{Bottom, Fixnum}, Type}};
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -46,42 +46,57 @@ pub extern "C" fn rb_zjit_profile_insn(opcode: ruby_vminsn_type, ec: EcPtr) {
 /// Profile a YARV instruction
 fn profile_insn(profiler: &mut Profiler, opcode: ruby_vminsn_type) {
     match opcode {
-        YARVINSN_opt_plus => profile_opt_plus(profiler),
+        YARVINSN_opt_plus  => profile_operands(profiler, 2),
+        YARVINSN_opt_minus => profile_operands(profiler, 2),
+        YARVINSN_opt_mult  => profile_operands(profiler, 2),
+        YARVINSN_opt_div   => profile_operands(profiler, 2),
+        YARVINSN_opt_mod   => profile_operands(profiler, 2),
+        YARVINSN_opt_eq    => profile_operands(profiler, 2),
+        YARVINSN_opt_neq   => profile_operands(profiler, 2),
+        YARVINSN_opt_lt    => profile_operands(profiler, 2),
+        YARVINSN_opt_le    => profile_operands(profiler, 2),
+        YARVINSN_opt_gt    => profile_operands(profiler, 2),
+        YARVINSN_opt_ge    => profile_operands(profiler, 2),
         _ => {}
     }
 }
 
-/// Profile opt_plus instruction
-fn profile_opt_plus(profiler: &mut Profiler) {
-    let recv = profiler.peek_at_stack(1);
-    let obj = profiler.peek_at_stack(0);
-
+/// Profile the Type of top-`n` stack operands
+fn profile_operands(profiler: &mut Profiler, n: usize) {
     let payload = get_or_create_iseq_payload(profiler.iseq);
-    payload.insns.insert(profiler.insn_idx, InsnProfile::OptPlus {
-        // TODO: profile the type and union it with past results
-        recv_is_fixnum: recv.fixnum_p(),
-        obj_is_fixnum: obj.fixnum_p(),
-    });
+    let mut types = if let Some(types) = payload.opnd_types.get(&profiler.insn_idx) {
+        types.clone()
+    } else {
+        vec![Bottom; n]
+    };
+
+    for i in 0..n {
+        let opnd_type = Type::from_value(profiler.peek_at_stack((n - i - 1) as isize));
+        types[i] = types[i].union(opnd_type);
+    }
+
+    payload.opnd_types.insert(profiler.insn_idx, types);
 }
 
-/// Profiling information for each YARV instruction
-pub enum InsnProfile {
-    // TODO: Change it to { recv: Type, obj: Type } once the type lattice is merged
-    OptPlus { recv_is_fixnum: bool, obj_is_fixnum: bool },
-}
-
-/// This is all the data YJIT stores on an iseq. This will be dynamically allocated by C code
+/// This is all the data ZJIT stores on an iseq. This will be dynamically allocated by C code
 /// C code should pass an &mut IseqPayload to us when calling into ZJIT.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct IseqPayload {
-    /// Profiling information for each YARV instruction, indexed by the instruction index
-    insns: HashMap<usize, InsnProfile>,
+    /// Type information of YARV instruction operands, indexed by the instruction index
+    opnd_types: HashMap<usize, Vec<Type>>,
 }
 
 impl IseqPayload {
-    /// Get the instruction profile for a given instruction index
-    pub fn get_insn_profile(&self, insn_idx: usize) -> Option<&InsnProfile> {
-        self.insns.get(&insn_idx)
+    /// Get profiled operand types for a given instruction index
+    pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[Type]> {
+        self.opnd_types.get(&insn_idx).map(|types| types.as_slice())
+    }
+
+    pub fn have_two_fixnums(&self, insn_idx: usize) -> bool {
+        match self.get_operand_types(insn_idx) {
+            Some([left, right]) => left.is_subtype(Fixnum) && right.is_subtype(Fixnum),
+            _ => false,
+        }
     }
 }
 

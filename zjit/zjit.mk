@@ -122,7 +122,7 @@ zjit-test: libminiruby.a
 	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
 	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
 	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
-	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml'
+	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml' $(ZJIT_TESTS)
 
 # A library for booting miniruby in tests.
 # Why not use libruby-static.a for this?

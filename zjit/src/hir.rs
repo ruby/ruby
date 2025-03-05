@@ -2,11 +2,11 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cruby::*,
-    get_option,
-    options::DumpHIR, profile::{get_or_create_iseq_payload, InsnProfile}
+    cruby::*, get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
 use std::collections::{HashMap, HashSet};
+
+use crate::hir_type::Type;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(pub usize);
@@ -89,6 +89,36 @@ pub enum Invariant {
     },
 }
 
+impl std::fmt::Display for Invariant {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::BOPRedefined { klass, bop } => {
+                write!(f, "BOPRedefined(")?;
+                match *klass {
+                    INTEGER_REDEFINED_OP_FLAG => write!(f, "INTEGER_REDEFINED_OP_FLAG")?,
+                    _ => write!(f, "{klass}")?,
+                }
+                write!(f, ", ")?;
+                match *bop {
+                    BOP_PLUS  => write!(f, "BOP_PLUS")?,
+                    BOP_MINUS => write!(f, "BOP_MINUS")?,
+                    BOP_MULT  => write!(f, "BOP_MULT")?,
+                    BOP_DIV   => write!(f, "BOP_DIV")?,
+                    BOP_MOD   => write!(f, "BOP_MOD")?,
+                    BOP_EQ    => write!(f, "BOP_EQ")?,
+                    BOP_NEQ   => write!(f, "BOP_NEQ")?,
+                    BOP_LT    => write!(f, "BOP_LT")?,
+                    BOP_LE    => write!(f, "BOP_LE")?,
+                    BOP_GT    => write!(f, "BOP_GT")?,
+                    BOP_GE    => write!(f, "BOP_GE")?,
+                    _ => write!(f, "{bop}")?,
+                }
+                write!(f, ")")
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Const {
     Value(VALUE),
@@ -161,12 +191,22 @@ pub enum Insn {
     // Control flow instructions
     Return { val: InsnId },
 
-    /// Fixnum + Fixnum
-    FixnumAdd { recv: InsnId, obj: InsnId },
+    /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=
+    FixnumAdd  { left: InsnId, right: InsnId },
+    FixnumSub  { left: InsnId, right: InsnId },
+    FixnumMult { left: InsnId, right: InsnId },
+    FixnumDiv  { left: InsnId, right: InsnId },
+    FixnumMod  { left: InsnId, right: InsnId },
+    FixnumEq   { left: InsnId, right: InsnId },
+    FixnumNeq  { left: InsnId, right: InsnId },
+    FixnumLt   { left: InsnId, right: InsnId },
+    FixnumLe   { left: InsnId, right: InsnId },
+    FixnumGt   { left: InsnId, right: InsnId },
+    FixnumGe   { left: InsnId, right: InsnId },
 
     /// Side-exist if val doesn't have the expected type.
     // TODO: Replace is_fixnum with the type lattice
-    GuardType { val: InsnId, is_fixnum: bool },
+    GuardType { val: InsnId, guard_type: Type },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -365,23 +405,36 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 }
                 write!(f, "  {insn_id} = ")?;
                 match &fun.insns[insn_id.0] {
-                    Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::Const { val } => { write!(f, "Const {val}")?; }
-                    Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
-                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
-                    Insn::Jump(target) => { write!(f, "Jump {target}")?; }
-                    Insn::Return { val } => { write!(f, "Return {val}")?; }
+                    Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
                     Insn::ArraySet { idx, val } => { write!(f, "ArraySet {idx}, {val}")?; }
                     Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}")?; }
+                    Insn::Test { val } => { write!(f, "Test {val}")?; }
+                    Insn::Snapshot { state } => { write!(f, "Snapshot {state}")?; }
+                    Insn::Jump(target) => { write!(f, "Jump {target}")?; }
+                    Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
+                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::Send { self_val, call_info, args } => {
                         write!(f, "Send {self_val}, :{}", call_info.name)?;
                         for arg in args {
                             write!(f, ", {arg}")?;
                         }
                     }
-                    Insn::Test { val } => { write!(f, "Test {val}")?; }
-                    Insn::Snapshot { state } => { write!(f, "Snapshot {state}")?; }
+                    Insn::Return { val } => { write!(f, "Return {val}")?; }
+                    Insn::FixnumAdd  { left, right } => { write!(f, "FixnumAdd {left}, {right}")?; },
+                    Insn::FixnumSub  { left, right } => { write!(f, "FixnumSub {left}, {right}")?; },
+                    Insn::FixnumMult { left, right } => { write!(f, "FixnumMult {left}, {right}")?; },
+                    Insn::FixnumDiv  { left, right } => { write!(f, "FixnumDiv {left}, {right}")?; },
+                    Insn::FixnumMod  { left, right } => { write!(f, "FixnumMod {left}, {right}")?; },
+                    Insn::FixnumEq   { left, right } => { write!(f, "FixnumEq {left}, {right}")?; },
+                    Insn::FixnumNeq  { left, right } => { write!(f, "FixnumNeq {left}, {right}")?; },
+                    Insn::FixnumLt   { left, right } => { write!(f, "FixnumLt {left}, {right}")?; },
+                    Insn::FixnumLe   { left, right } => { write!(f, "FixnumLe {left}, {right}")?; },
+                    Insn::FixnumGt   { left, right } => { write!(f, "FixnumGt {left}, {right}")?; },
+                    Insn::FixnumGe   { left, right } => { write!(f, "FixnumGe {left}, {right}")?; },
+                    Insn::GuardType { val, guard_type } => { write!(f, "GuardType {val}, {guard_type}")?; },
+                    Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {invariant:}")?; },
                     insn => { write!(f, "{insn:?}")?; }
                 }
                 writeln!(f, "")?;
@@ -438,6 +491,13 @@ impl FrameState {
 
     fn top(&self) -> Result<InsnId, ParseError> {
         self.stack.last().ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
+    }
+
+    fn stack_opnd(&self, idx: usize) -> Result<InsnId, ParseError> {
+        match self.stack.get(self.stack.len() - idx - 1) {
+            Some(&opnd) => Ok(opnd),
+            _ => Err(ParseError::StackUnderflow(self.clone())),
+        }
     }
 
     fn pop(&mut self) -> Result<InsnId, ParseError> {
@@ -586,8 +646,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
-            .try_into()
+                .try_into()
                 .unwrap();
+            // Preserve the actual index for the instruction being compiled
+            let current_insn_idx = insn_idx;
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
 
@@ -705,29 +767,126 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
-                    let right = state.pop()?;
-                    let left = state.pop()?;
-                    if let Some(InsnProfile::OptPlus { recv_is_fixnum: true, obj_is_fixnum: true }) = payload.get_insn_profile(insn_idx as usize) {
-                        state.push(fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS })));
-                        let left_fixnum = fun.push_insn(block, Insn::GuardType { val: left, is_fixnum: true });
-                        state.push(left_fixnum);
-                        let right_fixnum = fun.push_insn(block, Insn::GuardType { val: right, is_fixnum: true });
-                        state.push(right_fixnum);
-                        state.push(fun.push_insn(block, Insn::FixnumAdd { recv: left_fixnum, obj: right_fixnum }));
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumAdd { left, right }));
                     } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
                         state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
                     }
                 }
-                YARVINSN_opt_div => {
-                    let right = state.pop()?;
-                    let left = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] }));
+                YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MINUS }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumSub { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "-".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MULT }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumMult { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "*".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_DIV }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumDiv { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MOD }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumMod { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "%".into() }, args: vec![right] }));
+                    }
                 }
 
-                YARVINSN_opt_lt => {
-                    let right = state.pop()?;
-                    let left = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumEq { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "==".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_NEQ }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "!=".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LT }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumLt { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LE }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumLe { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GT }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumGt { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                    }
+                }
+                YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GE }));
+                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        state.push(fun.push_insn(block, Insn::FixnumGe { left, right }));
+                    } else {
+                        let right = state.pop()?;
+                        let left = state.pop()?;
+                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                    }
                 }
                 YARVINSN_opt_ltlt => {
                     let right = state.pop()?;
@@ -788,6 +947,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     Ok(fun)
 }
 
+/// Generate guards for two fixnum outputs
+fn guard_two_fixnums(state: &mut FrameState, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
+    let left = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(1)?, guard_type: Fixnum });
+    let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum });
+
+    // Pop operands after guards for side exits
+    state.pop()?;
+    state.pop()?;
+
+    Ok((left, right))
+}
+
 #[cfg(test)]
 mod union_find_tests {
     use super::UnionFind;
@@ -838,6 +1009,19 @@ mod tests {
                     eprintln!("{} ({:?}) does not match pattern {}", stringify!($x), val, stringify!($pat));
                     assert!(false);
                 }
+            }
+        };
+    }
+
+    macro_rules! assert_hir {
+        ($method:expr, $hir:expr) => {
+            {
+                let iseq = get_method_iseq($method);
+                let function = iseq_to_hir(iseq).unwrap();
+
+                let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
+                let expected_hir = unindent($hir, true);
+                assert_eq!(actual_hir, expected_hir);
             }
         };
     }
@@ -921,6 +1105,226 @@ mod tests {
             assert_matches!(function.insns.get(11), Some(Insn::Return { val: InsnId(9) }));
             assert_matches_const(function.insns.get(14), Const::Value(VALUE::fixnum_from_usize(4)));
             assert_matches!(function.insns.get(16), Some(Insn::Return { val: InsnId(14) }));
+        });
+    }
+
+    #[test]
+    fn test_opt_plus_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a + b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumAdd v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_minus_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a - b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumSub v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_mult_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a * b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumMult v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_div_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a / b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumDiv v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_mod_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a % b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumMod v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_eq_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a == b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumEq v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_neq_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a != b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumNeq v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_lt_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a < b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumLt v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_le_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a <= b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumLe v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_gt_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a > b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumGt v6, v7
+                  v10 = Return v8
+            ");
+        });
+    }
+
+    #[test]
+    fn test_opt_ge_fixnum() {
+        crate::cruby::with_rubyvm(|| {
+            eval("
+                def test(a, b) = a >= b
+                test(1, 2); test(1, 2)
+            ");
+            assert_hir!("test", "
+                bb0:
+                  v0 = Param 0
+                  v1 = Param 1
+                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+                  v6 = GuardType v0, Fixnum
+                  v7 = GuardType v1, Fixnum
+                  v8 = FixnumGe v6, v7
+                  v10 = Return v8
+            ");
         });
     }
 }
