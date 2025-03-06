@@ -4265,13 +4265,16 @@ rassoc_i(VALUE key, VALUE val, VALUE arg)
  *  call-seq:
  *    rassoc(value) -> new_array or nil
  *
- *  Returns a new 2-element Array consisting of the key and value
- *  of the first-found entry whose value is <tt>==</tt> to value
- *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]):
+ *  Searches +self+ for the first entry whose value is <tt>==</tt> to the given +value+;
+ *  see {Entry Order}[rdoc-ref:Hash@Entry+Order].
+ *
+ *  If the entry is found, returns its key and value as a 2-element array;
+ *  returns +nil+ if not found:
+ *
  *    h = {foo: 0, bar: 1, baz: 1}
  *    h.rassoc(1) # => [:bar, 1]
  *
- *  Returns +nil+ if no such value found.
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
