@@ -15,3 +15,8 @@ assert_equal '3', %q{
   def test = 1 + 2
   test; test
 }
+
+assert_equal '[6, 3]', %q{
+  def test(a, b) = a + b
+  [test(2, 4), test(1, 2)]
+}

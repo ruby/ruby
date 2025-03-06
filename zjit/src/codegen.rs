@@ -1,10 +1,10 @@
 use crate::{
-    asm::CodeBlock, backend::lir::{asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP}, cruby::*, debug, hir::{Const, FrameState, Function, Insn, InsnId}, hir_type::{types::Fixnum, Type}, virtualmem::CodePtr
+    asm::CodeBlock, backend::lir, backend::lir::{asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP}, cruby::*, debug, hir::{Const, FrameState, Function, Insn, InsnId}, hir_type::{types::Fixnum, Type}, virtualmem::CodePtr
 };
 
 /// Ephemeral code generation state
 struct JITState {
-    /// Instruction sequence for the compiling method
+    /// Instruction sequence for the method being compiled
     iseq: IseqPtr,
 
     /// Low-level IR Operands indexed by High-level IR's Instruction ID
@@ -12,11 +12,21 @@ struct JITState {
 }
 
 impl JITState {
+    /// Create a new JITState instance
     fn new(iseq: IseqPtr, insn_len: usize) -> Self {
         JITState {
             iseq,
             opnds: vec![None; insn_len],
         }
+    }
+
+    /// Retrieve the output of a given instruction that has been compiled
+    fn get_opnd(&self, insn_id: InsnId) -> Option<lir::Opnd> {
+        let opnd = self.opnds[insn_id.0];
+        if opnd.is_none() {
+            debug!("Failed to get_opnd({insn_id})");
+        }
+        opnd
     }
 }
 
@@ -29,23 +39,10 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
 
     // Compile each instruction in the IR
     for (insn_idx, insn) in function.insns.iter().enumerate() {
-        let insn_id = InsnId(insn_idx);
-        if !matches!(*insn, Insn::Snapshot { .. }) {
-            asm_comment!(asm, "Insn: {:04} {:?}", insn_idx, insn);
+        if gen_insn(&mut jit, &mut asm, function, InsnId(insn_idx), insn).is_none() {
+            debug!("Failed to compile insn: {:04} {:?}", insn_idx, insn);
+            return None;
         }
-        match insn {
-            Insn::Const { val: Const::Value(val) } => gen_const(&mut jit, insn_id, *val),
-            Insn::Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
-            Insn::Return { val } => gen_return(&jit, &mut asm, *val)?,
-            Insn::FixnumAdd { left, right, state } => gen_fixnum_add(&mut jit, &mut asm, insn_id, *left, *right, function.frame_state(*state))?,
-            Insn::GuardType { val, guard_type, state } => gen_guard_type(&mut jit, &mut asm, insn_id, *val, *guard_type, function.frame_state(*state))?,
-            Insn::PatchPoint(_) => {}, // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
-            _ => {
-                debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
-                return None;
-            }
-        }
-        debug!("Compiled insn: {:04} {:?}", insn_idx, insn);
     }
 
     // Generate code if everything can be compiled
@@ -53,6 +50,31 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
     cb.mark_all_executable();
 
     start_ptr
+}
+
+/// Compile an instruction
+fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
+    if !matches!(*insn, Insn::Snapshot { .. }) {
+        asm_comment!(asm, "Insn: {:04} {:?}", insn_id.0, insn);
+    }
+    let out_opnd = match insn {
+        Insn::Const { val: Const::Value(val) } => gen_const(*val),
+        Insn::Param { idx } => gen_param(jit, asm, *idx)?,
+        Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
+        Insn::Return { val } => return Some(gen_return(&jit, asm, *val)?),
+        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, *left, *right, function.frame_state(*state))?,
+        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, *val, *guard_type, function.frame_state(*state))?,
+        Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
+        _ => {
+            debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
+            return None;
+        }
+    };
+
+    // If the instruction has an output, remember it in jit.opnds
+    jit.opnds[insn_id.0] = Some(out_opnd);
+
+    Some(())
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -76,9 +98,25 @@ fn gen_entry_prologue(jit: &JITState, asm: &mut Assembler) {
 }
 
 /// Compile a constant
-fn gen_const(jit: &mut JITState, insn_id: InsnId, val: VALUE) {
-    // Just remember the constant value and generate nothing
-    jit.opnds[insn_id.0] = Some(Opnd::Value(val));
+fn gen_const(val: VALUE) -> Opnd {
+    // Just propagate the constant value and generate nothing
+    Opnd::Value(val)
+}
+
+/// Compile a method/block paramter read. For now, it only supports method parameters.
+fn gen_param(jit: &JITState, asm: &mut Assembler, local_idx: usize) -> Option<lir::Opnd> {
+    // Get the EP of the current CFP
+    // TODO: Use the SP register and invalidate on EP escape
+    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
+    let ep_reg = asm.load(ep_opnd);
+
+    // Load the local variable
+    // val = *(vm_get_ep(GET_EP(), level) - idx);
+    let ep_offset = local_idx_to_ep_offset(jit.iseq, local_idx);
+    let offs = -(SIZEOF_VALUE_I32 * ep_offset);
+    let local_opnd = Opnd::mem(64, ep_reg, offs);
+
+    Some(local_opnd)
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -104,9 +142,9 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
 }
 
 /// Compile Fixnum + Fixnum
-fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, left: InsnId, right: InsnId, state: &FrameState) -> Option<()> {
-    let left_opnd = jit.opnds[left.0]?;
-    let right_opnd = jit.opnds[right.0]?;
+fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId, state: &FrameState) -> Option<lir::Opnd> {
+    let left_opnd = jit.get_opnd(left)?;
+    let right_opnd = jit.get_opnd(right)?;
 
     // Load left into a register if left is a constant. The backend doesn't support sub(imm, imm).
     let left_reg = match left_opnd {
@@ -119,13 +157,12 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, left
     let out_val = asm.add(left_untag, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
 
-    jit.opnds[insn_id.0] = Some(out_val);
-    Some(())
+    Some(out_val)
 }
 
 /// Compile a type check with a side exit
-fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, val: InsnId, guard_type: Type, state: &FrameState) -> Option<()> {
-    let opnd = jit.opnds[val.0]?;
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: InsnId, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
+    let opnd = jit.get_opnd(val)?;
     if guard_type.is_subtype(Fixnum) {
         // Load opnd into a register if opnd is a constant. The backend doesn't support test(imm, imm) yet.
         let opnd_reg = match opnd {
@@ -139,7 +176,13 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, insn_id: InsnId, val:
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
+    Some(opnd)
+}
 
-    jit.opnds[insn_id.0] = Some(opnd);
-    Some(())
+/// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
+fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
+    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
+        .try_into()
+        .unwrap();
+    local_table_size - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
 }

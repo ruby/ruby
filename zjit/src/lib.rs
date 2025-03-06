@@ -89,23 +89,30 @@ fn rb_bug_panic_hook() {
 /// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
-    // TODO: acquire the VM barrier
-
-    // Compile ISEQ into High-level IR
-    let ssa = match hir::iseq_to_hir(iseq) {
-        Ok(ssa) => ssa,
-        Err(err) => {
-            debug!("ZJIT: iseq_to_hir: {:?}", err);
-            return std::ptr::null();
-        }
-    };
-
-    // Compile High-level IR into machine code
-    let cb = ZJITState::get_code_block();
-    match gen_function(cb, &ssa, iseq) {
-        Some(start_ptr) => start_ptr.raw_ptr(cb),
-
-        // Compilation failed, continue executing in the interpreter only
-        None => std::ptr::null(),
+    // Do not test the JIT code in HIR tests
+    if cfg!(test) {
+        return std::ptr::null();
     }
+
+    // Take a lock to avoid writing to ISEQ in parallel with Ractors.
+    // with_vm_lock() does nothing if the program doesn't use Ractors.
+    with_vm_lock(src_loc!(), || {
+        // Compile ISEQ into High-level IR
+        let ssa = match hir::iseq_to_hir(iseq) {
+            Ok(ssa) => ssa,
+            Err(err) => {
+                debug!("ZJIT: iseq_to_hir: {:?}", err);
+                return std::ptr::null();
+            }
+        };
+
+        // Compile High-level IR into machine code
+        let cb = ZJITState::get_code_block();
+        match gen_function(cb, &ssa, iseq) {
+            Some(start_ptr) => start_ptr.raw_ptr(cb),
+
+            // Compilation failed, continue executing in the interpreter only
+            None => std::ptr::null(),
+        }
+    })
 }
