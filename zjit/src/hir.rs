@@ -167,10 +167,10 @@ pub enum Insn {
     //SetIvar {},
     //GetIvar {},
 
-    // Own a FrameState so that instructions can look up their dominating FrameState when
+    // Own a FrameStateId so that instructions can look up their dominating FrameStateId when
     // generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     // any code.
-    Snapshot { state: FrameState },
+    Snapshot { state: FrameStateId },
 
     // Unconditional jump
     Jump(BranchEdge),
@@ -192,21 +192,21 @@ pub enum Insn {
     Return { val: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=
-    FixnumAdd  { left: InsnId, right: InsnId, state: FrameState },
-    FixnumSub  { left: InsnId, right: InsnId, state: FrameState },
-    FixnumMult { left: InsnId, right: InsnId, state: FrameState },
-    FixnumDiv  { left: InsnId, right: InsnId, state: FrameState },
-    FixnumMod  { left: InsnId, right: InsnId, state: FrameState },
-    FixnumEq   { left: InsnId, right: InsnId, state: FrameState },
-    FixnumNeq  { left: InsnId, right: InsnId, state: FrameState },
-    FixnumLt   { left: InsnId, right: InsnId, state: FrameState },
-    FixnumLe   { left: InsnId, right: InsnId, state: FrameState },
-    FixnumGt   { left: InsnId, right: InsnId, state: FrameState },
-    FixnumGe   { left: InsnId, right: InsnId, state: FrameState },
+    FixnumAdd  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumSub  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumMult { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumDiv  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumMod  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumEq   { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumNeq  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumLt   { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumLe   { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumGt   { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumGe   { left: InsnId, right: InsnId, state: FrameStateId },
 
     /// Side-exist if val doesn't have the expected type.
     // TODO: Replace is_fixnum with the type lattice
-    GuardType { val: InsnId, guard_type: Type, state: FrameState },
+    GuardType { val: InsnId, guard_type: Type, state: FrameStateId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -338,6 +338,7 @@ pub struct Function {
     union_find: UnionFind<InsnId>,
     blocks: Vec<Block>,
     entry_block: BlockId,
+    frame_states: Vec<FrameState>,
 }
 
 impl Function {
@@ -347,7 +348,8 @@ impl Function {
             insns: vec![],
             union_find: UnionFind::new(),
             blocks: vec![Block::default()],
-            entry_block: BlockId(0)
+            entry_block: BlockId(0),
+            frame_states: vec![],
         }
     }
 
@@ -357,6 +359,19 @@ impl Function {
         self.insns.push(insn);
         self.blocks[block.0].insns.push(id);
         id
+    }
+
+    /// Store the given FrameState on the Function so that it can be cheaply referenced by
+    /// instructions.
+    fn push_frame_state(&mut self, state: FrameState) -> FrameStateId {
+        let id = FrameStateId(self.frame_states.len());
+        self.frame_states.push(state);
+        id
+    }
+
+    /// Return a reference to the FrameState at the given index.
+    pub fn frame_state(&self, id: FrameStateId) -> &FrameState {
+        &self.frame_states[id.0]
     }
 
     fn new_block(&mut self) -> BlockId {
@@ -411,7 +426,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     Insn::ArraySet { idx, val } => { write!(f, "ArraySet {idx}, {val}")?; }
                     Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}")?; }
                     Insn::Test { val } => { write!(f, "Test {val}")?; }
-                    Insn::Snapshot { state } => { write!(f, "Snapshot {state}")?; }
+                    Insn::Snapshot { state } => { write!(f, "Snapshot {}", fun.frame_state(*state))?; }
                     Insn::Jump(target) => { write!(f, "Jump {target}")?; }
                     Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
@@ -453,6 +468,9 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 }
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub struct FrameStateId(pub usize);
 
 /// Compute the index of a local variable from its slot index
 fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
@@ -642,7 +660,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // Get the current pc and opcode
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
             state.pc = unsafe { *pc };
-            fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+            let exit_state = fun.push_frame_state(state.clone());
+            fun.push_insn(block, Insn::Snapshot { state: exit_state });
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
@@ -769,8 +788,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumAdd { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -781,8 +799,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MINUS }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumSub { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -793,8 +810,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MULT }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumMult { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -805,8 +821,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_DIV }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumDiv { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -817,8 +832,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MOD }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumMod { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -830,8 +844,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumEq { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -842,8 +855,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_NEQ }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumNeq { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -854,8 +866,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LT }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumLt { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -866,8 +877,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LE }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumLe { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -878,8 +888,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GT }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumGt { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -890,8 +899,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GE }));
-                        let exit_state = state.clone();
-                        let (left, right) = guard_two_fixnums(&mut state, &mut fun, block)?;
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.push(fun.push_insn(block, Insn::FixnumGe { left, right, state: exit_state }));
                     } else {
                         let right = state.pop()?;
@@ -959,9 +967,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Generate guards for two fixnum outputs
-fn guard_two_fixnums(state: &mut FrameState, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
-    let left = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(1)?, guard_type: Fixnum, state: state.clone() });
-    let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum, state: state.clone() });
+fn guard_two_fixnums(state: &mut FrameState, exit_state: FrameStateId, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
+    let left = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(1)?, guard_type: Fixnum, state: exit_state });
+    let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum, state: exit_state });
 
     // Pop operands after guards for side exits
     state.pop()?;

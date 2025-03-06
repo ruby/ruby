@@ -37,8 +37,8 @@ pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> O
             Insn::Const { val: Const::Value(val) } => gen_const(&mut jit, insn_id, *val),
             Insn::Snapshot { .. } => {}, // we don't need to do anything for this instruction at the moment
             Insn::Return { val } => gen_return(&jit, &mut asm, *val)?,
-            Insn::FixnumAdd { left, right, state } => gen_fixnum_add(&mut jit, &mut asm, insn_id, *left, *right, state)?,
-            Insn::GuardType { val, guard_type, state } => gen_guard_type(&mut jit, &mut asm, insn_id, *val, *guard_type, state)?,
+            Insn::FixnumAdd { left, right, state } => gen_fixnum_add(&mut jit, &mut asm, insn_id, *left, *right, function.frame_state(*state))?,
+            Insn::GuardType { val, guard_type, state } => gen_guard_type(&mut jit, &mut asm, insn_id, *val, *guard_type, function.frame_state(*state))?,
             Insn::PatchPoint(_) => {}, // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
             _ => {
                 debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
