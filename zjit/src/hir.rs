@@ -356,8 +356,12 @@ impl Function {
     // Add an instruction to an SSA block
     fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
         let id = InsnId(self.insns.len());
+        if let Insn::Param { .. } = &insn {
+            self.blocks[block.0].params.push(id);
+        } else {
+            self.blocks[block.0].insns.push(id);
+        }
         self.insns.push(insn);
-        self.blocks[block.0].insns.push(id);
         id
     }
 
@@ -413,7 +417,15 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
         let fun = &self.fun;
         for (block_id, block) in fun.blocks.iter().enumerate() {
             let block_id = BlockId(block_id);
-            writeln!(f, "{block_id}:")?;
+            write!(f, "{block_id}(")?;
+            if !block.params.is_empty() {
+                let mut sep = "";
+                for param in &block.params {
+                    write!(f, "{sep}{param}")?;
+                    sep = ", ";
+                }
+            }
+            writeln!(f, "):")?;
             for insn_id in &block.insns {
                 if !self.display_snapshot && matches!(fun.insns[insn_id.0], Insn::Snapshot {..}) {
                     continue;
@@ -1083,7 +1095,7 @@ mod tests {
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
             assert_function_hir(function, "
-                bb0:
+                bb0():
                   v1 = Const Value(123)
                   v3 = Return v1
             ");
@@ -1097,7 +1109,7 @@ mod tests {
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
             assert_function_hir(function, "
-                bb0:
+                bb0():
                   v1 = Const Value(1)
                   v3 = Const Value(2)
                   v5 = Send v1, :+, v3
@@ -1113,7 +1125,7 @@ mod tests {
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
             assert_function_hir(function, "
-                bb0:
+                bb0():
                   v0 = Const Value(nil)
                   v2 = Const Value(1)
                   v6 = Return v2
@@ -1128,15 +1140,14 @@ mod tests {
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
             assert_function_hir(function, "
-                bb0:
+                bb0():
                   v0 = Const Value(nil)
                   v2 = Const Value(true)
                   v6 = Test v2
                   v7 = IfFalse v6, bb1(v2)
                   v9 = Const Value(3)
                   v11 = Return v9
-                bb1:
-                  v12 = Param 0
+                bb1(v12):
                   v14 = Const Value(4)
                   v16 = Return v14
             ");
@@ -1151,9 +1162,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1171,9 +1180,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1191,9 +1198,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1211,9 +1216,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1231,9 +1234,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1251,9 +1252,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1271,9 +1270,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1291,9 +1288,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1311,9 +1306,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1331,9 +1324,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
@@ -1351,9 +1342,7 @@ mod tests {
                 test(1, 2); test(1, 2)
             ");
             assert_method_hir("test", "
-                bb0:
-                  v0 = Param 0
-                  v1 = Param 1
+                bb0(v0, v1):
                   v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
                   v6 = GuardType v0, Fixnum
                   v7 = GuardType v1, Fixnum
