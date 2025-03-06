@@ -939,7 +939,7 @@ G
     end
   end
 
-  context "bundle console", bundler: "< 3" do
+  context "bundle console" do
     before do
       install_gemfile <<-G
         source "https://gem.repo1"
