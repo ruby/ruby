@@ -1067,7 +1067,7 @@ mod tests {
 
     #[track_caller]
     fn assert_method_hir(method: &str, hir: &str) {
-        let iseq = get_method_iseq(method);
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, hir);
     }
@@ -1081,274 +1081,242 @@ mod tests {
 
     #[test]
     fn boot_vm() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "nil.itself";
-            let iseq = compile_to_iseq(program);
-            assert!(iseq_to_hir(iseq).is_ok());
-        });
+        let program = "nil.itself";
+        let iseq = compile_to_iseq(program);
+        assert!(iseq_to_hir(iseq).is_ok());
     }
 
     #[test]
     fn test_putobject() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "123";
-            let iseq = compile_to_iseq(program);
-            let function = iseq_to_hir(iseq).unwrap();
-            assert_function_hir(function, "
-                bb0():
-                  v1 = Const Value(123)
-                  v3 = Return v1
-            ");
-        });
+        let program = "123";
+        let iseq = compile_to_iseq(program);
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, "
+            bb0():
+              v1 = Const Value(123)
+              v3 = Return v1
+        ");
     }
 
     #[test]
     fn test_opt_plus() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "1+2";
-            let iseq = compile_to_iseq(program);
-            let function = iseq_to_hir(iseq).unwrap();
-            assert_function_hir(function, "
-                bb0():
-                  v1 = Const Value(1)
-                  v3 = Const Value(2)
-                  v5 = Send v1, :+, v3
-                  v7 = Return v5
-            ");
-        });
+        let program = "1+2";
+        let iseq = compile_to_iseq(program);
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, "
+            bb0():
+              v1 = Const Value(1)
+              v3 = Const Value(2)
+              v5 = Send v1, :+, v3
+              v7 = Return v5
+        ");
     }
 
     #[test]
     fn test_setlocal_getlocal() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "a = 1; a";
-            let iseq = compile_to_iseq(program);
-            let function = iseq_to_hir(iseq).unwrap();
-            assert_function_hir(function, "
-                bb0():
-                  v0 = Const Value(nil)
-                  v2 = Const Value(1)
-                  v6 = Return v2
-            ");
-        });
+        let program = "a = 1; a";
+        let iseq = compile_to_iseq(program);
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, "
+            bb0():
+              v0 = Const Value(nil)
+              v2 = Const Value(1)
+              v6 = Return v2
+        ");
     }
 
     #[test]
     fn test_merge_const() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "cond = true; if cond; 3; else; 4; end";
-            let iseq = compile_to_iseq(program);
-            let function = iseq_to_hir(iseq).unwrap();
-            assert_function_hir(function, "
-                bb0():
-                  v0 = Const Value(nil)
-                  v2 = Const Value(true)
-                  v6 = Test v2
-                  v7 = IfFalse v6, bb1(v2)
-                  v9 = Const Value(3)
-                  v11 = Return v9
-                bb1(v12):
-                  v14 = Const Value(4)
-                  v16 = Return v14
-            ");
-        });
+        let program = "cond = true; if cond; 3; else; 4; end";
+        let iseq = compile_to_iseq(program);
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, "
+            bb0():
+              v0 = Const Value(nil)
+              v2 = Const Value(true)
+              v6 = Test v2
+              v7 = IfFalse v6, bb1(v2)
+              v9 = Const Value(3)
+              v11 = Return v9
+            bb1(v12):
+              v14 = Const Value(4)
+              v16 = Return v14
+        ");
     }
 
     #[test]
     fn test_opt_plus_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a + b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumAdd v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a + b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumAdd v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_minus_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a - b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumSub v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a - b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumSub v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_mult_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a * b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumMult v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a * b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumMult v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_div_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a / b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumDiv v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a / b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumDiv v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_mod_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a % b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumMod v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a % b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumMod v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_eq_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a == b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumEq v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a == b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumEq v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_neq_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a != b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumNeq v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a != b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumNeq v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_lt_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a < b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumLt v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a < b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumLt v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_le_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a <= b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumLe v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a <= b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumLe v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_gt_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a > b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumGt v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a > b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumGt v6, v7
+              v10 = Return v8
+        ");
     }
 
     #[test]
     fn test_opt_ge_fixnum() {
-        crate::cruby::with_rubyvm(|| {
-            eval("
-                def test(a, b) = a >= b
-                test(1, 2); test(1, 2)
-            ");
-            assert_method_hir("test", "
-                bb0(v0, v1):
-                  v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-                  v6 = GuardType v0, Fixnum
-                  v7 = GuardType v1, Fixnum
-                  v8 = FixnumGe v6, v7
-                  v10 = Return v8
-            ");
-        });
+        eval("
+            def test(a, b) = a >= b
+            test(1, 2); test(1, 2)
+        ");
+        assert_method_hir("test", "
+            bb0(v0, v1):
+              v5 = PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              v6 = GuardType v0, Fixnum
+              v7 = GuardType v1, Fixnum
+              v8 = FixnumGe v6, v7
+              v10 = Return v8
+        ");
     }
 }

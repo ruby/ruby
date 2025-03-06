@@ -853,13 +853,16 @@ pub use manual_defs::*;
 
 #[cfg(test)]
 pub mod test_utils {
-    use std::ptr::null;
+    use std::{ptr::null, sync::Once};
 
     use crate::{options::init_options, rb_zjit_enabled_p, state::ZJITState};
 
     use super::*;
 
-    pub fn with_rubyvm(mut func: impl FnMut()) {
+    static RUBY_VM_INIT: Once = Once::new();
+
+    /// Boot and initialize the Ruby VM for Rust testing
+    fn boot_rubyvm() {
         // Boot the VM
         unsafe {
             let mut var: VALUE = Qnil;
@@ -868,32 +871,47 @@ pub mod test_utils {
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
-        // Invoke callback through rb_protect() so exceptions don't crash the process.
-        // "Fun" double pointer dance to get a thin function pointer to pass through C
-        let mut data: &mut dyn FnMut() = &mut func;
-        unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
-            // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: &mut &mut dyn FnMut() -> bool = unsafe { std::mem::transmute(data) };
-            callback();
-            Qnil
-        }
-
         // Set up globals for convenience
         ZJITState::init(init_options());
 
         // Enable zjit_* instructions
         unsafe { rb_zjit_enabled_p = true; }
+    }
+
+    /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
+    pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
+        RUBY_VM_INIT.call_once(|| boot_rubyvm());
+
+        // Set up a callback wrapper to store a return value
+        let mut result: Option<T> = None;
+        let mut data: &mut dyn FnMut() = &mut || {
+            // Store the result externally
+            result.replace(func());
+        };
+
+        // Invoke callback through rb_protect() so exceptions don't crash the process.
+        // "Fun" double pointer dance to get a thin function pointer to pass through C
+        unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
+            // SAFETY: shorter lifetime than the data local in the caller frame
+            let callback: &mut &mut dyn FnMut() = unsafe { std::mem::transmute(data) };
+            callback();
+            Qnil
+        }
 
         let mut state: c_int = 0;
         unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
         // TODO(alan): there should be a way to print the exception instead of swallowing it
         assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
+
+        result.expect("Callback did not set result")
     }
 
     /// Compile an ISeq via `RubyVM::InstructionSequence.compile`.
     pub fn compile_to_iseq(program: &str) -> *const rb_iseq_t {
-        let wrapped_iseq = compile_to_wrapped_iseq(program);
-        unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
+        with_rubyvm(|| {
+            let wrapped_iseq = compile_to_wrapped_iseq(program);
+            unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
+        })
     }
 
     pub fn define_class(name: &str, superclass: VALUE) -> VALUE {
@@ -903,8 +921,10 @@ pub mod test_utils {
 
     /// Evaluate a given Ruby program
     pub fn eval(program: &str) -> VALUE {
-        let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
-        unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        with_rubyvm(|| {
+            let wrapped_iseq = compile_to_wrapped_iseq(&unindent(program, false));
+            unsafe { rb_funcallv(wrapped_iseq, ID!(eval), 0, null()) }
+        })
     }
 
     /// Get the ISeq of a specified method
