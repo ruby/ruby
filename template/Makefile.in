@@ -642,7 +642,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_insn_len_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_name_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
-	  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb \
 	  $(tooldir)/ruby_vm/views/_insn_type_chars.erb \
 	  $(tooldir)/ruby_vm/views/_leaf_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_notice.erb \
