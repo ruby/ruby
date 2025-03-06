@@ -941,8 +941,13 @@ G
 
   context "bundle console" do
     before do
+      build_repo2 do
+        build_dummy_irb
+      end
+
       install_gemfile <<-G
-        source "https://gem.repo1"
+        source "https://gem.repo2"
+        gem "irb"
         gem "myrack"
         gem "activesupport", :group => :test
         gem "myrack_middleware", :group => :development
