@@ -129,10 +129,12 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS"
-          SPECOPTS="$SPECOPTS"
-        timeout-minutes: 60
+          for i in {1..21}; do
+            make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+            RUN_OPTS="$RUN_OPTS"
+            SPECOPTS="$SPECOPTS"
+          done
+        timeout-minutes: 3600
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'

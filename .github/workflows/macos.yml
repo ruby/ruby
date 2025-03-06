@@ -132,9 +132,10 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          ulimit -c unlimited
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-        timeout-minutes: 60
+          for i in {1..21}; do
+            make -s ${{ matrix.test_task }}
+          done
+        timeout-minutes: 3600
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'

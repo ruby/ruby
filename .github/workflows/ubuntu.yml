@@ -118,10 +118,10 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: >-
-          $SETARCH make -s ${{ matrix.test_task }}
-          ${TESTS:+TESTS="$TESTS"}
-          ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
-        timeout-minutes: ${{ matrix.timeout || 40 }}
+          for i in {1..21}; do
+            $SETARCH make -s ${{ matrix.test_task }}
+          done
+        timeout-minutes: 3600
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'

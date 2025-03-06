@@ -161,6 +161,7 @@ module Test
 
       def _report(res, *args) # :nodoc:
         @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
+        @stdout.flush
         true
       rescue Errno::EPIPE
       rescue TypeError => e

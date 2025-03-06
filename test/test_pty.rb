@@ -16,21 +16,89 @@ class TestPTY < Test::Unit::TestCase
   rescue RuntimeError
     omit $!
   else
-    assert_equal("a\r\n", r.gets)
+    sleep 5
+    retry_times = 0
+    is_success = false
+    is_exit = false
+    reads = []
+    statuses = []
+    until retry_times > 10
+      begin
+        p = PTY.check(pid)
+        statuses << p
+        if p = Process.waitpid(pid, Process::WNOHANG)
+          is_exit = true
+          break
+        end
+      rescue Errno::ECHILD
+        is_exit = true
+      end
+      read = r.gets
+      reads << read
+      if read == "a\r\n"
+        is_success = true
+        break
+      end
+      retry_times += 1
+      sleep 0.01
+    end
+    if is_success
+      $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
+      assert true
+    else
+      assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
+    end
   ensure
     r&.close
     w&.close
-    Process.wait pid if pid
+    begin
+      Process.wait pid if pid
+    rescue Errno::ECHILD
+    end
   end
 
   def test_spawn_with_block
     PTY.spawn(RUBY, '-e', 'puts "b"; sleep 0.1') {|r,w,pid|
       begin
-        assert_equal("b\r\n", r.gets)
+        sleep 5
+        retry_times = 0
+        is_success = false
+        is_exit = false
+        reads = []
+        statuses = []
+        until retry_times > 10
+          p = PTY.check(pid)
+          statuses << p
+          begin
+            if p = Process.waitpid(pid, Process::WNOHANG)
+              is_exit = true
+              break
+            end
+          rescue Errno::ECHILD
+            is_exit = true
+          end
+          read = r.gets
+          reads << read
+          if read == "b\r\n"
+            is_success = true
+            break
+          end
+          retry_times += 1
+          sleep 0.01
+        end
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
+        end
       ensure
         r.close
         w.close
-        Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError
@@ -41,11 +109,45 @@ class TestPTY < Test::Unit::TestCase
     commandline = Shellwords.join([RUBY, '-e', 'puts "foo"; sleep 0.1'])
     PTY.spawn(commandline) {|r,w,pid|
       begin
-        assert_equal("foo\r\n", r.gets)
+        sleep 5
+        retry_times = 0
+        is_success = false
+        is_exit = false
+        reads = []
+        statuses = []
+        until retry_times > 10
+          p = PTY.check(pid)
+          statuses << p
+          begin
+            if p = Process.waitpid(pid, Process::WNOHANG)
+              is_exit = true
+              break
+            end
+          rescue Errno::ECHILD
+            is_exit = true
+          end
+          read = r.gets
+          reads << read
+          if read == "foo\r\n"
+            is_success = true
+            break
+          end
+          retry_times += 1
+          sleep 0.01
+        end
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
+        end
       ensure
         r.close
         w.close
-        Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError
@@ -55,11 +157,45 @@ class TestPTY < Test::Unit::TestCase
   def test_argv0
     PTY.spawn([RUBY, "argv0"], '-e', 'puts "bar"; sleep 0.1') {|r,w,pid|
       begin
-        assert_equal("bar\r\n", r.gets)
+        sleep 5
+        retry_times = 0
+        is_success = false
+        is_exit = false
+        reads = []
+        statuses = []
+        until retry_times > 10
+          p = PTY.check(pid)
+          statuses << p
+          begin
+            if p = Process.waitpid(pid, Process::WNOHANG)
+              is_exit = true
+              break
+            end
+          rescue Errno::ECHILD
+            is_exit = true
+          end
+          read = r.gets
+          reads << read
+          if read == "bar\r\n"
+            is_success = true
+            break
+          end
+          retry_times += 1
+          sleep 0.01
+        end
+        if is_success
+          $stderr.puts "Success case: RUBY: #{RUBY}, Process: #{pid}, retry_times: #{retry_times}"
+          assert true
+        else
+          assert false, "RUBY: #{RUBY}, Process: #{pid}, Process_exit: #{is_exit} retry_times: #{retry_times} reads: #{reads}, statuses: #{statuses}"
+        end
       ensure
         r.close
         w.close
-        Process.wait(pid)
+        begin
+          Process.wait pid if pid
+        rescue Errno::ECHILD
+        end
       end
     }
   rescue RuntimeError

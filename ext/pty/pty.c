@@ -120,6 +120,17 @@ chfunc(void *data, char *errbuf, size_t errbuf_len)
     if (drop_privilege(errbuf, errbuf_len))
         return -1;
 
+#ifdef __APPLE__
+    /*
+        In macOS, there is a problem where the Slave PTY output is lost after a child process exits.
+        As a workaround, we open /dev/tty, then close it.
+        https://bugs.ruby-lang.org/issues/20682
+
+        NOTE: The order of calling this function is important. Please be careful if you move this function to another place.
+    */
+    close(open("/dev/tty", O_WRONLY));
+#endif
+
     return rb_exec_async_signal_safe(carg->eargp, errbuf, errbuf_len);
 }
 
