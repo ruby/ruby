@@ -17,7 +17,7 @@ use crate::cruby::ClassRelationship;
 /// Type internals.
 pub enum Specialization {
     /// We know nothing about the specialization of this Type.
-    Top,
+    Any,
     /// We know that this Type is an instance of the given Ruby class in the VALUE or any of its subclasses.
     Type(VALUE),
     /// We know that this Type is an instance of exactly the Ruby class in the VALUE.
@@ -29,9 +29,9 @@ pub enum Specialization {
     Int(u64),
     /// We know that this Type is exactly the given primitive/C double.
     Double(f64),
-    /// We know that the Type is [`types::Bottom`] and therefore the instruction that produces this
+    /// We know that the Type is [`types::Empty`] and therefore the instruction that produces this
     /// value never returns.
-    Bottom,
+    Empty,
 }
 
 // NOTE: Type very intentionally does not support Eq or PartialEq; we almost never want to check
@@ -47,8 +47,8 @@ pub enum Specialization {
 pub struct Type {
     /// A bitset representing type information about the object. Specific bits are assigned for
     /// leaf types (for example, static symbols) and union-ing bitsets together represents
-    /// union-ing sets of types. These sets form a lattice (with Top as "could be anything" and
-    /// Bottom as "can be nothing").
+    /// union-ing sets of types. These sets form a lattice (with Any as "could be anything" and
+    /// Empty as "can be nothing").
     ///
     /// Capable of also representing primitive types (bool, i32, etc).
     ///
@@ -76,7 +76,7 @@ fn get_class_name(class: Option<VALUE>) -> String {
 
 fn write_spec(f: &mut std::fmt::Formatter, ty: Type) -> std::fmt::Result {
     match ty.spec {
-        Specialization::Top | Specialization::Bottom => { Ok(()) },
+        Specialization::Any | Specialization::Empty => { Ok(()) },
         Specialization::Object(val) => write!(f, "[{val}]"),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(Some(val))),
         Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(Some(val))),
@@ -175,10 +175,10 @@ impl Type {
     const fn from_bits(bits: u64) -> Type {
         Type {
             bits,
-            spec: if bits == bits::Bottom {
-                Specialization::Bottom
+            spec: if bits == bits::Empty {
+                Specialization::Empty
             } else {
-                Specialization::Top
+                Specialization::Any
             },
         }
     }
@@ -187,7 +187,7 @@ impl Type {
     /// `specialization` represents. For example, `Type::from_cint(types::CBool, 1)` or
     /// `Type::from_cint(types::CUInt16, 12)`.
     pub fn from_cint(ty: Type, val: i64) -> Type {
-        assert_eq!(ty.spec, Specialization::Top);
+        assert_eq!(ty.spec, Specialization::Any);
         assert!((ty.is_subtype(types::CUnsigned) || ty.is_subtype(types::CSigned)) &&
                 ty.bits != types::CUnsigned.bits && ty.bits != types::CSigned.bits,
                 "ty must be a specific int size");
@@ -302,10 +302,10 @@ impl Type {
     /// You probably want [`Type::is_subtype`] instead.
     fn spec_is_subtype_of(&self, other: Type) -> bool {
         match (self.spec, other.spec) {
-            // Bottom is a subtype of everything; Top is a supertype of everything
-            (Specialization::Bottom, _) | (_, Specialization::Top) => true,
-            // Other is not Top from the previous case, so Top is definitely not a subtype
-            (Specialization::Top, _) | (_, Specialization::Bottom) => false,
+            // Empty is a subtype of everything; Any is a supertype of everything
+            (Specialization::Empty, _) | (_, Specialization::Any) => true,
+            // Other is not Any from the previous case, so Any is definitely not a subtype
+            (Specialization::Any, _) | (_, Specialization::Empty) => false,
             // Int and double specialization requires exact equality
             (Specialization::Int(_), _) | (_, Specialization::Int(_)) |
             (Specialization::Double(_), _) | (_, Specialization::Double(_)) =>
@@ -348,27 +348,27 @@ mod tests {
     }
 
     #[test]
-    fn bottom_is_subtype_of_everything() {
+    fn empty_is_subtype_of_everything() {
         // Spot check a few cases
-        assert_subtype(types::Bottom, types::NilClassExact);
-        assert_subtype(types::Bottom, types::Array);
-        assert_subtype(types::Bottom, types::Object);
-        assert_subtype(types::Bottom, types::CUInt16);
-        assert_subtype(types::Bottom, Type::from_cint(types::CInt32, 10));
-        assert_subtype(types::Bottom, types::Top);
-        assert_subtype(types::Bottom, types::Bottom);
+        assert_subtype(types::Empty, types::NilClassExact);
+        assert_subtype(types::Empty, types::Array);
+        assert_subtype(types::Empty, types::Object);
+        assert_subtype(types::Empty, types::CUInt16);
+        assert_subtype(types::Empty, Type::from_cint(types::CInt32, 10));
+        assert_subtype(types::Empty, types::Any);
+        assert_subtype(types::Empty, types::Empty);
     }
 
     #[test]
-    fn everything_is_a_subtype_of_top() {
+    fn everything_is_a_subtype_of_any() {
         // Spot check a few cases
-        assert_subtype(types::NilClassExact, types::Top);
-        assert_subtype(types::Array, types::Top);
-        assert_subtype(types::Object, types::Top);
-        assert_subtype(types::CUInt16, types::Top);
-        assert_subtype(Type::from_cint(types::CInt32, 10), types::Top);
-        assert_subtype(types::Bottom, types::Top);
-        assert_subtype(types::Top, types::Top);
+        assert_subtype(types::NilClassExact, types::Any);
+        assert_subtype(types::Array, types::Any);
+        assert_subtype(types::Object, types::Any);
+        assert_subtype(types::CUInt16, types::Any);
+        assert_subtype(Type::from_cint(types::CInt32, 10), types::Any);
+        assert_subtype(types::Empty, types::Any);
+        assert_subtype(types::Any, types::Any);
     }
 
     #[test]
@@ -499,7 +499,7 @@ mod tests {
 
     #[test]
     fn union_bits_unions_bits() {
-        assert_bit_equal(types::Fixnum.union(types::StaticSymbol), Type { bits: bits::Fixnum | bits::StaticSymbol, spec: Specialization::Top });
+        assert_bit_equal(types::Fixnum.union(types::StaticSymbol), Type { bits: bits::Fixnum | bits::StaticSymbol, spec: Specialization::Any });
     }
 
     #[test]
@@ -517,8 +517,8 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let specialized = Type::from_value(unsafe { rb_ary_new_capa(0) });
             let unspecialized = types::StringExact;
-            assert_bit_equal(specialized.union(unspecialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Top });
-            assert_bit_equal(unspecialized.union(specialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Top });
+            assert_bit_equal(specialized.union(unspecialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
+            assert_bit_equal(unspecialized.union(specialized), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
         });
     }
 
@@ -571,7 +571,7 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let string = Type::from_value(rust_str_to_ruby("hello"));
             let array = Type::from_value(unsafe { rb_ary_new_capa(0) });
-            assert_bit_equal(string.union(array), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Top });
+            assert_bit_equal(string.union(array), Type { bits: bits::ArrayExact | bits::StringExact, spec: Specialization::Any });
         });
     }
 

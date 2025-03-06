@@ -43,13 +43,13 @@ end
 
 # ===== Start generating the type DAG =====
 
-# Start at Top. All types are subtypes of Top.
-top = Type.new "Top"
+# Start at Any. All types are subtypes of Any.
+any = Type.new "Any"
 # Build the Ruby object universe.
-object = top.subtype "Object"
+object = any.subtype "Object"
 object.subtype "ObjectExact"
 $object_user = object.subtype "ObjectUser"
-$user = top.subtype "User"
+$user = any.subtype "User"
 $builtin_exact = object.subtype "BuiltinExact"
 
 # Define a new type that can be subclassed (most of them).
@@ -86,7 +86,7 @@ base_type "TrueClass"
 base_type "FalseClass"
 
 # Build the primitive object universe.
-primitive = top.subtype "Primitive"
+primitive = any.subtype "Primitive"
 primitive.subtype "CBool"
 primitive.subtype "CPtr"
 primitive.subtype "CDouble"
@@ -101,9 +101,9 @@ unsigned = primitive_int.subtype "CUnsigned"
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0
-bits = {"Bottom" => ["0u64"]}
-numeric_bits = {"Bottom" => 0}
-Set[top, *top.all_subtypes].sort_by(&:name).each {|type|
+bits = {"Empty" => ["0u64"]}
+numeric_bits = {"Empty" => 0}
+Set[any, *any.all_subtypes].sort_by(&:name).each {|type|
   subtypes = type.subtypes
   if subtypes.empty?
     # Assign bits for leaves
@@ -115,7 +115,7 @@ Set[top, *top.all_subtypes].sort_by(&:name).each {|type|
     bits[type.name] = subtypes.map(&:name).sort
   end
 }
-[*top.all_subtypes, top].each {|type|
+[*any.all_subtypes, any].each {|type|
   subtypes = type.subtypes
   unless subtypes.empty?
     numeric_bits[type.name] = subtypes.map {|ty| numeric_bits[ty.name]}.reduce(&:|)

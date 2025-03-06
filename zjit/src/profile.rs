@@ -4,7 +4,7 @@
 use core::ffi::c_void;
 use std::collections::HashMap;
 
-use crate::{cruby::*, hir_type::{types::{Bottom, Fixnum}, Type}};
+use crate::{cruby::*, hir_type::{types::{Empty, Fixnum}, Type}};
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -67,7 +67,7 @@ fn profile_operands(profiler: &mut Profiler, n: usize) {
     let mut types = if let Some(types) = payload.opnd_types.get(&profiler.insn_idx) {
         types.clone()
     } else {
-        vec![Bottom; n]
+        vec![Empty; n]
     };
 
     for i in 0..n {
