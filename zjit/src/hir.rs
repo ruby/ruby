@@ -1032,28 +1032,6 @@ mod tests {
         };
     }
 
-    macro_rules! assert_hir {
-        ($method:expr, $hir:expr) => {
-            {
-                let iseq = get_method_iseq($method);
-                let function = iseq_to_hir(iseq).unwrap();
-
-                let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
-                let expected_hir = unindent($hir, true);
-                assert_eq!(actual_hir, expected_hir);
-            }
-        };
-    }
-
-    #[test]
-    fn boot_vm() {
-        crate::cruby::with_rubyvm(|| {
-            let program = "nil.itself";
-            let iseq = compile_to_iseq(program);
-            let function = iseq_to_hir(iseq).unwrap();
-            assert!(matches!(function.insns.get(0), Some(Insn::Snapshot { .. })));
-        });
-    }
 
     #[track_caller]
     fn assert_matches_value(insn: Option<&Insn>, val: VALUE) {
@@ -1075,14 +1053,40 @@ mod tests {
         }
     }
 
+    #[track_caller]
+    fn assert_method_hir(method: &str, hir: &str) {
+        let iseq = get_method_iseq(method);
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, hir);
+    }
+
+    #[track_caller]
+    fn assert_function_hir(function: Function, hir: &str) {
+        let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
+        let expected_hir = unindent(hir, true);
+        assert_eq!(actual_hir, expected_hir);
+    }
+
+    #[test]
+    fn boot_vm() {
+        crate::cruby::with_rubyvm(|| {
+            let program = "nil.itself";
+            let iseq = compile_to_iseq(program);
+            assert!(iseq_to_hir(iseq).is_ok());
+        });
+    }
+
     #[test]
     fn test_putobject() {
         crate::cruby::with_rubyvm(|| {
             let program = "123";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches_value(function.insns.get(1), VALUE::fixnum_from_usize(123));
-            assert_matches!(function.insns.get(3), Some(Insn::Return { val: InsnId(1) }));
+            assert_function_hir(function, "
+                bb0:
+                  v1 = Const Value(123)
+                  v3 = Return v1
+            ");
         });
     }
 
@@ -1092,11 +1096,13 @@ mod tests {
             let program = "1+2";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            // TODO(max): Figure out a clean way to match against String
-            // TODO(max): Figure out a clean way to match against args vec
-            assert_matches_value(function.insns.get(1), VALUE::fixnum_from_usize(1));
-            assert_matches_value(function.insns.get(3), VALUE::fixnum_from_usize(2));
-            assert_matches!(function.insns.get(5), Some(Insn::Send { self_val: InsnId(1), .. }));
+            assert_function_hir(function, "
+                bb0:
+                  v1 = Const Value(1)
+                  v3 = Const Value(2)
+                  v5 = Send v1, :+, v3
+                  v7 = Return v5
+            ");
         });
     }
 
@@ -1106,8 +1112,12 @@ mod tests {
             let program = "a = 1; a";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches_value(function.insns.get(2), VALUE::fixnum_from_usize(1));
-            assert_matches!(function.insns.get(6), Some(Insn::Return { val: InsnId(2) }));
+            assert_function_hir(function, "
+                bb0:
+                  v0 = Const Value(nil)
+                  v2 = Const Value(1)
+                  v6 = Return v2
+            ");
         });
     }
 
@@ -1117,13 +1127,19 @@ mod tests {
             let program = "cond = true; if cond; 3; else; 4; end";
             let iseq = compile_to_iseq(program);
             let function = iseq_to_hir(iseq).unwrap();
-            assert_matches_const(function.insns.get(2), Const::Value(Qtrue));
-            assert_matches!(function.insns.get(6), Some(Insn::Test { val: InsnId(2) }));
-            assert_matches!(function.insns.get(7), Some(Insn::IfFalse { val: InsnId(6), target: BranchEdge { target: BlockId(1), .. } }));
-            assert_matches_const(function.insns.get(9), Const::Value(VALUE::fixnum_from_usize(3)));
-            assert_matches!(function.insns.get(11), Some(Insn::Return { val: InsnId(9) }));
-            assert_matches_const(function.insns.get(14), Const::Value(VALUE::fixnum_from_usize(4)));
-            assert_matches!(function.insns.get(16), Some(Insn::Return { val: InsnId(14) }));
+            assert_function_hir(function, "
+                bb0:
+                  v0 = Const Value(nil)
+                  v2 = Const Value(true)
+                  v6 = Test v2
+                  v7 = IfFalse v6, bb1(v2)
+                  v9 = Const Value(3)
+                  v11 = Return v9
+                bb1:
+                  v12 = Param 0
+                  v14 = Const Value(4)
+                  v16 = Return v14
+            ");
         });
     }
 
@@ -1134,7 +1150,7 @@ mod tests {
                 def test(a, b) = a + b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1154,7 +1170,7 @@ mod tests {
                 def test(a, b) = a - b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1174,7 +1190,7 @@ mod tests {
                 def test(a, b) = a * b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1194,7 +1210,7 @@ mod tests {
                 def test(a, b) = a / b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1214,7 +1230,7 @@ mod tests {
                 def test(a, b) = a % b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1234,7 +1250,7 @@ mod tests {
                 def test(a, b) = a == b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1254,7 +1270,7 @@ mod tests {
                 def test(a, b) = a != b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1274,7 +1290,7 @@ mod tests {
                 def test(a, b) = a < b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1294,7 +1310,7 @@ mod tests {
                 def test(a, b) = a <= b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1314,7 +1330,7 @@ mod tests {
                 def test(a, b) = a > b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
@@ -1334,7 +1350,7 @@ mod tests {
                 def test(a, b) = a >= b
                 test(1, 2); test(1, 2)
             ");
-            assert_hir!("test", "
+            assert_method_hir("test", "
                 bb0:
                   v0 = Param 0
                   v1 = Param 1
