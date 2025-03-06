@@ -2607,17 +2607,18 @@ rb_hash_reject_bang(VALUE hash)
  *    reject {|key, value| ... } -> new_hash
  *    reject -> new_enumerator
  *
- *  Returns a new +Hash+ object whose entries are all those
- *  from +self+ for which the block returns +false+ or +nil+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.reject {|key, value| key.start_with?('b') }
- *    h1 # => {foo: 0}
+ *  With a block given, returns a copy of +self+ with zero or more entries removed;
+ *  calls the block with each key-value pair;
+ *  includes the entry in the copy if the block returns a truthy value,
+ *  excludes it otherwise:
  *
- *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.reject # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:reject>
- *    h1 = e.each {|key, value| key.start_with?('b') }
- *    h1 # => {foo: 0}
+ *    h.reject {|key, value| key.start_with?('b') }
+ *    # => {foo: 0}
+ *
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
