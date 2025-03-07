@@ -323,7 +323,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -341,7 +341,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra", verbose: true
@@ -406,7 +406,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -429,7 +429,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_missing"
@@ -449,7 +449,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo4("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo4("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_api_missing"
@@ -478,7 +478,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -498,7 +498,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G

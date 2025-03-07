@@ -100,7 +100,7 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      FileUtils.rm_rf(default_bundle_path("gems/myrack-1.0.0"))
+      FileUtils.rm_r(default_bundle_path("gems/myrack-1.0.0"))
 
       bundle "install --verbose"
 
@@ -337,13 +337,13 @@ RSpec.describe "bundle install with gem sources" do
       it "allows running bundle install --system without deleting foo", bundler: "< 3" do
         bundle "install --path vendor"
         bundle "install --system"
-        FileUtils.rm_rf(bundled_app("vendor"))
+        FileUtils.rm_r(bundled_app("vendor"))
         expect(the_bundle).to include_gems "myrack 1.0"
       end
 
       it "allows running bundle install --system after deleting foo", bundler: "< 3" do
         bundle "install --path vendor"
-        FileUtils.rm_rf(bundled_app("vendor"))
+        FileUtils.rm_r(bundled_app("vendor"))
         bundle "install --system"
         expect(the_bundle).to include_gems "myrack 1.0"
       end

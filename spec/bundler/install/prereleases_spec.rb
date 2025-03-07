@@ -41,7 +41,7 @@ RSpec.describe "bundle install" do
       build_repo3 do
         build_gem "myrack"
       end
-      FileUtils.rm_rf Dir[gem_repo3("prerelease*")]
+      FileUtils.rm_r Dir[gem_repo3("prerelease*")]
 
       install_gemfile <<-G
         source "https://gem.repo3"

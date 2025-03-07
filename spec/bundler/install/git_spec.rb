@@ -242,7 +242,7 @@ RSpec.describe "bundle install" do
           expect([install_directory, dot_git_directory, lib_directory, gemspec]).to all exist
 
           # remove all elements in the install directory except .git directory
-          FileUtils.rm_rf(lib_directory)
+          FileUtils.rm_r(lib_directory)
           gemspec.delete
 
           expect(dot_git_directory).to exist

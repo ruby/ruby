@@ -121,6 +121,6 @@ RSpec.configure do |config|
   end
 
   config.after :suite do
-    FileUtils.rm_rf Spec::Path.pristine_system_gem_path
+    FileUtils.rm_r Spec::Path.pristine_system_gem_path
   end
 end

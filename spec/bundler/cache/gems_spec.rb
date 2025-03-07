@@ -312,7 +312,7 @@ RSpec.describe "bundle cache" do
         path: cached_myrack.parent,
         rubygems_version: "1.3.2"
 
-      FileUtils.rm_rf default_bundle_path
+      FileUtils.rm_r default_bundle_path
       system_gems :bundler
 
       FileUtils.rm bundled_app_lock
@@ -345,7 +345,7 @@ RSpec.describe "bundle cache" do
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
 
-      FileUtils.rm_rf default_bundle_path
+      FileUtils.rm_r default_bundle_path
       system_gems :bundler
 
       lockfile <<-L
