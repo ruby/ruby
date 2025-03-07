@@ -1,3 +1,4 @@
+use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
 
@@ -8,6 +9,9 @@ pub struct ZJITState {
 
     /// ZJIT command-line options
     options: Options,
+
+    /// Assumptions that require invalidation
+    invariants: Invariants,
 }
 
 /// Private singleton instance of the codegen globals
@@ -59,8 +63,14 @@ impl ZJITState {
         let zjit_state = ZJITState {
             code_block: cb,
             options,
+            invariants: Invariants::default(),
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
+    }
+
+    /// Return true if zjit_state has been initialized
+    pub fn has_instance() -> bool {
+        unsafe { ZJIT_STATE.as_mut().is_some() }
     }
 
     /// Get a mutable reference to the codegen globals instance
@@ -73,8 +83,13 @@ impl ZJITState {
         &mut ZJITState::get_instance().code_block
     }
 
-    // Get a mutable reference to the options
+    /// Get a mutable reference to the options
     pub fn get_options() -> &'static mut Options {
         &mut ZJITState::get_instance().options
+    }
+
+    /// Get a mutable reference to the invariants
+    pub fn get_invariants() -> &'static mut Invariants {
+        &mut ZJITState::get_instance().invariants
     }
 }

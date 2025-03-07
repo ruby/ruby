@@ -1,6 +1,8 @@
-use crate::{
-    asm::CodeBlock, backend::lir, backend::lir::{asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP}, cruby::*, debug, hir::{Const, FrameState, Function, Insn, InsnId}, hir_type::{types::Fixnum, Type}, virtualmem::CodePtr
-};
+use crate::{asm::CodeBlock, cruby::*, debug, virtualmem::CodePtr};
+use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
+use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId};
+use crate::hir_type::{types::Fixnum, Type};
 
 /// Ephemeral code generation state
 struct JITState {
@@ -27,6 +29,15 @@ impl JITState {
             debug!("Failed to get_opnd({insn_id})");
         }
         opnd
+    }
+
+    /// Assume that this ISEQ doesn't escape EP. Return false if it's known to escape EP.
+    fn assume_no_ep_escape(&mut self) -> bool {
+        if iseq_escapes_ep(self.iseq) {
+            return false;
+        }
+        track_no_ep_escape_assumption(self.iseq);
+        true
     }
 }
 
@@ -104,17 +115,23 @@ fn gen_const(val: VALUE) -> Opnd {
 }
 
 /// Compile a method/block paramter read. For now, it only supports method parameters.
-fn gen_param(jit: &JITState, asm: &mut Assembler, local_idx: usize) -> Option<lir::Opnd> {
-    // Get the EP of the current CFP
-    // TODO: Use the SP register and invalidate on EP escape
-    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
-    let ep_reg = asm.load(ep_opnd);
-
-    // Load the local variable
-    // val = *(vm_get_ep(GET_EP(), level) - idx);
+fn gen_param(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> Option<lir::Opnd> {
     let ep_offset = local_idx_to_ep_offset(jit.iseq, local_idx);
-    let offs = -(SIZEOF_VALUE_I32 * ep_offset);
-    let local_opnd = Opnd::mem(64, ep_reg, offs);
+
+    let local_opnd = if jit.assume_no_ep_escape() {
+        // Create a reference to the local variable using the SP register. We assume EP == BP.
+        // TODO: Implement the invalidation in rb_zjit_invalidate_ep_is_bp()
+        let offs = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
+        Opnd::mem(64, SP, offs)
+    } else {
+        // Get the EP of the current CFP
+        let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
+        let ep_reg = asm.load(ep_opnd);
+
+        // Create a reference to the local variable using cfp->ep
+        let offs = -(SIZEOF_VALUE_I32 * ep_offset);
+        Opnd::mem(64, ep_reg, offs)
+    };
 
     Some(local_opnd)
 }
