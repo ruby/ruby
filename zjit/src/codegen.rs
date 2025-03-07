@@ -146,14 +146,8 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
     let left_opnd = jit.get_opnd(left)?;
     let right_opnd = jit.get_opnd(right)?;
 
-    // Load left into a register if left is a constant. The backend doesn't support sub(imm, imm).
-    let left_reg = match left_opnd {
-        Opnd::Value(_) => asm.load(left_opnd),
-        _ => left_opnd,
-    };
-
     // Add arg0 + arg1 and test for overflow
-    let left_untag = asm.sub(left_reg, Opnd::Imm(1));
+    let left_untag = asm.sub(left_opnd, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
 
@@ -164,14 +158,8 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
 fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: InsnId, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
     let opnd = jit.get_opnd(val)?;
     if guard_type.is_subtype(Fixnum) {
-        // Load opnd into a register if opnd is a constant. The backend doesn't support test(imm, imm) yet.
-        let opnd_reg = match opnd {
-            Opnd::Value(_) => asm.load(opnd),
-            _ => opnd,
-        };
-
         // Check if opnd is Fixnum
-        asm.test(opnd_reg, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.test(opnd, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(Target::SideExit(state.clone()));
     } else {
         unimplemented!("unsupported type: {guard_type}");

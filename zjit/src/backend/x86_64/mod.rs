@@ -217,6 +217,10 @@ impl Assembler
                                 (Opnd::Mem(_) | Opnd::Reg(_), _) => {
                                     *left = asm.load(*left);
                                 },
+                                // The first operand can't be an immediate value
+                                (Opnd::Value(_), _) => {
+                                    *left = asm.load(*left);
+                                }
                                 _ => {}
                             };
 
@@ -244,9 +248,15 @@ impl Assembler
                     }
                 },
                 Insn::Test { left, right } => {
-                    if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
-                        let loaded = asm.load(*right);
-                        *right = loaded;
+                    match (&left, &right) {
+                        (Opnd::Mem(_), Opnd::Mem(_)) => {
+                            *right = asm.load(*right);
+                        }
+                        // The first operand can't be an immediate value
+                        (Opnd::UImm(_) | Opnd::Imm(_), _) => {
+                            *left = asm.load(*left);
+                        }
+                        _ => {}
                     }
                     asm.push_insn(insn);
                 },
