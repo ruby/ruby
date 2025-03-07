@@ -366,13 +366,17 @@ static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 static st_index_t
 fstring_hash(VALUE str)
 {
+    st_index_t h;
     if (FL_TEST_RAW(str, STR_FAKESTR)) {
         // register_fstring precomputes the hash and stores it in capa for fake strings
-        return (st_index_t)RSTRING(str)->as.heap.aux.capa;
+        h = (st_index_t)RSTRING(str)->as.heap.aux.capa;
     }
     else {
-        return rb_str_hash(str);
+        h = rb_str_hash(str);
     }
+    // rb_str_hash doesn't include the encoding for ascii only strings, so
+    // we add it to avoid common collisions between `:sym.name` (ASCII) and `"sym"` (UTF-8)
+    return rb_hash_end(rb_hash_uint32(h, (uint32_t)ENCODING_GET_INLINED(str)));
 }
 #else
 #define fstring_hash rb_str_hash
@@ -460,7 +464,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                     STR_SET_LEN(new_str, RSTRING_LEN(str));
                     TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
                     rb_enc_copy(new_str, str);
-                    str_store_precomputed_hash(new_str, fstring_hash(str));
+                    str_store_precomputed_hash(new_str, str_do_hash(str));
                 }
                 else {
                     new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
