@@ -1580,6 +1580,21 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
+assert_equal "ok", %Q{
+  N = #{N}
+  a, b = 2.times.map{
+    Ractor.new{
+      N.times.map{|i| -(i.to_s)}
+    }
+  }.map{|r| r.take}
+  N.times do |i|
+    unless a[i].equal?(b[i])
+      raise [a[i], b[i]].inspect
+    end
+  end
+  :ok
+}
+
 # Generic ivtbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
