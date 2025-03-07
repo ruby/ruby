@@ -458,9 +458,8 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "works even when the cache directory has been deleted" do
-      bundle "config set --local path vendor/bundle"
       bundle :install
-      FileUtils.rm_rf vendored_gems("cache")
+      FileUtils.rm_rf default_cache_path
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 

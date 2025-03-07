@@ -974,7 +974,7 @@ RSpec.describe "bundle outdated" do
         gem "terranova", '8'
       G
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       update_git "foo", path: lib_path("foo")
       update_repo2 do

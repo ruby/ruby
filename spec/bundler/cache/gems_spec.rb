@@ -291,7 +291,7 @@ RSpec.describe "bundle cache" do
         expect(cached_gem("platform_specific-1.0-java")).to exist
       end
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       simulate_platform "x86-darwin-100" do
         install_gemfile <<-G
@@ -312,7 +312,8 @@ RSpec.describe "bundle cache" do
         path: cached_myrack.parent,
         rubygems_version: "1.3.2"
 
-      simulate_new_machine
+      FileUtils.rm_rf default_bundle_path
+      system_gems :bundler
 
       FileUtils.rm bundled_app_lock
       bundle :install, raise_on_error: false
@@ -344,7 +345,8 @@ RSpec.describe "bundle cache" do
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
 
-      simulate_new_machine
+      FileUtils.rm_rf default_bundle_path
+      system_gems :bundler
 
       lockfile <<-L
         GEM
@@ -369,7 +371,7 @@ RSpec.describe "bundle cache" do
       setup_main_repo
       cached_gem("myrack-1.0.0").rmtree
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       lockfile <<-L
         GEM

@@ -164,7 +164,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set path vendor/bundle"
     bundle :install
 
-    simulate_new_machine
+    pristine_system_gems :bundler
     with_path_as "" do
       bundle "config set deployment true"
       bundle "install --local"
@@ -181,10 +181,8 @@ RSpec.describe "bundle cache with git" do
     G
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/foo-1.0-*")).first.to_s
 
-    simulate_new_machine
+    pristine_system_gems :bundler
     bundle "config set frozen true"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
@@ -200,12 +198,9 @@ RSpec.describe "bundle cache with git" do
     G
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/foo-1.0-*")).first.to_s
 
-    simulate_new_machine
+    pristine_system_gems :bundler
     bundle "config set frozen true"
-    FileUtils.rm_rf "#{default_bundle_path}/cache/bundler/git/foo-1.0-*"
     bundle "install --local --verbose"
     expect(out).to_not include("Fetching")
     expect(the_bundle).to include_gem "foo 1.0"
@@ -220,12 +215,9 @@ RSpec.describe "bundle cache with git" do
     G
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/extensions/**/foo-1.0-*")).first.to_s
-    FileUtils.rm_rf Dir.glob(default_bundle_path("bundler/gems/foo-1.0-*")).first.to_s
 
-    simulate_new_machine
+    pristine_system_gems :bundler
     bundle "config set frozen true"
-    FileUtils.rm_rf "#{default_bundle_path}/cache/bundler/git/foo-1.0-*"
 
     # Remove untracked files (including the empty refs dir in the cache)
     Dir.chdir(bundled_app) do
@@ -388,7 +380,7 @@ RSpec.describe "bundle cache with git" do
     bundle "config set cache_all true"
     bundle :cache, "all-platforms" => true, :install => false
 
-    simulate_new_machine
+    pristine_system_gems :bundler
     with_path_as "" do
       bundle "config set deployment true"
       bundle :install, local: true
