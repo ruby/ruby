@@ -89,6 +89,15 @@ fn rb_bug_panic_hook() {
 /// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+    let code_ptr = iseq_gen_entry_point(iseq);
+    if ZJITState::assert_compiles_enabled() && code_ptr == std::ptr::null() {
+        let iseq_location = iseq_get_location(iseq, 0);
+        panic!("Failed to compile: {iseq_location}");
+    }
+    code_ptr
+}
+
+fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
     // Do not test the JIT code in HIR tests
     if cfg!(test) {
         return std::ptr::null();
@@ -115,4 +124,11 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
             None => std::ptr::null(),
         }
     })
+}
+
+/// Assert that any future ZJIT compilation will return a function pointer (not fail to compile)
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
+    ZJITState::enable_assert_compiles();
+    Qnil
 }

@@ -677,3 +677,9 @@ rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
     RUBY_ASSERT_ALWAYS(NULL == iseq->body->zjit_payload);
     iseq->body->zjit_payload = payload;
 }
+
+// Primitives used by zjit.rb
+VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
+
+// Preprocessed zjit.rb generated during build
+#include "zjit.rbinc"

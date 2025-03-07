@@ -36,15 +36,9 @@ jobs:
           - test_task: 'zjit-test'
             configure: '--enable-zjit=dev'
 
-          - test_task: 'btest'
-            zjit_opts: '--zjit-call-threshold=1'
+          - test_task: 'test-all'
             configure: '--enable-zjit=dev'
-            btests: '../src/bootstraptest/test_zjit.rb'
-
-          - test_task: 'btest'
-            zjit_opts: '--zjit-call-threshold=2'
-            configure: '--enable-zjit=dev'
-            btests: '../src/bootstraptest/test_zjit.rb'
+            tests: '../src/test/ruby/test_zjit.rb'
 
           # Test without ZJIT for now
           - test_task: 'check'
@@ -125,7 +119,6 @@ jobs:
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
           RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
           YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
-          BTESTS="$BTESTS"
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
@@ -134,7 +127,7 @@ jobs:
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
           LIBCLANG_PATH: ${{ matrix.libclang_path }}
-          BTESTS: ${{ matrix.btests }}
+          TESTS: ${{ matrix.tests }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
   result:

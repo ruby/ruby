@@ -12,6 +12,9 @@ pub struct ZJITState {
 
     /// Assumptions that require invalidation
     invariants: Invariants,
+
+    /// Assert successful compilation if set to true
+    assert_compiles: bool,
 }
 
 /// Private singleton instance of the codegen globals
@@ -64,6 +67,7 @@ impl ZJITState {
             code_block: cb,
             options,
             invariants: Invariants::default(),
+            assert_compiles: false,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -91,5 +95,16 @@ impl ZJITState {
     /// Get a mutable reference to the invariants
     pub fn get_invariants() -> &'static mut Invariants {
         &mut ZJITState::get_instance().invariants
+    }
+
+    /// Return true if successful compilation should be asserted
+    pub fn assert_compiles_enabled() -> bool {
+        ZJITState::get_instance().assert_compiles
+    }
+
+    /// Start asserting successful compilation
+    pub fn enable_assert_compiles() {
+        let instance = ZJITState::get_instance();
+        instance.assert_compiles = true;
     }
 }
