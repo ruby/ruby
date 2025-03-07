@@ -3997,7 +3997,6 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *  call-seq:
  *    update(*other_hashes) -> self
  *    update(*other_hashes) { |key, old_value, new_value| ... } -> self
- *    update -> self
  *
  *  Like Hash#merge, but modifies and returns +self+ instead of a new hash:
  *
