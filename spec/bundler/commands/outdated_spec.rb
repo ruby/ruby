@@ -417,7 +417,7 @@ RSpec.describe "bundle outdated" do
     end
 
     it "doesn't hit repo2" do
-      FileUtils.rm_rf(gem_repo2)
+      FileUtils.rm_r(gem_repo2)
 
       bundle "outdated --local"
       expect(out).not_to match(/Fetching (gem|version|dependency) metadata from/)

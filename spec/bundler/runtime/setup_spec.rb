@@ -459,7 +459,7 @@ RSpec.describe "Bundler.setup" do
 
     it "works even when the cache directory has been deleted" do
       bundle :install
-      FileUtils.rm_rf default_cache_path
+      FileUtils.rm_r default_cache_path
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
@@ -496,7 +496,7 @@ RSpec.describe "Bundler.setup" do
       bundle %(config set local.myrack #{lib_path("local-myrack")})
       bundle :install
 
-      FileUtils.rm_rf(lib_path("local-myrack"))
+      FileUtils.rm_r(lib_path("local-myrack"))
       run "require 'myrack'", raise_on_error: false
       expect(err).to match(/Cannot use local override for myrack-0.8 because #{Regexp.escape(lib_path("local-myrack").to_s)} does not exist/)
     end
@@ -611,7 +611,7 @@ RSpec.describe "Bundler.setup" do
         gem 'foo', :path => 'vendor/foo', :group => :development
       G
 
-      FileUtils.rm_rf(path)
+      FileUtils.rm_r(path)
 
       ruby "require 'bundler'; Bundler.setup", env: { "DEBUG" => "1" }
       expect(out).to include("Assuming that source at `vendor/foo` has not changed since fetching its specs errored")

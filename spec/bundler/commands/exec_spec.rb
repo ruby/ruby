@@ -1264,7 +1264,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "allows calling bundle install after removing gem.build_complete" do
-        FileUtils.rm_rf Dir[bundled_app(".bundle/**/gem.build_complete")]
+        FileUtils.rm_r Dir[bundled_app(".bundle/**/gem.build_complete")]
         bundle "exec #{Gem.ruby} -S bundle install"
       end
     end
