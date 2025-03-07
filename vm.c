@@ -3134,10 +3134,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
         }
-        if (vm->frozen_strings) {
-            st_free_table(vm->frozen_strings);
-            vm->frozen_strings = 0;
-        }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3236,7 +3232,6 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
         rb_st_memsize(vm->ci_table) +
-        rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
@@ -4441,7 +4436,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
-    vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 
 // Stub for builtin function when not building YJIT units
@@ -4502,12 +4496,6 @@ ruby_free_at_exit_p(void)
 VALUE rb_insn_operand_intern(const rb_iseq_t *iseq,
                              VALUE insn, int op_no, VALUE op,
                              int len, size_t pos, VALUE *pnop, VALUE child);
-
-st_table *
-rb_vm_fstring_table(void)
-{
-    return GET_VM()->frozen_strings;
-}
 
 #if VM_COLLECT_USAGE_DETAILS
 

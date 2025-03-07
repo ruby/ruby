@@ -341,6 +341,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
         if (rb_obj_is_mutex(obj)) return false;
         if (rb_obj_is_fiber(obj)) return false;
         if (rb_obj_is_main_ractor(obj)) return false;
+        if (rb_obj_is_fstring_table(obj)) return false;
 
         return true;
 
@@ -3528,6 +3529,7 @@ vm_weak_table_frozen_strings_foreach(st_data_t key, st_data_t value, st_data_t d
     return retval;
 }
 
+void rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 void
 rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
                             vm_table_update_callback_func update_callback,
@@ -3590,14 +3592,11 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         break;
       }
       case RB_GC_VM_FROZEN_STRINGS_TABLE: {
-        if (vm->frozen_strings) {
-            st_foreach_with_replace(
-                vm->frozen_strings,
-                vm_weak_table_frozen_strings_foreach,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        rb_fstring_foreach_with_replace(
+            vm_weak_table_frozen_strings_foreach,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       default:
