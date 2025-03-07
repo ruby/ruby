@@ -2609,8 +2609,8 @@ rb_hash_reject_bang(VALUE hash)
  *
  *  With a block given, returns a copy of +self+ with zero or more entries removed;
  *  calls the block with each key-value pair;
- *  includes the entry in the copy if the block returns a truthy value,
- *  excludes it otherwise:
+ *  excludes the entry in the copy if the block returns a truthy value,
+ *  includes it otherwise:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.reject {|key, value| key.start_with?('b') }
