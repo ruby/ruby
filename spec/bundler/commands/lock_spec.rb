@@ -99,7 +99,7 @@ RSpec.describe "bundle lock" do
     L
   end
 
-  before :each do
+  let(:gemfile_with_rails_weakling_and_foo_from_repo4) do
     build_repo4 do
       FileUtils.cp rake_path, "#{gem_repo4}/gems/"
 
@@ -143,12 +143,16 @@ RSpec.describe "bundle lock" do
   end
 
   it "prints a lockfile when there is no existing lockfile with --print" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --print"
 
     expect(out).to eq(expected_lockfile.chomp)
   end
 
   it "prints a lockfile when there is an existing lockfile with --print" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     bundle "lock --print"
@@ -157,6 +161,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "prints a lockfile when there is an existing checksums lockfile with --print" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     bundle "lock --print"
@@ -165,12 +171,16 @@ RSpec.describe "bundle lock" do
   end
 
   it "writes a lockfile when there is no existing lockfile" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock"
 
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
   it "prints a lockfile without fetching new checksums if the existing lockfile had no checksums" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     bundle "lock --print"
@@ -179,6 +189,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "touches the lockfile when there is an existing lockfile that does not need changes" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     expect do
@@ -187,6 +199,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not touch lockfile with --print" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     expect do
@@ -195,6 +209,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "writes a lockfile when there is an outdated lockfile using --update" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile outdated_lockfile
 
     bundle "lock --update"
@@ -203,6 +219,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "prints an updated lockfile when there is an outdated lockfile using --print --update" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile outdated_lockfile
 
     bundle "lock --print --update"
@@ -211,6 +229,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "emits info messages to stderr when updating an outdated lockfile using --print --update" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile outdated_lockfile
 
     bundle "lock --print --update"
@@ -222,6 +242,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "writes a lockfile when there is an outdated lockfile and bundle is frozen" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile outdated_lockfile
 
     bundle "lock --update", env: { "BUNDLE_FROZEN" => "true" }
@@ -230,12 +252,16 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not fetch remote specs when using the --local option" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --update --local", raise_on_error: false
 
     expect(err).to match(/locally installed gems/)
   end
 
   it "does not fetch remote checksums with --local" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     bundle "lock --print --local"
@@ -244,6 +270,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "works with --gemfile flag" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     gemfile "CustomGemfile", <<-G
       source "https://gem.repo4"
       gem "foo"
@@ -275,6 +303,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "writes to a custom location using --lockfile" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --lockfile=lock"
 
     expect(out).to match(/Writing lockfile to.+lock/)
@@ -283,6 +313,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "writes to custom location using --lockfile when a default lockfile is present" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "install"
     bundle "lock --lockfile=lock"
 
@@ -338,6 +370,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     checksums = checksums_section_when_enabled do |c|
       c.checksum gem_repo4, "actionmailer", "2.3.1"
       c.checksum gem_repo4, "actionpack", "2.3.1"
@@ -515,6 +549,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "preserves unknown checksum algorithms" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile.gsub(/(sha256=[a-f0-9]+)$/, "constant=true,\\1,xyz=123")
 
     previous_lockfile = read_lockfile
@@ -525,6 +561,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not unlock git sources when only uri shape changes" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     build_git("foo")
 
     install_gemfile <<-G
@@ -543,6 +581,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "updates specific gems using --update using the locked revision of unrelated git gems for resolving" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     ref = build_git("foo").ref_for("HEAD")
 
     gemfile <<-G
@@ -581,6 +621,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "errors when updating a missing specific gems using --update" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile expected_lockfile
 
     bundle "lock --update blahblah", raise_on_error: false
@@ -590,6 +632,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "can lock without downloading gems" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -762,6 +806,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms when there's no previous lockfile" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --add-platform java x86-mingw32 --verbose"
     expect(out).to include("Resolving dependencies because there's no lockfile")
 
@@ -770,6 +816,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms when a previous lockfile exists" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock"
     bundle "lock --add-platform java x86-mingw32 --verbose"
     expect(out).to include("Found changes from the lockfile, re-resolving dependencies because you are adding a new platform to your lockfile")
@@ -835,6 +883,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     lockfile <<-L
       GEM
         remote: https://gem.repo1/
@@ -858,6 +908,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "supports adding the `ruby` platform" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --add-platform ruby"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -865,12 +917,16 @@ RSpec.describe "bundle lock" do
   end
 
   it "fails when adding an unknown platform" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --add-platform foobarbaz", raise_on_error: false
     expect(err).to include("The platform `foobarbaz` is unknown to RubyGems and can't be added to the lockfile")
     expect(last_command).to be_failure
   end
 
   it "allows removing platforms" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --add-platform java x86-mingw32"
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
@@ -944,6 +1000,8 @@ RSpec.describe "bundle lock" do
   end
 
   it "errors when removing all platforms" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
     bundle "lock --remove-platform #{local_platform}", raise_on_error: false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
@@ -1378,6 +1436,8 @@ RSpec.describe "bundle lock" do
 
   context "when an update is available" do
     before do
+      gemfile_with_rails_weakling_and_foo_from_repo4
+
       update_repo4 do
         build_gem "foo", "2.0"
       end

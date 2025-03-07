@@ -88,7 +88,7 @@ RSpec.describe "install in deployment or frozen mode" do
 
   it "still works if you are not in the app directory and specify --gemfile" do
     bundle "install"
-    simulate_new_machine
+    pristine_system_gems :bundler
     bundle "config set --local deployment true"
     bundle "config set --local path vendor/bundle"
     bundle "install --gemfile #{tmp}/bundled_app/Gemfile", dir: tmp
@@ -547,7 +547,7 @@ RSpec.describe "install in deployment or frozen mode" do
       bundle "install --local"
       expect(out).to include("Updating files in vendor/cache")
 
-      simulate_new_machine
+      pristine_system_gems :bundler
       bundle "config set --local deployment true"
       bundle "install --verbose"
       expect(out).not_to include("but the lockfile can't be updated because frozen mode is set")

@@ -414,7 +414,6 @@ module Spec
     def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
-      FileUtils.rm_rf("#{bundled_app}/vendor/cache")
       FileUtils.mkdir_p("#{bundled_app}/vendor/cache")
 
       gems.each do |g|
@@ -547,6 +546,12 @@ module Spec
     def exit_status_for_signal(signal_number)
       # For details see: https://en.wikipedia.org/wiki/Exit_status#Shell_and_scripts
       128 + signal_number
+    end
+
+    def empty_repo4
+      FileUtils.rm_r gem_repo4
+
+      build_repo4 {}
     end
 
     private
