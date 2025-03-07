@@ -626,6 +626,8 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         return;
     }
 
+    incr_counter!(invalidate_everything);
+
     // Stop other ractors since we are going to patch machine code.
     with_vm_lock(src_loc!(), || {
         // Make it so all live block versions are no longer valid branch targets
