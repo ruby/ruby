@@ -4117,53 +4117,48 @@ rb_hash_update_by(VALUE hash1, VALUE hash2, rb_hash_update_func *func)
 
 /*
  *  call-seq:
- *    merge -> copy_of_self
  *    merge(*other_hashes) -> new_hash
  *    merge(*other_hashes) { |key, old_value, new_value| ... } -> new_hash
  *
- *  Returns the new +Hash+ formed by merging each of +other_hashes+
- *  into a copy of +self+.
+ *  Each argument +other_hash+ in +other_hashes+ must be a hash.
  *
- *  Each argument in +other_hashes+ must be a +Hash+.
+ *  With arguments +other_hashes+ given and no block,
+ *  returns the new hash formed by merging each successive +other_hash+
+ *  into a copy of +self+;
+ *  returns that copy;
+ *  for each successive entry in +other_hash+:
  *
- *  ---
- *
- *  With arguments and no block:
- *  * Returns the new +Hash+ object formed by merging each successive
- *    +Hash+ in +other_hashes+ into +self+.
- *  * Each new-key entry is added at the end.
- *  * Each duplicate-key entry's value overwrites the previous value.
+ *  - For a new key, the entry is added at the end of +self+.
+ *  - For duplicate key, the entry overwrites the entry in +self+,
+ *    whose position is unchanged.
  *
  *  Example:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
  *    h.merge(h1, h2) # => {foo: 0, bar: 4, baz: 2, bat: 6, bam: 5}
  *
- *  With arguments and a block:
- *  * Returns a new +Hash+ object that is the merge of +self+ and each given hash.
- *  * The given hashes are merged left to right.
- *  * Each new-key entry is added at the end.
- *  * For each duplicate key:
- *    * Calls the block with the key and the old and new values.
- *    * The block's return value becomes the new value for the entry.
+ *  With arguments +other_hashes+ and a block given, behaves as above
+ *  except that for a duplicate key
+ *  the overwriting entry takes it value not from the entry in +other_hash+,
+ *  but instead from the block:
+ *
+ *  - The block is called with the duplicate key and the values
+ *    from both +self+ and +other_hash+.
+ *  - The block's return value becomes the new value for the entry in +self+.
  *
  *  Example:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = {bat: 3, bar: 4}
  *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
- *    h3 # => {foo: 0, bar: 5, baz: 2, bat: 9, bam: 5}
+ *    h.merge(h1, h2) { |key, old_value, new_value| old_value + new_value }
+ *    # => {foo: 0, bar: 5, baz: 2, bat: 9, bam: 5}
  *
- *  With no arguments:
- *  * Returns a copy of +self+.
- *  * The block, if given, is ignored.
+ *  With no arguments, returns a copy of +self+; the block, if given, is ignored.
  *
- *  Example:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.merge # => {foo: 0, bar: 1, baz: 2}
- *    h1 = h.merge { |key, old_value, new_value| raise 'Cannot happen' }
- *    h1 # => {foo: 0, bar: 1, baz: 2}
+ *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
 static VALUE
