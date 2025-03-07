@@ -1988,8 +1988,9 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *     rehash -> self
  *
- *  Rebuilds the hash table by recomputing the hash index for each key;
+ *  Rebuilds the hash table for +self+ by recomputing the hash index for each key;
  *  returns <tt>self</tt>.
+ *  Calling this method ensures that the hash table is valid.
  *
  *  The hash table becomes invalid if the hash value of a key
  *  has changed after the entry was created.
