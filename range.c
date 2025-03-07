@@ -1405,12 +1405,29 @@ range_first(int argc, VALUE *argv, VALUE range)
     return ary[1];
 }
 
+static bool
+range_basic_each_p(VALUE range)
+{
+    return rb_method_basic_definition_p(CLASS_OF(range), idEach);
+}
+
+static bool
+integer_end_optimizable(VALUE range)
+{
+    VALUE b = RANGE_BEG(range);
+    if (!NIL_P(b) && !RB_INTEGER_TYPE_P(b)) return false;
+    VALUE e = RANGE_END(range);
+    if (!RB_INTEGER_TYPE_P(e)) return false;
+    if (RB_LIKELY(range_basic_each_p(range))) return true;
+    return false;
+}
+
 static VALUE
 rb_int_range_last(int argc, VALUE *argv, VALUE range)
 {
     static const VALUE ONE = INT2FIX(1);
 
-    VALUE b, e, len_1, len, nv, ary;
+    VALUE b, e, len_1 = Qnil, len = Qnil, nv, ary;
     int x;
     long n;
 
@@ -1418,20 +1435,28 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT(NIL_P(b) || RB_INTEGER_TYPE_P(b), "b=%"PRIsVALUE, rb_obj_class(b));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(e), "e=%"PRIsVALUE, rb_obj_class(e));
 
     x = EXCL(range);
 
-    len_1 = rb_int_minus(e, b);
-    if (x) {
-        e = rb_int_minus(e, ONE);
-        len = len_1;
+    if (!NIL_P(b)) {
+        len_1 = rb_int_minus(e, b);
+        if (x) {
+            e = rb_int_minus(e, ONE);
+            len = len_1;
+        }
+        else {
+            len = rb_int_plus(len_1, ONE);
+        }
     }
     else {
-        len = rb_int_plus(len_1, ONE);
+        if (x) {
+            e = rb_int_minus(e, ONE);
+        }
     }
 
-    if (FIXNUM_ZERO_P(len) || rb_num_negative_p(len)) {
+    if (!NIL_P(len) && (FIXNUM_ZERO_P(len) || rb_num_negative_p(len))) {
         return rb_ary_new_capa(0);
     }
 
@@ -1442,7 +1467,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     }
 
     nv = LONG2NUM(n);
-    if (RTEST(rb_int_gt(nv, len))) {
+    if (!NIL_P(b) && RTEST(rb_int_gt(nv, len))) {
         nv = len;
         n = NUM2LONG(nv);
     }
@@ -1496,17 +1521,11 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 static VALUE
 range_last(int argc, VALUE *argv, VALUE range)
 {
-    VALUE b, e;
-
     if (NIL_P(RANGE_END(range))) {
         rb_raise(rb_eRangeError, "cannot get the last element of endless range");
     }
     if (argc == 0) return RANGE_END(range);
-
-    b = RANGE_BEG(range);
-    e = RANGE_END(range);
-    if (RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e) &&
-        RB_LIKELY(rb_method_basic_definition_p(rb_cRange, idEach))) {
+    if (integer_end_optimizable(range)) {
         return rb_int_range_last(argc, argv, range);
     }
     return rb_ary_last(argc, argv, rb_Array(range));
@@ -1714,11 +1733,26 @@ range_max(int argc, VALUE *argv, VALUE range)
 
     VALUE b = RANGE_BEG(range);
 
-    if (rb_block_given_p() || (EXCL(range) && !nm) || argc) {
+    if (rb_block_given_p() || (EXCL(range) && !nm)) {
         if (NIL_P(b)) {
             rb_raise(rb_eRangeError, "cannot get the maximum of beginless range with custom comparison method");
         }
         return rb_call_super(argc, argv);
+    }
+    else if (argc) {
+        VALUE ary[2];
+        ID reverse_each;
+        CONST_ID(reverse_each, "reverse_each");
+        rb_scan_args(argc, argv, "1", &ary[0]);
+        ary[1] = rb_ary_new2(NUM2LONG(ary[0]));
+        rb_block_call(range, reverse_each, 0, 0, first_i, (VALUE)ary);
+        return ary[1];
+#if 0
+        if (integer_end_optimizable(range)) {
+            return rb_int_range_last(argc, argv, range, true);
+        }
+        return rb_ary_reverse(rb_ary_last(argc, argv, rb_Array(range)));
+#endif
     }
     else {
         int c = NIL_P(b) ? -1 : OPTIMIZED_CMP(b, e);
@@ -1730,13 +1764,13 @@ range_max(int argc, VALUE *argv, VALUE range)
                 rb_raise(rb_eTypeError, "cannot exclude non Integer end value");
             }
             if (c == 0) return Qnil;
-            if (!RB_INTEGER_TYPE_P(b)) {
+            if (!NIL_P(b) && !RB_INTEGER_TYPE_P(b)) {
                 rb_raise(rb_eTypeError, "cannot exclude end value with non Integer begin value");
             }
             if (FIXNUM_P(e)) {
                 return LONG2NUM(FIX2LONG(e) - 1);
             }
-            return rb_funcall(e, '-', 1, INT2FIX(1));
+            return rb_int_minus(e,INT2FIX(1));
         }
         return e;
     }

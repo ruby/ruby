@@ -121,13 +121,15 @@ class TestRange < Test::Unit::TestCase
 
     assert_equal([10,9,8], (0..10).max(3))
     assert_equal([9,8,7], (0...10).max(3))
+    assert_equal([10,9,8], (..10).max(3))
+    assert_equal([9,8,7], (...10).max(3))
     assert_raise(RangeError) { (1..).max(3) }
     assert_raise(RangeError) { (1...).max(3) }
 
     assert_raise(RangeError) { (..0).min {|a, b| a <=> b } }
 
     assert_equal(2, (..2).max)
-    assert_raise(TypeError) { (...2).max }
+    assert_equal(1, (...2).max)
     assert_raise(TypeError) { (...2.0).max }
 
     assert_equal(Float::INFINITY, (1..Float::INFINITY).max)
@@ -870,16 +872,20 @@ class TestRange < Test::Unit::TestCase
   def test_first_last
     assert_equal([0, 1, 2], (0..10).first(3))
     assert_equal([8, 9, 10], (0..10).last(3))
+    assert_equal([8, 9, 10], (nil..10).last(3))
     assert_equal(0, (0..10).first)
     assert_equal(10, (0..10).last)
+    assert_equal(10, (nil..10).last)
     assert_equal("a", ("a".."c").first)
     assert_equal("c", ("a".."c").last)
     assert_equal(0, (2..0).last)
 
     assert_equal([0, 1, 2], (0...10).first(3))
     assert_equal([7, 8, 9], (0...10).last(3))
+    assert_equal([7, 8, 9], (nil...10).last(3))
     assert_equal(0, (0...10).first)
     assert_equal(10, (0...10).last)
+    assert_equal(10, (nil...10).last)
     assert_equal("a", ("a"..."c").first)
     assert_equal("c", ("a"..."c").last)
     assert_equal(0, (2...0).last)
