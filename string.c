@@ -37,6 +37,7 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
+#include "internal/st.h"
 #include "internal/string.h"
 #include "internal/transcode.h"
 #include "probes.h"
@@ -420,90 +421,65 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
 }
 
 struct fstr_update_arg {
-    VALUE fstr;
     bool copy;
     bool force_precompute_hash;
 };
 
-static int
-fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    struct fstr_update_arg *arg = (struct fstr_update_arg *)data;
-    VALUE str = (VALUE)*key;
+static VALUE build_fstring(VALUE str, struct fstr_update_arg *arg) {
+    // Unless the string is empty or binary, its coderange has been precomputed.
+    int coderange = ENC_CODERANGE(str);
 
-    if (existing) {
-        /* because of lazy sweep, str may be unmarked already and swept
-         * at next time */
+    if (FL_TEST_RAW(str, STR_FAKESTR)) {
+        if (arg->copy) {
+            VALUE new_str;
+            long len = RSTRING_LEN(str);
+            long capa = len + sizeof(st_index_t);
+            int term_len = TERM_LEN(str);
 
-        if (rb_objspace_garbage_object_p(str)) {
-            arg->fstr = Qundef;
-            // When RSTRING_FSTR strings are swept, they call `st_delete`.
-            // To avoid a race condition if an equivalent string was inserted
-            // we must remove the flag immediately.
-            FL_UNSET_RAW(str, RSTRING_FSTR);
-            return ST_DELETE;
-        }
-
-        arg->fstr = str;
-        return ST_STOP;
-    }
-    else {
-        // Unless the string is empty or binary, its coderange has been precomputed.
-        int coderange = ENC_CODERANGE(str);
-
-        if (FL_TEST_RAW(str, STR_FAKESTR)) {
-            if (arg->copy) {
-                VALUE new_str;
-                long len = RSTRING_LEN(str);
-                long capa = len + sizeof(st_index_t);
-                int term_len = TERM_LEN(str);
-
-                if (arg->force_precompute_hash && STR_EMBEDDABLE_P(capa, term_len)) {
-                    new_str = str_alloc_embed(rb_cString, capa + term_len);
-                    memcpy(RSTRING_PTR(new_str), RSTRING_PTR(str), len);
-                    STR_SET_LEN(new_str, RSTRING_LEN(str));
-                    TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
-                    rb_enc_copy(new_str, str);
-                    str_store_precomputed_hash(new_str, str_do_hash(str));
-                }
-                else {
-                    new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
-                    rb_enc_copy(new_str, str);
-#ifdef PRECOMPUTED_FAKESTR_HASH
-                    if (rb_str_capacity(new_str) >= RSTRING_LEN(str) + term_len + sizeof(st_index_t)) {
-                        str_store_precomputed_hash(new_str, (st_index_t)RSTRING(str)->as.heap.aux.capa);
-                    }
-#endif
-                }
-                str = new_str;
+            if (arg->force_precompute_hash && STR_EMBEDDABLE_P(capa, term_len)) {
+                new_str = str_alloc_embed(rb_cString, capa + term_len);
+                memcpy(RSTRING_PTR(new_str), RSTRING_PTR(str), len);
+                STR_SET_LEN(new_str, RSTRING_LEN(str));
+                TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
+                rb_enc_copy(new_str, str);
+                str_store_precomputed_hash(new_str, str_do_hash(str));
             }
             else {
-                str = str_new_static(rb_cString, RSTRING(str)->as.heap.ptr,
-                                     RSTRING(str)->len,
-                                     ENCODING_GET(str));
+                new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
+                rb_enc_copy(new_str, str);
+#ifdef PRECOMPUTED_FAKESTR_HASH
+                if (rb_str_capacity(new_str) >= RSTRING_LEN(str) + term_len + sizeof(st_index_t)) {
+                    str_store_precomputed_hash(new_str, (st_index_t)RSTRING(str)->as.heap.aux.capa);
+                }
+#endif
             }
-            OBJ_FREEZE(str);
+            str = new_str;
         }
         else {
-            if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
-                str = str_new_frozen(rb_cString, str);
-            }
-            if (STR_SHARED_P(str)) { /* str should not be shared */
-                /* shared substring  */
-                str_make_independent(str);
-                RUBY_ASSERT(OBJ_FROZEN(str));
-            }
-            if (!BARE_STRING_P(str)) {
-                str = str_new_frozen(rb_cString, str);
-            }
+            str = str_new_static(rb_cString, RSTRING(str)->as.heap.ptr,
+                    RSTRING(str)->len,
+                    ENCODING_GET(str));
         }
-
-        ENC_CODERANGE_SET(str, coderange);
-        RBASIC(str)->flags |= RSTRING_FSTR;
-
-        *key = *value = arg->fstr = str;
-        return ST_CONTINUE;
+        OBJ_FREEZE(str);
     }
+    else {
+        if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
+            str = str_new_frozen(rb_cString, str);
+        }
+        if (STR_SHARED_P(str)) { /* str should not be shared */
+            /* shared substring  */
+            str_make_independent(str);
+            RUBY_ASSERT(OBJ_FROZEN(str));
+        }
+        if (!BARE_STRING_P(str)) {
+            str = str_new_frozen(rb_cString, str);
+        }
+    }
+
+    ENC_CODERANGE_SET(str, coderange);
+    RBASIC(str)->flags |= RSTRING_FSTR;
+
+    return str;
 }
 
 VALUE
@@ -543,6 +519,151 @@ rb_fstring(VALUE str)
     return fstr;
 }
 
+#define FSTRING_TABLE_EMPTY     ((VALUE)0)
+#define FSTRING_TABLE_TOMBSTONE ((VALUE)1)
+
+struct fstring_table_struct {
+    VALUE *entries;
+    int capacity;
+    int deleted_entries;
+    rb_atomic_t count; // TODO: pad to own cache line?
+};
+
+static struct fstring_table_struct fstring_table;
+
+void Init_fstring_table(void) {
+    fstring_table.capacity = 8192 << 2;
+    fstring_table.count = 0;
+    fstring_table.entries = ZALLOC_N(VALUE, fstring_table.capacity);
+}
+
+static void fstring_try_resize(void);
+
+static VALUE fstring_upsert(VALUE hash_code, VALUE value, bool insert) {
+    struct fstring_table_struct *table = &fstring_table;
+    hash_code *= 1111111111111111111u;
+
+retry:
+    int idx = hash_code % table->capacity;
+
+    for (;;) {
+        VALUE candidate = table->entries[idx];
+
+        if (candidate == FSTRING_TABLE_EMPTY) {
+            // Not in table
+            if (insert) {
+                int prev_count = RUBY_ATOMIC_FETCH_ADD(table->count, 1);
+
+                if (UNLIKELY(prev_count > table->capacity / 2)) {
+                    fstring_try_resize();
+                    goto retry;
+                }
+
+                VALUE found = RUBY_ATOMIC_VALUE_CAS(table->entries[idx], FSTRING_TABLE_EMPTY, value);
+                if (found == FSTRING_TABLE_EMPTY) {
+                    // Success! Our value was inserted
+                    return value;
+                } else {
+                    // Nothing was inserted
+                    RUBY_ATOMIC_DEC(table->count); // we didn't end up inserting
+
+                    // Another thread won the race, try again at the same location
+                    continue;
+                }
+            } else {
+
+                return Qfalse;
+            }
+        } else if (candidate == FSTRING_TABLE_TOMBSTONE) {
+            // Deleted entry, continue searching
+        } else if (!fstring_cmp(candidate, value)) {
+            // We've found a match
+            if (rb_objspace_garbage_object_p(candidate)) {
+                // We found an object which is about to be GC'd
+                // Skip it and mark it is a tombstone
+                RUBY_ATOMIC_VALUE_CAS(table->entries[idx], candidate, FSTRING_TABLE_TOMBSTONE);
+            } else {
+                return candidate;
+            }
+        }
+
+        // linear probing (TODO: something better)
+        idx++;
+        idx %= table->capacity;
+    }
+}
+
+// Rebuilds the table
+static void fstring_try_resize(void) {
+    RB_VM_LOCK_ENTER();
+
+    // Stop all other threads to prevent concurrent reads as we resize
+    // TODO: Through extra work we should be able to perform this resize without locks or a barrier
+    rb_vm_barrier();
+
+    // This may overcount by up to the number of threads concurrently attempting to insert
+    // GC may also happen between now and the table being rebuilt
+    int expected_count = fstring_table.count - fstring_table.deleted_entries;
+
+    VALUE *old_entries = fstring_table.entries;
+    int old_capacity = fstring_table.capacity;
+    int new_capacity = old_capacity * 2;
+    if (new_capacity > expected_count * 4) {
+        new_capacity = old_capacity;
+    }
+
+    // May cause GC and therefore deletes, so must hapen first
+    VALUE *new_entries = ZALLOC_N(VALUE, new_capacity);
+
+    fstring_table.capacity = new_capacity;
+    fstring_table.entries = new_entries;
+    fstring_table.count = 0;
+    fstring_table.deleted_entries = 0;
+
+    for (int i = 0; i < old_capacity; i++) {
+        VALUE val = old_entries[i];
+        if (val == FSTRING_TABLE_EMPTY)     continue;
+        if (val == FSTRING_TABLE_TOMBSTONE) continue;
+        fstring_upsert(str_do_hash(val), val, true);
+    }
+
+    xfree(old_entries);
+
+#if 0
+    fprintf(stderr, "resized: %i -> %i (count: %i)\n", old_capacity, fstring_table.capacity, fstring_table.count);
+#endif
+
+    RB_VM_LOCK_LEAVE();
+}
+
+
+// Removes an fstring from the table. Compares by identity
+static void fstring_delete(VALUE hash_code, VALUE value) {
+    // Delete is never called concurrently, so atomic operations are unnecessary
+    struct fstring_table_struct *table = &fstring_table;
+    hash_code *= 1111111111111111111u;
+
+    int idx = hash_code % table->capacity;
+
+    for (;;) {
+        VALUE candidate = table->entries[idx];
+
+        if (candidate == FSTRING_TABLE_EMPTY) {
+            // We didn't find our string to delete
+            return;
+        } else if (candidate == value) {
+            // We found our string, replace it with a tombstone and increment the count
+            table->entries[idx] = FSTRING_TABLE_TOMBSTONE;
+            table->deleted_entries++;
+            return;
+        }
+
+        // linear probing (TODO: something better)
+        idx++;
+        idx %= table->capacity;
+    }
+}
+
 static VALUE
 register_fstring(VALUE str, bool copy, bool force_precompute_hash)
 {
@@ -559,29 +680,78 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     }
 #endif
 
-    RB_VM_LOCK_ENTER();
-    {
-        st_table *frozen_strings = rb_vm_fstring_table();
-        do {
-            args.fstr = str;
-            st_update(frozen_strings, (st_data_t)str, fstr_update_callback, (st_data_t)&args);
-        } while (UNDEF_P(args.fstr));
+    VALUE hash_code = rb_str_hash(str);
+    VALUE result = fstring_upsert(hash_code, str, false);
+
+    VALUE new_fstr = Qfalse;
+    while (!result || rb_objspace_garbage_object_p(result)) {
+        if (!new_fstr) {
+            new_fstr = build_fstring(str, &args);
+        }
+
+        RUBY_ASSERT(RB_TYPE_P(new_fstr, T_STRING));
+        RUBY_ASSERT(OBJ_FROZEN(new_fstr));
+        RUBY_ASSERT(!FL_TEST_RAW(new_fstr, STR_FAKESTR));
+        RUBY_ASSERT(!FL_TEST_RAW(new_fstr, FL_EXIVAR));
+        RUBY_ASSERT(RBASIC_CLASS(new_fstr) == rb_cString);
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(new_fstr));
+
+        // Repeatedly try to insert our new string.
+        // It's still possible another thread is inserting the same string and wins the race
+        result = fstring_upsert(hash_code, new_fstr, true);
     }
-    RB_VM_LOCK_LEAVE();
 
-    RUBY_ASSERT(OBJ_FROZEN(args.fstr));
-    RUBY_ASSERT(!FL_TEST_RAW(args.fstr, STR_FAKESTR));
-    RUBY_ASSERT(!FL_TEST_RAW(args.fstr, FL_EXIVAR));
-    RUBY_ASSERT(RBASIC_CLASS(args.fstr) == rb_cString);
+    RUBY_ASSERT(!rb_objspace_garbage_object_p(result));
+    RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
+    RUBY_ASSERT(OBJ_FROZEN(result));
+    RUBY_ASSERT(!FL_TEST_RAW(result, STR_FAKESTR));
+    RUBY_ASSERT(!FL_TEST_RAW(result, FL_EXIVAR));
+    RUBY_ASSERT(RBASIC_CLASS(result) == rb_cString);
 
-    return args.fstr;
+    return result;
+}
+
+void rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg) {
+    // Assume locking and barrier (which there is no assert for)
+    ASSERT_vm_locking();
+
+    struct fstring_table_struct *table = &fstring_table;
+
+    for (int i = 0; i < table->capacity; i++) {
+        VALUE key = table->entries[i];
+        if(key == FSTRING_TABLE_EMPTY) continue;
+        if(key == FSTRING_TABLE_TOMBSTONE) continue;
+
+        enum st_retval retval;
+        retval = (*func)(key, key, arg, 0);
+
+        if (retval == ST_REPLACE && replace) {
+            st_data_t value = key;
+            retval = (*replace)(&key, &value, arg, TRUE);
+            table->entries[i] = key;
+        }
+        switch (retval) {
+            case ST_REPLACE:
+            case ST_CONTINUE:
+                break;
+            case ST_CHECK:
+                rb_bug("unsupported");
+            case ST_STOP:
+                return;
+            case ST_DELETE:
+                table->entries[i] = FSTRING_TABLE_TOMBSTONE;
+                break;
+        }
+    }
 }
 
 void rb_gc_free_fstring(VALUE obj) {
+    // Assume locking and barrier (which there is no assert for)
     ASSERT_vm_locking();
 
-    st_data_t fstr = (st_data_t)obj;
-    st_delete(rb_vm_fstring_table(), &fstr, NULL);
+    VALUE str_hash = str_do_hash(obj);
+    fstring_delete(str_hash, obj);
+
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
 
     FL_UNSET(obj, RSTRING_FSTR);
@@ -652,6 +822,10 @@ fstring_cmp(VALUE a, VALUE b)
 {
     long alen, blen;
     const char *aptr, *bptr;
+
+    RUBY_ASSERT(RB_TYPE_P(a, T_STRING));
+    RUBY_ASSERT(RB_TYPE_P(b, T_STRING));
+
     RSTRING_GETMEM(a, aptr, alen);
     RSTRING_GETMEM(b, bptr, blen);
     return (alen != blen ||
@@ -12614,7 +12788,14 @@ Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
     RUBY_ASSERT(rb_vm_fstring_table());
-    st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
+    for (int i = 0; i < fstring_table.capacity; i++) {
+        VALUE str = fstring_table.entries[i];
+        if (!str) continue;
+        fstring_set_class_i(str, Qfalse, rb_cString);
+    }
+    //for (int i = 0; i < FSTRING_STRIPES; i++) {
+    //    st_foreach(&fstring_tables[i].table, fstring_set_class_i, rb_cString);
+    //}
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
