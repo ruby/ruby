@@ -10,21 +10,21 @@ return unless JITSupport.zjit_supported?
 
 class TestZJIT < Test::Unit::TestCase
   def test_nil
-    assert_compiles nil, %q{
+    assert_compiles 'nil', %q{
       def test = nil
       test
     }
   end
 
   def test_putobject
-    assert_compiles 1, %q{
+    assert_compiles '1', %q{
       def test = 1
       test
     }
   end
 
   def test_opt_plus_const
-    assert_compiles 3, %q{
+    assert_compiles '3', %q{
       def test = 1 + 2
       test # profile opt_plus
       test
@@ -32,7 +32,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_plus_fixnum
-    assert_compiles 3, %q{
+    assert_compiles '3', %q{
       def test(a, b) = a + b
       test(0, 1) # profile opt_plus
       test(1, 2)
@@ -40,7 +40,7 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_plus_chain
-    assert_compiles 6, %q{
+    assert_compiles '6', %q{
       def test(a, b, c) = a + b + c
       test(0, 1, 2) # profile opt_plus
       test(1, 2, 3)
@@ -50,7 +50,7 @@ class TestZJIT < Test::Unit::TestCase
   # Test argument ordering
   def test_opt_minus
     omit 'FixnumSub is not implemented yet'
-    assert_compiles 2, %q{
+    assert_compiles '2', %q{
       def test(a, b) = a - b
       test(2, 1) # profile opt_minus
       test(6, 4)
@@ -70,17 +70,16 @@ class TestZJIT < Test::Unit::TestCase
         #{test_script}
       }
       result = _test_proc.call
-      IO.open(#{pipe_fd}).write(Marshal.dump(result))
+      IO.open(#{pipe_fd}).write(result.inspect)
     RUBY
 
-    status, out, err, pipe_out = eval_with_jit(script, call_threshold:, pipe_fd:)
+    status, out, err, actual = eval_with_jit(script, call_threshold:, pipe_fd:)
 
     message = "exited with status #{status.to_i}"
     message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
     message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
     assert status.success?, message
 
-    actual = Marshal.load(pipe_out)
     assert_equal expected, actual
   end
 
