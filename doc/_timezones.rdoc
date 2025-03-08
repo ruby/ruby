@@ -64,43 +64,49 @@ The timezone methods are:
 
 - +local_to_utc+:
 
-  - Called when Time.new is invoked with +tz+
-    as the value of positional argument +zone+ or keyword argument +in:+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
-  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the UTC timezone.
+  Called when Time.new is invoked with +tz+ as the value of positional
+  argument +zone+ or keyword argument +in:+.
+
+  Argument:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  Returns:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the UTC timezone.
 
 - +utc_to_local+:
 
-  - Called when Time.at or Time.now is invoked with +tz+
-    as the value for keyword argument +in:+,
-    and when Time#getlocal or Time#localtime is called with +tz+
-    as the value for positional argument +zone+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
-  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
+  Called when Time.at or Time.now is invoked with +tz+ as the value for
+  keyword argument +in:+, and when Time#getlocal or Time#localtime is called
+  with +tz+ as the value for positional argument +zone+.
+
+  The UTC offset will be calculated as the difference between the
+  original time and the returned object as an +Integer+.
+
+  Argument:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  Returns:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
 
 A custom timezone class may have these instance methods,
 which will be called if defined:
 
 - +abbr+:
 
-  - Called when Time#strftime is invoked with a format involving <tt>%Z</tt>.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
-  - Returns: a string abbreviation for the timezone name.
+  Called when Time#strftime is invoked with a format involving <tt>%Z</tt>.
+
+  Argument:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  Returns:: a string abbreviation for the timezone name.
 
 - +dst?+:
 
-  - Called when Time.at or Time.now is invoked with +tz+
-    as the value for keyword argument +in:+,
-    and when Time#getlocal or Time#localtime is called with +tz+
-    as the value for positional argument +zone+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
-  - Returns: whether the time is daylight saving time.
+  Called when Time.at or Time.now is invoked with +tz+ as the value for
+  keyword argument +in:+, and when Time#getlocal or Time#localtime is
+  called with +tz+ as the value for positional argument +zone+.
+
+  Argument:: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  Returns:: whether the time is daylight saving time.
 
 - +name+:
 
-  - Called when <tt>Marshal.dump(t)</tt> is invoked
-  - Argument: none.
-  - Returns: the string name of the timezone.
+  Called when <tt>Marshal.dump(t)</tt> is invoked
+
+  Argument:: none.
+  Returns:: the string name of the timezone.
 
 ==== +Time+-Like Objects
 
