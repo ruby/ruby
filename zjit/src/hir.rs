@@ -2,7 +2,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cruby::*, get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
+    cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
 use std::collections::{HashMap, HashSet};
 

@@ -64,8 +64,8 @@ include!("hir_type.inc.rs");
 
 /// Get class name from a class pointer.
 fn get_class_name(class: Option<VALUE>) -> String {
-    use crate::{RB_TYPE_P, RUBY_T_MODULE, RUBY_T_CLASS};
-    use crate::{cstr_to_rust_string, rb_class2name};
+    use crate::cruby::{RB_TYPE_P, RUBY_T_MODULE, RUBY_T_CLASS};
+    use crate::cruby::{cstr_to_rust_string, rb_class2name};
     class.filter(|&class| {
         // type checks for rb_class2name()
         unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) }
@@ -324,11 +324,11 @@ impl Type {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust_str_to_ruby;
-    use crate::rust_str_to_sym;
-    use crate::rb_ary_new_capa;
-    use crate::rb_hash_new;
-    use crate::rb_float_new;
+    use crate::cruby::rust_str_to_ruby;
+    use crate::cruby::rust_str_to_sym;
+    use crate::cruby::rb_ary_new_capa;
+    use crate::cruby::rb_hash_new;
+    use crate::cruby::rb_float_new;
     use crate::cruby::define_class;
 
     #[track_caller]

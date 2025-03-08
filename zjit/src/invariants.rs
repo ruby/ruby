@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{cruby::{ruby_basic_operators, IseqPtr, RedefinitionFlag}, state::ZJITState, zjit_enabled_p};
+use crate::{cruby::{ruby_basic_operators, IseqPtr, RedefinitionFlag}, state::ZJITState, state::zjit_enabled_p};
 
 /// Used to track all of the various block references that contain assumptions
 /// about the state of the virtual machine.

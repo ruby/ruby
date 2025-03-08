@@ -1,6 +1,8 @@
-use crate::{asm::CodeBlock, cruby::*, debug, virtualmem::CodePtr};
+use crate::state::ZJITState;
+use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP};
+use crate::hir;
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 
@@ -41,8 +43,48 @@ impl JITState {
     }
 }
 
+/// Generate JIT code for a given ISEQ, which takes EC and CFP as its arguments.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+    let code_ptr = iseq_gen_entry_point(iseq);
+    if ZJITState::assert_compiles_enabled() && code_ptr == std::ptr::null() {
+        let iseq_location = iseq_get_location(iseq, 0);
+        panic!("Failed to compile: {iseq_location}");
+    }
+    code_ptr
+}
+
+fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
+    // Do not test the JIT code in HIR tests
+    if cfg!(test) {
+        return std::ptr::null();
+    }
+
+    // Take a lock to avoid writing to ISEQ in parallel with Ractors.
+    // with_vm_lock() does nothing if the program doesn't use Ractors.
+    with_vm_lock(src_loc!(), || {
+        // Compile ISEQ into High-level IR
+        let ssa = match hir::iseq_to_hir(iseq) {
+            Ok(ssa) => ssa,
+            Err(err) => {
+                debug!("ZJIT: iseq_to_hir: {:?}", err);
+                return std::ptr::null();
+            }
+        };
+
+        // Compile High-level IR into machine code
+        let cb = ZJITState::get_code_block();
+        match gen_function(cb, &ssa, iseq) {
+            Some(start_ptr) => start_ptr.raw_ptr(cb),
+
+            // Compilation failed, continue executing in the interpreter only
+            None => std::ptr::null(),
+        }
+    })
+}
+
 /// Compile High-level IR into machine code
-pub fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
+fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
     // Set up special registers
     let mut jit = JITState::new(iseq, function.insns.len());
     let mut asm = Assembler::new();

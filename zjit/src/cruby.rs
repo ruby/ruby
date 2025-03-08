@@ -770,6 +770,45 @@ where
     ret
 }
 
+/// At the moment, we abort in all cases we panic.
+/// To aid with getting diagnostics in the wild without requiring people to set
+/// RUST_BACKTRACE=1, register a panic hook that crash using rb_bug() for release builds.
+/// rb_bug() might not be as good at printing a call trace as Rust's stdlib, but
+/// it dumps some other info that might be relevant.
+///
+/// In case we want to start doing fancier exception handling with panic=unwind,
+/// we can revisit this later. For now, this helps to get us good bug reports.
+pub fn rb_bug_panic_hook() {
+    use std::env;
+    use std::panic;
+    use std::io::{stderr, Write};
+
+    // Probably the default hook. We do this very early during process boot.
+    let previous_hook = panic::take_hook();
+
+    panic::set_hook(Box::new(move |panic_info| {
+        // Not using `eprintln` to avoid double panic.
+        let _ = stderr().write_all(b"ruby: ZJIT has panicked. More info to follow...\n");
+
+        // Always show a Rust backtrace for release builds.
+        // You should set RUST_BACKTRACE=1 for dev builds.
+        let release_build = cfg!(not(debug_assertions));
+        if release_build {
+            unsafe { env::set_var("RUST_BACKTRACE", "1"); }
+        }
+        previous_hook(panic_info);
+
+        // Dump information about the interpreter for release builds.
+        // You may also use ZJIT_RB_BUG=1 to trigger this on dev builds.
+        if release_build || env::var("ZJIT_RB_BUG").is_ok() {
+            // Abort with rb_bug(). It has a length limit on the message.
+            let panic_message = &format!("{}", panic_info)[..];
+            let len = std::cmp::min(0x100, panic_message.len()) as c_int;
+            unsafe { rb_bug(b"ZJIT: %*s\0".as_ref().as_ptr() as *const c_char, len, panic_message.as_ptr()); }
+        }
+    }));
+}
+
 // Non-idiomatic capitalization for consistency with CRuby code
 #[allow(non_upper_case_globals)]
 pub const Qfalse: VALUE = VALUE(RUBY_Qfalse as usize);
@@ -855,7 +894,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::init_options, rb_zjit_enabled_p, state::ZJITState};
+    use crate::{options::init_options, state::rb_zjit_enabled_p, state::ZJITState};
 
     use super::*;
 

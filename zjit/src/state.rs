@@ -1,6 +1,16 @@
+use crate::cruby::{rb_bug_panic_hook, EcPtr, Qnil, VALUE};
 use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
+
+#[allow(non_upper_case_globals)]
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_enabled_p: bool = false;
+
+/// Like rb_zjit_enabled_p, but for Rust code.
+pub fn zjit_enabled_p() -> bool {
+    unsafe { rb_zjit_enabled_p }
+}
 
 /// Global state needed for code generation
 pub struct ZJITState {
@@ -107,4 +117,34 @@ impl ZJITState {
         let instance = ZJITState::get_instance();
         instance.assert_compiles = true;
     }
+}
+
+/// Initialize ZJIT, given options allocated by rb_zjit_init_options()
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_init(options: *const u8) {
+    // Catch panics to avoid UB for unwinding into C frames.
+    // See https://doc.rust-lang.org/nomicon/exception-safety.html
+    let result = std::panic::catch_unwind(|| {
+        let options = unsafe { Box::from_raw(options as *mut Options) };
+        ZJITState::init(*options);
+        std::mem::drop(options);
+
+        rb_bug_panic_hook();
+
+        // YJIT enabled and initialized successfully
+        assert!(unsafe{ !rb_zjit_enabled_p });
+        unsafe { rb_zjit_enabled_p = true; }
+    });
+
+    if let Err(_) = result {
+        println!("ZJIT: zjit_init() panicked. Aborting.");
+        std::process::abort();
+    }
+}
+
+/// Assert that any future ZJIT compilation will return a function pointer (not fail to compile)
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
+    ZJITState::enable_assert_compiles();
+    Qnil
 }
