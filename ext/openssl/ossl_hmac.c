@@ -113,6 +113,7 @@ ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_hmac_copy(VALUE self, VALUE other)
 {

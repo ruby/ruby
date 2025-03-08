@@ -103,6 +103,7 @@ ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_x509req_copy(VALUE self, VALUE other)
 {

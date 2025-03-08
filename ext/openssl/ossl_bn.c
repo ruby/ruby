@@ -929,6 +929,7 @@ BIGNUM_NUM(num_bytes)
  */
 BIGNUM_NUM(num_bits)
 
+/* :nodoc: */
 static VALUE
 ossl_bn_copy(VALUE self, VALUE other)
 {

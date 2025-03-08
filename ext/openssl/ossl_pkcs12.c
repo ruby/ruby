@@ -60,6 +60,7 @@ ossl_pkcs12_s_allocate(VALUE klass)
     return obj;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_pkcs12_initialize_copy(VALUE self, VALUE other)
 {

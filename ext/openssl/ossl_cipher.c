@@ -130,6 +130,7 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_cipher_copy(VALUE self, VALUE other)
 {
