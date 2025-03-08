@@ -843,7 +843,7 @@ wkmap_aset(VALUE self, VALUE key, VALUE val)
     TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
 
     if (!FL_ABLE(key) || SYMBOL_P(key) || RB_BIGNUM_TYPE_P(key) || RB_TYPE_P(key, T_FLOAT)) {
-        rb_raise(rb_eArgError, "WeakKeyMap must be garbage collectable");
+        rb_raise(rb_eArgError, "WeakKeyMap keys must be garbage collectable");
         UNREACHABLE_RETURN(Qnil);
     }
 
