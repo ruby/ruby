@@ -5050,22 +5050,21 @@ opt_block_param	: none
                     }
                 ;
 
-block_param_def	: '|' opt_bv_decl '|'
+block_param_def	: '|' block_param? <node_args> opt_bv_decl '|'
                     {
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
-                        $$ = 0;
-                    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), $:2) %*/
-                    }
-                | '|' block_param opt_bv_decl '|'
-                    {
-                        p->max_numparam = ORDINAL_PARAM;
-                        p->ctxt.in_argdef = 0;
-                        $$ = $2;
-                    /*% ripper: block_var!($:2, $:3) %*/
+
+                        if ($2) {
+                            $$ = $2;
+                            /*% ripper: block_var!($:2, $:3) %*/
+                        }
+                        else {
+                            $$ = 0;
+                            /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), $:2) %*/
+                        }
                     }
                 ;
-
 
 opt_bv_decl	: '\n'?
                     {
