@@ -551,7 +551,7 @@ rb_current_ec_set(rb_execution_context_t *ec)
 }
 
 
-#ifdef __APPLE__
+#if defined(__arm64__) || defined(__aarch64__)
 rb_execution_context_t *
 rb_current_ec(void)
 {
