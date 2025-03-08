@@ -116,6 +116,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Return { val } => return Some(gen_return(&jit, asm, *val)?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, *left, *right, function.frame_state(*state))?,
+        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, *left, *right, function.frame_state(*state))?,
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, *val, *guard_type, function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         _ => {
@@ -209,6 +210,19 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
     let left_untag = asm.sub(left_opnd, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
+
+    Some(out_val)
+}
+
+/// Compile Fixnum - Fixnum
+fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId, state: &FrameState) -> Option<lir::Opnd> {
+    let left_opnd = jit.get_opnd(left)?;
+    let right_opnd = jit.get_opnd(right)?;
+
+    // Add arg0 + arg1 and test for overflow
+    let val_untag = asm.sub(left_opnd, right_opnd);
+    asm.jo(Target::SideExit(state.clone()));
+    let out_val = asm.add(val_untag, Opnd::Imm(1));
 
     Some(out_val)
 }

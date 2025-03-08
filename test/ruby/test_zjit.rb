@@ -49,7 +49,6 @@ class TestZJIT < Test::Unit::TestCase
 
   # Test argument ordering
   def test_opt_minus
-    omit 'FixnumSub is not implemented yet'
     assert_compiles '2', %q{
       def test(a, b) = a - b
       test(2, 1) # profile opt_minus
@@ -84,11 +83,12 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   # Run a Ruby process with ZJIT options and a pipe for writing test results
-  def eval_with_jit(script, call_threshold: 1, timeout: 1000, pipe_fd:)
+  def eval_with_jit(script, call_threshold: 1, timeout: 1000, pipe_fd:, debug: true)
     args = [
       "--disable-gems",
       "--zjit-call-threshold=#{call_threshold}",
     ]
+    args << "--zjit-debug" if debug
     args << "-e" << script_shell_encode(script)
     pipe_r, pipe_w = IO.pipe
     # Separate thread so we don't deadlock when
