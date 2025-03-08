@@ -5091,9 +5091,6 @@ bvar		: tIDENTIFIER
                     /*% ripper: $:1 %*/
                     }
                 | f_bad_arg
-                    {
-                        $$ = 0;
-                    }
                 ;
 
 max_numparam	:   {
