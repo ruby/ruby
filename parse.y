@@ -2795,7 +2795,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
 %type <node> p_value p_primitive p_primitive_value p_variable p_var_ref p_expr_ref p_const
 %type <node> p_kwargs p_kwarg p_kw
-%type <id>   keyword_variable user_variable sym operation operation2 operation3
+%type <id>   keyword_variable user_variable sym operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_f_block_arg f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
@@ -2910,9 +2910,6 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                 | keyword_variable
                 ;
 
-%rule %inline inline_operation : ident_or_const
-                               | tFID
-                               ;
 /*
  *	parameterizing rules
  */
@@ -3781,7 +3778,7 @@ cpath		: tCOLON3 cname
                     }
                 ;
 
-fname		: inline_operation
+fname		: operation
                 | op
                     {
                         SET_LEX_STATE(EXPR_ENDFN);
@@ -6716,8 +6713,9 @@ assoc		: arg_value tASSOC arg_value
                     }
                 ;
 
-operation	: inline_operation
-                ;
+%rule %inline operation : ident_or_const
+                        | tFID
+                        ;
 
 operation2	: operation
                 | op
