@@ -5200,23 +5200,22 @@ block_call	: command do_block
                         fixpos($$, $1);
                     /*% ripper: method_add_block!($:1, $:2) %*/
                     }
-                | block_call call_op2 operation2 opt_paren_args
+                | block_call call_op2 operation2 opt_paren_args brace_block? <node>
                     {
                         bool has_args = $4 != 0;
                         if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
-                    /*% ripper: call!($:1, $:2, $:3) %*/
-                        if (has_args) {
-                        /*% ripper: method_add_arg!($:$, $:4) %*/
-                        }
-                    }
-                | block_call call_op2 operation2 opt_paren_args brace_block
-                    {
-                        if (NODE_EMPTY_ARGS_P($4)) $4 = 0;
-                        $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
-                    /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
+
                         if ($5) {
-                        /*% ripper: method_add_block!($:$, $:5) %*/
+                            $$ = new_command_qcall(p, $2, $1, $3, $4, $5, &@3, &@$);
+                            /*% ripper: command_call!($:1, $:2, $:3, $:4) %*/
+                            /*% ripper: method_add_block!($:$, $:5) %*/
+                        }
+                        else {
+                            $$ = new_qcall(p, $2, $1, $3, $4, &@3, &@$);
+                            /*% ripper: call!($:1, $:2, $:3) %*/
+                            if (has_args) {
+                                /*% ripper: method_add_arg!($:$, $:4) %*/
+                            }
                         }
                     }
                 | block_call call_op2 operation2 command_args do_block
