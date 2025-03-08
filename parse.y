@@ -4408,15 +4408,15 @@ primary         : inline_primary
                         $$ = new_defined(p, $5, &@$);
                     /*% ripper: defined!($:5) %*/
                     }
-                | keyword_not '(' expr rparen
+                | keyword_not '(' expr? <node> rparen
                     {
-                        $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
-                    /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
-                    }
-                | keyword_not '(' rparen
-                    {
-                        $$ = call_uni_op(p, method_cond(p, new_nil(&@2), &@2), METHOD_NOT, &@1, &@$);
-                    /*% ripper: unary!(ID2VAL(idNOT), Qnil) %*/
+                        if ($3) {
+                            $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
+                        /*% ripper: unary!(ID2VAL(idNOT), $:3) %*/
+                        } else {
+                            $$ = call_uni_op(p, method_cond(p, new_nil(&@2), &@2), METHOD_NOT, &@1, &@$);
+                        /*% ripper: unary!(ID2VAL(idNOT), Qnil) %*/
+                        }
                     }
                 | fcall brace_block
                     {
