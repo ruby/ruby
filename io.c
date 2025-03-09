@@ -233,6 +233,32 @@ VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, 
     return rb_io_blocking_region_wait(io, function, argument, 0);
 }
 
+VALUE
+rb_io_interruptible_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+
+    if (scheduler == Qnil) {
+        return function(argument);
+    } else {
+        return rb_thread_io_interruptible_operation(self, function, argument);
+    }
+}
+
+static VALUE
+io_interruptible_operation_begin(VALUE block)
+{
+    return rb_proc_call_with_block(block, 0, NULL, Qnil);
+}
+
+static VALUE
+io_interruptible_operation(VALUE self)
+{
+    VALUE block = rb_block_proc();
+
+    return rb_io_interruptible_operation(self, io_interruptible_operation_begin, block);
+}
+
 struct argf {
     VALUE filename, current_file;
     long last_lineno;		/* $. */
@@ -15699,6 +15725,8 @@ Init_IO(void)
     rb_define_singleton_method(rb_cIO, "copy_stream", rb_io_s_copy_stream, -1);
 
     rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
+
+    rb_define_method(rb_cIO, "interruptible_operation", io_interruptible_operation, 0);
 
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, deprecated_str_setter);
