@@ -54,11 +54,13 @@ static VALUE rb_namespace_inspect(VALUE obj);
 int
 rb_namespace_available()
 {
-    const char *env;
+    // const char *env;
     if (namespace_availability) {
         return namespace_availability > 0 ? 1 : 0;
     }
+    return 1;
     // TODO: command line option?
+    /*
     env = getenv("RUBY_NAMESPACE");
     if (env && strlen(env) > 0) {
         if (strcmp(env, "1") == 0) {
@@ -68,6 +70,7 @@ rb_namespace_available()
     }
     namespace_availability = -1;
     return 0;
+    */
 }
 
 static void namespace_push(rb_thread_t *th, VALUE namespace);
@@ -942,8 +945,6 @@ rb_initialize_main_namespace(void)
     rb_thread_t *th = GET_THREAD();
     VALUE main_ns;
 
-    // main_ns initialization must follow initializations of ns_builtin_x members
-    // because Namespace#initialize uses those values.
     main_ns = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespace);
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
@@ -1007,12 +1008,14 @@ namespace_builtin_refiner_loading_func_ensure(VALUE _)
 }
 
 static VALUE
-rb_namespace_builtin_refner_loading_func(int argc, VALUE *argv, VALUE _self)
+rb_namespace_builtin_refiner_loading_func(int argc, VALUE *argv, VALUE _self)
 {
     rb_vm_t *vm = GET_VM();
     if (!vm->require_stack)
         rb_bug("require_stack is not ready but the namespace refiner is called");
     rb_namespace_enable_builtin();
+    // const rb_namespace_t *ns = rb_loading_namespace();
+    // printf("N:current loading ns: %ld\n", ns->ns_id);
     struct refiner_calling_super_data data = {
         .argc = argc,
         .argv = argv
@@ -1026,9 +1029,9 @@ setup_builtin_refinement(VALUE mod)
 {
     struct rb_refinements_data data;
     rb_refinement_setup(&data, mod, rb_mKernel);
-    rb_define_method(data.refinement, "require", rb_namespace_builtin_refner_loading_func, -1);
-    rb_define_method(data.refinement, "require_relative", rb_namespace_builtin_refner_loading_func, -1);
-    rb_define_method(data.refinement, "load", rb_namespace_builtin_refner_loading_func, -1);
+    rb_define_method(data.refinement, "require", rb_namespace_builtin_refiner_loading_func, -1);
+    rb_define_method(data.refinement, "require_relative", rb_namespace_builtin_refiner_loading_func, -1);
+    rb_define_method(data.refinement, "load", rb_namespace_builtin_refiner_loading_func, -1);
 }
 
 static VALUE
