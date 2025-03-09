@@ -412,6 +412,12 @@ struct rb_fiber_scheduler_blocking_operation_state {
 VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_operation_state *state);
 
 /**
+ * Interrupt a fiber by raising an exception. You can construct an exception using `rb_make_exception`.
+ *
+ */
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception);
+
+/**
  * Create and schedule a non-blocking fiber.
  *
  */
