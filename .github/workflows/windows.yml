@@ -31,10 +31,10 @@ jobs:
             test_task: check
           - vs: 2019
             test_task: check
-          - vs: 2019
+          - vs: 2022
+            test_task: check
+          - vs: 2022
             test_task: test-bundled-gems
-          # - vs: 2022
-          #   test_task: check
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
