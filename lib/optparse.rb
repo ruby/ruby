@@ -668,7 +668,7 @@ class OptionParser
 
       (sopts+lopts).each do |opt|
         # "(-x -c -r)-l[left justify]"
-        if /^--\[no-\](.+)$/ =~ opt
+        if /\A--\[no-\](.+)$/ =~ opt
           o = $1
           yield("--#{o}", desc.join(""))
           yield("--no-#{o}", desc.join(""))
@@ -1508,7 +1508,7 @@ XXX
         raise ArgumentError, "unsupported argument type: #{o}", ParseError.filter_backtrace(caller(4))
       when *ArgumentStyle.keys
         style = notwice(ArgumentStyle[o], style, 'style')
-      when /^--no-([^\[\]=\s]*)(.+)?/
+      when /\A--no-([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         not_pattern, not_conv = search(:atype, o) unless not_style
@@ -1519,7 +1519,7 @@ XXX
         (q = q.downcase).tr!('_', '-')
         long << "no-#{q}"
         nolong << q
-      when /^--\[no-\]([^\[\]=\s]*)(.+)?/
+      when /\A--\[no-\]([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         o = notwice(a ? Object : TrueClass, klass, 'type')
         if a
@@ -1532,7 +1532,7 @@ XXX
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
         not_style = Switch::NoArgument
         nolong << "no-#{o}"
-      when /^--([^\[\]=\s]*)(.+)?/
+      when /\A--([^\[\]=\s]*)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1542,7 +1542,7 @@ XXX
         ldesc << "--#{q}"
         (o = q.downcase).tr!('_', '-')
         long << o
-      when /^-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
+      when /\A-(\[\^?\]?(?:[^\\\]]|\\.)*\])(.+)?/
         q, a = $1, $2
         o = notwice(Object, klass, 'type')
         if a
@@ -1553,7 +1553,7 @@ XXX
         end
         sdesc << "-#{q}"
         short << Regexp.new(q)
-      when /^-(.)(.+)?/
+      when /\A-(.)(.+)?/
         q, a = $1, $2
         if a
           o = notwice(NilClass, klass, 'type')
@@ -1562,7 +1562,7 @@ XXX
         end
         sdesc << "-#{q}"
         short << q
-      when /^=/
+      when /\A=/
         style = notwice(default_style.guess(arg = o), style, 'style')
         default_pattern, conv = search(:atype, Object) unless default_pattern
       else
