@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'psych'
+
 module Gem
   ###
   # This module is used for safely loading YAML specs from a gem.  The
