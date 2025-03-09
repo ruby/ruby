@@ -1503,7 +1503,7 @@ XXX
         else
           raise ArgumentError, "argument pattern given twice"
         end
-        o.each {|pat, *v| pattern[pat] = v.fetch(0) {pat}}
+        o.each {|pat, *v| pattern[pat.to_s] = v.fetch(0) {pat}}
       when Module
         raise ArgumentError, "unsupported argument type: #{o}", ParseError.filter_backtrace(caller(4))
       when *ArgumentStyle.keys
