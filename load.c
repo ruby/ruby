@@ -1140,6 +1140,8 @@ static VALUE rb_require_string_internal(VALUE fname, bool resurrect);
 VALUE
 rb_f_require(VALUE obj, VALUE fname)
 {
+    // const rb_namespace_t *ns = rb_loading_namespace();
+    // printf("F:current loading ns: %ld\n", ns->ns_id);
     return rb_require_string(fname);
 }
 
@@ -1357,6 +1359,20 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
+struct rb_vm_call_cfunc2_data {
+    VALUE recv;
+    VALUE arg1;
+    VALUE arg2;
+    VALUE block_handler;
+    VALUE filename;
+};
+
+static VALUE
+call_load_ext_in_ns(VALUE data){
+    struct rb_vm_call_cfunc2_data *arg = (struct rb_vm_call_cfunc2_data *)data;
+    return rb_vm_call_cfunc2(arg->recv, load_ext, arg->arg1, arg->arg2, arg->block_handler, arg->filename);
+}
+
 /*
  * returns
  *  0: if already loaded (false)
@@ -1420,7 +1436,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else {
                 switch (found) {
                   case 'r':
+                    // iseq_eval_in_namespace will be called with the loading namespace eventually
                     if (NAMESPACE_OPTIONAL_P(vm_ns->ns)) {
+                        // check with NAMESPACE_OPTIONAL_P (not NAMESPACE_USER_P) for NS1::xxx naming
+                        // it is not expected for the main namespace
                         load_wrapping(saved.ec, path, vm_ns->ns->ns_object);
                     } else {
                         load_iseq_eval(saved.ec, path);
@@ -1428,10 +1447,17 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                     break;
 
                   case 's':
+                    // the loading namespace must be set to the current namespace before calling load_ext
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    handle = rb_vm_call_cfunc2(rb_vm_top_self(), load_ext,
-                                              path, fname, VM_BLOCK_HANDLER_NONE, path);
+                    struct rb_vm_call_cfunc2_data arg = {
+                        .recv = rb_vm_top_self(),
+                        .arg1 = path,
+                        .arg2 = fname,
+                        .block_handler = VM_BLOCK_HANDLER_NONE,
+                        .filename = path,
+                    };
+                    handle = rb_namespace_exec(vm_ns->ns, call_load_ext_in_ns, (VALUE)&arg);
                     rb_hash_aset(CURRENT_NS_RUBY_DLN_LIBMAP(vm_ns, ruby_dln_libmap), path,
                                  SVALUE2NUM((SIGNED_VALUE)handle));
                     break;
