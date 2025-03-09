@@ -402,8 +402,7 @@ static inline enum method_missing_reason rb_method_call_status(rb_execution_cont
 static VALUE
 gccct_hash(VALUE klass, VALUE namespace, ID mid)
 {
-    // return ((klass ^ namespace) >> 3) ^ (VALUE)mid;
-    return (klass >> 3) ^ (VALUE)mid;
+    return ((klass ^ namespace) >> 3) ^ (VALUE)mid;
 }
 
 NOINLINE(static const struct rb_callcache *gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const struct rb_callinfo * ci));
@@ -448,7 +447,7 @@ scope_to_ci(call_type scope, ID mid, int argc, struct rb_callinfo *ci)
 static inline const struct rb_callcache *
 gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci)
 {
-    VALUE klass;
+    VALUE klass, ns_value;
     const rb_namespace_t *ns = rb_current_namespace();
 
     if (!SPECIAL_CONST_P(recv)) {
@@ -459,8 +458,13 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
         klass = CLASS_OF(recv);
     }
 
+    if (NAMESPACE_USER_P(ns)) {
+        ns_value = ns->ns_object;
+    } else {
+        ns_value = 0;
+    }
     // search global method cache
-    unsigned int index = (unsigned int)(gccct_hash(klass, ns && ns->ns_object, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+    unsigned int index = (unsigned int)(gccct_hash(klass, ns_value, mid) % VM_GLOBAL_CC_CACHE_TABLE_SIZE);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     const struct rb_callcache *cc = vm->global_cc_cache_table[index];
 

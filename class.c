@@ -1908,7 +1908,7 @@ rb_define_class(const char *name, VALUE super)
 {
     VALUE klass;
     ID id;
-    rb_namespace_t *ns = GET_THREAD()->ns;
+    const rb_namespace_t *ns = rb_current_namespace();
 
     id = rb_intern(name);
     if (NAMESPACE_OPTIONAL_P(ns)) {
@@ -2027,7 +2027,7 @@ rb_define_module(const char *name)
 {
     VALUE module;
     ID id;
-    rb_namespace_t *ns = GET_THREAD()->ns;
+    const rb_namespace_t *ns = rb_current_namespace();
 
     id = rb_intern(name);
     if (NAMESPACE_OPTIONAL_P(ns)) {

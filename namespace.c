@@ -869,7 +869,7 @@ VALUE
 rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VALUE arg)
 {
     rb_thread_t *th = GET_THREAD();
-    namespace_push(th, ns->ns_object);
+    namespace_push(th, ns ? ns->ns_object : Qnil);
     return rb_ensure(func, arg, namespace_pop, (VALUE)th);
 }
 
