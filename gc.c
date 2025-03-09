@@ -1342,10 +1342,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         if (RCLASS(obj)->ns_classext_tbl) {
             st_free_table(RCLASS(obj)->ns_classext_tbl);
         }
-        // TODO: TESTING delete this
-        RCLASS(obj)->ns_classext_tbl = NULL;
-        RCLASS(obj)->prime_classext_readable = 0;
-        RCLASS(obj)->prime_classext_writable = 0;
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
         (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
         break;
@@ -3849,13 +3845,6 @@ void
 rb_gc_update_object_references(void *objspace, VALUE obj)
 {
     struct classext_foreach_args args;
-
-    /*
-     * TODO: check this is not needed now or not
-    if (FL_TEST(obj, FL_EXIVAR)) {
-        rb_ref_update_generic_ivar(obj);
-    }
-    */
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
