@@ -396,12 +396,22 @@ Executions:
   $ ruby matched_values.rb --help
   Usage: matched_values [options]
           --xxx XXX                    Matched values
+          --yyy YYY                    Check by range
+          --zzz ZZZ                    Check by list
   $ ruby matched_values.rb --xxx foo
   ["--xxx", "foo"]
   $ ruby matched_values.rb --xxx FOO
   ["--xxx", "FOO"]
   $ ruby matched_values.rb --xxx bar
-  matched_values.rb:6:in '<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+  matched_values.rb:12:in '<main>': invalid argument: --xxx bar (OptionParser::InvalidArgument)
+  $ ruby matched_values.rb --yyy 1
+  ["--yyy", 1]
+  $ ruby matched_values.rb --yyy 4
+  matched_values.rb:12:in '<main>': invalid argument: --yyy 4 (OptionParser::InvalidArgument)
+  $ ruby matched_values.rb --zzz 1
+  ["--zzz", 1]
+  $ ruby matched_values.rb --zzz 2
+  matched_values.rb:12:in '<main>': invalid argument: --zzz 2 (OptionParser::InvalidArgument)
 
 === Argument Converters
 
