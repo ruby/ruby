@@ -297,6 +297,18 @@ vm_cc_segments(const struct iseq_inline_constant_cache *cc)
     return cc->segments;
 }
 
+static inline void
+vm_cc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flag)
+{
+    cc->entry->flags |= flag;
+}
+
+static inline VALUE
+vm_cc_flags(const struct iseq_inline_constant_cache *cc)
+{
+    return cc->entry->flags;
+}
+
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
     ID iv_set_name;
