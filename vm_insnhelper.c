@@ -6419,7 +6419,7 @@ VALUE
 rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
 {
     VALUE val;
-    const ID *segments = ic->segments;
+    const ID *segments = vm_cc_segments(ic);
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
