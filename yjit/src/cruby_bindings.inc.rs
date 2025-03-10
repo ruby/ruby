@@ -1268,7 +1268,7 @@ extern "C" {
     pub fn rb_yjit_multi_ractor_p() -> bool;
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
-    pub fn rb_yjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
+    pub fn rb_yjit_constcache_shareable(ic: *const iseq_inline_constant_cache) -> bool;
     pub fn rb_assert_cme_handle(handle: VALUE);
     pub fn rb_yjit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_yjit_obj_written(

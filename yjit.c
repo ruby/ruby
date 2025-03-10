@@ -1070,9 +1070,9 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
 }
 
 bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache *ic)
 {
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+    return (vm_cc_flags(ic) & IMEMO_CONST_CACHE_SHAREABLE) != 0;
 }
 
 void

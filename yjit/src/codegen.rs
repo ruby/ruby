@@ -10275,7 +10275,7 @@ fn gen_opt_getconstant_path(
     }
 
     let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-    let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
+    let is_shareable = unsafe { rb_yjit_constcache_shareable(ic) };
     let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
     if needs_checks {
