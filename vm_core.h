@@ -321,6 +321,18 @@ vm_cc_set_value(struct iseq_inline_constant_cache *cc, VALUE value)
     RB_OBJ_WRITE(cc->entry, &cc->entry->value, value);
 }
 
+static inline const rb_cref_t *
+vm_cc_cref(const struct iseq_inline_constant_cache *cc)
+{
+    return cc->entry->ic_cref;
+}
+
+static inline void
+vm_cc_set_cref(struct iseq_inline_constant_cache *cc, const rb_cref_t *cref)
+{
+    cc->entry->ic_cref = cref;
+}
+
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
     ID iv_set_name;
