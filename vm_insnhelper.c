@@ -6384,7 +6384,6 @@ vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VA
 static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
 {
-    VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
     return vm_inlined_ic_hit_p(vm_icc_flags(ic), vm_icc_value(ic), vm_icc_cref(ic), reg_ep);
 }
 
@@ -6392,7 +6391,7 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
 bool
 rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
-    return ic->entry && vm_ic_hit_p(ic, reg_ep);
+    return vm_icc_is_set(ic) && vm_ic_hit_p(ic, reg_ep);
 }
 
 static void
@@ -6428,7 +6427,7 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
 {
     VALUE val;
     const ID *segments = vm_icc_segments(ic);
-    if (!UNDEF_P(ic->value) && vm_ic_hit_p(ic, GET_EP())) {
+    if (vm_icc_is_set(ic) && vm_ic_hit_p(ic, GET_EP())) {
         val = vm_icc_value(ic);
 
         VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
