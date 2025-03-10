@@ -194,6 +194,11 @@ impl Type {
         Type { bits: ty.bits, spec: Specialization::Int(val as u64) }
     }
 
+    /// Create a `Type` (a `CDouble` with double specialization) from a f64.
+    pub fn from_double(val: f64) -> Type {
+        Type { bits: bits::CDouble, spec: Specialization::Double(val) }
+    }
+
     /// Create a `Type` from a primitive boolean.
     pub fn from_cbool(val: bool) -> Type {
         Type { bits: bits::CBool, spec: Specialization::Int(val as u64) }
@@ -226,6 +231,7 @@ impl Type {
         false
     }
 
+    /// Union both types together, preserving specialization if possible.
     pub fn union(&self, other: Type) -> Type {
         // Easy cases first
         if self.is_subtype(other) { return other; }
@@ -254,6 +260,19 @@ impl Type {
             }
         }
         Type { bits, spec: Specialization::Type(super_class) }
+    }
+
+    /// Intersect both types, preserving specialization if possible.
+    pub fn intersection(&self, other: Type) -> Type {
+        let bits = self.bits & other.bits;
+        if bits == bits::Empty { return types::Empty; }
+        if self.spec_is_subtype_of(other) { return Type { bits, spec: self.spec }; }
+        if other.spec_is_subtype_of(*self) { return Type { bits, spec: other.spec }; }
+        types::Empty
+    }
+
+    pub fn could_be(&self, other: Type) -> bool {
+        !self.intersection(other).bit_equal(types::Empty)
     }
 
     /// Check if the type field of `self` is a subtype of the type field of `other` and also check
@@ -296,6 +315,11 @@ impl Type {
             Specialization::TypeExact(val) | Specialization::Type(val) => Some(val),
             _ => None,
         }
+    }
+
+    /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Type::is_subtype`].
+    pub fn bit_equal(&self, other: Type) -> bool {
+        self.bits == other.bits && self.spec == other.spec
     }
 
     /// Check *only* if `self`'s specialization is a subtype of `other`'s specialization. Private.
