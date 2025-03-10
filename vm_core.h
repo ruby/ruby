@@ -253,7 +253,9 @@ union ic_serial_entry {
     VALUE data[2];
 };
 
-#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+#define IMEMO_CONST_CACHE_SHAREABLE 0x2
+#define IMEMO_CONST_CACHE_HAS_ENTRY 0x1
+#define IMEMO_CONST_CACHE_MASK (IMEMO_CONST_CACHE_SHAREABLE | IMEMO_CONST_CACHE_HAS_ENTRY)
 
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
@@ -269,7 +271,10 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
                sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
-    struct iseq_inline_constant_cache_entry *entry;
+    union {
+        struct iseq_inline_constant_cache_entry *entry;
+        VALUE value; // value is Qundef if the cache hasn't been set
+    };
 
     /**
      * A null-terminated list of ids, used to represent a constant's path
@@ -282,55 +287,63 @@ struct iseq_inline_constant_cache {
      *   ::FOO      {idNULL, rb_intern("FOO"), 0}
      *   ::FOO::BAR {idNULL, rb_intern("FOO"), rb_intern("BAR"), 0}
      */
-    const ID *segments;
+    union {
+        const ID *tagged_segments;
+        VALUE flags;
+    };
 };
 
-static inline void
-vm_icc_set_segments(struct iseq_inline_constant_cache *cc, const ID *segments)
+static inline VALUE
+vm_icc_flags(const struct iseq_inline_constant_cache *cc)
 {
-    cc->segments = segments;
+    return (VALUE)cc->tagged_segments;
+}
+
+static inline bool
+vm_icc_has_entry(const struct iseq_inline_constant_cache *cc)
+{
+    return vm_icc_flags(cc) & IMEMO_CONST_CACHE_HAS_ENTRY;
+}
+
+static inline void
+vm_icc_init(struct iseq_inline_constant_cache *cc, const ID *segments)
+{
+    cc->value = Qundef;
+    cc->tagged_segments = segments;
 }
 
 static inline const ID *
 vm_icc_segments(const struct iseq_inline_constant_cache *cc)
 {
-    return cc->segments;
+    VALUE tagged_segments = (VALUE)cc->tagged_segments;
+    tagged_segments &= ~(VALUE)IMEMO_CONST_CACHE_MASK;
+    return (const ID *)tagged_segments;
 }
 
 static inline void
-vm_icc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flag)
+vm_icc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flags)
 {
-    cc->entry->flags |= flag;
-}
-
-static inline VALUE
-vm_icc_flags(const struct iseq_inline_constant_cache *cc)
-{
-    return cc->entry->flags;
+    cc->flags |= flags;
 }
 
 static inline VALUE
 vm_icc_value(const struct iseq_inline_constant_cache *cc)
 {
-    return cc->entry->value;
-}
-
-static inline void
-vm_icc_set_value(struct iseq_inline_constant_cache *cc, VALUE value)
-{
-    RB_OBJ_WRITE(cc->entry, &cc->entry->value, value);
+    if (vm_icc_has_entry(cc)) {
+        return cc->entry->value;
+    }
+    else {
+        return cc->value;
+    }
 }
 
 static inline const rb_cref_t *
 vm_icc_cref(const struct iseq_inline_constant_cache *cc)
 {
-    return cc->entry->ic_cref;
-}
-
-static inline void
-vm_icc_set_cref(struct iseq_inline_constant_cache *cc, const rb_cref_t *cref)
-{
-    cc->entry->ic_cref = cref;
+    if (vm_icc_has_entry(cc)) {
+        return cc->entry->ic_cref;
+    }
+    return NULL;
 }
 
 struct iseq_inline_iv_cache_entry {

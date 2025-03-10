@@ -6404,11 +6404,19 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
         return;
     }
 
-    struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
-    RB_OBJ_WRITE(iseq, &ic->entry, ice);
-    vm_icc_set_value(ic, val);
-    vm_icc_set_cref(ic, vm_get_const_key_cref(reg_ep));
+    const rb_cref_t *cref = vm_get_const_key_cref(reg_ep);
+    if (cref) {
+        vm_icc_set_flag(ic, IMEMO_CONST_CACHE_HAS_ENTRY);
+        struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
+        RB_OBJ_WRITE(iseq, &ic->entry, ice);
+        RB_OBJ_WRITE(ic->entry, &ic->entry->value, val);
+        ic->entry->ic_cref = vm_get_const_key_cref(reg_ep);
+    }
+    else {
+        RB_OBJ_WRITE(iseq, &ic->value, val);
+    }
     if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, IMEMO_CONST_CACHE_SHAREABLE);
+    /* vm_icc_update(ic, val, ) */
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
@@ -6420,8 +6428,7 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
 {
     VALUE val;
     const ID *segments = vm_icc_segments(ic);
-    struct iseq_inline_constant_cache_entry *ice = ic->entry;
-    if (ice && vm_ic_hit_p(ic, GET_EP())) {
+    if (!UNDEF_P(ic->value) && vm_ic_hit_p(ic, GET_EP())) {
         val = vm_icc_value(ic);
 
         VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
