@@ -62,10 +62,10 @@ A space\-separated list of groups to install only gems of the specified groups\.
 The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
 .TP
 \fBwithout\fR
-A space\-separated list of groups referencing gems to skip during installation\.
+A space\-separated or \fB:\fR\-separated list of groups referencing gems to skip during installation\.
 .TP
 \fBwith\fR
-A space\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
+A space\-separated or \fB:\fR\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
 .SH "BUILD OPTIONS"
 You can use \fBbundle config\fR to give Bundler the flags to pass to the gem installer every time bundler tries to install a particular gem\.
 .P
@@ -197,9 +197,9 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBversion\fR (\fBBUNDLE_VERSION\fR): The version of Bundler to use when running under Bundler environment\. Defaults to \fBlockfile\fR\. You can also specify \fBsystem\fR or \fBx\.y\.z\fR\. \fBlockfile\fR will use the Bundler version specified in the \fBGemfile\.lock\fR, \fBsystem\fR will use the system version of Bundler, and \fBx\.y\.z\fR will use the specified version of Bundler\.
 .IP "\(bu" 4
-\fBwith\fR (\fBBUNDLE_WITH\fR): A \fB:\fR\-separated list of groups whose gems bundler should install\.
+\fBwith\fR (\fBBUNDLE_WITH\fR): A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should install\.
 .IP "\(bu" 4
-\fBwithout\fR (\fBBUNDLE_WITHOUT\fR): A \fB:\fR\-separated list of groups whose gems bundler should not install\.
+\fBwithout\fR (\fBBUNDLE_WITHOUT\fR): A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should not install\.
 .IP "" 0
 .SH "LOCAL GIT REPOS"
 Bundler also allows you to work against a git repository locally instead of using the remote version\. This can be achieved by setting up a local override:
