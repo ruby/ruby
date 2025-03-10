@@ -183,8 +183,7 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -789,8 +788,7 @@ RSpec.describe "compact index api" do
   end
 
   it "performs update with etag not-modified" do
-    versions_etag = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions_etag = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions.etag"
     )
     expect(versions_etag.file?).to eq(false)
@@ -833,8 +831,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '1.0.0'
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     # Modify the cached file. The ranged request will be based on this but,
@@ -876,8 +873,7 @@ RSpec.describe "compact index api" do
     G
 
     # Create a partial cache versions file
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -941,7 +937,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index"
 
-    cache_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
+    cache_path = compact_index_cache_path.join("localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
 
     # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
     myrack_info_etag_path = File.join(cache_path, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
