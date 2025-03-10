@@ -2,9 +2,8 @@
 # -*- ruby -*-
 exec "${RUBY-ruby}" "-x" "$0" "$@" && [ ] if false
 #!ruby
-# This needs ruby 2.0, Subversion and Git.
-# As a Ruby committer, run this in an SVN repository
-# to commit a change.
+# This needs ruby 2.0 and Git.
+# As a Ruby committer, run this in a git repository to commit a change.
 
 require 'tempfile'
 require 'net/http'
@@ -15,20 +14,11 @@ ENV['LC_ALL'] = 'C'
 ORIGIN = 'git@git.ruby-lang.org:ruby.git'
 GITHUB = 'git@github.com:ruby/ruby.git'
 
-module Merger
-  REPOS = 'svn+ssh://svn@ci.ruby-lang.org/ruby/'
-end
-
-class << Merger
-  include Merger
-
+class << Merger = Object.new
   def help
     puts <<-HELP
 \e[1msimple backport\e[0m
-  ruby #$0 1234
-
-\e[1mbackport from other branch\e[0m
-  ruby #$0 17502 mvm
+  ruby #$0 1234abc
 
 \e[1mrevision increment\e[0m
   ruby #$0 revisionup
@@ -37,16 +27,16 @@ class << Merger
   ruby #$0 teenyup
 
 \e[1mtagging major release\e[0m
-  ruby #$0 tag 2.2.0
+  ruby #$0 tag 3.2.0
 
-\e[1mtagging patch release\e[0m (about 2.1.0 or later, it means X.Y.Z (Z > 0) release)
+\e[1mtagging patch release\e[0m (for 2.1.0 or later, it means X.Y.Z (Z > 0) release)
   ruby #$0 tag
 
 \e[1mtagging preview/RC\e[0m
-  ruby #$0 tag 2.2.0-preview1
+  ruby #$0 tag 3.2.0-preview1
 
 \e[1mremove tag\e[0m
-  ruby #$0 removetag 2.2.9
+  ruby #$0 removetag 3.2.9
 
 \e[33;1m* all operations shall be applied to the working directory.\e[0m
     HELP
@@ -57,11 +47,11 @@ class << Merger
       yield if block_given?
       STDERR.puts "\e[1;33m#{str} ([y]es|[a]bort|[r]etry#{'|[e]dit' if editfile})\e[0m"
       case STDIN.gets
-      when /\Aa/i then exit
+      when /\Aa/i then exit 1
       when /\Ar/i then redo
       when /\Ay/i then break
       when /\Ae/i then system(ENV['EDITOR'], editfile)
-      else exit
+      else exit 1
       end
     end
   end
@@ -69,11 +59,7 @@ class << Merger
   def version_up(teeny: false)
     now = Time.now
     now = now.localtime(9*60*60) # server is Japan Standard Time +09:00
-    if svn_mode?
-      system('svn', 'revert', 'version.h')
-    else
-      system('git', 'checkout', 'HEAD', 'version.h')
-    end
+    system('git', 'checkout', 'HEAD', 'version.h')
     v, pl = version
 
     if teeny
@@ -129,31 +115,13 @@ class << Merger
     end
     tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
 
-    if svn_mode?
-      if relname
-        branch_url = `svn info`[/URL: (.*)/, 1]
-      else
-        branch_url = "#{REPOS}branches/ruby_"
-        if v[0] < '2' || (v[0] == '2' && v[1] < '1')
-          abort 'patchlevel must be greater than 0 for patch release' if pl == '0'
-          branch_url << v.join('_')
-        else
-          abort 'teeny must be greater than 0 for patch release' if v[2] == '0'
-          branch_url << v.join('_').sub(/_\d+\z/, '')
-        end
-      end
-      tag_url = "#{REPOS}tags/#{tagname}"
-      system('svn', 'info', tag_url, out: IO::NULL, err: IO::NULL)
-      if $?.success?
-        abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
-      end
-      execute('svn', 'cp', '-m', "add tag #{tagname}", branch_url, tag_url, interactive: true)
-    else
-      unless execute('git', 'tag', tagname)
-        abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
-      end
-      execute('git', 'push', ORIGIN, tagname, interactive: true)
+    unless execute('git', 'diff', '--exit-code')
+      abort 'uncommitted changes'
     end
+    unless execute('git', 'tag', tagname)
+      abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
+    end
+    execute('git', 'push', ORIGIN, tagname, interactive: true)
   end
 
   def remove_tag(relname)
@@ -173,63 +141,43 @@ class << Merger
       tagname = relname
     end
 
-    if svn_mode?
-      tag_url = "#{REPOS}tags/#{tagname}"
-      execute('svn', 'rm', '-m', "remove tag #{tagname}", tag_url, interactive: true)
-    else
-      execute('git', 'tag', '-d', tagname)
-      execute('git', 'push', ORIGIN, ":#{tagname}", interactive: true)
-      execute('git', 'push', GITHUB, ":#{tagname}", interactive: true)
-    end
+    execute('git', 'tag', '-d', tagname)
+    execute('git', 'push', ORIGIN, ":#{tagname}", interactive: true)
+    execute('git', 'push', GITHUB, ":#{tagname}", interactive: true)
   end
 
   def update_revision_h
-    if svn_mode?
-      execute('svn', 'up')
-    end
     execute('ruby tool/file2lastrev.rb --revision.h . > revision.tmp')
     execute('tool/ifchange', '--timestamp=.revision.time', 'revision.h', 'revision.tmp')
     execute('rm', '-f', 'revision.tmp')
   end
 
   def stat
-    if svn_mode?
-      `svn stat`
-    else
-      `git status --short`
-    end
+    `git status --short`
   end
 
   def diff(file = nil)
-    if svn_mode?
-      command = %w[svn diff --diff-cmd=diff -x -upw]
-    else
-      command = %w[git diff --color]
-    end
+    command = %w[git diff --color HEAD]
     IO.popen(command + [file].compact, &:read)
   end
 
   def commit(file)
-    if svn_mode?
-      begin
-        execute('svn', 'ci', '-F', file)
-        execute('svn', 'update') # svn ci doesn't update revision info on working copy
-      ensure
-        execute('rm', '-f', 'subversion.commitlog')
-      end
-    else
-      current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
-      execute('git', 'add', '.') &&
-        execute('git', 'commit', '-F', file)
-    end
+    current_branch = IO.popen(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], &:read).strip
+    execute('git', 'add', '.') && execute('git', 'commit', '-F', file)
+  end
+
+  def has_conflicts?
+    changes = IO.popen(%w[git status --porcelain -z]) { |io| io.readlines("\0", chomp: true) }
+    # Discover unmerged files
+    # AU: unmerged, added by us
+    # DU: unmerged, deleted by us
+    # UU: unmerged, both modified
+    # AA: unmerged, both added
+    conflict = changes.grep(/\A(?:.U|AA) /) {$'}
+    !conflict.empty?
   end
 
   private
-
-  def svn_mode?
-    return @svn_mode if defined?(@svn_mode)
-    @svn_mode = system("svn info", %i(out err) => IO::NULL)
-  end
 
   # Prints the version of Ruby found in version.h
   def version
@@ -289,21 +237,21 @@ else
 
   case ARGV[0]
   when /--ticket=(.*)/
-    tickets = $1.split(/,/).map{|num| " [Backport ##{num}]"}.join
+    tickets = $1.split(/,/)
     ARGV.shift
   else
-    tickets = ''
+    tickets = []
+    detect_ticket = true
   end
 
-  revstr = ARGV[0].delete('^, :\-0-9a-fA-F')
+  revstr = ARGV[0].gsub(%r!https://github\.com/ruby/ruby/commit/|https://bugs\.ruby-lang\.org/projects/ruby-master/repository/git/revisions/!, '')
+  revstr = revstr.delete('^, :\-0-9a-fA-F')
   revs = revstr.split(/[,\s]+/)
   commit_message = ''
 
   revs.each do |rev|
     git_rev = nil
     case rev
-    when /\A\d{1,6}\z/
-      svn_rev = rev
     when /\A\h{7,40}\z/
       git_rev = rev
     when nil then
@@ -314,27 +262,24 @@ else
       exit
     end
 
-    # Merge revision from Git patch or SVN
-    if git_rev
-      git_uri = "https://git.ruby-lang.org/ruby.git/patch/?id=#{git_rev}"
-      resp = Net::HTTP.get_response(URI(git_uri))
-      if resp.code != '200'
-        abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
-      end
-      patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
-
-      message = "\n\n#{(patch[/^Subject: (.*)\n\ndiff --git/m, 1] || "Message not found for revision: #{git_rev}\n")}"
-      puts '+ git apply'
-      IO.popen(['git', 'apply'], 'wb') { |f| f.write(patch) }
-    else
-      default_merge_branch = (%r{^URL: .*/branches/ruby_1_8_} =~ `svn info` ? 'branches/ruby_1_8' : 'trunk')
-      svn_src = "#{Merger::REPOS}#{ARGV[1] || default_merge_branch}"
-      message = IO.popen(['svn', 'log', '-c', svn_rev, svn_src], &:read)
-
-      cmd = ['svn', 'merge', '--accept=postpone', '-c', svn_rev, svn_src]
-      puts "+ #{cmd.join(' ')}"
-      system(*cmd)
+    # Merge revision from Git patch
+    git_uri = "https://git.ruby-lang.org/ruby.git/patch/?id=#{git_rev}"
+    resp = Net::HTTP.get_response(URI(git_uri))
+    if resp.code != '200'
+      abort "'#{git_uri}' returned status '#{resp.code}':\n#{resp.body}"
     end
+    patch = resp.body.sub(/^diff --git a\/version\.h b\/version\.h\nindex .*\n--- a\/version\.h\n\+\+\+ b\/version\.h\n@@ .* @@\n(?:[-\+ ].*\n|\n)+/, '')
+
+    if detect_ticket
+      tickets += patch.scan(/\[(?:Bug|Feature|Misc) #(\d+)\]/i).map(&:first)
+    end
+
+    message = "#{(patch[/^Subject: (.*)\n---\n /m, 1] || "Message not found for revision: #{git_rev}\n")}"
+    message.gsub!(/\G(.*)\n( .*)/, "\\1\\2")
+    message = "\n\n#{message}"
+
+    puts '+ git apply'
+    IO.popen(['git', 'apply', '--3way'], 'wb') { |f| f.write(patch) }
 
     commit_message << message.sub(/\A-+\nr.*/, '').sub(/\n-+\n\z/, '').gsub(/^./, "\t\\&")
   end
@@ -345,20 +290,22 @@ else
 
   Merger.version_up
   f = Tempfile.new 'merger.rb'
-  f.printf "merge revision(s) %s:%s", revstr, tickets
+  f.printf "merge revision(s) %s:%s", revs.join(', '), tickets.map{|num| " [Backport ##{num}]"}.join
   f.write commit_message
   f.flush
   f.close
 
-  Merger.interactive('conflicts resolved?', f.path) do
-    IO.popen(ENV['PAGER'] || ['less', '-R'], 'w') do |g|
-      g << Merger.stat
-      g << "\n\n"
-      f.open
-      g << f.read
-      f.close
-      g << "\n\n"
-      g << Merger.diff
+  if Merger.has_conflicts?
+    Merger.interactive('conflicts resolved?', f.path) do
+      IO.popen(ENV['PAGER'] || ['less', '-R'], 'w') do |g|
+        g << Merger.stat
+        g << "\n\n"
+        f.open
+        g << f.read
+        f.close
+        g << "\n\n"
+        g << Merger.diff
+      end
     end
   end
 
