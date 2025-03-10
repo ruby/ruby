@@ -5669,31 +5669,44 @@ i_apply_case_fold(OnigCodePoint from, OnigCodePoint to[],
     if ((is_in != 0 && !IS_NCCLASS_NOT(cc)) ||
 	(is_in == 0 &&  IS_NCCLASS_NOT(cc))) {
       if (add_flag) {
-	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
-	  r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
-	  if (r < 0) return r;
-	}
-	else {
-	  BITSET_SET_BIT(bs, *to);
-	}
+        if (ONIGENC_MBC_MAXLEN(env->enc) == 1) {
+          // single byte encoding
+          BITSET_SET_BIT(bs, *to);
+        } else {
+          // multi byte encoding
+          if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
+            r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
+            if (r < 0) return r;
+          } else {
+            BITSET_SET_BIT(bs, *to);
+          }
+        }
       }
     }
 #else
     if (is_in != 0) {
       if (add_flag) {
-	if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
-	  if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
-	  r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
-	  if (r < 0) return r;
-	}
-	else {
-	  if (IS_NCCLASS_NOT(cc)) {
-	    BITSET_CLEAR_BIT(bs, *to);
-	  }
-	  else {
-	    BITSET_SET_BIT(bs, *to);
-	  }
-	}
+        if (ONIGENC_MBC_MAXLEN(env->enc) == 1) {
+          // single byte encoding
+          if (IS_NCCLASS_NOT(cc)) {
+            BITSET_CLEAR_BIT(bs, *to);
+          } else {
+            BITSET_SET_BIT(bs, *to);
+          }
+        } else {
+          // multi byte encoding && to >= 0x80
+          if (ONIGENC_MBC_MINLEN(env->enc) > 1 || *to >= 0x80) {
+            if (IS_NCCLASS_NOT(cc)) clear_not_flag_cclass(cc, env->enc);
+            r = add_code_range0(&(cc->mbuf), env, *to, *to, 0);
+            if (r < 0) return r;
+          } else {
+            if (IS_NCCLASS_NOT(cc)) {
+              BITSET_CLEAR_BIT(bs, *to);
+            } else {
+              BITSET_SET_BIT(bs, *to);
+            }
+          }
+        }
       }
     }
 #endif /* CASE_FOLD_IS_APPLIED_INSIDE_NEGATIVE_CCLASS */
