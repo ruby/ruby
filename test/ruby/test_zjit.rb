@@ -73,6 +73,26 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_less_than
+    assert_compiles 'true', %q{
+      def test(a, b) = a < b
+      test(2, 5)
+    }, call_threshold: 2
+  end
+
+  def test_while_loop
+    assert_compiles '10', %q{
+      def loop_fun(n)
+        i = 0
+        while i < n
+          i = i + 1
+        end
+        i
+      end
+      loop_fun(10)
+    }, call_threshold: 2
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
