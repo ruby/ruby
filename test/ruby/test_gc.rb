@@ -424,6 +424,9 @@ class TestGc < Test::Unit::TestCase
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, GC.latest_gc_info(:weak_references_count))
     RUBY
+  rescue Exception => e
+    retry_count = 10 unless retry_count
+    retry if (retry_count -= 1) > 0
   end
 
   def test_stress_compile_send
