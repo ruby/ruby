@@ -4002,50 +4002,18 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
 
 /*
  *  call-seq:
- *    merge! -> self
- *    merge!(*other_hashes) -> self
- *    merge!(*other_hashes) { |key, old_value, new_value| ... } -> self
+ *    update(*other_hashes) -> self
+ *    update(*other_hashes) { |key, old_value, new_value| ... } -> self
  *
- *  Merges each of +other_hashes+ into +self+; returns +self+.
+ *  Like Hash#merge, but modifies and returns +self+ instead of a new hash:
  *
- *  Each argument in +other_hashes+ must be a +Hash+.
+ *    season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
+ *    today = {AB: 3, H: 1, W: 1}
+ *    yesterday = {AB: 4, H: 2, HR: 1}
+ *    season.update(yesterday, today) {|key, old_value, new_value| old_value + new_value }
+ *    # => {AB: 82, H: 23, HR: 4, SO: 17, W: 12, HBP: 3}
  *
- *  With arguments and no block:
- *  * Returns +self+, after the given hashes are merged into it.
- *  * The given hashes are merged left to right.
- *  * Each new entry is added at the end.
- *  * Each duplicate-key entry's value overwrites the previous value.
- *
- *  Example:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = {bat: 3, bar: 4}
- *    h2 = {bam: 5, bat:6}
- *    h.merge!(h1, h2) # => {foo: 0, bar: 4, baz: 2, bat: 6, bam: 5}
- *
- *  With arguments and a block:
- *  * Returns +self+, after the given hashes are merged.
- *  *  The given hashes are merged left to right.
- *  *  Each new-key entry is added at the end.
- *  *  For each duplicate key:
- *     * Calls the block with the key and the old and new values.
- *     * The block's return value becomes the new value for the entry.
- *
- *  Example:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = {bat: 3, bar: 4}
- *    h2 = {bam: 5, bat:6}
- *    h3 = h.merge!(h1, h2) { |key, old_value, new_value| old_value + new_value }
- *    h3 # => {foo: 0, bar: 5, baz: 2, bat: 9, bam: 5}
- *
- *  With no arguments:
- *  * Returns +self+, unmodified.
- *  * The block, if given, is ignored.
- *
- *  Example:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.merge # => {foo: 0, bar: 1, baz: 2}
- *    h1 = h.merge! { |key, old_value, new_value| raise 'Cannot happen' }
- *    h1 # => {foo: 0, bar: 1, baz: 2}
+ *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
 
 static VALUE
