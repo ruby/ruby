@@ -23,6 +23,13 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_leave_param
+    assert_compiles '5', %q{
+      def test(n) = n
+      test(5)
+    }
+  end
+
   def test_opt_plus_const
     assert_compiles '3', %q{
       def test = 1 + 2

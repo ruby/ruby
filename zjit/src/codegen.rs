@@ -1,7 +1,7 @@
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
-use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, EC, SP};
+use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
 use crate::hir;
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
@@ -188,15 +188,17 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
+    // Set a return value to the register. We do this before popping SP, EC,
+    // and CFP registers because ret_val may depend on them.
+    let ret_val = jit.opnds[val.0]?;
+    asm.mov(C_RET_OPND, ret_val);
+
     asm_comment!(asm, "exit from leave");
     asm.cpop_into(SP);
     asm.cpop_into(EC);
     asm.cpop_into(CFP);
     asm.frame_teardown();
-
-    // Return a value
-    let ret_val = jit.opnds[val.0]?;
-    asm.cret(ret_val);
+    asm.cret(C_RET_OPND);
 
     Some(())
 }
