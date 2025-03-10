@@ -10246,7 +10246,7 @@ fn gen_opt_getconstant_path(
 ) -> Option<CodegenStatus> {
     let const_cache_as_value = jit.get_arg(0);
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
-    let idlist: *const ID = unsafe { (*ic).segments };
+    let idlist: *const ID = unsafe { rb_yjit_constcache_segments(ic) };
 
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().
@@ -10254,8 +10254,7 @@ fn gen_opt_getconstant_path(
 
     // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     // If a cache is not filled, fallback to the general C call.
-    let ice = unsafe { (*ic).entry };
-    if ice.is_null() {
+    if unsafe { rb_yjit_constcache_value(ic) == Qundef } {
         // Prepare for const_missing
         jit_prepare_non_leaf_call(jit, asm);
 
@@ -10274,7 +10273,7 @@ fn gen_opt_getconstant_path(
         return jump_to_next_insn(jit, asm);
     }
 
-    let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
+    let cref_sensitive = !unsafe { rb_yjit_constcache_cref(ic) }.is_null();
     let is_shareable = unsafe { rb_yjit_constcache_shareable(ic) };
     let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
@@ -10316,7 +10315,7 @@ fn gen_opt_getconstant_path(
         // constants referenced within the current block.
         jit.assume_stable_constant_names(asm, idlist);
 
-        jit_putobject(asm, unsafe { (*ice).value });
+        jit_putobject(asm, unsafe { rb_yjit_constcache_value(ic) });
     }
 
     jump_to_next_insn(jit, asm)
