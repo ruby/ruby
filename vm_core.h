@@ -286,49 +286,49 @@ struct iseq_inline_constant_cache {
 };
 
 static inline void
-vm_cc_set_segments(struct iseq_inline_constant_cache *cc, const ID *segments)
+vm_icc_set_segments(struct iseq_inline_constant_cache *cc, const ID *segments)
 {
     cc->segments = segments;
 }
 
 static inline const ID *
-vm_cc_segments(const struct iseq_inline_constant_cache *cc)
+vm_icc_segments(const struct iseq_inline_constant_cache *cc)
 {
     return cc->segments;
 }
 
 static inline void
-vm_cc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flag)
+vm_icc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flag)
 {
     cc->entry->flags |= flag;
 }
 
 static inline VALUE
-vm_cc_flags(const struct iseq_inline_constant_cache *cc)
+vm_icc_flags(const struct iseq_inline_constant_cache *cc)
 {
     return cc->entry->flags;
 }
 
 static inline VALUE
-vm_cc_value(const struct iseq_inline_constant_cache *cc)
+vm_icc_value(const struct iseq_inline_constant_cache *cc)
 {
     return cc->entry->value;
 }
 
 static inline void
-vm_cc_set_value(struct iseq_inline_constant_cache *cc, VALUE value)
+vm_icc_set_value(struct iseq_inline_constant_cache *cc, VALUE value)
 {
     RB_OBJ_WRITE(cc->entry, &cc->entry->value, value);
 }
 
 static inline const rb_cref_t *
-vm_cc_cref(const struct iseq_inline_constant_cache *cc)
+vm_icc_cref(const struct iseq_inline_constant_cache *cc)
 {
     return cc->entry->ic_cref;
 }
 
 static inline void
-vm_cc_set_cref(struct iseq_inline_constant_cache *cc, const rb_cref_t *cref)
+vm_icc_set_cref(struct iseq_inline_constant_cache *cc, const rb_cref_t *cref)
 {
     cc->entry->ic_cref = cref;
 }

@@ -6385,7 +6385,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(vm_cc_flags(ic), vm_cc_value(ic), vm_cc_cref(ic), reg_ep);
+    return vm_inlined_ic_hit_p(vm_icc_flags(ic), vm_icc_value(ic), vm_icc_cref(ic), reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -6406,9 +6406,9 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
 
     struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
-    vm_cc_set_value(ic, val);
-    vm_cc_set_cref(ic, vm_get_const_key_cref(reg_ep));
-    if (rb_ractor_shareable_p(val)) vm_cc_set_flag(ic, IMEMO_CONST_CACHE_SHAREABLE);
+    vm_icc_set_value(ic, val);
+    vm_icc_set_cref(ic, vm_get_const_key_cref(reg_ep));
+    if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, IMEMO_CONST_CACHE_SHAREABLE);
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
@@ -6419,10 +6419,10 @@ VALUE
 rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
 {
     VALUE val;
-    const ID *segments = vm_cc_segments(ic);
+    const ID *segments = vm_icc_segments(ic);
     struct iseq_inline_constant_cache_entry *ice = ic->entry;
     if (ice && vm_ic_hit_p(ic, GET_EP())) {
-        val = vm_cc_value(ic);
+        val = vm_icc_value(ic);
 
         VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
     }
