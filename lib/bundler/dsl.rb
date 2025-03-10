@@ -241,7 +241,7 @@ module Bundler
       dep = Dependency.new(name, version, options)
 
       # if there's already a dependency with this name we try to prefer one
-      if current = @dependencies.find {|d| d.name == dep.name }
+      if current = @dependencies.find {|d| d.name == name }
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
@@ -250,7 +250,7 @@ module Bundler
             gemfile_dep = [dep, current].find(&:gemfile_dep?)
 
             if gemfile_dep && !current_requirement_open
-              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
+              Bundler.ui.warn "A gemspec development dependency (#{name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{name}, #{gemfile_dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
             elsif gemfile_dep.nil?
               require_relative "vendor/pub_grub/lib/pub_grub/version_range"
@@ -274,14 +274,14 @@ module Bundler
               if dep.requirements_list.include?(">= 0") && !current_requirement_open
                 update_prompt = ". Gem already added"
               else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
+                update_prompt = ". If you want to update the gem version, run `bundle update #{name}`"
 
                 update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
               end
             end
 
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "You specified: #{name} (#{current.requirement}) and #{name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
         end
@@ -294,10 +294,10 @@ module Bundler
             return
           elsif current.source != dep.source
             raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                            "You specified that #{name} (#{dep.requirement}) should come from " \
                             "#{current.source || "an unspecified source"} and #{dep.source}\n"
           else
-            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+            Bundler.ui.warn "Your Gemfile lists the gem #{name} (#{current.requirement}) more than once.\n" \
                             "You should probably keep only one of them.\n" \
                             "Remove any duplicate entries and specify the gem only once.\n" \
                             "While it's not a problem now, it could cause errors if you change the version of one of them later."
