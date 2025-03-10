@@ -6388,9 +6388,8 @@ vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VA
 static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
 {
-    const struct iseq_inline_constant_cache_entry *ice = ic->entry;
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(vm_cc_flags(ic), vm_cc_value(ic), ice->ic_cref, reg_ep);
+    return vm_inlined_ic_hit_p(vm_cc_flags(ic), vm_cc_value(ic), vm_cc_cref(ic), reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -6412,7 +6411,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(iseq, &ic->entry, ice);
     vm_cc_set_value(ic, val);
-    ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    vm_cc_set_cref(ic, vm_get_const_key_cref(reg_ep));
     if (rb_ractor_shareable_p(val)) vm_cc_set_flag(ic, IMEMO_CONST_CACHE_SHAREABLE);
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
