@@ -465,7 +465,7 @@ impl Function {
     fn infer_type(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
-            Insn::Param { .. } => unimplemented!("use infer_param_type instead"),
+            Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } =>
