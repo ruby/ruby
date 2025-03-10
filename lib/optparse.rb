@@ -780,7 +780,7 @@ class OptionParser
       # Returns nil if argument is not present or begins with '-' and is not '-'.
       #
       def parse(arg, argv, &error)
-        if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
+        if !(val = arg) and !(val = argv[0])&.match?(/\A(?!-.)/)
           return nil, block
         end
         opt = (val = parse_arg(val, &error))[1]
