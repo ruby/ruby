@@ -30,6 +30,16 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_setlocal
+    assert_compiles '3', %q{
+      def test(n)
+        m = n
+        m
+      end
+      test(3)
+    }
+  end
+
   def test_opt_plus_const
     assert_compiles '3', %q{
       def test = 1 + 2
