@@ -2696,7 +2696,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = array_to_idlist(operands[j]);
+                            vm_cc_set_segments(ic, array_to_idlist(operands[j]));
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -12790,7 +12790,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_IC:
                 {
                     IC ic = (IC)op;
-                    VALUE arr = idlist_to_array(ic->segments);
+                    VALUE arr = idlist_to_array(vm_cc_segments(ic));
                     wv = ibf_dump_object(dump, arr);
                 }
                 break;
@@ -12914,7 +12914,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    vm_cc_set_segments(ic, array_to_idlist(arr));
 
                     code[code_index] = (VALUE)ic;
                 }

@@ -285,6 +285,18 @@ struct iseq_inline_constant_cache {
     const ID *segments;
 };
 
+static inline void
+vm_cc_set_segments(struct iseq_inline_constant_cache *cc, const ID *segments)
+{
+    cc->segments = segments;
+}
+
+static inline const ID *
+vm_cc_segments(const struct iseq_inline_constant_cache *cc)
+{
+    return cc->segments;
+}
+
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
     ID iv_set_name;
