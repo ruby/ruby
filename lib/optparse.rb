@@ -142,7 +142,7 @@
 # Used:
 #
 #   $ ruby optparse-test.rb -r
-#   optparse-test.rb:9:in `<main>': missing argument: -r (OptionParser::MissingArgument)
+#   optparse-test.rb:9:in '<main>': missing argument: -r (OptionParser::MissingArgument)
 #   $ ruby optparse-test.rb -r my-library
 #   You required my-library!
 #
@@ -235,7 +235,7 @@
 #   $ ruby optparse-test.rb --user 2
 #   #<struct User id=2, name="Gandalf">
 #   $ ruby optparse-test.rb --user 3
-#   optparse-test.rb:15:in `block in find_user': No User Found for id 3 (RuntimeError)
+#   optparse-test.rb:15:in 'block in find_user': No User Found for id 3 (RuntimeError)
 #
 # === Store options to a Hash
 #
