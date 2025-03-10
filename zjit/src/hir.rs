@@ -1472,7 +1472,7 @@ mod tests {
     fn assert_function_hir(function: Function, hir: &str) {
         let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
         let expected_hir = unindent(hir, true);
-        assert_eq!(actual_hir, expected_hir);
+        assert_eq!(actual_hir, expected_hir, "{}", diff_text(&expected_hir, &actual_hir));
     }
 
     #[test]
