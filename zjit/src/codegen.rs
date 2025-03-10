@@ -206,7 +206,7 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
     let left_opnd = jit.get_opnd(left)?;
     let right_opnd = jit.get_opnd(right)?;
 
-    // Add arg0 + arg1 and test for overflow
+    // Add left + right and test for overflow
     let left_untag = asm.sub(left_opnd, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
@@ -219,7 +219,7 @@ fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
     let left_opnd = jit.get_opnd(left)?;
     let right_opnd = jit.get_opnd(right)?;
 
-    // Add arg0 + arg1 and test for overflow
+    // Subtract left - right and test for overflow
     let val_untag = asm.sub(left_opnd, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
     let out_val = asm.add(val_untag, Opnd::Imm(1));
