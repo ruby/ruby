@@ -73,13 +73,18 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  # FIXME: need to call twice because of call threshold 2, but
+  # then this fails because of missing FixnumLt
   def test_less_than
     assert_compiles 'true', %q{
       def test(a, b) = a < b
       test(2, 5)
+      #test(2, 5)
     }, call_threshold: 2
   end
 
+  # FIXME: need to call twice because of call threshold 2, but
+  # then this fails because of missing FixnumLt
   def test_while_loop
     assert_compiles '10', %q{
       def loop_fun(n)
@@ -90,6 +95,7 @@ class TestZJIT < Test::Unit::TestCase
         i
       end
       loop_fun(10)
+      #loop_fun(10)
     }, call_threshold: 2
   end
 
