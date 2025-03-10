@@ -312,6 +312,14 @@ vm_icc_is_set(const struct iseq_inline_constant_cache *cc)
 }
 
 static inline void
+vm_icc_reset(struct iseq_inline_constant_cache *cc)
+{
+    if (!UNDEF_P(cc->value)) {
+        cc->value = Qundef;
+    }
+}
+
+static inline void
 vm_icc_init(struct iseq_inline_constant_cache *cc, const ID *segments)
 {
     cc->value = Qundef;

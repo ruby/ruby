@@ -6403,9 +6403,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
 {
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
-        if (!vm_icc_is_set(ic)) {
-            ic->value = Qundef;
-        }
+        vm_icc_reset(ic);
         return;
     }
 
