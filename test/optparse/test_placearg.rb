@@ -8,7 +8,8 @@ class TestOptionParserPlaceArg < TestOptionParser
     @opt.def_option("--option [VAL]") {|x| @flag = x}
     @opt.def_option("-T [level]", /^[0-4]$/, Integer) {|x| @topt = x}
     @opt.def_option("--enum [VAL]", [:Alpha, :Bravo, :Charlie]) {|x| @enum = x}
-    @opt.def_option("--integer [VAL]", [1, 2, 3]) {|x| @integer = x}
+    @opt.def_option("--integer [VAL]", Integer, [1, 2, 3]) {|x| @integer = x}
+    @opt.def_option("--range [VAL]", Integer, 1..3) {|x| @range = x}
     @topt = nil
     @opt.def_option("-n") {}
     @opt.def_option("--regexp [REGEXP]", Regexp) {|x| @reopt = x}
@@ -104,5 +105,11 @@ class TestOptionParserPlaceArg < TestOptionParser
   def test_enum_conversion
     assert_equal([], no_error {@opt.parse!(%w"--integer=1")})
     assert_equal(1, @integer)
+  end
+
+  def test_enum_range
+    assert_equal([], no_error {@opt.parse!(%w"--range=1")})
+    assert_equal(1, @range)
+    assert_raise(OptionParser::InvalidArgument) {@opt.parse!(%w"--range=4")}
   end
 end
