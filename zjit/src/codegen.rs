@@ -117,6 +117,8 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::Return { val } => return Some(gen_return(&jit, asm, *val)?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, *left, *right, function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, *left, *right, function.frame_state(*state))?,
+        // TODO(max): Remove FrameState from FixnumLt
+        Insn::FixnumLt { left, right, .. } => gen_fixnum_lt(jit, asm, *left, *right)?,
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, *val, *guard_type, function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         _ => {
@@ -213,6 +215,15 @@ fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: 
     let out_val = asm.add(left_untag, right_opnd);
     asm.jo(Target::SideExit(state.clone()));
 
+    Some(out_val)
+}
+
+/// Compile Fixnum < Fixnum
+fn gen_fixnum_lt(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId) -> Option<lir::Opnd> {
+    let left_opnd = jit.get_opnd(left)?;
+    let right_opnd = jit.get_opnd(right)?;
+    asm.cmp(left_opnd, right_opnd);
+    let out_val = asm.csel_l(Qtrue.into(), Qfalse.into());
     Some(out_val)
 }
 
