@@ -1021,8 +1021,8 @@ class Socket < BasicSocket
   private_constant :HostnameResolutionResult
 
   class HostnameResolutionStore
-    PRIORITY_ON_V6 = [:ipv6, :ipv4]
-    PRIORITY_ON_V4 = [:ipv4, :ipv6]
+    PRIORITY_ON_V6 = [:ipv6, :ipv4].freeze
+    PRIORITY_ON_V4 = [:ipv4, :ipv6].freeze
 
     def initialize(family_names)
       @family_names = family_names
