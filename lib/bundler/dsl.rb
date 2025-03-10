@@ -247,22 +247,21 @@ module Bundler
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            gemfile_dep = [dep, current].find(&:gemfile_dep?)
+            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
 
-            if gemfile_dep && !current_requirement_open
-              Bundler.ui.warn "A gemspec development dependency (#{name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{name}, #{gemfile_dep.requirement}).\n" \
-                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
-            elsif gemfile_dep.nil?
-              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
 
-              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+            if current_gemspec_range.intersects?(next_gemspec_range)
+              dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+            else
+              gemfile_dep = [dep, current].find(&:gemfile_dep?)
 
-              if current_gemspec_range.intersects?(next_gemspec_range)
-                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+              if gemfile_dep
+                raise GemfileError, "The #{name} dependency has conflicting requirements in Gemfile (#{gemfile_dep.requirement}) and gemspec (#{gemspec_dep.requirement})"
               else
                 raise GemfileError, "Two gemspec development dependencies have conflicting requirements on the same gem: #{dep} and #{current}"
               end
