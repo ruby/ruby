@@ -291,8 +291,8 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         // IC Entries
         for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
             IC ic = (IC)is_entries;
-            if (vm_icc_has_entry(ic)) {
-                rb_gc_mark_and_move_ptr(&ic->entry);
+            if (vm_icc_has_ext(ic)) {
+                rb_gc_mark_and_move_ptr(&ic->ext);
             }
         }
     }

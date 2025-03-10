@@ -6372,8 +6372,8 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 static inline bool
 vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
-    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
-        VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
+    if ((flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+        VM_ASSERT(ractor_incidental_shareable_p(flags & CONST_CACHE_SHAREABLE, value));
 
         return (ic_cref == NULL || // no need to check CREF
                 ic_cref == vm_get_cref(reg_ep));
@@ -6405,16 +6405,16 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
 
     const rb_cref_t *cref = vm_get_const_key_cref(reg_ep);
     if (cref) {
-        vm_icc_set_flag(ic, IMEMO_CONST_CACHE_HAS_ENTRY);
+        vm_icc_set_flag(ic, CONST_CACHE_HAS_EXT);
         struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
-        RB_OBJ_WRITE(iseq, &ic->entry, ice);
-        RB_OBJ_WRITE(ic->entry, &ic->entry->value, val);
-        ic->entry->ic_cref = vm_get_const_key_cref(reg_ep);
+        RB_OBJ_WRITE(iseq, &ic->ext, ice);
+        RB_OBJ_WRITE(ic->ext, &ic->ext->value, val);
+        ic->ext->ic_cref = cref;
     }
     else {
         RB_OBJ_WRITE(iseq, &ic->value, val);
     }
-    if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, IMEMO_CONST_CACHE_SHAREABLE);
+    if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, CONST_CACHE_SHAREABLE);
     /* vm_icc_update(ic, val, ) */
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
