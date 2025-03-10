@@ -425,7 +425,7 @@
 #
 class OptionParser
   # The version string
-  OptionParser::Version = "0.6.0"
+  OptionParser::Version = "0.7.0.dev.1"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
