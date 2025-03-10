@@ -309,6 +309,18 @@ vm_cc_flags(const struct iseq_inline_constant_cache *cc)
     return cc->entry->flags;
 }
 
+static inline VALUE
+vm_cc_value(const struct iseq_inline_constant_cache *cc)
+{
+    return cc->entry->value;
+}
+
+static inline void
+vm_cc_set_value(struct iseq_inline_constant_cache *cc, VALUE value)
+{
+    RB_OBJ_WRITE(cc->entry, &cc->entry->value, value);
+}
+
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
     ID iv_set_name;
