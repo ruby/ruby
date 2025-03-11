@@ -83,6 +83,7 @@ VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
+void rb_gc_free_fstring(VALUE obj);
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
