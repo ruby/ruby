@@ -304,6 +304,7 @@ vm_icc_reset(struct iseq_inline_constant_cache *cc)
 {
     if (!UNDEF_P(cc->c.value)) {
         cc->c.value = Qundef;
+        cc->tagged_segments &= ~CONST_CACHE_HAS_EXT;
     }
 }
 
