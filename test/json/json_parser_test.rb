@@ -311,6 +311,11 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\uaa"') }
     assert_raise(JSON::ParserError) { parse('"\uaaa"') }
     assert_equal "\uaaaa", parse('"\uaaaa"')
+
+    assert_raise(JSON::ParserError) { parse('"\u______"') }
+    assert_raise(JSON::ParserError) { parse('"\u1_____"') }
+    assert_raise(JSON::ParserError) { parse('"\u11____"') }
+    assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
   def test_parse_big_integers
