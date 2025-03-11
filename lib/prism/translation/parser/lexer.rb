@@ -261,10 +261,11 @@ module Prism
 
             case type
             when :kDO
-              types = tokens.map(&:first)
-              nearest_lambda_token_type = types.reverse.find { |type| LAMBDA_TOKEN_TYPES.include?(type) }
+              nearest_lambda_token = tokens.reverse_each.find do |token|
+                LAMBDA_TOKEN_TYPES.include?(token.first)
+              end
 
-              if nearest_lambda_token_type == :tLAMBDA
+              if nearest_lambda_token&.first == :tLAMBDA
                 type = :kDO_LAMBDA
               end
             when :tCHARACTER
