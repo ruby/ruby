@@ -2778,14 +2778,15 @@ keep_if_i(VALUE key, VALUE value, VALUE hash)
  *    select {|key, value| ... } -> new_hash
  *    select -> new_enumerator
  *
- *  Returns a new +Hash+ object whose entries are those for which the block returns a truthy value:
+ *  With a block given, calls the block with each entry's key and value;
+ *  returns a new hash whose entries are those for which the block returns a truthy value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.select {|key, value| value < 2 } # => {foo: 0, bar: 1}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.select # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:select>
- *    e.each {|key, value| value < 2 } # => {foo: 0, bar: 1}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
