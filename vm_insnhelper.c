@@ -6397,9 +6397,10 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 static void
 vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const VALUE *pc)
 {
+    vm_icc_reset(ic);
+
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
-        vm_icc_reset(ic);
         return;
     }
 
