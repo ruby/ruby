@@ -2609,12 +2609,18 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
     bool needs_bitmap = false;
 
-    mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+    if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
+        mark_offset_bits = &ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
+    }
+    else {
+        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+        ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
+    }
 
     ISEQ_COMPILE_DATA(iseq)->iseq_encoded = (void *)generated_iseq;
     ISEQ_COMPILE_DATA(iseq)->iseq_size = code_index;
-    ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
-    ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
 
     list = FIRST_ELEMENT(anchor);
     insns_info_index = code_index = sp = 0;
@@ -2826,19 +2832,16 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->iseq_size = code_index;
     body->stack_max = stack_max;
 
-    if (ISEQ_MBITS_BUFLEN(body->iseq_size) == 1) {
-        body->mark_bits.single = mark_offset_bits[0];
-        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
-        ISEQ_COMPILE_DATA(iseq)->mark_bits.single = mark_offset_bits[0];
-        ruby_xfree(mark_offset_bits);
+    if (ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit) {
+        body->mark_bits.single = ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
     }
     else {
         if (needs_bitmap) {
             body->mark_bits.list = mark_offset_bits;
         }
         else {
-            body->mark_bits.list = 0;
-            ISEQ_COMPILE_DATA(iseq)->mark_bits.list = 0;
+            body->mark_bits.list = NULL;
+            ISEQ_COMPILE_DATA(iseq)->mark_bits.list = NULL;
             ruby_xfree(mark_offset_bits);
         }
     }
