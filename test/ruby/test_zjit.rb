@@ -81,6 +81,24 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_mult_overflow
+    omit 'side exits are not implemented yet'
+    assert_compiles '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
+      def test(a, b)
+        a * b
+      end
+      test(1, 1) # profile opt_mult
+
+      r1 = test(2, 3)
+      r2 = test(2, -3)
+      r3 = test(2 << 40, 2 << 41)
+      r4 = test(2 << 40, -2 << 41)
+      r5 = test(1 << 62, 1 << 62)
+
+      [r1, r2, r3, r4, r5]
+    }, call_threshold: 2
+  end
+
   def test_opt_eq
     assert_compiles '[true, false]', %q{
       def test(a, b) = a == b
