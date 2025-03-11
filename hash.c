@@ -2649,7 +2649,7 @@ rb_hash_reject(VALUE hash)
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.slice(:baz, :foo, :nosuch) # => {baz: 2, foo: 0}
  *
- *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].s
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
