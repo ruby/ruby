@@ -2809,16 +2809,19 @@ rb_hash_select(VALUE hash)
  *    select! {|key, value| ... } -> self or nil
  *    select! -> new_enumerator
  *
- *  Returns +self+, whose entries are those for which the block returns a truthy value:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.select! {|key, value| value < 2 }  => {foo: 0, bar: 1}
+ *  With a block given, calls the block with each entry's key and value;
+ *  removes from +self+ each entry for which the block returns +false+ or +nil+.
  *
- *  Returns +nil+ if no entries were removed.
+ *  Returns +self+ if any entries were removed, +nil+ otherwise:
  *
- *  Returns a new Enumerator if no block given:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.select!  # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:select!>
- *    e.each { |key, value| value < 2 } # => {foo: 0, bar: 1}
+ *    h.select! {|key, value| value < 2 } # => {foo: 0, bar: 1}
+ *    h.select! {|key, value| value < 2 } # => nil
+ *
+ *
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
