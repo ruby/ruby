@@ -2480,14 +2480,16 @@ shift_i_safe(VALUE key, VALUE value, VALUE arg)
  *  call-seq:
  *    shift -> [key, value] or nil
  *
- *  Removes the first hash entry
- *  (see {Entry Order}[rdoc-ref:Hash@Entry+Order]);
- *  returns a 2-element Array containing the removed key and value:
+ *  Removes and returns the first entry of +self+ as a 2-element array;
+ *  see {Entry Order}[rdoc-ref:Hash@Entry+Order]:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.shift # => [:foo, 0]
- *    h # => {bar: 1, baz: 2}
+ *    h       # => {bar: 1, baz: 2}
  *
- *  Returns nil if the hash is empty.
+ *  Returns +nil+ if +self+ is empty.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
