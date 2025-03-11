@@ -999,6 +999,18 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_regsub_no_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+      code = proc do
+        "aaaaaaaaaaa".gsub(/a/, "")
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)

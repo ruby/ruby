@@ -1829,6 +1829,9 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     if (NIL_P(match)) {
         match = match_alloc(rb_cMatch);
     }
+    else {
+        onig_region_free(&RMATCH_EXT(match)->regs, false);
+    }
 
     rb_matchext_t *rm = RMATCH_EXT(match);
     rm->regs = regs;
