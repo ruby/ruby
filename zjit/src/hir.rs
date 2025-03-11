@@ -948,7 +948,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    // TODO(max): Merge locals/stack for bb arguments
                     let _branch_id = fun.push_insn(block, Insn::IfFalse {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args() }
@@ -962,7 +961,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    // TODO(max): Merge locals/stack for bb arguments
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args() }
