@@ -326,6 +326,7 @@ fn main() {
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
         .allowlist_function("rb_yjit_constcache_cref")
+        .allowlist_function("rb_yjit_constcache_has_ext")
         .allowlist_function("rb_yjit_constcache_segments")
         .allowlist_function("rb_yjit_constcache_shareable")
         .allowlist_function("rb_yjit_constcache_value")
