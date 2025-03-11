@@ -341,6 +341,44 @@ static void rvalue_stack_eagerly_release(VALUE handle)
     }
 }
 
+
+#ifndef HAVE_STRNLEN
+static size_t strnlen(const char *s, size_t maxlen)
+{
+    char *p;
+    return ((p = memchr(s, '\0', maxlen)) ? p - s : maxlen);
+}
+#endif
+
+#define PARSE_ERROR_FRAGMENT_LEN 32
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_parse_error(const char *format, const char *start)
+{
+    unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
+
+    size_t len = start ? strnlen(start, PARSE_ERROR_FRAGMENT_LEN) : 0;
+    const char *ptr = start;
+
+    if (len == PARSE_ERROR_FRAGMENT_LEN) {
+        MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
+
+        while (buffer[len - 1] >= 0x80 && buffer[len - 1] < 0xC0) { // Is continuation byte
+            len--;
+        }
+
+        if (buffer[len - 1] >= 0xC0) { // multibyte character start
+            len--;
+        }
+
+        buffer[len] = '\0';
+        ptr = (const char *)buffer;
+    }
+
+    rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
+}
+
 /* unicode */
 
 static const signed char digit_values[256] = {
@@ -362,21 +400,19 @@ static const signed char digit_values[256] = {
 
 static uint32_t unescape_unicode(const unsigned char *p)
 {
-    const uint32_t replacement_char = 0xFFFD;
-
     signed char b;
     uint32_t result = 0;
     b = digit_values[p[0]];
-    if (b < 0) return replacement_char;
+    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[1]];
-    if (b < 0) return replacement_char;
+    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[2]];
-    if (b < 0) return replacement_char;
+    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
     result = (result << 4) | (unsigned char)b;
     b = digit_values[p[3]];
-    if (b < 0) return replacement_char;
+    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
     result = (result << 4) | (unsigned char)b;
     return result;
 }
@@ -439,43 +475,6 @@ typedef struct JSON_ParserStateStruct {
     TypedData_Get_Struct(self, JSON_ParserConfig, &JSON_ParserConfig_type, config)
 
 static const rb_data_type_t JSON_ParserConfig_type;
-
-#ifndef HAVE_STRNLEN
-static size_t strnlen(const char *s, size_t maxlen)
-{
-    char *p;
-    return ((p = memchr(s, '\0', maxlen)) ? p - s : maxlen);
-}
-#endif
-
-#define PARSE_ERROR_FRAGMENT_LEN 32
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error(const char *format, const char *start)
-{
-    unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
-
-    size_t len = start ? strnlen(start, PARSE_ERROR_FRAGMENT_LEN) : 0;
-    const char *ptr = start;
-
-    if (len == PARSE_ERROR_FRAGMENT_LEN) {
-        MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
-
-        while (buffer[len - 1] >= 0x80 && buffer[len - 1] < 0xC0) { // Is continuation byte
-            len--;
-        }
-
-        if (buffer[len - 1] >= 0xC0) { // multibyte character start
-            len--;
-        }
-
-        buffer[len] = '\0';
-        ptr = (const char *)buffer;
-    }
-
-    rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
-}
 
 static const bool whitespace[256] = {
     [' '] = 1,
