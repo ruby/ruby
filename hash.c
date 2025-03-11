@@ -3421,10 +3421,13 @@ to_a_i(VALUE key, VALUE value, VALUE ary)
  *  call-seq:
  *    to_a -> new_array
  *
- *  Returns a new Array of 2-element Array objects;
- *  each nested Array contains a key-value pair from +self+:
+ *  Returns all elements of +self+ as an array of 2-element arrays;
+ *  each nested array contains a key-value pair from +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.to_a # => [[:foo, 0], [:bar, 1], [:baz, 2]]
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 
 static VALUE
