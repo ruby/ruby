@@ -1216,11 +1216,7 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
         if (FL_TEST(obj, RSTRING_FSTR)) {
-            st_data_t fstr = (st_data_t)obj;
-            st_delete(rb_vm_fstring_table(), &fstr, NULL);
-            RB_DEBUG_COUNTER_INC(obj_str_fstr);
-
-            FL_UNSET(obj, RSTRING_FSTR);
+            rb_gc_free_fstring(obj);
         }
         break;
       case T_SYMBOL:

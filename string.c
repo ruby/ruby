@@ -578,6 +578,16 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     return args.fstr;
 }
 
+void rb_gc_free_fstring(VALUE obj) {
+    ASSERT_vm_locking();
+
+    st_data_t fstr = (st_data_t)obj;
+    st_delete(rb_vm_fstring_table(), &fstr, NULL);
+    RB_DEBUG_COUNTER_INC(obj_str_fstr);
+
+    FL_UNSET(obj, RSTRING_FSTR);
+}
+
 static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
