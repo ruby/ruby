@@ -465,7 +465,7 @@ pub struct iseq_inline_constant_cache_entry {
 }
 #[repr(C)]
 pub struct iseq_inline_constant_cache {
-    pub __bindgen_anon_1: iseq_inline_constant_cache__bindgen_ty_1,
+    pub c: iseq_inline_constant_cache__bindgen_ty_1,
     pub tagged_segments: VALUE,
 }
 #[repr(C)]
@@ -1273,6 +1273,7 @@ extern "C" {
     pub fn rb_yjit_multi_ractor_p() -> bool;
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
+    pub fn rb_yjit_constcache_has_ext(ic: *const iseq_inline_constant_cache) -> bool;
     pub fn rb_yjit_constcache_value(ic: *const iseq_inline_constant_cache) -> VALUE;
     pub fn rb_yjit_constcache_segments(ic: *const iseq_inline_constant_cache) -> *const ID;
     pub fn rb_yjit_constcache_cref(ic: *const iseq_inline_constant_cache) -> *const rb_cref_t;
