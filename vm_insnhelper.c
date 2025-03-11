@@ -6397,8 +6397,6 @@ rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 static void
 vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const VALUE *pc)
 {
-    vm_icc_reset(ic);
-
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
         return;
@@ -6408,9 +6406,9 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     if (cref) {
         vm_icc_set_flag(ic, CONST_CACHE_HAS_EXT);
         struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
-        RB_OBJ_WRITE(iseq, &ic->c.ext, ice);
         RB_OBJ_WRITE(ic->c.ext, &ice->value, val);
         ice->ic_cref = cref;
+        RB_OBJ_WRITE(iseq, &ic->c.ext, ice);
     }
     else {
         RB_OBJ_WRITE(iseq, &ic->c.value, val);
