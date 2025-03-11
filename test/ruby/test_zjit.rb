@@ -73,19 +73,59 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_less_than_true
-    assert_compiles 'true', %q{
-      def test(a, b) = a < b
-      test(2, 5)
-      test(2, 5)
+  def test_opt_mult
+    assert_compiles '6', %q{
+      def test(a, b) = a * b
+      test(1, 2) # profile opt_mult
+      test(2, 3)
     }, call_threshold: 2
   end
 
-  def test_less_than_false
-    assert_compiles '[false, false]', %q{
+  def test_opt_eq
+    assert_compiles '[true, false]', %q{
+      def test(a, b) = a == b
+      test(0, 2) # profile opt_eq
+      [test(1, 1), test(0, 1)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_neq
+    assert_compiles '[false, true]', %q{
+      def test(a, b) = a != b
+      test(0, 2) # profile opt_neq
+      [test(1, 1), test(0, 1)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_lt
+    assert_compiles '[true, false, false]', %q{
       def test(a, b) = a < b
-      test(5, 2)
-      [test(5, 2), test(2, 2)]
+      test(2, 3) # profile opt_lt
+      [test(0, 1), test(0, 0), test(1, 0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_le
+    assert_compiles '[true, true, false]', %q{
+      def test(a, b) = a <= b
+      test(2, 3) # profile opt_le
+      [test(0, 1), test(0, 0), test(1, 0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_gt
+    assert_compiles '[false, false, true]', %q{
+      def test(a, b) = a > b
+      test(2, 3) # profile opt_gt
+      [test(0, 1), test(0, 0), test(1, 0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_ge
+    assert_compiles '[false, true, true]', %q{
+      def test(a, b) = a >= b
+      test(2, 3) # profile opt_ge
+      [test(0, 1), test(0, 0), test(1, 0)]
     }, call_threshold: 2
   end
 

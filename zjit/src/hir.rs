@@ -197,12 +197,12 @@ pub enum Insn {
     FixnumMult { left: InsnId, right: InsnId, state: FrameStateId },
     FixnumDiv  { left: InsnId, right: InsnId, state: FrameStateId },
     FixnumMod  { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumEq   { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumNeq  { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumLt   { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumLe   { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumGt   { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumGe   { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumEq   { left: InsnId, right: InsnId },
+    FixnumNeq  { left: InsnId, right: InsnId },
+    FixnumLt   { left: InsnId, right: InsnId },
+    FixnumLe   { left: InsnId, right: InsnId },
+    FixnumGt   { left: InsnId, right: InsnId },
+    FixnumGe   { left: InsnId, right: InsnId },
 
     /// Side-exist if val doesn't have the expected type.
     // TODO: Replace is_fixnum with the type lattice
@@ -437,12 +437,12 @@ impl Function {
             FixnumMult { left, right, state } => FixnumMult { left: find!(*left), right: find!(*right), state: *state },
             FixnumDiv { left, right, state } => FixnumDiv { left: find!(*left), right: find!(*right), state: *state },
             FixnumMod { left, right, state } => FixnumMod { left: find!(*left), right: find!(*right), state: *state },
-            FixnumNeq { left, right, state } => FixnumNeq { left: find!(*left), right: find!(*right), state: *state },
-            FixnumEq { left, right, state } => FixnumEq { left: find!(*left), right: find!(*right), state: *state },
-            FixnumGt { left, right, state } => FixnumGt { left: find!(*left), right: find!(*right), state: *state },
-            FixnumGe { left, right, state } => FixnumGe { left: find!(*left), right: find!(*right), state: *state },
-            FixnumLt { left, right, state } => FixnumLt { left: find!(*left), right: find!(*right), state: *state },
-            FixnumLe { left, right, state } => FixnumLe { left: find!(*left), right: find!(*right), state: *state },
+            FixnumNeq { left, right } => FixnumNeq { left: find!(*left), right: find!(*right) },
+            FixnumEq { left, right } => FixnumEq { left: find!(*left), right: find!(*right) },
+            FixnumGt { left, right } => FixnumGt { left: find!(*left), right: find!(*right) },
+            FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
+            FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
+            FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
             Send { self_val, call_info, args } => Send { self_val: find!(*self_val), call_info: call_info.clone(), args: args.iter().map(|arg| find!(*arg)).collect() },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val } => ArrayDup { val: find!(*val) },
@@ -1069,7 +1069,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumEq { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumEq { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;
@@ -1080,7 +1080,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_NEQ }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumNeq { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;
@@ -1091,7 +1091,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LT }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumLt { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumLt { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;
@@ -1102,7 +1102,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LE }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumLe { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumLe { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;
@@ -1113,7 +1113,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GT }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumGt { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumGt { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;
@@ -1124,7 +1124,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GE }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumGe { left, right, state: exit_state }));
+                        state.push(fun.push_insn(block, Insn::FixnumGe { left, right }));
                     } else {
                         let right = state.pop()?;
                         let left = state.pop()?;

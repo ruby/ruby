@@ -107,6 +107,13 @@ fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Optio
 
 /// Compile an instruction
 fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
+    // Convert InsnId to lir::Opnd
+    macro_rules! opnd {
+        ($insn_id:ident) => {
+            jit.get_opnd(*$insn_id)?
+        };
+    }
+
     if !matches!(*insn, Insn::Snapshot { .. }) {
         asm_comment!(asm, "Insn: {:04} {:?}", insn_id.0, insn);
     }
@@ -114,12 +121,17 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::Param { idx } => gen_param(jit, asm, *idx)?,
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
-        Insn::Return { val } => return Some(gen_return(&jit, asm, *val)?),
-        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, *left, *right, function.frame_state(*state))?,
-        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, *left, *right, function.frame_state(*state))?,
-        // TODO(max): Remove FrameState from FixnumLt
-        Insn::FixnumLt { left, right, .. } => gen_fixnum_lt(jit, asm, *left, *right)?,
-        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, *val, *guard_type, function.frame_state(*state))?,
+        Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
+        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
+        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
+        Insn::FixnumMult { left, right, state } => gen_fixnum_mult(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
+        Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right))?,
+        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right))?,
+        Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right))?,
+        Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right))?,
+        Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right))?,
+        Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right))?,
+        Insn::GuardType { val, guard_type, state } => gen_guard_type(asm, opnd!(val), *guard_type, function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
@@ -182,7 +194,7 @@ fn gen_param(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> Optio
 }
 
 /// Compile code that exits from JIT code with a return value
-fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
+fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
@@ -192,8 +204,7 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
 
     // Set a return value to the register. We do this before popping SP, EC,
     // and CFP registers because ret_val may depend on them.
-    let ret_val = jit.opnds[val.0]?;
-    asm.mov(C_RET_OPND, ret_val);
+    asm.mov(C_RET_OPND, val);
 
     asm_comment!(asm, "exit from leave");
     asm.cpop_into(SP);
@@ -206,51 +217,86 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: InsnId) -> Option<()> {
 }
 
 /// Compile Fixnum + Fixnum
-fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId, state: &FrameState) -> Option<lir::Opnd> {
-    let left_opnd = jit.get_opnd(left)?;
-    let right_opnd = jit.get_opnd(right)?;
-
+fn gen_fixnum_add(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Add left + right and test for overflow
-    let left_untag = asm.sub(left_opnd, Opnd::Imm(1));
-    let out_val = asm.add(left_untag, right_opnd);
+    let left_untag = asm.sub(left, Opnd::Imm(1));
+    let out_val = asm.add(left_untag, right);
     asm.jo(Target::SideExit(state.clone()));
 
     Some(out_val)
 }
 
-/// Compile Fixnum < Fixnum
-fn gen_fixnum_lt(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId) -> Option<lir::Opnd> {
-    let left_opnd = jit.get_opnd(left)?;
-    let right_opnd = jit.get_opnd(right)?;
-    asm.cmp(left_opnd, right_opnd);
-    let out_val = asm.csel_l(Qtrue.into(), Qfalse.into());
-    Some(out_val)
-}
-
 /// Compile Fixnum - Fixnum
-fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: InsnId, right: InsnId, state: &FrameState) -> Option<lir::Opnd> {
-    let left_opnd = jit.get_opnd(left)?;
-    let right_opnd = jit.get_opnd(right)?;
-
+fn gen_fixnum_sub(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Subtract left - right and test for overflow
-    let val_untag = asm.sub(left_opnd, right_opnd);
+    let val_untag = asm.sub(left, right);
     asm.jo(Target::SideExit(state.clone()));
     let out_val = asm.add(val_untag, Opnd::Imm(1));
 
     Some(out_val)
 }
 
+/// Compile Fixnum * Fixnum
+fn gen_fixnum_mult(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+    // Do some bitwise gymnastics to handle tag bits
+    // x * y is translated to (x >> 1) * (y - 1) + 1
+    let left_untag = asm.rshift(left, Opnd::UImm(1));
+    let right_untag = asm.sub(right, Opnd::UImm(1));
+    let out_val = asm.mul(left_untag, right_untag);
+
+    // Test for overflow
+    asm.jo_mul(Target::SideExit(state.clone()));
+    let out_val = asm.add(out_val, Opnd::UImm(1));
+
+    Some(out_val)
+}
+
+/// Compile Fixnum == Fixnum
+fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_e(Qtrue.into(), Qfalse.into()))
+}
+
+/// Compile Fixnum != Fixnum
+fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_ne(Qtrue.into(), Qfalse.into()))
+}
+
+/// Compile Fixnum < Fixnum
+fn gen_fixnum_lt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_l(Qtrue.into(), Qfalse.into()))
+}
+
+/// Compile Fixnum <= Fixnum
+fn gen_fixnum_le(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_le(Qtrue.into(), Qfalse.into()))
+}
+
+/// Compile Fixnum > Fixnum
+fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_g(Qtrue.into(), Qfalse.into()))
+}
+
+/// Compile Fixnum >= Fixnum
+fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
+    asm.cmp(left, right);
+    Some(asm.csel_ge(Qtrue.into(), Qfalse.into()))
+}
+
 /// Compile a type check with a side exit
-fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: InsnId, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
-    let opnd = jit.get_opnd(val)?;
+fn gen_guard_type(asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
     if guard_type.is_subtype(Fixnum) {
         // Check if opnd is Fixnum
-        asm.test(opnd, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+        asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.jz(Target::SideExit(state.clone()));
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
-    Some(opnd)
+    Some(val)
 }
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
