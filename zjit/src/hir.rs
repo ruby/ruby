@@ -205,7 +205,6 @@ pub enum Insn {
     FixnumGe   { left: InsnId, right: InsnId },
 
     /// Side-exist if val doesn't have the expected type.
-    // TODO: Replace is_fixnum with the type lattice
     GuardType { val: InsnId, guard_type: Type, state: FrameStateId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
