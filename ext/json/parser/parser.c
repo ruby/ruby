@@ -608,7 +608,7 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
     buffer = RSTRING_PTR(result);
     bufferStart = buffer;
 
-    while ((pe = memchr(pe, '\\', stringEnd - pe))) {
+    while (pe < stringEnd && (pe = memchr(pe, '\\', stringEnd - pe))) {
         unescape = (char *) "?";
         unescape_len = 1;
         if (pe > p) {
