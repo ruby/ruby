@@ -6407,12 +6407,12 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     if (cref) {
         vm_icc_set_flag(ic, CONST_CACHE_HAS_EXT);
         struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
-        RB_OBJ_WRITE(iseq, &ic->ext, ice);
-        RB_OBJ_WRITE(ic->ext, &ic->ext->value, val);
-        ic->ext->ic_cref = cref;
+        RB_OBJ_WRITE(iseq, &ic->c.ext, ice);
+        RB_OBJ_WRITE(ic->c.ext, &ice->value, val);
+        ice->ic_cref = cref;
     }
     else {
-        RB_OBJ_WRITE(iseq, &ic->value, val);
+        RB_OBJ_WRITE(iseq, &ic->c.value, val);
     }
     if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, CONST_CACHE_SHAREABLE);
     /* vm_icc_update(ic, val, ) */
