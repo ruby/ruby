@@ -2579,17 +2579,18 @@ rb_hash_delete_if(VALUE hash)
  *    reject! {|key, value| ... } -> self or nil
  *    reject! -> new_enumerator
  *
- *  Returns +self+, whose remaining entries are those
- *  for which the block returns +false+ or +nil+:
+ *  With a block given, calls the block with each entry's key and value;
+ *  removes the entry from +self+ if the block returns a truthy value.
+ *
+ *  Return +self+ if any entries were removed, +nil+ otherwise:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.reject! {|key, value| value < 2 } # => {baz: 2}
+ *    h.reject! {|key, value| value < 2 } # => nil
  *
- *  Returns +nil+ if no entries are removed.
+ *  With no block given, returns a new Enumerator.
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.reject! # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:reject!>
- *    e.each {|key, value| key.start_with?('b') } # => {foo: 0}
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
