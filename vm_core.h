@@ -276,7 +276,7 @@ struct iseq_inline_constant_cache {
     union {
         struct iseq_inline_constant_cache_entry *ext;
         VALUE value; // value is Qundef if the cache hasn't been set
-    };
+    } c;
 
     VALUE tagged_segments;
 };
@@ -296,21 +296,21 @@ vm_icc_has_ext(const struct iseq_inline_constant_cache *cc)
 static inline bool
 vm_icc_is_set(const struct iseq_inline_constant_cache *cc)
 {
-    return !UNDEF_P(cc->value);
+    return !UNDEF_P(cc->c.value);
 }
 
 static inline void
 vm_icc_reset(struct iseq_inline_constant_cache *cc)
 {
-    if (!UNDEF_P(cc->value)) {
-        cc->value = Qundef;
+    if (!UNDEF_P(cc->c.value)) {
+        cc->c.value = Qundef;
     }
 }
 
 static inline void
 vm_icc_init(struct iseq_inline_constant_cache *cc, const ID *segments)
 {
-    cc->value = Qundef;
+    cc->c.value = Qundef;
     cc->tagged_segments = (VALUE)segments;
 }
 
@@ -341,10 +341,10 @@ static inline VALUE
 vm_icc_value(const struct iseq_inline_constant_cache *cc)
 {
     if (vm_icc_has_ext(cc)) {
-        return cc->ext->value;
+        return cc->c.ext->value;
     }
     else {
-        return cc->value;
+        return cc->c.value;
     }
 }
 
@@ -352,7 +352,7 @@ static inline const rb_cref_t *
 vm_icc_cref(const struct iseq_inline_constant_cache *cc)
 {
     if (vm_icc_has_ext(cc)) {
-        return cc->ext->ic_cref;
+        return cc->c.ext->ic_cref;
     }
     return NULL;
 }
