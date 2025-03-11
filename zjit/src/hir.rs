@@ -726,14 +726,22 @@ impl FrameState {
         FrameState { iseq, pc: VALUE(0), stack: vec![], locals: vec![] }
     }
 
-    fn push(&mut self, opnd: InsnId) {
+    /// Push a stack operand
+    fn stack_push(&mut self, opnd: InsnId) {
         self.stack.push(opnd);
     }
 
-    fn top(&self) -> Result<InsnId, ParseError> {
+    /// Pop a stack operand
+    fn stack_pop(&mut self) -> Result<InsnId, ParseError> {
+        self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
+    }
+
+    /// Get a stack-top operand
+    fn stack_top(&self) -> Result<InsnId, ParseError> {
         self.stack.last().ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
 
+    /// Get a stack operand at idx
     fn stack_opnd(&self, idx: usize) -> Result<InsnId, ParseError> {
         match self.stack.get(self.stack.len() - idx - 1) {
             Some(&opnd) => Ok(opnd),
@@ -741,12 +749,9 @@ impl FrameState {
         }
     }
 
-    fn pop(&mut self) -> Result<InsnId, ParseError> {
-        self.stack.pop().ok_or_else(|| ParseError::StackUnderflow(self.clone()))
-    }
-
-    fn setn(&mut self, n: usize, opnd: InsnId) {
-        let idx = self.stack.len() - n - 1;
+    /// Set a stack operand at idx
+    fn stack_setn(&mut self, idx: usize, opnd: InsnId) {
+        let idx = self.stack.len() - idx - 1;
         self.stack[idx] = opnd;
     }
 
@@ -897,53 +902,53 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             match opcode {
                 YARVINSN_nop => {},
-                YARVINSN_putnil => { state.push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
-                YARVINSN_putobject => { state.push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
+                YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
+                YARVINSN_putobject => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
                 YARVINSN_putstring | YARVINSN_putchilledstring => {
                     // TODO(max): Do something different for chilled string
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let insn_id = fun.push_insn(block, Insn::StringCopy { val });
-                    state.push(insn_id);
+                    state.stack_push(insn_id);
                 }
-                YARVINSN_putself => { state.push(fun.push_insn(block, Insn::PutSelf)); }
+                YARVINSN_putself => { state.stack_push(fun.push_insn(block, Insn::PutSelf)); }
                 YARVINSN_intern => {
-                    let val = state.pop()?;
+                    let val = state.stack_pop()?;
                     let insn_id = fun.push_insn(block, Insn::StringIntern { val });
-                    state.push(insn_id);
+                    state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
                     let array = fun.push_insn(block, Insn::NewArray { count });
                     for idx in (0..count).rev() {
-                        fun.push_insn(block, Insn::ArraySet { array, idx, val: state.pop()? });
+                        fun.push_insn(block, Insn::ArraySet { array, idx, val: state.stack_pop()? });
                     }
-                    state.push(array);
+                    state.stack_push(array);
                 }
                 YARVINSN_duparray => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
-                    state.push(insn_id);
+                    state.stack_push(insn_id);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
-                    state.push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }));
+                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }));
                 }
                 YARVINSN_putobject_INT2FIX_1_ => {
-                    state.push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
+                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
                 }
                 YARVINSN_defined => {
                     let op_type = get_arg(pc, 0).as_usize();
                     let obj = get_arg(pc, 0);
                     let pushval = get_arg(pc, 0);
-                    let v = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
+                    let v = state.stack_pop()?;
+                    state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr::<u8>();
-                    state.push(fun.push_insn(block, Insn::GetConstantPath { ic }));
+                    state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic }));
                 }
                 YARVINSN_branchunless => {
                     let offset = get_arg(pc, 0).as_i64();
-                    let val = state.pop()?;
+                    let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -956,7 +961,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_branchif => {
                     let offset = get_arg(pc, 0).as_i64();
-                    let val = state.pop()?;
+                    let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
@@ -979,86 +984,86 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_opt_nil_p => {
-                    let recv = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] }));
+                    let recv = state.stack_pop()?;
+                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] }));
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.getlocal(ep_offset);
-                    state.push(val);
+                    state.stack_push(val);
                 }
                 YARVINSN_setlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    let val = state.pop()?;
+                    let val = state.stack_pop()?;
                     state.setlocal(ep_offset, val);
                 }
-                YARVINSN_pop => { state.pop()?; }
-                YARVINSN_dup => { state.push(state.top()?); }
+                YARVINSN_pop => { state.stack_pop()?; }
+                YARVINSN_dup => { state.stack_push(state.stack_top()?); }
                 YARVINSN_swap => {
-                    let right = state.pop()?;
-                    let left = state.pop()?;
-                    state.push(right);
-                    state.push(left);
+                    let right = state.stack_pop()?;
+                    let left = state.stack_pop()?;
+                    state.stack_push(right);
+                    state.stack_push(left);
                 }
                 YARVINSN_setn => {
                     let n = get_arg(pc, 0).as_usize();
-                    let top = state.top()?;
-                    state.setn(n, top);
+                    let top = state.stack_top()?;
+                    state.stack_setn(n, top);
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumAdd { left, right, state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumAdd { left, right, state: exit_state }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MINUS }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumSub { left, right, state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumSub { left, right, state: exit_state }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "-".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "-".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MULT }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumMult { left, right, state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumMult { left, right, state: exit_state }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "*".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "*".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_DIV }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumDiv { left, right, state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumDiv { left, right, state: exit_state }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MOD }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumMod { left, right, state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumMod { left, right, state: exit_state }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "%".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "%".into() }, args: vec![right] }));
                     }
                 }
 
@@ -1066,83 +1071,83 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumEq { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumEq { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "==".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "==".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_NEQ }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "!=".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "!=".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LT }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumLt { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumLt { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LE }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumLe { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumLe { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GT }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumGt { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumGt { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GE }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.push(fun.push_insn(block, Insn::FixnumGe { left, right }));
+                        state.stack_push(fun.push_insn(block, Insn::FixnumGe { left, right }));
                     } else {
-                        let right = state.pop()?;
-                        let left = state.pop()?;
-                        state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
                     }
                 }
                 YARVINSN_opt_ltlt => {
-                    let right = state.pop()?;
-                    let left = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<<".into() }, args: vec![right] }));
+                    let right = state.stack_pop()?;
+                    let left = state.stack_pop()?;
+                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<<".into() }, args: vec![right] }));
                 }
                 YARVINSN_opt_aset => {
-                    let set = state.pop()?;
-                    let obj = state.pop()?;
-                    let recv = state.pop()?;
+                    let set = state.stack_pop()?;
+                    let obj = state.stack_pop()?;
+                    let recv = state.stack_pop()?;
                     fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
-                    state.push(set);
+                    state.stack_push(set);
                 }
 
                 YARVINSN_leave => {
-                    fun.push_insn(block, Insn::Return { val: state.pop()? });
+                    fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
                     break;  // Don't enqueue the next block as a successor
                 }
 
@@ -1158,12 +1163,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     };
                     let mut args = vec![];
                     for _ in 0..argc {
-                        args.push(state.pop()?);
+                        args.push(state.stack_pop()?);
                     }
                     args.reverse();
 
-                    let recv = state.pop()?;
-                    state.push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args }));
+                    let recv = state.stack_pop()?;
+                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args }));
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
@@ -1195,8 +1200,8 @@ fn guard_two_fixnums(state: &mut FrameState, exit_state: FrameStateId, fun: &mut
     let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum, state: exit_state });
 
     // Pop operands after guards for side exits
-    state.pop()?;
-    state.pop()?;
+    state.stack_pop()?;
+    state.stack_pop()?;
 
     Ok((left, right))
 }
