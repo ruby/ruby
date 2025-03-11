@@ -1741,6 +1741,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
                                          1, NULL, 0, ISEQ_TYPE_TOP, &option,
                                          Qnil));
     rb_ast_dispose(ast);
+    RB_GC_GUARD(ast_value);
 
     rb_vm_pop_frame(ec);
     RB_GC_GUARD(v);
