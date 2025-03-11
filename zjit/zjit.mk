@@ -88,15 +88,10 @@ update-zjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
 
-RUST_VERSION = +1.58.0
-
 # Gives quick feedback about ZJIT. Not a replacement for a full test run.
-.PHONY: zjit-smoke-test
-zjit-smoke-test:
-ifneq ($(strip $(CARGO)),)
-	$(CARGO) $(RUST_VERSION) test --all-features -q --manifest-path='$(top_srcdir)/zjit/Cargo.toml'
-endif
-	$(MAKE) btest RUN_OPTS='--zjit-call-threshold=1' BTESTS=-j
+.PHONY: zjit-test-all
+zjit-test-all:
+	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
 
 ZJIT_BINDGEN_DIFF_OPTS =

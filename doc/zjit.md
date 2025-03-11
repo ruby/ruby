@@ -31,7 +31,33 @@ To run code snippets with ZJIT:
 You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output with syntax highlighting
 in a way that can be easily shared with other team members.
 
-## Unit Testing (`make zjit-test`)
+## Testing
+
+### make zjit-test-all
+
+This command runs all ZJIT tests: `make zjit-test` and `test/ruby/test_zjit.rb`.
+
+```
+make zjit-test-all
+```
+
+### make zjit-test
+
+This command runs Rust unit tests.
+
+```
+make zjit-test
+```
+
+You can also run a single test case by specifying the function name:
+
+```
+make zjit-test ZJIT_TESTS=test_putobject
+```
+
+<details>
+
+<summary>Setting up zjit-test</summary>
 
 ZJIT uses `cargo-nextest` for Rust unit tests instead of `cargo test`.
 `cargo-nextest` runs each test in its own process, which is valuable since
@@ -44,3 +70,19 @@ Since it uses Cargo, you'll also need a `configure --enable-zjit=dev ...` build
 for `make zjit-test`. Since the tests need to link against CRuby, directly
 calling `cargo test`, or `cargo nextest` likely won't build. Make sure to
 use `make`.
+
+</details>
+
+### test/ruby/test\_zjit.rb
+
+This command runs Ruby execution tests.
+
+```
+make test-all TESTS="test/ruby/test_zjit.rb"
+```
+
+You can also run a single test case by matching the method name:
+
+```
+make test-all TESTS="test/ruby/test_zjit.rb -n test_putobject"
+```
