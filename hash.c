@@ -4817,12 +4817,15 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
  *    to_proc -> proc
  *
  *  Returns a Proc object that maps a key to its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    proc = h.to_proc
  *    proc.class # => Proc
  *    proc.call(:foo) # => 0
  *    proc.call(:bar) # => 1
  *    proc.call(:nosuch) # => nil
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 static VALUE
 rb_hash_to_proc(VALUE hash)
