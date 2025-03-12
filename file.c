@@ -719,8 +719,7 @@ rb_stat_dev(VALUE self)
  *  call-seq:
  *     stat.dev_major   -> integer
  *
- *  Returns the major part of <code>File_Stat#dev</code> or
- *  <code>nil</code>.
+ *  Returns the major part of File::Stat#dev or +nil+.
  *
  *     File.stat("/dev/fd1").dev_major   #=> 2
  *     File.stat("/dev/tty").dev_major   #=> 5
@@ -742,8 +741,7 @@ rb_stat_dev_major(VALUE self)
  *  call-seq:
  *     stat.dev_minor   -> integer
  *
- *  Returns the minor part of <code>File_Stat#dev</code> or
- *  <code>nil</code>.
+ *  Returns the minor part of File::Stat#dev or +nil+.
  *
  *     File.stat("/dev/fd1").dev_minor   #=> 1
  *     File.stat("/dev/tty").dev_minor   #=> 0
@@ -863,8 +861,8 @@ rb_stat_gid(VALUE self)
  *     stat.rdev   ->  integer or nil
  *
  *  Returns an integer representing the device type on which
- *  <i>stat</i> resides. Returns <code>nil</code> if the operating
- *  system doesn't support this feature.
+ *  <i>stat</i> resides. Returns +nil+ if the operating system doesn't
+ *  support this feature.
  *
  *     File.stat("/dev/fd1").rdev   #=> 513
  *     File.stat("/dev/tty").rdev   #=> 1280
@@ -892,8 +890,7 @@ rb_stat_rdev(VALUE self)
  *  call-seq:
  *     stat.rdev_major   -> integer
  *
- *  Returns the major part of <code>File_Stat#rdev</code> or
- *  <code>nil</code>.
+ *  Returns the major part of File::Stat#rdev or +nil+.
  *
  *     File.stat("/dev/fd1").rdev_major   #=> 2
  *     File.stat("/dev/tty").rdev_major   #=> 5
@@ -915,8 +912,7 @@ rb_stat_rdev_major(VALUE self)
  *  call-seq:
  *     stat.rdev_minor   -> integer
  *
- *  Returns the minor part of <code>File_Stat#rdev</code> or
- *  <code>nil</code>.
+ *  Returns the minor part of File::Stat#rdev or +nil+.
  *
  *     File.stat("/dev/fd1").rdev_minor   #=> 1
  *     File.stat("/dev/tty").rdev_minor   #=> 0
@@ -953,8 +949,8 @@ rb_stat_size(VALUE self)
  *  call-seq:
  *     stat.blksize   -> integer or nil
  *
- *  Returns the native file system's block size. Will return <code>nil</code>
- *  on platforms that don't support this information.
+ *  Returns the native file system's block size. Will return +nil+ on
+ *  platforms that don't support this information.
  *
  *     File.stat("testfile").blksize   #=> 4096
  *
@@ -975,8 +971,8 @@ rb_stat_blksize(VALUE self)
  *     stat.blocks    -> integer or nil
  *
  *  Returns the number of native file system blocks allocated for this
- *  file, or <code>nil</code> if the operating system doesn't
- *  support this feature.
+ *  file, or +nil+ if the operating system doesn't support this
+ *  feature.
  *
  *     File.stat("testfile").blocks   #=> 2
  */
@@ -2158,8 +2154,8 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
  *
  * If <i>file_name</i> is readable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
- * <code>nil</code> otherwise. The meaning of the bits is platform
- * dependent; on Unix systems, see <code>stat(2)</code>.
+ * +nil+ otherwise. The meaning of the bits is platform dependent; on
+ * Unix systems, see <code>stat(2)</code>.
  *
  * _file_name_ can be an IO object.
  *
@@ -2186,8 +2182,8 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.writable?(file_name)   -> true or false
  *
- * Returns <code>true</code> if the named file is writable by the effective
- * user and group id of this process. See eaccess(3).
+ * Returns +true+ if the named file is writable by the effective user and
+ * group id of this process. See eaccess(3).
  *
  * Note that some OS-level security features may cause this to return true
  * even though the file is not writable by the effective user/group.
@@ -2203,8 +2199,8 @@ rb_file_writable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.writable_real?(file_name)   -> true or false
  *
- * Returns <code>true</code> if the named file is writable by the real
- * user and group id of this process. See access(3).
+ * Returns +true+ if the named file is writable by the real user and group id
+ * of this process. See access(3).
  *
  * Note that some OS-level security features may cause this to return true
  * even though the file is not writable by the real user/group.
@@ -2222,8 +2218,8 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
  *
  * If <i>file_name</i> is writable by others, returns an integer
  * representing the file permission bits of <i>file_name</i>. Returns
- * <code>nil</code> otherwise. The meaning of the bits is platform
- * dependent; on Unix systems, see <code>stat(2)</code>.
+ * +nil+ otherwise. The meaning of the bits is platform dependent; on
+ * Unix systems, see <code>stat(2)</code>.
  *
  * _file_name_ can be an IO object.
  *
@@ -2290,8 +2286,8 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.executable_real?(file_name)   -> true or false
  *
- * Returns <code>true</code> if the named file is executable by the real
- * user and group id of this process. See access(3).
+ * Returns +true+ if the named file is executable by the real user and group
+ * id of this process. See access(3).
  *
  * Windows does not support execute permissions separately from read
  * permissions. On Windows, a file is only considered executable if it ends in
@@ -2500,7 +2496,7 @@ check3rdbyte(VALUE fname, int mode)
  * call-seq:
  *   File.setuid?(file_name)   ->  true or false
  *
- * Returns <code>true</code> if the named file has the setuid bit set.
+ * Returns +true+ if the named file has the setuid bit set.
  *
  * _file_name_ can be an IO object.
  */
@@ -2519,7 +2515,7 @@ rb_file_suid_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.setgid?(file_name)   ->  true or false
  *
- * Returns <code>true</code> if the named file has the setgid bit set.
+ * Returns +true+ if the named file has the setgid bit set.
  *
  * _file_name_ can be an IO object.
  */
@@ -2538,7 +2534,7 @@ rb_file_sgid_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.sticky?(file_name)   ->  true or false
  *
- * Returns <code>true</code> if the named file has the sticky bit set.
+ * Returns +true+ if the named file has the sticky bit set.
  *
  * _file_name_ can be an IO object.
  */
@@ -3396,9 +3392,9 @@ rb_fchown(int fd, rb_uid_t owner, rb_gid_t group)
  *  Changes the owner and group of <i>file</i> to the given numeric
  *  owner and group id's. Only a process with superuser privileges may
  *  change the owner of a file. The current owner of a file may change
- *  the file's group to any group to which the owner belongs. A
- *  <code>nil</code> or -1 owner or group id is ignored. Follows
- *  symbolic links. See also File#lchown.
+ *  the file's group to any group to which the owner belongs. A +nil+
+ *  or -1 owner or group id is ignored. Follows symbolic links. See
+ *  also File#lchown.
  *
  *     File.new("testfile").chown(502, 1000)
  *
@@ -4122,11 +4118,10 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
  *     File.umask()          -> integer
  *     File.umask(integer)   -> integer
  *
- *  Returns the current umask value for this process. If the optional
- *  argument is given, set the umask to that value and return the
- *  previous value. Umask values are <em>subtracted</em> from the
- *  default permissions, so a umask of <code>0222</code> would make a
- *  file read-only for everyone.
+ *  Returns the current umask value for this process. If the optional argument
+ *  is given, set the umask to that value and return the previous value. Umask
+ *  values are <em>subtracted</em> from the default permissions, so a umask of
+ *  +0222+ would make a file read-only for everyone.
  *
  *     File.umask(0006)   #=> 18
  *     File.umask         #=> 6
@@ -6835,8 +6830,7 @@ rb_stat_ftype(VALUE obj)
  *  call-seq:
  *     stat.directory?   -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a directory,
- *  <code>false</code> otherwise.
+ *  Returns +true+ if <i>stat</i> is a directory, +false+ otherwise.
  *
  *     File.stat("testfile").directory?   #=> false
  *     File.stat(".").directory?          #=> true
@@ -6912,9 +6906,8 @@ rb_stat_l(VALUE obj)
  *  call-seq:
  *     stat.socket?    -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a socket,
- *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature.
+ *  Returns +true+ if <i>stat</i> is a socket, +false+ if it isn't or if the
+ *  operating system doesn't support this feature.
  *
  *     File.stat("testfile").socket?   #=> false
  *
@@ -6934,9 +6927,8 @@ rb_stat_S(VALUE obj)
  *  call-seq:
  *     stat.blockdev?   -> true or false
  *
- *  Returns <code>true</code> if the file is a block device,
- *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature.
+ *  Returns +true+ if the file is a block device, +false+ if it isn't or if
+ *  the operating system doesn't support this feature.
  *
  *     File.stat("testfile").blockdev?    #=> false
  *     File.stat("/dev/hda1").blockdev?   #=> true
@@ -6957,9 +6949,8 @@ rb_stat_b(VALUE obj)
  *  call-seq:
  *     stat.chardev?    -> true or false
  *
- *  Returns <code>true</code> if the file is a character device,
- *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature.
+ *  Returns +true+ if the file is a character device, +false+ if it isn't or
+ *  if the operating system doesn't support this feature.
  *
  *     File.stat("/dev/tty").chardev?   #=> true
  *
@@ -7121,9 +7112,9 @@ rb_stat_R(VALUE obj)
  *    stat.world_readable? -> integer or nil
  *
  * If <i>stat</i> is readable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns
- * <code>nil</code> otherwise. The meaning of the bits is platform
- * dependent; on Unix systems, see <code>stat(2)</code>.
+ * representing the file permission bits of <i>stat</i>. Returns +nil+
+ * otherwise. The meaning of the bits is platform dependent; on Unix
+ * systems, see <code>stat(2)</code>.
  *
  *    m = File.stat("/etc/passwd").world_readable?  #=> 420
  *    sprintf("%o", m)				    #=> "644"
@@ -7145,8 +7136,8 @@ rb_stat_wr(VALUE obj)
  *  call-seq:
  *     stat.writable?  ->  true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is writable by the
- *  effective user id of this process.
+ *  Returns +true+ if <i>stat</i> is writable by the effective user id of this
+ *  process.
  *
  *     File.stat("testfile").writable?   #=> true
  *
@@ -7178,8 +7169,8 @@ rb_stat_w(VALUE obj)
  *  call-seq:
  *     stat.writable_real?  ->  true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is writable by the real
- *  user id of this process.
+ *  Returns +true+ if <i>stat</i> is writable by the real user id of this
+ *  process.
  *
  *     File.stat("testfile").writable_real?   #=> true
  *
@@ -7212,9 +7203,9 @@ rb_stat_W(VALUE obj)
  *    stat.world_writable?  ->  integer or nil
  *
  * If <i>stat</i> is writable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns
- * <code>nil</code> otherwise. The meaning of the bits is platform
- * dependent; on Unix systems, see <code>stat(2)</code>.
+ * representing the file permission bits of <i>stat</i>. Returns +nil+
+ * otherwise. The meaning of the bits is platform dependent; on Unix
+ * systems, see <code>stat(2)</code>.
  *
  *    m = File.stat("/tmp").world_writable?	    #=> 511
  *    sprintf("%o", m)				    #=> "777"
@@ -7347,8 +7338,7 @@ rb_stat_f(VALUE obj)
  *  call-seq:
  *     stat.zero?    -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a zero-length file;
- *  <code>false</code> otherwise.
+ *  Returns +true+ if <i>stat</i> is a zero-length file; +false+ otherwise.
  *
  *     File.stat("testfile").zero?   #=> false
  *
@@ -7386,9 +7376,9 @@ rb_stat_s(VALUE obj)
  *  call-seq:
  *     stat.setuid?    -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> has the set-user-id
- *  permission bit set, <code>false</code> if it doesn't or if the
- *  operating system doesn't support this feature.
+ *  Returns +true+ if <i>stat</i> has the set-user-id permission bit set,
+ *  +false+ if it doesn't or if the operating system doesn't support this
+ *  feature.
  *
  *     File.stat("/bin/su").setuid?   #=> true
  */
@@ -7406,9 +7396,9 @@ rb_stat_suid(VALUE obj)
  *  call-seq:
  *     stat.setgid?   -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> has the set-group-id
- *  permission bit set, <code>false</code> if it doesn't or if the
- *  operating system doesn't support this feature.
+ *  Returns +true+ if <i>stat</i> has the set-group-id permission bit set,
+ *  +false+ if it doesn't or if the operating system doesn't support this
+ *  feature.
  *
  *     File.stat("/usr/sbin/lpc").setgid?   #=> true
  *
@@ -7427,9 +7417,8 @@ rb_stat_sgid(VALUE obj)
  *  call-seq:
  *     stat.sticky?    -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> has its sticky bit set,
- *  <code>false</code> if it doesn't or if the operating system doesn't
- *  support this feature.
+ *  Returns +true+ if <i>stat</i> has its sticky bit set, +false+ if it
+ *  doesn't or if the operating system doesn't support this feature.
  *
  *     File.stat("testfile").sticky?   #=> false
  *
@@ -8419,11 +8408,11 @@ const char ruby_null_device[] =
  *  Higher-order bits in permissions may indicate the type of file
  *  (plain, directory, pipe, socket, etc.) and various other special features.
  *
- *  On non-Posix operating systems, permissions may include only read-only or read-write,
- *  in which case, the remaining permission will resemble typical values.
- *  On Windows, for instance, the default permissions are <code>0644</code>;
- *  The only change that can be made is to make the file
- *  read-only, which is reported as <code>0444</code>.
+ *  On non-Posix operating systems, permissions may include only read-only or
+ *  read-write, in which case, the remaining permission will resemble typical
+ *  values.  On Windows, for instance, the default permissions are +0644+; The
+ *  only change that can be made is to make the file read-only, which is
+ *  reported as +0444+.
  *
  *  For a method that actually creates a file in the underlying platform
  *  (as opposed to merely creating a \File object),
