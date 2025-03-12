@@ -501,16 +501,20 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
-            Insn::Send { .. } => types::Object,
-            Insn::PutSelf => types::Object,
-            Insn::Defined { .. } => types::Object,
-            Insn::GetConstantPath { .. } => types::Object,
+            Insn::Send { .. } => types::BasicObject,
+            Insn::PutSelf => types::BasicObject,
+            Insn::Defined { .. } => types::BasicObject,
+            Insn::GetConstantPath { .. } => types::BasicObject,
         }
     }
 
     fn infer_types(&mut self) {
         // Reset all types
         self.insn_types.fill(types::Empty);
+        for param in &self.blocks[self.entry_block.0].params {
+            // We know that function parameters are BasicObject or some subclass
+            self.insn_types[param.0] = types::BasicObject;
+        }
         // Compute predecessor instructions for each block
         let mut preds: Vec<Vec<InsnId>> = vec![Vec::new(); self.blocks.len()];
         let rpo = self.rpo();
@@ -1486,10 +1490,8 @@ mod tests {
 
     #[test]
     fn test_putobject() {
-        let program = "123";
-        let iseq = compile_to_iseq(program);
-        let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, "
+        eval("def test = 123");
+        assert_method_hir("test", "
             bb0():
               v1:Fixnum[123] = Const Value(123)
               Return v1
@@ -1498,24 +1500,25 @@ mod tests {
 
     #[test]
     fn test_opt_plus() {
-        let program = "1+2";
-        let iseq = compile_to_iseq(program);
-        let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, "
+        eval("def test = 1+2");
+        assert_method_hir("test", "
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
-              v5:Object = Send v1, :+, v3
+              v5:BasicObject = Send v1, :+, v3
               Return v5
         ");
     }
 
     #[test]
     fn test_setlocal_getlocal() {
-        let program = "a = 1; a";
-        let iseq = compile_to_iseq(program);
-        let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, "
+        eval("
+            def test
+              a = 1
+              a
+            end
+        ");
+        assert_method_hir("test", "
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:Fixnum[1] = Const Value(1)
@@ -1524,21 +1527,52 @@ mod tests {
     }
 
     #[test]
+    fn test_return_const() {
+        eval("
+            def test(cond)
+              if cond
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_method_hir("test", "
+            bb0(v0:BasicObject):
+              v3:CBool = Test v0
+              IfFalse v3, bb1(v0)
+              v6:Fixnum[3] = Const Value(3)
+              Return v6
+            bb1(v9:BasicObject):
+              v11:Fixnum[4] = Const Value(4)
+              Return v11
+        ");
+    }
+
+    #[test]
     fn test_merge_const() {
-        let program = "cond = true; if cond; 3; else; 4; end";
-        let iseq = compile_to_iseq(program);
-        let function = iseq_to_hir(iseq).unwrap();
-        assert_function_hir(function, "
-            bb0():
-              v0:NilClassExact = Const Value(nil)
-              v2:TrueClassExact = Const Value(true)
-              v6:CBool[true] = Test v2
-              IfFalse v6, bb1(v2)
-              v9:Fixnum[3] = Const Value(3)
-              Return v9
-            bb1(v12):
-              v14 = Const Value(4)
-              Return v14
+        eval("
+            def test(cond)
+              if cond
+                result = 3
+              else
+                result = 4
+              end
+              result
+            end
+        ");
+        assert_method_hir("test", "
+            bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v4:CBool = Test v0
+              IfFalse v4, bb1(v0, v1)
+              v7:Fixnum[3] = Const Value(3)
+              Jump bb2(v0, v7)
+            bb1(v11:BasicObject, v12:NilClassExact):
+              v14:Fixnum[4] = Const Value(4)
+              Jump bb2(v11, v14)
+            bb2(v17:BasicObject, v18:Fixnum):
+              Return v18
         ");
     }
 
@@ -1549,10 +1583,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumAdd v6, v7
               Return v8
         ");
@@ -1565,10 +1599,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumSub v6, v7
               Return v8
         ");
@@ -1581,10 +1615,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumMult v6, v7
               Return v8
         ");
@@ -1597,10 +1631,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumDiv v6, v7
               Return v8
         ");
@@ -1613,10 +1647,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumMod v6, v7
               Return v8
         ");
@@ -1629,10 +1663,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumEq v6, v7
               Return v8
         ");
@@ -1645,10 +1679,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumNeq v6, v7
               Return v8
         ");
@@ -1661,10 +1695,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumLt v6, v7
               Return v8
         ");
@@ -1677,10 +1711,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumLe v6, v7
               Return v8
         ");
@@ -1693,10 +1727,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumGt v6, v7
               Return v8
         ");
@@ -1755,10 +1789,10 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", "
-            bb0(v0, v1):
+            bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v6 = GuardType v0, Fixnum
-              v7 = GuardType v1, Fixnum
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumGe v6, v7
               Return v8
         ");
