@@ -1,6 +1,6 @@
 # Generate hir_type.inc.rs. To do this, we build up a DAG that
 # represents a slice of the Ruby type hierarchy that we care about optimizing.
-# This also includes primitive values such as C booleans, int32, and so on.
+# This also includes cvalue values such as C booleans, int32, and so on.
 
 require 'set'
 
@@ -46,7 +46,12 @@ end
 # Start at Any. All types are subtypes of Any.
 any = Type.new "Any"
 # Build the Ruby object universe.
-$object = any.subtype "Object"
+value = any.subtype "RubyValue"
+undef_ = value.subtype "Undef"
+basic_object = value.subtype "BasicObject"
+basic_object.subtype "BasicObjectExact"
+basic_object.subtype "BasicObjectUser"
+$object = basic_object.subtype "Object"
 object_exact = $object.subtype "ObjectExact"
 object_user = $object.subtype "ObjectUser"
 $user = [object_user.name]
@@ -68,32 +73,34 @@ base_type "Hash"
 
 (integer, integer_exact) = base_type "Integer"
 # CRuby partitions Integer into immediate and non-immediate variants.
-integer_exact.subtype "Fixnum"
+fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
 (float, float_exact) = base_type "Float"
 # CRuby partitions Float into immediate and non-immediate variants.
-float_exact.subtype "Flonum"
+flonum = float_exact.subtype "Flonum"
 float_exact.subtype "HeapFloat"
 
 (symbol, symbol_exact) = base_type "Symbol"
 # CRuby partitions Symbol into immediate and non-immediate variants.
-symbol_exact.subtype "StaticSymbol"
+static_sym = symbol_exact.subtype "StaticSymbol"
 symbol_exact.subtype "DynamicSymbol"
 
-base_type "NilClass"
+_, nil_exact = base_type "NilClass"
 _, true_exact = base_type "TrueClass"
 _, false_exact = base_type "FalseClass"
 
-# Build the primitive object universe.
-primitive = any.subtype "Primitive"
-primitive.subtype "CBool"
-primitive.subtype "CPtr"
-primitive.subtype "CDouble"
-primitive.subtype "CNull"
-primitive_int = primitive.subtype "CInt"
-signed = primitive_int.subtype "CSigned"
-unsigned = primitive_int.subtype "CUnsigned"
+# Build the cvalue object universe. This is for C-level types that may be
+# passed around when calling into the Ruby VM or after some strength reduction
+# of HIR.
+cvalue = any.subtype "CValue"
+cvalue.subtype "CBool"
+cvalue.subtype "CPtr"
+cvalue.subtype "CDouble"
+cvalue.subtype "CNull"
+cvalue_int = cvalue.subtype "CInt"
+signed = cvalue_int.subtype "CSigned"
+unsigned = cvalue_int.subtype "CUnsigned"
 [8, 16, 32, 64].each {|width|
   signed.subtype "CInt#{width}"
   unsigned.subtype "CUInt#{width}"
@@ -135,6 +142,7 @@ end
 add_union "BuiltinExact", $builtin_exact
 add_union "User", $user
 add_union "BoolExact", [true_exact.name, false_exact.name]
+add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
 
 # ===== Finished generating the DAG; write Rust code =====
 

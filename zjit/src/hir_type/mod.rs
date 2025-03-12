@@ -5,7 +5,7 @@ use crate::cruby::ClassRelationship;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 /// Specialization of the type. If we know additional information about the object, we put it here.
-/// This includes information about its value as a primitive. For Ruby objects, type specialization
+/// This includes information about its value as a cvalue. For Ruby objects, type specialization
 /// is split into three sub-cases:
 ///
 /// * Object, where we know exactly what object (pointer) the Type corresponds to
@@ -24,10 +24,10 @@ pub enum Specialization {
     TypeExact(VALUE),
     /// We know that this Type is exactly the Ruby object in the VALUE.
     Object(VALUE),
-    /// We know that this Type is exactly the given primitive/C integer value (use the type bits to
+    /// We know that this Type is exactly the given cvalue/C integer value (use the type bits to
     /// inform how we should interpret the u64, e.g. as CBool or CInt32).
     Int(u64),
-    /// We know that this Type is exactly the given primitive/C double.
+    /// We know that this Type is exactly the given cvalue/C double.
     Double(f64),
     /// We know that the Type is [`types::Empty`] and therefore the instruction that produces this
     /// value never returns.
@@ -50,7 +50,7 @@ pub struct Type {
     /// union-ing sets of types. These sets form a lattice (with Any as "could be anything" and
     /// Empty as "can be nothing").
     ///
-    /// Capable of also representing primitive types (bool, i32, etc).
+    /// Capable of also representing cvalue types (bool, i32, etc).
     ///
     /// This field should not be directly read or written except by internal `Type` APIs.
     bits: u64,
@@ -183,7 +183,7 @@ impl Type {
         }
     }
 
-    /// Create a `Type` from a primitive integer. Use the `ty` given to specify what size the
+    /// Create a `Type` from a cvalue integer. Use the `ty` given to specify what size the
     /// `specialization` represents. For example, `Type::from_cint(types::CBool, 1)` or
     /// `Type::from_cint(types::CUInt16, 12)`.
     pub fn from_cint(ty: Type, val: i64) -> Type {
@@ -199,7 +199,7 @@ impl Type {
         Type { bits: bits::CDouble, spec: Specialization::Double(val) }
     }
 
-    /// Create a `Type` from a primitive boolean.
+    /// Create a `Type` from a cvalue boolean.
     pub fn from_cbool(val: bool) -> Type {
         Type { bits: bits::CBool, spec: Specialization::Int(val as u64) }
     }
@@ -343,6 +343,10 @@ impl Type {
                 self.inexact_ruby_class().unwrap().is_subclass_of(other_class) == ClassRelationship::Subclass,
         }
     }
+
+    fn is_immediate(&self) -> bool {
+        self.is_subtype(types::Immediate)
+    }
 }
 
 #[cfg(test)]
@@ -421,6 +425,23 @@ mod tests {
         assert_subtype(types::DynamicSymbol, types::SymbolExact);
         assert_subtype(types::SymbolExact, types::Symbol);
         assert_subtype(types::SymbolUser, types::Symbol);
+    }
+
+    #[test]
+    fn immediate() {
+        assert_subtype(Type::fixnum(123), types::Immediate);
+        assert_subtype(types::Fixnum, types::Immediate);
+        assert_not_subtype(types::Bignum, types::Immediate);
+        assert_subtype(types::NilClassExact, types::Immediate);
+        assert_subtype(types::TrueClassExact, types::Immediate);
+        assert_subtype(types::FalseClassExact, types::Immediate);
+        assert_not_subtype(types::NilClassUser, types::Immediate);
+        assert_not_subtype(types::TrueClassUser, types::Immediate);
+        assert_not_subtype(types::FalseClassUser, types::Immediate);
+        assert_subtype(types::StaticSymbol, types::Immediate);
+        assert_not_subtype(types::DynamicSymbol, types::Immediate);
+        assert_subtype(types::Flonum, types::Immediate);
+        assert_not_subtype(types::HeapFloat, types::Immediate);
     }
 
     #[test]
