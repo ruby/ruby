@@ -49,21 +49,21 @@ any = Type.new "Any"
 value = any.subtype "RubyValue"
 undef_ = value.subtype "Undef"
 basic_object = value.subtype "BasicObject"
-basic_object.subtype "BasicObjectExact"
-basic_object.subtype "BasicObjectUser"
+basic_object_exact = basic_object.subtype "BasicObjectExact"
+basic_object_subclass = basic_object.subtype "BasicObjectSubclass"
 $object = basic_object.subtype "Object"
 object_exact = $object.subtype "ObjectExact"
-object_user = $object.subtype "ObjectUser"
-$user = [object_user.name]
-$builtin_exact = [object_exact.name]
+object_subclass = $object.subtype "ObjectSubclass"
+$subclass = [basic_object_subclass.name, object_subclass.name]
+$builtin_exact = [basic_object_exact.name, object_exact.name]
 
 # Define a new type that can be subclassed (most of them).
 def base_type name
   type = $object.subtype name
   exact = type.subtype(name+"Exact")
-  user = type.subtype(name+"User")
+  subclass = type.subtype(name+"Subclass")
   $builtin_exact << exact.name
-  $user << user.name
+  $subclass << subclass.name
   [type, exact]
 end
 
@@ -140,7 +140,7 @@ def add_union name, type_names
 end
 
 add_union "BuiltinExact", $builtin_exact
-add_union "User", $user
+add_union "Subclass", $subclass
 add_union "BoolExact", [true_exact.name, false_exact.name]
 add_union "Immediate", [fixnum.name, flonum.name, static_sym.name, nil_exact.name, true_exact.name, false_exact.name, undef_.name]
 

@@ -408,7 +408,7 @@ mod tests {
         assert_subtype(types::Fixnum, types::IntegerExact);
         assert_subtype(types::Bignum, types::IntegerExact);
         assert_subtype(types::IntegerExact, types::Integer);
-        assert_subtype(types::IntegerUser, types::Integer);
+        assert_subtype(types::IntegerSubclass, types::Integer);
     }
 
     #[test]
@@ -416,7 +416,7 @@ mod tests {
         assert_subtype(types::Flonum, types::FloatExact);
         assert_subtype(types::HeapFloat, types::FloatExact);
         assert_subtype(types::FloatExact, types::Float);
-        assert_subtype(types::FloatUser, types::Float);
+        assert_subtype(types::FloatSubclass, types::Float);
     }
 
     #[test]
@@ -424,7 +424,7 @@ mod tests {
         assert_subtype(types::StaticSymbol, types::SymbolExact);
         assert_subtype(types::DynamicSymbol, types::SymbolExact);
         assert_subtype(types::SymbolExact, types::Symbol);
-        assert_subtype(types::SymbolUser, types::Symbol);
+        assert_subtype(types::SymbolSubclass, types::Symbol);
     }
 
     #[test]
@@ -435,9 +435,9 @@ mod tests {
         assert_subtype(types::NilClassExact, types::Immediate);
         assert_subtype(types::TrueClassExact, types::Immediate);
         assert_subtype(types::FalseClassExact, types::Immediate);
-        assert_not_subtype(types::NilClassUser, types::Immediate);
-        assert_not_subtype(types::TrueClassUser, types::Immediate);
-        assert_not_subtype(types::FalseClassUser, types::Immediate);
+        assert_not_subtype(types::NilClassSubclass, types::Immediate);
+        assert_not_subtype(types::TrueClassSubclass, types::Immediate);
+        assert_not_subtype(types::FalseClassSubclass, types::Immediate);
         assert_subtype(types::StaticSymbol, types::Immediate);
         assert_not_subtype(types::DynamicSymbol, types::Immediate);
         assert_subtype(types::Flonum, types::Immediate);
@@ -520,7 +520,7 @@ mod tests {
     fn display_multiple_bits() {
         assert_eq!(format!("{}", types::CSigned), "CSigned");
         assert_eq!(format!("{}", types::CUInt8.union(types::CInt32)), "CUInt8|CInt32");
-        assert_eq!(format!("{}", types::HashExact.union(types::HashUser)), "Hash");
+        assert_eq!(format!("{}", types::HashExact.union(types::HashSubclass)), "Hash");
     }
 
     #[test]
@@ -625,11 +625,11 @@ mod tests {
         crate::cruby::with_rubyvm(|| {
             let c_class = define_class("C", unsafe { rb_cObject });
             let d_class = define_class("D", c_class);
-            let c_instance = Type { bits: bits::ObjectUser, spec: Specialization::TypeExact(c_class) };
-            let d_instance = Type { bits: bits::ObjectUser, spec: Specialization::TypeExact(d_class) };
-            assert_bit_equal(c_instance.union(c_instance), Type { bits: bits::ObjectUser, spec: Specialization::TypeExact(c_class)});
-            assert_bit_equal(c_instance.union(d_instance), Type { bits: bits::ObjectUser, spec: Specialization::Type(c_class)});
-            assert_bit_equal(d_instance.union(c_instance), Type { bits: bits::ObjectUser, spec: Specialization::Type(c_class)});
+            let c_instance = Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class) };
+            let d_instance = Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(d_class) };
+            assert_bit_equal(c_instance.union(c_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::TypeExact(c_class)});
+            assert_bit_equal(c_instance.union(d_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
+            assert_bit_equal(d_instance.union(c_instance), Type { bits: bits::ObjectSubclass, spec: Specialization::Type(c_class)});
         });
     }
 }
