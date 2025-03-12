@@ -117,6 +117,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
     if !matches!(*insn, Insn::Snapshot { .. }) {
         asm_comment!(asm, "Insn: {:04} {:?}", insn_id.0, insn);
     }
+
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::Param { idx } => gen_param(jit, asm, *idx)?,
@@ -131,6 +132,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right))?,
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right))?,
         Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right))?,
+        Insn::Test { val } => gen_test(asm, opnd!(val))?,
         Insn::GuardType { val, guard_type, state } => gen_guard_type(asm, opnd!(val), *guard_type, function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         _ => {
@@ -285,6 +287,17 @@ fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Opti
 fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
     asm.cmp(left, right);
     Some(asm.csel_ge(Qtrue.into(), Qfalse.into()))
+}
+
+/// Evaluate if a value is truthy
+/// Produces a CBool type (0 or 1)
+/// In Ruby, only nil and false are falsy
+/// Everything else evaluates to true
+fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
+    // Test if any bit (outside of the Qnil bit) is on
+    // See RB_TEST(), include/ruby/internal/special_consts.h
+    asm.test(val, Opnd::Imm(!Qnil.as_i64()));
+    Some(asm.csel_e(0.into(), 1.into()))
 }
 
 /// Compile a type check with a side exit

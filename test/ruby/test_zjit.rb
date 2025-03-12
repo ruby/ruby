@@ -149,7 +149,7 @@ class TestZJIT < Test::Unit::TestCase
 
 
 
-  # FIXME: not yet working, missing Test insn
+  # FIXME: missing IfFalse insn
   #def test_if_else
   #  assert_compiles '[0, 1]', %q{
   #    def test(n)
