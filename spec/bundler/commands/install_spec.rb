@@ -49,7 +49,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app(".bundle")).not_to exist
     end
 
-    it "creates lock files based on the Gemfile name" do
+    it "creates lockfiles based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
         gem "myrack", "1.0"

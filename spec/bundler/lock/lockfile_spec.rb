@@ -2030,7 +2030,7 @@ RSpec.describe "the lockfile format" do
     L
 
     bundle "install --verbose"
-    expect(out).to include("re-resolving dependencies because your lock file includes \"minitest-bisect\" but not some of its dependencies")
+    expect(out).to include("re-resolving dependencies because your lockfile includes \"minitest-bisect\" but not some of its dependencies")
 
     expect(lockfile).to eq <<~L
       GEM
