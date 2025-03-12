@@ -190,7 +190,7 @@ module Bundler
       def replace(spec, checksum)
         return unless checksum
 
-        lock_name = spec.name_tuple.lock_name
+        lock_name = spec.lock_name
         @store_mutex.synchronize do
           existing = fetch_checksum(lock_name, checksum.algo)
           if !existing || existing.same_source?(checksum)
@@ -204,7 +204,7 @@ module Bundler
       def register(spec, checksum)
         return unless checksum
 
-        register_checksum(spec.name_tuple.lock_name, checksum)
+        register_checksum(spec.lock_name, checksum)
       end
 
       def merge!(other)
@@ -216,7 +216,7 @@ module Bundler
       end
 
       def to_lock(spec)
-        lock_name = spec.name_tuple.lock_name
+        lock_name = spec.lock_name
         checksums = @store[lock_name]
         if checksums
           "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"

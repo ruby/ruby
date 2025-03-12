@@ -262,6 +262,10 @@ module Gem
       !default_gem? && !File.directory?(full_gem_path)
     end
 
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
+    end
+
     unless VALIDATES_FOR_RESOLUTION
       def validate_for_resolution
         SpecificationPolicy.new(self).validate_for_resolution
