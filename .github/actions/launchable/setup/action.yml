@@ -121,6 +121,8 @@ runs:
         : # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
         echo "GITHUB_PR_HEAD_SHA=${{ github.event.pull_request.head.sha || github.sha }}" >> $GITHUB_ENV
         echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
+        : # To prevent a slowdown in CI, disable request retries when the Launchable server is unstable.
+        echo "LAUNCHABLE_SKIP_TIMEOUT_RETRY=1" >> $GITHUB_ENV
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set up path
