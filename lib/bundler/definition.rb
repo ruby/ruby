@@ -810,7 +810,7 @@ module Bundler
       [
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
-        [@current_platform_missing, "your lockfile does not include the current platform"],
+        [@current_platform_missing, "your lockfile is missing the current platform"],
         [@new_platforms.any?, "you are adding a new platform to your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
