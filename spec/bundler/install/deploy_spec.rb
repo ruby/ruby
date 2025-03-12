@@ -321,7 +321,7 @@ RSpec.describe "install in deployment or frozen mode" do
       L
 
       bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false, artifice: "compact_index"
-      expect(err).to include("Your lock file is missing \"bar\", but the lockfile can't be updated because frozen mode is set")
+      expect(err).to include("Your lockfile is missing \"bar\", but the lockfile can't be updated because frozen mode is set")
     end
 
     it "explodes if a path gem is missing" do

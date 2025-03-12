@@ -33,7 +33,7 @@ RSpec.describe Bundler::Definition do
       before { Bundler::Definition.no_lock = true }
       after { Bundler::Definition.no_lock = false }
 
-      it "does not create a lock file" do
+      it "does not create a lockfile" do
         subject.lock
         expect(bundled_app_lock).not_to be_file
       end

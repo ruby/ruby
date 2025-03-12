@@ -813,9 +813,9 @@ module Bundler
         [@new_platforms.any?, "you are adding a new platform to your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
-        [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
+        [@missing_lockfile_dep, "your lockfile is missing \"#{@missing_lockfile_dep}\""],
         [@unlocking_bundler, "an update to the version of Bundler itself was requested"],
-        [@locked_spec_with_missing_deps, "your lock file includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
+        [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
       ].select(&:first).map(&:last).join(", ")
     end
