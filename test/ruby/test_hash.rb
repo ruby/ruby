@@ -1986,9 +1986,12 @@ class TestHashOnly < Test::Unit::TestCase
     ObjectSpace.count_objects
 
     h = {"abc" => 1}
-    before = ObjectSpace.count_objects[:T_STRING]
-    5.times{ h["abc"] }
-    assert_equal before, ObjectSpace.count_objects[:T_STRING]
+
+    EnvUtil.without_gc do
+      before = ObjectSpace.count_objects[:T_STRING]
+      5.times{ h["abc"] }
+      assert_equal before, ObjectSpace.count_objects[:T_STRING]
+    end
   end
 
   def test_AREF_fstring_key_default_proc
