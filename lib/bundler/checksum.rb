@@ -201,9 +201,11 @@ module Bundler
         end
       end
 
-      def register(spec, checksum)
-        return unless checksum
+      def missing?(spec)
+        @store[spec.lock_name].nil?
+      end
 
+      def register(spec, checksum)
         register_checksum(spec.lock_name, checksum)
       end
 
@@ -218,7 +220,7 @@ module Bundler
       def to_lock(spec)
         lock_name = spec.lock_name
         checksums = @store[lock_name]
-        if checksums
+        if checksums&.any?
           "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
         else
           lock_name
@@ -229,11 +231,15 @@ module Bundler
 
       def register_checksum(lock_name, checksum)
         @store_mutex.synchronize do
-          existing = fetch_checksum(lock_name, checksum.algo)
-          if existing
-            merge_checksum(lock_name, checksum, existing)
+          if checksum
+            existing = fetch_checksum(lock_name, checksum.algo)
+            if existing
+              merge_checksum(lock_name, checksum, existing)
+            else
+              store_checksum(lock_name, checksum)
+            end
           else
-            store_checksum(lock_name, checksum)
+            init_checksum(lock_name)
           end
         end
       end
@@ -243,7 +249,11 @@ module Bundler
       end
 
       def store_checksum(lock_name, checksum)
-        (@store[lock_name] ||= {})[checksum.algo] = checksum
+        init_checksum(lock_name)[checksum.algo] = checksum
+      end
+
+      def init_checksum(lock_name)
+        @store[lock_name] ||= {}
       end
 
       def fetch_checksum(lock_name, algo)

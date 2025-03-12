@@ -1221,7 +1221,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
           DEPENDENCIES
             myrack!
-          #{checksums_section}
+
           BUNDLED WITH
              #{Bundler::VERSION}
         L
