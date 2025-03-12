@@ -1331,11 +1331,6 @@ Init_prism(void) {
         );
     }
 
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-    // Mark this extension as Ractor-safe.
-    rb_ext_ractor_safe(true);
-#endif
-
     // Grab up references to all of the constants that we're going to need to
     // reference throughout this extension.
     rb_cPrism = rb_define_module("Prism");

@@ -592,7 +592,7 @@ module Prism
       <%- tokens.each do |token| -%>
       <%= token.name.to_sym.inspect %>,
       <%- end -%>
-    ].freeze
+    ]
 
     private_constant :MAJOR_VERSION, :MINOR_VERSION, :PATCH_VERSION
     private_constant :ConstantPool, :FastStringIO, :Loader, :TOKEN_TYPES
