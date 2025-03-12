@@ -1136,7 +1136,7 @@ class TestIO < Test::Unit::TestCase
       body.rewind
 
       payload = []
-      IO.copy_stream(body, dst_class.new{payload << it})
+      IO.copy_stream(body, dst_class.new{|data| payload << data})
       body.rewind
       assert_equal(body.read, payload.join, bug21131)
     ensure
