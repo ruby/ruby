@@ -2646,11 +2646,13 @@ rb_hash_reject(VALUE hash)
  *  call-seq:
  *    slice(*keys) -> new_hash
  *
- *  Returns a new +Hash+ object containing the entries for the given +keys+:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    h.slice(:baz, :foo) # => {baz: 2, foo: 0}
+ *  Returns a new hash containing the entries from +self+ for the given +keys+;
+ *  ignores any keys that are not found:
  *
- *  Any given +keys+ that are not found are ignored.
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.slice(:baz, :foo, :nosuch) # => {baz: 2, foo: 0}
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
