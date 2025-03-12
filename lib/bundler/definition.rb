@@ -539,8 +539,9 @@ module Bundler
 
       reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
 
-      msg = String.new
-      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because #{update_refused_reason}"
+      msg = String.new("#{reason.capitalize.strip}, but ")
+      msg << "the lockfile " unless msg.start_with?("Your lockfile")
+      msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
