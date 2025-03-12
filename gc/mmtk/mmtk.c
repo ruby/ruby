@@ -1318,14 +1318,33 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 
 // Miscellaneous
 
-#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 0
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 1
 static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    object_metadata_entries[0].name = 0;
-    object_metadata_entries[0].val = 0;
+    static ID ID_object_id;
+
+    if (!ID_object_id) {
+#define I(s) ID_##s = rb_intern(#s);
+        I(object_id);
+#undef I
+    }
+
+    size_t n = 0;
+
+#define SET_ENTRY(na, v) do { \
+    RUBY_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    object_metadata_entries[n].name = ID_##na; \
+    object_metadata_entries[n].val = v; \
+    n++; \
+} while (0)
+
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+
+    object_metadata_entries[n].name = 0;
+    object_metadata_entries[n].val = 0;
 
     return object_metadata_entries;
 }
