@@ -544,7 +544,7 @@ module Bundler
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_lockfile_path} to version control.\n" unless unlocking?
       msg
     end
 
