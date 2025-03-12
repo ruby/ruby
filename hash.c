@@ -3534,6 +3534,8 @@ rb_hash_inspect(VALUE hash)
  *    to_hash -> self
  *
  *  Returns +self+.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 static VALUE
 rb_hash_to_hash(VALUE hash)
