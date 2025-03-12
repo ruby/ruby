@@ -193,76 +193,68 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
-    let(:default_ss_version) { ruby "gem 'syntax_suggest', '< 999999'; require 'syntax_suggest/version'; puts SyntaxSuggest::VERSION", raise_on_error: false }
+    let(:default_erb_version) { ruby "gem 'erb', '< 999999'; require 'erb/version'; puts Erb::VERSION", raise_on_error: false }
 
     context "when not specified in Gemfile" do
       before do
-        skip "syntax_suggest executable is not provided on Windows" if Gem.win_platform?
-        skip "syntax_suggest isn't a default gem" if default_ss_version.empty?
-        skip "syntax_suggest executable is broken" if default_ss_version <= "2.0.1"
-
         install_gemfile "source \"https://gem.repo1\""
       end
 
       it "uses version provided by ruby" do
-        bundle "exec ruby --disable-syntax-suggest -S syntax_suggest --version"
+        bundle "exec erb --version"
 
-        expect(out).to include(default_ss_version)
+        expect(out).to include(default_erb_version)
       end
     end
 
     context "when specified in Gemfile directly" do
-      let(:specified_ss_version) { "2.0.0" }
+      let(:specified_erb_version) { "2.0.0" }
 
       before do
-        skip "syntax_suggest isn't a default gem" if default_ss_version.empty?
-
         build_repo2 do
-          build_gem "syntax_suggest", specified_ss_version do |s|
-            s.executables = "syntax_suggest"
+          build_gem "erb", specified_erb_version do |s|
+            s.executables = "erb"
           end
         end
 
         install_gemfile <<-G
           source "https://gem.repo2"
-          gem "syntax_suggest", "#{specified_ss_version}"
+          gem "erb", "#{specified_erb_version}"
         G
       end
 
       it "uses version specified" do
-        bundle "exec ruby --disable-syntax-suggest -S syntax_suggest --version"
+        bundle "exec erb --version", artifice: nil
 
-        expect(out).to eq(specified_ss_version)
+        expect(out).to eq(specified_erb_version)
         expect(err).to be_empty
       end
     end
 
     context "when specified in Gemfile indirectly" do
-      let(:indirect_ss_version) { "2.0.0" }
+      let(:indirect_erb_version) { "2.0.0" }
 
       before do
-        skip "syntax_suggest isn't a default gem" if default_ss_version.empty?
-
         build_repo2 do
-          build_gem "syntax_suggest", indirect_ss_version do |s|
-            s.executables = "syntax_suggest"
+          build_gem "erb", indirect_erb_version do |s|
+            s.executables = "erb"
           end
 
-          build_gem "gem_depending_on_old_ss" do |s|
-            s.add_dependency "syntax_suggest", indirect_ss_version
+          build_gem "gem_depending_on_old_erb" do |s|
+            s.add_dependency "erb", indirect_erb_version
           end
         end
 
         install_gemfile <<-G
           source "https://gem.repo2"
-          gem "gem_depending_on_old_ss"
+          gem "gem_depending_on_old_erb"
         G
 
-        bundle "exec ruby --disable-syntax-suggest -S syntax_suggest --version"
+        bundle "exec erb --version", artifice: nil
       end
 
       it "uses resolved version" do
-        expect(out).to eq(indirect_ss_version)
+        expect(out).to eq(indirect_erb_version)
         expect(err).to be_empty
       end
     end
