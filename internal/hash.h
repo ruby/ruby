@@ -110,6 +110,7 @@ int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_hash_new_with_size(st_index_t size);
+VALUE rb_hash_new_with_size_and_klass(VALUE klass, st_index_t size);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 VALUE rb_hash_keys(VALUE hash);
