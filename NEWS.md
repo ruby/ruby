@@ -22,7 +22,7 @@ Note: We're only listing outstanding class updates.
 The following bundled gems are promoted from default gems.
 
 * ostruct 0.6.1
-* pstore 0.1.4
+* pstore 0.2.0
 * benchmark 0.4.0
 * logger 1.6.6
 * rdoc 6.12.0
