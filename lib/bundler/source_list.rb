@@ -183,9 +183,7 @@ module Bundler
       end
 
       path = @path_sources.map do |source|
-        next source if source.is_a?(Source::Gemspec)
-
-        replace_source(replacement_sources, source)
+        replace_path_source(replacement_sources, source)
       end
 
       [rubygems, path, git, plugin]
@@ -201,6 +199,8 @@ module Bundler
         replacement_source.remotes = gemfile_source.remotes
 
         yield replacement_source if block_given?
+
+        replacement_source
       end
     end
 
@@ -208,9 +208,20 @@ module Bundler
       replacement_source = replacement_sources.find {|s| s == gemfile_source }
       return gemfile_source unless replacement_source
 
-      yield replacement_source if block_given?
+      replacement_source = yield(replacement_source) if block_given?
 
       replacement_source
+    end
+
+    def replace_path_source(replacement_sources, gemfile_source)
+      replace_source(replacement_sources, gemfile_source) do |replacement_source|
+        if gemfile_source.is_a?(Source::Gemspec)
+          gemfile_source.checksum_store = replacement_source.checksum_store
+          gemfile_source
+        else
+          replacement_source
+        end
+      end
     end
 
     def different_sources?(lock_sources, replacement_sources)
