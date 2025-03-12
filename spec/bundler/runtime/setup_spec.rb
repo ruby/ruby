@@ -1683,7 +1683,7 @@ end
         RUBY
       end
 
-      expect(err).to include("Your lockfile does not include the current platform, but the lockfile can't be updated because file system is read-only")
+      expect(err).to include("Your lockfile does not include the current platform, but can't be updated because file system is read-only")
     end
   end
 end
