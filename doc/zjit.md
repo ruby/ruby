@@ -9,13 +9,6 @@ To build ZJIT on macOS:
 make -j miniruby
 ```
 
-To run unit tests:
-```
-# Make sure you have a `--enable-zjit=dev` build, and
-# you'll need to `brew install cargo-nextest` first:
-make zjit-test
-```
-
 ## Useful dev commands
 
 To view YARV output for code snippets:
@@ -32,6 +25,8 @@ You can also try https://www.rubyexplorer.xyz/ to view Ruby YARV disasm output w
 in a way that can be easily shared with other team members.
 
 ## Testing
+
+Make sure you have a `--enable-zjit=dev` build, and run `brew install cargo-nextest` first.
 
 ### make zjit-test-all
 
