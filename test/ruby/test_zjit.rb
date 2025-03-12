@@ -147,6 +147,25 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+
+
+  # FIXME: not yet working, missing Test insn
+  #def test_if_else
+  #  assert_compiles '[0, 1]', %q{
+  #    def test(n)
+  #      if n < 5
+  #        0
+  #      else
+  #        1
+  #      end
+  #    end
+  #    [test(3), test(7)]
+  #  }, call_threshold: 2
+  #end
+
+
+
+
   # FIXME: need to call twice because of call threshold 2, but
   # then this fails because of missing FixnumLt
   def test_while_loop
@@ -162,24 +181,6 @@ class TestZJIT < Test::Unit::TestCase
       #loop_fun(10)
     }, call_threshold: 2
   end
-
-
-
-  # FIXME: not yet working, missing FixnumLt?
-  #def test_if_else
-  #  assert_compiles '[0, 1]', %q{
-  #    def test(n)
-  #      if n < 5
-  #        0
-  #      else
-  #        1
-  #      end
-  #    end
-  #    [test(3), test(7)]
-  #  }, call_threshold: 2
-  #end
-
-
 
   private
 
