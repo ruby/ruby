@@ -57,6 +57,7 @@ The following bundled gems are added.
 
 The following bundled gems are updated.
 
+* minitest 5.25.5
 * rexml 3.4.1
 * net-imap 0.5.6
 * net-smtp 0.5.1
