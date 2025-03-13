@@ -5745,29 +5745,25 @@ vm_check_if_module(ID id, VALUE mod)
 }
 
 static VALUE
-declare_under(ID id, VALUE cbase, VALUE c)
-{
-    rb_set_class_path_string(c, cbase, rb_id2str(id));
-    rb_const_set(cbase, id, c);
-    return c;
-}
-
-static VALUE
 vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
     /* new class declaration */
     VALUE s = VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) ? super : rb_cObject;
-    VALUE c = declare_under(id, cbase, rb_define_class_id(id, s));
+    VALUE c = rb_define_class_id(id, s);
     rb_define_alloc_func(c, rb_get_alloc_func(c));
+    rb_set_class_path_string(c, cbase, rb_id2str(id));
     rb_class_inherited(s, c);
+    rb_const_set(cbase, id, c);
     return c;
 }
 
 static VALUE
 vm_declare_module(ID id, VALUE cbase)
 {
-    /* new module declaration */
-    return declare_under(id, cbase, rb_module_new());
+    VALUE m = rb_module_new();
+    rb_set_class_path_string(m, cbase, rb_id2str(id));
+    rb_const_set(cbase, id, m);
+    return m;
 }
 
 NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));

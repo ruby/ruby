@@ -101,4 +101,14 @@ class CApiClassSpecs
     module M
     end
   end
+
+  class Callbacks
+    def self.inherited(child)
+      ScratchPad << [:inherited, child.name]
+    end
+
+    def self.const_added(const_name)
+      ScratchPad << [:const_added, const_name]
+    end
+  end
 end
