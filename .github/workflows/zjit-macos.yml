@@ -37,7 +37,7 @@ jobs:
 
           # Test without ZJIT for now
           - test_task: 'check'
-            configure: '--enable-zjit'
+            configure: '--disable-zjit'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
