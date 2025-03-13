@@ -475,6 +475,12 @@ class TestParse < Test::Unit::TestCase
     assert_parse_error(%q[def (:"#{42}").foo; end], msg)
     assert_parse_error(%q[def ([]).foo; end], msg)
     assert_parse_error(%q[def ([1]).foo; end], msg)
+    assert_parse_error(%q[def (__FILE__).foo; end], msg)
+    assert_parse_error(%q[def (__LINE__).foo; end], msg)
+    assert_parse_error(%q[def (__ENCODING__).foo; end], msg)
+    assert_parse_error(%q[def __FILE__.foo; end], msg)
+    assert_parse_error(%q[def __LINE__.foo; end], msg)
+    assert_parse_error(%q[def __ENCODING__.foo; end], msg)
   end
 
   def test_flip_flop
