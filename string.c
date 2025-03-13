@@ -37,7 +37,6 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
-#include "internal/st.h"
 #include "internal/string.h"
 #include "internal/transcode.h"
 #include "probes.h"
