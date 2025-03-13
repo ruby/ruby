@@ -2757,7 +2757,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token <num>  tREGEXP_END
 %token <num>  tDUMNY_END     "dummy end"
 
-%type <node> singleton strings string string1 xstring regexp
+%type <node> singleton singleton_expr strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
@@ -6581,16 +6581,10 @@ opt_f_block_arg	: ',' f_block_arg
                 | none
                 ;
 
-singleton	: value_expr(var_ref)
-                | '('
+
+singleton	: value_expr(singleton_expr)
                     {
-                        SET_LEX_STATE(EXPR_BEG);
-                        p->ctxt.in_argdef = 0;
-                    }
-                  expr rparen
-                    {
-                        p->ctxt.in_argdef = 1;
-                        NODE *expr = last_expr_node($3);
+                        NODE *expr = last_expr_node($1);
                         switch (nd_type(expr)) {
                           case NODE_STR:
                           case NODE_DSTR:
@@ -6612,9 +6606,21 @@ singleton	: value_expr(var_ref)
                             yyerror1(&expr->nd_loc, "can't define singleton method for literals");
                             break;
                           default:
-                            value_expr($3);
                             break;
                         }
+                        $$ = $1;
+                    }
+                ;
+
+singleton_expr	: var_ref
+                | '('
+                    {
+                        SET_LEX_STATE(EXPR_BEG);
+                        p->ctxt.in_argdef = 0;
+                    }
+                  expr rparen
+                    {
+                        p->ctxt.in_argdef = 1;
                         $$ = $3;
                     /*% ripper: paren!($:3) %*/
                     }
