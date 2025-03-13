@@ -489,14 +489,13 @@ eom
         case expected
         when String
           assert = :assert_equal
-        when Regexp
-          assert = :assert_match
         else
-          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
+          assert_respond_to(expected, :===)
+          assert = :assert_match
         end
 
         ex = m = nil
-        EnvUtil.with_default_internal(expected.encoding) do
+        EnvUtil.with_default_internal(of: expected) do
           ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
             yield
           end
@@ -670,7 +669,7 @@ eom
 
       def assert_warning(pat, msg = nil)
         result = nil
-        stderr = EnvUtil.with_default_internal(pat.encoding) {
+        stderr = EnvUtil.with_default_internal(of: pat) {
           EnvUtil.verbose_warning {
             result = yield
           }
