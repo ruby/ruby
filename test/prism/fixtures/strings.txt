@@ -45,19 +45,10 @@ foo\
 b\nar
 "
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4ef093b600 (Fix parser translator edge-case when multiline string ends with \n)
 "foo
 \nbar\n\n
 a\nb\n\nc\n"
 
-<<<<<<< HEAD
-=======
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
-=======
->>>>>>> 4ef093b600 (Fix parser translator edge-case when multiline string ends with \n)
 %q{abc}
 
 %s[abc]
@@ -85,13 +76,6 @@ a\nb\n\nc\n"
 %w[foo\ bar\\ baz\\\
  bat]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 %W[#{foo}\
 bar
 baz #{bat}
@@ -107,14 +91,6 @@ baz #{bat}
 %W(foo\
 bar)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
 %w[foo     bar]
 
 %w[
