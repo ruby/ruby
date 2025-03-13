@@ -156,6 +156,13 @@ module Gem
     specifications/default
   ].freeze
 
+  ##
+  # The default value for SOURCE_DATE_EPOCH if not specified.
+  # We want a date after 1980-01-01, to prevent issues with Zip files.
+  # This particular timestamp is for 1980-01-02 00:00:00 GMT.
+
+  DEFAULT_SOURCE_DATE_EPOCH = 315_619_200
+
   @@win_platform = nil
 
   @configuration = nil
@@ -1155,8 +1162,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   ##
   # If the SOURCE_DATE_EPOCH environment variable is set, returns it's value.
-  # Otherwise, returns the time that +Gem.source_date_epoch_string+ was
-  # first called in the same format as SOURCE_DATE_EPOCH.
+  # Otherwise, returns DEFAULT_SOURCE_DATE_EPOCH as a string.
   #
   # NOTE(@duckinator): The implementation is a tad weird because we want to:
   #   1. Make builds reproducible by default, by having this function always
@@ -1171,15 +1177,12 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # https://reproducible-builds.org/specs/source-date-epoch/
 
   def self.source_date_epoch_string
-    # The value used if $SOURCE_DATE_EPOCH is not set.
-    @default_source_date_epoch ||= Time.now.to_i.to_s
-
     specified_epoch = ENV["SOURCE_DATE_EPOCH"]
 
     # If it's empty or just whitespace, treat it like it wasn't set at all.
     specified_epoch = nil if !specified_epoch.nil? && specified_epoch.strip.empty?
 
-    epoch = specified_epoch || @default_source_date_epoch
+    epoch = specified_epoch || DEFAULT_SOURCE_DATE_EPOCH.to_s
 
     epoch.strip
   end
