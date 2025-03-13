@@ -3579,7 +3579,7 @@ rb_hash_to_h_block(VALUE hash)
  *    to_h {|key, value| ... } -> new_hash
  *    to_h -> self or new_hash
  *
- *  With a block is given, returns a new hash whose content is based on the block;
+ *  With a block given, returns a new hash whose content is based on the block;
  *  the block is called with each entry's key and value;
  *  it block should return a 2-element array
  *  containing the key and value to be included in the returned array:
