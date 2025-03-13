@@ -393,6 +393,26 @@ class TestRange < Test::Unit::TestCase
     assert_equal(4, (1.0...5.6).step(1.5).to_a.size)
   end
 
+  def test_step_with_succ
+    c = Struct.new(:i) do
+      def succ; self.class.new(i+1); end
+      def <=>(other) i <=> other.i;end
+    end.new(0)
+
+    result = []
+    (c..c.succ).step(2) do |d|
+      result << d.i
+    end
+    assert_equal([0], result)
+
+    result = []
+    (c..).step(2) do |d|
+      result << d.i
+      break if d.i >= 4
+    end
+    assert_equal([0, 2, 4], result)
+  end
+
   def test_each
     a = []
     (0..10).each {|x| a << x }
@@ -455,6 +475,26 @@ class TestRange < Test::Unit::TestCase
     a = []
     (o..).each {|x| a << x; break if a.size >= 3}
     assert_equal(["a", "b", "c"], a)
+  end
+
+  def test_each_with_succ
+    c = Struct.new(:i) do
+      def succ; self.class.new(i+1); end
+      def <=>(other) i <=> other.i;end
+    end.new(0)
+
+    result = []
+    (c..c.succ).each do |d|
+      result << d.i
+    end
+    assert_equal([0, 1], result)
+
+    result = []
+    (c..).each do |d|
+      result << d.i
+      break if d.i >= 4
+    end
+    assert_equal([0, 1, 2, 3, 4], result)
   end
 
   def test_begin_end
