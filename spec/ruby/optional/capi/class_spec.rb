@@ -383,6 +383,17 @@ describe "C-API Class function" do
         CApiClassSpecs.const_get(cls.name)
       }.should raise_error(NameError, /wrong constant name/)
     end
+
+    ruby_version_is "3.5" do
+      it "calls .inherited before .const_added" do
+        ScratchPad.record([])
+        @s.rb_define_class_id_under(CApiClassSpecs::Callbacks, :Subclass, CApiClassSpecs::Callbacks)
+        ScratchPad.recorded.should == [
+          [:inherited, "CApiClassSpecs::Callbacks::Subclass"],
+          [:const_added, :Subclass],
+        ]
+      end
+    end
   end
 
   describe "rb_define_class_id_under" do
