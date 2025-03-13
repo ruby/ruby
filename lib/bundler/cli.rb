@@ -130,7 +130,7 @@ module Bundler
 
       if man_pages.include?(command)
         man_page = man_pages[command]
-        if Bundler.which("man") && !man_path.match?(%r{^file:/.+!/META-INF/jruby.home/.+})
+        if Bundler.which("man") && !man_path.match?(%r{^(?:file:/.+!|uri:classloader:)/META-INF/jruby.home/.+})
           Kernel.exec("man", man_page)
         else
           puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
