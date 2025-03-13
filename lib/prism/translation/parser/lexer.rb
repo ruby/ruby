@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
 require "strscan"
 
 module Prism
@@ -10,7 +9,7 @@ module Prism
       # format for the parser gem.
       class Lexer
         # These tokens are always skipped
-        TYPES_ALWAYS_SKIP = %i[IGNORED_NEWLINE __END__ EOF].to_set
+        TYPES_ALWAYS_SKIP = Set.new(%i[IGNORED_NEWLINE __END__ EOF])
         private_constant :TYPES_ALWAYS_SKIP
 
         # The direct translating of types between the two lexers.
@@ -195,18 +194,18 @@ module Prism
         #
         # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note that `kDO` is still returned
         # instead of `kDO_LAMBDA`, which is expected: https://github.com/ruby/prism/pull/3046
-        LAMBDA_TOKEN_TYPES = [:kDO_LAMBDA, :tLAMBDA, :tLAMBEG].to_set
+        LAMBDA_TOKEN_TYPES = Set.new([:kDO_LAMBDA, :tLAMBDA, :tLAMBEG])
 
         # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
         # The following token types are listed as those classified as `tLPAREN`.
-        LPAREN_CONVERSION_TOKEN_TYPES = [
+        LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
           :kBREAK, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
           :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
-        ].to_set
+        ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.
         # For these, the parser gem doesn't emit a newline token after the last comment.
-        COMMENT_CONTINUATION_TYPES = [:COMMENT, :AMPERSAND_DOT, :DOT].to_set
+        COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
         private_constant :COMMENT_CONTINUATION_TYPES
 
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
