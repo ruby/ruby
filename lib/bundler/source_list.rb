@@ -173,12 +173,12 @@ module Bundler
 
     def map_sources(replacement_sources)
       rubygems = @rubygems_sources.map do |source|
-        replace_rubygems_source(replacement_sources, source) || source
+        replace_rubygems_source(replacement_sources, source)
       end
 
       git, plugin = [@git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
-          replacement_sources.find {|s| s == source } || source
+          replace_source(replacement_sources, source)
         end
       end
 
@@ -190,19 +190,24 @@ module Bundler
     end
 
     def global_replacement_source(replacement_sources)
-      replacement_source = replace_rubygems_source(replacement_sources, global_rubygems_source)
-      return global_rubygems_source unless replacement_source
-
-      replacement_source.local!
-      replacement_source
+      replace_rubygems_source(replacement_sources, global_rubygems_source, &:local!)
     end
 
     def replace_rubygems_source(replacement_sources, gemfile_source)
-      replacement_source = replacement_sources.find {|s| s == gemfile_source }
-      return unless replacement_source
+      replace_source(replacement_sources, gemfile_source) do |replacement_source|
+        # locked sources never include credentials so always prefer remotes from the gemfile
+        replacement_source.remotes = gemfile_source.remotes
 
-      # locked sources never include credentials so always prefer remotes from the gemfile
-      replacement_source.remotes = gemfile_source.remotes
+        yield replacement_source if block_given?
+      end
+    end
+
+    def replace_source(replacement_sources, gemfile_source)
+      replacement_source = replacement_sources.find {|s| s == gemfile_source }
+      return gemfile_source unless replacement_source
+
+      yield replacement_source if block_given?
+
       replacement_source
     end
 
