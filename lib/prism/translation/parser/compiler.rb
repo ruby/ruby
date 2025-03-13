@@ -1138,7 +1138,17 @@ module Prism
         # -> { it }
         # ^^^^^^^^^
         def visit_it_parameters_node(node)
-          builder.itarg
+          # FIXME: The builder _should_ always be a subclass of the prism builder.
+          # Currently RuboCop passes in its own builder that always inherits from the
+          # parser builder (which is lacking the `itarg` method). Once rubocop-ast
+          # opts in to use the custom prism builder a warning can be emitted when
+          # it is not the expected class, and eventually raise.
+          # https://github.com/rubocop/rubocop-ast/pull/354
+          if builder.is_a?(Translation::Parser::Builder)
+            builder.itarg
+          else
+            builder.args(nil, [], nil, false)
+          end
         end
 
         # foo(bar: baz)
