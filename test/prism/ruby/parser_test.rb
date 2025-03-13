@@ -74,7 +74,6 @@ module Prism
 
       # Contains an escaped multibyte character. This is supposed to drop to backslash
       "seattlerb/regexp_escape_extended.txt",
-<<<<<<< HEAD
 
       # https://github.com/whitequark/parser/issues/1020
       # These contain consecutive \r characters, followed by \n. Prism only receives
@@ -83,25 +82,16 @@ module Prism
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
-=======
->>>>>>> e1c75f304b (Better handle regexp in the parser translator)
+
+      # https://github.com/whitequark/parser/issues/1026
+      # Regex with \c escape
+      "unescaping.txt",
+      "seattlerb/regexp_esc_C_slash.txt",
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
-      "unescaping.txt",
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
-      "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
-      "seattlerb/heredoc_with_only_carriage_returns.txt",
-      "seattlerb/pctW_lineno.txt",
->>>>>>> e1c75f304b (Better handle regexp in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-      "seattlerb/regexp_esc_C_slash.txt",
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -192,7 +182,7 @@ module Prism
         ignore_warnings { Prism::Translation::Parser33.new.tokenize(buffer) }
 
       if expected_ast == actual_ast
-        if !compare_asts
+        if !compare_asts && !Fixture.custom_base_path?
           puts "#{fixture.path} is now passing"
         end
 
@@ -203,7 +193,7 @@ module Prism
         rescue Test::Unit::AssertionFailedError
           raise if compare_tokens
         else
-          puts "#{fixture.path} is now passing" if !compare_tokens
+          puts "#{fixture.path} is now passing" if !compare_tokens && !Fixture.custom_base_path?
         end
 
         assert_equal_comments(expected_comments, actual_comments) if compare_comments
