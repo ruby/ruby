@@ -811,13 +811,6 @@ rb_fstring_cstr(const char *ptr)
 }
 
 static int
-fstring_set_class_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    RBASIC_SET_CLASS((VALUE)key, (VALUE)arg);
-    return ST_CONTINUE;
-}
-
-static int
 fstring_cmp(VALUE a, VALUE b)
 {
     long alen, blen;
@@ -12787,15 +12780,11 @@ void
 Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
-    RUBY_ASSERT(rb_vm_fstring_table());
     for (int i = 0; i < fstring_table.capacity; i++) {
         VALUE str = fstring_table.entries[i];
         if (!str) continue;
-        fstring_set_class_i(str, Qfalse, rb_cString);
+        RBASIC_SET_CLASS(str, rb_cString);
     }
-    //for (int i = 0; i < FSTRING_STRIPES; i++) {
-    //    st_foreach(&fstring_tables[i].table, fstring_set_class_i, rb_cString);
-    //}
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);

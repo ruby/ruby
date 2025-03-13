@@ -3592,13 +3592,11 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         break;
       }
       case RB_GC_VM_FROZEN_STRINGS_TABLE: {
-        if (vm->frozen_strings) {
-            rb_fstring_foreach_with_replace(
-                vm_weak_table_frozen_strings_foreach,
-                vm_weak_table_foreach_update_weak_key,
-                (st_data_t)&foreach_data
-            );
-        }
+        rb_fstring_foreach_with_replace(
+            vm_weak_table_frozen_strings_foreach,
+            vm_weak_table_foreach_update_weak_key,
+            (st_data_t)&foreach_data
+        );
         break;
       }
       default:
