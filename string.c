@@ -540,7 +540,6 @@ static void fstring_try_resize(void);
 
 static VALUE fstring_upsert(VALUE hash_code, VALUE value, bool insert) {
     struct fstring_table_struct *table = &fstring_table;
-    hash_code *= 1111111111111111111u;
 
     int idx;
 retry:
@@ -641,7 +640,6 @@ static void fstring_try_resize(void) {
 static void fstring_delete(VALUE hash_code, VALUE value) {
     // Delete is never called concurrently, so atomic operations are unnecessary
     struct fstring_table_struct *table = &fstring_table;
-    hash_code *= 1111111111111111111u;
 
     int idx = hash_code % table->capacity;
 
