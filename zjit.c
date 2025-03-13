@@ -681,5 +681,14 @@ rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
 // Primitives used by zjit.rb
 VALUE rb_zjit_assert_compiles(rb_execution_context_t *ec, VALUE self);
 
+void
+rb_zjit_print_exception(void)
+{
+    VALUE exception = rb_errinfo();
+    rb_set_errinfo(Qnil);
+    assert(RTEST(exception));
+    rb_warn("Ruby error: %"PRIsVALUE"", rb_funcall(exception, rb_intern("full_message"), 0));
+}
+
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"

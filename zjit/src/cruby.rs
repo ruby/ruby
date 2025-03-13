@@ -939,8 +939,10 @@ pub mod test_utils {
 
         let mut state: c_int = 0;
         unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
-        // TODO(alan): there should be a way to print the exception instead of swallowing it
-        assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
+        if state != 0 {
+            unsafe { rb_zjit_print_exception(); }
+            assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
+        }
 
         result.expect("Callback did not set result")
     }
