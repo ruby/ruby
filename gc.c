@@ -9281,10 +9281,23 @@ rb_gc_register_address(VALUE *addr)
     rb_objspace_t *objspace = &rb_objspace;
     struct gc_list *tmp;
 
+    VALUE obj = *addr;
+
     tmp = ALLOC(struct gc_list);
     tmp->next = global_list;
     tmp->varptr = addr;
     global_list = tmp;
+
+    /*
+     * Because some C extensions have assignment-then-register bugs,
+     * we guard `obj` here so that it would not get swept defensively.
+     */
+    RB_GC_GUARD(obj);
+    if (0 && !SPECIAL_CONST_P(obj)) {
+	rb_warn("Object is assigned to registering address already: %"PRIsVALUE,
+		rb_obj_class(obj));
+	rb_print_backtrace();
+    }
 }
 
 void

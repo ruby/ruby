@@ -647,8 +647,8 @@ ruby_init_loadpath(void)
 #   endif
     rb_obj_hide(selfpath);
     OBJ_FREEZE_RAW(selfpath);
-    rb_libruby_selfpath = selfpath;
     rb_gc_register_address(&rb_libruby_selfpath);
+    rb_libruby_selfpath = selfpath;
 # endif
 #endif
 
