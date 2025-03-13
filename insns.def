@@ -869,7 +869,7 @@ sendforward
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
+    VALUE bh = vm_caller_setup_fwd_args(ec, GET_CFP(), cd, blockiseq, 0, &adjusted_cd, &adjusted_ci);
 
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_method);
     JIT_EXEC(ec, val);
@@ -1081,7 +1081,7 @@ invokesuperforward
     struct rb_forwarding_call_data adjusted_cd;
     struct rb_callinfo adjusted_ci;
 
-    VALUE bh = vm_caller_setup_fwd_args(GET_EC(), GET_CFP(), cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
+    VALUE bh = vm_caller_setup_fwd_args(ec, GET_CFP(), cd, blockiseq, 1, &adjusted_cd, &adjusted_ci);
 
     val = vm_sendish(ec, GET_CFP(), &adjusted_cd.cd, bh, mexp_search_super);
     JIT_EXEC(ec, val);
