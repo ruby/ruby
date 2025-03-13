@@ -1471,6 +1471,9 @@ ruby_init_ext(const char *name, void (*init)(void))
  *  If _const_ in _mod_ is defined as autoload, the file name to be
  *  loaded is replaced with _filename_.  If _const_ is defined but not
  *  as autoload, does nothing.
+ *
+ *  Files that are currently being loaded must not be registered for
+ *  autoload.
  */
 
 static VALUE
@@ -1535,6 +1538,9 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
  *  If _const_ is defined as autoload, the file name to be loaded is
  *  replaced with _filename_.  If _const_ is defined but not as
  *  autoload, does nothing.
+ *
+ *  Files that are currently being loaded must not be registered for
+ *  autoload.
  */
 
 static VALUE
