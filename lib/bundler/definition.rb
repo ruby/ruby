@@ -833,7 +833,7 @@ module Bundler
       !locked || dependencies_for_source_changed?(source, locked) || specs_for_source_changed?(source)
     end
 
-    def dependencies_for_source_changed?(source, locked_source = source)
+    def dependencies_for_source_changed?(source, locked_source)
       deps_for_source = @dependencies.select {|s| s.source == source }
       locked_deps_for_source = locked_dependencies.select {|dep| dep.source == locked_source }
 
