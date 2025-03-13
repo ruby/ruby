@@ -719,6 +719,11 @@ flags:
       - name: REPEATED_PARAMETER
         comment: "a parameter name that has been repeated in the method signature"
     comment: Flags for parameter nodes.
+  - name: ParenthesesNodeFlags
+    values:
+      - name: MULTIPLE_STATEMENTS
+        comment: "parentheses that contain multiple potentially void statements"
+    comment: Flags for parentheses nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
@@ -3852,6 +3857,7 @@ nodes:
                 ^^^^^^^
           end
   - name: ParenthesesNode
+    flags: ParenthesesNodeFlags
     fields:
       - name: body
         type: node?
