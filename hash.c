@@ -3581,7 +3581,7 @@ rb_hash_to_h_block(VALUE hash)
  *
  *  With a block given, returns a new hash whose content is based on the block;
  *  the block is called with each entry's key and value;
- *  it block should return a 2-element array
+ *  the block should return a 2-element array
  *  containing the key and value to be included in the returned array:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
