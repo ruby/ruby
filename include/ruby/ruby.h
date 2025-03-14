@@ -439,6 +439,13 @@ __extension__({ \
     RUBY_WIN32_GLOBAL_SETUP \
     /* RUBY_GLOBAL_SETUP end */
 
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+int rb_wasm_rt_start(int (*)(int, char **), int, char **);
+# define ruby_start_main rb_wasm_rt_start
+#else
+# define ruby_start_main(main, argc, argv) main(argc, argv)
+#endif
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_RUBY_H */
