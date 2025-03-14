@@ -314,5 +314,17 @@ asan_get_fake_stack_extents(void *thread_fake_stack_handle, VALUE slot,
     return false;
 }
 
+extern const char ruby_asan_default_options[];
+
+#ifdef RUBY_ASAN_ENABLED
+/* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
+ * that even tests which fork ruby with a clean environment will run ASAN with the right
+ * settings */
+# undef RUBY__ASAN_DEFAULT_OPTIONS
+# define RUBY__ASAN_DEFAULT_OPTIONS \
+    RBIMPL_SYMBOL_EXPORT_BEGIN() \
+    const char * __asan_default_options(void) {return ruby_asan_default_options;} \
+    RBIMPL_SYMBOL_EXPORT_END()
+#endif
 
 #endif /* INTERNAL_SANITIZERS_H */
