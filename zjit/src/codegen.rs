@@ -2,7 +2,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir;
+use crate::hir::{self, CallInfo};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 
@@ -119,9 +119,11 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
     }
 
     let out_opnd = match insn {
+        Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::Param { idx } => gen_param(jit, asm, *idx)?,
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
+        Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, function.frame_state(*state))?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
@@ -167,8 +169,13 @@ fn gen_entry_prologue(jit: &JITState, asm: &mut Assembler) {
     // TODO: Support entry chain guard when ISEQ has_opt
 }
 
+/// Compile self in the current frame
+fn gen_putself() -> lir::Opnd {
+    Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
+}
+
 /// Compile a constant
-fn gen_const(val: VALUE) -> Opnd {
+fn gen_const(val: VALUE) -> lir::Opnd {
     // Just propagate the constant value and generate nothing
     Opnd::Value(val)
 }
@@ -193,6 +200,38 @@ fn gen_param(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> Optio
     };
 
     Some(local_opnd)
+}
+
+/// Compile a dynamic dispatch without block
+fn gen_send_without_block(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    call_info: &CallInfo,
+    cd: *const rb_call_data,
+    state: &FrameState,
+) -> Option<lir::Opnd> {
+    // Spill the virtual stack onto the stack. They need to be marked by GC and may be caller-saved registers.
+    // TODO: Avoid spilling operands that have been spilled before.
+    for (idx, &insn_id) in state.stack().enumerate() {
+        // Currently, we don't move the SP register. So it's equal to the base pointer.
+        let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
+        asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
+    }
+
+    // Save PC and SP
+    gen_save_pc(asm, state);
+    gen_save_sp(asm, state);
+
+    asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
+    unsafe extern "C" {
+        fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+    }
+    let ret = asm.ccall(
+        rb_vm_opt_send_without_block as *const u8,
+        vec![EC, CFP, (cd as usize).into()],
+    );
+
+    Some(ret)
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -310,6 +349,28 @@ fn gen_guard_type(asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: 
         unimplemented!("unsupported type: {guard_type}");
     }
     Some(val)
+}
+
+/// Save the incremented PC on the CFP.
+/// This is necessary when callees can raise or allocate.
+fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
+    let opcode: usize = state.get_opcode().try_into().unwrap();
+    let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
+
+    asm_comment!(asm, "save PC to CFP");
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc as *const u8));
+}
+
+/// Save the current SP on the CFP
+fn gen_save_sp(asm: &mut Assembler, state: &FrameState) {
+    // Update cfp->sp which will be read by the interpreter. We also have the SP register in JIT
+    // code, and ZJIT's codegen currently assumes the SP register doesn't move, e.g. gen_param().
+    // So we don't update the SP register here. We could update the SP register to avoid using
+    // an extra register for asm.lea(), but you'll need to manage the SP offset like YJIT does.
+    asm_comment!(asm, "save SP to CFP: {}", state.stack_size());
+    let sp_addr = asm.lea(Opnd::mem(64, SP, state.stack_size() as i32 * SIZEOF_VALUE_I32));
+    let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+    asm.mov(cfp_sp, sp_addr);
 }
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.

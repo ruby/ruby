@@ -40,6 +40,20 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_without_block
+    assert_compiles '[1, 2, 3]', %q{
+      def foo = 1
+      def bar(a) = a - 1
+      def baz(a, b) = a - b
+
+      def test1 = foo
+      def test2 = bar(3)
+      def test3 = baz(4, 1)
+
+      [test1, test2, test3]
+    }
+  end
+
   def test_opt_plus_const
     assert_compiles '3', %q{
       def test = 1 + 2

@@ -4,7 +4,7 @@
 use crate::{
     cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
-use std::collections::{HashMap, HashSet};
+use std::{collections::{HashMap, HashSet}, slice::Iter};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -73,7 +73,7 @@ impl std::fmt::Display for BranchEdge {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct CallInfo {
-    name: String,
+    pub method_name: String,
 }
 
 /// Invalidation reasons
@@ -184,9 +184,9 @@ pub enum Insn {
     //       or can we backtranslate the function pointer into a name string?
     CCall { cfun: *const u8, args: Vec<InsnId> },
 
-    // Send with dynamic dispatch
+    // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
-    Send { self_val: InsnId, call_info: CallInfo, args: Vec<InsnId> },
+    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: FrameStateId },
 
     // Control flow instructions
     Return { val: InsnId },
@@ -442,7 +442,13 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            Send { self_val, call_info, args } => Send { self_val: find!(*self_val), call_info: call_info.clone(), args: args.iter().map(|arg| find!(*arg)).collect() },
+            SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
+                self_val: find!(*self_val),
+                call_info: call_info.clone(),
+                cd: cd.clone(),
+                args: args.iter().map(|arg| find!(*arg)).collect(),
+                state: *state,
+            },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val } => ArrayDup { val: find!(*val) },
             CCall { cfun, args } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect() },
@@ -501,7 +507,7 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
-            Insn::Send { .. } => types::BasicObject,
+            Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::PutSelf => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
@@ -657,8 +663,8 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     Insn::Jump(target) => { write!(f, "Jump {target}")?; }
                     Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
-                    Insn::Send { self_val, call_info, args } => {
-                        write!(f, "Send {self_val}, :{}", call_info.name)?;
+                    Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
+                        write!(f, "Send {self_val}, :{}", call_info.method_name)?;
                         for arg in args {
                             write!(f, ", {arg}")?;
                         }
@@ -690,10 +696,17 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
 pub struct FrameState {
     iseq: IseqPtr,
     // Ruby bytecode instruction pointer
-    pub pc: VALUE,
+    pub pc: *const VALUE,
 
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
+}
+
+impl FrameState {
+    /// Get the opcode for the current instruction
+    pub fn get_opcode(&self) -> i32 {
+        unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) }
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -727,7 +740,17 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: VALUE(0), stack: vec![], locals: vec![] }
+        FrameState { iseq, pc: 0 as *const VALUE, stack: vec![], locals: vec![] }
+    }
+
+    /// Get the number of stack operands
+    pub fn stack_size(&self) -> usize {
+        self.stack.len()
+    }
+
+    /// Iterate over all stack slots
+    pub fn stack(&self) -> Iter<InsnId> {
+        self.stack.iter()
     }
 
     /// Push a stack operand
@@ -776,7 +799,7 @@ impl FrameState {
 
 impl std::fmt::Display for FrameState {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "FrameState {{ pc: {:?}, stack: ", self.pc.as_ptr::<u8>())?;
+        write!(f, "FrameState {{ pc: {:?}, stack: ", self.pc)?;
         write_vec(f, &self.stack)?;
         write!(f, ", locals: ")?;
         write_vec(f, &self.locals)?;
@@ -891,7 +914,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         while insn_idx < iseq_size {
             // Get the current pc and opcode
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
-            state.pc = unsafe { *pc };
+            state.pc = pc;
             let exit_state = fun.push_frame_state(state.clone());
             fun.push_insn(block, Insn::Snapshot { state: exit_state });
 
@@ -988,8 +1011,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_opt_nil_p => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let recv = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "nil?".into() }, args: vec![] }));
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_state }));
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -1021,9 +1045,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumAdd { left, right, state: exit_state }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "+".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "+".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
@@ -1032,9 +1057,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumSub { left, right, state: exit_state }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "-".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "-".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
@@ -1043,9 +1069,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumMult { left, right, state: exit_state }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "*".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "*".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
@@ -1054,9 +1081,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumDiv { left, right, state: exit_state }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "/".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "/".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
@@ -1065,9 +1093,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumMod { left, right, state: exit_state }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "%".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "%".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
 
@@ -1077,9 +1106,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumEq { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "==".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "==".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
@@ -1088,9 +1118,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "!=".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "!=".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
@@ -1099,9 +1130,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumLt { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
@@ -1110,9 +1142,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumLe { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<=".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
@@ -1121,9 +1154,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumGt { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
@@ -1132,21 +1166,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::FixnumGe { left, right }));
                     } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<=".into() }, args: vec![right] }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<=".into() }, cd, args: vec![right], state: exit_state }));
                     }
                 }
                 YARVINSN_opt_ltlt => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let right = state.stack_pop()?;
                     let left = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: left, call_info: CallInfo { name: "<<".into() }, args: vec![right] }));
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_state }));
                 }
                 YARVINSN_opt_aset => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let set = state.stack_pop()?;
                     let obj = state.stack_pop()?;
                     let recv = state.stack_pop()?;
-                    fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: "[]=".into() }, args: vec![obj, set] });
+                    fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_state });
                     state.stack_push(set);
                 }
 
@@ -1172,7 +1209,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { name: method_name }, args }));
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_state }));
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
