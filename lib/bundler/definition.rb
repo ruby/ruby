@@ -833,7 +833,7 @@ module Bundler
     end
 
     def dependencies_for_source_changed?(source, locked_source)
-      deps_for_source = @dependencies.select {|s| s.source == source }
+      deps_for_source = @dependencies.select {|dep| dep.source == source }
       locked_deps_for_source = locked_dependencies.select {|dep| dep.source == locked_source }
 
       deps_for_source.uniq.sort != locked_deps_for_source.sort
