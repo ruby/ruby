@@ -96,8 +96,6 @@ fn main() {
         // For testing
         .allowlist_function("ruby_init")
         .allowlist_function("ruby_init_stack")
-        .allowlist_function("ruby_options")
-        .allowlist_function("ruby_executable_node")
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
 
