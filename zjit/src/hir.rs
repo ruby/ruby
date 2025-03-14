@@ -1537,6 +1537,46 @@ mod tests {
     }
 
     #[test]
+    fn test_bignum() {
+        eval("def test = 999999999999999999999999999999999999");
+        assert_method_hir("test", "
+            bb0():
+              v1:Bignum[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              Return v1
+        ");
+    }
+
+    #[test]
+    fn test_flonum() {
+        eval("def test = 1.5");
+        assert_method_hir("test", "
+            bb0():
+              v1:Flonum[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              Return v1
+        ");
+    }
+
+    #[test]
+    fn test_heap_float() {
+        eval("def test = 1.7976931348623157e+308");
+        assert_method_hir("test", "
+            bb0():
+              v1:HeapFloat[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              Return v1
+        ");
+    }
+
+    #[test]
+    fn test_static_sym() {
+        eval("def test = :foo");
+        assert_method_hir("test", "
+            bb0():
+              v1:StaticSymbol[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              Return v1
+        ");
+    }
+
+    #[test]
     fn test_opt_plus() {
         eval("def test = 1+2");
         assert_method_hir("test", "
