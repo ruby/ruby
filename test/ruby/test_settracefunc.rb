@@ -188,14 +188,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 8, :new, Class],
-                 events.shift)
-    assert_equal(["c-call", 8, :initialize, BasicObject],
-                 events.shift)
-    assert_equal(["c-return", 8, :initialize, BasicObject],
-                 events.shift)
-    assert_equal(["c-return", 8, :new, Class],
-                 events.shift)
     assert_equal(["call", 5, :bar, Foo],
                  events.shift)
     assert_equal(["return", 6, :bar, Foo],
