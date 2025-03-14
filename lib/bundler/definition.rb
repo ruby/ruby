@@ -906,7 +906,7 @@ module Bundler
 
     def converge_path_source_to_gemspec_source(source)
       return source unless source.instance_of?(Source::Path)
-      gemspec_source = sources.path_sources.find {|s| s.is_a?(Source::Gemspec) && s.as_path_source == source }
+      gemspec_source = sources.path_sources.find {|s| s == source }
       gemspec_source || source
     end
 

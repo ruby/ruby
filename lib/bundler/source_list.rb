@@ -183,7 +183,7 @@ module Bundler
       end
 
       path = @path_sources.map do |source|
-        replacement_sources.find {|s| s == (source.is_a?(Source::Gemspec) ? source.as_path_source : source) } || source
+        replace_source(replacement_sources, source)
       end
 
       [rubygems, path, git, plugin]
