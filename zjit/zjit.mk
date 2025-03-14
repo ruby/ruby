@@ -101,11 +101,8 @@ ZJIT_BINDGEN_DIFF_OPTS =
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
 .PHONY: zjit-bindgen zjit-bindgen-show-unused
 zjit-bindgen: zjit.$(OBJEXT)
-	YJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
-	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(YJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
-
-check-zjit-bindgen-unused: yjit.$(OBJEXT)
-	RUST_LOG=warn YJIT_SRC_ROOT_PATH='$(top_srcdir)' $(CARGO) run --manifest-path '$(top_srcdir)/yjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) 2>&1 | (! grep "unused option: --allow")
+	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
+	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
 
 # We need `cargo nextest` for its one-process-per execution execution model
 # since we can only boot the VM once per process. Normal `cargo test`

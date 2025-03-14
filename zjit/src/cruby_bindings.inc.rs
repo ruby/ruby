@@ -1001,7 +1001,7 @@ unsafe extern "C" {
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_assert_cme_handle(handle: VALUE);
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
-    pub fn rb_yjit_vm_unlock(
+    pub fn rb_zjit_vm_unlock(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
@@ -1015,7 +1015,7 @@ unsafe extern "C" {
     pub fn rb_vm_ci_kwarg(ci: *const rb_callinfo) -> *const rb_callinfo_kwarg;
     pub fn rb_METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
     pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
-    pub fn rb_yjit_vm_lock_then_barrier(
+    pub fn rb_zjit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,

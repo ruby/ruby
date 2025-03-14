@@ -15,7 +15,6 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "vm_sync.h"
-#include "yjit.h"
 #include "vm_insnhelper.h"
 #include "probes.h"
 #include "probes_helper.h"
@@ -46,7 +45,7 @@ rb_zjit_get_page_size(void)
 
     return (uint32_t)page_size;
 #else
-#error "YJIT supports POSIX only for now"
+#error "ZJIT supports POSIX only for now"
 #endif
 }
 
@@ -195,7 +194,7 @@ rb_iseq_encoded_size(const rb_iseq_t *iseq)
 int
 rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    // YJIT should only use iseqs after AST to bytecode compilation
+    // ZJIT should only use iseqs after AST to bytecode compilation
     RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
@@ -544,7 +543,7 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
 // Release the VM lock. The lock level must point to the same integer used to
 // acquire the lock.
 void
-rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
+rb_zjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
 {
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
@@ -620,11 +619,11 @@ rb_yarv_class_of(VALUE obj)
 }
 
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
-// contend for the VM lock, putting them to sleep. YJIT uses this to evict
+// contend for the VM lock, putting them to sleep. ZJIT uses this to evict
 // threads running inside generated code so among other things, it can
 // safely change memory protection of regions housing generated code.
 void
-rb_yjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
+rb_zjit_vm_lock_then_barrier(unsigned int *recursive_lock_level, const char *file, int line)
 {
     rb_vm_lock_enter(recursive_lock_level, file, line);
     rb_vm_barrier();
