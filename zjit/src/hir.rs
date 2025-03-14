@@ -48,6 +48,7 @@ impl std::fmt::Display for VALUE {
             &Qnil => write!(f, "nil"),
             &Qtrue => write!(f, "true"),
             &Qfalse => write!(f, "false"),
+            _ if cfg!(test) => write!(f, "VALUE(0xffffffffffffffff)"),
             val => write!(f, "VALUE({:#X?})", val.as_ptr::<u8>()),
         }
     }
@@ -683,7 +684,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         // For tests, we want to check HIR snippets textually. Addresses change
                         // between runs, making tests fail. Instead, pick an arbitrary hex value to
                         // use as a "pointer" so we can check the rest of the HIR.
-                        let blockiseq = if cfg!(test) { "0xdeadbeef".into() } else { format!("{blockiseq:?}") };
+                        let blockiseq = if cfg!(test) { "0xffffffffffffffff".into() } else { format!("{blockiseq:?}") };
                         write!(f, "Send {self_val}, {blockiseq}, :{}", call_info.method_name)?;
                         for arg in args {
                             write!(f, ", {arg}")?;
@@ -1857,7 +1858,7 @@ mod tests {
         ");
         assert_method_hir("test",  "
             bb0(v0:BasicObject):
-              v3:BasicObject = Send v0, 0xdeadbeef, :each
+              v3:BasicObject = Send v0, 0xffffffffffffffff, :each
               Return v3
         ");
     }
