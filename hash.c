@@ -3590,21 +3590,22 @@ rb_hash_to_h_block(VALUE hash)
 
 /*
  *  call-seq:
- *    to_h -> self or new_hash
  *    to_h {|key, value| ... } -> new_hash
+ *    to_h -> self or new_hash
  *
- *  For an instance of +Hash+, returns +self+.
+ *  With a block given, returns a new hash whose content is based on the block;
+ *  the block is called with each entry's key and value;
+ *  the block should return a 2-element array
+ *  containing the key and value to be included in the returned array:
  *
- *  For a subclass of +Hash+, returns a new +Hash+
- *  containing the content of +self+.
- *
- *  When a block is given, returns a new +Hash+ object
- *  whose content is based on the block;
- *  the block should return a 2-element Array object
- *  specifying the key-value pair to be included in the returned Array:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.to_h {|key, value| [value, key] }
- *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
+ *    h.to_h {|key, value| [value, key] }
+ *    # => {0 => :foo, 1 => :bar, 2 => :baz}
+ *
+ *  With no block given, returns +self+ if +self+ is an instance of +Hash+;
+ *  if +self+ is a subclass of +Hash+, returns a new hash containing the content of +self+.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 
 static VALUE
