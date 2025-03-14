@@ -18,6 +18,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_failure
+    assert_raise(Socket::ResolutionError) do
+      t = TCPSocket.open(nil, nil)
+    ensure
+      t&.close
+    end
+
     # These addresses are chosen from TEST-NET-1, TEST-NET-2, and TEST-NET-3.
     # [RFC 5737]
     # They are chosen because probably they are not used as a host address.
