@@ -456,23 +456,9 @@ pub const VM_THROW_NO_ESCAPE_FLAG: ruby_vm_throw_flags = 32768;
 pub const VM_THROW_STATE_MASK: ruby_vm_throw_flags = 255;
 pub type ruby_vm_throw_flags = u32;
 #[repr(C)]
-pub struct iseq_inline_constant_cache_entry {
-    pub flags: VALUE,
-    pub value: VALUE,
-    pub _unused1: VALUE,
-    pub _unused2: VALUE,
-    pub ic_cref: *const rb_cref_t,
-}
-#[repr(C)]
 pub struct iseq_inline_constant_cache {
-    pub c: iseq_inline_constant_cache__bindgen_ty_1,
+    pub value: VALUE,
     pub tagged_segments: VALUE,
-}
-#[repr(C)]
-pub struct iseq_inline_constant_cache__bindgen_ty_1 {
-    pub ext: __BindgenUnionField<*mut iseq_inline_constant_cache_entry>,
-    pub value: __BindgenUnionField<VALUE>,
-    pub bindgen_union_field: u64,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1273,7 +1259,6 @@ extern "C" {
     pub fn rb_yjit_multi_ractor_p() -> bool;
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
-    pub fn rb_yjit_constcache_has_ext(ic: *const iseq_inline_constant_cache) -> bool;
     pub fn rb_yjit_constcache_value(ic: *const iseq_inline_constant_cache) -> VALUE;
     pub fn rb_yjit_constcache_segments(ic: *const iseq_inline_constant_cache) -> *const ID;
     pub fn rb_yjit_constcache_cref(ic: *const iseq_inline_constant_cache) -> *const rb_cref_t;

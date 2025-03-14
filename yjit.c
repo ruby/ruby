@@ -1069,12 +1069,6 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
     return IMEMO_TYPE_P(imemo, imemo_type);
 }
 
-bool
-rb_yjit_constcache_has_ext(const struct iseq_inline_constant_cache *ic)
-{
-    return vm_icc_has_ext(ic);
-}
-
 VALUE
 rb_yjit_constcache_value(const struct iseq_inline_constant_cache *ic)
 {
