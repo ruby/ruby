@@ -3198,40 +3198,91 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *    transform_keys {|key| ... } -> new_hash
- *    transform_keys(hash2) -> new_hash
- *    transform_keys(hash2) {|other_key| ...} -> new_hash
+ *    transform_keys {|old_key| ... } -> new_hash
+ *    transform_keys(other_hash) -> new_hash
+ *    transform_keys(other_hash) {|old_key| ...} -> new_hash
  *    transform_keys -> new_enumerator
  *
- *  Returns a new +Hash+ object; each entry has:
- *  * A key provided by the block.
- *  * The value from +self+.
+ *  With an argument, a block, or both given,
+ *  derives a new hash +new_hash+ from +self+, the argument, and/or the block;
+ *  all, some, or none of its keys may be different from those in +self+.
  *
- *  An optional hash argument can be provided to map keys to new keys.
- *  Any key not given will be mapped using the provided block,
- *  or remain the same if no block is given.
+ *  With a block given and no argument,
+ *  +new_hash+ has keys determined only by the block.
  *
- *  Transform keys:
+ *  For each key/value pair <tt>old_key/value</tt> in +self+, calls the block with +old_key+;
+ *  the block's return value becomes +new_key+;
+ *  sets <tt>new_hash[new_key] = value</tt>;
+ *  a duplicate key overwrites:
+ *
  *      h = {foo: 0, bar: 1, baz: 2}
- *      h1 = h.transform_keys {|key| key.to_s }
- *      h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *      h.transform_keys {|old_key| old_key.to_s }
+ *      # => {"foo" => 0, "bar" => 1, "baz" => 2}
+ *      h.transform_keys {|old_key| 'xxx' }
+ *      # => {"xxx" => 2}
  *
- *      h.transform_keys(foo: :bar, bar: :foo)
- *      #=> {bar: 0, foo: 1, baz: 2}
+ *  With argument +other_hash+ given and no block,
+ *  +new_hash+ may have new keys provided by +other_hash+
+ *  and unchanged keys provided by +self+.
  *
- *      h.transform_keys(foo: :hello, &:to_s)
- *      #=> {hello: 0, "bar" => 1, "baz" => 2}
+ *  For each key/value pair <tt>old_key/old_value</tt> in +self+,
+ *  looks for key +old_key+ in +other_hash+:
  *
- *  Overwrites values for duplicate keys:
+ *  - If +old_key+ is found, its value <tt>other_hash[old_key]</tt> is taken as +new_key+;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ, bar: :BAR, foo: :FOO)
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *      h.transform_keys(baz: :FOO, bar: :FOO, foo: :FOO)
+ *      # => {FOO: 2}
+ *
+ *  - If +old_key+ is not found,
+ *    sets <tt>new_hash[old_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys({})
+ *      # => {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :foo)
+ *      # => {foo: 2, bar: 1}
+ *
+ *  Unused keys in +other_hash+ are ignored:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys {|key| :bat }
- *    h1 # => {bat: 2}
+ *    h.transform_keys(bat: 3)
+ *    # => {foo: 0, bar: 1, baz: 2}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_keys # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:transform_keys>
- *    h1 = e.each { |key| key.to_s }
- *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *  With both argument +other_hash+ and a block given,
+ *  +new_hash+ has new keys specified by +other_hash+ or by the block,
+ *  and unchanged keys provided by +self+.
+ *
+ *  For each pair +old_key+ and +value+ in +self+:
+ *
+ *  - If +other_hash+ has key +old_key+ (with value +new_key+),
+ *    does not call the block for that key;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ, bar: :BAR, foo: :FOO) {|key| fail 'Not called' }
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *
+ *  - If +other_hash+ does not have key +old_key+,
+ *    calls the block with +old_key+ and takes its return value as +new_key+;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ) {|key| key.to_s.reverse }
+ *      # => {"oof" => 0, "rab" => 1, BAZ: 2}
+ *      h.transform_keys(baz: :BAZ) {|key| 'ook' }
+ *      # => {"ook" => 1, BAZ: 2}
+ *
+ *  With no argument and no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
