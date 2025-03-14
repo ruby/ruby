@@ -560,10 +560,6 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, :nothing],
-     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, :nothing],
-     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, nil, xyzzy],
      [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
      [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
      [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
@@ -706,10 +702,6 @@ CODE
      [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
-     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
      [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
      [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
      [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
@@ -1987,7 +1979,7 @@ CODE
     TracePoint.new(:c_call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[1]
+    assert_equal [:c_call, :itself, :initialize], events[0]
     events.clear
 
     o = Class.new{
