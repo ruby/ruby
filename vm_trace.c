@@ -694,6 +694,11 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
 {
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
 
+    while (cfp && rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
+    }
+
     if (cfp) {
         const rb_iseq_t *iseq = cfp->iseq;
         *pathp = rb_iseq_path(iseq);
@@ -745,7 +750,8 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (self && (filename != Qnil) &&
         event != RUBY_EVENT_C_CALL &&
         event != RUBY_EVENT_C_RETURN &&
-        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq)) &&
+        !rb_iseq_attr_p(ec->cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
         argv[4] = rb_binding_new();
     }
     argv[5] = klass ? klass : Qnil;
@@ -986,7 +992,8 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     }
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
-    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
+    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq) &&
+            !rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
         return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {
