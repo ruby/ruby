@@ -1784,7 +1784,7 @@ CODE
       Bug10724.new
     }
 
-    assert_equal([:call, :call, :return, :return], evs)
+    assert_equal([:call, :call, :call, :return, :return, :return], evs)
   end
 
   require 'fiber'
