@@ -2782,7 +2782,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
-%type <node_args> block_param opt_block_param block_param_def
+%type <node_args> block_param opt_block_param_def block_param_def opt_block_param
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
 %type <locations_lambda_body> lambda_body
@@ -5038,21 +5038,14 @@ block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(blo
                     }
                 ;
 
-opt_block_param	: none
-                | block_param_def
-                    {
-                        p->command_start = TRUE;
-                    }
-                ;
+opt_block_param_def	: none
+                    | block_param_def
+                        {
+                            p->command_start = TRUE;
+                        }
+                    ;
 
-block_param_def	: '|' opt_bv_decl '|'
-                    {
-                        p->max_numparam = ORDINAL_PARAM;
-                        p->ctxt.in_argdef = 0;
-                        $$ = 0;
-                    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), $:2) %*/
-                    }
-                | '|' block_param opt_bv_decl '|'
+block_param_def	: '|' opt_block_param opt_bv_decl '|'
                     {
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
@@ -5061,6 +5054,13 @@ block_param_def	: '|' opt_bv_decl '|'
                     }
                 ;
 
+opt_block_param	: /* none */
+                    {
+                        $$ = 0;
+                    /*% ripper: params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil) %*/
+                    }
+                | block_param
+                ;
 
 opt_bv_decl	: '\n'?
                     {
@@ -5298,7 +5298,7 @@ brace_block	: '{' brace_body '}'
 
 brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] compstmt(stmts)
+                  opt_block_param_def[args] compstmt(stmts)
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
@@ -5318,7 +5318,7 @@ do_body 	:   {
                         CMDARG_PUSH(0);
                     }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] bodystmt
+                  opt_block_param_def[args] bodystmt
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
