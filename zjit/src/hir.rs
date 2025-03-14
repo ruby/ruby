@@ -927,6 +927,36 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
 
+            // Push a FixnumXxx instruction if profiled operand types are fixnums
+            macro_rules! push_fixnum_insn {
+                // Without FrameState
+                ($insn:ident, $method_name:expr, $bop:ident) => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
+                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right }));
+                    } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_state }));
+                    }
+                };
+                // With FrameState
+                ($insn:ident, $method_name:expr, $bop:ident, $state:expr) => {
+                    if payload.have_two_fixnums(current_insn_idx as usize) {
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
+                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
+                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right, state: $state }));
+                    } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_state }));
+                    }
+                };
+            }
+
             match opcode {
                 YARVINSN_nop => {},
                 YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
@@ -1040,137 +1070,38 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_PLUS }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumAdd { left, right, state: exit_state }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "+".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, exit_state);
                 }
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MINUS }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumSub { left, right, state: exit_state }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "-".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, exit_state);
                 }
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MULT }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumMult { left, right, state: exit_state }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "*".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, exit_state);
                 }
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_DIV }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumDiv { left, right, state: exit_state }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "/".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, exit_state);
                 }
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_MOD }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumMod { left, right, state: exit_state }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "%".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, exit_state);
                 }
 
                 YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumEq { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "==".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumEq, "==", BOP_EQ);
                 }
                 YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_NEQ }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumNeq { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "!=".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumNeq, "!=", BOP_NEQ);
                 }
                 YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LT }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumLt { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumLt, "<", BOP_LT);
                 }
                 YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_LE }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumLe { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<=".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumLe, "<=", BOP_LE);
                 }
                 YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GT }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumGt { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumGt, ">", BOP_GT);
                 }
                 YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_GE }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::FixnumGe { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<=".into() }, cd, args: vec![right], state: exit_state }));
-                    }
+                    push_fixnum_insn!(FixnumGe, ">==", BOP_GE);
                 }
                 YARVINSN_opt_ltlt => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
