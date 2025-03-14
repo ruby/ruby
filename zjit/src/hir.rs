@@ -48,6 +48,9 @@ impl std::fmt::Display for VALUE {
             &Qnil => write!(f, "nil"),
             &Qtrue => write!(f, "true"),
             &Qfalse => write!(f, "false"),
+            // For tests, we want to check HIR snippets textually. Addresses change between runs,
+            // making tests fail. Instead, pick an arbitrary hex value to use as a "pointer" so we
+            // can check the rest of the HIR.
             _ if cfg!(test) => write!(f, "VALUE(0xffffffffffffffff)"),
             val => write!(f, "VALUE({:#X?})", val.as_ptr::<u8>()),
         }
@@ -1496,6 +1499,40 @@ mod tests {
             bb0():
               v1:Fixnum[123] = Const Value(123)
               Return v1
+        ");
+    }
+
+    #[test]
+    fn test_new_array() {
+        eval("def test = []");
+        assert_method_hir("test", "
+            bb0():
+              v1:ArrayExact = NewArray 0
+              Return v1
+        ");
+    }
+
+    #[test]
+    fn test_array_dup() {
+        eval("def test = [1, 2, 3]");
+        assert_method_hir("test", "
+            bb0():
+              v1:ArrayExact[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v2:ArrayExact = ArrayDup v1
+              Return v2
+        ");
+    }
+
+    // TODO(max): Test newhash when we have it
+
+    #[test]
+    fn test_string_copy() {
+        eval("def test = \"hello\"");
+        assert_method_hir("test", "
+            bb0():
+              v1:StringExact[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v2:StringExact = StringCopy { val: InsnId(1) }
+              Return v2
         ");
     }
 

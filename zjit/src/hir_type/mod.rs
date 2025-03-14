@@ -1,5 +1,5 @@
 #![allow(non_upper_case_globals)]
-use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE};
+use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass};
 use crate::cruby::ClassRelationship;
 
@@ -118,6 +118,21 @@ impl std::fmt::Display for Type {
     }
 }
 
+fn is_array_exact(val: VALUE) -> bool {
+    // Prism hides array values in the constant pool from the GC, so class_of will return 0
+    val.class_of() == unsafe { rb_cArray } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_ARRAY)
+}
+
+fn is_string_exact(val: VALUE) -> bool {
+    // Prism hides string values in the constant pool from the GC, so class_of will return 0
+    val.class_of() == unsafe { rb_cString } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_STRING)
+}
+
+fn is_hash_exact(val: VALUE) -> bool {
+    // Prism hides hash values in the constant pool from the GC, so class_of will return 0
+    val.class_of() == unsafe { rb_cHash } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_HASH)
+}
+
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -153,13 +168,13 @@ impl Type {
         else if val.class_of() == unsafe { rb_cSymbol } {
             Type { bits: bits::DynamicSymbol, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cArray } {
+        else if is_array_exact(val) {
             Type { bits: bits::ArrayExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cHash } {
+        else if is_hash_exact(val) {
             Type { bits: bits::HashExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cString } {
+        else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cObject } {
