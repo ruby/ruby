@@ -291,8 +291,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         // IC Entries
         for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
             IC ic = (IC)is_entries;
-            // ic->ext is either an IMEMO/constcache or the cached value.
-            rb_gc_mark_and_move_ptr(&ic->c.ext);
+            rb_gc_mark_and_move(&ic->value);
         }
     }
 

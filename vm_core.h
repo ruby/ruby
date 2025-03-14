@@ -254,8 +254,7 @@ union ic_serial_entry {
 };
 
 enum iseq_inline_constant_cache_flags {
-    CONST_CACHE_HAS_EXT = 0x1,
-    CONST_CACHE_SHAREABLE = 0x2,
+    CONST_CACHE_SHAREABLE = 0x1,
     CONST_CACHE_FLAGS_MASK = 0x3,
 };
 
@@ -273,11 +272,7 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
                sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
-    union {
-        struct iseq_inline_constant_cache_entry *ext;
-        VALUE value; // value is Qundef if the cache hasn't been set
-    } c;
-
+    VALUE value; // value is Qundef if the cache hasn't been set
     VALUE tagged_segments;
 };
 
@@ -287,23 +282,11 @@ vm_icc_flags(const struct iseq_inline_constant_cache *cc)
     return cc->tagged_segments;
 }
 
-static inline bool
-vm_icc_has_ext(const struct iseq_inline_constant_cache *cc)
-{
-    return vm_icc_flags(cc) & CONST_CACHE_HAS_EXT;
-}
-
-static inline bool
-vm_icc_is_set(const struct iseq_inline_constant_cache *cc)
-{
-    return !UNDEF_P(cc->c.value);
-}
-
 static inline void
 vm_icc_reset(struct iseq_inline_constant_cache *cc)
 {
-    if (!UNDEF_P(cc->c.value)) {
-        cc->c.value = Qundef;
+    if (!UNDEF_P(cc->value)) {
+        cc->value = Qundef;
         cc->tagged_segments &= ~CONST_CACHE_FLAGS_MASK;
     }
 }
@@ -311,7 +294,7 @@ vm_icc_reset(struct iseq_inline_constant_cache *cc)
 static inline void
 vm_icc_init(struct iseq_inline_constant_cache *cc, const ID *segments)
 {
-    cc->c.value = Qundef;
+    cc->value = Qundef;
     cc->tagged_segments = (VALUE)segments;
 }
 
@@ -341,21 +324,25 @@ vm_icc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flags)
 static inline VALUE
 vm_icc_value(const struct iseq_inline_constant_cache *cc)
 {
-    if (vm_icc_has_ext(cc)) {
-        return cc->c.ext->value;
+    VALUE val = cc->value;
+    if (SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO)) {
+        return val;
     }
     else {
-        return cc->c.value;
+        return ((struct iseq_inline_constant_cache_entry *)val)->value;
     }
 }
 
 static inline const rb_cref_t *
 vm_icc_cref(const struct iseq_inline_constant_cache *cc)
 {
-    if (vm_icc_has_ext(cc)) {
-        return cc->c.ext->ic_cref;
+    VALUE val = cc->value;
+    if (SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO)) {
+        return NULL;
     }
-    return NULL;
+    else {
+        return ((struct iseq_inline_constant_cache_entry *)val)->ic_cref;
+    }
 }
 
 struct iseq_inline_iv_cache_entry {
