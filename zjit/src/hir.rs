@@ -1519,13 +1519,6 @@ mod tests {
     }
 
     #[test]
-    fn boot_vm() {
-        let program = "nil.itself";
-        let iseq = compile_to_iseq(program);
-        assert!(iseq_to_hir(iseq).is_ok());
-    }
-
-    #[test]
     fn test_putobject() {
         eval("def test = 123");
         assert_method_hir("test", "

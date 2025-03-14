@@ -904,9 +904,29 @@ pub mod test_utils {
     fn boot_rubyvm() {
         // Boot the VM
         unsafe {
+            // TODO(alan): this init_stack call is incorrect. It sets the stack bottom, but
+            // when we return from this function will be be deeper in the stack.
+            // The callback for with_rubyvm() should run on a frame higher than this frame
+            // so the GC scans all the VALUEs on the stack.
+            // Consequently with_rubyvm() can only be used once per process, i.e. you can't
+            // boot and then run a few callbacks, because that risks putting VALUE outside
+            // the marked stack memory range.
+            //
+            // Need to also address the ergnomic issues addressed by
+            // <https://github.com/Shopify/zjit/pull/37>, though
             let mut var: VALUE = Qnil;
             ruby_init_stack(&mut var as *mut VALUE as *mut _);
             ruby_init();
+
+            // Pass command line options so the VM loads core library methods defined in
+            // ruby such as from `kernel.rb`.
+            // We drive ZJIT manually in tests, so disable heuristic compilation triggers.
+            // (Also, pass this in case we offer a -DFORCE_ENABLE_ZJIT option which turns
+            // ZJIT on by default.)
+            let cmdline = [c"--disable-all".as_ptr().cast_mut(), c"-e0".as_ptr().cast_mut()];
+            let options_ret = ruby_options(2, cmdline.as_ptr().cast_mut());
+            assert_ne!(0, ruby_executable_node(options_ret, std::ptr::null_mut()), "command-line parsing failed");
+
             crate::cruby::ids::init(); // for ID! usages in tests
         }
 
@@ -1041,6 +1061,19 @@ pub mod test_utils {
             rb_funcallv(rb_cISeq, ID!(compile), 1, &program_str)
         }
     }
+
+    #[test]
+    fn boot_vm() {
+        // Test that we loaded kernel.rb and have Kernel#class
+        eval("1.class");
+    }
+
+    #[test]
+    #[should_panic]
+    fn ruby_exception_causes_panic() {
+        eval("raise");
+    }
+
 }
 #[cfg(test)]
 pub use test_utils::*;

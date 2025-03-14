@@ -791,6 +791,14 @@ unsafe extern "C" {
     pub static mut rb_cThread: VALUE;
     pub static mut rb_cTrueClass: VALUE;
     pub fn ruby_init();
+    pub fn ruby_options(
+        argc: ::std::os::raw::c_int,
+        argv: *mut *mut ::std::os::raw::c_char,
+    ) -> *mut ::std::os::raw::c_void;
+    pub fn ruby_executable_node(
+        n: *mut ::std::os::raw::c_void,
+        status: *mut ::std::os::raw::c_int,
+    ) -> ::std::os::raw::c_int;
     pub fn ruby_init_stack(addr: *mut ::std::os::raw::c_void);
     pub fn rb_define_class(name: *const ::std::os::raw::c_char, super_: VALUE) -> VALUE;
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
