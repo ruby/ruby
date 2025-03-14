@@ -95,18 +95,10 @@ impl From<&Opnd> for A64Opnd {
 /// more than necessary when other_cb jumps from a position early in the page.
 /// This invalidates a small range of cb twice, but we accept the small cost.
 fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
-    /*
-    #[cfg(not(test))]
     let start = cb.get_write_ptr();
-    */
     emit_jmp_ptr(cb, dst_ptr, true);
-    /*
-    #[cfg(not(test))]
-    {
-        let end = cb.get_write_ptr();
-        unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
-    }
-    */
+    let end = cb.get_write_ptr();
+    unsafe { rb_zjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
@@ -1357,14 +1349,7 @@ impl Assembler
             //cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
-            // It should invalidate only the code ranges of the current cb because the code
-            // ranges of the other cb might have a memory region that is still PROT_NONE.
-            //#[cfg(not(test))]
-            //cb.without_page_end_reserve(|cb| {
-            //    for (start, end) in cb.writable_addrs(start_ptr, cb.get_write_ptr()) {
-            //        unsafe { rb_yjit_icache_invalidate(start as _, end as _) };
-            //    }
-            //});
+            unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
             Some((start_ptr, gc_offsets))
         } else {

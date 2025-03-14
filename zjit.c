@@ -582,6 +582,21 @@ rb_zjit_mark_unused(void *mem_block, uint32_t mem_size)
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
 }
 
+// Invalidate icache for arm64.
+// `start` is inclusive and `end` is exclusive.
+void
+rb_zjit_icache_invalidate(void *start, void *end)
+{
+    // Clear/invalidate the instruction cache. Compiles to nothing on x86_64
+    // but required on ARM before running freshly written code.
+    // On Darwin it's the same as calling sys_icache_invalidate().
+#ifdef __GNUC__
+    __builtin___clear_cache(start, end);
+#elif defined(__aarch64__)
+#error No instruction cache clear available with this compiler on Aarch64!
+#endif
+}
+
 unsigned int
 rb_vm_ci_argc(const struct rb_callinfo *ci)
 {
