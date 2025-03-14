@@ -426,6 +426,14 @@ __extension__({ \
 # include "ruby/backward.h"
 #endif
 
+#ifndef RUBY__ASAN_DEFAULT_OPTIONS
+# define RUBY__ASAN_DEFAULT_OPTIONS
+#endif
+
+#define RUBY_GLOBAL_SETUP \
+    RUBY__ASAN_DEFAULT_OPTIONS \
+    /* RUBY_GLOBAL_SETUP end */
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_RUBY_H */

@@ -3188,3 +3188,9 @@ ruby_sysinit(int *argc, char ***argv)
     }
     fill_standard_fds();
 }
+
+#ifdef RUBY_ASAN_ENABLED
+RUBY_SYMBOL_EXPORT_BEGIN
+const char ruby_asan_default_options[] = "use_sigaltstack=0:detect_leaks=0";
+RUBY_SYMBOL_EXPORT_END
+#endif

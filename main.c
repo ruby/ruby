@@ -32,6 +32,8 @@
 # undef RUBY_DEBUG_ENV
 #endif
 
+RUBY_GLOBAL_SETUP
+
 static int
 rb_main(int argc, char **argv)
 {
@@ -64,16 +66,3 @@ main(int argc, char **argv)
     ruby_sysinit(&argc, &argv);
     return rb_main(argc, argv);
 }
-
-#ifdef RUBY_ASAN_ENABLED
-/* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
- * that even tests which fork ruby with a clean environment will run ASAN with the right
- * settings */
-RUBY_SYMBOL_EXPORT_BEGIN
-const char *
-__asan_default_options(void)
-{
-    return "use_sigaltstack=0:detect_leaks=0";
-}
-RUBY_SYMBOL_EXPORT_END
-#endif
