@@ -2561,7 +2561,7 @@ range_overlap(VALUE range, VALUE other)
         /* if both begin values are equal, no more comparisons needed */
         if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
     }
-    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg)) {
+    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg) && !NIL_P(other_end)) {
         VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
         return RBOOL(!NIL_P(cmp));
     }
