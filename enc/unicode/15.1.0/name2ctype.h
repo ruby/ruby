@@ -43,7 +43,7 @@ static const OnigCodePoint CR_NEWLINE[] = {
 
 /* 'Alpha': [[:Alpha:]] */
 static const OnigCodePoint CR_Alpha[] = {
-	732,
+	733,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -773,6 +773,7 @@ static const OnigCodePoint CR_Alpha[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -869,7 +870,7 @@ static const OnigCodePoint CR_Digit[] = {
 
 /* 'Graph': [[:Graph:]] */
 static const OnigCodePoint CR_Graph[] = {
-	712,
+	713,
 	0x0021, 0x007e,
 	0x00a1, 0x0377,
 	0x037a, 0x037f,
@@ -1144,14 +1145,14 @@ static const OnigCodePoint CR_Graph[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
+	0x2ff0, 0x2fff,
 	0x3001, 0x303f,
 	0x3041, 0x3096,
 	0x3099, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x3190, 0x31e3,
-	0x31f0, 0x321e,
+	0x31ef, 0x321e,
 	0x3220, 0xa48c,
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
@@ -1574,6 +1575,7 @@ static const OnigCodePoint CR_Graph[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -2534,14 +2536,13 @@ static const OnigCodePoint CR_Print[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
-	0x3000, 0x303f,
+	0x2ff0, 0x303f,
 	0x3041, 0x3096,
 	0x3099, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x3190, 0x31e3,
-	0x31f0, 0x321e,
+	0x31ef, 0x321e,
 	0x3220, 0xa48c,
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
@@ -2964,6 +2965,7 @@ static const OnigCodePoint CR_Print[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -3846,7 +3848,7 @@ static const OnigCodePoint CR_XDigit[] = {
 
 /* 'Word': [[:Word:]] */
 static const OnigCodePoint CR_Word[] = {
-	770,
+	771,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -4613,6 +4615,7 @@ static const OnigCodePoint CR_Word[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -4621,7 +4624,7 @@ static const OnigCodePoint CR_Word[] = {
 
 /* 'Alnum': [[:Alnum:]] */
 static const OnigCodePoint CR_Alnum[] = {
-	772,
+	773,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
@@ -5391,6 +5394,7 @@ static const OnigCodePoint CR_Alnum[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -5877,14 +5881,13 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
-	0x3000, 0x303f,
+	0x2ff0, 0x303f,
 	0x3041, 0x3096,
 	0x3099, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x3190, 0x31e3,
-	0x31f0, 0x321e,
+	0x31ef, 0x321e,
 	0x3220, 0xa48c,
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
@@ -6307,6 +6310,7 @@ static const OnigCodePoint CR_Assigned[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -6597,13 +6601,12 @@ static const OnigCodePoint CR_C[] = {
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
-	0x2ffc, 0x2fff,
 	0x3040, 0x3040,
 	0x3097, 0x3098,
 	0x3100, 0x3104,
 	0x3130, 0x3130,
 	0x318f, 0x318f,
-	0x31e4, 0x31ef,
+	0x31e4, 0x31ee,
 	0x321f, 0x321f,
 	0xa48d, 0xa48f,
 	0xa4c7, 0xa4cf,
@@ -7027,7 +7030,8 @@ static const OnigCodePoint CR_C[] = {
 	0x2b73a, 0x2b73f,
 	0x2b81e, 0x2b81f,
 	0x2cea2, 0x2ceaf,
-	0x2ebe1, 0x2f7ff,
+	0x2ebe1, 0x2ebef,
+	0x2ee5e, 0x2f7ff,
 	0x2fa1e, 0x2ffff,
 	0x3134b, 0x3134f,
 	0x323b0, 0xe00ff,
@@ -7335,13 +7339,12 @@ static const OnigCodePoint CR_Cn[] = {
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
-	0x2ffc, 0x2fff,
 	0x3040, 0x3040,
 	0x3097, 0x3098,
 	0x3100, 0x3104,
 	0x3130, 0x3130,
 	0x318f, 0x318f,
-	0x31e4, 0x31ef,
+	0x31e4, 0x31ee,
 	0x321f, 0x321f,
 	0xa48d, 0xa48f,
 	0xa4c7, 0xa4cf,
@@ -7764,7 +7767,8 @@ static const OnigCodePoint CR_Cn[] = {
 	0x2b73a, 0x2b73f,
 	0x2b81e, 0x2b81f,
 	0x2cea2, 0x2ceaf,
-	0x2ebe1, 0x2f7ff,
+	0x2ebe1, 0x2ebef,
+	0x2ee5e, 0x2f7ff,
 	0x2fa1e, 0x2ffff,
 	0x3134b, 0x3134f,
 	0x323b0, 0xe0000,
@@ -7791,7 +7795,7 @@ static const OnigCodePoint CR_Cs[] = {
 
 /* 'L': Major Category */
 static const OnigCodePoint CR_L[] = {
-	659,
+	660,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -8448,6 +8452,7 @@ static const OnigCodePoint CR_L[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -9342,7 +9347,7 @@ static const OnigCodePoint CR_Lm[] = {
 
 /* 'Lo': General Category */
 static const OnigCodePoint CR_Lo[] = {
-	510,
+	511,
 	0x00aa, 0x00aa,
 	0x00ba, 0x00ba,
 	0x01bb, 0x01bb,
@@ -9850,6 +9855,7 @@ static const OnigCodePoint CR_Lo[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -12051,7 +12057,7 @@ static const OnigCodePoint CR_Ps[] = {
 
 /* 'S': Major Category */
 static const OnigCodePoint CR_S[] = {
-	232,
+	233,
 	0x0024, 0x0024,
 	0x002b, 0x002b,
 	0x003c, 0x003e,
@@ -12159,7 +12165,7 @@ static const OnigCodePoint CR_S[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
+	0x2ff0, 0x2fff,
 	0x3004, 0x3004,
 	0x3012, 0x3013,
 	0x3020, 0x3020,
@@ -12169,6 +12175,7 @@ static const OnigCodePoint CR_S[] = {
 	0x3190, 0x3191,
 	0x3196, 0x319f,
 	0x31c0, 0x31e3,
+	0x31ef, 0x31ef,
 	0x3200, 0x321e,
 	0x322a, 0x3247,
 	0x3250, 0x3250,
@@ -12419,7 +12426,7 @@ static const OnigCodePoint CR_Sm[] = {
 
 /* 'So': General Category */
 static const OnigCodePoint CR_So[] = {
-	184,
+	185,
 	0x00a6, 0x00a6,
 	0x00a9, 0x00a9,
 	0x00ae, 0x00ae,
@@ -12506,7 +12513,7 @@ static const OnigCodePoint CR_So[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
+	0x2ff0, 0x2fff,
 	0x3004, 0x3004,
 	0x3012, 0x3013,
 	0x3020, 0x3020,
@@ -12515,6 +12522,7 @@ static const OnigCodePoint CR_So[] = {
 	0x3190, 0x3191,
 	0x3196, 0x319f,
 	0x31c0, 0x31e3,
+	0x31ef, 0x31ef,
 	0x3200, 0x321e,
 	0x322a, 0x3247,
 	0x3250, 0x3250,
@@ -16041,7 +16049,7 @@ static const OnigCodePoint CR_Changes_When_Casemapped[] = {
 
 /* 'ID_Start': Derived Property */
 static const OnigCodePoint CR_ID_Start[] = {
-	659,
+	660,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -16698,6 +16706,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -16705,7 +16714,7 @@ static const OnigCodePoint CR_ID_Start[] = {
 
 /* 'ID_Continue': Derived Property */
 static const OnigCodePoint CR_ID_Continue[] = {
-	768,
+	769,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -17006,6 +17015,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x1fe0, 0x1fec,
 	0x1ff2, 0x1ff4,
 	0x1ff6, 0x1ffc,
+	0x200c, 0x200d,
 	0x203f, 0x2040,
 	0x2054, 0x2054,
 	0x2071, 0x2071,
@@ -17050,8 +17060,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x3038, 0x303c,
 	0x3041, 0x3096,
 	0x3099, 0x309f,
-	0x30a1, 0x30fa,
-	0x30fc, 0x30ff,
+	0x30a1, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x31a0, 0x31bf,
@@ -17129,7 +17138,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0xff21, 0xff3a,
 	0xff3f, 0xff3f,
 	0xff41, 0xff5a,
-	0xff66, 0xffbe,
+	0xff65, 0xffbe,
 	0xffc2, 0xffc7,
 	0xffca, 0xffcf,
 	0xffd2, 0xffd7,
@@ -17470,6 +17479,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -17478,7 +17488,7 @@ static const OnigCodePoint CR_ID_Continue[] = {
 
 /* 'XID_Start': Derived Property */
 static const OnigCodePoint CR_XID_Start[] = {
-	666,
+	667,
 	0x0041, 0x005a,
 	0x0061, 0x007a,
 	0x00aa, 0x00aa,
@@ -18142,6 +18152,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -18149,7 +18160,7 @@ static const OnigCodePoint CR_XID_Start[] = {
 
 /* 'XID_Continue': Derived Property */
 static const OnigCodePoint CR_XID_Continue[] = {
-	775,
+	776,
 	0x0030, 0x0039,
 	0x0041, 0x005a,
 	0x005f, 0x005f,
@@ -18450,6 +18461,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x1fe0, 0x1fec,
 	0x1ff2, 0x1ff4,
 	0x1ff6, 0x1ffc,
+	0x200c, 0x200d,
 	0x203f, 0x2040,
 	0x2054, 0x2054,
 	0x2071, 0x2071,
@@ -18495,8 +18507,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x3041, 0x3096,
 	0x3099, 0x309a,
 	0x309d, 0x309f,
-	0x30a1, 0x30fa,
-	0x30fc, 0x30ff,
+	0x30a1, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x31a0, 0x31bf,
@@ -18580,7 +18591,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0xff21, 0xff3a,
 	0xff3f, 0xff3f,
 	0xff41, 0xff5a,
-	0xff66, 0xffbe,
+	0xff65, 0xffbe,
 	0xffc2, 0xffc7,
 	0xffca, 0xffcf,
 	0xffd2, 0xffd7,
@@ -18921,6 +18932,7 @@ static const OnigCodePoint CR_XID_Continue[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -19672,15 +19684,14 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
-	0x2ff0, 0x2ffb,
-	0x3000, 0x3029,
+	0x2ff0, 0x3029,
 	0x3030, 0x303f,
 	0x3041, 0x3096,
 	0x309b, 0x30ff,
 	0x3105, 0x312f,
 	0x3131, 0x318e,
 	0x3190, 0x31e3,
-	0x31f0, 0x321e,
+	0x31ef, 0x321e,
 	0x3220, 0xa48c,
 	0xa490, 0xa4c6,
 	0xa4d0, 0xa62b,
@@ -20192,6 +20203,7 @@ static const OnigCodePoint CR_Grapheme_Base[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -20258,6 +20270,222 @@ static const OnigCodePoint CR_Grapheme_Link[] = {
 	0x11f41, 0x11f42,
 }; /* CR_Grapheme_Link */
 
+/* 'InCB_Linker': Derived Property */
+static const OnigCodePoint CR_InCB_Linker[] = {
+	6,
+	0x094d, 0x094d,
+	0x09cd, 0x09cd,
+	0x0acd, 0x0acd,
+	0x0b4d, 0x0b4d,
+	0x0c4d, 0x0c4d,
+	0x0d4d, 0x0d4d,
+}; /* CR_InCB_Linker */
+
+/* 'InCB_Consonant': Derived Property */
+static const OnigCodePoint CR_InCB_Consonant[] = {
+	26,
+	0x0915, 0x0939,
+	0x0958, 0x095f,
+	0x0978, 0x097f,
+	0x0995, 0x09a8,
+	0x09aa, 0x09b0,
+	0x09b2, 0x09b2,
+	0x09b6, 0x09b9,
+	0x09dc, 0x09dd,
+	0x09df, 0x09df,
+	0x09f0, 0x09f1,
+	0x0a95, 0x0aa8,
+	0x0aaa, 0x0ab0,
+	0x0ab2, 0x0ab3,
+	0x0ab5, 0x0ab9,
+	0x0af9, 0x0af9,
+	0x0b15, 0x0b28,
+	0x0b2a, 0x0b30,
+	0x0b32, 0x0b33,
+	0x0b35, 0x0b39,
+	0x0b5c, 0x0b5d,
+	0x0b5f, 0x0b5f,
+	0x0b71, 0x0b71,
+	0x0c15, 0x0c28,
+	0x0c2a, 0x0c39,
+	0x0c58, 0x0c5a,
+	0x0d15, 0x0d3a,
+}; /* CR_InCB_Consonant */
+
+/* 'InCB_Extend': Derived Property */
+static const OnigCodePoint CR_InCB_Extend[] = {
+	169,
+	0x0300, 0x034e,
+	0x0350, 0x036f,
+	0x0483, 0x0487,
+	0x0591, 0x05bd,
+	0x05bf, 0x05bf,
+	0x05c1, 0x05c2,
+	0x05c4, 0x05c5,
+	0x05c7, 0x05c7,
+	0x0610, 0x061a,
+	0x064b, 0x065f,
+	0x0670, 0x0670,
+	0x06d6, 0x06dc,
+	0x06df, 0x06e4,
+	0x06e7, 0x06e8,
+	0x06ea, 0x06ed,
+	0x0711, 0x0711,
+	0x0730, 0x074a,
+	0x07eb, 0x07f3,
+	0x07fd, 0x07fd,
+	0x0816, 0x0819,
+	0x081b, 0x0823,
+	0x0825, 0x0827,
+	0x0829, 0x082d,
+	0x0859, 0x085b,
+	0x0898, 0x089f,
+	0x08ca, 0x08e1,
+	0x08e3, 0x08ff,
+	0x093c, 0x093c,
+	0x0951, 0x0954,
+	0x09bc, 0x09bc,
+	0x09fe, 0x09fe,
+	0x0a3c, 0x0a3c,
+	0x0abc, 0x0abc,
+	0x0b3c, 0x0b3c,
+	0x0c3c, 0x0c3c,
+	0x0c55, 0x0c56,
+	0x0cbc, 0x0cbc,
+	0x0d3b, 0x0d3c,
+	0x0e38, 0x0e3a,
+	0x0e48, 0x0e4b,
+	0x0eb8, 0x0eba,
+	0x0ec8, 0x0ecb,
+	0x0f18, 0x0f19,
+	0x0f35, 0x0f35,
+	0x0f37, 0x0f37,
+	0x0f39, 0x0f39,
+	0x0f71, 0x0f72,
+	0x0f74, 0x0f74,
+	0x0f7a, 0x0f7d,
+	0x0f80, 0x0f80,
+	0x0f82, 0x0f84,
+	0x0f86, 0x0f87,
+	0x0fc6, 0x0fc6,
+	0x1037, 0x1037,
+	0x1039, 0x103a,
+	0x108d, 0x108d,
+	0x135d, 0x135f,
+	0x1714, 0x1714,
+	0x17d2, 0x17d2,
+	0x17dd, 0x17dd,
+	0x18a9, 0x18a9,
+	0x1939, 0x193b,
+	0x1a17, 0x1a18,
+	0x1a60, 0x1a60,
+	0x1a75, 0x1a7c,
+	0x1a7f, 0x1a7f,
+	0x1ab0, 0x1abd,
+	0x1abf, 0x1ace,
+	0x1b34, 0x1b34,
+	0x1b6b, 0x1b73,
+	0x1bab, 0x1bab,
+	0x1be6, 0x1be6,
+	0x1c37, 0x1c37,
+	0x1cd0, 0x1cd2,
+	0x1cd4, 0x1ce0,
+	0x1ce2, 0x1ce8,
+	0x1ced, 0x1ced,
+	0x1cf4, 0x1cf4,
+	0x1cf8, 0x1cf9,
+	0x1dc0, 0x1dff,
+	0x200d, 0x200d,
+	0x20d0, 0x20dc,
+	0x20e1, 0x20e1,
+	0x20e5, 0x20f0,
+	0x2cef, 0x2cf1,
+	0x2d7f, 0x2d7f,
+	0x2de0, 0x2dff,
+	0x302a, 0x302f,
+	0x3099, 0x309a,
+	0xa66f, 0xa66f,
+	0xa674, 0xa67d,
+	0xa69e, 0xa69f,
+	0xa6f0, 0xa6f1,
+	0xa82c, 0xa82c,
+	0xa8e0, 0xa8f1,
+	0xa92b, 0xa92d,
+	0xa9b3, 0xa9b3,
+	0xaab0, 0xaab0,
+	0xaab2, 0xaab4,
+	0xaab7, 0xaab8,
+	0xaabe, 0xaabf,
+	0xaac1, 0xaac1,
+	0xaaf6, 0xaaf6,
+	0xabed, 0xabed,
+	0xfb1e, 0xfb1e,
+	0xfe20, 0xfe2f,
+	0x101fd, 0x101fd,
+	0x102e0, 0x102e0,
+	0x10376, 0x1037a,
+	0x10a0d, 0x10a0d,
+	0x10a0f, 0x10a0f,
+	0x10a38, 0x10a3a,
+	0x10a3f, 0x10a3f,
+	0x10ae5, 0x10ae6,
+	0x10d24, 0x10d27,
+	0x10eab, 0x10eac,
+	0x10efd, 0x10eff,
+	0x10f46, 0x10f50,
+	0x10f82, 0x10f85,
+	0x11070, 0x11070,
+	0x1107f, 0x1107f,
+	0x110ba, 0x110ba,
+	0x11100, 0x11102,
+	0x11133, 0x11134,
+	0x11173, 0x11173,
+	0x111ca, 0x111ca,
+	0x11236, 0x11236,
+	0x112e9, 0x112ea,
+	0x1133b, 0x1133c,
+	0x11366, 0x1136c,
+	0x11370, 0x11374,
+	0x11446, 0x11446,
+	0x1145e, 0x1145e,
+	0x114c3, 0x114c3,
+	0x115c0, 0x115c0,
+	0x116b7, 0x116b7,
+	0x1172b, 0x1172b,
+	0x1183a, 0x1183a,
+	0x1193e, 0x1193e,
+	0x11943, 0x11943,
+	0x11a34, 0x11a34,
+	0x11a47, 0x11a47,
+	0x11a99, 0x11a99,
+	0x11d42, 0x11d42,
+	0x11d44, 0x11d45,
+	0x11d97, 0x11d97,
+	0x11f42, 0x11f42,
+	0x16af0, 0x16af4,
+	0x16b30, 0x16b36,
+	0x1bc9e, 0x1bc9e,
+	0x1d165, 0x1d165,
+	0x1d167, 0x1d169,
+	0x1d16e, 0x1d172,
+	0x1d17b, 0x1d182,
+	0x1d185, 0x1d18b,
+	0x1d1aa, 0x1d1ad,
+	0x1d242, 0x1d244,
+	0x1e000, 0x1e006,
+	0x1e008, 0x1e018,
+	0x1e01b, 0x1e021,
+	0x1e023, 0x1e024,
+	0x1e026, 0x1e02a,
+	0x1e08f, 0x1e08f,
+	0x1e130, 0x1e136,
+	0x1e2ae, 0x1e2ae,
+	0x1e2ec, 0x1e2ef,
+	0x1e4ec, 0x1e4ef,
+	0x1e8d0, 0x1e8d6,
+	0x1e944, 0x1e94a,
+}; /* CR_InCB_Extend */
+
 /* 'Common': Script */
 static const OnigCodePoint CR_Common[] = {
 	173,
@@ -20315,8 +20543,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x2b76, 0x2b95,
 	0x2b97, 0x2bff,
 	0x2e00, 0x2e5d,
-	0x2ff0, 0x2ffb,
-	0x3000, 0x3004,
+	0x2ff0, 0x3004,
 	0x3006, 0x3006,
 	0x3008, 0x3020,
 	0x3030, 0x3037,
@@ -20326,6 +20553,7 @@ static const OnigCodePoint CR_Common[] = {
 	0x30fb, 0x30fc,
 	0x3190, 0x319f,
 	0x31c0, 0x31e3,
+	0x31ef, 0x31ef,
 	0x3220, 0x325f,
 	0x327f, 0x32cf,
 	0x32ff, 0x32ff,
@@ -21021,7 +21249,7 @@ static const OnigCodePoint CR_Bopomofo[] = {
 
 /* 'Han': Script */
 static const OnigCodePoint CR_Han[] = {
-	21,
+	22,
 	0x2e80, 0x2e99,
 	0x2e9b, 0x2ef3,
 	0x2f00, 0x2fd5,
@@ -21040,6 +21268,7 @@ static const OnigCodePoint CR_Han[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -22617,7 +22846,7 @@ static const OnigCodePoint CR_Other_Alphabetic[] = {
 
 /* 'Ideographic': Binary Property */
 static const OnigCodePoint CR_Ideographic[] = {
-	20,
+	21,
 	0x3006, 0x3007,
 	0x3021, 0x3029,
 	0x3038, 0x303a,
@@ -22635,6 +22864,7 @@ static const OnigCodePoint CR_Ideographic[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x2f800, 0x2fa1d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
@@ -22976,9 +23206,10 @@ static const OnigCodePoint CR_Other_Grapheme_Extend[] = {
 
 /* 'IDS_Binary_Operator': Binary Property */
 static const OnigCodePoint CR_IDS_Binary_Operator[] = {
-	2,
+	3,
 	0x2ff0, 0x2ff1,
-	0x2ff4, 0x2ffb,
+	0x2ff4, 0x2ffd,
+	0x31ef, 0x31ef,
 }; /* CR_IDS_Binary_Operator */
 
 /* 'IDS_Trinary_Operator': Binary Property */
@@ -22986,6 +23217,12 @@ static const OnigCodePoint CR_IDS_Trinary_Operator[] = {
 	1,
 	0x2ff2, 0x2ff3,
 }; /* CR_IDS_Trinary_Operator */
+
+/* 'IDS_Unary_Operator': Binary Property */
+static const OnigCodePoint CR_IDS_Unary_Operator[] = {
+	1,
+	0x2ffe, 0x2fff,
+}; /* CR_IDS_Unary_Operator */
 
 /* 'Radical': Binary Property */
 static const OnigCodePoint CR_Radical[] = {
@@ -22997,7 +23234,7 @@ static const OnigCodePoint CR_Radical[] = {
 
 /* 'Unified_Ideograph': Binary Property */
 static const OnigCodePoint CR_Unified_Ideograph[] = {
-	16,
+	17,
 	0x3400, 0x4dbf,
 	0x4e00, 0x9fff,
 	0xfa0e, 0xfa0f,
@@ -23012,6 +23249,7 @@ static const OnigCodePoint CR_Unified_Ideograph[] = {
 	0x2b740, 0x2b81d,
 	0x2b820, 0x2cea1,
 	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
 	0x30000, 0x3134a,
 	0x31350, 0x323af,
 }; /* CR_Unified_Ideograph */
@@ -23107,16 +23345,60 @@ static const OnigCodePoint CR_Other_ID_Start[] = {
 
 /* 'Other_ID_Continue': Binary Property */
 static const OnigCodePoint CR_Other_ID_Continue[] = {
-	4,
+	7,
 	0x00b7, 0x00b7,
 	0x0387, 0x0387,
 	0x1369, 0x1371,
 	0x19da, 0x19da,
+	0x200c, 0x200d,
+	0x30fb, 0x30fb,
+	0xff65, 0xff65,
 }; /* CR_Other_ID_Continue */
+
+/* 'ID_Compat_Math_Continue': Binary Property */
+static const OnigCodePoint CR_ID_Compat_Math_Continue[] = {
+	18,
+	0x00b2, 0x00b3,
+	0x00b9, 0x00b9,
+	0x2070, 0x2070,
+	0x2074, 0x207e,
+	0x2080, 0x208e,
+	0x2202, 0x2202,
+	0x2207, 0x2207,
+	0x221e, 0x221e,
+	0x1d6c1, 0x1d6c1,
+	0x1d6db, 0x1d6db,
+	0x1d6fb, 0x1d6fb,
+	0x1d715, 0x1d715,
+	0x1d735, 0x1d735,
+	0x1d74f, 0x1d74f,
+	0x1d76f, 0x1d76f,
+	0x1d789, 0x1d789,
+	0x1d7a9, 0x1d7a9,
+	0x1d7c3, 0x1d7c3,
+}; /* CR_ID_Compat_Math_Continue */
+
+/* 'ID_Compat_Math_Start': Binary Property */
+static const OnigCodePoint CR_ID_Compat_Math_Start[] = {
+	13,
+	0x2202, 0x2202,
+	0x2207, 0x2207,
+	0x221e, 0x221e,
+	0x1d6c1, 0x1d6c1,
+	0x1d6db, 0x1d6db,
+	0x1d6fb, 0x1d6fb,
+	0x1d715, 0x1d715,
+	0x1d735, 0x1d735,
+	0x1d74f, 0x1d74f,
+	0x1d76f, 0x1d76f,
+	0x1d789, 0x1d789,
+	0x1d7a9, 0x1d7a9,
+	0x1d7c3, 0x1d7c3,
+}; /* CR_ID_Compat_Math_Start */
 
 /* 'Sentence_Terminal': Binary Property */
 static const OnigCodePoint CR_Sentence_Terminal[] = {
-	80,
+	81,
 	0x0021, 0x0021,
 	0x002e, 0x002e,
 	0x003f, 0x003f,
@@ -23134,6 +23416,7 @@ static const OnigCodePoint CR_Sentence_Terminal[] = {
 	0x1367, 0x1368,
 	0x166e, 0x166e,
 	0x1735, 0x1736,
+	0x17d4, 0x17d5,
 	0x1803, 0x1803,
 	0x1809, 0x1809,
 	0x1944, 0x1945,
@@ -23932,13 +24215,12 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x2e9a, 0x2e9a,
 	0x2ef4, 0x2eff,
 	0x2fd6, 0x2fef,
-	0x2ffc, 0x2fff,
 	0x3040, 0x3040,
 	0x3097, 0x3098,
 	0x3100, 0x3104,
 	0x3130, 0x3130,
 	0x318f, 0x318f,
-	0x31e4, 0x31ef,
+	0x31e4, 0x31ee,
 	0x321f, 0x321f,
 	0xa48d, 0xa48f,
 	0xa4c7, 0xa4cf,
@@ -24361,7 +24643,8 @@ static const OnigCodePoint CR_Unknown[] = {
 	0x2b73a, 0x2b73f,
 	0x2b81e, 0x2b81f,
 	0x2cea2, 0x2ceaf,
-	0x2ebe1, 0x2f7ff,
+	0x2ebe1, 0x2ebef,
+	0x2ee5e, 0x2f7ff,
 	0x2fa1e, 0x2ffff,
 	0x3134b, 0x3134f,
 	0x323b0, 0xe0000,
@@ -37634,6 +37917,726 @@ static const OnigCodePoint CR_Age_15_0[] = {
 	0xefffe, 0x10ffff,
 }; /* CR_Age_15_0 */
 
+/* 'Age_15_1': Derived Age 15.1 */
+static const OnigCodePoint CR_Age_15_1[] = {
+	715,
+	0x0000, 0x0377,
+	0x037a, 0x037f,
+	0x0384, 0x038a,
+	0x038c, 0x038c,
+	0x038e, 0x03a1,
+	0x03a3, 0x052f,
+	0x0531, 0x0556,
+	0x0559, 0x058a,
+	0x058d, 0x058f,
+	0x0591, 0x05c7,
+	0x05d0, 0x05ea,
+	0x05ef, 0x05f4,
+	0x0600, 0x070d,
+	0x070f, 0x074a,
+	0x074d, 0x07b1,
+	0x07c0, 0x07fa,
+	0x07fd, 0x082d,
+	0x0830, 0x083e,
+	0x0840, 0x085b,
+	0x085e, 0x085e,
+	0x0860, 0x086a,
+	0x0870, 0x088e,
+	0x0890, 0x0891,
+	0x0898, 0x0983,
+	0x0985, 0x098c,
+	0x098f, 0x0990,
+	0x0993, 0x09a8,
+	0x09aa, 0x09b0,
+	0x09b2, 0x09b2,
+	0x09b6, 0x09b9,
+	0x09bc, 0x09c4,
+	0x09c7, 0x09c8,
+	0x09cb, 0x09ce,
+	0x09d7, 0x09d7,
+	0x09dc, 0x09dd,
+	0x09df, 0x09e3,
+	0x09e6, 0x09fe,
+	0x0a01, 0x0a03,
+	0x0a05, 0x0a0a,
+	0x0a0f, 0x0a10,
+	0x0a13, 0x0a28,
+	0x0a2a, 0x0a30,
+	0x0a32, 0x0a33,
+	0x0a35, 0x0a36,
+	0x0a38, 0x0a39,
+	0x0a3c, 0x0a3c,
+	0x0a3e, 0x0a42,
+	0x0a47, 0x0a48,
+	0x0a4b, 0x0a4d,
+	0x0a51, 0x0a51,
+	0x0a59, 0x0a5c,
+	0x0a5e, 0x0a5e,
+	0x0a66, 0x0a76,
+	0x0a81, 0x0a83,
+	0x0a85, 0x0a8d,
+	0x0a8f, 0x0a91,
+	0x0a93, 0x0aa8,
+	0x0aaa, 0x0ab0,
+	0x0ab2, 0x0ab3,
+	0x0ab5, 0x0ab9,
+	0x0abc, 0x0ac5,
+	0x0ac7, 0x0ac9,
+	0x0acb, 0x0acd,
+	0x0ad0, 0x0ad0,
+	0x0ae0, 0x0ae3,
+	0x0ae6, 0x0af1,
+	0x0af9, 0x0aff,
+	0x0b01, 0x0b03,
+	0x0b05, 0x0b0c,
+	0x0b0f, 0x0b10,
+	0x0b13, 0x0b28,
+	0x0b2a, 0x0b30,
+	0x0b32, 0x0b33,
+	0x0b35, 0x0b39,
+	0x0b3c, 0x0b44,
+	0x0b47, 0x0b48,
+	0x0b4b, 0x0b4d,
+	0x0b55, 0x0b57,
+	0x0b5c, 0x0b5d,
+	0x0b5f, 0x0b63,
+	0x0b66, 0x0b77,
+	0x0b82, 0x0b83,
+	0x0b85, 0x0b8a,
+	0x0b8e, 0x0b90,
+	0x0b92, 0x0b95,
+	0x0b99, 0x0b9a,
+	0x0b9c, 0x0b9c,
+	0x0b9e, 0x0b9f,
+	0x0ba3, 0x0ba4,
+	0x0ba8, 0x0baa,
+	0x0bae, 0x0bb9,
+	0x0bbe, 0x0bc2,
+	0x0bc6, 0x0bc8,
+	0x0bca, 0x0bcd,
+	0x0bd0, 0x0bd0,
+	0x0bd7, 0x0bd7,
+	0x0be6, 0x0bfa,
+	0x0c00, 0x0c0c,
+	0x0c0e, 0x0c10,
+	0x0c12, 0x0c28,
+	0x0c2a, 0x0c39,
+	0x0c3c, 0x0c44,
+	0x0c46, 0x0c48,
+	0x0c4a, 0x0c4d,
+	0x0c55, 0x0c56,
+	0x0c58, 0x0c5a,
+	0x0c5d, 0x0c5d,
+	0x0c60, 0x0c63,
+	0x0c66, 0x0c6f,
+	0x0c77, 0x0c8c,
+	0x0c8e, 0x0c90,
+	0x0c92, 0x0ca8,
+	0x0caa, 0x0cb3,
+	0x0cb5, 0x0cb9,
+	0x0cbc, 0x0cc4,
+	0x0cc6, 0x0cc8,
+	0x0cca, 0x0ccd,
+	0x0cd5, 0x0cd6,
+	0x0cdd, 0x0cde,
+	0x0ce0, 0x0ce3,
+	0x0ce6, 0x0cef,
+	0x0cf1, 0x0cf3,
+	0x0d00, 0x0d0c,
+	0x0d0e, 0x0d10,
+	0x0d12, 0x0d44,
+	0x0d46, 0x0d48,
+	0x0d4a, 0x0d4f,
+	0x0d54, 0x0d63,
+	0x0d66, 0x0d7f,
+	0x0d81, 0x0d83,
+	0x0d85, 0x0d96,
+	0x0d9a, 0x0db1,
+	0x0db3, 0x0dbb,
+	0x0dbd, 0x0dbd,
+	0x0dc0, 0x0dc6,
+	0x0dca, 0x0dca,
+	0x0dcf, 0x0dd4,
+	0x0dd6, 0x0dd6,
+	0x0dd8, 0x0ddf,
+	0x0de6, 0x0def,
+	0x0df2, 0x0df4,
+	0x0e01, 0x0e3a,
+	0x0e3f, 0x0e5b,
+	0x0e81, 0x0e82,
+	0x0e84, 0x0e84,
+	0x0e86, 0x0e8a,
+	0x0e8c, 0x0ea3,
+	0x0ea5, 0x0ea5,
+	0x0ea7, 0x0ebd,
+	0x0ec0, 0x0ec4,
+	0x0ec6, 0x0ec6,
+	0x0ec8, 0x0ece,
+	0x0ed0, 0x0ed9,
+	0x0edc, 0x0edf,
+	0x0f00, 0x0f47,
+	0x0f49, 0x0f6c,
+	0x0f71, 0x0f97,
+	0x0f99, 0x0fbc,
+	0x0fbe, 0x0fcc,
+	0x0fce, 0x0fda,
+	0x1000, 0x10c5,
+	0x10c7, 0x10c7,
+	0x10cd, 0x10cd,
+	0x10d0, 0x1248,
+	0x124a, 0x124d,
+	0x1250, 0x1256,
+	0x1258, 0x1258,
+	0x125a, 0x125d,
+	0x1260, 0x1288,
+	0x128a, 0x128d,
+	0x1290, 0x12b0,
+	0x12b2, 0x12b5,
+	0x12b8, 0x12be,
+	0x12c0, 0x12c0,
+	0x12c2, 0x12c5,
+	0x12c8, 0x12d6,
+	0x12d8, 0x1310,
+	0x1312, 0x1315,
+	0x1318, 0x135a,
+	0x135d, 0x137c,
+	0x1380, 0x1399,
+	0x13a0, 0x13f5,
+	0x13f8, 0x13fd,
+	0x1400, 0x169c,
+	0x16a0, 0x16f8,
+	0x1700, 0x1715,
+	0x171f, 0x1736,
+	0x1740, 0x1753,
+	0x1760, 0x176c,
+	0x176e, 0x1770,
+	0x1772, 0x1773,
+	0x1780, 0x17dd,
+	0x17e0, 0x17e9,
+	0x17f0, 0x17f9,
+	0x1800, 0x1819,
+	0x1820, 0x1878,
+	0x1880, 0x18aa,
+	0x18b0, 0x18f5,
+	0x1900, 0x191e,
+	0x1920, 0x192b,
+	0x1930, 0x193b,
+	0x1940, 0x1940,
+	0x1944, 0x196d,
+	0x1970, 0x1974,
+	0x1980, 0x19ab,
+	0x19b0, 0x19c9,
+	0x19d0, 0x19da,
+	0x19de, 0x1a1b,
+	0x1a1e, 0x1a5e,
+	0x1a60, 0x1a7c,
+	0x1a7f, 0x1a89,
+	0x1a90, 0x1a99,
+	0x1aa0, 0x1aad,
+	0x1ab0, 0x1ace,
+	0x1b00, 0x1b4c,
+	0x1b50, 0x1b7e,
+	0x1b80, 0x1bf3,
+	0x1bfc, 0x1c37,
+	0x1c3b, 0x1c49,
+	0x1c4d, 0x1c88,
+	0x1c90, 0x1cba,
+	0x1cbd, 0x1cc7,
+	0x1cd0, 0x1cfa,
+	0x1d00, 0x1f15,
+	0x1f18, 0x1f1d,
+	0x1f20, 0x1f45,
+	0x1f48, 0x1f4d,
+	0x1f50, 0x1f57,
+	0x1f59, 0x1f59,
+	0x1f5b, 0x1f5b,
+	0x1f5d, 0x1f5d,
+	0x1f5f, 0x1f7d,
+	0x1f80, 0x1fb4,
+	0x1fb6, 0x1fc4,
+	0x1fc6, 0x1fd3,
+	0x1fd6, 0x1fdb,
+	0x1fdd, 0x1fef,
+	0x1ff2, 0x1ff4,
+	0x1ff6, 0x1ffe,
+	0x2000, 0x2064,
+	0x2066, 0x2071,
+	0x2074, 0x208e,
+	0x2090, 0x209c,
+	0x20a0, 0x20c0,
+	0x20d0, 0x20f0,
+	0x2100, 0x218b,
+	0x2190, 0x2426,
+	0x2440, 0x244a,
+	0x2460, 0x2b73,
+	0x2b76, 0x2b95,
+	0x2b97, 0x2cf3,
+	0x2cf9, 0x2d25,
+	0x2d27, 0x2d27,
+	0x2d2d, 0x2d2d,
+	0x2d30, 0x2d67,
+	0x2d6f, 0x2d70,
+	0x2d7f, 0x2d96,
+	0x2da0, 0x2da6,
+	0x2da8, 0x2dae,
+	0x2db0, 0x2db6,
+	0x2db8, 0x2dbe,
+	0x2dc0, 0x2dc6,
+	0x2dc8, 0x2dce,
+	0x2dd0, 0x2dd6,
+	0x2dd8, 0x2dde,
+	0x2de0, 0x2e5d,
+	0x2e80, 0x2e99,
+	0x2e9b, 0x2ef3,
+	0x2f00, 0x2fd5,
+	0x2ff0, 0x303f,
+	0x3041, 0x3096,
+	0x3099, 0x30ff,
+	0x3105, 0x312f,
+	0x3131, 0x318e,
+	0x3190, 0x31e3,
+	0x31ef, 0x321e,
+	0x3220, 0xa48c,
+	0xa490, 0xa4c6,
+	0xa4d0, 0xa62b,
+	0xa640, 0xa6f7,
+	0xa700, 0xa7ca,
+	0xa7d0, 0xa7d1,
+	0xa7d3, 0xa7d3,
+	0xa7d5, 0xa7d9,
+	0xa7f2, 0xa82c,
+	0xa830, 0xa839,
+	0xa840, 0xa877,
+	0xa880, 0xa8c5,
+	0xa8ce, 0xa8d9,
+	0xa8e0, 0xa953,
+	0xa95f, 0xa97c,
+	0xa980, 0xa9cd,
+	0xa9cf, 0xa9d9,
+	0xa9de, 0xa9fe,
+	0xaa00, 0xaa36,
+	0xaa40, 0xaa4d,
+	0xaa50, 0xaa59,
+	0xaa5c, 0xaac2,
+	0xaadb, 0xaaf6,
+	0xab01, 0xab06,
+	0xab09, 0xab0e,
+	0xab11, 0xab16,
+	0xab20, 0xab26,
+	0xab28, 0xab2e,
+	0xab30, 0xab6b,
+	0xab70, 0xabed,
+	0xabf0, 0xabf9,
+	0xac00, 0xd7a3,
+	0xd7b0, 0xd7c6,
+	0xd7cb, 0xd7fb,
+	0xd800, 0xfa6d,
+	0xfa70, 0xfad9,
+	0xfb00, 0xfb06,
+	0xfb13, 0xfb17,
+	0xfb1d, 0xfb36,
+	0xfb38, 0xfb3c,
+	0xfb3e, 0xfb3e,
+	0xfb40, 0xfb41,
+	0xfb43, 0xfb44,
+	0xfb46, 0xfbc2,
+	0xfbd3, 0xfd8f,
+	0xfd92, 0xfdc7,
+	0xfdcf, 0xfe19,
+	0xfe20, 0xfe52,
+	0xfe54, 0xfe66,
+	0xfe68, 0xfe6b,
+	0xfe70, 0xfe74,
+	0xfe76, 0xfefc,
+	0xfeff, 0xfeff,
+	0xff01, 0xffbe,
+	0xffc2, 0xffc7,
+	0xffca, 0xffcf,
+	0xffd2, 0xffd7,
+	0xffda, 0xffdc,
+	0xffe0, 0xffe6,
+	0xffe8, 0xffee,
+	0xfff9, 0x1000b,
+	0x1000d, 0x10026,
+	0x10028, 0x1003a,
+	0x1003c, 0x1003d,
+	0x1003f, 0x1004d,
+	0x10050, 0x1005d,
+	0x10080, 0x100fa,
+	0x10100, 0x10102,
+	0x10107, 0x10133,
+	0x10137, 0x1018e,
+	0x10190, 0x1019c,
+	0x101a0, 0x101a0,
+	0x101d0, 0x101fd,
+	0x10280, 0x1029c,
+	0x102a0, 0x102d0,
+	0x102e0, 0x102fb,
+	0x10300, 0x10323,
+	0x1032d, 0x1034a,
+	0x10350, 0x1037a,
+	0x10380, 0x1039d,
+	0x1039f, 0x103c3,
+	0x103c8, 0x103d5,
+	0x10400, 0x1049d,
+	0x104a0, 0x104a9,
+	0x104b0, 0x104d3,
+	0x104d8, 0x104fb,
+	0x10500, 0x10527,
+	0x10530, 0x10563,
+	0x1056f, 0x1057a,
+	0x1057c, 0x1058a,
+	0x1058c, 0x10592,
+	0x10594, 0x10595,
+	0x10597, 0x105a1,
+	0x105a3, 0x105b1,
+	0x105b3, 0x105b9,
+	0x105bb, 0x105bc,
+	0x10600, 0x10736,
+	0x10740, 0x10755,
+	0x10760, 0x10767,
+	0x10780, 0x10785,
+	0x10787, 0x107b0,
+	0x107b2, 0x107ba,
+	0x10800, 0x10805,
+	0x10808, 0x10808,
+	0x1080a, 0x10835,
+	0x10837, 0x10838,
+	0x1083c, 0x1083c,
+	0x1083f, 0x10855,
+	0x10857, 0x1089e,
+	0x108a7, 0x108af,
+	0x108e0, 0x108f2,
+	0x108f4, 0x108f5,
+	0x108fb, 0x1091b,
+	0x1091f, 0x10939,
+	0x1093f, 0x1093f,
+	0x10980, 0x109b7,
+	0x109bc, 0x109cf,
+	0x109d2, 0x10a03,
+	0x10a05, 0x10a06,
+	0x10a0c, 0x10a13,
+	0x10a15, 0x10a17,
+	0x10a19, 0x10a35,
+	0x10a38, 0x10a3a,
+	0x10a3f, 0x10a48,
+	0x10a50, 0x10a58,
+	0x10a60, 0x10a9f,
+	0x10ac0, 0x10ae6,
+	0x10aeb, 0x10af6,
+	0x10b00, 0x10b35,
+	0x10b39, 0x10b55,
+	0x10b58, 0x10b72,
+	0x10b78, 0x10b91,
+	0x10b99, 0x10b9c,
+	0x10ba9, 0x10baf,
+	0x10c00, 0x10c48,
+	0x10c80, 0x10cb2,
+	0x10cc0, 0x10cf2,
+	0x10cfa, 0x10d27,
+	0x10d30, 0x10d39,
+	0x10e60, 0x10e7e,
+	0x10e80, 0x10ea9,
+	0x10eab, 0x10ead,
+	0x10eb0, 0x10eb1,
+	0x10efd, 0x10f27,
+	0x10f30, 0x10f59,
+	0x10f70, 0x10f89,
+	0x10fb0, 0x10fcb,
+	0x10fe0, 0x10ff6,
+	0x11000, 0x1104d,
+	0x11052, 0x11075,
+	0x1107f, 0x110c2,
+	0x110cd, 0x110cd,
+	0x110d0, 0x110e8,
+	0x110f0, 0x110f9,
+	0x11100, 0x11134,
+	0x11136, 0x11147,
+	0x11150, 0x11176,
+	0x11180, 0x111df,
+	0x111e1, 0x111f4,
+	0x11200, 0x11211,
+	0x11213, 0x11241,
+	0x11280, 0x11286,
+	0x11288, 0x11288,
+	0x1128a, 0x1128d,
+	0x1128f, 0x1129d,
+	0x1129f, 0x112a9,
+	0x112b0, 0x112ea,
+	0x112f0, 0x112f9,
+	0x11300, 0x11303,
+	0x11305, 0x1130c,
+	0x1130f, 0x11310,
+	0x11313, 0x11328,
+	0x1132a, 0x11330,
+	0x11332, 0x11333,
+	0x11335, 0x11339,
+	0x1133b, 0x11344,
+	0x11347, 0x11348,
+	0x1134b, 0x1134d,
+	0x11350, 0x11350,
+	0x11357, 0x11357,
+	0x1135d, 0x11363,
+	0x11366, 0x1136c,
+	0x11370, 0x11374,
+	0x11400, 0x1145b,
+	0x1145d, 0x11461,
+	0x11480, 0x114c7,
+	0x114d0, 0x114d9,
+	0x11580, 0x115b5,
+	0x115b8, 0x115dd,
+	0x11600, 0x11644,
+	0x11650, 0x11659,
+	0x11660, 0x1166c,
+	0x11680, 0x116b9,
+	0x116c0, 0x116c9,
+	0x11700, 0x1171a,
+	0x1171d, 0x1172b,
+	0x11730, 0x11746,
+	0x11800, 0x1183b,
+	0x118a0, 0x118f2,
+	0x118ff, 0x11906,
+	0x11909, 0x11909,
+	0x1190c, 0x11913,
+	0x11915, 0x11916,
+	0x11918, 0x11935,
+	0x11937, 0x11938,
+	0x1193b, 0x11946,
+	0x11950, 0x11959,
+	0x119a0, 0x119a7,
+	0x119aa, 0x119d7,
+	0x119da, 0x119e4,
+	0x11a00, 0x11a47,
+	0x11a50, 0x11aa2,
+	0x11ab0, 0x11af8,
+	0x11b00, 0x11b09,
+	0x11c00, 0x11c08,
+	0x11c0a, 0x11c36,
+	0x11c38, 0x11c45,
+	0x11c50, 0x11c6c,
+	0x11c70, 0x11c8f,
+	0x11c92, 0x11ca7,
+	0x11ca9, 0x11cb6,
+	0x11d00, 0x11d06,
+	0x11d08, 0x11d09,
+	0x11d0b, 0x11d36,
+	0x11d3a, 0x11d3a,
+	0x11d3c, 0x11d3d,
+	0x11d3f, 0x11d47,
+	0x11d50, 0x11d59,
+	0x11d60, 0x11d65,
+	0x11d67, 0x11d68,
+	0x11d6a, 0x11d8e,
+	0x11d90, 0x11d91,
+	0x11d93, 0x11d98,
+	0x11da0, 0x11da9,
+	0x11ee0, 0x11ef8,
+	0x11f00, 0x11f10,
+	0x11f12, 0x11f3a,
+	0x11f3e, 0x11f59,
+	0x11fb0, 0x11fb0,
+	0x11fc0, 0x11ff1,
+	0x11fff, 0x12399,
+	0x12400, 0x1246e,
+	0x12470, 0x12474,
+	0x12480, 0x12543,
+	0x12f90, 0x12ff2,
+	0x13000, 0x13455,
+	0x14400, 0x14646,
+	0x16800, 0x16a38,
+	0x16a40, 0x16a5e,
+	0x16a60, 0x16a69,
+	0x16a6e, 0x16abe,
+	0x16ac0, 0x16ac9,
+	0x16ad0, 0x16aed,
+	0x16af0, 0x16af5,
+	0x16b00, 0x16b45,
+	0x16b50, 0x16b59,
+	0x16b5b, 0x16b61,
+	0x16b63, 0x16b77,
+	0x16b7d, 0x16b8f,
+	0x16e40, 0x16e9a,
+	0x16f00, 0x16f4a,
+	0x16f4f, 0x16f87,
+	0x16f8f, 0x16f9f,
+	0x16fe0, 0x16fe4,
+	0x16ff0, 0x16ff1,
+	0x17000, 0x187f7,
+	0x18800, 0x18cd5,
+	0x18d00, 0x18d08,
+	0x1aff0, 0x1aff3,
+	0x1aff5, 0x1affb,
+	0x1affd, 0x1affe,
+	0x1b000, 0x1b122,
+	0x1b132, 0x1b132,
+	0x1b150, 0x1b152,
+	0x1b155, 0x1b155,
+	0x1b164, 0x1b167,
+	0x1b170, 0x1b2fb,
+	0x1bc00, 0x1bc6a,
+	0x1bc70, 0x1bc7c,
+	0x1bc80, 0x1bc88,
+	0x1bc90, 0x1bc99,
+	0x1bc9c, 0x1bca3,
+	0x1cf00, 0x1cf2d,
+	0x1cf30, 0x1cf46,
+	0x1cf50, 0x1cfc3,
+	0x1d000, 0x1d0f5,
+	0x1d100, 0x1d126,
+	0x1d129, 0x1d1ea,
+	0x1d200, 0x1d245,
+	0x1d2c0, 0x1d2d3,
+	0x1d2e0, 0x1d2f3,
+	0x1d300, 0x1d356,
+	0x1d360, 0x1d378,
+	0x1d400, 0x1d454,
+	0x1d456, 0x1d49c,
+	0x1d49e, 0x1d49f,
+	0x1d4a2, 0x1d4a2,
+	0x1d4a5, 0x1d4a6,
+	0x1d4a9, 0x1d4ac,
+	0x1d4ae, 0x1d4b9,
+	0x1d4bb, 0x1d4bb,
+	0x1d4bd, 0x1d4c3,
+	0x1d4c5, 0x1d505,
+	0x1d507, 0x1d50a,
+	0x1d50d, 0x1d514,
+	0x1d516, 0x1d51c,
+	0x1d51e, 0x1d539,
+	0x1d53b, 0x1d53e,
+	0x1d540, 0x1d544,
+	0x1d546, 0x1d546,
+	0x1d54a, 0x1d550,
+	0x1d552, 0x1d6a5,
+	0x1d6a8, 0x1d7cb,
+	0x1d7ce, 0x1da8b,
+	0x1da9b, 0x1da9f,
+	0x1daa1, 0x1daaf,
+	0x1df00, 0x1df1e,
+	0x1df25, 0x1df2a,
+	0x1e000, 0x1e006,
+	0x1e008, 0x1e018,
+	0x1e01b, 0x1e021,
+	0x1e023, 0x1e024,
+	0x1e026, 0x1e02a,
+	0x1e030, 0x1e06d,
+	0x1e08f, 0x1e08f,
+	0x1e100, 0x1e12c,
+	0x1e130, 0x1e13d,
+	0x1e140, 0x1e149,
+	0x1e14e, 0x1e14f,
+	0x1e290, 0x1e2ae,
+	0x1e2c0, 0x1e2f9,
+	0x1e2ff, 0x1e2ff,
+	0x1e4d0, 0x1e4f9,
+	0x1e7e0, 0x1e7e6,
+	0x1e7e8, 0x1e7eb,
+	0x1e7ed, 0x1e7ee,
+	0x1e7f0, 0x1e7fe,
+	0x1e800, 0x1e8c4,
+	0x1e8c7, 0x1e8d6,
+	0x1e900, 0x1e94b,
+	0x1e950, 0x1e959,
+	0x1e95e, 0x1e95f,
+	0x1ec71, 0x1ecb4,
+	0x1ed01, 0x1ed3d,
+	0x1ee00, 0x1ee03,
+	0x1ee05, 0x1ee1f,
+	0x1ee21, 0x1ee22,
+	0x1ee24, 0x1ee24,
+	0x1ee27, 0x1ee27,
+	0x1ee29, 0x1ee32,
+	0x1ee34, 0x1ee37,
+	0x1ee39, 0x1ee39,
+	0x1ee3b, 0x1ee3b,
+	0x1ee42, 0x1ee42,
+	0x1ee47, 0x1ee47,
+	0x1ee49, 0x1ee49,
+	0x1ee4b, 0x1ee4b,
+	0x1ee4d, 0x1ee4f,
+	0x1ee51, 0x1ee52,
+	0x1ee54, 0x1ee54,
+	0x1ee57, 0x1ee57,
+	0x1ee59, 0x1ee59,
+	0x1ee5b, 0x1ee5b,
+	0x1ee5d, 0x1ee5d,
+	0x1ee5f, 0x1ee5f,
+	0x1ee61, 0x1ee62,
+	0x1ee64, 0x1ee64,
+	0x1ee67, 0x1ee6a,
+	0x1ee6c, 0x1ee72,
+	0x1ee74, 0x1ee77,
+	0x1ee79, 0x1ee7c,
+	0x1ee7e, 0x1ee7e,
+	0x1ee80, 0x1ee89,
+	0x1ee8b, 0x1ee9b,
+	0x1eea1, 0x1eea3,
+	0x1eea5, 0x1eea9,
+	0x1eeab, 0x1eebb,
+	0x1eef0, 0x1eef1,
+	0x1f000, 0x1f02b,
+	0x1f030, 0x1f093,
+	0x1f0a0, 0x1f0ae,
+	0x1f0b1, 0x1f0bf,
+	0x1f0c1, 0x1f0cf,
+	0x1f0d1, 0x1f0f5,
+	0x1f100, 0x1f1ad,
+	0x1f1e6, 0x1f202,
+	0x1f210, 0x1f23b,
+	0x1f240, 0x1f248,
+	0x1f250, 0x1f251,
+	0x1f260, 0x1f265,
+	0x1f300, 0x1f6d7,
+	0x1f6dc, 0x1f6ec,
+	0x1f6f0, 0x1f6fc,
+	0x1f700, 0x1f776,
+	0x1f77b, 0x1f7d9,
+	0x1f7e0, 0x1f7eb,
+	0x1f7f0, 0x1f7f0,
+	0x1f800, 0x1f80b,
+	0x1f810, 0x1f847,
+	0x1f850, 0x1f859,
+	0x1f860, 0x1f887,
+	0x1f890, 0x1f8ad,
+	0x1f8b0, 0x1f8b1,
+	0x1f900, 0x1fa53,
+	0x1fa60, 0x1fa6d,
+	0x1fa70, 0x1fa7c,
+	0x1fa80, 0x1fa88,
+	0x1fa90, 0x1fabd,
+	0x1fabf, 0x1fac5,
+	0x1face, 0x1fadb,
+	0x1fae0, 0x1fae8,
+	0x1faf0, 0x1faf8,
+	0x1fb00, 0x1fb92,
+	0x1fb94, 0x1fbca,
+	0x1fbf0, 0x1fbf9,
+	0x1fffe, 0x2a6df,
+	0x2a700, 0x2b739,
+	0x2b740, 0x2b81d,
+	0x2b820, 0x2cea1,
+	0x2ceb0, 0x2ebe0,
+	0x2ebf0, 0x2ee5d,
+	0x2f800, 0x2fa1d,
+	0x2fffe, 0x3134a,
+	0x31350, 0x323af,
+	0x3fffe, 0x3ffff,
+	0x4fffe, 0x4ffff,
+	0x5fffe, 0x5ffff,
+	0x6fffe, 0x6ffff,
+	0x7fffe, 0x7ffff,
+	0x8fffe, 0x8ffff,
+	0x9fffe, 0x9ffff,
+	0xafffe, 0xaffff,
+	0xbfffe, 0xbffff,
+	0xcfffe, 0xcffff,
+	0xdfffe, 0xdffff,
+	0xe0001, 0xe0001,
+	0xe0020, 0xe007f,
+	0xe0100, 0xe01ef,
+	0xefffe, 0x10ffff,
+}; /* CR_Age_15_1 */
+
 #endif /* USE_UNICODE_AGE_PROPERTIES */
 /* 'Grapheme_Cluster_Break_Prepend': Grapheme_Cluster_Break=Prepend */
 static const OnigCodePoint CR_Grapheme_Cluster_Break_Prepend[] = {
@@ -40955,6 +41958,12 @@ static const OnigCodePoint CR_In_CJK_Unified_Ideographs_Extension_F[] = {
 	0x2ceb0, 0x2ebef,
 }; /* CR_In_CJK_Unified_Ideographs_Extension_F */
 
+/* 'In_CJK_Unified_Ideographs_Extension_I': Block */
+static const OnigCodePoint CR_In_CJK_Unified_Ideographs_Extension_I[] = {
+	1,
+	0x2ebf0, 0x2ee5f,
+}; /* CR_In_CJK_Unified_Ideographs_Extension_I */
+
 /* 'In_CJK_Compatibility_Ideographs_Supplement': Block */
 static const OnigCodePoint CR_In_CJK_Compatibility_Ideographs_Supplement[] = {
 	1,
@@ -41046,7 +42055,7 @@ static const OnigCodePoint CR_In_No_Block[] = {
 	0x1ef00, 0x1efff,
 	0x1fc00, 0x1ffff,
 	0x2a6e0, 0x2a6ff,
-	0x2ebf0, 0x2f7ff,
+	0x2ee60, 0x2f7ff,
 	0x2fa20, 0x2ffff,
 	0x323b0, 0xdffff,
 	0xe0080, 0xe00ff,
@@ -41131,6 +42140,9 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Grapheme_Extend,
   CR_Grapheme_Base,
   CR_Grapheme_Link,
+  CR_InCB_Linker,
+  CR_InCB_Consonant,
+  CR_InCB_Extend,
   CR_Common,
   CR_Latin,
   CR_Greek,
@@ -41314,6 +42326,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Other_Grapheme_Extend,
   CR_IDS_Binary_Operator,
   CR_IDS_Trinary_Operator,
+  CR_IDS_Unary_Operator,
   CR_Radical,
   CR_Unified_Ideograph,
   CR_Other_Default_Ignorable_Code_Point,
@@ -41322,6 +42335,8 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Logical_Order_Exception,
   CR_Other_ID_Start,
   CR_Other_ID_Continue,
+  CR_ID_Compat_Math_Continue,
+  CR_ID_Compat_Math_Start,
   CR_Sentence_Terminal,
   CR_Variation_Selector,
   CR_Pattern_White_Space,
@@ -41361,6 +42376,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_Age_13_0,
   CR_Age_14_0,
   CR_Age_15_0,
+  CR_Age_15_1,
 #endif /* USE_UNICODE_AGE_PROPERTIES */
   CR_Grapheme_Cluster_Break_Prepend,
   CR_Grapheme_Cluster_Break_CR,
@@ -41695,6 +42711,7 @@ static const OnigCodePoint* const CodeRanges[] = {
   CR_In_CJK_Unified_Ideographs_Extension_D,
   CR_In_CJK_Unified_Ideographs_Extension_E,
   CR_In_CJK_Unified_Ideographs_Extension_F,
+  CR_In_CJK_Unified_Ideographs_Extension_I,
   CR_In_CJK_Compatibility_Ideographs_Supplement,
   CR_In_CJK_Unified_Ideographs_Extension_G,
   CR_In_CJK_Unified_Ideographs_Extension_H,
@@ -41722,15 +42739,15 @@ static const struct uniname2ctype_struct *uniname2ctype_p(register const char *s
 /* maximum key range = 15, duplicates = 0 */
 #else /* USE_UNICODE_PROPERTIES */
 #ifndef USE_UNICODE_AGE_PROPERTIES
-#define TOTAL_KEYWORDS 866
+#define TOTAL_KEYWORDS 874
 #else /* USE_UNICODE_AGE_PROPERTIES */
-#define TOTAL_KEYWORDS 891
+#define TOTAL_KEYWORDS 900
 #endif /* USE_UNICODE_AGE_PROPERTIES */
 #define MIN_WORD_LENGTH 1
 #define MAX_WORD_LENGTH 45
 #define MIN_HASH_VALUE 11
-#define MAX_HASH_VALUE 6098
-/* maximum key range = 6088, duplicates = 0 */
+#define MAX_HASH_VALUE 6262
+/* maximum key range = 6252, duplicates = 0 */
 #endif /* USE_UNICODE_PROPERTIES */
 
 #ifdef __GNUC__
@@ -41764,24 +42781,24 @@ uniname2ctype_hash (register const char *str, register size_t len)
        2,  1,  1, 21,  1,  7,  4,  6, 21,  1,
        4, 21, 21, 21, 21, 21, 21, 21
 #else /* USE_UNICODE_PROPERTIES */
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
 #ifndef USE_UNICODE_AGE_PROPERTIES
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
 #else /* USE_UNICODE_AGE_PROPERTIES */
-      6099, 6099, 6099, 6099, 6099, 6099,   12, 6099,    3,    1,
-         4,    8,   32,   26,   14,   17,   10,    7, 6099, 6099,
+      6263, 6263, 6263, 6263, 6263, 6263,    7, 6263,    2,    1,
+         4,   17,   31,   11,   22,    9,    2,    1, 6263, 6263,
 #endif /* USE_UNICODE_AGE_PROPERTIES */
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099, 6099,
-      6099, 6099, 6099, 6099, 6099, 6099, 6099,    1, 1425,  113,
-       437,   37, 1086, 1071, 1051,    4, 1984,    9,  500,   88,
-         8,   18, 1371, 1287,   54,  203,  310,  619, 1958,  603,
-       275, 1624,   44,    1,   22, 6099, 6099, 6099, 6099, 6099
+      6263,    3, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263, 6263,
+      6263, 6263, 6263, 6263, 6263, 6263, 6263,    1, 1373,  113,
+       437,   37, 1454,  772, 1164,    4, 1647,    9,  500,   88,
+         8,   18, 1443, 1275,   54,  203,  310,  619, 2080,  678,
+       576, 1502,   33,    1,    3, 6263, 6263, 6263, 6263, 6263
 #endif /* USE_UNICODE_PROPERTIES */
     };
 #ifndef USE_UNICODE_PROPERTIES
@@ -41852,6 +42869,7 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str33[sizeof("maka")];
     char uniname2ctype_pool_str35[sizeof("mani")];
     char uniname2ctype_pool_str36[sizeof("mn")];
+    char uniname2ctype_pool_str37[sizeof("z")];
     char uniname2ctype_pool_str45[sizeof("miao")];
     char uniname2ctype_pool_str46[sizeof("lo")];
     char uniname2ctype_pool_str47[sizeof("ci")];
@@ -41861,18 +42879,18 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str55[sizeof("cn")];
     char uniname2ctype_pool_str64[sizeof("pi")];
     char uniname2ctype_pool_str66[sizeof("innko")];
-    char uniname2ctype_pool_str67[sizeof("z")];
     char uniname2ctype_pool_str71[sizeof("gran")];
     char uniname2ctype_pool_str75[sizeof("co")];
+    char uniname2ctype_pool_str79[sizeof("yezi")];
     char uniname2ctype_pool_str83[sizeof("lineara")];
     char uniname2ctype_pool_str86[sizeof("mark")];
-    char uniname2ctype_pool_str90[sizeof("yezi")];
     char uniname2ctype_pool_str92[sizeof("po")];
     char uniname2ctype_pool_str94[sizeof("me")];
     char uniname2ctype_pool_str100[sizeof("cari")];
     char uniname2ctype_pool_str101[sizeof("inkharoshthi")];
     char uniname2ctype_pool_str102[sizeof("kana")];
     char uniname2ctype_pool_str103[sizeof("loe")];
+    char uniname2ctype_pool_str106[sizeof("zzzz")];
     char uniname2ctype_pool_str107[sizeof("m")];
     char uniname2ctype_pool_str108[sizeof("grek")];
     char uniname2ctype_pool_str111[sizeof("mro")];
@@ -41893,7 +42911,6 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str151[sizeof("c")];
     char uniname2ctype_pool_str152[sizeof("mandaic")];
     char uniname2ctype_pool_str153[sizeof("meeteimayek")];
-    char uniname2ctype_pool_str158[sizeof("zzzz")];
     char uniname2ctype_pool_str161[sizeof("inarmenian")];
     char uniname2ctype_pool_str177[sizeof("inmyanmar")];
     char uniname2ctype_pool_str178[sizeof("inmakasar")];
@@ -41926,8 +42943,6 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str282[sizeof("pc")];
     char uniname2ctype_pool_str283[sizeof("armenian")];
     char uniname2ctype_pool_str285[sizeof("insharada")];
-    char uniname2ctype_pool_str287[sizeof("vai")];
-    char uniname2ctype_pool_str288[sizeof("vaii")];
     char uniname2ctype_pool_str289[sizeof("inmarchen")];
     char uniname2ctype_pool_str293[sizeof("makasar")];
     char uniname2ctype_pool_str297[sizeof("masaramgondi")];
@@ -41949,15 +42964,15 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str352[sizeof("inkaithi")];
     char uniname2ctype_pool_str362[sizeof("inscriptionalparthian")];
     char uniname2ctype_pool_str366[sizeof("initialpunctuation")];
+    char uniname2ctype_pool_str370[sizeof("inzanabazarsquare")];
     char uniname2ctype_pool_str373[sizeof("mtei")];
-    char uniname2ctype_pool_str381[sizeof("inzanabazarsquare")];
     char uniname2ctype_pool_str386[sizeof("inkhmersymbols")];
     char uniname2ctype_pool_str399[sizeof("insyriac")];
     char uniname2ctype_pool_str401[sizeof("intakri")];
     char uniname2ctype_pool_str404[sizeof("arabic")];
+    char uniname2ctype_pool_str411[sizeof("zs")];
     char uniname2ctype_pool_str418[sizeof("katakana")];
     char uniname2ctype_pool_str426[sizeof("prti")];
-    char uniname2ctype_pool_str430[sizeof("zs")];
     char uniname2ctype_pool_str442[sizeof("ascii")];
     char uniname2ctype_pool_str445[sizeof("cs")];
     char uniname2ctype_pool_str462[sizeof("ps")];
@@ -41976,40 +42991,42 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str509[sizeof("l")];
     char uniname2ctype_pool_str511[sizeof("inmeeteimayek")];
     char uniname2ctype_pool_str520[sizeof("inideographicdescriptioncharacters")];
-    char uniname2ctype_pool_str533[sizeof("yezidi")];
+    char uniname2ctype_pool_str522[sizeof("yezidi")];
     char uniname2ctype_pool_str538[sizeof("knda")];
     char uniname2ctype_pool_str541[sizeof("innandinagari")];
     char uniname2ctype_pool_str543[sizeof("kannada")];
+    char uniname2ctype_pool_str548[sizeof("xidcontinue")];
     char uniname2ctype_pool_str556[sizeof("inmodi")];
     char uniname2ctype_pool_str558[sizeof("inlao")];
-    char uniname2ctype_pool_str559[sizeof("xidcontinue")];
     char uniname2ctype_pool_str560[sizeof("inoldnortharabian")];
     char uniname2ctype_pool_str565[sizeof("intransportandmapsymbols")];
     char uniname2ctype_pool_str566[sizeof("letternumber")];
     char uniname2ctype_pool_str568[sizeof("gothic")];
+    char uniname2ctype_pool_str571[sizeof("incb=consonant")];
     char uniname2ctype_pool_str572[sizeof("inlineara")];
     char uniname2ctype_pool_str577[sizeof("inmendekikakui")];
     char uniname2ctype_pool_str579[sizeof("mongolian")];
     char uniname2ctype_pool_str582[sizeof("inmiscellaneousmathematicalsymbolsa")];
     char uniname2ctype_pool_str583[sizeof("inspecials")];
+    char uniname2ctype_pool_str588[sizeof("vai")];
+    char uniname2ctype_pool_str589[sizeof("vaii")];
     char uniname2ctype_pool_str590[sizeof("grlink")];
+    char uniname2ctype_pool_str591[sizeof("xidc")];
     char uniname2ctype_pool_str594[sizeof("brahmi")];
     char uniname2ctype_pool_str596[sizeof("inemoticons")];
     char uniname2ctype_pool_str597[sizeof("kali")];
     char uniname2ctype_pool_str600[sizeof("inolditalic")];
-    char uniname2ctype_pool_str602[sizeof("xidc")];
     char uniname2ctype_pool_str604[sizeof("inmedefaidrin")];
     char uniname2ctype_pool_str605[sizeof("inchesssymbols")];
     char uniname2ctype_pool_str608[sizeof("incjkcompatibilityideographssupplement")];
     char uniname2ctype_pool_str609[sizeof("kits")];
     char uniname2ctype_pool_str614[sizeof("inadlam")];
+    char uniname2ctype_pool_str618[sizeof("incb=extend")];
     char uniname2ctype_pool_str624[sizeof("psalterpahlavi")];
     char uniname2ctype_pool_str625[sizeof("incommonindicnumberforms")];
     char uniname2ctype_pool_str630[sizeof("lt")];
-    char uniname2ctype_pool_str636[sizeof("innewa")];
     char uniname2ctype_pool_str639[sizeof("sk")];
     char uniname2ctype_pool_str642[sizeof("control")];
-    char uniname2ctype_pool_str643[sizeof("inkawi")];
     char uniname2ctype_pool_str645[sizeof("inancientsymbols")];
     char uniname2ctype_pool_str647[sizeof("palm")];
     char uniname2ctype_pool_str650[sizeof("inlycian")];
@@ -42019,743 +43036,742 @@ struct uniname2ctype_pool_t
     char uniname2ctype_pool_str675[sizeof("idc")];
     char uniname2ctype_pool_str678[sizeof("meroiticcursive")];
     char uniname2ctype_pool_str679[sizeof("intoto")];
-    char uniname2ctype_pool_str683[sizeof("vs")];
-    char uniname2ctype_pool_str692[sizeof("xids")];
-    char uniname2ctype_pool_str695[sizeof("inwarangciti")];
+    char uniname2ctype_pool_str681[sizeof("xids")];
     char uniname2ctype_pool_str696[sizeof("sora")];
     char uniname2ctype_pool_str697[sizeof("inopticalcharacterrecognition")];
-    char uniname2ctype_pool_str700[sizeof("kawi")];
+    char uniname2ctype_pool_str698[sizeof("incb=linker")];
     char uniname2ctype_pool_str703[sizeof("inoldsogdian")];
     char uniname2ctype_pool_str705[sizeof("inmalayalam")];
     char uniname2ctype_pool_str707[sizeof("bamum")];
     char uniname2ctype_pool_str708[sizeof("inkanasupplement")];
+    char uniname2ctype_pool_str711[sizeof("innewa")];
     char uniname2ctype_pool_str713[sizeof("insundanese")];
+    char uniname2ctype_pool_str718[sizeof("inkawi")];
     char uniname2ctype_pool_str720[sizeof("grext")];
     char uniname2ctype_pool_str737[sizeof("print")];
     char uniname2ctype_pool_str738[sizeof("intaitham")];
-    char uniname2ctype_pool_str742[sizeof("lower")];
-    char uniname2ctype_pool_str745[sizeof("patternsyntax")];
     char uniname2ctype_pool_str753[sizeof("joinc")];
     char uniname2ctype_pool_str755[sizeof("inoldsoutharabian")];
     char uniname2ctype_pool_str760[sizeof("incjkstrokes")];
     char uniname2ctype_pool_str761[sizeof("batk")];
     char uniname2ctype_pool_str766[sizeof("samr")];
-    char uniname2ctype_pool_str767[sizeof("inwancho")];
+    char uniname2ctype_pool_str770[sizeof("inwarangciti")];
     char uniname2ctype_pool_str771[sizeof("batak")];
+    char uniname2ctype_pool_str775[sizeof("kawi")];
     char uniname2ctype_pool_str776[sizeof("patws")];
     char uniname2ctype_pool_str783[sizeof("samaritan")];
     char uniname2ctype_pool_str787[sizeof("idsbinaryoperator")];
     char uniname2ctype_pool_str791[sizeof("pauc")];
+    char uniname2ctype_pool_str792[sizeof("inznamennymusicalnotation")];
     char uniname2ctype_pool_str794[sizeof("insmallkanaextension")];
     char uniname2ctype_pool_str797[sizeof("sm")];
     char uniname2ctype_pool_str799[sizeof("indominotiles")];
     char uniname2ctype_pool_str802[sizeof("alnum")];
-    char uniname2ctype_pool_str803[sizeof("inznamennymusicalnotation")];
+    char uniname2ctype_pool_str806[sizeof("gong")];
+    char uniname2ctype_pool_str808[sizeof("ingrantha")];
     char uniname2ctype_pool_str809[sizeof("insylotinagri")];
     char uniname2ctype_pool_str814[sizeof("inugaritic")];
+    char uniname2ctype_pool_str817[sizeof("lower")];
     char uniname2ctype_pool_str818[sizeof("incontrolpictures")];
+    char uniname2ctype_pool_str820[sizeof("mong")];
     char uniname2ctype_pool_str821[sizeof("inlinearbideograms")];
     char uniname2ctype_pool_str822[sizeof("inmusicalsymbols")];
     char uniname2ctype_pool_str823[sizeof("s")];
     char uniname2ctype_pool_str824[sizeof("ital")];
     char uniname2ctype_pool_str825[sizeof("inmodifiertoneletters")];
     char uniname2ctype_pool_str828[sizeof("inancientgreekmusicalnotation")];
+    char uniname2ctype_pool_str836[sizeof("idsunaryoperator")];
     char uniname2ctype_pool_str838[sizeof("lisu")];
-    char uniname2ctype_pool_str842[sizeof("lowercase")];
-    char uniname2ctype_pool_str845[sizeof("cwcm")];
+    char uniname2ctype_pool_str842[sizeof("inwancho")];
     char uniname2ctype_pool_str847[sizeof("sc")];
     char uniname2ctype_pool_str848[sizeof("bass")];
+    char uniname2ctype_pool_str851[sizeof("georgian")];
+    char uniname2ctype_pool_str852[sizeof("inosage")];
     char uniname2ctype_pool_str855[sizeof("ids")];
     char uniname2ctype_pool_str857[sizeof("inlatinextendeda")];
+    char uniname2ctype_pool_str871[sizeof("ingeneralpunctuation")];
     char uniname2ctype_pool_str875[sizeof("intaile")];
+    char uniname2ctype_pool_str879[sizeof("ingeorgian")];
     char uniname2ctype_pool_str886[sizeof("inmiscellaneoussymbols")];
+    char uniname2ctype_pool_str891[sizeof("emoji")];
     char uniname2ctype_pool_str895[sizeof("inmiscellaneoussymbolsandarrows")];
     char uniname2ctype_pool_str898[sizeof("incaucasianalbanian")];
     char uniname2ctype_pool_str900[sizeof("inmiscellaneoussymbolsandpictographs")];
+    char uniname2ctype_pool_str904[sizeof("inmongolian")];
+    char uniname2ctype_pool_str905[sizeof("innagmundari")];
     char uniname2ctype_pool_str906[sizeof("inoldturkic")];
     char uniname2ctype_pool_str907[sizeof("insaurashtra")];
-    char uniname2ctype_pool_str920[sizeof("incyrillicextendeda")];
+    char uniname2ctype_pool_str917[sizeof("lowercase")];
+    char uniname2ctype_pool_str920[sizeof("cwcm")];
     char uniname2ctype_pool_str924[sizeof("idcontinue")];
-    char uniname2ctype_pool_str925[sizeof("intaixuanjingsymbols")];
     char uniname2ctype_pool_str926[sizeof("intamil")];
     char uniname2ctype_pool_str928[sizeof("inmultani")];
     char uniname2ctype_pool_str929[sizeof("inlatinextendede")];
     char uniname2ctype_pool_str930[sizeof("pd")];
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    char uniname2ctype_pool_str934[sizeof("age=11.0")];
+    char uniname2ctype_pool_str935[sizeof("age=10.0")];
+    char uniname2ctype_pool_str936[sizeof("age=12.1")];
+    char uniname2ctype_pool_str937[sizeof("age=12.0")];
+    char uniname2ctype_pool_str938[sizeof("age=1.1")];
+    char uniname2ctype_pool_str939[sizeof("age=9.0")];
+    char uniname2ctype_pool_str940[sizeof("age=8.0")];
+    char uniname2ctype_pool_str941[sizeof("age=2.1")];
+    char uniname2ctype_pool_str942[sizeof("age=2.0")];
+    char uniname2ctype_pool_str943[sizeof("age=15.1")];
+    char uniname2ctype_pool_str944[sizeof("age=15.0")];
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str945[sizeof("ingurmukhi")];
     char uniname2ctype_pool_str946[sizeof("bali")];
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    char uniname2ctype_pool_str947[sizeof("age=7.0")];
+    char uniname2ctype_pool_str948[sizeof("age=5.1")];
+    char uniname2ctype_pool_str949[sizeof("age=5.0")];
+    char uniname2ctype_pool_str950[sizeof("age=13.0")];
+    char uniname2ctype_pool_str951[sizeof("age=5.2")];
+    char uniname2ctype_pool_str954[sizeof("age=3.1")];
+    char uniname2ctype_pool_str955[sizeof("age=3.0")];
+    char uniname2ctype_pool_str957[sizeof("age=3.2")];
+    char uniname2ctype_pool_str959[sizeof("age=6.1")];
+    char uniname2ctype_pool_str960[sizeof("age=6.0")];
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     char uniname2ctype_pool_str961[sizeof("blank")];
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    char uniname2ctype_pool_str962[sizeof("age=6.2")];
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     char uniname2ctype_pool_str963[sizeof("idst")];
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    char uniname2ctype_pool_str964[sizeof("age=14.0")];
+    char uniname2ctype_pool_str968[sizeof("age=4.1")];
+    char uniname2ctype_pool_str969[sizeof("age=4.0")];
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     char uniname2ctype_pool_str974[sizeof("inlydian")];
-    char uniname2ctype_pool_str986[sizeof("innewtailue")];
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    char uniname2ctype_pool_str975[sizeof("age=6.3")];
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str984[sizeof("vs")];
     char uniname2ctype_pool_str994[sizeof("bengali")];
     char uniname2ctype_pool_str995[sizeof("runr")];
+    char uniname2ctype_pool_str1005[sizeof("zl")];
     char uniname2ctype_pool_str1010[sizeof("ll")];
     char uniname2ctype_pool_str1013[sizeof("indeseret")];
     char uniname2ctype_pool_str1015[sizeof("inancientgreeknumbers")];
     char uniname2ctype_pool_str1021[sizeof("idstart")];
-    char uniname2ctype_pool_str1024[sizeof("zl")];
     char uniname2ctype_pool_str1025[sizeof("inmeeteimayekextensions")];
     char uniname2ctype_pool_str1028[sizeof("balinese")];
-    char uniname2ctype_pool_str1032[sizeof("incyrillicextendedc")];
+    char uniname2ctype_pool_str1032[sizeof("logicalorderexception")];
     char uniname2ctype_pool_str1035[sizeof("inspacingmodifierletters")];
     char uniname2ctype_pool_str1036[sizeof("inearlydynasticcuneiform")];
+    char uniname2ctype_pool_str1046[sizeof("patternsyntax")];
     char uniname2ctype_pool_str1049[sizeof("plrd")];
+    char uniname2ctype_pool_str1061[sizeof("innewtailue")];
     char uniname2ctype_pool_str1067[sizeof("canadianaboriginal")];
+    char uniname2ctype_pool_str1068[sizeof("insorasompeng")];
     char uniname2ctype_pool_str1072[sizeof("sind")];
+    char uniname2ctype_pool_str1074[sizeof("emojimodifier")];
     char uniname2ctype_pool_str1081[sizeof("inlatinextendedc")];
-    char uniname2ctype_pool_str1085[sizeof("uideo")];
     char uniname2ctype_pool_str1087[sizeof("incountingrodnumerals")];
-    char uniname2ctype_pool_str1089[sizeof("zinh")];
-    char uniname2ctype_pool_str1095[sizeof("dia")];
-    char uniname2ctype_pool_str1096[sizeof("di")];
     char uniname2ctype_pool_str1097[sizeof("inkhudawadi")];
-    char uniname2ctype_pool_str1102[sizeof("inhanifirohingya")];
-    char uniname2ctype_pool_str1104[sizeof("diak")];
-    char uniname2ctype_pool_str1105[sizeof("gong")];
-    char uniname2ctype_pool_str1107[sizeof("ingrantha")];
+    char uniname2ctype_pool_str1103[sizeof("xidstart")];
+    char uniname2ctype_pool_str1104[sizeof("xdigit")];
     char uniname2ctype_pool_str1109[sizeof("bidic")];
-    char uniname2ctype_pool_str1114[sizeof("xidstart")];
-    char uniname2ctype_pool_str1115[sizeof("xdigit")];
-    char uniname2ctype_pool_str1119[sizeof("mong")];
+    char uniname2ctype_pool_str1116[sizeof("intangsa")];
     char uniname2ctype_pool_str1120[sizeof("cased")];
-    char uniname2ctype_pool_str1134[sizeof("inhiragana")];
+    char uniname2ctype_pool_str1123[sizeof("ingreekandcoptic")];
     char uniname2ctype_pool_str1140[sizeof("sinhala")];
     char uniname2ctype_pool_str1142[sizeof("adlm")];
-    char uniname2ctype_pool_str1145[sizeof("xsux")];
     char uniname2ctype_pool_str1146[sizeof("glagolitic")];
     char uniname2ctype_pool_str1147[sizeof("sterm")];
     char uniname2ctype_pool_str1149[sizeof("bamu")];
-    char uniname2ctype_pool_str1150[sizeof("georgian")];
-    char uniname2ctype_pool_str1151[sizeof("inosage")];
     char uniname2ctype_pool_str1152[sizeof("gunjalagondi")];
-    char uniname2ctype_pool_str1153[sizeof("phoenician")];
     char uniname2ctype_pool_str1156[sizeof("inolduyghur")];
     char uniname2ctype_pool_str1157[sizeof("multani")];
-    char uniname2ctype_pool_str1158[sizeof("kaithi")];
+    char uniname2ctype_pool_str1160[sizeof("uideo")];
     char uniname2ctype_pool_str1164[sizeof("joincontrol")];
     char uniname2ctype_pool_str1168[sizeof("runic")];
-    char uniname2ctype_pool_str1170[sizeof("ingeneralpunctuation")];
-    char uniname2ctype_pool_str1171[sizeof("inmahajani")];
     char uniname2ctype_pool_str1174[sizeof("incyrillicsupplement")];
-    char uniname2ctype_pool_str1175[sizeof("lowercaseletter")];
-    char uniname2ctype_pool_str1176[sizeof("marchen")];
-    char uniname2ctype_pool_str1177[sizeof("graphemelink")];
-    char uniname2ctype_pool_str1178[sizeof("ingeorgian")];
-    char uniname2ctype_pool_str1180[sizeof("khojki")];
-    char uniname2ctype_pool_str1181[sizeof("cham")];
-    char uniname2ctype_pool_str1182[sizeof("inogham")];
-    char uniname2ctype_pool_str1183[sizeof("cher")];
-    char uniname2ctype_pool_str1185[sizeof("chakma")];
+    char uniname2ctype_pool_str1177[sizeof("inmeroitichieroglyphs")];
+    char uniname2ctype_pool_str1183[sizeof("zinh")];
     char uniname2ctype_pool_str1186[sizeof("inkaktoviknumerals")];
-    char uniname2ctype_pool_str1190[sizeof("emoji")];
+    char uniname2ctype_pool_str1190[sizeof("enclosingmark")];
     char uniname2ctype_pool_str1191[sizeof("insiddham")];
-    char uniname2ctype_pool_str1197[sizeof("cherokee")];
-    char uniname2ctype_pool_str1198[sizeof("khar")];
-    char uniname2ctype_pool_str1203[sizeof("inmongolian")];
-    char uniname2ctype_pool_str1204[sizeof("innagmundari")];
     char uniname2ctype_pool_str1207[sizeof("incherokeesupplement")];
-    char uniname2ctype_pool_str1209[sizeof("manichaean")];
-    char uniname2ctype_pool_str1212[sizeof("inolchiki")];
+    char uniname2ctype_pool_str1215[sizeof("inhanifirohingya")];
+    char uniname2ctype_pool_str1221[sizeof("incyrillicextendeda")];
     char uniname2ctype_pool_str1223[sizeof("inkhitansmallscript")];
+    char uniname2ctype_pool_str1226[sizeof("intaixuanjingsymbols")];
     char uniname2ctype_pool_str1227[sizeof("quotationmark")];
-    char uniname2ctype_pool_str1229[sizeof("vithkuqi")];
-    char uniname2ctype_pool_str1230[sizeof("variationselector")];
     char uniname2ctype_pool_str1231[sizeof("adlam")];
-    char uniname2ctype_pool_str1232[sizeof("inethiopic")];
-    char uniname2ctype_pool_str1233[sizeof("graphemebase")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1234[sizeof("age=11.0")];
-    char uniname2ctype_pool_str1235[sizeof("age=12.1")];
-    char uniname2ctype_pool_str1236[sizeof("age=10.0")];
-    char uniname2ctype_pool_str1237[sizeof("age=12.0")];
-    char uniname2ctype_pool_str1241[sizeof("age=13.0")];
-    char uniname2ctype_pool_str1242[sizeof("age=1.1")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str1232[sizeof("inkangxiradicals")];
+    char uniname2ctype_pool_str1238[sizeof("regionalindicator")];
     char uniname2ctype_pool_str1243[sizeof("casedletter")];
-    char uniname2ctype_pool_str1244[sizeof("ingurmukhi")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1245[sizeof("age=2.1")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
     char uniname2ctype_pool_str1246[sizeof("incjkunifiedideographsextensiona")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1247[sizeof("age=2.0")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str1247[sizeof("inhiragana")];
     char uniname2ctype_pool_str1248[sizeof("lu")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1249[sizeof("age=3.1")];
-    char uniname2ctype_pool_str1250[sizeof("age=9.0")];
-    char uniname2ctype_pool_str1251[sizeof("age=3.0")];
-    char uniname2ctype_pool_str1252[sizeof("age=3.2")];
-    char uniname2ctype_pool_str1253[sizeof("age=8.0")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str1249[sizeof("incjkunifiedideographsextensioni")];
+    char uniname2ctype_pool_str1250[sizeof("lowercaseletter")];
     char uniname2ctype_pool_str1254[sizeof("intamilsupplement")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1255[sizeof("age=6.1")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1256[sizeof("unknown")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1257[sizeof("age=6.0")];
-    char uniname2ctype_pool_str1258[sizeof("age=6.2")];
-    char uniname2ctype_pool_str1259[sizeof("age=15.0")];
-    char uniname2ctype_pool_str1260[sizeof("age=7.0")];
-    char uniname2ctype_pool_str1262[sizeof("age=6.3")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1263[sizeof("cwt")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1265[sizeof("age=14.0")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1266[sizeof("unassigned")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1267[sizeof("age=5.1")];
-    char uniname2ctype_pool_str1269[sizeof("age=5.0")];
-    char uniname2ctype_pool_str1270[sizeof("age=5.2")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1271[sizeof("diacritic")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1273[sizeof("age=4.1")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    char uniname2ctype_pool_str1274[sizeof("ahom")];
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    char uniname2ctype_pool_str1275[sizeof("age=4.0")];
-#endif /* USE_UNICODE_AGE_PROPERTIES */
+    char uniname2ctype_pool_str1258[sizeof("beng")];
+    char uniname2ctype_pool_str1264[sizeof("emojimodifierbase")];
+    char uniname2ctype_pool_str1266[sizeof("phoenician")];
+    char uniname2ctype_pool_str1271[sizeof("kaithi")];
+    char uniname2ctype_pool_str1272[sizeof("idsu")];
+    char uniname2ctype_pool_str1281[sizeof("glag")];
     char uniname2ctype_pool_str1282[sizeof("incjkunifiedideographsextensione")];
-    char uniname2ctype_pool_str1285[sizeof("khmr")];
-    char uniname2ctype_pool_str1289[sizeof("insinhala")];
+    char uniname2ctype_pool_str1284[sizeof("inmahajani")];
+    char uniname2ctype_pool_str1288[sizeof("indogra")];
+    char uniname2ctype_pool_str1289[sizeof("marchen")];
+    char uniname2ctype_pool_str1290[sizeof("graphemelink")];
     char uniname2ctype_pool_str1292[sizeof("inmiscellaneoustechnical")];
+    char uniname2ctype_pool_str1293[sizeof("khojki")];
+    char uniname2ctype_pool_str1294[sizeof("cham")];
+    char uniname2ctype_pool_str1295[sizeof("inogham")];
+    char uniname2ctype_pool_str1296[sizeof("cher")];
     char uniname2ctype_pool_str1297[sizeof("saur")];
+    char uniname2ctype_pool_str1298[sizeof("chakma")];
     char uniname2ctype_pool_str1300[sizeof("guru")];
     char uniname2ctype_pool_str1301[sizeof("sundanese")];
     char uniname2ctype_pool_str1306[sizeof("punct")];
+    char uniname2ctype_pool_str1310[sizeof("cherokee")];
+    char uniname2ctype_pool_str1311[sizeof("khar")];
     char uniname2ctype_pool_str1314[sizeof("paucinhau")];
     char uniname2ctype_pool_str1317[sizeof("gurmukhi")];
-    char uniname2ctype_pool_str1328[sizeof("chorasmian")];
-    char uniname2ctype_pool_str1331[sizeof("logicalorderexception")];
-    char uniname2ctype_pool_str1340[sizeof("khmer")];
+    char uniname2ctype_pool_str1319[sizeof("emod")];
+    char uniname2ctype_pool_str1322[sizeof("manichaean")];
+    char uniname2ctype_pool_str1323[sizeof("ingreekextended")];
+    char uniname2ctype_pool_str1325[sizeof("inolchiki")];
+    char uniname2ctype_pool_str1333[sizeof("incyrillicextendedc")];
+    char uniname2ctype_pool_str1338[sizeof("cwt")];
+    char uniname2ctype_pool_str1340[sizeof("oriya")];
+    char uniname2ctype_pool_str1341[sizeof("unassigned")];
     char uniname2ctype_pool_str1343[sizeof("limbu")];
-    char uniname2ctype_pool_str1349[sizeof("chrs")];
-    char uniname2ctype_pool_str1352[sizeof("oriya")];
-    char uniname2ctype_pool_str1354[sizeof("inscriptionalpahlavi")];
-    char uniname2ctype_pool_str1356[sizeof("incyrillicextendedd")];
+    char uniname2ctype_pool_str1345[sizeof("inethiopic")];
+    char uniname2ctype_pool_str1346[sizeof("graphemebase")];
+    char uniname2ctype_pool_str1355[sizeof("ingeometricshapes")];
+    char uniname2ctype_pool_str1356[sizeof("emojicomponent")];
     char uniname2ctype_pool_str1358[sizeof("incjkunifiedideographsextensionc")];
     char uniname2ctype_pool_str1360[sizeof("cntrl")];
     char uniname2ctype_pool_str1365[sizeof("inlatinextendedadditional")];
-    char uniname2ctype_pool_str1367[sizeof("insorasompeng")];
     char uniname2ctype_pool_str1369[sizeof("radical")];
-    char uniname2ctype_pool_str1373[sizeof("emojimodifier")];
-    char uniname2ctype_pool_str1375[sizeof("kharoshthi")];
-    char uniname2ctype_pool_str1380[sizeof("n")];
-    char uniname2ctype_pool_str1384[sizeof("math")];
-    char uniname2ctype_pool_str1387[sizeof("goth")];
-    char uniname2ctype_pool_str1392[sizeof("phnx")];
+    char uniname2ctype_pool_str1387[sizeof("ahom")];
+    char uniname2ctype_pool_str1389[sizeof("zanb")];
+    char uniname2ctype_pool_str1397[sizeof("linb")];
+    char uniname2ctype_pool_str1398[sizeof("khmr")];
     char uniname2ctype_pool_str1400[sizeof("anatolianhieroglyphs")];
     char uniname2ctype_pool_str1401[sizeof("inenclosedalphanumerics")];
-    char uniname2ctype_pool_str1407[sizeof("nandinagari")];
-    char uniname2ctype_pool_str1409[sizeof("no")];
-    char uniname2ctype_pool_str1415[sizeof("intangsa")];
-    char uniname2ctype_pool_str1419[sizeof("nko")];
-    char uniname2ctype_pool_str1420[sizeof("nkoo")];
-    char uniname2ctype_pool_str1422[sizeof("ingreekandcoptic")];
-    char uniname2ctype_pool_str1426[sizeof("p")];
-    char uniname2ctype_pool_str1428[sizeof("grantha")];
-    char uniname2ctype_pool_str1429[sizeof("decimalnumber")];
+    char uniname2ctype_pool_str1402[sizeof("insinhala")];
+    char uniname2ctype_pool_str1406[sizeof("unknown")];
+    char uniname2ctype_pool_str1410[sizeof("inbhaiksuki")];
+    char uniname2ctype_pool_str1418[sizeof("innabataean")];
+    char uniname2ctype_pool_str1423[sizeof("inkanbun")];
+    char uniname2ctype_pool_str1425[sizeof("intangut")];
+    char uniname2ctype_pool_str1429[sizeof("sogdian")];
+    char uniname2ctype_pool_str1431[sizeof("sogo")];
+    char uniname2ctype_pool_str1433[sizeof("ideographic")];
+    char uniname2ctype_pool_str1435[sizeof("xsux")];
     char uniname2ctype_pool_str1438[sizeof("incjkunifiedideographs")];
-    char uniname2ctype_pool_str1442[sizeof("intirhuta")];
-    char uniname2ctype_pool_str1448[sizeof("inhatran")];
-    char uniname2ctype_pool_str1449[sizeof("linb")];
+    char uniname2ctype_pool_str1441[sizeof("chorasmian")];
+    char uniname2ctype_pool_str1445[sizeof("inelbasan")];
+    char uniname2ctype_pool_str1446[sizeof("insogdian")];
+    char uniname2ctype_pool_str1447[sizeof("indingbats")];
     char uniname2ctype_pool_str1451[sizeof("mult")];
+    char uniname2ctype_pool_str1452[sizeof("n")];
+    char uniname2ctype_pool_str1453[sizeof("khmer")];
     char uniname2ctype_pool_str1454[sizeof("saurashtra")];
-    char uniname2ctype_pool_str1457[sizeof("kthi")];
-    char uniname2ctype_pool_str1460[sizeof("zanb")];
-    char uniname2ctype_pool_str1462[sizeof("inbhaiksuki")];
-    char uniname2ctype_pool_str1470[sizeof("innabataean")];
-    char uniname2ctype_pool_str1471[sizeof("inphoenician")];
-    char uniname2ctype_pool_str1474[sizeof("xpeo")];
-    char uniname2ctype_pool_str1475[sizeof("inkanbun")];
-    char uniname2ctype_pool_str1476[sizeof("inmeroitichieroglyphs")];
-    char uniname2ctype_pool_str1480[sizeof("ahex")];
-    char uniname2ctype_pool_str1489[sizeof("enclosingmark")];
+    char uniname2ctype_pool_str1455[sizeof("linearb")];
+    char uniname2ctype_pool_str1462[sizeof("chrs")];
+    char uniname2ctype_pool_str1463[sizeof("dia")];
+    char uniname2ctype_pool_str1464[sizeof("di")];
+    char uniname2ctype_pool_str1467[sizeof("inscriptionalpahlavi")];
+    char uniname2ctype_pool_str1472[sizeof("diak")];
+    char uniname2ctype_pool_str1477[sizeof("limb")];
+    char uniname2ctype_pool_str1479[sizeof("nandinagari")];
+    char uniname2ctype_pool_str1481[sizeof("no")];
+    char uniname2ctype_pool_str1488[sizeof("kharoshthi")];
+    char uniname2ctype_pool_str1491[sizeof("nko")];
+    char uniname2ctype_pool_str1492[sizeof("nkoo")];
     char uniname2ctype_pool_str1495[sizeof("sd")];
-    char uniname2ctype_pool_str1497[sizeof("inelbasan")];
+    char uniname2ctype_pool_str1497[sizeof("math")];
+    char uniname2ctype_pool_str1498[sizeof("p")];
     char uniname2ctype_pool_str1499[sizeof("inenclosedideographicsupplement")];
+    char uniname2ctype_pool_str1500[sizeof("goth")];
     char uniname2ctype_pool_str1501[sizeof("sidd")];
-    char uniname2ctype_pool_str1507[sizeof("linearb")];
-    char uniname2ctype_pool_str1508[sizeof("cpmn")];
+    char uniname2ctype_pool_str1509[sizeof("ugar")];
+    char uniname2ctype_pool_str1511[sizeof("intags")];
+    char uniname2ctype_pool_str1513[sizeof("inarabic")];
     char uniname2ctype_pool_str1517[sizeof("inenclosedalphanumericsupplement")];
     char uniname2ctype_pool_str1520[sizeof("bidicontrol")];
-    char uniname2ctype_pool_str1524[sizeof("inphaistosdisc")];
-    char uniname2ctype_pool_str1529[sizeof("limb")];
-    char uniname2ctype_pool_str1531[sizeof("inkangxiradicals")];
-    char uniname2ctype_pool_str1533[sizeof("lepc")];
+    char uniname2ctype_pool_str1530[sizeof("vithkuqi")];
+    char uniname2ctype_pool_str1531[sizeof("variationselector")];
+    char uniname2ctype_pool_str1535[sizeof("xpeo")];
     char uniname2ctype_pool_str1536[sizeof("braille")];
-    char uniname2ctype_pool_str1537[sizeof("regionalindicator")];
-    char uniname2ctype_pool_str1542[sizeof("inlowsurrogates")];
-    char uniname2ctype_pool_str1547[sizeof("brah")];
-    char uniname2ctype_pool_str1549[sizeof("inoldhungarian")];
-    char uniname2ctype_pool_str1557[sizeof("beng")];
-    char uniname2ctype_pool_str1563[sizeof("emojimodifierbase")];
-    char uniname2ctype_pool_str1565[sizeof("inarabic")];
-    char uniname2ctype_pool_str1570[sizeof("osage")];
-    char uniname2ctype_pool_str1572[sizeof("inherited")];
-    char uniname2ctype_pool_str1577[sizeof("incyprominoan")];
-    char uniname2ctype_pool_str1580[sizeof("glag")];
-    char uniname2ctype_pool_str1582[sizeof("medf")];
-    char uniname2ctype_pool_str1583[sizeof("osma")];
-    char uniname2ctype_pool_str1587[sizeof("indogra")];
-    char uniname2ctype_pool_str1597[sizeof("arab")];
-    char uniname2ctype_pool_str1598[sizeof("medefaidrin")];
-    char uniname2ctype_pool_str1607[sizeof("inshorthandformatcontrols")];
-    char uniname2ctype_pool_str1613[sizeof("phli")];
-    char uniname2ctype_pool_str1617[sizeof("inimperialaramaic")];
-    char uniname2ctype_pool_str1618[sizeof("emod")];
-    char uniname2ctype_pool_str1622[sizeof("ingreekextended")];
-    char uniname2ctype_pool_str1623[sizeof("inanatolianhieroglyphs")];
+    char uniname2ctype_pool_str1539[sizeof("inornamentaldingbats")];
+    char uniname2ctype_pool_str1541[sizeof("grantha")];
+    char uniname2ctype_pool_str1542[sizeof("inkayahli")];
+    char uniname2ctype_pool_str1543[sizeof("inphoenician")];
+    char uniname2ctype_pool_str1545[sizeof("arab")];
+    char uniname2ctype_pool_str1549[sizeof("inoriya")];
+    char uniname2ctype_pool_str1555[sizeof("intirhuta")];
+    char uniname2ctype_pool_str1558[sizeof("osage")];
+    char uniname2ctype_pool_str1561[sizeof("inhatran")];
+    char uniname2ctype_pool_str1562[sizeof("wara")];
+    char uniname2ctype_pool_str1567[sizeof("caseignorable")];
+    char uniname2ctype_pool_str1568[sizeof("inyezidi")];
+    char uniname2ctype_pool_str1570[sizeof("kthi")];
+    char uniname2ctype_pool_str1571[sizeof("osma")];
+    char uniname2ctype_pool_str1580[sizeof("cpmn")];
+    char uniname2ctype_pool_str1596[sizeof("inphaistosdisc")];
+    char uniname2ctype_pool_str1597[sizeof("ingeometricshapesextended")];
+    char uniname2ctype_pool_str1605[sizeof("lepc")];
+    char uniname2ctype_pool_str1617[sizeof("inlowsurrogates")];
+    char uniname2ctype_pool_str1623[sizeof("inarabicpresentationformsa")];
+    char uniname2ctype_pool_str1625[sizeof("inbasiclatin")];
     char uniname2ctype_pool_str1629[sizeof("punctuation")];
-    char uniname2ctype_pool_str1635[sizeof("graphemeextend")];
-    char uniname2ctype_pool_str1643[sizeof("cwl")];
-    char uniname2ctype_pool_str1644[sizeof("vith")];
-    char uniname2ctype_pool_str1654[sizeof("ingeometricshapes")];
-    char uniname2ctype_pool_str1655[sizeof("emojicomponent")];
-    char uniname2ctype_pool_str1657[sizeof("dsrt")];
-    char uniname2ctype_pool_str1662[sizeof("coptic")];
-    char uniname2ctype_pool_str1664[sizeof("inkayahli")];
-    char uniname2ctype_pool_str1671[sizeof("inoriya")];
-    char uniname2ctype_pool_str1675[sizeof("inarabicpresentationformsa")];
-    char uniname2ctype_pool_str1677[sizeof("inbasiclatin")];
+    char uniname2ctype_pool_str1631[sizeof("lyci")];
+    char uniname2ctype_pool_str1639[sizeof("diacritic")];
+    char uniname2ctype_pool_str1646[sizeof("lycian")];
+    char uniname2ctype_pool_str1649[sizeof("incyprominoan")];
+    char uniname2ctype_pool_str1657[sizeof("incyrillicextendedd")];
+    char uniname2ctype_pool_str1660[sizeof("brah")];
+    char uniname2ctype_pool_str1662[sizeof("inoldhungarian")];
+    char uniname2ctype_pool_str1664[sizeof("hani")];
+    char uniname2ctype_pool_str1666[sizeof("mymr")];
+    char uniname2ctype_pool_str1667[sizeof("han")];
+    char uniname2ctype_pool_str1671[sizeof("myanmar")];
+    char uniname2ctype_pool_str1678[sizeof("hano")];
     char uniname2ctype_pool_str1682[sizeof("incjkunifiedideographsextensiond")];
-    char uniname2ctype_pool_str1684[sizeof("wara")];
-    char uniname2ctype_pool_str1686[sizeof("sinh")];
+    char uniname2ctype_pool_str1685[sizeof("inherited")];
     char uniname2ctype_pool_str1687[sizeof("sund")];
-    char uniname2ctype_pool_str1691[sizeof("shavian")];
+    char uniname2ctype_pool_str1689[sizeof("inimperialaramaic")];
+    char uniname2ctype_pool_str1695[sizeof("sorasompeng")];
     char uniname2ctype_pool_str1699[sizeof("insundanesesupplement")];
-    char uniname2ctype_pool_str1701[sizeof("inyezidi")];
-    char uniname2ctype_pool_str1704[sizeof("bhks")];
-    char uniname2ctype_pool_str1714[sizeof("bhaiksuki")];
-    char uniname2ctype_pool_str1722[sizeof("inhanunoo")];
-    char uniname2ctype_pool_str1724[sizeof("intangut")];
-    char uniname2ctype_pool_str1728[sizeof("sogdian")];
+    char uniname2ctype_pool_str1703[sizeof("inkhojki")];
+    char uniname2ctype_pool_str1707[sizeof("hanunoo")];
+    char uniname2ctype_pool_str1710[sizeof("hira")];
+    char uniname2ctype_pool_str1714[sizeof("grbase")];
+    char uniname2ctype_pool_str1717[sizeof("inbatak")];
+    char uniname2ctype_pool_str1718[sizeof("cwl")];
+    char uniname2ctype_pool_str1723[sizeof("odi")];
+    char uniname2ctype_pool_str1726[sizeof("phli")];
     char uniname2ctype_pool_str1729[sizeof("inlatinextendedd")];
-    char uniname2ctype_pool_str1730[sizeof("sogo")];
-    char uniname2ctype_pool_str1731[sizeof("insinhalaarchaicnumbers")];
-    char uniname2ctype_pool_str1732[sizeof("ideographic")];
-    char uniname2ctype_pool_str1733[sizeof("ugar")];
-    char uniname2ctype_pool_str1734[sizeof("deseret")];
-    char uniname2ctype_pool_str1735[sizeof("odi")];
-    char uniname2ctype_pool_str1740[sizeof("copt")];
-    char uniname2ctype_pool_str1742[sizeof("imperialaramaic")];
-    char uniname2ctype_pool_str1745[sizeof("insogdian")];
-    char uniname2ctype_pool_str1746[sizeof("indingbats")];
-    char uniname2ctype_pool_str1750[sizeof("format")];
-    char uniname2ctype_pool_str1752[sizeof("ininscriptionalpahlavi")];
-    char uniname2ctype_pool_str1753[sizeof("lyci")];
-    char uniname2ctype_pool_str1757[sizeof("ininscriptionalparthian")];
-    char uniname2ctype_pool_str1766[sizeof("grbase")];
-    char uniname2ctype_pool_str1768[sizeof("lycian")];
-    char uniname2ctype_pool_str1769[sizeof("inbatak")];
-    char uniname2ctype_pool_str1776[sizeof("cprt")];
-    char uniname2ctype_pool_str1781[sizeof("inunifiedcanadianaboriginalsyllabicsextendeda")];
-    char uniname2ctype_pool_str1788[sizeof("mymr")];
-    char uniname2ctype_pool_str1793[sizeof("myanmar")];
-    char uniname2ctype_pool_str1806[sizeof("intibetan")];
-    char uniname2ctype_pool_str1810[sizeof("intags")];
-    char uniname2ctype_pool_str1811[sizeof("asciihexdigit")];
+    char uniname2ctype_pool_str1734[sizeof("coptic")];
+    char uniname2ctype_pool_str1736[sizeof("inanatolianhieroglyphs")];
+    char uniname2ctype_pool_str1744[sizeof("assigned")];
+    char uniname2ctype_pool_str1748[sizeof("graphemeextend")];
+    char uniname2ctype_pool_str1754[sizeof("intibetan")];
+    char uniname2ctype_pool_str1766[sizeof("inelymaic")];
+    char uniname2ctype_pool_str1767[sizeof("insoyombo")];
+    char uniname2ctype_pool_str1776[sizeof("inblockelements")];
+    char uniname2ctype_pool_str1780[sizeof("incjkcompatibility")];
+    char uniname2ctype_pool_str1790[sizeof("innumberforms")];
+    char uniname2ctype_pool_str1797[sizeof("decimalnumber")];
+    char uniname2ctype_pool_str1799[sizeof("sinh")];
+    char uniname2ctype_pool_str1800[sizeof("inglagolitic")];
+    char uniname2ctype_pool_str1804[sizeof("shavian")];
+    char uniname2ctype_pool_str1806[sizeof("phnx")];
+    char uniname2ctype_pool_str1812[sizeof("copt")];
     char uniname2ctype_pool_str1813[sizeof("sentenceterminal")];
-    char uniname2ctype_pool_str1821[sizeof("nand")];
-    char uniname2ctype_pool_str1828[sizeof("inblockelements")];
-    char uniname2ctype_pool_str1838[sizeof("inornamentaldingbats")];
-    char uniname2ctype_pool_str1841[sizeof("inethiopicextendeda")];
-    char uniname2ctype_pool_str1842[sizeof("innumberforms")];
-    char uniname2ctype_pool_str1843[sizeof("cwcf")];
-    char uniname2ctype_pool_str1845[sizeof("oidc")];
-    char uniname2ctype_pool_str1848[sizeof("bopo")];
-    char uniname2ctype_pool_str1851[sizeof("cuneiform")];
-    char uniname2ctype_pool_str1866[sizeof("caseignorable")];
-    char uniname2ctype_pool_str1871[sizeof("inoldpersian")];
-    char uniname2ctype_pool_str1881[sizeof("cwu")];
-    char uniname2ctype_pool_str1888[sizeof("inelymaic")];
-    char uniname2ctype_pool_str1889[sizeof("insoyombo")];
-    char uniname2ctype_pool_str1896[sizeof("ingeometricshapesextended")];
-    char uniname2ctype_pool_str1902[sizeof("incjkcompatibility")];
-    char uniname2ctype_pool_str1904[sizeof("inmyanmarextendedb")];
-    char uniname2ctype_pool_str1905[sizeof("innushu")];
-    char uniname2ctype_pool_str1912[sizeof("inkanaextendedb")];
-    char uniname2ctype_pool_str1913[sizeof("olck")];
-    char uniname2ctype_pool_str1916[sizeof("inbyzantinemusicalsymbols")];
-    char uniname2ctype_pool_str1924[sizeof("olchiki")];
-    char uniname2ctype_pool_str1929[sizeof("inkatakanaphoneticextensions")];
-    char uniname2ctype_pool_str1932[sizeof("incoptic")];
-    char uniname2ctype_pool_str1935[sizeof("oids")];
-    char uniname2ctype_pool_str1936[sizeof("inarabicextendeda")];
-    char uniname2ctype_pool_str1941[sizeof("modifierletter")];
-    char uniname2ctype_pool_str1950[sizeof("incjksymbolsandpunctuation")];
-    char uniname2ctype_pool_str1956[sizeof("olower")];
-    char uniname2ctype_pool_str1958[sizeof("bopomofo")];
+    char uniname2ctype_pool_str1814[sizeof("imperialaramaic")];
+    char uniname2ctype_pool_str1817[sizeof("bhks")];
+    char uniname2ctype_pool_str1824[sizeof("ininscriptionalpahlavi")];
+    char uniname2ctype_pool_str1827[sizeof("bhaiksuki")];
+    char uniname2ctype_pool_str1829[sizeof("ininscriptionalparthian")];
+    char uniname2ctype_pool_str1833[sizeof("oidc")];
+    char uniname2ctype_pool_str1835[sizeof("inhanunoo")];
+    char uniname2ctype_pool_str1836[sizeof("bugi")];
+    char uniname2ctype_pool_str1844[sizeof("insinhalaarchaicnumbers")];
+    char uniname2ctype_pool_str1847[sizeof("ingeorgiansupplement")];
+    char uniname2ctype_pool_str1848[sizeof("cprt")];
+    char uniname2ctype_pool_str1850[sizeof("sogd")];
+    char uniname2ctype_pool_str1852[sizeof("inmyanmarextendedb")];
+    char uniname2ctype_pool_str1853[sizeof("inbyzantinemusicalsymbols")];
+    char uniname2ctype_pool_str1860[sizeof("inkanaextendedb")];
+    char uniname2ctype_pool_str1863[sizeof("format")];
+    char uniname2ctype_pool_str1880[sizeof("inmayannumerals")];
+    char uniname2ctype_pool_str1881[sizeof("intagalog")];
+    char uniname2ctype_pool_str1884[sizeof("inarabicextendeda")];
+    char uniname2ctype_pool_str1886[sizeof("ugaritic")];
+    char uniname2ctype_pool_str1889[sizeof("patsyn")];
+    char uniname2ctype_pool_str1893[sizeof("nand")];
+    char uniname2ctype_pool_str1894[sizeof("ahex")];
+    char uniname2ctype_pool_str1901[sizeof("olck")];
+    char uniname2ctype_pool_str1912[sizeof("olchiki")];
+    char uniname2ctype_pool_str1916[sizeof("innoblock")];
+    char uniname2ctype_pool_str1918[sizeof("buginese")];
+    char uniname2ctype_pool_str1919[sizeof("inmongoliansupplement")];
+    char uniname2ctype_pool_str1920[sizeof("bopo")];
+    char uniname2ctype_pool_str1923[sizeof("oids")];
+    char uniname2ctype_pool_str1924[sizeof("asciihexdigit")];
+    char uniname2ctype_pool_str1933[sizeof("inbraillepatterns")];
+    char uniname2ctype_pool_str1941[sizeof("inbalinese")];
+    char uniname2ctype_pool_str1943[sizeof("inoldpersian")];
+    char uniname2ctype_pool_str1944[sizeof("olower")];
+    char uniname2ctype_pool_str1949[sizeof("insuttonsignwriting")];
+    char uniname2ctype_pool_str1950[sizeof("medf")];
+    char uniname2ctype_pool_str1954[sizeof("inmiscellaneousmathematicalsymbolsb")];
+    char uniname2ctype_pool_str1955[sizeof("lydi")];
+    char uniname2ctype_pool_str1956[sizeof("cwu")];
     char uniname2ctype_pool_str1964[sizeof("inlisu")];
-    char uniname2ctype_pool_str1967[sizeof("inoldpermic")];
-    char uniname2ctype_pool_str1968[sizeof("innoblock")];
-    char uniname2ctype_pool_str1969[sizeof("ext")];
-    char uniname2ctype_pool_str1974[sizeof("inunifiedcanadianaboriginalsyllabics")];
-    char uniname2ctype_pool_str1981[sizeof("takri")];
-    char uniname2ctype_pool_str1985[sizeof("inbraillepatterns")];
-    char uniname2ctype_pool_str1988[sizeof("invai")];
-    char uniname2ctype_pool_str1991[sizeof("alpha")];
-    char uniname2ctype_pool_str1993[sizeof("inbalinese")];
-    char uniname2ctype_pool_str1994[sizeof("sorasompeng")];
-    char uniname2ctype_pool_str1996[sizeof("closepunctuation")];
-    char uniname2ctype_pool_str2001[sizeof("hani")];
-    char uniname2ctype_pool_str2002[sizeof("inmayannumerals")];
-    char uniname2ctype_pool_str2004[sizeof("han")];
-    char uniname2ctype_pool_str2006[sizeof("inmiscellaneousmathematicalsymbolsb")];
-    char uniname2ctype_pool_str2010[sizeof("inlepcha")];
-    char uniname2ctype_pool_str2011[sizeof("patsyn")];
+    char uniname2ctype_pool_str1966[sizeof("medefaidrin")];
+    char uniname2ctype_pool_str1970[sizeof("lydian")];
+    char uniname2ctype_pool_str1971[sizeof("ext")];
+    char uniname2ctype_pool_str1975[sizeof("inshorthandformatcontrols")];
+    char uniname2ctype_pool_str1981[sizeof("hatran")];
+    char uniname2ctype_pool_str1992[sizeof("inyiradicals")];
+    char uniname2ctype_pool_str1995[sizeof("phag")];
+    char uniname2ctype_pool_str1996[sizeof("inarabicextendedc")];
+    char uniname2ctype_pool_str2004[sizeof("incoptic")];
+    char uniname2ctype_pool_str2009[sizeof("inhanguljamo")];
     char uniname2ctype_pool_str2012[sizeof("inlisusupplement")];
-    char uniname2ctype_pool_str2014[sizeof("insyriacsupplement")];
-    char uniname2ctype_pool_str2015[sizeof("hano")];
-    char uniname2ctype_pool_str2016[sizeof("newa")];
-    char uniname2ctype_pool_str2023[sizeof("spacingmark")];
-    char uniname2ctype_pool_str2024[sizeof("inpalmyrene")];
-    char uniname2ctype_pool_str2026[sizeof("takr")];
-    char uniname2ctype_pool_str2033[sizeof("xposixpunct")];
-    char uniname2ctype_pool_str2040[sizeof("inkhojki")];
-    char uniname2ctype_pool_str2042[sizeof("taile")];
-    char uniname2ctype_pool_str2043[sizeof("assigned")];
-    char uniname2ctype_pool_str2044[sizeof("hanunoo")];
-    char uniname2ctype_pool_str2047[sizeof("hira")];
-    char uniname2ctype_pool_str2048[sizeof("inarabicextendedc")];
-    char uniname2ctype_pool_str2062[sizeof("newtailue")];
-    char uniname2ctype_pool_str2070[sizeof("space")];
+    char uniname2ctype_pool_str2015[sizeof("word")];
+    char uniname2ctype_pool_str2016[sizeof("hatr")];
+    char uniname2ctype_pool_str2017[sizeof("incjkunifiedideographsextensiong")];
+    char uniname2ctype_pool_str2018[sizeof("innushu")];
+    char uniname2ctype_pool_str2022[sizeof("incjksymbolsandpunctuation")];
+    char uniname2ctype_pool_str2025[sizeof("dsrt")];
+    char uniname2ctype_pool_str2026[sizeof("idsb")];
+    char uniname2ctype_pool_str2030[sizeof("bopomofo")];
+    char uniname2ctype_pool_str2038[sizeof("inhanguljamoextendeda")];
+    char uniname2ctype_pool_str2039[sizeof("inoldpermic")];
+    char uniname2ctype_pool_str2042[sizeof("inkatakanaphoneticextensions")];
+    char uniname2ctype_pool_str2051[sizeof("sarb")];
+    char uniname2ctype_pool_str2057[sizeof("zanabazarsquare")];
+    char uniname2ctype_pool_str2058[sizeof("vith")];
+    char uniname2ctype_pool_str2062[sizeof("innyiakengpuachuehmong")];
+    char uniname2ctype_pool_str2063[sizeof("alpha")];
+    char uniname2ctype_pool_str2068[sizeof("closepunctuation")];
     char uniname2ctype_pool_str2073[sizeof("intelugu")];
-    char uniname2ctype_pool_str2077[sizeof("lydi")];
-    char uniname2ctype_pool_str2078[sizeof("idsb")];
-    char uniname2ctype_pool_str2090[sizeof("extpict")];
-    char uniname2ctype_pool_str2092[sizeof("lydian")];
-    char uniname2ctype_pool_str2095[sizeof("inethiopicsupplement")];
-    char uniname2ctype_pool_str2103[sizeof("sarb")];
-    char uniname2ctype_pool_str2110[sizeof("ugaritic")];
-    char uniname2ctype_pool_str2114[sizeof("inyiradicals")];
-    char uniname2ctype_pool_str2115[sizeof("inphoneticextensions")];
-    char uniname2ctype_pool_str2117[sizeof("sharada")];
-    char uniname2ctype_pool_str2128[sizeof("zanabazarsquare")];
-    char uniname2ctype_pool_str2135[sizeof("bugi")];
-    char uniname2ctype_pool_str2137[sizeof("word")];
-    char uniname2ctype_pool_str2141[sizeof("term")];
-    char uniname2ctype_pool_str2145[sizeof("separator")];
-    char uniname2ctype_pool_str2146[sizeof("ingeorgiansupplement")];
-    char uniname2ctype_pool_str2149[sizeof("sogd")];
-    char uniname2ctype_pool_str2163[sizeof("extender")];
-    char uniname2ctype_pool_str2165[sizeof("shrd")];
-    char uniname2ctype_pool_str2166[sizeof("graph")];
-    char uniname2ctype_pool_str2174[sizeof("tnsa")];
-    char uniname2ctype_pool_str2178[sizeof("tangsa")];
-    char uniname2ctype_pool_str2181[sizeof("phag")];
-    char uniname2ctype_pool_str2182[sizeof("dogra")];
-    char uniname2ctype_pool_str2195[sizeof("inhanguljamo")];
-    char uniname2ctype_pool_str2196[sizeof("inshavian")];
-    char uniname2ctype_pool_str2207[sizeof("siddham")];
-    char uniname2ctype_pool_str2211[sizeof("cf")];
-    char uniname2ctype_pool_str2216[sizeof("inunifiedcanadianaboriginalsyllabicsextended")];
-    char uniname2ctype_pool_str2217[sizeof("buginese")];
-    char uniname2ctype_pool_str2218[sizeof("inmongoliansupplement")];
-    char uniname2ctype_pool_str2219[sizeof("cyrl")];
-    char uniname2ctype_pool_str2224[sizeof("inhanguljamoextendeda")];
-    char uniname2ctype_pool_str2228[sizeof("pf")];
-    char uniname2ctype_pool_str2229[sizeof("number")];
-    char uniname2ctype_pool_str2232[sizeof("inphoneticextensionssupplement")];
-    char uniname2ctype_pool_str2233[sizeof("dogr")];
-    char uniname2ctype_pool_str2234[sizeof("mlym")];
-    char uniname2ctype_pool_str2235[sizeof("incopticepactnumbers")];
-    char uniname2ctype_pool_str2241[sizeof("malayalam")];
-    char uniname2ctype_pool_str2244[sizeof("inbamum")];
-    char uniname2ctype_pool_str2247[sizeof("nd")];
-    char uniname2ctype_pool_str2248[sizeof("insuttonsignwriting")];
-    char uniname2ctype_pool_str2276[sizeof("inethiopicextended")];
-    char uniname2ctype_pool_str2278[sizeof("shaw")];
-    char uniname2ctype_pool_str2279[sizeof("palmyrene")];
-    char uniname2ctype_pool_str2283[sizeof("soyo")];
-    char uniname2ctype_pool_str2296[sizeof("incjkunifiedideographsextensionh")];
-    char uniname2ctype_pool_str2305[sizeof("sgnw")];
-    char uniname2ctype_pool_str2308[sizeof("toto")];
-    char uniname2ctype_pool_str2312[sizeof("caucasianalbanian")];
-    char uniname2ctype_pool_str2315[sizeof("inmathematicalalphanumericsymbols")];
-    char uniname2ctype_pool_str2316[sizeof("incjkunifiedideographsextensiong")];
-    char uniname2ctype_pool_str2318[sizeof("hatran")];
-    char uniname2ctype_pool_str2321[sizeof("taiviet")];
-    char uniname2ctype_pool_str2323[sizeof("meroitichieroglyphs")];
-    char uniname2ctype_pool_str2327[sizeof("ingeorgianextended")];
-    char uniname2ctype_pool_str2331[sizeof("incjkunifiedideographsextensionf")];
-    char uniname2ctype_pool_str2333[sizeof("oldpersian")];
-    char uniname2ctype_pool_str2343[sizeof("induployan")];
-    char uniname2ctype_pool_str2344[sizeof("incyrillicextendedb")];
-    char uniname2ctype_pool_str2345[sizeof("dash")];
-    char uniname2ctype_pool_str2353[sizeof("hatr")];
-    char uniname2ctype_pool_str2361[sizeof("innyiakengpuachuehmong")];
-    char uniname2ctype_pool_str2364[sizeof("incombiningdiacriticalmarks")];
-    char uniname2ctype_pool_str2373[sizeof("nl")];
-    char uniname2ctype_pool_str2374[sizeof("incombiningdiacriticalmarksforsymbols")];
-    char uniname2ctype_pool_str2375[sizeof("khudawadi")];
-    char uniname2ctype_pool_str2397[sizeof("incjkradicalssupplement")];
-    char uniname2ctype_pool_str2398[sizeof("inglagolitic")];
-    char uniname2ctype_pool_str2405[sizeof("orkh")];
-    char uniname2ctype_pool_str2414[sizeof("syrc")];
-    char uniname2ctype_pool_str2427[sizeof("surrogate")];
-    char uniname2ctype_pool_str2433[sizeof("indevanagari")];
-    char uniname2ctype_pool_str2434[sizeof("avestan")];
-    char uniname2ctype_pool_str2437[sizeof("oldpermic")];
-    char uniname2ctype_pool_str2440[sizeof("ethi")];
-    char uniname2ctype_pool_str2451[sizeof("ogam")];
-    char uniname2ctype_pool_str2454[sizeof("rohg")];
-    char uniname2ctype_pool_str2460[sizeof("idstrinaryoperator")];
-    char uniname2ctype_pool_str2464[sizeof("java")];
-    char uniname2ctype_pool_str2470[sizeof("inphagspa")];
-    char uniname2ctype_pool_str2475[sizeof("lepcha")];
-    char uniname2ctype_pool_str2476[sizeof("indevanagariextendeda")];
-    char uniname2ctype_pool_str2478[sizeof("intifinagh")];
-    char uniname2ctype_pool_str2479[sizeof("intagalog")];
-    char uniname2ctype_pool_str2481[sizeof("incombiningdiacriticalmarkssupplement")];
-    char uniname2ctype_pool_str2500[sizeof("tale")];
-    char uniname2ctype_pool_str2506[sizeof("inbrahmi")];
-    char uniname2ctype_pool_str2511[sizeof("terminalpunctuation")];
-    char uniname2ctype_pool_str2513[sizeof("insymbolsandpictographsextendeda")];
-    char uniname2ctype_pool_str2530[sizeof("syriac")];
-    char uniname2ctype_pool_str2534[sizeof("inbengali")];
-    char uniname2ctype_pool_str2535[sizeof("nagm")];
-    char uniname2ctype_pool_str2545[sizeof("extendedpictographic")];
-    char uniname2ctype_pool_str2548[sizeof("buhd")];
-    char uniname2ctype_pool_str2549[sizeof("javanese")];
-    char uniname2ctype_pool_str2551[sizeof("taml")];
-    char uniname2ctype_pool_str2564[sizeof("inbuginese")];
-    char uniname2ctype_pool_str2567[sizeof("inlatin1supplement")];
-    char uniname2ctype_pool_str2570[sizeof("ingothic")];
-    char uniname2ctype_pool_str2572[sizeof("invariationselectors")];
-    char uniname2ctype_pool_str2574[sizeof("hex")];
-    char uniname2ctype_pool_str2575[sizeof("inverticalforms")];
-    char uniname2ctype_pool_str2576[sizeof("ebase")];
-    char uniname2ctype_pool_str2582[sizeof("incurrencysymbols")];
-    char uniname2ctype_pool_str2588[sizeof("avst")];
-    char uniname2ctype_pool_str2602[sizeof("osge")];
-    char uniname2ctype_pool_str2606[sizeof("incombiningdiacriticalmarksextended")];
-    char uniname2ctype_pool_str2608[sizeof("intaiviet")];
-    char uniname2ctype_pool_str2609[sizeof("spaceseparator")];
-    char uniname2ctype_pool_str2625[sizeof("softdotted")];
-    char uniname2ctype_pool_str2648[sizeof("nchar")];
-    char uniname2ctype_pool_str2652[sizeof("invedicextensions")];
-    char uniname2ctype_pool_str2656[sizeof("inlimbu")];
-    char uniname2ctype_pool_str2657[sizeof("olditalic")];
-    char uniname2ctype_pool_str2665[sizeof("gujr")];
-    char uniname2ctype_pool_str2666[sizeof("mathsymbol")];
-    char uniname2ctype_pool_str2670[sizeof("incjkunifiedideographsextensionb")];
-    char uniname2ctype_pool_str2674[sizeof("gujarati")];
-    char uniname2ctype_pool_str2688[sizeof("phagspa")];
-    char uniname2ctype_pool_str2689[sizeof("invariationselectorssupplement")];
-    char uniname2ctype_pool_str2694[sizeof("currencysymbol")];
-    char uniname2ctype_pool_str2705[sizeof("inlinearbsyllabary")];
-    char uniname2ctype_pool_str2726[sizeof("wancho")];
-    char uniname2ctype_pool_str2750[sizeof("inpaucinhau")];
-    char uniname2ctype_pool_str2761[sizeof("other")];
-    char uniname2ctype_pool_str2762[sizeof("otheridcontinue")];
-    char uniname2ctype_pool_str2765[sizeof("sylo")];
-    char uniname2ctype_pool_str2766[sizeof("zp")];
-    char uniname2ctype_pool_str2769[sizeof("inaegeannumbers")];
-    char uniname2ctype_pool_str2772[sizeof("warangciti")];
-    char uniname2ctype_pool_str2775[sizeof("othernumber")];
-    char uniname2ctype_pool_str2786[sizeof("digit")];
-    char uniname2ctype_pool_str2793[sizeof("nonspacingmark")];
-    char uniname2ctype_pool_str2801[sizeof("titlecaseletter")];
-    char uniname2ctype_pool_str2808[sizeof("inmeroiticcursive")];
-    char uniname2ctype_pool_str2810[sizeof("wcho")];
-    char uniname2ctype_pool_str2816[sizeof("graphemeclusterbreak=spacingmark")];
-    char uniname2ctype_pool_str2821[sizeof("inletterlikesymbols")];
-    char uniname2ctype_pool_str2830[sizeof("inottomansiyaqnumbers")];
-    char uniname2ctype_pool_str2834[sizeof("intagbanwa")];
-    char uniname2ctype_pool_str2836[sizeof("cyrillic")];
-    char uniname2ctype_pool_str2847[sizeof("oalpha")];
-    char uniname2ctype_pool_str2852[sizeof("graphemeclusterbreak=cr")];
-    char uniname2ctype_pool_str2855[sizeof("narb")];
-    char uniname2ctype_pool_str2856[sizeof("changeswhencasemapped")];
-    char uniname2ctype_pool_str2859[sizeof("inbopomofo")];
-    char uniname2ctype_pool_str2867[sizeof("graphemeclusterbreak=regionalindicator")];
-    char uniname2ctype_pool_str2868[sizeof("otheralphabetic")];
-    char uniname2ctype_pool_str2871[sizeof("noncharactercodepoint")];
-    char uniname2ctype_pool_str2879[sizeof("oldhungarian")];
-    char uniname2ctype_pool_str2886[sizeof("insymbolsforlegacycomputing")];
-    char uniname2ctype_pool_str2902[sizeof("insmallformvariants")];
-    char uniname2ctype_pool_str2904[sizeof("inhangulsyllables")];
-    char uniname2ctype_pool_str2905[sizeof("emojipresentation")];
-    char uniname2ctype_pool_str2907[sizeof("epres")];
-    char uniname2ctype_pool_str2909[sizeof("inbassavah")];
-    char uniname2ctype_pool_str2911[sizeof("indevanagariextended")];
-    char uniname2ctype_pool_str2941[sizeof("inbuhid")];
-    char uniname2ctype_pool_str2953[sizeof("tirhuta")];
-    char uniname2ctype_pool_str2964[sizeof("inpsalterpahlavi")];
-    char uniname2ctype_pool_str2966[sizeof("whitespace")];
-    char uniname2ctype_pool_str2967[sizeof("finalpunctuation")];
-    char uniname2ctype_pool_str2970[sizeof("orya")];
-    char uniname2ctype_pool_str2980[sizeof("phlp")];
-    char uniname2ctype_pool_str2984[sizeof("inbamumsupplement")];
-    char uniname2ctype_pool_str2986[sizeof("buhid")];
-    char uniname2ctype_pool_str2987[sizeof("paragraphseparator")];
-    char uniname2ctype_pool_str2988[sizeof("inalphabeticpresentationforms")];
-    char uniname2ctype_pool_str2997[sizeof("inlatinextendedg")];
-    char uniname2ctype_pool_str3001[sizeof("elba")];
-    char uniname2ctype_pool_str3002[sizeof("changeswhentitlecased")];
-    char uniname2ctype_pool_str3005[sizeof("incombininghalfmarks")];
-    char uniname2ctype_pool_str3006[sizeof("intangutcomponents")];
-    char uniname2ctype_pool_str3015[sizeof("thaa")];
-    char uniname2ctype_pool_str3018[sizeof("thai")];
-    char uniname2ctype_pool_str3019[sizeof("oldturkic")];
-    char uniname2ctype_pool_str3026[sizeof("thaana")];
-    char uniname2ctype_pool_str3027[sizeof("inlatinextendedf")];
-    char uniname2ctype_pool_str3035[sizeof("ougr")];
-    char uniname2ctype_pool_str3042[sizeof("tang")];
-    char uniname2ctype_pool_str3045[sizeof("inarabicmathematicalalphabeticsymbols")];
-    char uniname2ctype_pool_str3048[sizeof("tagbanwa")];
-    char uniname2ctype_pool_str3052[sizeof("tamil")];
-    char uniname2ctype_pool_str3053[sizeof("khitansmallscript")];
-    char uniname2ctype_pool_str3058[sizeof("mahj")];
-    char uniname2ctype_pool_str3067[sizeof("mahajani")];
-    char uniname2ctype_pool_str3068[sizeof("hang")];
-    char uniname2ctype_pool_str3071[sizeof("tirh")];
-    char uniname2ctype_pool_str3072[sizeof("sylotinagri")];
-    char uniname2ctype_pool_str3082[sizeof("talu")];
-    char uniname2ctype_pool_str3084[sizeof("nagmundari")];
-    char uniname2ctype_pool_str3086[sizeof("deva")];
-    char uniname2ctype_pool_str3087[sizeof("ingujarati")];
-    char uniname2ctype_pool_str3091[sizeof("deprecated")];
-    char uniname2ctype_pool_str3099[sizeof("inarabicpresentationformsb")];
-    char uniname2ctype_pool_str3104[sizeof("devanagari")];
-    char uniname2ctype_pool_str3106[sizeof("ingunjalagondi")];
-    char uniname2ctype_pool_str3107[sizeof("graphemeclusterbreak=t")];
-    char uniname2ctype_pool_str3109[sizeof("graphemeclusterbreak=lvt")];
-    char uniname2ctype_pool_str3110[sizeof("taitham")];
-    char uniname2ctype_pool_str3111[sizeof("nbat")];
-    char uniname2ctype_pool_str3118[sizeof("telu")];
-    char uniname2ctype_pool_str3123[sizeof("hiragana")];
-    char uniname2ctype_pool_str3125[sizeof("nabataean")];
-    char uniname2ctype_pool_str3135[sizeof("inrejang")];
-    char uniname2ctype_pool_str3142[sizeof("intangutsupplement")];
-    char uniname2ctype_pool_str3145[sizeof("khoj")];
-    char uniname2ctype_pool_str3155[sizeof("hmng")];
-    char uniname2ctype_pool_str3157[sizeof("cyprominoan")];
-    char uniname2ctype_pool_str3158[sizeof("inhebrew")];
-    char uniname2ctype_pool_str3176[sizeof("inmathematicaloperators")];
-    char uniname2ctype_pool_str3180[sizeof("inarabicsupplement")];
-    char uniname2ctype_pool_str3193[sizeof("inenclosedcjklettersandmonths")];
-    char uniname2ctype_pool_str3209[sizeof("changeswhenlowercased")];
-    char uniname2ctype_pool_str3212[sizeof("tangut")];
-    char uniname2ctype_pool_str3215[sizeof("elbasan")];
-    char uniname2ctype_pool_str3218[sizeof("osmanya")];
-    char uniname2ctype_pool_str3237[sizeof("insuperscriptsandsubscripts")];
-    char uniname2ctype_pool_str3239[sizeof("graphemeclusterbreak=extend")];
-    char uniname2ctype_pool_str3240[sizeof("graphemeclusterbreak=prepend")];
-    char uniname2ctype_pool_str3248[sizeof("nshu")];
-    char uniname2ctype_pool_str3254[sizeof("otherlowercase")];
-    char uniname2ctype_pool_str3265[sizeof("inethiopicextendedb")];
-    char uniname2ctype_pool_str3267[sizeof("otherletter")];
-    char uniname2ctype_pool_str3275[sizeof("kayahli")];
-    char uniname2ctype_pool_str3284[sizeof("inplayingcards")];
-    char uniname2ctype_pool_str3287[sizeof("elym")];
-    char uniname2ctype_pool_str3297[sizeof("graphemeclusterbreak=l")];
-    char uniname2ctype_pool_str3303[sizeof("graphemeclusterbreak=control")];
-    char uniname2ctype_pool_str3313[sizeof("ogrext")];
-    char uniname2ctype_pool_str3320[sizeof("elymaic")];
-    char uniname2ctype_pool_str3328[sizeof("changeswhenuppercased")];
-    char uniname2ctype_pool_str3329[sizeof("inalchemicalsymbols")];
-    char uniname2ctype_pool_str3331[sizeof("oldsogdian")];
-    char uniname2ctype_pool_str3338[sizeof("otheridstart")];
-    char uniname2ctype_pool_str3348[sizeof("insupplementalarrowsa")];
-    char uniname2ctype_pool_str3350[sizeof("invithkuqi")];
-    char uniname2ctype_pool_str3355[sizeof("symbol")];
-    char uniname2ctype_pool_str3360[sizeof("inarabicextendedb")];
-    char uniname2ctype_pool_str3371[sizeof("cypriot")];
-    char uniname2ctype_pool_str3372[sizeof("any")];
-    char uniname2ctype_pool_str3373[sizeof("otheruppercase")];
-    char uniname2ctype_pool_str3377[sizeof("rjng")];
-    char uniname2ctype_pool_str3391[sizeof("wspace")];
-    char uniname2ctype_pool_str3396[sizeof("inindicsiyaqnumbers")];
-    char uniname2ctype_pool_str3405[sizeof("inprivateusearea")];
-    char uniname2ctype_pool_str3416[sizeof("othersymbol")];
-    char uniname2ctype_pool_str3428[sizeof("oupper")];
-    char uniname2ctype_pool_str3433[sizeof("signwriting")];
-    char uniname2ctype_pool_str3436[sizeof("nushu")];
-    char uniname2ctype_pool_str3455[sizeof("hmnp")];
-    char uniname2ctype_pool_str3458[sizeof("upper")];
-    char uniname2ctype_pool_str3460[sizeof("insupplementalarrowsc")];
-    char uniname2ctype_pool_str3483[sizeof("omath")];
-    char uniname2ctype_pool_str3502[sizeof("modifiersymbol")];
-    char uniname2ctype_pool_str3504[sizeof("hebr")];
-    char uniname2ctype_pool_str3505[sizeof("inhalfwidthandfullwidthforms")];
-    char uniname2ctype_pool_str3511[sizeof("insupplementalmathematicaloperators")];
-    char uniname2ctype_pool_str3532[sizeof("inpahawhhmong")];
-    char uniname2ctype_pool_str3533[sizeof("alphabetic")];
-    char uniname2ctype_pool_str3558[sizeof("uppercase")];
-    char uniname2ctype_pool_str3580[sizeof("dupl")];
-    char uniname2ctype_pool_str3590[sizeof("ogham")];
-    char uniname2ctype_pool_str3613[sizeof("dashpunctuation")];
-    char uniname2ctype_pool_str3618[sizeof("hangul")];
-    char uniname2ctype_pool_str3648[sizeof("inhanguljamoextendedb")];
-    char uniname2ctype_pool_str3659[sizeof("bassavah")];
-    char uniname2ctype_pool_str3664[sizeof("aghb")];
-    char uniname2ctype_pool_str3686[sizeof("hung")];
-    char uniname2ctype_pool_str3689[sizeof("hexdigit")];
-    char uniname2ctype_pool_str3698[sizeof("incypriotsyllabary")];
-    char uniname2ctype_pool_str3699[sizeof("indivesakuru")];
-    char uniname2ctype_pool_str3701[sizeof("tibt")];
-    char uniname2ctype_pool_str3705[sizeof("inlatinextendedb")];
-    char uniname2ctype_pool_str3710[sizeof("hluw")];
-    char uniname2ctype_pool_str3713[sizeof("tibetan")];
-    char uniname2ctype_pool_str3721[sizeof("inyisyllables")];
-    char uniname2ctype_pool_str3744[sizeof("oldnortharabian")];
-    char uniname2ctype_pool_str3754[sizeof("defaultignorablecodepoint")];
-    char uniname2ctype_pool_str3766[sizeof("inhighprivateusesurrogates")];
-    char uniname2ctype_pool_str3799[sizeof("soyombo")];
-    char uniname2ctype_pool_str3807[sizeof("otherdefaultignorablecodepoint")];
-    char uniname2ctype_pool_str3842[sizeof("pahawhhmong")];
-    char uniname2ctype_pool_str3845[sizeof("unifiedideograph")];
-    char uniname2ctype_pool_str3850[sizeof("othermath")];
-    char uniname2ctype_pool_str3854[sizeof("changeswhencasefolded")];
-    char uniname2ctype_pool_str3857[sizeof("inmahjongtiles")];
-    char uniname2ctype_pool_str3868[sizeof("dep")];
-    char uniname2ctype_pool_str3881[sizeof("divesakuru")];
-    char uniname2ctype_pool_str3884[sizeof("graphemeclusterbreak=lf")];
-    char uniname2ctype_pool_str3891[sizeof("uppercaseletter")];
-    char uniname2ctype_pool_str3924[sizeof("insupplementalpunctuation")];
-    char uniname2ctype_pool_str3942[sizeof("ethiopic")];
-    char uniname2ctype_pool_str3944[sizeof("inyijinghexagramsymbols")];
-    char uniname2ctype_pool_str3949[sizeof("ecomp")];
-    char uniname2ctype_pool_str3976[sizeof("inglagoliticsupplement")];
-    char uniname2ctype_pool_str3998[sizeof("inbopomofoextended")];
-    char uniname2ctype_pool_str4007[sizeof("injavanese")];
-    char uniname2ctype_pool_str4106[sizeof("otherpunctuation")];
-    char uniname2ctype_pool_str4116[sizeof("tifinagh")];
-    char uniname2ctype_pool_str4127[sizeof("tfng")];
-    char uniname2ctype_pool_str4169[sizeof("hanifirohingya")];
-    char uniname2ctype_pool_str4231[sizeof("tavt")];
-    char uniname2ctype_pool_str4308[sizeof("inboxdrawing")];
-    char uniname2ctype_pool_str4309[sizeof("oldsoutharabian")];
-    char uniname2ctype_pool_str4348[sizeof("inegyptianhieroglyphs")];
-    char uniname2ctype_pool_str4361[sizeof("inegyptianhieroglyphformatcontrols")];
-    char uniname2ctype_pool_str4459[sizeof("tagb")];
-    char uniname2ctype_pool_str4487[sizeof("rejang")];
-    char uniname2ctype_pool_str4604[sizeof("tglg")];
-    char uniname2ctype_pool_str4626[sizeof("tagalog")];
-    char uniname2ctype_pool_str4627[sizeof("othergraphemeextend")];
-    char uniname2ctype_pool_str4674[sizeof("insupplementaryprivateuseareaa")];
-    char uniname2ctype_pool_str4683[sizeof("inhighsurrogates")];
-    char uniname2ctype_pool_str4695[sizeof("hebrew")];
-    char uniname2ctype_pool_str4734[sizeof("duployan")];
-    char uniname2ctype_pool_str4755[sizeof("graphemeclusterbreak=v")];
-    char uniname2ctype_pool_str4756[sizeof("graphemeclusterbreak=lv")];
-    char uniname2ctype_pool_str4772[sizeof("insupplementalarrowsb")];
-    char uniname2ctype_pool_str4783[sizeof("graphemeclusterbreak=zwj")];
-    char uniname2ctype_pool_str4810[sizeof("telugu")];
-    char uniname2ctype_pool_str4898[sizeof("zyyy")];
-    char uniname2ctype_pool_str4982[sizeof("olduyghur")];
-    char uniname2ctype_pool_str4986[sizeof("inhangulcompatibilityjamo")];
-    char uniname2ctype_pool_str5018[sizeof("openpunctuation")];
-    char uniname2ctype_pool_str5038[sizeof("hyphen")];
-    char uniname2ctype_pool_str5134[sizeof("insupplementalsymbolsandpictographs")];
-    char uniname2ctype_pool_str5141[sizeof("egyp")];
-    char uniname2ctype_pool_str5300[sizeof("nyiakengpuachuehmong")];
-    char uniname2ctype_pool_str5980[sizeof("egyptianhieroglyphs")];
-    char uniname2ctype_pool_str6098[sizeof("insupplementaryprivateuseareab")];
+    char uniname2ctype_pool_str2081[sizeof("sgnw")];
+    char uniname2ctype_pool_str2082[sizeof("inlepcha")];
+    char uniname2ctype_pool_str2086[sizeof("insyriacsupplement")];
+    char uniname2ctype_pool_str2092[sizeof("extpict")];
+    char uniname2ctype_pool_str2095[sizeof("spacingmark")];
+    char uniname2ctype_pool_str2096[sizeof("inpalmyrene")];
+    char uniname2ctype_pool_str2097[sizeof("cyrl")];
+    char uniname2ctype_pool_str2102[sizeof("deseret")];
+    char uniname2ctype_pool_str2103[sizeof("takri")];
+    char uniname2ctype_pool_str2110[sizeof("invai")];
+    char uniname2ctype_pool_str2112[sizeof("mlym")];
+    char uniname2ctype_pool_str2119[sizeof("malayalam")];
+    char uniname2ctype_pool_str2128[sizeof("surrogate")];
+    char uniname2ctype_pool_str2140[sizeof("ogam")];
+    char uniname2ctype_pool_str2142[sizeof("space")];
+    char uniname2ctype_pool_str2148[sizeof("takr")];
+    char uniname2ctype_pool_str2149[sizeof("inunifiedcanadianaboriginalsyllabicsextendeda")];
+    char uniname2ctype_pool_str2157[sizeof("palmyrene")];
+    char uniname2ctype_pool_str2161[sizeof("soyo")];
+    char uniname2ctype_pool_str2163[sizeof("newa")];
+    char uniname2ctype_pool_str2164[sizeof("taile")];
+    char uniname2ctype_pool_str2165[sizeof("extender")];
+    char uniname2ctype_pool_str2183[sizeof("inbengali")];
+    char uniname2ctype_pool_str2192[sizeof("inbamum")];
+    char uniname2ctype_pool_str2201[sizeof("meroitichieroglyphs")];
+    char uniname2ctype_pool_str2208[sizeof("inethiopicsupplement")];
+    char uniname2ctype_pool_str2209[sizeof("newtailue")];
+    char uniname2ctype_pool_str2213[sizeof("inbuginese")];
+    char uniname2ctype_pool_str2217[sizeof("separator")];
+    char uniname2ctype_pool_str2219[sizeof("cuneiform")];
+    char uniname2ctype_pool_str2225[sizeof("ebase")];
+    char uniname2ctype_pool_str2230[sizeof("sharada")];
+    char uniname2ctype_pool_str2243[sizeof("inphagspa")];
+    char uniname2ctype_pool_str2251[sizeof("dogra")];
+    char uniname2ctype_pool_str2254[sizeof("ethi")];
+    char uniname2ctype_pool_str2255[sizeof("inethiopicextendeda")];
+    char uniname2ctype_pool_str2260[sizeof("caucasianalbanian")];
+    char uniname2ctype_pool_str2263[sizeof("term")];
+    char uniname2ctype_pool_str2268[sizeof("rohg")];
+    char uniname2ctype_pool_str2278[sizeof("shrd")];
+    char uniname2ctype_pool_str2286[sizeof("cwcf")];
+    char uniname2ctype_pool_str2291[sizeof("osge")];
+    char uniname2ctype_pool_str2292[sizeof("syrc")];
+    char uniname2ctype_pool_str2296[sizeof("tnsa")];
+    char uniname2ctype_pool_str2300[sizeof("tangsa")];
+    char uniname2ctype_pool_str2301[sizeof("number")];
+    char uniname2ctype_pool_str2302[sizeof("dogr")];
+    char uniname2ctype_pool_str2307[sizeof("incopticepactnumbers")];
+    char uniname2ctype_pool_str2308[sizeof("nagm")];
+    char uniname2ctype_pool_str2309[sizeof("modifierletter")];
+    char uniname2ctype_pool_str2312[sizeof("incombiningdiacriticalmarks")];
+    char uniname2ctype_pool_str2318[sizeof("inshavian")];
+    char uniname2ctype_pool_str2319[sizeof("nd")];
+    char uniname2ctype_pool_str2320[sizeof("siddham")];
+    char uniname2ctype_pool_str2321[sizeof("oldpersian")];
+    char uniname2ctype_pool_str2322[sizeof("incombiningdiacriticalmarksforsymbols")];
+    char uniname2ctype_pool_str2328[sizeof("gujr")];
+    char uniname2ctype_pool_str2329[sizeof("ingeorgianextended")];
+    char uniname2ctype_pool_str2337[sizeof("gujarati")];
+    char uniname2ctype_pool_str2342[sizeof("inunifiedcanadianaboriginalsyllabics")];
+    char uniname2ctype_pool_str2351[sizeof("warangciti")];
+    char uniname2ctype_pool_str2384[sizeof("ingothic")];
+    char uniname2ctype_pool_str2392[sizeof("graph")];
+    char uniname2ctype_pool_str2395[sizeof("xposixpunct")];
+    char uniname2ctype_pool_str2399[sizeof("inlatinextendedg")];
+    char uniname2ctype_pool_str2408[sizeof("syriac")];
+    char uniname2ctype_pool_str2409[sizeof("incjkunifiedideographsextensionh")];
+    char uniname2ctype_pool_str2415[sizeof("induployan")];
+    char uniname2ctype_pool_str2418[sizeof("inaegeannumbers")];
+    char uniname2ctype_pool_str2425[sizeof("oldpermic")];
+    char uniname2ctype_pool_str2428[sizeof("inmathematicalalphanumericsymbols")];
+    char uniname2ctype_pool_str2429[sizeof("incombiningdiacriticalmarkssupplement")];
+    char uniname2ctype_pool_str2430[sizeof("toto")];
+    char uniname2ctype_pool_str2432[sizeof("hang")];
+    char uniname2ctype_pool_str2443[sizeof("taiviet")];
+    char uniname2ctype_pool_str2445[sizeof("nl")];
+    char uniname2ctype_pool_str2451[sizeof("ingujarati")];
+    char uniname2ctype_pool_str2460[sizeof("incurrencysymbols")];
+    char uniname2ctype_pool_str2461[sizeof("insymbolsandpictographsextendeda")];
+    char uniname2ctype_pool_str2466[sizeof("shaw")];
+    char uniname2ctype_pool_str2469[sizeof("incjkradicalssupplement")];
+    char uniname2ctype_pool_str2470[sizeof("ingunjalagondi")];
+    char uniname2ctype_pool_str2483[sizeof("intagbanwa")];
+    char uniname2ctype_pool_str2487[sizeof("hiragana")];
+    char uniname2ctype_pool_str2488[sizeof("inphoneticextensions")];
+    char uniname2ctype_pool_str2499[sizeof("inrejang")];
+    char uniname2ctype_pool_str2506[sizeof("orkh")];
+    char uniname2ctype_pool_str2519[sizeof("hmng")];
+    char uniname2ctype_pool_str2532[sizeof("idstrinaryoperator")];
+    char uniname2ctype_pool_str2535[sizeof("insymbolsforlegacycomputing")];
+    char uniname2ctype_pool_str2544[sizeof("mathsymbol")];
+    char uniname2ctype_pool_str2547[sizeof("extendedpictographic")];
+    char uniname2ctype_pool_str2554[sizeof("incombiningdiacriticalmarksextended")];
+    char uniname2ctype_pool_str2555[sizeof("indevanagari")];
+    char uniname2ctype_pool_str2556[sizeof("avestan")];
+    char uniname2ctype_pool_str2563[sizeof("khudawadi")];
+    char uniname2ctype_pool_str2567[sizeof("inbrahmi")];
+    char uniname2ctype_pool_str2583[sizeof("inlinearbsyllabary")];
+    char uniname2ctype_pool_str2584[sizeof("inunifiedcanadianaboriginalsyllabicsextended")];
+    char uniname2ctype_pool_str2586[sizeof("java")];
+    char uniname2ctype_pool_str2593[sizeof("incyrillicextendedb")];
+    char uniname2ctype_pool_str2598[sizeof("indevanagariextendeda")];
+    char uniname2ctype_pool_str2604[sizeof("inlimbu")];
+    char uniname2ctype_pool_str2605[sizeof("inphoneticextensionssupplement")];
+    char uniname2ctype_pool_str2618[sizeof("incjkunifiedideographsextensionb")];
+    char uniname2ctype_pool_str2622[sizeof("tale")];
+    char uniname2ctype_pool_str2633[sizeof("terminalpunctuation")];
+    char uniname2ctype_pool_str2639[sizeof("inlatin1supplement")];
+    char uniname2ctype_pool_str2642[sizeof("currencysymbol")];
+    char uniname2ctype_pool_str2643[sizeof("sylo")];
+    char uniname2ctype_pool_str2645[sizeof("olditalic")];
+    char uniname2ctype_pool_str2650[sizeof("elba")];
+    char uniname2ctype_pool_str2660[sizeof("lepcha")];
+    char uniname2ctype_pool_str2661[sizeof("buhd")];
+    char uniname2ctype_pool_str2670[sizeof("changeswhencasemapped")];
+    char uniname2ctype_pool_str2671[sizeof("javanese")];
+    char uniname2ctype_pool_str2673[sizeof("taml")];
+    char uniname2ctype_pool_str2678[sizeof("emojipresentation")];
+    char uniname2ctype_pool_str2680[sizeof("epres")];
+    char uniname2ctype_pool_str2681[sizeof("spaceseparator")];
+    char uniname2ctype_pool_str2690[sizeof("inethiopicextended")];
+    char uniname2ctype_pool_str2694[sizeof("invariationselectors")];
+    char uniname2ctype_pool_str2697[sizeof("inverticalforms")];
+    char uniname2ctype_pool_str2699[sizeof("incjkunifiedideographsextensionf")];
+    char uniname2ctype_pool_str2708[sizeof("inottomansiyaqnumbers")];
+    char uniname2ctype_pool_str2710[sizeof("avst")];
+    char uniname2ctype_pool_str2714[sizeof("cyrillic")];
+    char uniname2ctype_pool_str2717[sizeof("wancho")];
+    char uniname2ctype_pool_str2718[sizeof("inhangulsyllables")];
+    char uniname2ctype_pool_str2724[sizeof("ougr")];
+    char uniname2ctype_pool_str2730[sizeof("intaiviet")];
+    char uniname2ctype_pool_str2741[sizeof("rjng")];
+    char uniname2ctype_pool_str2760[sizeof("paragraphseparator")];
+    char uniname2ctype_pool_str2769[sizeof("inletterlikesymbols")];
+    char uniname2ctype_pool_str2774[sizeof("invedicextensions")];
+    char uniname2ctype_pool_str2779[sizeof("intangutcomponents")];
+    char uniname2ctype_pool_str2801[sizeof("wcho")];
+    char uniname2ctype_pool_str2811[sizeof("invariationselectorssupplement")];
+    char uniname2ctype_pool_str2816[sizeof("changeswhentitlecased")];
+    char uniname2ctype_pool_str2822[sizeof("inpaucinhau")];
+    char uniname2ctype_pool_str2826[sizeof("dash")];
+    char uniname2ctype_pool_str2833[sizeof("nchar")];
+    char uniname2ctype_pool_str2834[sizeof("mahj")];
+    char uniname2ctype_pool_str2836[sizeof("orya")];
+    char uniname2ctype_pool_str2839[sizeof("hex")];
+    char uniname2ctype_pool_str2843[sizeof("mahajani")];
+    char uniname2ctype_pool_str2855[sizeof("digit")];
+    char uniname2ctype_pool_str2856[sizeof("inenclosedcjklettersandmonths")];
+    char uniname2ctype_pool_str2857[sizeof("nagmundari")];
+    char uniname2ctype_pool_str2862[sizeof("other")];
+    char uniname2ctype_pool_str2863[sizeof("otheridcontinue")];
+    char uniname2ctype_pool_str2864[sizeof("elbasan")];
+    char uniname2ctype_pool_str2865[sizeof("tang")];
+    char uniname2ctype_pool_str2866[sizeof("elym")];
+    char uniname2ctype_pool_str2867[sizeof("oldhungarian")];
+    char uniname2ctype_pool_str2871[sizeof("tagbanwa")];
+    char uniname2ctype_pool_str2873[sizeof("phagspa")];
+    char uniname2ctype_pool_str2875[sizeof("narb")];
+    char uniname2ctype_pool_str2876[sizeof("othernumber")];
+    char uniname2ctype_pool_str2877[sizeof("graphemeclusterbreak=spacingmark")];
+    char uniname2ctype_pool_str2879[sizeof("inbopomofo")];
+    char uniname2ctype_pool_str2891[sizeof("zp")];
+    char uniname2ctype_pool_str2899[sizeof("elymaic")];
+    char uniname2ctype_pool_str2910[sizeof("signwriting")];
+    char uniname2ctype_pool_str2913[sizeof("graphemeclusterbreak=cr")];
+    char uniname2ctype_pool_str2915[sizeof("intangutsupplement")];
+    char uniname2ctype_pool_str2921[sizeof("khoj")];
+    char uniname2ctype_pool_str2923[sizeof("titlecaseletter")];
+    char uniname2ctype_pool_str2928[sizeof("graphemeclusterbreak=regionalindicator")];
+    char uniname2ctype_pool_str2930[sizeof("inmeroiticcursive")];
+    char uniname2ctype_pool_str2932[sizeof("inbamumsupplement")];
+    char uniname2ctype_pool_str2937[sizeof("nonspacingmark")];
+    char uniname2ctype_pool_str2947[sizeof("cf")];
+    char uniname2ctype_pool_str2948[sizeof("oalpha")];
+    char uniname2ctype_pool_str2950[sizeof("sylotinagri")];
+    char uniname2ctype_pool_str2957[sizeof("whitespace")];
+    char uniname2ctype_pool_str2959[sizeof("intifinagh")];
+    char uniname2ctype_pool_str2964[sizeof("pf")];
+    char uniname2ctype_pool_str2969[sizeof("otheralphabetic")];
+    char uniname2ctype_pool_str2970[sizeof("inbassavah")];
+    char uniname2ctype_pool_str2993[sizeof("softdotted")];
+    char uniname2ctype_pool_str2995[sizeof("inarabicpresentationformsb")];
+    char uniname2ctype_pool_str3002[sizeof("inbuhid")];
+    char uniname2ctype_pool_str3007[sizeof("oldturkic")];
+    char uniname2ctype_pool_str3020[sizeof("oldsogdian")];
+    char uniname2ctype_pool_str3023[sizeof("changeswhenlowercased")];
+    char uniname2ctype_pool_str3024[sizeof("insmallformvariants")];
+    char uniname2ctype_pool_str3033[sizeof("indevanagariextended")];
+    char uniname2ctype_pool_str3050[sizeof("hung")];
+    char uniname2ctype_pool_str3056[sizeof("noncharactercodepoint")];
+    char uniname2ctype_pool_str3066[sizeof("incombininghalfmarks")];
+    char uniname2ctype_pool_str3075[sizeof("tirhuta")];
+    char uniname2ctype_pool_str3084[sizeof("osmanya")];
+    char uniname2ctype_pool_str3099[sizeof("buhid")];
+    char uniname2ctype_pool_str3106[sizeof("inarabicmathematicalalphabeticsymbols")];
+    char uniname2ctype_pool_str3107[sizeof("cyprominoan")];
+    char uniname2ctype_pool_str3115[sizeof("hebr")];
+    char uniname2ctype_pool_str3128[sizeof("any")];
+    char uniname2ctype_pool_str3131[sizeof("nbat")];
+    char uniname2ctype_pool_str3142[sizeof("changeswhenuppercased")];
+    char uniname2ctype_pool_str3145[sizeof("nabataean")];
+    char uniname2ctype_pool_str3149[sizeof("inpsalterpahlavi")];
+    char uniname2ctype_pool_str3152[sizeof("finalpunctuation")];
+    char uniname2ctype_pool_str3165[sizeof("phlp")];
+    char uniname2ctype_pool_str3168[sizeof("graphemeclusterbreak=t")];
+    char uniname2ctype_pool_str3170[sizeof("graphemeclusterbreak=lvt")];
+    char uniname2ctype_pool_str3173[sizeof("inalphabeticpresentationforms")];
+    char uniname2ctype_pool_str3174[sizeof("tamil")];
+    char uniname2ctype_pool_str3190[sizeof("hmnp")];
+    char uniname2ctype_pool_str3200[sizeof("inarabicsupplement")];
+    char uniname2ctype_pool_str3204[sizeof("talu")];
+    char uniname2ctype_pool_str3233[sizeof("symbol")];
+    char uniname2ctype_pool_str3234[sizeof("inplayingcards")];
+    char uniname2ctype_pool_str3238[sizeof("khitansmallscript")];
+    char uniname2ctype_pool_str3240[sizeof("telu")];
+    char uniname2ctype_pool_str3250[sizeof("thaa")];
+    char uniname2ctype_pool_str3253[sizeof("thai")];
+    char uniname2ctype_pool_str3256[sizeof("inarabicextendedb")];
+    char uniname2ctype_pool_str3261[sizeof("thaana")];
+    char uniname2ctype_pool_str3266[sizeof("kayahli")];
+    char uniname2ctype_pool_str3281[sizeof("hangul")];
+    char uniname2ctype_pool_str3294[sizeof("inhebrew")];
+    char uniname2ctype_pool_str3300[sizeof("graphemeclusterbreak=extend")];
+    char uniname2ctype_pool_str3301[sizeof("graphemeclusterbreak=prepend")];
+    char uniname2ctype_pool_str3303[sizeof("ogrext")];
+    char uniname2ctype_pool_str3306[sizeof("tirh")];
+    char uniname2ctype_pool_str3321[sizeof("cypriot")];
+    char uniname2ctype_pool_str3332[sizeof("inindicsiyaqnumbers")];
+    char uniname2ctype_pool_str3334[sizeof("tangut")];
+    char uniname2ctype_pool_str3341[sizeof("wspace")];
+    char uniname2ctype_pool_str3345[sizeof("taitham")];
+    char uniname2ctype_pool_str3354[sizeof("hexdigit")];
+    char uniname2ctype_pool_str3355[sizeof("otherlowercase")];
+    char uniname2ctype_pool_str3358[sizeof("graphemeclusterbreak=l")];
+    char uniname2ctype_pool_str3361[sizeof("inmathematicaloperators")];
+    char uniname2ctype_pool_str3364[sizeof("graphemeclusterbreak=control")];
+    char uniname2ctype_pool_str3368[sizeof("otherletter")];
+    char uniname2ctype_pool_str3381[sizeof("insuperscriptsandsubscripts")];
+    char uniname2ctype_pool_str3390[sizeof("inalchemicalsymbols")];
+    char uniname2ctype_pool_str3392[sizeof("ogham")];
+    char uniname2ctype_pool_str3410[sizeof("inhanguljamoextendedb")];
+    char uniname2ctype_pool_str3418[sizeof("inpahawhhmong")];
+    char uniname2ctype_pool_str3426[sizeof("aghb")];
+    char uniname2ctype_pool_str3433[sizeof("nshu")];
+    char uniname2ctype_pool_str3439[sizeof("otheridstart")];
+    char uniname2ctype_pool_str3448[sizeof("hluw")];
+    char uniname2ctype_pool_str3450[sizeof("inglagoliticsupplement")];
+    char uniname2ctype_pool_str3474[sizeof("otheruppercase")];
+    char uniname2ctype_pool_str3477[sizeof("inyisyllables")];
+    char uniname2ctype_pool_str3485[sizeof("inyijinghexagramsymbols")];
+    char uniname2ctype_pool_str3488[sizeof("oupper")];
+    char uniname2ctype_pool_str3492[sizeof("insupplementalarrowsa")];
+    char uniname2ctype_pool_str3508[sizeof("nushu")];
+    char uniname2ctype_pool_str3517[sizeof("othersymbol")];
+    char uniname2ctype_pool_str3531[sizeof("deprecated")];
+    char uniname2ctype_pool_str3552[sizeof("rejang")];
+    char uniname2ctype_pool_str3553[sizeof("alphabetic")];
+    char uniname2ctype_pool_str3576[sizeof("deva")];
+    char uniname2ctype_pool_str3585[sizeof("invithkuqi")];
+    char uniname2ctype_pool_str3594[sizeof("devanagari")];
+    char uniname2ctype_pool_str3599[sizeof("inprivateusearea")];
+    char uniname2ctype_pool_str3601[sizeof("inlatinextendedb")];
+    char uniname2ctype_pool_str3604[sizeof("insupplementalarrowsc")];
+    char uniname2ctype_pool_str3621[sizeof("idcompatmathcontinue")];
+    char uniname2ctype_pool_str3625[sizeof("soyombo")];
+    char uniname2ctype_pool_str3627[sizeof("inethiopicextendedb")];
+    char uniname2ctype_pool_str3633[sizeof("inmahjongtiles")];
+    char uniname2ctype_pool_str3635[sizeof("idcompatmathstart")];
+    char uniname2ctype_pool_str3648[sizeof("incypriotsyllabary")];
+    char uniname2ctype_pool_str3655[sizeof("insupplementalmathematicaloperators")];
+    char uniname2ctype_pool_str3677[sizeof("upper")];
+    char uniname2ctype_pool_str3680[sizeof("oldnortharabian")];
+    char uniname2ctype_pool_str3693[sizeof("inhighprivateusesurrogates")];
+    char uniname2ctype_pool_str3697[sizeof("omath")];
+    char uniname2ctype_pool_str3763[sizeof("inlatinextendedf")];
+    char uniname2ctype_pool_str3771[sizeof("tibt")];
+    char uniname2ctype_pool_str3777[sizeof("uppercase")];
+    char uniname2ctype_pool_str3783[sizeof("tibetan")];
+    char uniname2ctype_pool_str3792[sizeof("injavanese")];
+    char uniname2ctype_pool_str3794[sizeof("ecomp")];
+    char uniname2ctype_pool_str3818[sizeof("modifiersymbol")];
+    char uniname2ctype_pool_str3821[sizeof("indivesakuru")];
+    char uniname2ctype_pool_str3828[sizeof("ethiopic")];
+    char uniname2ctype_pool_str3844[sizeof("pahawhhmong")];
+    char uniname2ctype_pool_str3847[sizeof("unifiedideograph")];
+    char uniname2ctype_pool_str3894[sizeof("bassavah")];
+    char uniname2ctype_pool_str3901[sizeof("hanifirohingya")];
+    char uniname2ctype_pool_str3908[sizeof("otherdefaultignorablecodepoint")];
+    char uniname2ctype_pool_str3959[sizeof("inboxdrawing")];
+    char uniname2ctype_pool_str3986[sizeof("inhalfwidthandfullwidthforms")];
+    char uniname2ctype_pool_str3999[sizeof("inegyptianhieroglyphs")];
+    char uniname2ctype_pool_str4012[sizeof("inegyptianhieroglyphformatcontrols")];
+    char uniname2ctype_pool_str4020[sizeof("dupl")];
+    char uniname2ctype_pool_str4036[sizeof("changeswhencasefolded")];
+    char uniname2ctype_pool_str4053[sizeof("dashpunctuation")];
+    char uniname2ctype_pool_str4064[sizeof("othermath")];
+    char uniname2ctype_pool_str4068[sizeof("insupplementalpunctuation")];
+    char uniname2ctype_pool_str4110[sizeof("uppercaseletter")];
+    char uniname2ctype_pool_str4128[sizeof("tglg")];
+    char uniname2ctype_pool_str4150[sizeof("tagalog")];
+    char uniname2ctype_pool_str4230[sizeof("tagb")];
+    char uniname2ctype_pool_str4245[sizeof("oldsoutharabian")];
+    char uniname2ctype_pool_str4279[sizeof("otherpunctuation")];
+    char uniname2ctype_pool_str4311[sizeof("inhighsurrogates")];
+    char uniname2ctype_pool_str4313[sizeof("graphemeclusterbreak=lf")];
+    char uniname2ctype_pool_str4318[sizeof("tfng")];
+    char uniname2ctype_pool_str4319[sizeof("inbopomofoextended")];
+    char uniname2ctype_pool_str4371[sizeof("divesakuru")];
+    char uniname2ctype_pool_str4380[sizeof("dep")];
+    char uniname2ctype_pool_str4429[sizeof("othergraphemeextend")];
+    char uniname2ctype_pool_str4456[sizeof("hebrew")];
+    char uniname2ctype_pool_str4475[sizeof("tavt")];
+    char uniname2ctype_pool_str4490[sizeof("defaultignorablecodepoint")];
+    char uniname2ctype_pool_str4493[sizeof("egyp")];
+    char uniname2ctype_pool_str4507[sizeof("graphemeclusterbreak=zwj")];
+    char uniname2ctype_pool_str4513[sizeof("zyyy")];
+    char uniname2ctype_pool_str4549[sizeof("olduyghur")];
+    char uniname2ctype_pool_str4633[sizeof("telugu")];
+    char uniname2ctype_pool_str4651[sizeof("hyphen")];
+    char uniname2ctype_pool_str4719[sizeof("tifinagh")];
+    char uniname2ctype_pool_str4820[sizeof("inhangulcompatibilityjamo")];
+    char uniname2ctype_pool_str4864[sizeof("insupplementalarrowsb")];
+    char uniname2ctype_pool_str4890[sizeof("insupplementaryprivateuseareaa")];
+    char uniname2ctype_pool_str4938[sizeof("graphemeclusterbreak=v")];
+    char uniname2ctype_pool_str4939[sizeof("graphemeclusterbreak=lv")];
+    char uniname2ctype_pool_str5052[sizeof("duployan")];
+    char uniname2ctype_pool_str5064[sizeof("nyiakengpuachuehmong")];
+    char uniname2ctype_pool_str5138[sizeof("egyptianhieroglyphs")];
+    char uniname2ctype_pool_str5150[sizeof("openpunctuation")];
+    char uniname2ctype_pool_str5156[sizeof("insupplementalsymbolsandpictographs")];
+    char uniname2ctype_pool_str6262[sizeof("insupplementaryprivateuseareab")];
 #endif /* USE_UNICODE_PROPERTIES */
   };
 static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
@@ -42770,6 +43786,7 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "maka",
     "mani",
     "mn",
+    "z",
     "miao",
     "lo",
     "ci",
@@ -42779,18 +43796,18 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "cn",
     "pi",
     "innko",
-    "z",
     "gran",
     "co",
+    "yezi",
     "lineara",
     "mark",
-    "yezi",
     "po",
     "me",
     "cari",
     "inkharoshthi",
     "kana",
     "loe",
+    "zzzz",
     "m",
     "grek",
     "mro",
@@ -42811,7 +43828,6 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "c",
     "mandaic",
     "meeteimayek",
-    "zzzz",
     "inarmenian",
     "inmyanmar",
     "inmakasar",
@@ -42844,8 +43860,6 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "pc",
     "armenian",
     "insharada",
-    "vai",
-    "vaii",
     "inmarchen",
     "makasar",
     "masaramgondi",
@@ -42867,15 +43881,15 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "inkaithi",
     "inscriptionalparthian",
     "initialpunctuation",
-    "mtei",
     "inzanabazarsquare",
+    "mtei",
     "inkhmersymbols",
     "insyriac",
     "intakri",
     "arabic",
+    "zs",
     "katakana",
     "prti",
-    "zs",
     "ascii",
     "cs",
     "ps",
@@ -42898,36 +43912,38 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "knda",
     "innandinagari",
     "kannada",
+    "xidcontinue",
     "inmodi",
     "inlao",
-    "xidcontinue",
     "inoldnortharabian",
     "intransportandmapsymbols",
     "letternumber",
     "gothic",
+    "incb=consonant",
     "inlineara",
     "inmendekikakui",
     "mongolian",
     "inmiscellaneousmathematicalsymbolsa",
     "inspecials",
+    "vai",
+    "vaii",
     "grlink",
+    "xidc",
     "brahmi",
     "inemoticons",
     "kali",
     "inolditalic",
-    "xidc",
     "inmedefaidrin",
     "inchesssymbols",
     "incjkcompatibilityideographssupplement",
     "kits",
     "inadlam",
+    "incb=extend",
     "psalterpahlavi",
     "incommonindicnumberforms",
     "lt",
-    "innewa",
     "sk",
     "control",
-    "inkawi",
     "inancientsymbols",
     "palm",
     "inlycian",
@@ -42937,17 +43953,17 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "idc",
     "meroiticcursive",
     "intoto",
-    "vs",
     "xids",
-    "inwarangciti",
     "sora",
     "inopticalcharacterrecognition",
-    "kawi",
+    "incb=linker",
     "inoldsogdian",
     "inmalayalam",
     "bamum",
     "inkanasupplement",
+    "innewa",
     "insundanese",
+    "inkawi",
     "grext",
 #endif /* USE_UNICODE_PROPERTIES */
     "print",
@@ -42956,88 +43972,130 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "alpha",
 #else /* USE_UNICODE_PROPERTIES */
     "intaitham",
-    "lower",
-    "patternsyntax",
     "joinc",
     "inoldsoutharabian",
     "incjkstrokes",
     "batk",
     "samr",
-    "inwancho",
+    "inwarangciti",
     "batak",
+    "kawi",
     "patws",
     "samaritan",
     "idsbinaryoperator",
     "pauc",
+    "inznamennymusicalnotation",
     "insmallkanaextension",
     "sm",
     "indominotiles",
 #endif /* USE_UNICODE_PROPERTIES */
     "alnum",
 #ifdef USE_UNICODE_PROPERTIES
-    "inznamennymusicalnotation",
+    "gong",
+    "ingrantha",
     "insylotinagri",
     "inugaritic",
+    "lower",
     "incontrolpictures",
+    "mong",
     "inlinearbideograms",
     "inmusicalsymbols",
     "s",
     "ital",
     "inmodifiertoneletters",
     "inancientgreekmusicalnotation",
+    "idsunaryoperator",
     "lisu",
-    "lowercase",
-    "cwcm",
+    "inwancho",
     "sc",
     "bass",
+    "georgian",
+    "inosage",
     "ids",
     "inlatinextendeda",
+    "ingeneralpunctuation",
     "intaile",
+    "ingeorgian",
     "inmiscellaneoussymbols",
+    "emoji",
     "inmiscellaneoussymbolsandarrows",
     "incaucasianalbanian",
     "inmiscellaneoussymbolsandpictographs",
+    "inmongolian",
+    "innagmundari",
     "inoldturkic",
     "insaurashtra",
-    "incyrillicextendeda",
+    "lowercase",
+    "cwcm",
     "idcontinue",
-    "intaixuanjingsymbols",
     "intamil",
     "inmultani",
     "inlatinextendede",
     "pd",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=11.0",
+    "age=10.0",
+    "age=12.1",
+    "age=12.0",
+    "age=1.1",
+    "age=9.0",
+    "age=8.0",
+    "age=2.1",
+    "age=2.0",
+    "age=15.1",
+    "age=15.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "ingurmukhi",
     "bali",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=7.0",
+    "age=5.1",
+    "age=5.0",
+    "age=13.0",
+    "age=5.2",
+    "age=3.1",
+    "age=3.0",
+    "age=3.2",
+    "age=6.1",
+    "age=6.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     "blank",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=6.2",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     "idst",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=14.0",
+    "age=4.1",
+    "age=4.0",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
     "inlydian",
-    "innewtailue",
+#ifdef USE_UNICODE_AGE_PROPERTIES
+    "age=6.3",
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+    "vs",
     "bengali",
     "runr",
+    "zl",
     "ll",
     "indeseret",
     "inancientgreeknumbers",
     "idstart",
-    "zl",
     "inmeeteimayekextensions",
     "balinese",
-    "incyrillicextendedc",
+    "logicalorderexception",
     "inspacingmodifierletters",
     "inearlydynasticcuneiform",
+    "patternsyntax",
     "plrd",
+    "innewtailue",
     "canadianaboriginal",
+    "insorasompeng",
     "sind",
+    "emojimodifier",
     "inlatinextendedc",
-    "uideo",
     "incountingrodnumerals",
-    "zinh",
-    "dia",
-    "di",
     "inkhudawadi",
-    "inhanifirohingya",
-    "diak",
-    "gong",
-    "ingrantha",
-    "bidic",
     "xidstart",
 #endif /* USE_UNICODE_PROPERTIES */
     "xdigit",
@@ -43045,660 +44103,616 @@ static const struct uniname2ctype_pool_t uniname2ctype_pool_contents =
     "upper",
     "ascii",
 #else /* USE_UNICODE_PROPERTIES */
-    "mong",
+    "bidic",
+    "intangsa",
     "cased",
-    "inhiragana",
+    "ingreekandcoptic",
     "sinhala",
     "adlm",
-    "xsux",
     "glagolitic",
     "sterm",
     "bamu",
-    "georgian",
-    "inosage",
     "gunjalagondi",
-    "phoenician",
     "inolduyghur",
     "multani",
-    "kaithi",
+    "uideo",
     "joincontrol",
     "runic",
-    "ingeneralpunctuation",
-    "inmahajani",
     "incyrillicsupplement",
+    "inmeroitichieroglyphs",
+    "zinh",
+    "inkaktoviknumerals",
+    "enclosingmark",
+    "insiddham",
+    "incherokeesupplement",
+    "inhanifirohingya",
+    "incyrillicextendeda",
+    "inkhitansmallscript",
+    "intaixuanjingsymbols",
+    "quotationmark",
+    "adlam",
+    "inkangxiradicals",
+    "regionalindicator",
+    "casedletter",
+    "incjkunifiedideographsextensiona",
+    "inhiragana",
+    "lu",
+    "incjkunifiedideographsextensioni",
     "lowercaseletter",
+    "intamilsupplement",
+    "beng",
+    "emojimodifierbase",
+    "phoenician",
+    "kaithi",
+    "idsu",
+    "glag",
+    "incjkunifiedideographsextensione",
+    "inmahajani",
+    "indogra",
     "marchen",
     "graphemelink",
-    "ingeorgian",
+    "inmiscellaneoustechnical",
     "khojki",
     "cham",
     "inogham",
     "cher",
-    "chakma",
-    "inkaktoviknumerals",
-    "emoji",
-    "insiddham",
-    "cherokee",
-    "khar",
-    "inmongolian",
-    "innagmundari",
-    "incherokeesupplement",
-    "manichaean",
-    "inolchiki",
-    "inkhitansmallscript",
-    "quotationmark",
-    "vithkuqi",
-    "variationselector",
-    "adlam",
-    "inethiopic",
-    "graphemebase",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=11.0",
-    "age=12.1",
-    "age=10.0",
-    "age=12.0",
-    "age=13.0",
-    "age=1.1",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "casedletter",
-    "ingurmukhi",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=2.1",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "incjkunifiedideographsextensiona",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=2.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "lu",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=3.1",
-    "age=9.0",
-    "age=3.0",
-    "age=3.2",
-    "age=8.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "intamilsupplement",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=6.1",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "unknown",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=6.0",
-    "age=6.2",
-    "age=15.0",
-    "age=7.0",
-    "age=6.3",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "cwt",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=14.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "unassigned",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=5.1",
-    "age=5.0",
-    "age=5.2",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "diacritic",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=4.1",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "ahom",
-#ifdef USE_UNICODE_AGE_PROPERTIES
-    "age=4.0",
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-    "incjkunifiedideographsextensione",
-    "khmr",
-    "insinhala",
-    "inmiscellaneoustechnical",
     "saur",
+    "chakma",
     "guru",
     "sundanese",
     "punct",
+    "cherokee",
+    "khar",
     "paucinhau",
     "gurmukhi",
-    "chorasmian",
-    "logicalorderexception",
-    "khmer",
-    "limbu",
-    "chrs",
+    "emod",
+    "manichaean",
+    "ingreekextended",
+    "inolchiki",
+    "incyrillicextendedc",
+    "cwt",
     "oriya",
-    "inscriptionalpahlavi",
-    "incyrillicextendedd",
+    "unassigned",
+    "limbu",
+    "inethiopic",
+    "graphemebase",
+    "ingeometricshapes",
+    "emojicomponent",
     "incjkunifiedideographsextensionc",
 #endif /* USE_UNICODE_PROPERTIES */
     "cntrl",
-#ifndef USE_UNICODE_PROPERTIES
-    "space",
-#else /* USE_UNICODE_PROPERTIES */
+#ifdef USE_UNICODE_PROPERTIES
     "inlatinextendedadditional",
-    "insorasompeng",
     "radical",
-    "emojimodifier",
-    "kharoshthi",
-    "n",
-    "math",
-    "goth",
-    "phnx",
+    "ahom",
+    "zanb",
+    "linb",
+    "khmr",
     "anatolianhieroglyphs",
     "inenclosedalphanumerics",
-    "nandinagari",
-    "no",
-    "intangsa",
-    "nko",
-    "nkoo",
-    "ingreekandcoptic",
-    "p",
-    "grantha",
-    "decimalnumber",
-    "incjkunifiedideographs",
-    "intirhuta",
-    "inhatran",
-    "linb",
-    "mult",
-    "saurashtra",
-    "kthi",
-    "zanb",
+    "insinhala",
+    "unknown",
     "inbhaiksuki",
     "innabataean",
-    "inphoenician",
-    "xpeo",
     "inkanbun",
-    "inmeroitichieroglyphs",
-    "ahex",
-    "enclosingmark",
-    "sd",
-    "inelbasan",
-    "inenclosedideographicsupplement",
-    "sidd",
-    "linearb",
-    "cpmn",
-    "inenclosedalphanumericsupplement",
-    "bidicontrol",
-    "inphaistosdisc",
-    "limb",
-    "inkangxiradicals",
-    "lepc",
-    "braille",
-    "regionalindicator",
-    "inlowsurrogates",
-    "brah",
-    "inoldhungarian",
-    "beng",
-    "emojimodifierbase",
-    "inarabic",
-    "osage",
-    "inherited",
-    "incyprominoan",
-    "glag",
-    "medf",
-    "osma",
-    "indogra",
-    "arab",
-    "medefaidrin",
-    "inshorthandformatcontrols",
-    "phli",
-    "inimperialaramaic",
-    "emod",
-    "ingreekextended",
-    "inanatolianhieroglyphs",
-    "punctuation",
-    "graphemeextend",
-    "cwl",
-    "vith",
-    "ingeometricshapes",
-    "emojicomponent",
-    "dsrt",
-    "coptic",
-    "inkayahli",
-    "inoriya",
-    "inarabicpresentationformsa",
-    "inbasiclatin",
-    "incjkunifiedideographsextensiond",
-    "wara",
-    "sinh",
-    "sund",
-    "shavian",
-    "insundanesesupplement",
-    "inyezidi",
-    "bhks",
-    "bhaiksuki",
-    "inhanunoo",
     "intangut",
     "sogdian",
-    "inlatinextendedd",
     "sogo",
-    "insinhalaarchaicnumbers",
     "ideographic",
-    "ugar",
-    "deseret",
-    "odi",
-    "copt",
-    "imperialaramaic",
+    "xsux",
+    "incjkunifiedideographs",
+    "chorasmian",
+    "inelbasan",
     "insogdian",
     "indingbats",
-    "format",
-    "ininscriptionalpahlavi",
-    "lyci",
-    "ininscriptionalparthian",
-    "grbase",
-    "lycian",
-    "inbatak",
-    "cprt",
-    "inunifiedcanadianaboriginalsyllabicsextendeda",
-    "mymr",
-    "myanmar",
-    "intibetan",
+    "mult",
+    "n",
+    "khmer",
+    "saurashtra",
+    "linearb",
+    "chrs",
+    "dia",
+    "di",
+    "inscriptionalpahlavi",
+    "diak",
+    "limb",
+    "nandinagari",
+    "no",
+    "kharoshthi",
+    "nko",
+    "nkoo",
+    "sd",
+    "math",
+    "p",
+    "inenclosedideographicsupplement",
+    "goth",
+    "sidd",
+    "ugar",
     "intags",
-    "asciihexdigit",
-    "sentenceterminal",
-    "nand",
-    "inblockelements",
+    "inarabic",
+    "inenclosedalphanumericsupplement",
+    "bidicontrol",
+    "vithkuqi",
+    "variationselector",
+    "xpeo",
+    "braille",
     "inornamentaldingbats",
-    "inethiopicextendeda",
-    "innumberforms",
-    "cwcf",
-    "oidc",
-    "bopo",
-    "cuneiform",
+    "grantha",
+    "inkayahli",
+    "inphoenician",
+    "arab",
+    "inoriya",
+    "intirhuta",
+    "osage",
+    "inhatran",
+    "wara",
     "caseignorable",
-    "inoldpersian",
-    "cwu",
-    "inelymaic",
-    "insoyombo",
+    "inyezidi",
+    "kthi",
+    "osma",
+    "cpmn",
+    "inphaistosdisc",
     "ingeometricshapesextended",
-    "incjkcompatibility",
-    "inmyanmarextendedb",
-    "innushu",
-    "inkanaextendedb",
-    "olck",
-    "inbyzantinemusicalsymbols",
-    "olchiki",
-    "inkatakanaphoneticextensions",
-    "incoptic",
-    "oids",
-    "inarabicextendeda",
-    "modifierletter",
-    "incjksymbolsandpunctuation",
-    "olower",
-    "bopomofo",
-    "inlisu",
-    "inoldpermic",
-    "innoblock",
-    "ext",
-    "inunifiedcanadianaboriginalsyllabics",
-    "takri",
-    "inbraillepatterns",
-    "invai",
-    "alpha",
-    "inbalinese",
-    "sorasompeng",
-    "closepunctuation",
+    "lepc",
+    "inlowsurrogates",
+    "inarabicpresentationformsa",
+    "inbasiclatin",
+    "punctuation",
+    "lyci",
+    "diacritic",
+    "lycian",
+    "incyprominoan",
+    "incyrillicextendedd",
+    "brah",
+    "inoldhungarian",
     "hani",
-    "inmayannumerals",
+    "mymr",
     "han",
-    "inmiscellaneousmathematicalsymbolsb",
-    "inlepcha",
-    "patsyn",
-    "inlisusupplement",
-    "insyriacsupplement",
+    "myanmar",
     "hano",
-    "newa",
-    "spacingmark",
-    "inpalmyrene",
-    "takr",
-#endif /* USE_UNICODE_PROPERTIES */
-    "xposixpunct",
-#ifndef USE_UNICODE_PROPERTIES
-    "lower",
-#else /* USE_UNICODE_PROPERTIES */
+    "incjkunifiedideographsextensiond",
+    "inherited",
+    "sund",
+    "inimperialaramaic",
+    "sorasompeng",
+    "insundanesesupplement",
     "inkhojki",
-    "taile",
-    "assigned",
     "hanunoo",
     "hira",
-    "inarabicextendedc",
-    "newtailue",
-    "space",
-    "intelugu",
-    "lydi",
-    "idsb",
-    "extpict",
-    "lydian",
-    "inethiopicsupplement",
-    "sarb",
-    "ugaritic",
-    "inyiradicals",
-    "inphoneticextensions",
-    "sharada",
-    "zanabazarsquare",
+    "grbase",
+    "inbatak",
+    "cwl",
+    "odi",
+    "phli",
+    "inlatinextendedd",
+    "coptic",
+    "inanatolianhieroglyphs",
+    "assigned",
+    "graphemeextend",
+    "intibetan",
+    "inelymaic",
+    "insoyombo",
+    "inblockelements",
+    "incjkcompatibility",
+    "innumberforms",
+    "decimalnumber",
+    "sinh",
+    "inglagolitic",
+    "shavian",
+    "phnx",
+    "copt",
+    "sentenceterminal",
+    "imperialaramaic",
+    "bhks",
+    "ininscriptionalpahlavi",
+    "bhaiksuki",
+    "ininscriptionalparthian",
+    "oidc",
+    "inhanunoo",
     "bugi",
-    "word",
-    "term",
-    "separator",
+    "insinhalaarchaicnumbers",
     "ingeorgiansupplement",
+    "cprt",
     "sogd",
+    "inmyanmarextendedb",
+    "inbyzantinemusicalsymbols",
+    "inkanaextendedb",
+    "format",
+    "inmayannumerals",
+    "intagalog",
+    "inarabicextendeda",
+    "ugaritic",
+    "patsyn",
+    "nand",
+    "ahex",
+    "olck",
+    "olchiki",
+    "innoblock",
+    "buginese",
+    "inmongoliansupplement",
+    "bopo",
+    "oids",
+    "asciihexdigit",
+    "inbraillepatterns",
+    "inbalinese",
+    "inoldpersian",
+    "olower",
+    "insuttonsignwriting",
+    "medf",
+    "inmiscellaneousmathematicalsymbolsb",
+    "lydi",
+    "cwu",
+    "inlisu",
+    "medefaidrin",
+    "lydian",
+    "ext",
+    "inshorthandformatcontrols",
+    "hatran",
+    "inyiradicals",
+    "phag",
+    "inarabicextendedc",
+    "incoptic",
+    "inhanguljamo",
+    "inlisusupplement",
+    "word",
+    "hatr",
+    "incjkunifiedideographsextensiong",
+    "innushu",
+    "incjksymbolsandpunctuation",
+    "dsrt",
+    "idsb",
+    "bopomofo",
+    "inhanguljamoextendeda",
+    "inoldpermic",
+    "inkatakanaphoneticextensions",
+    "sarb",
+    "zanabazarsquare",
+    "vith",
+    "innyiakengpuachuehmong",
+    "alpha",
+    "closepunctuation",
+    "intelugu",
+    "sgnw",
+    "inlepcha",
+    "insyriacsupplement",
+    "extpict",
+    "spacingmark",
+    "inpalmyrene",
+    "cyrl",
+    "deseret",
+    "takri",
+    "invai",
+    "mlym",
+    "malayalam",
+    "surrogate",
+    "ogam",
+#endif /* USE_UNICODE_PROPERTIES */
+    "space",
+#ifndef USE_UNICODE_PROPERTIES
+    "xposixpunct",
+    "lower",
+#else /* USE_UNICODE_PROPERTIES */
+    "takr",
+    "inunifiedcanadianaboriginalsyllabicsextendeda",
+    "palmyrene",
+    "soyo",
+    "newa",
+    "taile",
     "extender",
+    "inbengali",
+    "inbamum",
+    "meroitichieroglyphs",
+    "inethiopicsupplement",
+    "newtailue",
+    "inbuginese",
+    "separator",
+    "cuneiform",
+    "ebase",
+    "sharada",
+    "inphagspa",
+    "dogra",
+    "ethi",
+    "inethiopicextendeda",
+    "caucasianalbanian",
+    "term",
+    "rohg",
     "shrd",
+    "cwcf",
+    "osge",
+    "syrc",
+    "tnsa",
+    "tangsa",
+    "number",
+    "dogr",
+    "incopticepactnumbers",
+    "nagm",
+    "modifierletter",
+    "incombiningdiacriticalmarks",
+    "inshavian",
+    "nd",
+    "siddham",
+    "oldpersian",
+    "incombiningdiacriticalmarksforsymbols",
+    "gujr",
+    "ingeorgianextended",
+    "gujarati",
+    "inunifiedcanadianaboriginalsyllabics",
+    "warangciti",
+    "ingothic",
 #endif /* USE_UNICODE_PROPERTIES */
     "graph",
 #ifdef USE_UNICODE_PROPERTIES
-    "tnsa",
-    "tangsa",
-    "phag",
-    "dogra",
-    "inhanguljamo",
-    "inshavian",
-    "siddham",
-    "cf",
-    "inunifiedcanadianaboriginalsyllabicsextended",
-    "buginese",
-    "inmongoliansupplement",
-    "cyrl",
-    "inhanguljamoextendeda",
-    "pf",
-    "number",
-    "inphoneticextensionssupplement",
-    "dogr",
-    "mlym",
-    "incopticepactnumbers",
-    "malayalam",
-    "inbamum",
-    "nd",
-    "insuttonsignwriting",
-    "inethiopicextended",
-    "shaw",
-    "palmyrene",
-    "soyo",
+    "xposixpunct",
+    "inlatinextendedg",
+    "syriac",
     "incjkunifiedideographsextensionh",
-    "sgnw",
-    "toto",
-    "caucasianalbanian",
-    "inmathematicalalphanumericsymbols",
-    "incjkunifiedideographsextensiong",
-    "hatran",
-    "taiviet",
-    "meroitichieroglyphs",
-    "ingeorgianextended",
-    "incjkunifiedideographsextensionf",
-    "oldpersian",
     "induployan",
-    "incyrillicextendedb",
-    "dash",
-    "hatr",
-    "innyiakengpuachuehmong",
-    "incombiningdiacriticalmarks",
+    "inaegeannumbers",
+    "oldpermic",
+    "inmathematicalalphanumericsymbols",
+    "incombiningdiacriticalmarkssupplement",
+    "toto",
+    "hang",
+    "taiviet",
     "nl",
-    "incombiningdiacriticalmarksforsymbols",
-    "khudawadi",
+    "ingujarati",
+    "incurrencysymbols",
+    "insymbolsandpictographsextendeda",
+    "shaw",
     "incjkradicalssupplement",
-    "inglagolitic",
+    "ingunjalagondi",
+    "intagbanwa",
+    "hiragana",
+    "inphoneticextensions",
+    "inrejang",
     "orkh",
-    "syrc",
-    "surrogate",
+    "hmng",
+    "idstrinaryoperator",
+    "insymbolsforlegacycomputing",
+    "mathsymbol",
+    "extendedpictographic",
+    "incombiningdiacriticalmarksextended",
     "indevanagari",
     "avestan",
-    "oldpermic",
-    "ethi",
-    "ogam",
-    "rohg",
-    "idstrinaryoperator",
-    "java",
-    "inphagspa",
-    "lepcha",
-    "indevanagariextendeda",
-    "intifinagh",
-    "intagalog",
-    "incombiningdiacriticalmarkssupplement",
-    "tale",
+    "khudawadi",
     "inbrahmi",
+    "inlinearbsyllabary",
+    "inunifiedcanadianaboriginalsyllabicsextended",
+    "java",
+    "incyrillicextendedb",
+    "indevanagariextendeda",
+    "inlimbu",
+    "inphoneticextensionssupplement",
+    "incjkunifiedideographsextensionb",
+    "tale",
     "terminalpunctuation",
-    "insymbolsandpictographsextendeda",
-    "syriac",
-    "inbengali",
-    "nagm",
-    "extendedpictographic",
+    "inlatin1supplement",
+    "currencysymbol",
+    "sylo",
+    "olditalic",
+    "elba",
+    "lepcha",
     "buhd",
+    "changeswhencasemapped",
     "javanese",
     "taml",
-    "inbuginese",
-    "inlatin1supplement",
-    "ingothic",
-    "invariationselectors",
-    "hex",
-    "inverticalforms",
-    "ebase",
-    "incurrencysymbols",
-    "avst",
-    "osge",
-    "incombiningdiacriticalmarksextended",
-    "intaiviet",
+    "emojipresentation",
+    "epres",
     "spaceseparator",
-    "softdotted",
-    "nchar",
-    "invedicextensions",
-    "inlimbu",
-    "olditalic",
-    "gujr",
-    "mathsymbol",
-    "incjkunifiedideographsextensionb",
-    "gujarati",
-    "phagspa",
-    "invariationselectorssupplement",
-    "currencysymbol",
-    "inlinearbsyllabary",
+    "inethiopicextended",
+    "invariationselectors",
+    "inverticalforms",
+    "incjkunifiedideographsextensionf",
+    "inottomansiyaqnumbers",
+    "avst",
+    "cyrillic",
     "wancho",
+    "inhangulsyllables",
+    "ougr",
+    "intaiviet",
+    "rjng",
+    "paragraphseparator",
+    "inletterlikesymbols",
+    "invedicextensions",
+    "intangutcomponents",
+    "wcho",
+    "invariationselectorssupplement",
+    "changeswhentitlecased",
     "inpaucinhau",
-    "other",
-    "otheridcontinue",
-    "sylo",
-    "zp",
-    "inaegeannumbers",
-    "warangciti",
-    "othernumber",
+    "dash",
+    "nchar",
+    "mahj",
+    "orya",
+    "hex",
+    "mahajani",
 #endif /* USE_UNICODE_PROPERTIES */
     "digit",
 #ifndef USE_UNICODE_PROPERTIES
     "blank"
 #else /* USE_UNICODE_PROPERTIES */
-    "nonspacingmark",
-    "titlecaseletter",
-    "inmeroiticcursive",
-    "wcho",
-    "graphemeclusterbreak=spacingmark",
-    "inletterlikesymbols",
-    "inottomansiyaqnumbers",
-    "intagbanwa",
-    "cyrillic",
-    "oalpha",
-    "graphemeclusterbreak=cr",
-    "narb",
-    "changeswhencasemapped",
-    "inbopomofo",
-    "graphemeclusterbreak=regionalindicator",
-    "otheralphabetic",
-    "noncharactercodepoint",
-    "oldhungarian",
-    "insymbolsforlegacycomputing",
-    "insmallformvariants",
-    "inhangulsyllables",
-    "emojipresentation",
-    "epres",
-    "inbassavah",
-    "indevanagariextended",
-    "inbuhid",
-    "tirhuta",
-    "inpsalterpahlavi",
-    "whitespace",
-    "finalpunctuation",
-    "orya",
-    "phlp",
-    "inbamumsupplement",
-    "buhid",
-    "paragraphseparator",
-    "inalphabeticpresentationforms",
-    "inlatinextendedg",
-    "elba",
-    "changeswhentitlecased",
-    "incombininghalfmarks",
-    "intangutcomponents",
-    "thaa",
-    "thai",
-    "oldturkic",
-    "thaana",
-    "inlatinextendedf",
-    "ougr",
-    "tang",
-    "inarabicmathematicalalphabeticsymbols",
-    "tagbanwa",
-    "tamil",
-    "khitansmallscript",
-    "mahj",
-    "mahajani",
-    "hang",
-    "tirh",
-    "sylotinagri",
-    "talu",
+    "inenclosedcjklettersandmonths",
     "nagmundari",
-    "deva",
-    "ingujarati",
-    "deprecated",
-    "inarabicpresentationformsb",
-    "devanagari",
-    "ingunjalagondi",
-    "graphemeclusterbreak=t",
-    "graphemeclusterbreak=lvt",
-    "taitham",
-    "nbat",
-    "telu",
-    "hiragana",
-    "nabataean",
-    "inrejang",
+    "other",
+    "otheridcontinue",
+    "elbasan",
+    "tang",
+    "elym",
+    "oldhungarian",
+    "tagbanwa",
+    "phagspa",
+    "narb",
+    "othernumber",
+    "graphemeclusterbreak=spacingmark",
+    "inbopomofo",
+    "zp",
+    "elymaic",
+    "signwriting",
+    "graphemeclusterbreak=cr",
     "intangutsupplement",
     "khoj",
-    "hmng",
-    "cyprominoan",
-    "inhebrew",
-    "inmathematicaloperators",
-    "inarabicsupplement",
-    "inenclosedcjklettersandmonths",
+    "titlecaseletter",
+    "graphemeclusterbreak=regionalindicator",
+    "inmeroiticcursive",
+    "inbamumsupplement",
+    "nonspacingmark",
+    "cf",
+    "oalpha",
+    "sylotinagri",
+    "whitespace",
+    "intifinagh",
+    "pf",
+    "otheralphabetic",
+    "inbassavah",
+    "softdotted",
+    "inarabicpresentationformsb",
+    "inbuhid",
+    "oldturkic",
+    "oldsogdian",
     "changeswhenlowercased",
-    "tangut",
-    "elbasan",
+    "insmallformvariants",
+    "indevanagariextended",
+    "hung",
+    "noncharactercodepoint",
+    "incombininghalfmarks",
+    "tirhuta",
     "osmanya",
-    "insuperscriptsandsubscripts",
+    "buhid",
+    "inarabicmathematicalalphabeticsymbols",
+    "cyprominoan",
+    "hebr",
+    "any",
+    "nbat",
+    "changeswhenuppercased",
+    "nabataean",
+    "inpsalterpahlavi",
+    "finalpunctuation",
+    "phlp",
+    "graphemeclusterbreak=t",
+    "graphemeclusterbreak=lvt",
+    "inalphabeticpresentationforms",
+    "tamil",
+    "hmnp",
+    "inarabicsupplement",
+    "talu",
+    "symbol",
+    "inplayingcards",
+    "khitansmallscript",
+    "telu",
+    "thaa",
+    "thai",
+    "inarabicextendedb",
+    "thaana",
+    "kayahli",
+    "hangul",
+    "inhebrew",
     "graphemeclusterbreak=extend",
     "graphemeclusterbreak=prepend",
-    "nshu",
-    "otherlowercase",
-    "inethiopicextendedb",
-    "otherletter",
-    "kayahli",
-    "inplayingcards",
-    "elym",
-    "graphemeclusterbreak=l",
-    "graphemeclusterbreak=control",
     "ogrext",
-    "elymaic",
-    "changeswhenuppercased",
-    "inalchemicalsymbols",
-    "oldsogdian",
-    "otheridstart",
-    "insupplementalarrowsa",
-    "invithkuqi",
-    "symbol",
-    "inarabicextendedb",
+    "tirh",
     "cypriot",
-    "any",
-    "otheruppercase",
-    "rjng",
-    "wspace",
     "inindicsiyaqnumbers",
-    "inprivateusearea",
-    "othersymbol",
-    "oupper",
-    "signwriting",
-    "nushu",
-    "hmnp",
-    "upper",
-    "insupplementalarrowsc",
-    "omath",
-    "modifiersymbol",
-    "hebr",
-    "inhalfwidthandfullwidthforms",
-    "insupplementalmathematicaloperators",
-    "inpahawhhmong",
-    "alphabetic",
-    "uppercase",
-    "dupl",
-    "ogham",
-    "dashpunctuation",
-    "hangul",
-    "inhanguljamoextendedb",
-    "bassavah",
-    "aghb",
-    "hung",
+    "tangut",
+    "wspace",
+    "taitham",
     "hexdigit",
-    "incypriotsyllabary",
-    "indivesakuru",
-    "tibt",
-    "inlatinextendedb",
+    "otherlowercase",
+    "graphemeclusterbreak=l",
+    "inmathematicaloperators",
+    "graphemeclusterbreak=control",
+    "otherletter",
+    "insuperscriptsandsubscripts",
+    "inalchemicalsymbols",
+    "ogham",
+    "inhanguljamoextendedb",
+    "inpahawhhmong",
+    "aghb",
+    "nshu",
+    "otheridstart",
     "hluw",
-    "tibetan",
+    "inglagoliticsupplement",
+    "otheruppercase",
     "inyisyllables",
-    "oldnortharabian",
-    "defaultignorablecodepoint",
-    "inhighprivateusesurrogates",
+    "inyijinghexagramsymbols",
+    "oupper",
+    "insupplementalarrowsa",
+    "nushu",
+    "othersymbol",
+    "deprecated",
+    "rejang",
+    "alphabetic",
+    "deva",
+    "invithkuqi",
+    "devanagari",
+    "inprivateusearea",
+    "inlatinextendedb",
+    "insupplementalarrowsc",
+    "idcompatmathcontinue",
     "soyombo",
-    "otherdefaultignorablecodepoint",
+    "inethiopicextendedb",
+    "inmahjongtiles",
+    "idcompatmathstart",
+    "incypriotsyllabary",
+    "insupplementalmathematicaloperators",
+    "upper",
+    "oldnortharabian",
+    "inhighprivateusesurrogates",
+    "omath",
+    "inlatinextendedf",
+    "tibt",
+    "uppercase",
+    "tibetan",
+    "injavanese",
+    "ecomp",
+    "modifiersymbol",
+    "indivesakuru",
+    "ethiopic",
     "pahawhhmong",
     "unifiedideograph",
-    "othermath",
-    "changeswhencasefolded",
-    "inmahjongtiles",
-    "dep",
-    "divesakuru",
-    "graphemeclusterbreak=lf",
-    "uppercaseletter",
-    "insupplementalpunctuation",
-    "ethiopic",
-    "inyijinghexagramsymbols",
-    "ecomp",
-    "inglagoliticsupplement",
-    "inbopomofoextended",
-    "injavanese",
-    "otherpunctuation",
-    "tifinagh",
-    "tfng",
+    "bassavah",
     "hanifirohingya",
-    "tavt",
+    "otherdefaultignorablecodepoint",
     "inboxdrawing",
-    "oldsoutharabian",
+    "inhalfwidthandfullwidthforms",
     "inegyptianhieroglyphs",
     "inegyptianhieroglyphformatcontrols",
-    "tagb",
-    "rejang",
+    "dupl",
+    "changeswhencasefolded",
+    "dashpunctuation",
+    "othermath",
+    "insupplementalpunctuation",
+    "uppercaseletter",
     "tglg",
     "tagalog",
-    "othergraphemeextend",
-    "insupplementaryprivateuseareaa",
+    "tagb",
+    "oldsoutharabian",
+    "otherpunctuation",
     "inhighsurrogates",
+    "graphemeclusterbreak=lf",
+    "tfng",
+    "inbopomofoextended",
+    "divesakuru",
+    "dep",
+    "othergraphemeextend",
     "hebrew",
-    "duployan",
-    "graphemeclusterbreak=v",
-    "graphemeclusterbreak=lv",
-    "insupplementalarrowsb",
+    "tavt",
+    "defaultignorablecodepoint",
+    "egyp",
     "graphemeclusterbreak=zwj",
-    "telugu",
     "zyyy",
     "olduyghur",
-    "inhangulcompatibilityjamo",
-    "openpunctuation",
+    "telugu",
     "hyphen",
-    "insupplementalsymbolsandpictographs",
-    "egyp",
+    "tifinagh",
+    "inhangulcompatibilityjamo",
+    "insupplementalarrowsb",
+    "insupplementaryprivateuseareaa",
+    "graphemeclusterbreak=v",
+    "graphemeclusterbreak=lv",
+    "duployan",
     "nyiakengpuachuehmong",
     "egyptianhieroglyphs",
+    "openpunctuation",
+    "insupplementalsymbolsandpictographs",
     "insupplementaryprivateuseareab"
 #endif /* USE_UNICODE_PROPERTIES */
   };
@@ -43711,1804 +44725,66 @@ uniname2ctype_p (register const char *str, register size_t len)
 #ifdef USE_UNICODE_PROPERTIES
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1},
-      {uniname2ctype_offset(str11), 111},
+      {uniname2ctype_offset(str11), 114},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str17), 111},
+      {uniname2ctype_offset(str17), 114},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str22), 152},
+      {uniname2ctype_offset(str22), 155},
       {-1}, {-1},
-      {uniname2ctype_offset(str25), 184},
+      {uniname2ctype_offset(str25), 187},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str33), 218},
+      {uniname2ctype_offset(str33), 221},
       {-1},
-      {uniname2ctype_offset(str35), 186},
+      {uniname2ctype_offset(str35), 189},
       {uniname2ctype_offset(str36), 34},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str45), 173},
+      {uniname2ctype_offset(str37), 52},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str45), 176},
       {uniname2ctype_offset(str46), 28},
       {uniname2ctype_offset(str47), 61},
-      {uniname2ctype_offset(str48), 95},
-      {uniname2ctype_offset(str49), 95},
+      {uniname2ctype_offset(str48), 98},
+      {uniname2ctype_offset(str49), 98},
       {-1}, {-1},
-      {uniname2ctype_offset(str52), 346},
+      {uniname2ctype_offset(str52), 353},
       {-1}, {-1},
       {uniname2ctype_offset(str55), 21},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {uniname2ctype_offset(str64), 44},
       {-1},
-      {uniname2ctype_offset(str66), 333},
-      {uniname2ctype_offset(str67), 52},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str71), 181},
+      {uniname2ctype_offset(str66), 340},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str71), 184},
       {-1}, {-1}, {-1},
       {uniname2ctype_offset(str75), 22},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str83), 184},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str79), 233},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str83), 187},
       {-1}, {-1},
       {uniname2ctype_offset(str86), 31},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str90), 230},
-      {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
       {uniname2ctype_offset(str92), 45},
       {-1},
       {uniname2ctype_offset(str94), 33},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str100), 149},
-      {uniname2ctype_offset(str101), 513},
-      {uniname2ctype_offset(str102), 108},
-      {uniname2ctype_offset(str103), 263},
-      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str100), 152},
+      {uniname2ctype_offset(str101), 520},
+      {uniname2ctype_offset(str102), 111},
+      {uniname2ctype_offset(str103), 267},
+      {-1}, {-1},
+      {uniname2ctype_offset(str106), 284},
       {uniname2ctype_offset(str107), 31},
-      {uniname2ctype_offset(str108), 77},
+      {uniname2ctype_offset(str108), 80},
       {-1}, {-1},
-      {uniname2ctype_offset(str111), 189},
-      {uniname2ctype_offset(str112), 189},
+      {uniname2ctype_offset(str111), 192},
+      {uniname2ctype_offset(str112), 192},
       {-1}, {-1},
-      {uniname2ctype_offset(str115), 149},
+      {uniname2ctype_offset(str115), 152},
       {-1},
-      {uniname2ctype_offset(str117), 98},
-      {uniname2ctype_offset(str118), 77},
+      {uniname2ctype_offset(str117), 101},
+      {uniname2ctype_offset(str118), 80},
       {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str122), 212},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str129), 187},
-      {uniname2ctype_offset(str130), 42},
-      {uniname2ctype_offset(str131), 172},
-      {-1}, {-1},
-      {uniname2ctype_offset(str134), 497},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str139), 170},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str145), 516},
-      {uniname2ctype_offset(str146), 575},
-      {-1},
-      {uniname2ctype_offset(str148), 580},
-      {uniname2ctype_offset(str149), 535},
-      {-1},
-      {uniname2ctype_offset(str151), 18},
-      {uniname2ctype_offset(str152), 169},
-      {uniname2ctype_offset(str153), 160},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str158), 278},
-      {-1}, {-1},
-      {uniname2ctype_offset(str161), 327},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str177), 352},
-      {uniname2ctype_offset(str178), 563},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str183), 75},
-      {-1}, {-1},
-      {uniname2ctype_offset(str186), 27},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str190), 208},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str203), 360},
-      {uniname2ctype_offset(str204), 488},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str210), 581},
-      {-1},
-      {uniname2ctype_offset(str212), 365},
-      {uniname2ctype_offset(str213), 115},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str218), 549},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str226), 171},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str230), 530},
-      {uniname2ctype_offset(str231), 31},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str236), 25},
-      {uniname2ctype_offset(str237), 194},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str246), 32},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str250), 40},
-      {-1}, {-1},
-      {uniname2ctype_offset(str253), 102},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str260), 568},
-      {-1}, {-1},
-      {uniname2ctype_offset(str263), 161},
-      {-1},
-      {uniname2ctype_offset(str265), 19},
-      {-1},
-      {uniname2ctype_offset(str267), 79},
-      {uniname2ctype_offset(str268), 357},
-      {-1},
-      {uniname2ctype_offset(str270), 270},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str274), 567},
-      {uniname2ctype_offset(str275), 517},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str281), 321},
-      {uniname2ctype_offset(str282), 40},
-      {uniname2ctype_offset(str283), 79},
-      {-1},
-      {uniname2ctype_offset(str285), 537},
-      {-1},
-      {uniname2ctype_offset(str287), 144},
-      {uniname2ctype_offset(str288), 144},
-      {uniname2ctype_offset(str289), 560},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str293), 218},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str297), 212},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str301), 395},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str311), 325},
-      {-1},
-      {uniname2ctype_offset(str313), 456},
-      {-1},
-      {uniname2ctype_offset(str315), 243},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str320), 271},
-      {-1},
-      {uniname2ctype_offset(str322), 129},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str328), 334},
-      {-1}, {-1},
-      {uniname2ctype_offset(str331), 76},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str335), 561},
-      {-1}, {-1},
-      {uniname2ctype_offset(str338), 332},
-      {-1},
-      {uniname2ctype_offset(str340), 76},
-      {-1},
-      {uniname2ctype_offset(str342), 349},
-      {-1}, {-1},
-      {uniname2ctype_offset(str345), 53},
-      {uniname2ctype_offset(str346), 270},
-      {-1},
-      {uniname2ctype_offset(str348), 426},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str352), 533},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str362), 163},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str366), 44},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str373), 160},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str381), 554},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str386), 371},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str399), 330},
-      {-1},
-      {uniname2ctype_offset(str401), 548},
-      {-1}, {-1},
-      {uniname2ctype_offset(str404), 81},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str418), 108},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str426), 163},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str430), 55},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str442), 14},
-      {-1}, {-1},
-      {uniname2ctype_offset(str445), 23},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str462), 46},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str468), 169},
-      {-1},
-      {uniname2ctype_offset(str470), 22},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str475), 524},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str480), 457},
-      {uniname2ctype_offset(str481), 188},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str486), 476},
-      {-1},
-      {uniname2ctype_offset(str488), 588},
-      {-1}, {-1},
-      {uniname2ctype_offset(str491), 470},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str500), 127},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str504), 187},
-      {uniname2ctype_offset(str505), 249},
-      {uniname2ctype_offset(str506), 24},
-      {-1}, {-1},
-      {uniname2ctype_offset(str509), 24},
-      {-1},
-      {uniname2ctype_offset(str511), 463},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str520), 423},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str533), 230},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str538), 91},
-      {-1}, {-1},
-      {uniname2ctype_offset(str541), 553},
-      {-1},
-      {uniname2ctype_offset(str543), 91},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str556), 546},
-      {-1},
-      {uniname2ctype_offset(str558), 350},
-      {uniname2ctype_offset(str559), 70},
-      {uniname2ctype_offset(str560), 515},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str565), 624},
-      {uniname2ctype_offset(str566), 37},
-      {-1},
-      {uniname2ctype_offset(str568), 113},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str572), 502},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str577), 611},
-      {-1},
-      {uniname2ctype_offset(str579), 106},
-      {-1}, {-1},
-      {uniname2ctype_offset(str582), 406},
-      {uniname2ctype_offset(str583), 480},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str590), 74},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str594), 168},
-      {-1},
-      {uniname2ctype_offset(str596), 622},
-      {uniname2ctype_offset(str597), 146},
-      {-1}, {-1},
-      {uniname2ctype_offset(str600), 490},
-      {-1},
-      {uniname2ctype_offset(str602), 70},
-      {-1},
-      {uniname2ctype_offset(str604), 579},
-      {uniname2ctype_offset(str605), 629},
-      {-1}, {-1},
-      {uniname2ctype_offset(str608), 637},
-      {uniname2ctype_offset(str609), 229},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str614), 612},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str624), 195},
-      {uniname2ctype_offset(str625), 447},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str630), 29},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str636), 543},
-      {-1}, {-1},
-      {uniname2ctype_offset(str639), 49},
-      {-1}, {-1},
-      {uniname2ctype_offset(str642), 19},
-      {uniname2ctype_offset(str643), 564},
-      {-1},
-      {uniname2ctype_offset(str645), 485},
-      {-1},
-      {uniname2ctype_offset(str647), 192},
-      {-1}, {-1},
-      {uniname2ctype_offset(str650), 487},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str657), 51},
-      {-1}, {-1},
-      {uniname2ctype_offset(str660), 268},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str672), 335},
-      {-1}, {-1},
-      {uniname2ctype_offset(str675), 68},
-      {-1}, {-1},
-      {uniname2ctype_offset(str678), 171},
-      {uniname2ctype_offset(str679), 607},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str683), 267},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str692), 69},
-      {-1}, {-1},
-      {uniname2ctype_offset(str695), 551},
-      {uniname2ctype_offset(str696), 175},
-      {uniname2ctype_offset(str697), 399},
-      {-1}, {-1},
-      {uniname2ctype_offset(str700), 236},
-      {-1}, {-1},
-      {uniname2ctype_offset(str703), 527},
-      {-1},
-      {uniname2ctype_offset(str705), 347},
-      {-1},
-      {uniname2ctype_offset(str707), 158},
-      {uniname2ctype_offset(str708), 587},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str713), 376},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str720), 72},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str737), 7},
-      {uniname2ctype_offset(str738), 373},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str742), 6},
-      {-1}, {-1},
-      {uniname2ctype_offset(str745), 269},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str753), 240},
-      {-1},
-      {uniname2ctype_offset(str755), 514},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str760), 431},
-      {uniname2ctype_offset(str761), 167},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str766), 156},
-      {uniname2ctype_offset(str767), 608},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str771), 167},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str776), 268},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str783), 156},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str787), 256},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str791), 193},
-      {-1}, {-1},
-      {uniname2ctype_offset(str794), 589},
-      {-1}, {-1},
-      {uniname2ctype_offset(str797), 50},
-      {-1},
-      {uniname2ctype_offset(str799), 617},
-      {-1}, {-1},
-      {uniname2ctype_offset(str802), 13},
-      {uniname2ctype_offset(str803), 593},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str809), 446},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str814), 493},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str818), 398},
-      {-1}, {-1},
-      {uniname2ctype_offset(str821), 482},
-      {uniname2ctype_offset(str822), 595},
-      {uniname2ctype_offset(str823), 47},
-      {uniname2ctype_offset(str824), 112},
-      {uniname2ctype_offset(str825), 444},
-      {-1}, {-1},
-      {uniname2ctype_offset(str828), 596},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str838), 157},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str842), 58},
-      {-1}, {-1},
-      {uniname2ctype_offset(str845), 66},
-      {-1},
-      {uniname2ctype_offset(str847), 48},
-      {uniname2ctype_offset(str848), 178},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str855), 67},
-      {-1},
-      {uniname2ctype_offset(str857), 319},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str875), 369},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str886), 404},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str895), 412},
-      {-1}, {-1},
-      {uniname2ctype_offset(str898), 500},
-      {-1},
-      {uniname2ctype_offset(str900), 621},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str906), 521},
-      {uniname2ctype_offset(str907), 449},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str920), 419},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str924), 68},
-      {uniname2ctype_offset(str925), 599},
-      {uniname2ctype_offset(str926), 344},
-      {-1},
-      {uniname2ctype_offset(str928), 540},
-      {uniname2ctype_offset(str929), 461},
-      {uniname2ctype_offset(str930), 41},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str946), 136},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str961), 2},
-      {-1},
-      {uniname2ctype_offset(str963), 257},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str974), 510},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str986), 370},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str994), 85},
-      {uniname2ctype_offset(str995), 104},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1010), 26},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1013), 495},
-      {-1},
-      {uniname2ctype_offset(str1015), 484},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1021), 67},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1024), 53},
-      {uniname2ctype_offset(str1025), 459},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1028), 136},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1032), 380},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1035), 322},
-      {uniname2ctype_offset(str1036), 569},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1049), 173},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1067), 102},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1072), 197},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1081), 414},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1085), 259},
-      {-1},
-      {uniname2ctype_offset(str1087), 600},
-      {-1},
-      {uniname2ctype_offset(str1089), 115},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1095), 250},
-      {uniname2ctype_offset(str1096), 71},
-      {uniname2ctype_offset(str1097), 541},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1102), 523},
-      {-1},
-      {uniname2ctype_offset(str1104), 228},
-      {uniname2ctype_offset(str1105), 217},
-      {-1},
-      {uniname2ctype_offset(str1107), 542},
-      {-1},
-      {uniname2ctype_offset(str1109), 239},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1114), 69},
-      {uniname2ctype_offset(str1115), 11},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1119), 106},
-      {uniname2ctype_offset(str1120), 60},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1134), 425},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1140), 93},
-      {-1},
-      {uniname2ctype_offset(str1142), 206},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1145), 137},
-      {uniname2ctype_offset(str1146), 131},
-      {uniname2ctype_offset(str1147), 266},
-      {-1},
-      {uniname2ctype_offset(str1149), 158},
-      {uniname2ctype_offset(str1150), 98},
-      {uniname2ctype_offset(str1151), 498},
-      {uniname2ctype_offset(str1152), 217},
-      {uniname2ctype_offset(str1153), 138},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1156), 529},
-      {uniname2ctype_offset(str1157), 203},
-      {uniname2ctype_offset(str1158), 166},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1164), 240},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1168), 104},
-      {-1},
-      {uniname2ctype_offset(str1170), 389},
-      {uniname2ctype_offset(str1171), 536},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1174), 326},
-      {uniname2ctype_offset(str1175), 26},
-      {uniname2ctype_offset(str1176), 208},
-      {uniname2ctype_offset(str1177), 74},
-      {uniname2ctype_offset(str1178), 353},
-      {-1},
-      {uniname2ctype_offset(str1180), 183},
-      {uniname2ctype_offset(str1181), 151},
-      {uniname2ctype_offset(str1182), 359},
-      {uniname2ctype_offset(str1183), 101},
-      {-1},
-      {uniname2ctype_offset(str1185), 170},
-      {uniname2ctype_offset(str1186), 597},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1190), 272},
-      {uniname2ctype_offset(str1191), 545},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1197), 101},
-      {uniname2ctype_offset(str1198), 135},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1203), 366},
-      {uniname2ctype_offset(str1204), 609},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1207), 462},
-      {-1},
-      {uniname2ctype_offset(str1209), 186},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1212), 379},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str1223), 584},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1227), 243},
-      {-1},
-      {uniname2ctype_offset(str1229), 235},
-      {uniname2ctype_offset(str1230), 267},
-      {uniname2ctype_offset(str1231), 206},
-      {uniname2ctype_offset(str1232), 355},
-      {uniname2ctype_offset(str1233), 73},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1234), 298},
-      {uniname2ctype_offset(str1235), 300},
-      {uniname2ctype_offset(str1236), 297},
-      {uniname2ctype_offset(str1237), 299},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1241), 301},
-      {uniname2ctype_offset(str1242), 279},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1243), 25},
-      {uniname2ctype_offset(str1244), 341},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1245), 281},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1246), 435},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1247), 280},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1248), 30},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1249), 283},
-      {uniname2ctype_offset(str1250), 296},
-      {uniname2ctype_offset(str1251), 282},
-      {uniname2ctype_offset(str1252), 284},
-      {uniname2ctype_offset(str1253), 295},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1254), 566},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1255), 291},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1256), 278},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1257), 290},
-      {uniname2ctype_offset(str1258), 292},
-      {uniname2ctype_offset(str1259), 303},
-      {uniname2ctype_offset(str1260), 294},
-      {-1},
-      {uniname2ctype_offset(str1262), 293},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1263), 64},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {-1},
-      {uniname2ctype_offset(str1265), 302},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1266), 21},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1267), 288},
-      {-1},
-      {uniname2ctype_offset(str1269), 287},
-      {uniname2ctype_offset(str1270), 289},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1271), 250},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {-1},
-      {uniname2ctype_offset(str1273), 286},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1274), 200},
-#ifndef USE_UNICODE_AGE_PROPERTIES
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#else /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1275), 285},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-#endif /* USE_UNICODE_AGE_PROPERTIES */
-      {uniname2ctype_offset(str1282), 635},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1285), 105},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1289), 348},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1292), 397},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1297), 145},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1300), 86},
-      {uniname2ctype_offset(str1301), 141},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1306), 15},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1314), 193},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1317), 86},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str1328), 227},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1331), 263},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1340), 105},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1343), 120},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1349), 227},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1352), 88},
-      {-1},
-      {uniname2ctype_offset(str1354), 164},
-      {-1},
-      {uniname2ctype_offset(str1356), 605},
-      {-1},
-      {uniname2ctype_offset(str1358), 633},
-      {-1},
-      {uniname2ctype_offset(str1360), 3},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1365), 387},
-      {-1},
-      {uniname2ctype_offset(str1367), 534},
-      {-1},
-      {uniname2ctype_offset(str1369), 258},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1373), 274},
-      {-1},
-      {uniname2ctype_offset(str1375), 135},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1380), 35},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1384), 56},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1387), 113},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1392), 138},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1400), 201},
-      {uniname2ctype_offset(str1401), 400},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1407), 224},
-      {-1},
-      {uniname2ctype_offset(str1409), 38},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1415), 576},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1419), 140},
-      {uniname2ctype_offset(str1420), 140},
-      {-1},
-      {uniname2ctype_offset(str1422), 324},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1426), 39},
-      {-1},
-      {uniname2ctype_offset(str1428), 181},
-      {uniname2ctype_offset(str1429), 36},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1438), 437},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1442), 544},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1448), 508},
-      {uniname2ctype_offset(str1449), 122},
-      {-1},
-      {uniname2ctype_offset(str1451), 203},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1454), 145},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1457), 166},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1460), 215},
-      {-1},
-      {uniname2ctype_offset(str1462), 559},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1470), 507},
-      {uniname2ctype_offset(str1471), 509},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1474), 134},
-      {uniname2ctype_offset(str1475), 429},
-      {uniname2ctype_offset(str1476), 511},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1480), 247},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1489), 33},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1495), 262},
-      {-1},
-      {uniname2ctype_offset(str1497), 499},
-      {-1},
-      {uniname2ctype_offset(str1499), 620},
-      {-1},
-      {uniname2ctype_offset(str1501), 196},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1507), 122},
-      {uniname2ctype_offset(str1508), 231},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1517), 619},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1520), 239},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1524), 486},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1529), 120},
-      {-1},
-      {uniname2ctype_offset(str1531), 422},
-      {-1},
-      {uniname2ctype_offset(str1533), 142},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1536), 127},
-      {uniname2ctype_offset(str1537), 271},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1542), 468},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1547), 168},
-      {-1},
-      {uniname2ctype_offset(str1549), 522},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1557), 85},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1563), 275},
-      {-1},
-      {uniname2ctype_offset(str1565), 329},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1570), 210},
-      {-1},
-      {uniname2ctype_offset(str1572), 115},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1577), 570},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1580), 131},
-      {-1},
-      {uniname2ctype_offset(str1582), 219},
-      {uniname2ctype_offset(str1583), 125},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1587), 550},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1597), 81},
-      {uniname2ctype_offset(str1598), 219},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1607), 592},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1613), 164},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1617), 505},
-      {uniname2ctype_offset(str1618), 274},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1622), 388},
-      {uniname2ctype_offset(str1623), 573},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1629), 39},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1635), 72},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1643), 62},
-      {uniname2ctype_offset(str1644), 235},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1654), 403},
-      {uniname2ctype_offset(str1655), 276},
-      {-1},
-      {uniname2ctype_offset(str1657), 114},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1662), 129},
-      {-1},
-      {uniname2ctype_offset(str1664), 451},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1671), 343},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1675), 472},
-      {-1},
-      {uniname2ctype_offset(str1677), 317},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1682), 634},
-      {-1},
-      {uniname2ctype_offset(str1684), 199},
-      {-1},
-      {uniname2ctype_offset(str1686), 93},
-      {uniname2ctype_offset(str1687), 141},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1691), 124},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1699), 382},
-      {-1},
-      {uniname2ctype_offset(str1701), 525},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1704), 207},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1714), 207},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1722), 362},
-      {-1},
-      {uniname2ctype_offset(str1724), 582},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1728), 221},
-      {uniname2ctype_offset(str1729), 445},
-      {uniname2ctype_offset(str1730), 222},
-      {uniname2ctype_offset(str1731), 538},
-      {uniname2ctype_offset(str1732), 249},
-      {uniname2ctype_offset(str1733), 123},
-      {uniname2ctype_offset(str1734), 114},
-      {uniname2ctype_offset(str1735), 260},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1740), 129},
-      {-1},
-      {uniname2ctype_offset(str1742), 161},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1745), 528},
-      {uniname2ctype_offset(str1746), 405},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1750), 20},
-      {-1},
-      {uniname2ctype_offset(str1752), 519},
-      {uniname2ctype_offset(str1753), 148},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1757), 518},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1766), 73},
-      {-1},
-      {uniname2ctype_offset(str1768), 148},
-      {uniname2ctype_offset(str1769), 377},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1776), 126},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1781), 556},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1788), 97},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1793), 97},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1806), 351},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1810), 640},
-      {uniname2ctype_offset(str1811), 247},
-      {-1},
-      {uniname2ctype_offset(str1813), 266},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1821), 224},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1828), 402},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1838), 623},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1841), 460},
-      {uniname2ctype_offset(str1842), 394},
-      {uniname2ctype_offset(str1843), 65},
-      {-1},
-      {uniname2ctype_offset(str1845), 265},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1848), 109},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1851), 137},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1866), 61},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1871), 494},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1881), 63},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1888), 531},
-      {uniname2ctype_offset(str1889), 555},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1896), 626},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1902), 434},
-      {-1},
-      {uniname2ctype_offset(str1904), 455},
-      {uniname2ctype_offset(str1905), 590},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1912), 586},
-      {uniname2ctype_offset(str1913), 143},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1916), 594},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1924), 143},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1929), 432},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1932), 415},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1935), 264},
-      {uniname2ctype_offset(str1936), 338},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1941), 27},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1950), 424},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1956), 252},
-      {-1},
-      {uniname2ctype_offset(str1958), 109},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1964), 440},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1967), 492},
-      {uniname2ctype_offset(str1968), 644},
-      {uniname2ctype_offset(str1969), 251},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1974), 358},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1981), 176},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str1985), 408},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1988), 441},
-      {-1}, {-1},
-      {uniname2ctype_offset(str1991), 1},
-      {-1},
-      {uniname2ctype_offset(str1993), 375},
-      {uniname2ctype_offset(str1994), 175},
-      {-1},
-      {uniname2ctype_offset(str1996), 42},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2001), 110},
-      {uniname2ctype_offset(str2002), 598},
-      {-1},
-      {uniname2ctype_offset(str2004), 110},
-      {-1},
-      {uniname2ctype_offset(str2006), 410},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2010), 378},
-      {uniname2ctype_offset(str2011), 269},
-      {uniname2ctype_offset(str2012), 565},
-      {-1},
-      {uniname2ctype_offset(str2014), 336},
-      {uniname2ctype_offset(str2015), 117},
-      {uniname2ctype_offset(str2016), 209},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2023), 32},
-      {uniname2ctype_offset(str2024), 506},
-      {-1},
-      {uniname2ctype_offset(str2026), 176},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2033), 8},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2040), 539},
-      {-1},
-      {uniname2ctype_offset(str2042), 121},
-      {uniname2ctype_offset(str2043), 17},
-      {uniname2ctype_offset(str2044), 117},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2047), 107},
-      {uniname2ctype_offset(str2048), 526},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2062), 130},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2070), 9},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2073), 345},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2077), 150},
-      {uniname2ctype_offset(str2078), 256},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2090), 277},
-      {-1},
-      {uniname2ctype_offset(str2092), 150},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2095), 356},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2103), 162},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2110), 123},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2114), 439},
-      {uniname2ctype_offset(str2115), 384},
-      {-1},
-      {uniname2ctype_offset(str2117), 174},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2128), 215},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2135), 128},
-      {-1},
-      {uniname2ctype_offset(str2137), 12},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2141), 244},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2145), 52},
-      {uniname2ctype_offset(str2146), 416},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2149), 221},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2163), 251},
-      {-1},
-      {uniname2ctype_offset(str2165), 174},
-      {uniname2ctype_offset(str2166), 5},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2174), 233},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2178), 233},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2181), 139},
-      {uniname2ctype_offset(str2182), 216},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2195), 354},
-      {uniname2ctype_offset(str2196), 496},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2207), 196},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2211), 20},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2216), 367},
-      {uniname2ctype_offset(str2217), 128},
-      {uniname2ctype_offset(str2218), 547},
-      {uniname2ctype_offset(str2219), 78},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2224), 453},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2228), 43},
-      {uniname2ctype_offset(str2229), 35},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2232), 385},
-      {uniname2ctype_offset(str2233), 216},
-      {uniname2ctype_offset(str2234), 92},
-      {uniname2ctype_offset(str2235), 489},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2241), 92},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2244), 443},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2247), 36},
-      {uniname2ctype_offset(str2248), 602},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2276), 418},
-      {-1},
-      {uniname2ctype_offset(str2278), 124},
-      {uniname2ctype_offset(str2279), 192},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2283), 214},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2296), 639},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2305), 205},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2308), 234},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2312), 177},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2315), 601},
-      {uniname2ctype_offset(str2316), 638},
-      {-1},
-      {uniname2ctype_offset(str2318), 202},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2321), 153},
-      {-1},
-      {uniname2ctype_offset(str2323), 172},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2327), 381},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2331), 636},
-      {-1},
-      {uniname2ctype_offset(str2333), 134},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2343), 591},
-      {uniname2ctype_offset(str2344), 442},
-      {uniname2ctype_offset(str2345), 241},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2353), 202},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2361), 606},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2364), 323},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2373), 37},
-      {uniname2ctype_offset(str2374), 392},
-      {uniname2ctype_offset(str2375), 197},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2397), 421},
-      {uniname2ctype_offset(str2398), 413},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2405), 165},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2414), 82},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2427), 23},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2433), 339},
-      {uniname2ctype_offset(str2434), 154},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2437), 194},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2440), 100},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2451), 103},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2454), 220},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2460), 257},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2464), 159},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2470), 448},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2475), 142},
-      {uniname2ctype_offset(str2476), 558},
-      {-1},
-      {uniname2ctype_offset(str2478), 417},
-      {uniname2ctype_offset(str2479), 361},
-      {-1},
-      {uniname2ctype_offset(str2481), 386},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2500), 121},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2506), 532},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2511), 244},
-      {-1},
-      {uniname2ctype_offset(str2513), 630},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2530), 82},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2534), 340},
-      {uniname2ctype_offset(str2535), 237},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2545), 277},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2548), 118},
-      {uniname2ctype_offset(str2549), 159},
-      {-1},
-      {uniname2ctype_offset(str2551), 89},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2564), 372},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2567), 318},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2570), 491},
-      {-1},
-      {uniname2ctype_offset(str2572), 473},
-      {-1},
-      {uniname2ctype_offset(str2574), 246},
-      {uniname2ctype_offset(str2575), 474},
-      {uniname2ctype_offset(str2576), 275},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2582), 391},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2588), 154},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2602), 210},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2606), 374},
-      {-1},
-      {uniname2ctype_offset(str2608), 458},
-      {uniname2ctype_offset(str2609), 55},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2625), 262},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2648), 254},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2652), 383},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2656), 368},
-      {uniname2ctype_offset(str2657), 112},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2665), 87},
-      {uniname2ctype_offset(str2666), 50},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2670), 632},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2674), 87},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2688), 139},
-      {uniname2ctype_offset(str2689), 641},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2694), 48},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2705), 481},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2726), 226},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2750), 557},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2761), 18},
-      {uniname2ctype_offset(str2762), 265},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2765), 133},
-      {uniname2ctype_offset(str2766), 54},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2769), 483},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2772), 199},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2775), 38},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2786), 4},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2793), 34},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2801), 29},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2808), 512},
-      {-1},
-      {uniname2ctype_offset(str2810), 226},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2816), 310},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2821), 393},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2830), 614},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2834), 364},
-      {-1},
-      {uniname2ctype_offset(str2836), 78},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2847), 248},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2852), 305},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2855), 190},
-      {uniname2ctype_offset(str2856), 66},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2859), 427},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2867), 309},
-      {uniname2ctype_offset(str2868), 248},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2871), 254},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2879), 204},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2886), 631},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2902), 477},
-      {-1},
-      {uniname2ctype_offset(str2904), 464},
-      {uniname2ctype_offset(str2905), 273},
-      {-1},
-      {uniname2ctype_offset(str2907), 273},
-      {-1},
-      {uniname2ctype_offset(str2909), 577},
-      {-1},
-      {uniname2ctype_offset(str2911), 450},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2941), 363},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2953), 198},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str2964), 520},
-      {-1},
-      {uniname2ctype_offset(str2966), 238},
-      {uniname2ctype_offset(str2967), 43},
-      {-1}, {-1},
-      {uniname2ctype_offset(str2970), 88},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2980), 195},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2984), 574},
-      {-1},
-      {uniname2ctype_offset(str2986), 118},
-      {uniname2ctype_offset(str2987), 54},
-      {uniname2ctype_offset(str2988), 471},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str2997), 603},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3001), 180},
-      {uniname2ctype_offset(str3002), 64},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3005), 475},
-      {uniname2ctype_offset(str3006), 583},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3015), 83},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3018), 94},
-      {uniname2ctype_offset(str3019), 165},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3026), 83},
-      {uniname2ctype_offset(str3027), 503},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3035), 232},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3042), 211},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3045), 615},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3048), 119},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3052), 89},
-      {uniname2ctype_offset(str3053), 229},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3058), 185},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3067), 185},
-      {uniname2ctype_offset(str3068), 99},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3071), 198},
-      {uniname2ctype_offset(str3072), 133},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3082), 130},
-      {-1},
-      {uniname2ctype_offset(str3084), 237},
-      {-1},
-      {uniname2ctype_offset(str3086), 84},
-      {uniname2ctype_offset(str3087), 342},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3091), 261},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3099), 478},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3104), 84},
-      {-1},
-      {uniname2ctype_offset(str3106), 562},
-      {uniname2ctype_offset(str3107), 313},
-      {-1},
-      {uniname2ctype_offset(str3109), 315},
-      {uniname2ctype_offset(str3110), 152},
-      {uniname2ctype_offset(str3111), 191},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3118), 90},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3123), 107},
-      {-1},
-      {uniname2ctype_offset(str3125), 191},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3135), 452},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3142), 585},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3145), 183},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3155), 182},
-      {-1},
-      {uniname2ctype_offset(str3157), 231},
-      {uniname2ctype_offset(str3158), 328},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3176), 396},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3180), 331},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3193), 433},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3209), 62},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3212), 211},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3215), 180},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3218), 125},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3237), 390},
-      {-1},
-      {uniname2ctype_offset(str3239), 308},
-      {uniname2ctype_offset(str3240), 304},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3248), 213},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3254), 252},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3265), 610},
-      {-1},
-      {uniname2ctype_offset(str3267), 28},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3275), 146},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3284), 618},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3287), 223},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3297), 311},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3303), 307},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3313), 255},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3320), 223},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3328), 63},
-      {uniname2ctype_offset(str3329), 625},
-      {-1},
-      {uniname2ctype_offset(str3331), 222},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3338), 264},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3348), 407},
-      {-1},
-      {uniname2ctype_offset(str3350), 501},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3355), 47},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3360), 337},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3371), 126},
-      {uniname2ctype_offset(str3372), 16},
-      {uniname2ctype_offset(str3373), 253},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3377), 147},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3391), 238},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3396), 613},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3405), 469},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3416), 51},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3428), 253},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3433), 205},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3436), 213},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3455), 225},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3458), 10},
-      {-1},
-      {uniname2ctype_offset(str3460), 627},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3483), 245},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3502), 49},
-      {-1},
-      {uniname2ctype_offset(str3504), 80},
-      {uniname2ctype_offset(str3505), 479},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3511), 411},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3532), 578},
-      {uniname2ctype_offset(str3533), 57},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3558), 59},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3580), 179},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3590), 103},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3613), 41},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3618), 99},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3648), 465},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3659), 178},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3664), 177},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3686), 204},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3689), 246},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3698), 504},
-      {uniname2ctype_offset(str3699), 552},
-      {-1},
-      {uniname2ctype_offset(str3701), 96},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3705), 320},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3710), 201},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3713), 96},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3721), 438},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3744), 190},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3754), 71},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3766), 467},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3799), 214},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3807), 260},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3842), 182},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3845), 259},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3850), 245},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3854), 65},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3857), 616},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str3868), 261},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3881), 228},
-      {-1}, {-1},
-      {uniname2ctype_offset(str3884), 306},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3891), 30},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3924), 420},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3942), 100},
-      {-1},
-      {uniname2ctype_offset(str3944), 436},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3949), 276},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3976), 604},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str3998), 430},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4007), 454},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4106), 45},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4116), 132},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str4127), 132},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4169), 220},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4231), 153},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4308), 401},
-      {uniname2ctype_offset(str4309), 162},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4348), 571},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4361), 572},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4459), 119},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4487), 147},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4604), 116},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4626), 116},
-      {uniname2ctype_offset(str4627), 255},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str4674), 642},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4683), 466},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4695), 80},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4734), 179},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4755), 312},
-      {uniname2ctype_offset(str4756), 314},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4772), 409},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str4783), 316},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4810), 90},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4898), 75},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1},
-      {uniname2ctype_offset(str4982), 232},
-      {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str4986), 428},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str5018), 46},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1},
-      {uniname2ctype_offset(str5038), 242},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str5134), 628},
+      {uniname2ctype_offset(str122), 215},
 #endif /* USE_UNICODE_PROPERTIES */
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
 #ifndef USE_UNICODE_PROPERTIES
@@ -45528,7 +44804,1503 @@ uniname2ctype_p (register const char *str, register size_t len)
       {uniname2ctype_offset(str19), 4},
       {uniname2ctype_offset(str20), 2}
 #else /* USE_UNICODE_PROPERTIES */
-      {uniname2ctype_offset(str5141), 155},
+      {uniname2ctype_offset(str129), 190},
+      {uniname2ctype_offset(str130), 42},
+      {uniname2ctype_offset(str131), 175},
+      {-1}, {-1},
+      {uniname2ctype_offset(str134), 504},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str139), 173},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str145), 523},
+      {uniname2ctype_offset(str146), 582},
+      {-1},
+      {uniname2ctype_offset(str148), 587},
+      {uniname2ctype_offset(str149), 542},
+      {-1},
+      {uniname2ctype_offset(str151), 18},
+      {uniname2ctype_offset(str152), 172},
+      {uniname2ctype_offset(str153), 163},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str161), 334},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str177), 359},
+      {uniname2ctype_offset(str178), 570},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str183), 78},
+      {-1}, {-1},
+      {uniname2ctype_offset(str186), 27},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str190), 211},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str203), 367},
+      {uniname2ctype_offset(str204), 495},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str210), 588},
+      {-1},
+      {uniname2ctype_offset(str212), 372},
+      {uniname2ctype_offset(str213), 118},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str218), 556},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str226), 174},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str230), 537},
+      {uniname2ctype_offset(str231), 31},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str236), 25},
+      {uniname2ctype_offset(str237), 197},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str246), 32},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str250), 40},
+      {-1}, {-1},
+      {uniname2ctype_offset(str253), 105},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str260), 575},
+      {-1}, {-1},
+      {uniname2ctype_offset(str263), 164},
+      {-1},
+      {uniname2ctype_offset(str265), 19},
+      {-1},
+      {uniname2ctype_offset(str267), 82},
+      {uniname2ctype_offset(str268), 364},
+      {-1},
+      {uniname2ctype_offset(str270), 276},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str274), 574},
+      {uniname2ctype_offset(str275), 524},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str281), 328},
+      {uniname2ctype_offset(str282), 40},
+      {uniname2ctype_offset(str283), 82},
+      {-1},
+      {uniname2ctype_offset(str285), 544},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str289), 567},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str293), 221},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str297), 215},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str301), 402},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str311), 332},
+      {-1},
+      {uniname2ctype_offset(str313), 463},
+      {-1},
+      {uniname2ctype_offset(str315), 246},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str320), 277},
+      {-1},
+      {uniname2ctype_offset(str322), 132},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str328), 341},
+      {-1}, {-1},
+      {uniname2ctype_offset(str331), 79},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str335), 568},
+      {-1}, {-1},
+      {uniname2ctype_offset(str338), 339},
+      {-1},
+      {uniname2ctype_offset(str340), 79},
+      {-1},
+      {uniname2ctype_offset(str342), 356},
+      {-1}, {-1},
+      {uniname2ctype_offset(str345), 53},
+      {uniname2ctype_offset(str346), 276},
+      {-1},
+      {uniname2ctype_offset(str348), 433},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str352), 540},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str362), 166},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str366), 44},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str370), 561},
+      {-1}, {-1},
+      {uniname2ctype_offset(str373), 163},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str386), 378},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str399), 337},
+      {-1},
+      {uniname2ctype_offset(str401), 555},
+      {-1}, {-1},
+      {uniname2ctype_offset(str404), 84},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str411), 55},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str418), 111},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str426), 166},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str442), 14},
+      {-1}, {-1},
+      {uniname2ctype_offset(str445), 23},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str462), 46},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str468), 172},
+      {-1},
+      {uniname2ctype_offset(str470), 22},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str475), 531},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str480), 464},
+      {uniname2ctype_offset(str481), 191},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str486), 483},
+      {-1},
+      {uniname2ctype_offset(str488), 595},
+      {-1}, {-1},
+      {uniname2ctype_offset(str491), 477},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str500), 130},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str504), 190},
+      {uniname2ctype_offset(str505), 252},
+      {uniname2ctype_offset(str506), 24},
+      {-1}, {-1},
+      {uniname2ctype_offset(str509), 24},
+      {-1},
+      {uniname2ctype_offset(str511), 470},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str520), 430},
+      {-1},
+      {uniname2ctype_offset(str522), 233},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str538), 94},
+      {-1}, {-1},
+      {uniname2ctype_offset(str541), 560},
+      {-1},
+      {uniname2ctype_offset(str543), 94},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str548), 70},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str556), 553},
+      {-1},
+      {uniname2ctype_offset(str558), 357},
+      {-1},
+      {uniname2ctype_offset(str560), 522},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str565), 631},
+      {uniname2ctype_offset(str566), 37},
+      {-1},
+      {uniname2ctype_offset(str568), 116},
+      {-1}, {-1},
+      {uniname2ctype_offset(str571), 76},
+      {uniname2ctype_offset(str572), 509},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str577), 618},
+      {-1},
+      {uniname2ctype_offset(str579), 109},
+      {-1}, {-1},
+      {uniname2ctype_offset(str582), 413},
+      {uniname2ctype_offset(str583), 487},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str588), 147},
+      {uniname2ctype_offset(str589), 147},
+      {uniname2ctype_offset(str590), 74},
+      {uniname2ctype_offset(str591), 70},
+      {-1}, {-1},
+      {uniname2ctype_offset(str594), 171},
+      {-1},
+      {uniname2ctype_offset(str596), 629},
+      {uniname2ctype_offset(str597), 149},
+      {-1}, {-1},
+      {uniname2ctype_offset(str600), 497},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str604), 586},
+      {uniname2ctype_offset(str605), 636},
+      {-1}, {-1},
+      {uniname2ctype_offset(str608), 645},
+      {uniname2ctype_offset(str609), 232},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str614), 619},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str618), 77},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str624), 198},
+      {uniname2ctype_offset(str625), 454},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str630), 29},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str639), 49},
+      {-1}, {-1},
+      {uniname2ctype_offset(str642), 19},
+      {-1}, {-1},
+      {uniname2ctype_offset(str645), 492},
+      {-1},
+      {uniname2ctype_offset(str647), 195},
+      {-1}, {-1},
+      {uniname2ctype_offset(str650), 494},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str657), 51},
+      {-1}, {-1},
+      {uniname2ctype_offset(str660), 274},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str672), 342},
+      {-1}, {-1},
+      {uniname2ctype_offset(str675), 68},
+      {-1}, {-1},
+      {uniname2ctype_offset(str678), 174},
+      {uniname2ctype_offset(str679), 614},
+      {-1},
+      {uniname2ctype_offset(str681), 69},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str696), 178},
+      {uniname2ctype_offset(str697), 406},
+      {uniname2ctype_offset(str698), 75},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str703), 534},
+      {-1},
+      {uniname2ctype_offset(str705), 354},
+      {-1},
+      {uniname2ctype_offset(str707), 161},
+      {uniname2ctype_offset(str708), 594},
+      {-1}, {-1},
+      {uniname2ctype_offset(str711), 550},
+      {-1},
+      {uniname2ctype_offset(str713), 383},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str718), 571},
+      {-1},
+      {uniname2ctype_offset(str720), 72},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str737), 7},
+      {uniname2ctype_offset(str738), 380},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str753), 243},
+      {-1},
+      {uniname2ctype_offset(str755), 521},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str760), 438},
+      {uniname2ctype_offset(str761), 170},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str766), 159},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str770), 558},
+      {uniname2ctype_offset(str771), 170},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str775), 239},
+      {uniname2ctype_offset(str776), 274},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str783), 159},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str787), 259},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str791), 196},
+      {uniname2ctype_offset(str792), 600},
+      {-1},
+      {uniname2ctype_offset(str794), 596},
+      {-1}, {-1},
+      {uniname2ctype_offset(str797), 50},
+      {-1},
+      {uniname2ctype_offset(str799), 624},
+      {-1}, {-1},
+      {uniname2ctype_offset(str802), 13},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str806), 220},
+      {-1},
+      {uniname2ctype_offset(str808), 549},
+      {uniname2ctype_offset(str809), 453},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str814), 500},
+      {-1}, {-1},
+      {uniname2ctype_offset(str817), 6},
+      {uniname2ctype_offset(str818), 405},
+      {-1},
+      {uniname2ctype_offset(str820), 109},
+      {uniname2ctype_offset(str821), 489},
+      {uniname2ctype_offset(str822), 602},
+      {uniname2ctype_offset(str823), 47},
+      {uniname2ctype_offset(str824), 115},
+      {uniname2ctype_offset(str825), 451},
+      {-1}, {-1},
+      {uniname2ctype_offset(str828), 603},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str836), 261},
+      {-1},
+      {uniname2ctype_offset(str838), 160},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str842), 615},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str847), 48},
+      {uniname2ctype_offset(str848), 181},
+      {-1}, {-1},
+      {uniname2ctype_offset(str851), 101},
+      {uniname2ctype_offset(str852), 505},
+      {-1}, {-1},
+      {uniname2ctype_offset(str855), 67},
+      {-1},
+      {uniname2ctype_offset(str857), 326},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str871), 396},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str875), 376},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str879), 360},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str886), 411},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str891), 278},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str895), 419},
+      {-1}, {-1},
+      {uniname2ctype_offset(str898), 507},
+      {-1},
+      {uniname2ctype_offset(str900), 628},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str904), 373},
+      {uniname2ctype_offset(str905), 616},
+      {uniname2ctype_offset(str906), 528},
+      {uniname2ctype_offset(str907), 456},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str917), 58},
+      {-1}, {-1},
+      {uniname2ctype_offset(str920), 66},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str924), 68},
+      {-1},
+      {uniname2ctype_offset(str926), 351},
+      {-1},
+      {uniname2ctype_offset(str928), 547},
+      {uniname2ctype_offset(str929), 468},
+      {uniname2ctype_offset(str930), 41},
+#ifndef USE_UNICODE_AGE_PROPERTIES
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str934), 304},
+      {uniname2ctype_offset(str935), 303},
+      {uniname2ctype_offset(str936), 306},
+      {uniname2ctype_offset(str937), 305},
+      {uniname2ctype_offset(str938), 285},
+      {uniname2ctype_offset(str939), 302},
+      {uniname2ctype_offset(str940), 301},
+      {uniname2ctype_offset(str941), 287},
+      {uniname2ctype_offset(str942), 286},
+      {uniname2ctype_offset(str943), 310},
+      {uniname2ctype_offset(str944), 309},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str945), 348},
+      {uniname2ctype_offset(str946), 139},
+#ifndef USE_UNICODE_AGE_PROPERTIES
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str961), 2},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str947), 300},
+      {uniname2ctype_offset(str948), 294},
+      {uniname2ctype_offset(str949), 293},
+      {uniname2ctype_offset(str950), 307},
+      {uniname2ctype_offset(str951), 295},
+      {-1}, {-1},
+      {uniname2ctype_offset(str954), 289},
+      {uniname2ctype_offset(str955), 288},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {-1},
+#ifndef USE_UNICODE_AGE_PROPERTIES
+      {uniname2ctype_offset(str963), 260},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str957), 290},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {-1},
+#ifdef USE_UNICODE_AGE_PROPERTIES
+      {uniname2ctype_offset(str959), 297},
+      {uniname2ctype_offset(str960), 296},
+      {uniname2ctype_offset(str961), 2},
+      {uniname2ctype_offset(str962), 298},
+      {uniname2ctype_offset(str963), 260},
+      {uniname2ctype_offset(str964), 308},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str968), 292},
+      {uniname2ctype_offset(str969), 291},
+      {-1}, {-1}, {-1}, {-1},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str974), 517},
+#ifndef USE_UNICODE_AGE_PROPERTIES
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+#else /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str975), 299},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+#endif /* USE_UNICODE_AGE_PROPERTIES */
+      {uniname2ctype_offset(str984), 273},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str994), 88},
+      {uniname2ctype_offset(str995), 107},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1005), 53},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1010), 26},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1013), 502},
+      {-1},
+      {uniname2ctype_offset(str1015), 491},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1021), 67},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1025), 466},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1028), 139},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1032), 267},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1035), 329},
+      {uniname2ctype_offset(str1036), 576},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1046), 275},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1049), 176},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1061), 377},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1067), 105},
+      {uniname2ctype_offset(str1068), 541},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1072), 200},
+      {-1},
+      {uniname2ctype_offset(str1074), 280},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1081), 421},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1087), 607},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1097), 548},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1103), 69},
+      {uniname2ctype_offset(str1104), 11},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1109), 242},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1116), 583},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1120), 60},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1123), 331},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1140), 96},
+      {-1},
+      {uniname2ctype_offset(str1142), 209},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1146), 134},
+      {uniname2ctype_offset(str1147), 272},
+      {-1},
+      {uniname2ctype_offset(str1149), 161},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1152), 220},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1156), 536},
+      {uniname2ctype_offset(str1157), 206},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1160), 263},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1164), 243},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1168), 107},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1174), 333},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1177), 518},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1183), 118},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1186), 604},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1190), 33},
+      {uniname2ctype_offset(str1191), 552},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1207), 469},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1215), 530},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1221), 426},
+      {-1},
+      {uniname2ctype_offset(str1223), 591},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1226), 606},
+      {uniname2ctype_offset(str1227), 246},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1231), 209},
+      {uniname2ctype_offset(str1232), 429},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1238), 277},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1243), 25},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1246), 442},
+      {uniname2ctype_offset(str1247), 432},
+      {uniname2ctype_offset(str1248), 30},
+      {uniname2ctype_offset(str1249), 644},
+      {uniname2ctype_offset(str1250), 26},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1254), 573},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1258), 88},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1264), 281},
+      {-1},
+      {uniname2ctype_offset(str1266), 141},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1271), 169},
+      {uniname2ctype_offset(str1272), 261},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1281), 134},
+      {uniname2ctype_offset(str1282), 642},
+      {-1},
+      {uniname2ctype_offset(str1284), 543},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1288), 557},
+      {uniname2ctype_offset(str1289), 211},
+      {uniname2ctype_offset(str1290), 74},
+      {-1},
+      {uniname2ctype_offset(str1292), 404},
+      {uniname2ctype_offset(str1293), 186},
+      {uniname2ctype_offset(str1294), 154},
+      {uniname2ctype_offset(str1295), 366},
+      {uniname2ctype_offset(str1296), 104},
+      {uniname2ctype_offset(str1297), 148},
+      {uniname2ctype_offset(str1298), 173},
+      {-1},
+      {uniname2ctype_offset(str1300), 89},
+      {uniname2ctype_offset(str1301), 144},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1306), 15},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1310), 104},
+      {uniname2ctype_offset(str1311), 138},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1314), 196},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1317), 89},
+      {-1},
+      {uniname2ctype_offset(str1319), 280},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1322), 189},
+      {uniname2ctype_offset(str1323), 395},
+      {-1},
+      {uniname2ctype_offset(str1325), 386},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1333), 387},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1338), 64},
+      {-1},
+      {uniname2ctype_offset(str1340), 91},
+      {uniname2ctype_offset(str1341), 21},
+      {-1},
+      {uniname2ctype_offset(str1343), 123},
+      {-1},
+      {uniname2ctype_offset(str1345), 362},
+      {uniname2ctype_offset(str1346), 73},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1355), 410},
+      {uniname2ctype_offset(str1356), 282},
+      {-1},
+      {uniname2ctype_offset(str1358), 640},
+      {-1},
+      {uniname2ctype_offset(str1360), 3},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1365), 394},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1369), 262},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1387), 203},
+      {-1},
+      {uniname2ctype_offset(str1389), 218},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1397), 125},
+      {uniname2ctype_offset(str1398), 108},
+      {-1},
+      {uniname2ctype_offset(str1400), 204},
+      {uniname2ctype_offset(str1401), 407},
+      {uniname2ctype_offset(str1402), 355},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1406), 284},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1410), 566},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1418), 514},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1423), 436},
+      {-1},
+      {uniname2ctype_offset(str1425), 589},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1429), 224},
+      {-1},
+      {uniname2ctype_offset(str1431), 225},
+      {-1},
+      {uniname2ctype_offset(str1433), 252},
+      {-1},
+      {uniname2ctype_offset(str1435), 140},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1438), 444},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1441), 230},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1445), 506},
+      {uniname2ctype_offset(str1446), 535},
+      {uniname2ctype_offset(str1447), 412},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1451), 206},
+      {uniname2ctype_offset(str1452), 35},
+      {uniname2ctype_offset(str1453), 108},
+      {uniname2ctype_offset(str1454), 148},
+      {uniname2ctype_offset(str1455), 125},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1462), 230},
+      {uniname2ctype_offset(str1463), 253},
+      {uniname2ctype_offset(str1464), 71},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1467), 167},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1472), 231},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1477), 123},
+      {-1},
+      {uniname2ctype_offset(str1479), 227},
+      {-1},
+      {uniname2ctype_offset(str1481), 38},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1488), 138},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1491), 143},
+      {uniname2ctype_offset(str1492), 143},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1495), 266},
+      {-1},
+      {uniname2ctype_offset(str1497), 56},
+      {uniname2ctype_offset(str1498), 39},
+      {uniname2ctype_offset(str1499), 627},
+      {uniname2ctype_offset(str1500), 116},
+      {uniname2ctype_offset(str1501), 199},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1509), 126},
+      {-1},
+      {uniname2ctype_offset(str1511), 648},
+      {-1},
+      {uniname2ctype_offset(str1513), 336},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1517), 626},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1520), 242},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1530), 238},
+      {uniname2ctype_offset(str1531), 273},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1535), 137},
+      {uniname2ctype_offset(str1536), 130},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1539), 630},
+      {-1},
+      {uniname2ctype_offset(str1541), 184},
+      {uniname2ctype_offset(str1542), 458},
+      {uniname2ctype_offset(str1543), 516},
+      {-1},
+      {uniname2ctype_offset(str1545), 84},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1549), 350},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1555), 551},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1558), 213},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1561), 515},
+      {uniname2ctype_offset(str1562), 202},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1567), 61},
+      {uniname2ctype_offset(str1568), 532},
+      {-1},
+      {uniname2ctype_offset(str1570), 169},
+      {uniname2ctype_offset(str1571), 128},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1580), 234},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1596), 493},
+      {uniname2ctype_offset(str1597), 633},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1605), 145},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1617), 475},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1623), 479},
+      {-1},
+      {uniname2ctype_offset(str1625), 324},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1629), 39},
+      {-1},
+      {uniname2ctype_offset(str1631), 151},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1639), 253},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1646), 151},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1649), 577},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1657), 612},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1660), 171},
+      {-1},
+      {uniname2ctype_offset(str1662), 529},
+      {-1},
+      {uniname2ctype_offset(str1664), 113},
+      {-1},
+      {uniname2ctype_offset(str1666), 100},
+      {uniname2ctype_offset(str1667), 113},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1671), 100},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1678), 120},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1682), 641},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1685), 118},
+      {-1},
+      {uniname2ctype_offset(str1687), 144},
+      {-1},
+      {uniname2ctype_offset(str1689), 512},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1695), 178},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1699), 389},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1703), 546},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1707), 120},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1710), 110},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1714), 73},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1717), 384},
+      {uniname2ctype_offset(str1718), 62},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1723), 264},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1726), 167},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1729), 452},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1734), 132},
+      {-1},
+      {uniname2ctype_offset(str1736), 580},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1744), 17},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1748), 72},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1754), 358},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1766), 538},
+      {uniname2ctype_offset(str1767), 562},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1776), 409},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1780), 441},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1790), 401},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1797), 36},
+      {-1},
+      {uniname2ctype_offset(str1799), 96},
+      {uniname2ctype_offset(str1800), 420},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1804), 127},
+      {-1},
+      {uniname2ctype_offset(str1806), 141},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1812), 132},
+      {uniname2ctype_offset(str1813), 272},
+      {uniname2ctype_offset(str1814), 164},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1817), 210},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1824), 526},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1827), 210},
+      {-1},
+      {uniname2ctype_offset(str1829), 525},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1833), 269},
+      {-1},
+      {uniname2ctype_offset(str1835), 369},
+      {uniname2ctype_offset(str1836), 131},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1844), 545},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1847), 423},
+      {uniname2ctype_offset(str1848), 129},
+      {-1},
+      {uniname2ctype_offset(str1850), 224},
+      {-1},
+      {uniname2ctype_offset(str1852), 462},
+      {uniname2ctype_offset(str1853), 601},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1860), 593},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1863), 20},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1880), 605},
+      {uniname2ctype_offset(str1881), 368},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1884), 345},
+      {-1},
+      {uniname2ctype_offset(str1886), 126},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1889), 275},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1893), 227},
+      {uniname2ctype_offset(str1894), 250},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1901), 146},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str1912), 146},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1916), 652},
+      {-1},
+      {uniname2ctype_offset(str1918), 131},
+      {uniname2ctype_offset(str1919), 554},
+      {uniname2ctype_offset(str1920), 112},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1923), 268},
+      {uniname2ctype_offset(str1924), 250},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1933), 415},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1941), 382},
+      {-1},
+      {uniname2ctype_offset(str1943), 501},
+      {uniname2ctype_offset(str1944), 255},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1949), 609},
+      {uniname2ctype_offset(str1950), 222},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1954), 417},
+      {uniname2ctype_offset(str1955), 153},
+      {uniname2ctype_offset(str1956), 63},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1964), 447},
+      {-1},
+      {uniname2ctype_offset(str1966), 222},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1970), 153},
+      {uniname2ctype_offset(str1971), 254},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1975), 599},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str1981), 205},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str1992), 446},
+      {-1}, {-1},
+      {uniname2ctype_offset(str1995), 142},
+      {uniname2ctype_offset(str1996), 533},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2004), 422},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2009), 361},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2012), 572},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2015), 12},
+      {uniname2ctype_offset(str2016), 205},
+      {uniname2ctype_offset(str2017), 646},
+      {uniname2ctype_offset(str2018), 597},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2022), 431},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2025), 117},
+      {uniname2ctype_offset(str2026), 259},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2030), 112},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2038), 460},
+      {uniname2ctype_offset(str2039), 499},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2042), 439},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2051), 165},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2057), 218},
+      {uniname2ctype_offset(str2058), 238},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2062), 613},
+      {uniname2ctype_offset(str2063), 1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2068), 42},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2073), 352},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2081), 208},
+      {uniname2ctype_offset(str2082), 385},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2086), 343},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2092), 283},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2095), 32},
+      {uniname2ctype_offset(str2096), 513},
+      {uniname2ctype_offset(str2097), 81},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2102), 117},
+      {uniname2ctype_offset(str2103), 179},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2110), 448},
+      {-1},
+      {uniname2ctype_offset(str2112), 95},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2119), 95},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2128), 23},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2140), 106},
+      {-1},
+      {uniname2ctype_offset(str2142), 9},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2148), 179},
+      {uniname2ctype_offset(str2149), 563},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2157), 195},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2161), 217},
+      {-1},
+      {uniname2ctype_offset(str2163), 212},
+      {uniname2ctype_offset(str2164), 124},
+      {uniname2ctype_offset(str2165), 254},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2183), 347},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2192), 450},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2201), 175},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2208), 363},
+      {uniname2ctype_offset(str2209), 133},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2213), 379},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2217), 52},
+      {-1},
+      {uniname2ctype_offset(str2219), 140},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2225), 281},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2230), 177},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2243), 455},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2251), 219},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2254), 103},
+      {uniname2ctype_offset(str2255), 467},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2260), 180},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2263), 247},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2268), 223},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2278), 177},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2286), 65},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2291), 213},
+      {uniname2ctype_offset(str2292), 85},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2296), 236},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2300), 236},
+      {uniname2ctype_offset(str2301), 35},
+      {uniname2ctype_offset(str2302), 219},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2307), 496},
+      {uniname2ctype_offset(str2308), 240},
+      {uniname2ctype_offset(str2309), 27},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2312), 330},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2318), 503},
+      {uniname2ctype_offset(str2319), 36},
+      {uniname2ctype_offset(str2320), 199},
+      {uniname2ctype_offset(str2321), 137},
+      {uniname2ctype_offset(str2322), 399},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2328), 90},
+      {uniname2ctype_offset(str2329), 388},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2337), 90},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2342), 365},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2351), 202},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2384), 498},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2392), 5},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2395), 8},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2399), 610},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2408), 85},
+      {uniname2ctype_offset(str2409), 647},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2415), 598},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2418), 490},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2425), 197},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2428), 608},
+      {uniname2ctype_offset(str2429), 393},
+      {uniname2ctype_offset(str2430), 237},
+      {-1},
+      {uniname2ctype_offset(str2432), 102},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2443), 156},
+      {-1},
+      {uniname2ctype_offset(str2445), 37},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2451), 349},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2460), 398},
+      {uniname2ctype_offset(str2461), 637},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2466), 127},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2469), 428},
+      {uniname2ctype_offset(str2470), 569},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2483), 371},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2487), 110},
+      {uniname2ctype_offset(str2488), 391},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2499), 459},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2506), 168},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2519), 185},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2532), 260},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2535), 638},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2544), 50},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2547), 283},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2554), 381},
+      {uniname2ctype_offset(str2555), 346},
+      {uniname2ctype_offset(str2556), 157},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2563), 200},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2567), 539},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2583), 488},
+      {uniname2ctype_offset(str2584), 374},
+      {-1},
+      {uniname2ctype_offset(str2586), 162},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2593), 449},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2598), 565},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2604), 375},
+      {uniname2ctype_offset(str2605), 392},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2618), 639},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2622), 124},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2633), 247},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2639), 325},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2642), 48},
+      {uniname2ctype_offset(str2643), 136},
+      {-1},
+      {uniname2ctype_offset(str2645), 115},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2650), 183},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2660), 145},
+      {uniname2ctype_offset(str2661), 121},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2670), 66},
+      {uniname2ctype_offset(str2671), 162},
+      {-1},
+      {uniname2ctype_offset(str2673), 92},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2678), 279},
+      {-1},
+      {uniname2ctype_offset(str2680), 279},
+      {uniname2ctype_offset(str2681), 55},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2690), 425},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2694), 480},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2697), 481},
+      {-1},
+      {uniname2ctype_offset(str2699), 643},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2708), 621},
+      {-1},
+      {uniname2ctype_offset(str2710), 157},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2714), 81},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2717), 229},
+      {uniname2ctype_offset(str2718), 471},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2724), 235},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2730), 465},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2741), 150},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2760), 54},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2769), 400},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2774), 390},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2779), 590},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2801), 229},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2811), 649},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2816), 64},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2822), 564},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2826), 244},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2833), 257},
+      {uniname2ctype_offset(str2834), 188},
+      {-1},
+      {uniname2ctype_offset(str2836), 91},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2839), 249},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2843), 188},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2855), 4},
+      {uniname2ctype_offset(str2856), 440},
+      {uniname2ctype_offset(str2857), 240},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2862), 18},
+      {uniname2ctype_offset(str2863), 269},
+      {uniname2ctype_offset(str2864), 183},
+      {uniname2ctype_offset(str2865), 214},
+      {uniname2ctype_offset(str2866), 226},
+      {uniname2ctype_offset(str2867), 207},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2871), 122},
+      {-1},
+      {uniname2ctype_offset(str2873), 142},
+      {-1},
+      {uniname2ctype_offset(str2875), 193},
+      {uniname2ctype_offset(str2876), 38},
+      {uniname2ctype_offset(str2877), 317},
+      {-1},
+      {uniname2ctype_offset(str2879), 434},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2891), 54},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2899), 226},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str2910), 208},
+      {-1}, {-1},
+      {uniname2ctype_offset(str2913), 312},
+      {-1},
+      {uniname2ctype_offset(str2915), 592},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2921), 186},
+      {-1},
+      {uniname2ctype_offset(str2923), 29},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2928), 316},
+      {-1},
+      {uniname2ctype_offset(str2930), 519},
+      {-1},
+      {uniname2ctype_offset(str2932), 581},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2937), 34},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2947), 20},
+      {uniname2ctype_offset(str2948), 251},
+      {-1},
+      {uniname2ctype_offset(str2950), 136},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2957), 241},
+      {-1},
+      {uniname2ctype_offset(str2959), 424},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2964), 43},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2969), 251},
+      {uniname2ctype_offset(str2970), 584},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str2993), 266},
+      {-1},
+      {uniname2ctype_offset(str2995), 485},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3002), 370},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3007), 168},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3020), 225},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3023), 62},
+      {uniname2ctype_offset(str3024), 484},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3033), 457},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3050), 207},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3056), 257},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3066), 482},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3075), 201},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3084), 128},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3099), 121},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3106), 622},
+      {uniname2ctype_offset(str3107), 234},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3115), 83},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3128), 16},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3131), 194},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3142), 63},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3145), 194},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3149), 527},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3152), 43},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3165), 198},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3168), 320},
+      {-1},
+      {uniname2ctype_offset(str3170), 322},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3173), 478},
+      {uniname2ctype_offset(str3174), 92},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3190), 228},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3200), 338},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3204), 133},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3233), 47},
+      {uniname2ctype_offset(str3234), 625},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3238), 232},
+      {-1},
+      {uniname2ctype_offset(str3240), 93},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3250), 86},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3253), 97},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3256), 344},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3261), 86},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3266), 149},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3281), 102},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3294), 335},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3300), 315},
+      {uniname2ctype_offset(str3301), 311},
+      {-1},
+      {uniname2ctype_offset(str3303), 258},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3306), 201},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3321), 129},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3332), 620},
+      {-1},
+      {uniname2ctype_offset(str3334), 214},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3341), 241},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3345), 155},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3354), 249},
+      {uniname2ctype_offset(str3355), 255},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3358), 318},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3361), 403},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3364), 314},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3368), 28},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3381), 397},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3390), 632},
+      {-1},
+      {uniname2ctype_offset(str3392), 106},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3410), 472},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3418), 585},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3426), 180},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3433), 216},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3439), 268},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3448), 204},
+      {-1},
+      {uniname2ctype_offset(str3450), 611},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3474), 256},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3477), 445},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3485), 443},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3488), 256},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3492), 414},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3508), 216},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3517), 51},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3531), 265},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3552), 150},
+      {uniname2ctype_offset(str3553), 57},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3576), 87},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3585), 508},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3594), 87},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3599), 476},
+      {-1},
+      {uniname2ctype_offset(str3601), 327},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3604), 634},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3621), 270},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3625), 217},
+      {-1},
+      {uniname2ctype_offset(str3627), 617},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3633), 623},
+      {-1},
+      {uniname2ctype_offset(str3635), 271},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3648), 511},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3655), 418},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3677), 10},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3680), 193},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3693), 474},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3697), 248},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -45536,18 +46308,174 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3763), 510},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3771), 99},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3777), 59},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3783), 99},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3792), 461},
+      {-1},
+      {uniname2ctype_offset(str3794), 282},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3818), 49},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3821), 559},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3828), 103},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3844), 185},
+      {-1}, {-1},
+      {uniname2ctype_offset(str3847), 263},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str3894), 181},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3901), 223},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3908), 264},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str5300), 225},
+      {uniname2ctype_offset(str3959), 408},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3986), 486},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str3999), 578},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4012), 579},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4020), 182},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4036), 65},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4053), 41},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str4064), 248},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4068), 427},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4110), 30},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4128), 119},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4150), 119},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4230), 122},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4245), 165},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4279), 45},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4311), 473},
+      {-1},
+      {uniname2ctype_offset(str4313), 313},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4318), 135},
+      {uniname2ctype_offset(str4319), 437},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4371), 231},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4380), 265},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4429), 258},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4456), 83},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4475), 156},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4490), 71},
+      {-1}, {-1},
+      {uniname2ctype_offset(str4493), 158},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4507), 323},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4513), 78},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4549), 235},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str4633), 93},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4651), 245},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4719), 135},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -45559,58 +46487,26 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str4820), 435},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4864), 416},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str4890), 650},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str4938), 319},
+      {uniname2ctype_offset(str4939), 321},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -45624,7 +46520,25 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str5980), 155},
+      {uniname2ctype_offset(str5052), 182},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str5064), 228},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1},
+      {uniname2ctype_offset(str5138), 158},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1},
+      {uniname2ctype_offset(str5150), 46},
+      {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str5156), 635},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
@@ -45638,7 +46552,117 @@ uniname2ctype_p (register const char *str, register size_t len)
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
       {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
-      {uniname2ctype_offset(str6098), 643}
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1},
+      {uniname2ctype_offset(str6262), 651}
 #endif /* USE_UNICODE_PROPERTIES */
     };
 
@@ -45670,21 +46694,21 @@ uniname2ctype(const UChar *name, unsigned int len)
 }
 #if defined ONIG_UNICODE_VERSION_STRING && !( \
       ONIG_UNICODE_VERSION_MAJOR == 15 && \
-      ONIG_UNICODE_VERSION_MINOR == 0 && \
+      ONIG_UNICODE_VERSION_MINOR == 1 && \
       ONIG_UNICODE_VERSION_TEENY == 0 && \
       1)
 # error ONIG_UNICODE_VERSION_STRING mismatch
 #endif
-#define ONIG_UNICODE_VERSION_STRING "15.0.0"
+#define ONIG_UNICODE_VERSION_STRING "15.1.0"
 #define ONIG_UNICODE_VERSION_MAJOR 15
-#define ONIG_UNICODE_VERSION_MINOR 0
+#define ONIG_UNICODE_VERSION_MINOR 1
 #define ONIG_UNICODE_VERSION_TEENY 0
 #if defined ONIG_UNICODE_EMOJI_VERSION_STRING && !( \
       ONIG_UNICODE_EMOJI_VERSION_MAJOR == 15 && \
-      ONIG_UNICODE_EMOJI_VERSION_MINOR == 0 && \
+      ONIG_UNICODE_EMOJI_VERSION_MINOR == 1 && \
       1)
 # error ONIG_UNICODE_EMOJI_VERSION_STRING mismatch
 #endif
-#define ONIG_UNICODE_EMOJI_VERSION_STRING "15.0"
+#define ONIG_UNICODE_EMOJI_VERSION_STRING "15.1"
 #define ONIG_UNICODE_EMOJI_VERSION_MAJOR 15
-#define ONIG_UNICODE_EMOJI_VERSION_MINOR 0
+#define ONIG_UNICODE_EMOJI_VERSION_MINOR 1
