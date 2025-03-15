@@ -49,16 +49,14 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     server_addr = '127.0.0.1'
     server_port = 80
 
-    begin
+    e = assert_raise_kind_of(SystemCallError) do
       # Since client_addr is not an IP address of this host,
       # bind() in TCPSocket.new should fail as EADDRNOTAVAIL.
       t = TCPSocket.new(server_addr, server_port, client_addr, client_port)
-      flunk "expected SystemCallError"
-    rescue SystemCallError => e
-      assert_match "for \"#{client_addr}\" port #{client_port}", e.message
+    ensure
+      t&.close
     end
-  ensure
-    t.close if t && !t.closed?
+    assert_include e.message, "for \"#{client_addr}\" port #{client_port}"
   end
 
   def test_initialize_resolv_timeout
