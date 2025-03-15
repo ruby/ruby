@@ -3874,7 +3874,7 @@ pm_def_node_create(
         end = end_keyword->end;
     }
 
-    if ((receiver != NULL) && PM_NODE_TYPE_P(receiver, PM_PARENTHESES_NODE)) {
+    if (receiver != NULL) {
         pm_def_node_receiver_check(parser, receiver);
     }
 
