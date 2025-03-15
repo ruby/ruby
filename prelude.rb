@@ -1,13 +1,13 @@
 class Binding
   # :nodoc:
-  def irb
+  def irb(*args)
     begin
       require 'irb'
     rescue LoadError, Gem::LoadError
       Gem::BUNDLED_GEMS.force_activate 'irb'
       retry
     end
-    irb
+    irb(*args)
   end
 
   # suppress redefinition warning
