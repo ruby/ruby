@@ -1551,7 +1551,14 @@ collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
     rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
-    rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? (VALUE)cfp->iseq : Qnil);
+    // If there's no iseq, or the iseq has been tagged as C_TRACE, store nil
+    if (!cfp->iseq || rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)){
+        rb_ary_store(frame, CALLER_BINDING_ISEQ, Qnil);
+    }
+    else {
+        // Otherwise, store the iseq
+        rb_ary_store(frame, CALLER_BINDING_ISEQ, (VALUE)cfp->iseq);
+    }
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
     rb_ary_store(frame, CALLER_BINDING_DEPTH, INT2FIX(frame_depth(data->ec, cfp)));
 
