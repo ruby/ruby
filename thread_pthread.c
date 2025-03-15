@@ -1791,6 +1791,11 @@ native_thread_destroy(struct rb_native_thread *nt)
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
 #define STACKADDR_AVAILABLE 1
+# if defined(__linux__) && !defined __GLIBC__
+    /* Musl libc defines `pthread_getattr_np` but it can not get the
+     * correct value of the main thread. */
+#   define MAINSTACKADDR_AVAILABLE 0
+# endif
 #elif defined HAVE_PTHREAD_GET_STACKADDR_NP && defined HAVE_PTHREAD_GET_STACKSIZE_NP
 #define STACKADDR_AVAILABLE 1
 #undef MAINSTACKADDR_AVAILABLE
