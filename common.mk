@@ -2084,10 +2084,12 @@ array.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 array.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 array.$(OBJEXT): $(top_srcdir)/internal/object.h
 array.$(OBJEXT): $(top_srcdir)/internal/proc.h
+array.$(OBJEXT): $(top_srcdir)/internal/range.h
 array.$(OBJEXT): $(top_srcdir)/internal/rational.h
 array.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 array.$(OBJEXT): $(top_srcdir)/internal/serial.h
 array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+array.$(OBJEXT): $(top_srcdir)/internal/struct.h
 array.$(OBJEXT): $(top_srcdir)/internal/variable.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
 array.$(OBJEXT): $(top_srcdir)/internal/warnings.h
