@@ -188,13 +188,17 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 8, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 8, :new, Class],
+    assert_equal(["call", 1, :new, Class],
                  events.shift)
-    assert_equal(["c-call", 8, :initialize, BasicObject],
+    assert_equal(["line", 8, :new, Class],
                  events.shift)
-    assert_equal(["c-return", 8, :initialize, BasicObject],
+    assert_equal(["call", 1, :initialize, BasicObject],
                  events.shift)
-    assert_equal(["c-return", 8, :new, Class],
+    assert_equal(["line", 8, :initialize, BasicObject],
+                 events.shift)
+    assert_equal(["return", 8, :initialize, BasicObject],
+                 events.shift)
+    assert_equal(["return", 8, :new, Class],
                  events.shift)
     assert_equal(["call", 5, :bar, Foo],
                  events.shift)
@@ -421,10 +425,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
      ["c-return", 4, :method_added, Module],
      ["end", 7, nil, nil],
      ["line", 8, __method__, self.class],
-     ["c-call", 8, :new, Class],
-     ["c-call", 8, :initialize, BasicObject],
-     ["c-return", 8, :initialize, BasicObject],
-     ["c-return", 8, :new, Class],
+     ["call", 1, :new, Class],
+     ["line", 8, :new, Class],
+     ["call", 1, :initialize, BasicObject],
+     ["line", 8, :initialize, BasicObject],
+     ["return", 8, :initialize, BasicObject],
+     ["return", 8, :new, Class],
      ["call", 4, :foo, ThreadTraceInnerClass],
      ["line", 5, :foo, ThreadTraceInnerClass],
      ["c-call", 5, :+, Integer],
@@ -572,10 +578,12 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, :nothing],
-     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, :nothing],
-     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, nil, xyzzy],
+     [:call,     1, "xyzzy", Class,       :new,             xyzzy.class, nil, :nothing],
+     [:line,    18, "xyzzy", Class,       :new,             xyzzy.class, nil, :nothing],
+     [:call,     1, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, :nothing],
+     [:line,    18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, :nothing],
+     [:return,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
+     [:return,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, xyzzy],
      [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
      [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
      [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
@@ -718,10 +726,12 @@ CODE
      [:c_return,13, "xyzzy", Module,      :method_added,    xyzzy.class, nil, nil],
      [:end,     17, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
      [:line,    18, "xyzzy", TestSetTraceFunc, method,      self,        :outer, :nothing],
-     [:c_call,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
-     [:c_call,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
-     [:c_return,18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
+     [:call,     1, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
+     [:line,    18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
+     [:call,     1, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
+     [:line,    18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
+     [:return,  18, "xyzzy", BasicObject, :initialize,      xyzzy,       nil, nil],
+     [:return,  18, "xyzzy", Class,       :new,             xyzzy.class, nil, nil],
      [:line,    19, "xyzzy", TestSetTraceFunc, method,      self, :outer, :nothing],
      [:call,     9, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
      [:line,    10, "xyzzy", xyzzy.class, :foo,             xyzzy,       nil,  :nothing],
@@ -1784,7 +1794,7 @@ CODE
       Bug10724.new
     }
 
-    assert_equal([:call, :call, :return, :return], evs)
+    assert_equal([:call, :call, :call, :return, :return, :return], evs)
   end
 
   require 'fiber'
@@ -1999,7 +2009,7 @@ CODE
     TracePoint.new(:c_call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[1]
+    assert_equal [:c_call, :itself, :initialize], events[0]
     events.clear
 
     o = Class.new{
