@@ -822,6 +822,10 @@ extern int rb_w32_mprotect(void *, size_t, int);
 #define munmap(a, l) rb_w32_munmap(a, l)
 #define mprotect(a, l, prot) rb_w32_mprotect(a, l, prot)
 
+# define RUBY_WIN32_GLOBAL_SETUP \
+    static int main(int, char **); \
+    int wmain(void) {return main(0, NULL);}
+
 #if defined(__cplusplus)
 #if 0
 { /* satisfy cc-mode */
