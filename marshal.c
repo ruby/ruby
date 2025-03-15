@@ -100,6 +100,7 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
+#define s_encoding_long rb_id_encoding()
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -114,6 +115,7 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_encoding_long "encoding"
 #define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
@@ -581,13 +583,21 @@ rb_hash_ruby2_keywords(VALUE obj)
     RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
 }
 
-static inline bool
-to_be_skipped_id(const ID id)
+/*
+ * if instance variable name `id` is a special name to be skipped,
+ * returns the name of it.  otherwise it cannot be dumped (unnamed),
+ * returns `name` as-is.  returns NULL for ID that can be dumped.
+ */
+static inline const char *
+skipping_ivar_name(const ID id, const char *name)
 {
-    if (id == s_encoding_short) return true;
-    if (id == s_ruby2_keywords_flag) return true;
-    if (id == rb_id_encoding()) return true;
-    return !rb_id2str(id);
+#define IS_SKIPPED_IVAR(idname) \
+    ((id == idname) && (name = name_##idname, true))
+    if (IS_SKIPPED_IVAR(s_encoding_short)) return name;
+    if (IS_SKIPPED_IVAR(s_ruby2_keywords_flag)) return name;
+    if (IS_SKIPPED_IVAR(s_encoding_long)) return name;
+    if (!rb_id2str(id)) return name;
+    return NULL;
 }
 
 struct w_ivar_arg {
@@ -600,15 +610,12 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 {
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
+    const char unnamed[] = "", *ivname = skipping_ivar_name(id, unnamed);
 
-    if (to_be_skipped_id(id)) {
-        if (id == s_encoding_short) {
-            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
-        }
-        if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
+    if (ivname) {
+        if (ivname != unnamed) {
+            rb_warn("instance variable '%s' on class %"PRIsVALUE" is not dumped",
+                    ivname, CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
     }
@@ -621,7 +628,7 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 static int
 obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+    if (!skipping_ivar_name(id, "") && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
     return ST_CONTINUE;
