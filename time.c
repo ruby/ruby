@@ -4007,9 +4007,17 @@ time_eql(VALUE time1, VALUE time2)
  *    now = Time.now
  *    # => 2022-08-18 10:24:13.5398485 -0500
  *    now.utc? # => false
+ *    now.getutc.utc? # => true
  *    utc = Time.utc(2000, 1, 1, 20, 15, 1)
  *    # => 2000-01-01 20:15:01 UTC
  *    utc.utc? # => true
+ *
+ *  Note that only +Time+ objects created with these methods
+ *  considered in UTC:
+ *
+ *  * Time.utc
+ *  * Time#utc
+ *  * Time#getutc
  *
  *  Related: Time.utc.
  */
