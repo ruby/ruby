@@ -495,7 +495,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         return;
     };
 
-    if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
+    if !unsafe { rb_yjit_constcache_cref(ic) }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
         // We can't generate code in these situations, so no need to invalidate.
         // See gen_opt_getinlinecache.
         return;
