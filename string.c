@@ -344,6 +344,10 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
 
         if (rb_objspace_garbage_object_p(str)) {
             arg->fstr = Qundef;
+            // When RSTRING_FSTR strings are swept, they call `st_delete`.
+            // To avoid a race condition if an equivalent string was inserted
+            // we must remove the flag immediately.
+            FL_UNSET_RAW(str, RSTRING_FSTR);
             return ST_DELETE;
         }
 
