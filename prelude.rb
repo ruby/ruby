@@ -1,6 +1,6 @@
 class Binding
   # :nodoc:
-  def irb(*args)
+  def irb(...)
     begin
       require 'irb'
     rescue LoadError, Gem::LoadError
