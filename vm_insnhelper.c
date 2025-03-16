@@ -444,15 +444,8 @@ rb_vm_pop_frame(rb_execution_context_t *ec)
 VALUE
 rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    void *ptr = ruby_xcalloc(sizeof(struct rb_iseq_constant_body) + sizeof(struct rb_iseq_struct), 1);
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, ptr);
-
-    struct rb_iseq_struct *dmy_iseq = (struct rb_iseq_struct *)ptr;
-    struct rb_iseq_constant_body *dmy_body = (struct rb_iseq_constant_body *)&dmy_iseq[1];
-    dmy_iseq->body = dmy_body;
-    dmy_body->type = ISEQ_TYPE_TOP;
-    dmy_body->location.pathobj = fname;
+    rb_iseq_t *rb_iseq_alloc_with_dummy_path(VALUE fname);
+    rb_iseq_t *dmy_iseq = rb_iseq_alloc_with_dummy_path(fname);
 
     vm_push_frame(ec,
                   dmy_iseq, //const rb_iseq_t *iseq,
@@ -465,7 +458,7 @@ rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
                   0, // int local_size,
                   0); // int stack_max
 
-    return tmpbuf;
+    return (VALUE)dmy_iseq;
 }
 
 /* method dispatch */
