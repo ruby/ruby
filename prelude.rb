@@ -7,7 +7,7 @@ class Binding
       Gem::BUNDLED_GEMS.force_activate 'irb'
       retry
     end
-    irb(*args)
+    irb(...)
   end
 
   # suppress redefinition warning
