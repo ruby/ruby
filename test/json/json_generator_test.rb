@@ -707,4 +707,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
         assert_equal expected, value.to_json
       end
   end
+  
+  def test_numbers_of_various_sizes
+    numbers = [
+      0, 1, -1, 9, -9, 13, -13, 91, -91, 513, -513, 7513, -7513,
+      17591, -17591, -4611686018427387904, 4611686018427387903,
+      2**62, 2**63, 2**64, -(2**62), -(2**63), -(2**64)
+    ]
+
+    numbers.each do |number|
+      assert_equal "[#{number}]", JSON.generate([number])
+    end
+  end
 end

@@ -3,6 +3,7 @@
 
 #include "ruby.h"
 #include "ruby/encoding.h"
+#include "../vendor/jeaiii-ltoa.h"
 
 /* shims */
 /* This is the fallback definition from Ruby 3.4 */
@@ -150,6 +151,13 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
     }
 }
 
+/* Appends a character into a buffer. The buffer needs to have sufficient capacity, via fbuffer_inc_capa(...). */
+static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
+{
+    fb->ptr[fb->len] = chr;
+    fb->len += 1;
+}
+
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
 {
     const char *newstr = StringValuePtr(str);
@@ -167,25 +175,39 @@ static inline void fbuffer_append_char(FBuffer *fb, char newchr)
     fb->len++;
 }
 
-static long fltoa(long number, char *buf)
-{
-    static const char digits[] = "0123456789";
-    long sign = number;
-    char* tmp = buf;
-
-    if (sign < 0) number = -number;
-    do *tmp-- = digits[number % 10]; while (number /= 10);
-    if (sign < 0) *tmp-- = '-';
-    return buf - tmp;
-}
-
-#define LONG_BUFFER_SIZE 20
+/*
+ * Appends the decimal string representation of \a number into the buffer.
+ */
 static void fbuffer_append_long(FBuffer *fb, long number)
 {
-    char buf[LONG_BUFFER_SIZE];
-    char *buffer_end = buf + LONG_BUFFER_SIZE;
-    long len = fltoa(number, buffer_end - 1);
-    fbuffer_append(fb, buffer_end - len, len);
+    /*
+     * The to_text_from_ulong() function produces digits left-to-right,
+     * allowing us to write directly into the buffer, but we don't know
+     * the number of resulting characters.
+     *
+     * We do know, however, that the `number` argument is always in the
+     * range 0xc000000000000000 to 0x3fffffffffffffff, or, in decimal, 
+     * -4611686018427387904 to 4611686018427387903. The max number of chars
+     * generated is therefore 20 (including a potential sign character).
+     */
+
+    static const int MAX_CHARS_FOR_LONG = 20;
+
+    fbuffer_inc_capa(fb, MAX_CHARS_FOR_LONG);
+
+    if (number < 0) {
+        fbuffer_append_reserved_char(fb, '-');
+
+        /* 
+         * Since number is always > LONG_MIN, `-number` will not overflow
+         * and is always the positive abs() value.
+         */
+        number = -number;
+    }
+
+    char* d = fb->ptr + fb->len;
+    char* end = to_text_from_ulong(d, number);
+    fb->len += end - d;
 }
 
 static VALUE fbuffer_finalize(FBuffer *fb)

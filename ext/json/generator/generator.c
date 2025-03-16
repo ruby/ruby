@@ -1710,6 +1710,7 @@ void Init_generator(void)
     cFragment = rb_const_get(mJSON, rb_intern("Fragment"));
 
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
+
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
     rb_global_variable(&eGeneratorError);
