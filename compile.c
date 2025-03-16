@@ -9666,6 +9666,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     VALUE argc;
     LABEL *else_label = NULL;
     VALUE branches = Qfalse;
+    struct rb_callinfo_kwarg *keywords = NULL;
 
     /* optimization shortcut
      *   obj["literal"] = value -> opt_aset_with(obj, "literal", value)
@@ -9694,7 +9695,7 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
-    argc = setup_args(iseq, args, RNODE_ATTRASGN(node)->nd_args, &flag, NULL);
+    argc = setup_args(iseq, args, RNODE_ATTRASGN(node)->nd_args, &flag, &keywords);
     CHECK(!NIL_P(argc));
 
     int asgnflag = COMPILE_RECV(recv, "recv", node, RNODE_ATTRASGN(node)->nd_recv);
