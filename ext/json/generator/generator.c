@@ -1050,12 +1050,15 @@ static void generate_json_integer(FBuffer *buffer, struct generate_json_data *da
 }
 #endif
 
+#include "../vendor/fpconv/src/fpconv.c"
+
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
     char allow_nan = state->allow_nan;
-    if (!allow_nan) {
-        if (isinf(value) || isnan(value)) {
+    if (isinf(value) || isnan(value)) {
+        /* for NaN and Infinity values we either raise an error or rely on Float#to_s. */
+        if (!allow_nan) {
             if (state->strict && state->as_json) {
                 VALUE casted_obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
                 if (casted_obj != obj) {
@@ -1067,8 +1070,33 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
             }
             raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", rb_funcall(obj, i_to_s, 0));
         }
+
+        VALUE tmp = rb_funcall(obj, i_to_s, 0);
+        fbuffer_append_str(buffer, tmp);
+        return;
     }
-    fbuffer_append_str(buffer, rb_funcall(obj, i_to_s, 0));
+
+    /* This implementation writes directly into the buffer. We reserve
+     * the 24 characters that fpconv_dtoa states as its maximum, plus
+     * 2 more characters for the potential ".0" suffix. 
+     */
+    fbuffer_inc_capa(buffer, 26);
+    char* d = buffer->ptr + buffer->len;
+    int len = fpconv_dtoa(value, d);
+
+    /* fpconv_dtoa converts a float to its shorted string representation. When
+     * converting a float that is exactly an integer (e.g. `Float(2)`) this
+     * returns in a string that looks like an integer. This is correct, since
+     * JSON treats ints and floats the same. However, to not break integrations
+     * that expect a string representation looking like a float, we append a
+     * "." in that case.
+     */
+    if(!memchr(d, '.', len) && !memchr(d, 'e', len)) {
+        d[len] = '.';
+        d[len+1] = '0';
+        len += 2;
+    }
+    buffer->len += len;
 }
 
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
