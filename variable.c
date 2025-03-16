@@ -228,6 +228,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
             rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
+        name = rb_str_new_frozen(name);
+
         // Set the temporary classpath to the given name:
         RCLASS_SET_CLASSPATH(mod, name, FALSE);
     }
