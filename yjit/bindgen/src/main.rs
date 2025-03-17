@@ -389,6 +389,8 @@ fn main() {
         // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_equal")
+        .allowlist_function("rb_class_new_instance_pass_kw")
+        .allowlist_function("rb_obj_alloc")
 
         // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")

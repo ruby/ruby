@@ -3620,6 +3620,9 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     if (message_loc->start == NULL) message_loc = &call_node->base.location;
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, call_node->base.node_id);
+
+    LINK_ELEMENT *opt_new_prelude = LAST_ELEMENT(ret);
+
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
     LABEL *retry_end_l = NEW_LABEL(location.line);
@@ -3714,7 +3717,49 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, splatkw);
     }
 
-    PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    LABEL *not_basic_new = NEW_LABEL(location.line);
+    LABEL *not_basic_new_finish = NEW_LABEL(location.line);
+
+    bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        method_id == rb_intern("new") &&
+        call_node->block == NULL;
+
+    if (inline_new) {
+        if (LAST_ELEMENT(ret) == opt_new_prelude) {
+            PUSH_INSN(ret, location, putnil);
+            PUSH_INSN(ret, location, swap);
+        }
+        else {
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(swap), 0)->link);
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
+        }
+
+        // Jump unless the receiver uses the "basic" implementation of "new"
+        VALUE ci;
+        if (flags & VM_CALL_FORWARDING) {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc + 1, flags, kw_arg, 0);
+        }
+        else {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
+        }
+
+        PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        LABEL_REF(not_basic_new);
+        // optimized path
+        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        PUSH_INSNL(ret, location, jump, not_basic_new_finish);
+
+        PUSH_LABEL(ret, not_basic_new);
+        // Fall back to normal send
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+        PUSH_INSN(ret, location, swap);
+
+        PUSH_LABEL(ret, not_basic_new_finish);
+        PUSH_INSN(ret, location, pop);
+    }
+    else {
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);

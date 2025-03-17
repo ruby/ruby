@@ -4873,6 +4873,70 @@ fn gen_throw(
     Some(EndBlock)
 }
 
+fn gen_opt_new(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    let cd = jit.get_arg(0).as_ptr();
+    let jump_offset = jit.get_arg(1).as_i32();
+
+    if !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
+    let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
+    let mid = unsafe { vm_ci_mid(ci) };
+    let argc: i32 = unsafe { vm_ci_argc(ci) }.try_into().unwrap();
+
+    let recv_idx = argc;
+    let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
+
+    // This is a singleton class
+    let comptime_recv_klass = comptime_recv.class_of();
+
+    let recv = asm.stack_opnd(recv_idx);
+
+    perf_call!("opt_new: ", jit_guard_known_klass(
+        jit,
+        asm,
+        comptime_recv_klass,
+        recv,
+        recv.into(),
+        comptime_recv,
+        SEND_MAX_DEPTH,
+        Counter::guard_send_klass_megamorphic,
+    ));
+
+    // We now know that it's always comptime_recv_klass
+    if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _) {
+        // Fast path
+        // call rb_class_alloc to actually allocate
+        jit_prepare_non_leaf_call(jit, asm);
+        let obj = asm.ccall(rb_obj_alloc as _, vec![comptime_recv.into()]);
+
+        // Get a reference to the stack location where we need to save the
+        // return instance.
+        let result = asm.stack_opnd(recv_idx + 1);
+        let recv = asm.stack_opnd(recv_idx);
+
+        // Replace the receiver for the upcoming initialize call
+        asm.ctx.set_opnd_mapping(recv.into(), TempMapping::MapToStack(Type::UnknownHeap));
+        asm.mov(recv, obj);
+
+        // Save the allocated object for return
+        asm.ctx.set_opnd_mapping(result.into(), TempMapping::MapToStack(Type::UnknownHeap));
+        asm.mov(result, obj);
+
+        jump_to_next_insn(jit, asm)
+    } else {
+        // general case
+
+        // Get the branch target instruction offsets
+        let jump_idx = jit.next_insn_idx() as i32 + jump_offset;
+        return end_block_with_jump(jit, asm, jump_idx as u16);
+    }
+}
+
 fn gen_jump(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10699,6 +10763,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_branchnil => Some(gen_branchnil),
         YARVINSN_throw => Some(gen_throw),
         YARVINSN_jump => Some(gen_jump),
+        YARVINSN_opt_new => Some(gen_opt_new),
 
         YARVINSN_getblockparamproxy => Some(gen_getblockparamproxy),
         YARVINSN_getblockparam => Some(gen_getblockparam),
