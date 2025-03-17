@@ -1375,7 +1375,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 }
 
 static void
-iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE data)
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
 {
     const char *types = insn_op_types(insn->insn_id);
     for (int j = 0; types[j]; j++) {
@@ -1386,7 +1386,7 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE dat
           case TS_VALUE:
           case TS_IC: // constant path array
           case TS_CALLDATA: // ci is stored.
-            func(OPERAND_AT(insn, j), data);
+            func(&OPERAND_AT(insn, j), data);
             break;
           default:
             break;
@@ -1395,9 +1395,9 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE dat
 }
 
 static void
-iseq_insn_each_object_write_barrier(VALUE obj, VALUE iseq)
+iseq_insn_each_object_write_barrier(VALUE * obj, VALUE iseq)
 {
-    RB_OBJ_WRITTEN(iseq, Qundef, obj);
+    RB_OBJ_WRITTEN(iseq, Qundef, *obj);
 }
 
 static INSN *
@@ -2607,15 +2607,20 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq_bits_t * mark_offset_bits;
     int code_size = code_index;
 
-    iseq_bits_t tmp[1] = {0};
     bool needs_bitmap = false;
 
     if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
-        mark_offset_bits = tmp;
+        mark_offset_bits = &ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
     }
     else {
         mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+        ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
     }
+
+    ISEQ_COMPILE_DATA(iseq)->iseq_encoded = (void *)generated_iseq;
+    ISEQ_COMPILE_DATA(iseq)->iseq_size = code_index;
 
     list = FIRST_ELEMENT(anchor);
     insns_info_index = code_index = sp = 0;
@@ -2827,15 +2832,16 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->iseq_size = code_index;
     body->stack_max = stack_max;
 
-    if (ISEQ_MBITS_BUFLEN(body->iseq_size) == 1) {
-        body->mark_bits.single = mark_offset_bits[0];
+    if (ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit) {
+        body->mark_bits.single = ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
     }
     else {
         if (needs_bitmap) {
             body->mark_bits.list = mark_offset_bits;
         }
         else {
-            body->mark_bits.list = 0;
+            body->mark_bits.list = NULL;
+            ISEQ_COMPILE_DATA(iseq)->mark_bits.list = NULL;
             ruby_xfree(mark_offset_bits);
         }
     }
@@ -12128,13 +12134,13 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 static void
-iseq_insn_each_object_mark_and_pin(VALUE obj, VALUE _)
+iseq_insn_each_object_mark_and_move(VALUE * obj, VALUE _)
 {
-    rb_gc_mark(obj);
+    rb_gc_mark_and_move(obj);
 }
 
 void
-rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
@@ -12159,7 +12165,7 @@ rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_pin, (VALUE)0);
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_move, (VALUE)0);
             }
             pos += (int)size;
         }
