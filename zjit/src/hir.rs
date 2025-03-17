@@ -187,6 +187,7 @@ pub enum Insn {
     // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: FrameStateId },
+    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: FrameStateId },
 
     // Control flow instructions
     Return { val: InsnId },
@@ -449,6 +450,14 @@ impl Function {
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
+            Send { self_val, call_info, cd, blockiseq, args, state } => Send {
+                self_val: find!(*self_val),
+                call_info: call_info.clone(),
+                cd: cd.clone(),
+                blockiseq: *blockiseq,
+                args: args.iter().map(|arg| find!(*arg)).collect(),
+                state: *state,
+            },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val } => ArrayDup { val: find!(*val) },
             CCall { cfun, args } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect() },
@@ -508,6 +517,7 @@ impl Function {
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
+            Insn::Send { .. } => types::BasicObject,
             Insn::PutSelf => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
@@ -664,7 +674,17 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
                     Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
                     Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
-                        write!(f, "Send {self_val}, :{}", call_info.method_name)?;
+                        write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
+                        for arg in args {
+                            write!(f, ", {arg}")?;
+                        }
+                    }
+                    Insn::Send { self_val, call_info, args, blockiseq, .. } => {
+                        // For tests, we want to check HIR snippets textually. Addresses change
+                        // between runs, making tests fail. Instead, pick an arbitrary hex value to
+                        // use as a "pointer" so we can check the rest of the HIR.
+                        let blockiseq = if cfg!(test) { "0xdeadbeef".into() } else { format!("{blockiseq:?}") };
+                        write!(f, "Send {self_val}, {blockiseq}, :{}", call_info.method_name)?;
                         for arg in args {
                             write!(f, ", {arg}")?;
                         }
@@ -1142,6 +1162,25 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let recv = state.stack_pop()?;
                     state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_state }));
                 }
+                YARVINSN_send => {
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+                    let method_name = unsafe {
+                        let mid = rb_vm_ci_mid(call_info);
+                        cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
+                    };
+                    let mut args = vec![];
+                    for _ in 0..argc {
+                        args.push(state.stack_pop()?);
+                    }
+                    args.reverse();
+
+                    let recv = state.stack_pop()?;
+                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_state }));
+                }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
 
@@ -1466,7 +1505,7 @@ mod tests {
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
-              v5:BasicObject = Send v1, :+, v3
+              v5:BasicObject = SendWithoutBlock v1, :+, v3
               Return v5
         ");
     }
@@ -1783,5 +1822,43 @@ mod tests {
               v14 = Const Value(4)
               Return v14
             ");
+    }
+
+    #[test]
+    fn test_send_without_block() {
+        eval("
+            def bar(a, b)
+              a+b
+            end
+            def test
+              bar(2, 3)
+            end
+            test
+        ");
+        assert_method_hir("test",  "
+            bb0():
+              v1:BasicObject = PutSelf
+              v3:Fixnum[2] = Const Value(2)
+              v5:Fixnum[3] = Const Value(3)
+              v7:BasicObject = SendWithoutBlock v1, :bar, v3, v5
+              Return v7
+        ");
+    }
+
+    #[test]
+    fn test_send_with_block() {
+        eval("
+            def test(a)
+              a.each {|item|
+                item
+              }
+            end
+            test([1,2,3])
+        ");
+        assert_method_hir("test",  "
+            bb0(v0:BasicObject):
+              v3:BasicObject = Send v0, 0xdeadbeef, :each
+              Return v3
+        ");
     }
 }
