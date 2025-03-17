@@ -917,9 +917,6 @@ module Bundler
       @locked_specs.each do |spec|
         spec.source &&= converge_path_source_to_gemspec_source(spec.source)
       end
-      @locked_deps.each do |_, dep|
-        dep.source &&= converge_path_source_to_gemspec_source(dep.source)
-      end
     end
 
     def converge_sources
