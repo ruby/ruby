@@ -4424,7 +4424,7 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
  *    h.compact # => {foo: 0, baz: 2}
  *
- * Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
