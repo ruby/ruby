@@ -36,26 +36,25 @@ module Bundler::PubGrub
 
     # Returns true if there is more work to be done, false otherwise
     def work
-      return false if solved?
-
-      next_package = choose_package_version
-      propagate(next_package)
-
-      if solved?
+      unsatisfied_terms = solution.unsatisfied
+      if unsatisfied_terms.empty?
         logger.info { "Solution found after #{solution.attempted_solutions} attempts:" }
         solution.decisions.each do |package, version|
           next if Package.root?(package)
           logger.info { "* #{package} #{version}" }
         end
 
-        false
-      else
-        true
+        return false
       end
+
+      next_package = choose_package_version_from(unsatisfied_terms)
+      propagate(next_package)
+
+      true
     end
 
     def solve
-      work until solved?
+      while work; end
 
       solution.decisions
     end
@@ -105,25 +104,21 @@ module Bundler::PubGrub
       unsatisfied.package
     end
 
-    def next_package_to_try
-      solution.unsatisfied.min_by do |term|
+    def next_term_to_try_from(unsatisfied_terms)
+      unsatisfied_terms.min_by do |term|
         package = term.package
         range = term.constraint.range
         matching_versions = source.versions_for(package, range)
         higher_versions = source.versions_for(package, range.upper_invert)
 
         [matching_versions.count <= 1 ? 0 : 1, higher_versions.count]
-      end.package
+      end
     end
 
-    def choose_package_version
-      if solution.unsatisfied.empty?
-        logger.info "No packages unsatisfied. Solving complete!"
-        return nil
-      end
+    def choose_package_version_from(unsatisfied_terms)
+      unsatisfied_term = next_term_to_try_from(unsatisfied_terms)
+      package = unsatisfied_term.package
 
-      package = next_package_to_try
-      unsatisfied_term = solution.unsatisfied.find { |t| t.package == package }
       version = source.versions_for(package, unsatisfied_term.constraint.range).first
       logger.debug { "attempting #{package} #{version}" }
 

@@ -6,7 +6,8 @@ GIT
 
 GIT
   remote: https://github.com/jhawthorn/pub_grub.git
-  revision: 55a2d65c5c3176f72de5e25d59fb6f52b9fe60ef
+  revision: 57d4f344366c8b86f7fe506e9bfa08f3c731e397
+  ref: 57d4f344366c8b86f7fe506e9bfa08f3c731e397
   specs:
     pub_grub (0.5.0)
 
