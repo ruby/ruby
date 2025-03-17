@@ -953,25 +953,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             // Push a FixnumXxx instruction if profiled operand types are fixnums
             macro_rules! push_fixnum_insn {
-                // Without FrameState
-                ($insn:ident, $method_name:expr, $bop:ident) => {
+                ($insn:ident, $method_name:expr, $bop:ident$(, $key:ident: $value:expr)?) => {
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
                         let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right }));
-                    } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_state }));
-                    }
-                };
-                // With FrameState
-                ($insn:ident, $method_name:expr, $bop:ident, $state:expr) => {
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right, state: $state }));
+                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: $value)? }));
                     } else {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
@@ -1094,19 +1080,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
-                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, exit_state);
+                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, state: exit_state);
                 }
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
-                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, exit_state);
+                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, state: exit_state);
                 }
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
-                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, exit_state);
+                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, state: exit_state);
                 }
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
-                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, exit_state);
+                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, state: exit_state);
                 }
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
-                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, exit_state);
+                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, state: exit_state);
                 }
 
                 YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
