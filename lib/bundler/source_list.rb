@@ -183,6 +183,8 @@ module Bundler
       end
 
       path = @path_sources.map do |source|
+        next source if source.is_a?(Source::Gemspec)
+
         replace_source(replacement_sources, source)
       end
 
