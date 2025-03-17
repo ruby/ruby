@@ -96,7 +96,6 @@ RSpec.describe "compact index api" do
     bundle :install, artifice: "compact_index"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
