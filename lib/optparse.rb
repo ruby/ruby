@@ -1502,7 +1502,7 @@ XXX
         block = notwice(o, block, 'block')
       when Array, Hash
         if Array === o
-          o, v = o.partition {|v| Completion.completable?(v)}
+          o, v = o.partition {|v,| Completion.completable?(v)}
           values = notwice(v, values, 'values') unless v.empty?
           next if o.empty?
         end
