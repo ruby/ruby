@@ -905,6 +905,30 @@ opt_send_without_block
     }
 }
 
+/* Jump if "new" method has been defined by user */
+DEFINE_INSN
+opt_new
+(CALL_DATA cd, OFFSET dst)
+()
+()
+// attr bool leaf = false;
+{
+    VALUE argc = vm_ci_argc(cd->ci);
+    VALUE val = TOPN(argc);
+
+    if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw)) {
+        RB_DEBUG_COUNTER_INC(opt_new_hit);
+        val = rb_obj_alloc(val);
+        TOPN(argc) = val;
+        RUBY_ASSERT(TOPN(argc + 1) == Qnil);
+        TOPN(argc + 1) = val;
+    }
+    else {
+        RB_DEBUG_COUNTER_INC(opt_new_miss);
+        JUMP(dst);
+    }
+}
+
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
 objtostring
