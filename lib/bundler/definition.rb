@@ -147,7 +147,6 @@ module Bundler
 
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
 
-      converge_path_sources_to_gemspec_sources
       @path_changes = converge_paths
       @source_changes = converge_sources
 
@@ -842,7 +841,7 @@ module Bundler
 
     def specs_for_source_changed?(source)
       locked_index = Index.new
-      locked_index.use(@locked_specs.select {|s| source.can_lock?(s) })
+      locked_index.use(@locked_specs.select {|s| s.replace_source_with!(source) })
 
       !locked_index.subset?(source.specs)
     rescue PathError, GitError => e
@@ -901,18 +900,6 @@ module Bundler
     def converge_paths
       sources.path_sources.any? do |source|
         specs_changed?(source)
-      end
-    end
-
-    def converge_path_source_to_gemspec_source(source)
-      return source unless source.instance_of?(Source::Path)
-      gemspec_source = sources.path_sources.find {|s| s == source }
-      gemspec_source || source
-    end
-
-    def converge_path_sources_to_gemspec_sources
-      @locked_specs.each do |spec|
-        spec.source &&= converge_path_source_to_gemspec_source(spec.source)
       end
     end
 

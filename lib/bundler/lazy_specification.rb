@@ -175,6 +175,14 @@ module Bundler
       @force_ruby_platform = true
     end
 
+    def replace_source_with!(gemfile_source)
+      return unless gemfile_source.can_lock?(self)
+
+      @source = gemfile_source
+
+      true
+    end
+
     private
 
     def use_exact_resolved_specifications?
