@@ -164,7 +164,7 @@ module Bundler::PubGrub
             sorted_versions[high]
           end
 
-        range = VersionRange.new(min: low, max: high, include_min: true)
+        range = VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
         self_constraint = VersionConstraint.new(package, range: range)
 
