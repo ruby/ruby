@@ -1517,7 +1517,7 @@ mod tests {
         eval("def test = [1, 2, 3]");
         assert_method_hir("test", "
             bb0():
-              v1:ArrayExact[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:ArrayExact[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               v2:ArrayExact = ArrayDup v1
               Return v2
         ");
@@ -1530,7 +1530,7 @@ mod tests {
         eval("def test = \"hello\"");
         assert_method_hir("test", "
             bb0():
-              v1:StringExact[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:StringExact[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               v2:StringExact = StringCopy { val: InsnId(1) }
               Return v2
         ");
@@ -1541,7 +1541,7 @@ mod tests {
         eval("def test = 999999999999999999999999999999999999");
         assert_method_hir("test", "
             bb0():
-              v1:Bignum[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:Bignum[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               Return v1
         ");
     }
@@ -1551,7 +1551,7 @@ mod tests {
         eval("def test = 1.5");
         assert_method_hir("test", "
             bb0():
-              v1:Flonum[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:Flonum[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               Return v1
         ");
     }
@@ -1561,7 +1561,7 @@ mod tests {
         eval("def test = 1.7976931348623157e+308");
         assert_method_hir("test", "
             bb0():
-              v1:HeapFloat[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:HeapFloat[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               Return v1
         ");
     }
@@ -1571,7 +1571,7 @@ mod tests {
         eval("def test = :foo");
         assert_method_hir("test", "
             bb0():
-              v1:StaticSymbol[VALUE(0xdeadbeef)] = Const Value(VALUE(0xdeadbeef))
+              v1:StaticSymbol[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
               Return v1
         ");
     }
