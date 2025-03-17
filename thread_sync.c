@@ -419,46 +419,42 @@ rb_mutex_owned_p(VALUE self)
 static const char *
 rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_fiber_t *fiber)
 {
-    const char *err = NULL;
-
     if (mutex->fiber == 0) {
-        err = "Attempt to unlock a mutex which is not locked";
+        return "Attempt to unlock a mutex which is not locked";
     }
     else if (mutex->fiber != fiber) {
-        err = "Attempt to unlock a mutex which is locked by another thread/fiber";
+        return "Attempt to unlock a mutex which is locked by another thread/fiber";
     }
-    else {
-        struct sync_waiter *cur = 0, *next;
+    struct sync_waiter *cur = 0, *next;
 
-        mutex->fiber = 0;
-        list_for_each_safe(&mutex->waitq, cur, next, node) {
-            list_del_init(&cur->node);
+    mutex->fiber = 0;
+    thread_mutex_remove(th, mutex);
 
-            if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
-                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
-                goto found;
-            }
-            else {
-                switch (cur->th->status) {
-                  case THREAD_RUNNABLE: /* from someone else calling Thread#run */
-                  case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
-                    rb_threadptr_interrupt(cur->th);
-                    goto found;
-                  case THREAD_STOPPED: /* probably impossible */
-                    rb_bug("unexpected THREAD_STOPPED");
-                  case THREAD_KILLED:
-                    /* not sure about this, possible in exit GC? */
-                    rb_bug("unexpected THREAD_KILLED");
-                    continue;
-                }
+    list_for_each_safe(&mutex->waitq, cur, next, node) {
+        list_del_init(&cur->node);
+
+        if (cur->th->scheduler != Qnil && rb_fiberptr_blocking(cur->fiber) == 0) {
+            rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+            return NULL;
+        }
+        else {
+            switch (cur->th->status) {
+              case THREAD_RUNNABLE: /* from someone else calling Thread#run */
+              case THREAD_STOPPED_FOREVER: /* likely (rb_mutex_lock) */
+                rb_threadptr_interrupt(cur->th);
+                return NULL;
+              case THREAD_STOPPED: /* probably impossible */
+                rb_bug("unexpected THREAD_STOPPED");
+              case THREAD_KILLED:
+                /* not sure about this, possible in exit GC? */
+                rb_bug("unexpected THREAD_KILLED");
+                continue;
             }
         }
-
-    found:
-        thread_mutex_remove(th, mutex);
     }
 
-    return err;
+    // We did not find any threads to wake up, so we can just return with no error:
+    return NULL;
 }
 
 /*
