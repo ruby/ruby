@@ -952,7 +952,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: $state }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_state }));
                     }
                 };
             }
