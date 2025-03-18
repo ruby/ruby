@@ -79,7 +79,7 @@ RBIMPL_ATTR_CONST()
 static inline bool
 RB_ENC_CODERANGE_CLEAN_P(enum ruby_coderange_type cr)
 {
-    return rb_enc_coderange_clean_p(cr);
+    return rb_enc_coderange_clean_p(RBIMPL_CAST((int)cr));
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
