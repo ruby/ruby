@@ -1937,3 +1937,16 @@ assert_equal 'LoadError', %q{
   end
   r.take
 }
+
+# bind_call in Ractor [Bug #20934]
+assert_equal 'ok', %q{
+  2.times.map do
+    Ractor.new do
+      1000.times do
+        Object.instance_method(:itself).bind_call(self)
+      end
+    end
+  end.each(&:take)
+  GC.start
+  :ok.itself
+}

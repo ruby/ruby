@@ -15,6 +15,7 @@
 #include "internal/imemo.h"
 #include "internal/compilers.h"
 #include "internal/static_assert.h"
+#include "ruby/atomic.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
@@ -181,7 +182,8 @@ struct rb_method_definition_struct {
     unsigned int iseq_overload: 1;
     unsigned int no_redef_warning: 1;
     unsigned int aliased : 1;
-    int reference_count : 28;
+
+    rb_atomic_t reference_count;
 
     union {
         rb_method_iseq_t iseq;
