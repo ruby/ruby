@@ -43,9 +43,6 @@ extern void Init_limits(void);
 void
 Init_sizeof(void)
 {
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-    rb_ext_ractor_safe(true);
-#endif
     VALUE s = rb_hash_new();
     VALUE mRbConfig = rb_define_module("RbConfig");
     rb_define_const(mRbConfig, "SIZEOF", s);
