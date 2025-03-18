@@ -5328,6 +5328,12 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
             // should clear the mutability flags.
             CLEAR_FLAGS(node);
             break;
+        case PM_X_STRING_NODE:
+        case PM_INTERPOLATED_X_STRING_NODE:
+            // If this is an x string, then this is a syntax error. But we want
+            // to handle it here so that we don't fail the assertion.
+            CLEAR_FLAGS(node);
+            break;
         default:
             assert(false && "unexpected node type");
             break;
@@ -16823,6 +16829,10 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             // If we haven't already created our container for concatenation,
             // we'll do that now.
             if (!concating) {
+                if (!PM_NODE_TYPE_P(current, PM_STRING_NODE) && !PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
+                    pm_parser_err_node(parser, current, PM_ERR_STRING_CONCATENATION);
+                }
+
                 concating = true;
                 pm_token_t bounds = not_provided(parser);
 

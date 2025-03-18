@@ -3140,6 +3140,7 @@ nodes:
           - EmbeddedStatementsNode
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
+          - on error: XStringNode # `<<`FOO` "bar"
       - name: closing_loc
         type: location?
     newline: parts
