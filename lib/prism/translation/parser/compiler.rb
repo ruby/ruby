@@ -1100,7 +1100,7 @@ module Prism
         def visit_interpolated_regular_expression_node(node)
           builder.regexp_compose(
             token(node.opening_loc),
-            visit_all(node.parts),
+            string_nodes_from_interpolation(node, node.opening),
             [node.closing[0], srange_offsets(node.closing_loc.start_offset, node.closing_loc.start_offset + 1)],
             builder.regexp_options([node.closing[1..], srange_offsets(node.closing_loc.start_offset + 1, node.closing_loc.end_offset)])
           )
@@ -1117,45 +1117,6 @@ module Prism
             return visit_heredoc(node) { |children, closing| builder.string_compose(token(node.opening_loc), children, closing) }
           end
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-          parts = if node.parts.one? { |part| part.type == :string_node }
-            node.parts.flat_map do |node|
-              if node.type == :string_node && node.unescaped.lines.count >= 2
-                start_offset = node.content_loc.start_offset
-
-                node.unescaped.lines.map do |line|
-                  end_offset = start_offset + line.bytesize
-                  offsets = srange_offsets(start_offset, end_offset)
-                  start_offset = end_offset
-
-                  builder.string_internal([line, offsets])
-                end
-              else
-                visit(node)
-              end
-=======
-          parts = node.parts.flat_map do |part|
-            # When the content of a string node is split across multiple lines, the
-            # parser gem creates individual string nodes for each line the content is part of.
-            if part.type == :string_node && part.content.include?("\n") && part.opening_loc.nil?
-              string_nodes_from_line_continuations(part.unescaped, part.content, part.content_loc.start_offset, node.opening)
-            else
-              visit(part)
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
-            end
-          else
-            visit_all(node.parts)
-          end
-
->>>>>>> a651126458 (Fix an incompatibility with the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
           builder.string_compose(
             token(node.opening_loc),
             string_nodes_from_interpolation(node, node.opening),
@@ -1739,23 +1700,7 @@ module Prism
               if node.content.include?("\n")
                 string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
               else
-<<<<<<< HEAD
-<<<<<<< HEAD
                 [builder.string_internal([node.unescaped, srange(node.content_loc)])]
-=======
-                start_offset = node.content_loc.start_offset
-
-                [content_lines, unescaped_lines].transpose.map do |content_line, unescaped_line|
-                  end_offset = start_offset + content_line.bytesize
-                  offsets = srange_offsets(start_offset, end_offset)
-                  start_offset = end_offset
-
-                  builder.string_internal([unescaped_line, offsets])
-                end
->>>>>>> a651126458 (Fix an incompatibility with the parser translator)
-=======
-                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
               end
 
             builder.string_compose(
@@ -1799,10 +1744,6 @@ module Prism
               builder.symbol([node.unescaped, srange(node.location)])
             end
           else
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
             parts =
               if node.value == ""
                 []
@@ -1810,22 +1751,6 @@ module Prism
                 string_nodes_from_line_continuations(node.unescaped, node.value, node.value_loc.start_offset, node.opening)
               else
                 [builder.string_internal([node.unescaped, srange(node.value_loc)])]
-<<<<<<< HEAD
-=======
-            parts = if node.value.lines.one?
-              [builder.string_internal([node.unescaped, srange(node.value_loc)])]
-            else
-              start_offset = node.value_loc.start_offset
-
-              node.value.lines.map do |line|
-                end_offset = start_offset + line.bytesize
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
-
-                builder.string_internal([line, offsets])
->>>>>>> a651126458 (Fix an incompatibility with the parser translator)
-=======
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
               end
 
             builder.symbol_compose(
@@ -1964,23 +1889,7 @@ module Prism
             elsif node.content.include?("\n")
               string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
             else
-<<<<<<< HEAD
-<<<<<<< HEAD
               [builder.string_internal([node.unescaped, srange(node.content_loc)])]
-=======
-              start_offset = node.content_loc.start_offset
-
-              node.unescaped.lines.map do |line|
-                end_offset = start_offset + line.bytesize
-                offsets = srange_offsets(start_offset, end_offset)
-                start_offset = end_offset
-
-                builder.string_internal([line, offsets])
-              end
->>>>>>> a651126458 (Fix an incompatibility with the parser translator)
-=======
-              [builder.string_internal([node.unescaped, srange(node.content_loc)])]
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
             end
 
           builder.xstring_compose(
@@ -2219,31 +2128,14 @@ module Prism
         def string_nodes_from_line_continuations(unescaped, escaped, start_offset, opening)
           unescaped = unescaped.lines
           escaped = escaped.lines
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
           percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
-=======
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
-=======
-          percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
-          percent_array = opening&.start_with?("%w", "%W", "%i", "%I")
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
+          regex = opening == "/" || opening&.start_with?("%r")
 
           # Non-interpolating strings
           if opening&.end_with?("'") || opening&.start_with?("%q", "%s", "%w", "%i")
             current_length = 0
             current_line = +""
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             escaped.filter_map.with_index do |escaped_line, index|
               unescaped_line = unescaped.fetch(index, "")
               current_length += escaped_line.bytesize
@@ -2258,19 +2150,6 @@ module Prism
               current_line = +""
               current_length = 0
               s
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-          if opening&.end_with?("'")
-            escaped.each do |line|
-              escaped_lengths << line.bytesize
-              normalized_lengths << chomped_bytesize(line)
-              do_next_tokens << true
->>>>>>> 2637007929 (Better handle all kinds of multiline strings in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
             end
           else
             escaped_lengths = []
@@ -2285,11 +2164,18 @@ module Prism
               .chunk_while { |before, after| before[/(\\*)\r?\n$/, 1]&.length&.odd? || false }
               .each do |lines|
                 escaped_lengths << lines.sum(&:bytesize)
-                unescaped_lines_count = lines.sum do |line|
-                  count = line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? }
-                  count -= 1 if !line.end_with?("\n") && count > 0
-                  count
-                end
+
+                unescaped_lines_count =
+                  if regex
+                    0 # Will always be preserved as is
+                  else
+                    lines.sum do |line|
+                      count = line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? }
+                      count -= 1 if !line.end_with?("\n") && count > 0
+                      count
+                    end
+                  end
+
                 extra = 1
                 extra = lines.count if percent_array # Account for line continuations in percent arrays
 

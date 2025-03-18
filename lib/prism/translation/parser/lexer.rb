@@ -10,15 +10,7 @@ module Prism
       # format for the parser gem.
       class Lexer
         # These tokens are always skipped
-<<<<<<< HEAD
-<<<<<<< HEAD
         TYPES_ALWAYS_SKIP = Set.new(%i[IGNORED_NEWLINE __END__ EOF])
-=======
-        TYPES_ALWAYS_SKIP = %i[IGNORED_NEWLINE __END__ EOF].to_set
->>>>>>> ca9500a3fc (Optimize array inclusion checks in the parser translator)
-=======
-        TYPES_ALWAYS_SKIP = Set.new(%i[IGNORED_NEWLINE __END__ EOF])
->>>>>>> 422d5c4c64 (Use Set.new over to_set)
         private_constant :TYPES_ALWAYS_SKIP
 
         # The direct translating of types between the two lexers.
@@ -203,42 +195,18 @@ module Prism
         #
         # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note that `kDO` is still returned
         # instead of `kDO_LAMBDA`, which is expected: https://github.com/ruby/prism/pull/3046
-<<<<<<< HEAD
-<<<<<<< HEAD
         LAMBDA_TOKEN_TYPES = Set.new([:kDO_LAMBDA, :tLAMBDA, :tLAMBEG])
-=======
-        LAMBDA_TOKEN_TYPES = [:kDO_LAMBDA, :tLAMBDA, :tLAMBEG].to_set
->>>>>>> ca9500a3fc (Optimize array inclusion checks in the parser translator)
-=======
-        LAMBDA_TOKEN_TYPES = Set.new([:kDO_LAMBDA, :tLAMBDA, :tLAMBEG])
->>>>>>> 422d5c4c64 (Use Set.new over to_set)
 
         # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
         # The following token types are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
           :kBREAK, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
           :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
-<<<<<<< HEAD
-<<<<<<< HEAD
         ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.
         # For these, the parser gem doesn't emit a newline token after the last comment.
         COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
-=======
-        ].to_set
-
-        # Types of tokens that are allowed to continue a method call with comments in-between.
-        # For these, the parser gem doesn't emit a newline token after the last comment.
-        COMMENT_CONTINUATION_TYPES = [:COMMENT, :AMPERSAND_DOT, :DOT].to_set
->>>>>>> ca9500a3fc (Optimize array inclusion checks in the parser translator)
-=======
-        ])
-
-        # Types of tokens that are allowed to continue a method call with comments in-between.
-        # For these, the parser gem doesn't emit a newline token after the last comment.
-        COMMENT_CONTINUATION_TYPES = Set.new([:COMMENT, :AMPERSAND_DOT, :DOT])
->>>>>>> 422d5c4c64 (Use Set.new over to_set)
         private_constant :COMMENT_CONTINUATION_TYPES
 
         # Heredocs are complex and require us to keep track of a bit of info to refer to later
@@ -435,22 +403,6 @@ module Prism
               end
             when :tSTRING_CONTENT
               is_percent_array = percent_array?(quote_stack.last)
-<<<<<<< HEAD
-=======
-
-              if (lines = token.value.lines).one?
-<<<<<<< HEAD
-<<<<<<< HEAD
-                # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
-                is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
-                # The parser gem only removes indentation when the heredoc is not nested
-                not_nested = heredoc_stack.size == 1
-                if is_percent_array
-                  value = percent_array_unescape(value)
-                elsif is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
-                  value = trim_heredoc_whitespace(value, current_heredoc)
-                end
->>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
 
               if (lines = token.value.lines).one?
                 # Prism usually emits a single token for strings with line continuations.
@@ -470,45 +422,6 @@ module Prism
                     value = trim_heredoc_whitespace(token.value, current_heredoc)
                   end
 
-<<<<<<< HEAD
-=======
-                # Prism usually emits a single token for strings with line continuations.
-                # For squiggly heredocs they are not joined so we do that manually here.
-                current_string = +""
-                current_length = 0
-                start_offset = token.location.start_offset
-                while token.type == :STRING_CONTENT
-                  current_length += token.value.bytesize
-                  # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
-                  is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
-                  # The parser gem only removes indentation when the heredoc is not nested
-                  not_nested = heredoc_stack.size == 1
-                  if is_percent_array
-                    value = percent_array_unescape(token.value)
-                  elsif is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
-                    value = trim_heredoc_whitespace(token.value, current_heredoc)
-                  end
-
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
-                # Prism usually emits a single token for strings with line continuations.
-                # For squiggly heredocs they are not joined so we do that manually here.
-                current_string = +""
-                current_length = 0
-                start_offset = token.location.start_offset
-                while token.type == :STRING_CONTENT
-                  current_length += token.value.bytesize
-                  # Heredoc interpolation can have multiple STRING_CONTENT nodes on the same line.
-                  is_first_token_on_line = lexed[index - 1] && token.location.start_line != lexed[index - 2][0].location&.start_line
-                  # The parser gem only removes indentation when the heredoc is not nested
-                  not_nested = heredoc_stack.size == 1
-                  if is_percent_array
-                    value = percent_array_unescape(token.value)
-                  elsif is_first_token_on_line && not_nested && (current_heredoc = heredoc_stack.last).common_whitespace > 0
-                    value = trim_heredoc_whitespace(token.value, current_heredoc)
-                  end
-
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
                   current_string << unescape_string(value, quote_stack.last)
                   if (backslash_count = token.value[/(\\{1,})\n/, 1]&.length).nil? || backslash_count.even? || !interpolation?(quote_stack.last)
                     tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
@@ -553,11 +466,6 @@ module Prism
                     current_line = +""
                     adjustment = 0
                   end
-=======
-                  end_offset = start_offset + adjusted_line.bytesize + adjustment
-                  tokens << [:tSTRING_CONTENT, [adjusted_line, Range.new(source_buffer, offset_cache[start_offset], offset_cache[end_offset])]]
-                  start_offset = end_offset
->>>>>>> a651126458 (Fix an incompatibility with the parser translator)
                 end
               end
               next
@@ -786,44 +694,7 @@ module Prism
             while (skipped = scanner.skip_until(/\\/))
               # Append what was just skipped over, excluding the found backslash.
               result.append_as_bytes(string.byteslice(scanner.pos - skipped, skipped - 1))
-<<<<<<< HEAD
-<<<<<<< HEAD
               escape_read(result, scanner, false, false)
-=======
-
-              if scanner.peek(1) == "\n"
-                # Line continuation
-                scanner.pos += 1
-              elsif (replacement = ESCAPES[scanner.peek(1)])
-                # Simple single-character escape sequences like \n
-                result.append_as_bytes(replacement)
-                scanner.pos += 1
-              elsif (octal = scanner.check(/[0-7]{1,3}/))
-                # \nnn
-                result.append_as_bytes(octal.to_i(8).chr)
-                scanner.pos += octal.bytesize
-              elsif (hex = scanner.check(/x([0-9a-fA-F]{1,2})/))
-                # \xnn
-                result.append_as_bytes(hex[1..].to_i(16).chr)
-                scanner.pos += hex.bytesize
-              elsif (unicode = scanner.check(/u([0-9a-fA-F]{4})/))
-                # \unnnn
-                result.append_as_bytes(unicode[1..].hex.chr(Encoding::UTF_8))
-                scanner.pos += unicode.bytesize
-              elsif scanner.peek(3) == "u{}"
-                # https://github.com/whitequark/parser/issues/856
-                scanner.pos += 3
-              elsif (unicode_parts = scanner.check(/u{.*}/))
-                # \u{nnnn ...}
-                unicode_parts[2..-2].split.each do |unicode|
-                  result.append_as_bytes(unicode.hex.chr(Encoding::UTF_8))
-                end
-                scanner.pos += unicode_parts.bytesize
-              end
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
-              escape_read(result, scanner, false, false)
->>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
             end
 
             # Add remaining chars
@@ -835,13 +706,6 @@ module Prism
           end
         end
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         # Certain strings are merged into a single string token.
         def simplify_string?(value, quote)
           case quote
@@ -859,24 +723,11 @@ module Prism
           end
         end
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
         # Escape a byte value, given the control and meta flags.
         def escape_build(value, control, meta)
           value &= 0x9f if control
           value |= 0x80 if meta
-<<<<<<< HEAD
-<<<<<<< HEAD
           value
-=======
-          value.chr
->>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
-=======
-          value
->>>>>>> 161c606b1f (Fix parser translator crash for certain octal escapes)
         end
 
         # Read an escape out of the string scanner, given the control and meta
@@ -920,15 +771,6 @@ module Prism
           end
         end
 
-<<<<<<< HEAD
-=======
->>>>>>> bd3dd2b62a (Fix parser translator tokens for %-arrays with whitespace escapes)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 09c59a3aa5 (Handle control and meta escapes in parser translation)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         # In a percent array, certain whitespace can be preceeded with a backslash,
         # causing the following characters to be part of the previous element.
         def percent_array_unescape(string)
@@ -953,17 +795,6 @@ module Prism
         # Determine if characters preceeded by a backslash should be escaped or not
         def interpolation?(quote)
           !quote.end_with?("'") && !quote.start_with?("%q", "%w", "%i", "%s")
-<<<<<<< HEAD
-<<<<<<< HEAD
-        end
-
-        # Regexp allow interpolation but are handled differently during unescaping
-        def regexp?(quote)
-          quote == "/" || quote.start_with?("%r")
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
-=======
->>>>>>> 4edfe9d981 (Further refine string handling in the parser translator)
         end
 
         # Regexp allow interpolation but are handled differently during unescaping
