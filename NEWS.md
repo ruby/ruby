@@ -52,7 +52,7 @@ The following default gems are updated.
 * cgi 0.4.2
 * json 2.10.2
 * optparse 0.7.0.dev.1
-* prism 1.3.0
+* prism 1.4.0
 * psych 5.2.3
 * stringio 3.1.6.dev
 * uri 1.0.3
