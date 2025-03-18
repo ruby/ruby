@@ -258,7 +258,7 @@ rb_check_frozen_inline(VALUE obj)
 
     /* ref: internal CHILLED_STRING_P()
        This is an implementation detail subject to change. */
-    if (RB_UNLIKELY(RB_TYPE_P(obj, T_STRING) && FL_TEST_RAW(obj, RUBY_FL_USER3))) {
+    if (RB_UNLIKELY(RB_TYPE_P(obj, T_STRING) && FL_TEST_RAW(obj, RUBY_FL_USER2 | RUBY_FL_USER3))) { // STR_CHILLED
         rb_str_modify(obj);
     }
 }

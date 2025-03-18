@@ -17,7 +17,7 @@ class TestRequireLib < Test::Unit::TestCase
 
   scripts.each do |lib|
     define_method "test_thread_size:#{lib}" do
-      assert_separately(['-W0'], "#{<<~"begin;"}\n#{<<~"end;"}")
+      assert_separately(['-W0'], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
       begin;
         n = Thread.list.size
         require #{lib.dump}

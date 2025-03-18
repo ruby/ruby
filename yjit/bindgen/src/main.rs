@@ -61,9 +61,6 @@ fn main() {
         .blocklist_type("size_t")
         .blocklist_type("fpos_t")
 
-        // Prune these types since they are system dependant and we don't use them
-        .blocklist_type("__.*")
-
         // Import YARV bytecode instruction constants
         .allowlist_type("ruby_vminsn_type")
 
@@ -170,6 +167,7 @@ fn main() {
         .allowlist_var("rb_cIO")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
+        .allowlist_var("rb_cNumeric")
         .allowlist_var("rb_cString")
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
@@ -228,6 +226,7 @@ fn main() {
         .allowlist_function("rb_str_concat_literals")
         .allowlist_function("rb_obj_as_string_result")
         .allowlist_function("rb_str_byte_substr")
+        .allowlist_function("rb_str_substr_two_fixnums")
 
         // From include/ruby/internal/intern/parse.h
         .allowlist_function("rb_backref_get")
@@ -327,6 +326,7 @@ fn main() {
         .allowlist_function("rb_yjit_vm_unlock")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
+        .allowlist_function("rb_yjit_constcache_shareable")
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_for_each_iseq")
@@ -378,6 +378,7 @@ fn main() {
         .allowlist_function("rb_attr_get")
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
+        .allowlist_function("rb_mod_name")
 
         // From internal/vm.h
         .allowlist_var("rb_vm_insns_count")
@@ -420,7 +421,6 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
-        .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
         .allowlist_function("rb_get_iseq_body_parent_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")

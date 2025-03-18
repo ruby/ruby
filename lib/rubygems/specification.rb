@@ -391,7 +391,7 @@ class Gem::Specification < Gem::BasicSpecification
   #     "homepage_uri"      => "https://bestgemever.example.io",
   #     "mailing_list_uri"  => "https://groups.example.com/bestgemever",
   #     "source_code_uri"   => "https://example.com/user/bestgemever",
-  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki"
+  #     "wiki_uri"          => "https://example.com/user/bestgemever/wiki",
   #     "funding_uri"       => "https://example.com/donate"
   #   }
   #
@@ -464,10 +464,7 @@ class Gem::Specification < Gem::BasicSpecification
   #   spec.platform = Gem::Platform.local
 
   def platform=(platform)
-    if @original_platform.nil? ||
-       @original_platform == Gem::Platform::RUBY
-      @original_platform = platform
-    end
+    @original_platform = platform
 
     case platform
     when Gem::Platform::CURRENT then
@@ -1017,7 +1014,7 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def self.unresolved_specs
-    unresolved_deps.values.map(&:to_specs).flatten
+    unresolved_deps.values.flat_map(&:to_specs)
   end
   private_class_method :unresolved_specs
 
@@ -1076,7 +1073,7 @@ class Gem::Specification < Gem::BasicSpecification
       result[spec.name] = spec
     end
 
-    result.map(&:last).flatten.sort_by(&:name)
+    result.flat_map(&:last).sort_by(&:name)
   end
 
   ##
@@ -1202,21 +1199,30 @@ class Gem::Specification < Gem::BasicSpecification
     Gem.pre_reset_hooks.each(&:call)
     @specification_record = nil
     clear_load_cache
-    unresolved = unresolved_deps
-    unless unresolved.empty?
-      warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
-      unresolved.values.each do |dep|
-        warn "      #{dep}"
 
-        versions = find_all_by_name(dep.name).uniq(&:full_name)
-        unless versions.empty?
-          warn "      Available/installed versions of this gem:"
-          versions.each {|s| warn "      - #{s.version}" }
+    unless unresolved_deps.empty?
+      unresolved = unresolved_deps.filter_map do |name, dep|
+        matching_versions = find_all_by_name(name)
+        next if dep.latest_version? && matching_versions.any?(&:default_gem?)
+
+        [dep, matching_versions.uniq(&:full_name)]
+      end.to_h
+
+      unless unresolved.empty?
+        warn "WARN: Unresolved or ambiguous specs during Gem::Specification.reset:"
+        unresolved.each do |dep, versions|
+          warn "      #{dep}"
+
+          unless versions.empty?
+            warn "      Available/installed versions of this gem:"
+            versions.each {|s| warn "      - #{s.version}" }
+          end
         end
+        warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
+        warn "Please report a bug if this causes problems."
       end
-      warn "WARN: Clearing out unresolved specs. Try 'gem cleanup <gem>'"
-      warn "Please report a bug if this causes problems."
-      unresolved.clear
+
+      unresolved_deps.clear
     end
     Gem.post_reset_hooks.each(&:call)
   end
@@ -1308,7 +1314,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@summary,                   array[5]
     spec.instance_variable_set :@required_ruby_version,     array[6]
     spec.instance_variable_set :@required_rubygems_version, array[7]
-    spec.instance_variable_set :@original_platform,         array[8]
+    spec.platform =                                         array[8]
     spec.instance_variable_set :@dependencies,              array[9]
     # offset due to rubyforge_project removal
     spec.instance_variable_set :@email,                     array[11]
@@ -1316,9 +1322,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@description,               array[13]
     spec.instance_variable_set :@homepage,                  array[14]
     spec.instance_variable_set :@has_rdoc,                  array[15]
-    spec.instance_variable_set :@new_platform,              array[16]
-    spec.instance_variable_set :@platform,                  array[16].to_s
-    spec.instance_variable_set :@licenses,                  [array[17]]
+    spec.instance_variable_set :@licenses,                  array[17]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
     spec.instance_variable_set :@activated,                 false
@@ -1411,13 +1415,11 @@ class Gem::Specification < Gem::BasicSpecification
         raise e
       end
 
-      begin
-        specs = spec_dep.to_specs.uniq(&:full_name)
-      rescue Gem::MissingSpecError => e
-        raise Gem::MissingSpecError.new(e.name, e.requirement, "at: #{spec_file}")
-      end
+      specs = spec_dep.matching_specs(true).uniq(&:full_name)
 
-      if specs.size == 1
+      if specs.size == 0
+        raise Gem::MissingSpecError.new(spec_dep.name, spec_dep.requirement, "at: #{spec_file}")
+      elsif specs.size == 1
         specs.first.activate
       else
         name = spec_dep.name
@@ -1775,7 +1777,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns all specs that matches this spec's runtime dependencies.
 
   def dependent_specs
-    runtime_dependencies.map(&:to_specs).flatten
+    runtime_dependencies.flat_map(&:to_specs)
   end
 
   ##
@@ -1813,15 +1815,8 @@ class Gem::Specification < Gem::BasicSpecification
   def encode_with(coder) # :nodoc:
     coder.add "name", @name
     coder.add "version", @version
-    platform = case @original_platform
-               when nil, "" then
-                 "ruby"
-               when String then
-                 @original_platform
-               else
-                 @original_platform.to_s
-    end
-    coder.add "platform", platform
+    coder.add "platform", platform.to_s
+    coder.add "original_platform", original_platform.to_s if platform.to_s != original_platform.to_s
 
     attributes = @@attributes.map(&:to_s) - %w[name version platform]
     attributes.each do |name|
@@ -2626,13 +2621,12 @@ class Gem::Specification < Gem::BasicSpecification
       when "date"
         # Force Date to go through the extra coerce logic in date=
         self.date = val
+      when "platform"
+        self.platform = val
       else
         instance_variable_set "@#{ivar}", val
       end
     end
-
-    @original_platform = @platform # for backwards compatibility
-    self.platform = Gem::Platform.new @platform
   end
 
   ##

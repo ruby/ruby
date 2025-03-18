@@ -89,7 +89,6 @@
 #include "internal/time.h"
 #include "internal/warnings.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "ruby/debug.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -99,10 +98,6 @@
 #include "ractor_core.h"
 #include "vm_debug.h"
 #include "vm_sync.h"
-
-#if USE_RJIT && defined(HAVE_SYS_WAIT_H)
-#include <sys/wait.h>
-#endif
 
 #ifndef USE_NATIVE_THREAD_PRIORITY
 #define USE_NATIVE_THREAD_PRIORITY 0
@@ -115,6 +110,8 @@ static VALUE rb_cThreadShield;
 static VALUE sym_immediate;
 static VALUE sym_on_blocking;
 static VALUE sym_never;
+
+static uint32_t thread_default_quantum_ms = 100;
 
 #define THREAD_LOCAL_STORAGE_INITIALISED FL_USER13
 #define THREAD_LOCAL_STORAGE_INITIALISED_P(th) RB_FL_TEST_RAW((th), THREAD_LOCAL_STORAGE_INITIALISED)
@@ -342,25 +339,33 @@ unblock_function_clear(rb_thread_t *th)
 }
 
 static void
-rb_threadptr_interrupt_common(rb_thread_t *th, int trap)
+threadptr_interrupt_locked(rb_thread_t *th, bool trap)
 {
+    // th->interrupt_lock should be acquired here
+
     RUBY_DEBUG_LOG("th:%u trap:%d", rb_th_serial(th), trap);
 
+    if (trap) {
+        RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
+    }
+    else {
+        RUBY_VM_SET_INTERRUPT(th->ec);
+    }
+
+    if (th->unblock.func != NULL) {
+        (th->unblock.func)(th->unblock.arg);
+    }
+    else {
+        /* none */
+    }
+}
+
+static void
+threadptr_interrupt(rb_thread_t *th, int trap)
+{
     rb_native_mutex_lock(&th->interrupt_lock);
     {
-        if (trap) {
-            RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
-        }
-        else {
-            RUBY_VM_SET_INTERRUPT(th->ec);
-        }
-
-        if (th->unblock.func != NULL) {
-            (th->unblock.func)(th->unblock.arg);
-        }
-        else {
-            /* none */
-        }
+        threadptr_interrupt_locked(th, trap);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
@@ -369,13 +374,13 @@ void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
-    rb_threadptr_interrupt_common(th, 0);
+    threadptr_interrupt(th, false);
 }
 
 static void
 threadptr_trap_interrupt(rb_thread_t *th)
 {
-    rb_threadptr_interrupt_common(th, 1);
+    threadptr_interrupt(th, true);
 }
 
 static void
@@ -490,6 +495,7 @@ rb_thread_terminate_all(rb_thread_t *th)
 }
 
 void rb_threadptr_root_fiber_terminate(rb_thread_t *th);
+static void threadptr_interrupt_exec_cleanup(rb_thread_t *th);
 
 static void
 thread_cleanup_func_before_exec(void *th_ptr)
@@ -500,6 +506,7 @@ thread_cleanup_func_before_exec(void *th_ptr)
     // The thread stack doesn't exist in the forked process:
     th->ec->machine.stack_start = th->ec->machine.stack_end = NULL;
 
+    threadptr_interrupt_exec_cleanup(th);
     rb_threadptr_root_fiber_terminate(th);
 }
 
@@ -872,10 +879,10 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
 #define threadptr_initialized(th) ((th)->invoke_type != thread_invoke_type_none)
 
 /*
- * call-seq:
- *  Thread.new { ... }			-> thread
- *  Thread.new(*args, &proc)		-> thread
- *  Thread.new(*args) { |args| ... }	-> thread
+ *  call-seq:
+ *    Thread.new { ... }		-> thread
+ *    Thread.new(*args, &proc)		-> thread
+ *    Thread.new(*args) { |args| ... }	-> thread
  *
  *  Creates a new thread executing the given block.
  *
@@ -1406,6 +1413,12 @@ rb_thread_wait_for(struct timeval time)
     sleep_hrtime(th, rb_timeval2hrtime(&time), SLEEP_SPURIOUS_CHECK);
 }
 
+void
+rb_ec_check_ints(rb_execution_context_t *ec)
+{
+    RUBY_VM_CHECK_INTS_BLOCKING(ec);
+}
+
 /*
  * CAUTION: This function causes thread switching.
  *          rb_thread_check_ints() check ruby's interrupts.
@@ -1416,7 +1429,7 @@ rb_thread_wait_for(struct timeval time)
 void
 rb_thread_check_ints(void)
 {
-    RUBY_VM_CHECK_INTS_BLOCKING(GET_EC());
+    rb_ec_check_ints(GET_EC());
 }
 
 /*
@@ -1474,7 +1487,7 @@ static inline int
 blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
                       rb_unblock_function_t *ubf, void *arg, int fail_if_interrupted)
 {
-#ifdef RUBY_VM_CRITICAL_SECTION
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
     VM_ASSERT(ruby_assert_critical_section_entered == 0);
 #endif
     VM_ASSERT(th == GET_THREAD());
@@ -1523,13 +1536,26 @@ rb_nogvl(void *(*func)(void *), void *data1,
          rb_unblock_function_t *ubf, void *data2,
          int flags)
 {
+    if (flags & RB_NOGVL_OFFLOAD_SAFE) {
+        VALUE scheduler = rb_fiber_scheduler_current();
+        if (scheduler != Qnil) {
+            struct rb_fiber_scheduler_blocking_operation_state state;
+
+            VALUE result = rb_fiber_scheduler_blocking_operation_wait(scheduler, func, data1, ubf, data2, flags, &state);
+
+            if (!UNDEF_P(result)) {
+                rb_errno_set(state.saved_errno);
+                return state.result;
+            }
+        }
+    }
+
     void *val = 0;
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     rb_vm_t *vm = rb_ec_vm_ptr(ec);
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
-    VALUE ubf_th = Qfalse;
 
     if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
         ubf = ubf_select;
@@ -1552,10 +1578,6 @@ rb_nogvl(void *(*func)(void *), void *data1,
 
     if ((flags & RB_NOGVL_INTR_FAIL) == 0) {
         RUBY_VM_CHECK_INTS_BLOCKING(ec);
-    }
-
-    if (ubf_th != Qfalse) {
-        thread_value(rb_thread_kill(ubf_th));
     }
 
     rb_errno_set(saved_errno);
@@ -1784,7 +1806,7 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     volatile VALUE val = Qundef; /* shouldn't be used */
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
-    bool prev_mn_schedulable = th->mn_schedulable;
+    volatile bool prev_mn_schedulable = th->mn_schedulable;
     th->mn_schedulable = thread_io_mn_schedulable(th, events, NULL);
 
     // `errno` is only valid when there is an actual error - but we can't
@@ -2423,6 +2445,8 @@ threadptr_get_interrupts(rb_thread_t *th)
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
 }
 
+static void threadptr_interrupt_exec_exec(rb_thread_t *th);
+
 int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
@@ -2454,17 +2478,29 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             rb_postponed_job_flush(th->vm);
         }
 
-        /* signal handling */
-        if (trap_interrupt && (th == th->vm->ractor.main_thread)) {
-            enum rb_thread_status prev_status = th->status;
+        if (trap_interrupt) {
+            /* signal handling */
+            if (th == th->vm->ractor.main_thread) {
+                enum rb_thread_status prev_status = th->status;
 
-            th->status = THREAD_RUNNABLE;
-            {
-                while ((sig = rb_get_next_signal()) != 0) {
-                    ret |= rb_signal_exec(th, sig);
+                th->status = THREAD_RUNNABLE;
+                {
+                    while ((sig = rb_get_next_signal()) != 0) {
+                        ret |= rb_signal_exec(th, sig);
+                    }
                 }
+                th->status = prev_status;
             }
-            th->status = prev_status;
+
+            if (!ccan_list_empty(&th->interrupt_exec_tasks)) {
+                enum rb_thread_status prev_status = th->status;
+
+                th->status = THREAD_RUNNABLE;
+                {
+                    threadptr_interrupt_exec_exec(th);
+                }
+                th->status = prev_status;
+            }
         }
 
         /* exception from another thread */
@@ -2499,7 +2535,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         }
 
         if (timer_interrupt) {
-            uint32_t limits_us = TIME_QUANTUM_USEC;
+            uint32_t limits_us = thread_default_quantum_ms * 1000;
 
             if (th->priority > 0)
                 limits_us <<= th->priority;
@@ -4700,11 +4736,9 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_ractor_atfork(vm, th);
     rb_vm_postponed_job_atfork();
 
-    /* may be held by RJIT threads in parent */
-    rb_native_mutex_initialize(&vm->workqueue_lock);
-
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
+    ccan_list_head_init(&th->interrupt_exec_tasks);
 
     vm->fork_gen++;
     rb_ractor_sleeper_threads_clear(th->ractor);
@@ -5466,6 +5500,18 @@ Init_Thread(void)
     rb_define_method(cThGroup, "enclosed?", thgroup_enclosed_p, 0);
     rb_define_method(cThGroup, "add", thgroup_add, 1);
 
+    const char * ptr = getenv("RUBY_THREAD_TIMESLICE");
+
+    if (ptr) {
+        long quantum = strtol(ptr, NULL, 0);
+        if (quantum > 0 && !(SIZEOF_LONG > 4 && quantum > UINT32_MAX)) {
+            thread_default_quantum_ms = (uint32_t)quantum;
+        }
+        else if (0) {
+            fprintf(stderr, "Ignored RUBY_THREAD_TIMESLICE=%s\n", ptr);
+        }
+    }
+
     {
         th->thgroup = th->ractor->thgroup_default = rb_obj_alloc(cThGroup);
         rb_define_const(cThGroup, "Default", th->thgroup);
@@ -5542,7 +5588,7 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
             }
         }
         rb_str_catf(msg, "\n   ");
-        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, 0, 0), sep));
+        rb_str_concat(msg, rb_ary_join(rb_ec_backtrace_str_ary(th->ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES), sep));
         rb_str_catf(msg, "\n");
     }
 }
@@ -5924,4 +5970,121 @@ rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_ke
     VM_ASSERT(th->specific_storage);
 
     th->specific_storage[key] = data;
+}
+
+// interrupt_exec
+
+struct rb_interrupt_exec_task {
+    struct ccan_list_node node;
+
+    rb_interrupt_exec_func_t *func;
+    void *data;
+    enum rb_interrupt_exec_flag flags;
+};
+
+void
+rb_threadptr_interrupt_exec_task_mark(rb_thread_t *th)
+{
+    struct rb_interrupt_exec_task *task;
+
+    ccan_list_for_each(&th->interrupt_exec_tasks, task, node) {
+        if (task->flags & rb_interrupt_exec_flag_value_data) {
+            rb_gc_mark((VALUE)task->data);
+        }
+    }
+}
+
+// native thread safe
+// th should be available
+void
+rb_threadptr_interrupt_exec(rb_thread_t *th, rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
+{
+    // should not use ALLOC
+    struct rb_interrupt_exec_task *task = ALLOC(struct rb_interrupt_exec_task);
+    *task = (struct rb_interrupt_exec_task) {
+        .flags = flags,
+        .func = func,
+        .data = data,
+    };
+
+    rb_native_mutex_lock(&th->interrupt_lock);
+    {
+        ccan_list_add_tail(&th->interrupt_exec_tasks, &task->node);
+        threadptr_interrupt_locked(th, true);
+    }
+    rb_native_mutex_unlock(&th->interrupt_lock);
+}
+
+static void
+threadptr_interrupt_exec_exec(rb_thread_t *th)
+{
+    while (1) {
+        struct rb_interrupt_exec_task *task;
+
+        rb_native_mutex_lock(&th->interrupt_lock);
+        {
+            task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node);
+        }
+        rb_native_mutex_unlock(&th->interrupt_lock);
+
+        if (task) {
+            (*task->func)(task->data);
+            ruby_xfree(task);
+        }
+        else {
+            break;
+        }
+    }
+}
+
+static void
+threadptr_interrupt_exec_cleanup(rb_thread_t *th)
+{
+    rb_native_mutex_lock(&th->interrupt_lock);
+    {
+        struct rb_interrupt_exec_task *task;
+
+        while ((task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node)) != NULL) {
+            ruby_xfree(task);
+        }
+    }
+    rb_native_mutex_unlock(&th->interrupt_lock);
+}
+
+struct interrupt_ractor_new_thread_data {
+    rb_interrupt_exec_func_t *func;
+    void *data;
+};
+
+static VALUE
+interrupt_ractor_new_thread_func(void *data)
+{
+    struct interrupt_ractor_new_thread_data d = *(struct interrupt_ractor_new_thread_data *)data;
+    ruby_xfree(data);
+
+    d.func(d.data);
+    return Qnil;
+}
+
+static VALUE
+interrupt_ractor_func(void *data)
+{
+    rb_thread_create(interrupt_ractor_new_thread_func, data);
+    return Qnil;
+}
+
+// native thread safe
+// func/data should be native thread safe
+void
+rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
+                         rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
+{
+    struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
+
+    d->func = func;
+    d->data = data;
+    rb_thread_t *main_th = target_r->threads.main;
+    rb_threadptr_interrupt_exec(main_th, interrupt_ractor_func, d, flags);
+
+    // TODO MEMO: we can create a new thread in a ractor, but not sure how to do that now.
 }

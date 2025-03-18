@@ -987,10 +987,10 @@ vtm2tm_noyear(const struct vtm *vtm, struct tm *result)
     tm.tm_yday = vtm->yday-1;
     tm.tm_isdst = vtm->isdst;
 #if defined(HAVE_STRUCT_TM_TM_GMTOFF)
-    tm.tm_gmtoff = NUM2LONG(vtm->utc_offset);
+    tm.tm_gmtoff = 0;
 #endif
 #if defined(HAVE_TM_ZONE)
-    tm.tm_zone = (char *)vtm->zone;
+    tm.tm_zone = NULL;
 #endif
     *result = tm;
 }

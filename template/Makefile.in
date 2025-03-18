@@ -29,7 +29,7 @@ CPP = @CPP@
 LD = @LD@
 RUSTC = @RUSTC@
 CARGO = @CARGO@
-YACC = $(BASERUBY) $(tooldir)/lrama/exe/lrama
+LRAMA = $(BASERUBY) $(tooldir)/lrama/exe/lrama
 PURIFY =
 AUTOCONF = autoconf
 CONFIGURE = @CONFIGURE@
@@ -68,7 +68,7 @@ UNIVERSAL_ARCHNAMES = @UNIVERSAL_ARCHNAMES@
 BUILTIN_BINARY = @X_BUILTIN_BINARY@
 
 BUILTIN_GC = default
-shared_gc_dir = @shared_gc_dir@
+modular_gc_dir = @modular_gc_dir@
 
 TESTUI = console
 TESTS =
@@ -97,11 +97,10 @@ cppflags = @cppflags@
 incflags = @incflags@
 RUBY_DEVEL = @RUBY_DEVEL@ # "yes" or empty
 _RUBY_DEVEL_enabled = $(RUBY_DEVEL:no=)
-XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1)
+XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1) -Dmodular_gc_dir="$(modular_gc_dir)"
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
-RJIT_SUPPORT = @RJIT_SUPPORT@
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
@@ -310,8 +309,6 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
-#
-# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
@@ -347,6 +344,12 @@ $(ruby_pc): config.status Makefile
 	    > ruby.tmp.pc
 	$(Q)pkg_config=${PKG_CONFIG} && PKG_CONFIG_PATH=. $${pkg_config:-:} --print-errors ruby.tmp
 	$(Q)$(MV) -f ruby.tmp.pc $(ruby_pc)
+
+modular-gc-precheck:
+	$(Q) if test -z $(modular_gc_dir); then \
+	    echo "You must configure with --with-modular-gc to use modular GC"; \
+	    exit 1; \
+	fi
 
 pre-install-local:: pkgconfig-data
 
@@ -452,9 +455,11 @@ gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
 	@$(ECHO) compiling $<
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
+PREFIXED_SYMBOL = name
+_PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 .$(ASMEXT).$(OBJEXT):
 	@$(ECHO) assembling $<
-	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -DSYMBOL_PREFIX=$(SYMBOL_PREFIX) -c $<
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ "-DPREFIXED_SYMBOL(name)=$($(SYMBOL_PREFIX)PREFIXED_SYMBOL)" -c $<
 
 .c.$(ASMEXT):
 	@$(ECHO) translating $<
@@ -466,7 +471,7 @@ gc_impl.$(OBJEXT): gc/$(BUILTIN_GC).c probes.h
 
 .d.h:
 	@$(ECHO) translating probes $<
-	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) -s $<
+	$(Q) $(DTRACE) -o $@.tmp -h -C $(INCFLAGS) $(CPPFLAGS) -s $<
 	$(Q) sed -e 's/RUBY_/RUBY_DTRACE_/g' -e 's/PROBES_H_TMP/RUBY_PROBES_H/' -e 's/(char \*/(const char */g' -e 's/, char \*/, const char */g' $@.tmp > $@
 	$(Q) $(RM) $@.tmp
 
@@ -555,6 +560,12 @@ ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
 
+gc/clean gc/distclean gc/realclean::
+	- for gc in gc/*/; do ($(CHDIR) $$gc && exec $(MAKE) TARGET_SO_DIR=./ $(@F)); done || $(NULLCMD)
+
+gc/distclean gc/realclean::
+	- for gc in gc/*/; do $(RMDIR) $$gc; done || $(NULLCMD)
+
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
 	echo $(@:-enc=ing) encodings; \
@@ -631,7 +642,6 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_insn_len_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_name_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
-	  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb \
 	  $(tooldir)/ruby_vm/views/_insn_type_chars.erb \
 	  $(tooldir)/ruby_vm/views/_leaf_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_notice.erb \

@@ -3,6 +3,7 @@
 use crate::backend::ir::*;
 use crate::cruby::*;
 use std::slice;
+use std::os::raw::c_int;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
 /// Implementation conditional on the cast preserving the numeric value on
@@ -237,6 +238,14 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
 
     asm.cpop_all();
+}
+
+pub fn stdout_supports_colors() -> bool {
+    // TODO(max): Use std::io::IsTerminal after upgrading Rust to 1.70
+    extern "C" { fn isatty(fd: c_int) -> c_int; }
+    let stdout = 1;
+    let is_terminal = unsafe { isatty(stdout) } == 1;
+    is_terminal
 }
 
 #[cfg(test)]

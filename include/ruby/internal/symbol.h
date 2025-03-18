@@ -121,10 +121,17 @@ ID rb_intern_str(VALUE str);
  * Retrieves the name mapped to the given id.
  *
  * @param[in]  id         An id to query.
- * @retval     NULL       No such id ever existed in the history.
+ * @retval     NULL       Unknown id.
  * @retval     otherwise  A name that the id represents.
  * @note       The return value  is managed by the interpreter.   Don't pass it
  *             to free().
+ * @note       The underlying name can contain internal NUL bytes, so the return
+ *             value might be a truncated representation due to the nature of C
+ *             strings.
+ * @note       This C string is backed by an underlying Ruby string. The Ruby
+ *             string may move during GC compaction which would make this
+ *             C string point to invalid memory. Do not use the return value
+ *             of this function after a potential GC entry point.
  */
 const char *rb_id2name(ID id);
 
@@ -186,7 +193,8 @@ ID rb_check_id(volatile VALUE *namep);
 ID rb_to_id(VALUE str);
 
 /**
- * Identical to rb_id2name(), except it returns a Ruby's String instead of C's.
+ * Identical to rb_id2name(), except it returns a frozen Ruby String instead of
+ * a C String.
  *
  * @param[in]  id           An id to query.
  * @retval     RUBY_Qfalse  No such id ever existed in the history.
@@ -201,14 +209,14 @@ ID rb_to_id(VALUE str);
 VALUE rb_id2str(ID id);
 
 /**
- * Identical to rb_id2str(), except it takes an instance of ::rb_cSymbol rather
- * than an ::ID.
+ * Obtain a frozen string representation of a symbol (not including the leading
+ * colon). Done without any object allocations.
  *
- * @param[in]  id           An id to query.
- * @retval     RUBY_Qfalse  No such id ever existed in the history.
- * @retval     otherwise    An instance of ::rb_cString with the name of id.
+ * @param[in]  symbol  A ::rb_cSymbol instance to query.
+ * @return     A frozen instance of ::rb_cString with the name of `symbol`.
+ * @note       This does not create a permanent ::ID using the symbol.
  */
-VALUE rb_sym2str(VALUE id);
+VALUE rb_sym2str(VALUE symbol);
 
 /**
  * Identical  to  rb_intern_str(), except  it  generates  a dynamic  symbol  if
@@ -308,8 +316,9 @@ rbimpl_intern_const(ID *ptr, const char *str)
     }
 
 /**
- * Old implementation detail of rb_intern().
- * @deprecated Does anyone use it?  Preserved for backward compat.
+ * Returns  the cached  ID  for  the given  str  in  var, in  compiler
+ * independent manner.   Use this instead of  GCC specific rb_intern()
+ * when you want to cache the ID on all platforms certainly.
  */
 #define RUBY_CONST_ID(var, str) \
     do { \
@@ -318,7 +327,8 @@ rbimpl_intern_const(ID *ptr, const char *str)
     } while (0)
 
 #if defined(HAVE_STMT_AND_DECL_IN_EXPR)
-/* __builtin_constant_p and statement expression is available
+/* GCC specific shorthand for RUBY_CONST_ID().
+ * __builtin_constant_p and statement expression is available
  * since gcc-2.7.2.3 at least. */
 #define rb_intern(str) \
     (RBIMPL_CONSTANT_P(str) ? \

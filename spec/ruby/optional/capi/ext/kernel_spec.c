@@ -7,14 +7,10 @@
 extern "C" {
 #endif
 
-VALUE kernel_spec_call_proc(VALUE arg_array) {
+static VALUE kernel_spec_call_proc(VALUE arg_array) {
   VALUE arg = rb_ary_pop(arg_array);
   VALUE proc = rb_ary_pop(arg_array);
   return rb_funcall(proc, rb_intern("call"), 1, arg);
-}
-
-VALUE kernel_spec_call_proc_raise(VALUE arg_array, VALUE raised_exc) {
-  return kernel_spec_call_proc(arg_array);
 }
 
 static VALUE kernel_spec_rb_block_given_p(VALUE self) {
@@ -71,9 +67,18 @@ VALUE kernel_spec_rb_block_call_no_func(VALUE self, VALUE ary) {
   return rb_block_call(ary, rb_intern("map"), 0, NULL, (rb_block_call_func_t)NULL, Qnil);
 }
 
-
 VALUE kernel_spec_rb_frame_this_func(VALUE self) {
   return ID2SYM(rb_frame_this_func());
+}
+
+VALUE kernel_spec_rb_category_warn_deprecated(VALUE self) {
+  rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "foo");
+  return Qnil;
+}
+
+VALUE kernel_spec_rb_category_warn_deprecated_with_integer_extra_value(VALUE self, VALUE value) {
+  rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "foo %d", FIX2INT(value));
+  return Qnil;
 }
 
 VALUE kernel_spec_rb_ensure(VALUE self, VALUE main_proc, VALUE arg,
@@ -134,7 +139,16 @@ VALUE kernel_spec_rb_throw_obj(VALUE self, VALUE obj, VALUE result) {
   return ID2SYM(rb_intern("rb_throw_failed"));
 }
 
-VALUE kernel_spec_call_proc_with_raised_exc(VALUE arg_array, VALUE raised_exc) {
+VALUE kernel_spec_rb_errinfo(VALUE self) {
+  return rb_errinfo();
+}
+
+VALUE kernel_spec_rb_set_errinfo(VALUE self, VALUE exc) {
+  rb_set_errinfo(exc);
+  return Qnil;
+}
+
+static VALUE kernel_spec_call_proc_with_raised_exc(VALUE arg_array, VALUE raised_exc) {
   VALUE argv[2];
   int argc;
 
@@ -181,7 +195,7 @@ VALUE kernel_spec_rb_rescue2(int argc, VALUE *args, VALUE self) {
   rb_ary_push(raise_array, args[3]);
 
   return rb_rescue2(kernel_spec_call_proc, main_array,
-      kernel_spec_call_proc_raise, raise_array, args[4], args[5], (VALUE)0);
+      kernel_spec_call_proc_with_raised_exc, raise_array, args[4], args[5], (VALUE)0);
 }
 
 static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
@@ -195,7 +209,7 @@ static VALUE kernel_spec_rb_protect_yield(VALUE self, VALUE obj, VALUE ary) {
   return res;
 }
 
-static VALUE kernel_spec_rb_protect_errinfo(VALUE self, VALUE obj, VALUE ary) {
+static VALUE kernel_spec_rb_protect_ignore_status(VALUE self, VALUE obj, VALUE ary) {
   int status = 0;
   VALUE res = rb_protect(rb_yield, obj, &status);
   rb_ary_store(ary, 0, INT2NUM(23));
@@ -233,6 +247,13 @@ VALUE kernel_spec_rb_syserr_fail(VALUE self, VALUE err, VALUE msg) {
     rb_syserr_fail(NUM2INT(err), NULL);
   } else if (self != Qundef) {
     rb_syserr_fail(NUM2INT(err), StringValuePtr(msg));
+  }
+  return Qnil;
+}
+
+VALUE kernel_spec_rb_syserr_fail_str(VALUE self, VALUE err, VALUE msg) {
+  if (self != Qundef) {
+    rb_syserr_fail_str(NUM2INT(err), msg);
   }
   return Qnil;
 }
@@ -318,6 +339,10 @@ static VALUE kernel_spec_rb_f_sprintf(VALUE self, VALUE ary) {
   return rb_f_sprintf((int)RARRAY_LEN(ary), RARRAY_PTR(ary));
 }
 
+static VALUE kernel_spec_rb_str_format(VALUE self, VALUE count, VALUE ary, VALUE format) {
+  return rb_str_format(FIX2INT(count), RARRAY_PTR(ary), format);
+}
+
 static VALUE kernel_spec_rb_make_backtrace(VALUE self) {
   return rb_make_backtrace();
 }
@@ -376,22 +401,28 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_block_lambda", kernel_spec_rb_block_lambda, 0);
   rb_define_method(cls, "rb_frame_this_func_test", kernel_spec_rb_frame_this_func, 0);
   rb_define_method(cls, "rb_frame_this_func_test_again", kernel_spec_rb_frame_this_func, 0);
+  rb_define_method(cls, "rb_category_warn_deprecated", kernel_spec_rb_category_warn_deprecated, 0);
+  rb_define_method(cls, "rb_category_warn_deprecated_with_integer_extra_value", kernel_spec_rb_category_warn_deprecated_with_integer_extra_value, 1);
   rb_define_method(cls, "rb_ensure", kernel_spec_rb_ensure, 4);
   rb_define_method(cls, "rb_eval_string", kernel_spec_rb_eval_string, 1);
   rb_define_method(cls, "rb_eval_cmd_kw", kernel_spec_rb_eval_cmd_kw, 3);
   rb_define_method(cls, "rb_raise", kernel_spec_rb_raise, 1);
   rb_define_method(cls, "rb_throw", kernel_spec_rb_throw, 1);
   rb_define_method(cls, "rb_throw_obj", kernel_spec_rb_throw_obj, 2);
+  rb_define_method(cls, "rb_errinfo", kernel_spec_rb_errinfo, 0);
+  rb_define_method(cls, "rb_set_errinfo", kernel_spec_rb_set_errinfo, 1);
+  rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue", kernel_spec_rb_rescue, 4);
   rb_define_method(cls, "rb_rescue2", kernel_spec_rb_rescue2, -1);
   rb_define_method(cls, "rb_protect_yield", kernel_spec_rb_protect_yield, 2);
-  rb_define_method(cls, "rb_protect_errinfo", kernel_spec_rb_protect_errinfo, 2);
+  rb_define_method(cls, "rb_protect_ignore_status", kernel_spec_rb_protect_ignore_status, 2);
   rb_define_method(cls, "rb_protect_null_status", kernel_spec_rb_protect_null_status, 1);
   rb_define_method(cls, "rb_eval_string_protect", kernel_spec_rb_eval_string_protect, 2);
   rb_define_method(cls, "rb_catch", kernel_spec_rb_catch, 2);
   rb_define_method(cls, "rb_catch_obj", kernel_spec_rb_catch_obj, 2);
   rb_define_method(cls, "rb_sys_fail", kernel_spec_rb_sys_fail, 1);
   rb_define_method(cls, "rb_syserr_fail", kernel_spec_rb_syserr_fail, 2);
+  rb_define_method(cls, "rb_syserr_fail_str", kernel_spec_rb_syserr_fail_str, 2);
   rb_define_method(cls, "rb_warn", kernel_spec_rb_warn, 1);
   rb_define_method(cls, "rb_yield", kernel_spec_rb_yield, 1);
   rb_define_method(cls, "rb_yield_indirected", kernel_spec_rb_yield_indirected, 1);
@@ -402,6 +433,7 @@ void Init_kernel_spec(void) {
   rb_define_method(cls, "rb_exec_recursive", kernel_spec_rb_exec_recursive, 1);
   rb_define_method(cls, "rb_set_end_proc", kernel_spec_rb_set_end_proc, 1);
   rb_define_method(cls, "rb_f_sprintf", kernel_spec_rb_f_sprintf, 1);
+  rb_define_method(cls, "rb_str_format", kernel_spec_rb_str_format, 3);
   rb_define_method(cls, "rb_make_backtrace", kernel_spec_rb_make_backtrace, 0);
   rb_define_method(cls, "rb_funcallv", kernel_spec_rb_funcallv, 3);
 #ifdef RUBY_VERSION_IS_3_0

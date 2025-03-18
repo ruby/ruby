@@ -326,7 +326,9 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     oid = (0...100).to_a.join(".").b
     obj = OpenSSL::ASN1::ObjectId.new(oid)
     assert_equal oid, obj.oid
+  end
 
+  def test_object_identifier_equality
     aki = [
       OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
       OpenSSL::ASN1::ObjectId.new("X509v3 Authority Key Identifier"),
@@ -341,17 +343,22 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
 
     aki.each do |a|
       aki.each do |b|
-        assert a == b
+        assert_equal true, a == b
       end
 
       ski.each do |b|
-        refute a == b
+        assert_equal false, a == b
       end
     end
 
-    assert_raise(TypeError) {
-      OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
-    }
+    obj1 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.10")
+    obj2 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.10")
+    obj3 = OpenSSL::ASN1::ObjectId.new("1.2.34.56789.11")
+    omit "OID 1.2.34.56789.10 is registered" if obj1.sn
+    assert_equal true, obj1 == obj2
+    assert_equal false, obj1 == obj3
+
+    assert_equal false, OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier") == nil
   end
 
   def test_sequence
@@ -451,7 +458,7 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     encode_decode_test B(%w{ 81 00 }), OpenSSL::ASN1::ASN1Data.new(B(%w{}), 1, :CONTEXT_SPECIFIC)
     encode_decode_test B(%w{ C1 00 }), OpenSSL::ASN1::ASN1Data.new(B(%w{}), 1, :PRIVATE)
     encode_decode_test B(%w{ 1F 20 00 }), OpenSSL::ASN1::ASN1Data.new(B(%w{}), 32, :UNIVERSAL)
-    encode_decode_test B(%w{ 1F C0 20 00 }), OpenSSL::ASN1::ASN1Data.new(B(%w{}), 8224, :UNIVERSAL)
+    encode_decode_test B(%w{ 9F C0 20 00 }), OpenSSL::ASN1::ASN1Data.new(B(%w{}), 8224, :CONTEXT_SPECIFIC)
     encode_decode_test B(%w{ 41 02 AB CD }), OpenSSL::ASN1::ASN1Data.new(B(%w{ AB CD }), 1, :APPLICATION)
     encode_decode_test B(%w{ 41 81 80 } + %w{ AB CD } * 64), OpenSSL::ASN1::ASN1Data.new(B(%w{ AB CD } * 64), 1, :APPLICATION)
     encode_decode_test B(%w{ 41 82 01 00 } + %w{ AB CD } * 128), OpenSSL::ASN1::ASN1Data.new(B(%w{ AB CD } * 128), 1, :APPLICATION)

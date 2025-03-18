@@ -69,11 +69,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
   WCHAR_NUL = "\0".encode(WCHAR).freeze
   WCHAR_CR = "\r".encode(WCHAR).freeze
   WCHAR_SIZE = WCHAR_NUL.bytesize
-  begin
-    LOCALE = Encoding.find(Encoding.locale_charmap)
-  rescue ArgumentError
-    LOCALE = Encoding::UTF_8
-  end
+  LOCALE = Encoding::UTF_8
 
   class Registry
 
@@ -182,7 +178,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         buff = WCHAR_NUL * 1024
         lang = 0
         begin
-          len = FormatMessageW.call(0x1200, 0, code, lang, buff, 1024, 0)
+          len = FormatMessageW.call(0x1200, nil, code, lang, buff, 1024, nil)
           msg = buff.byteslice(0, len * WCHAR_SIZE)
           msg.delete!(WCHAR_CR)
           msg.chomp!
@@ -202,7 +198,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     #
     class PredefinedKey < Registry
       def initialize(hkey, keyname)
-        @hkey = hkey
+        @hkey = Fiddle::Pointer.new(hkey)
         @parent = nil
         @keyname = keyname
         @disposition = REG_OPENED_EXISTING_KEY
@@ -242,7 +238,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         "long RegDeleteKeyW(void *, void *)",
         "long RegFlushKey(void *)",
         "long RegCloseKey(void *)",
-        "long RegQueryInfoKey(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
+        "long RegQueryInfoKeyW(void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *, void *)",
       ].each do |fn|
         cfunc = extern fn, :stdcall
         const_set cfunc.name.intern, cfunc
@@ -289,7 +285,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       end
 
       def make_wstr(str)
-        str.encode(WCHAR)
+        (str+"\0").encode(WCHAR)
       end
 
       def OpenKey(hkey, name, opt, desired)
@@ -302,14 +298,14 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         result = packhandle(0)
         disp = packdw(0)
         check RegCreateKeyExW.call(hkey, make_wstr(name), 0, 0, opt, desired,
-                                   0, result, disp)
+                                   nil, result, disp)
         [ unpackhandle(result), unpackdw(disp) ]
       end
 
       def EnumValue(hkey, index)
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
-        check RegEnumValueW.call(hkey, index, name, size, 0, 0, 0, 0)
+        check RegEnumValueW.call(hkey, index, name, size, nil, nil, nil, nil)
         name.byteslice(0, unpackdw(size) * WCHAR_SIZE)
       end
 
@@ -317,7 +313,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         name = WCHAR_NUL * Constants::MAX_KEY_LENGTH
         size = packdw(Constants::MAX_KEY_LENGTH)
         wtime = ' ' * 8
-        check RegEnumKeyExW.call(hkey, index, name, size, 0, 0, 0, wtime)
+        check RegEnumKeyExW.call(hkey, index, name, size, nil, nil, nil, wtime)
         [ name.byteslice(0, unpackdw(size) * WCHAR_SIZE), unpackqw(wtime) ]
       end
 
@@ -325,9 +321,9 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         type = packdw(0)
         size = packdw(0)
         name = make_wstr(name)
-        check RegQueryValueExW.call(hkey, name, 0, type, 0, size)
+        check RegQueryValueExW.call(hkey, name, nil, type, nil, size)
         data = "\0".b * unpackdw(size)
-        check RegQueryValueExW.call(hkey, name, 0, type, data, size)
+        check RegQueryValueExW.call(hkey, name, nil, type, data, size)
         [ unpackdw(type), data[0, unpackdw(size)] ]
       end
 
@@ -364,7 +360,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
         maxvaluelen = packdw(0)
         secdescs = packdw(0)
         wtime = ' ' * 8
-        check RegQueryInfoKey.call(hkey, 0, 0, 0, subkeys, maxsubkeylen, 0,
+        check RegQueryInfoKeyW.call(hkey, 0, 0, 0, subkeys, maxsubkeylen, 0,
           values, maxvaluenamelen, maxvaluelen, secdescs, wtime)
         [ unpackdw(subkeys), unpackdw(maxsubkeylen), unpackdw(values),
           unpackdw(maxvaluenamelen), unpackdw(maxvaluelen),
@@ -434,7 +430,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # If block is given, the key is closed automatically.
     def self.open(hkey, subkey, desired = KEY_READ, opt = REG_OPTION_RESERVED)
       subkey = subkey.chomp('\\')
-      newkey = API.OpenKey(hkey.hkey, subkey, opt, desired)
+      newkey = API.OpenKey(hkey.instance_variable_get(:@hkey), subkey, opt, desired)
       obj = new(newkey, hkey, subkey, REG_OPENED_EXISTING_KEY)
       if block_given?
         begin
@@ -461,7 +457,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # If block is given, the key is closed automatically.
     #
     def self.create(hkey, subkey, desired = KEY_ALL_ACCESS, opt = REG_OPTION_RESERVED)
-      newkey, disp = API.CreateKey(hkey.hkey, subkey, opt, desired)
+      newkey, disp = API.CreateKey(hkey.instance_variable_get(:@hkey), subkey, opt, desired)
       obj = new(newkey, hkey, subkey, disp)
       if block_given?
         begin
@@ -483,7 +479,7 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     # initialize
     #
     def initialize(hkey, parent, keyname, disposition)
-      @hkey = hkey
+      @hkey = Fiddle::Pointer.new(hkey)
       @parent = parent
       @keyname = keyname
       @disposition = disposition
@@ -491,8 +487,6 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
       ObjectSpace.define_finalizer self, @@final.call(@hkeyfinal)
     end
 
-    #  Returns key handle value.
-    attr_reader :hkey
     # Win32::Registry object of parent key, or nil if predefeined key.
     attr_reader :parent
     # Same as subkey value of Registry.open or
@@ -500,6 +494,11 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     attr_reader :keyname
     #  Disposition value (REG_CREATED_NEW_KEY or REG_OPENED_EXISTING_KEY).
     attr_reader :disposition
+
+    #  Returns key handle value.
+    def hkey
+      @hkey.to_i
+    end
 
     #
     # Returns if key is created ((*newly*)).
@@ -567,9 +566,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate values.
+    # Enumerate all values in this registry path.
+    #
+    # For each value it yields key, type and data.
+    #
+    # key is a String which contains name of key.
+    # type is a type contant kind of Win32::Registry::REG_*
+    # data is the value of this key.
     #
     def each_value
+      return enum_for(:each_value) unless block_given?
       index = 0
       while true
         begin
@@ -600,13 +606,16 @@ For detail, see the MSDN[http://msdn.microsoft.com/library/en-us/sysinfo/base/pr
     end
 
     #
-    # Enumerate subkeys.
+    # Enumerate all subkeys.
+    #
+    # For each subkey it yields subkey and wtime.
     #
     # subkey is String which contains name of subkey.
     # wtime is last write time as FILETIME (64-bit integer).
     # (see Registry.wtime2time)
     #
     def each_key
+      return enum_for(:each_key) unless block_given?
       index = 0
       while true
         begin

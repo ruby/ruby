@@ -6,16 +6,15 @@
 ##
 
 #define TOKEN_PASTE(x,y) x##y
-#define PREFIXED_SYMBOL(prefix,name) TOKEN_PASTE(prefix,name)
 
 .file "Context.S"
 .text
-.globl PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
+.globl PREFIXED_SYMBOL(coroutine_transfer)
 .align 2
-.type PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer),%function
+.type PREFIXED_SYMBOL(coroutine_transfer),%function
 .syntax unified
 
-PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
+PREFIXED_SYMBOL(coroutine_transfer):
 	# Save caller state (8 registers + return address)
 	push {r4-r11,lr}
 

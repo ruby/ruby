@@ -84,6 +84,7 @@
 
 use std::convert::From;
 use std::ffi::{CString, CStr};
+use std::fmt::{Debug, Formatter};
 use std::os::raw::{c_char, c_int, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
@@ -541,9 +542,7 @@ impl VALUE {
 
         ptr
     }
-}
 
-impl VALUE {
     pub fn fixnum_from_usize(item: usize) -> Self {
         assert!(item <= (RUBY_FIXNUM_MAX as usize)); // An unsigned will always be greater than RUBY_FIXNUM_MIN
         let k: usize = item.wrapping_add(item.wrapping_add(1));
@@ -562,6 +561,18 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     /// For `.into()` convenience
     fn from(cme: *const rb_callable_method_entry_t) -> Self {
         VALUE(cme as usize)
+    }
+}
+
+impl From<&str> for VALUE {
+    fn from(value: &str) -> Self {
+        rust_str_to_ruby(value)
+    }
+}
+
+impl From<String> for VALUE {
+    fn from(value: String) -> Self {
+        rust_str_to_ruby(&value)
     }
 }
 
@@ -596,7 +607,6 @@ impl From<VALUE> for u16 {
 }
 
 /// Produce a Ruby string from a Rust string slice
-#[cfg(feature = "disasm")]
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
 }
@@ -625,6 +635,12 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
 pub struct SourceLocation {
     pub file: &'static CStr,
     pub line: c_int,
+}
+
+impl Debug for SourceLocation {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}:{}", self.file.to_string_lossy(), self.line))
+    }
 }
 
 /// Make a [SourceLocation] at the current spot.
@@ -807,7 +823,9 @@ pub(crate) mod ids {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
         name: to_ary             content: b"to_ary"
+        name: to_s               content: b"to_s"
         name: eq                 content: b"=="
+        name: include_p          content: b"include?"
     }
 }
 

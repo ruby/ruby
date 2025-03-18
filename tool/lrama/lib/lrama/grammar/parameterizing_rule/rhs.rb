@@ -16,7 +16,7 @@ module Lrama
           return unless user_code
 
           resolved = Lexer::Token::UserCode.new(s_value: user_code.s_value, location: user_code.location)
-          var_to_arg = {}
+          var_to_arg = {} #: Hash[String, String]
           symbols.each do |sym|
             resolved_sym = bindings.resolve_symbol(sym)
             if resolved_sym != sym

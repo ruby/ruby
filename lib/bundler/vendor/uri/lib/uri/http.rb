@@ -85,7 +85,7 @@ module Bundler::URI
     # == Description
     #
     # Returns the authority for an HTTP uri, as defined in
-    # https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.
+    # https://www.rfc-editor.org/rfc/rfc3986#section-3.2.
     #
     #
     # Example:
@@ -106,7 +106,7 @@ module Bundler::URI
     # == Description
     #
     # Returns the origin for an HTTP uri, as defined in
-    # https://datatracker.ietf.org/doc/html/rfc6454.
+    # https://www.rfc-editor.org/rfc/rfc6454.
     #
     #
     # Example:

@@ -12,6 +12,17 @@ describe "Integer#/" do
 
     it "supports dividing negative numbers" do
       (-1 / 10).should == -1
+      (-1 / 10**10).should == -1
+      (-1 / 10**20).should == -1
+    end
+
+    it "preservers sign correctly" do
+      (4 / 3).should == 1
+      (4 / -3).should == -2
+      (-4 / 3).should == -2
+      (-4 / -3).should == 1
+      (0 / -3).should == 0
+      (0 / 3).should == 0
     end
 
     it "returns result the same class as the argument" do
@@ -56,6 +67,15 @@ describe "Integer#/" do
 
       ((-10**50) / (10**40 + 1)).should == -10000000000
       ((10**50) / -(10**40 + 1)).should == -10000000000
+    end
+
+    it "preservers sign correctly" do
+      (4 / bignum_value).should == 0
+      (4 / -bignum_value).should == -1
+      (-4 / bignum_value).should == -1
+      (-4 / -bignum_value).should == 0
+      (0 / bignum_value).should == 0
+      (0 / -bignum_value).should == 0
     end
 
     it "returns self divided by Float" do

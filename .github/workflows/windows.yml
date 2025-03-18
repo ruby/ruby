@@ -28,8 +28,13 @@ jobs:
           - vc: 2015
             vs: 2019
             vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
+            test_task: check
           - vs: 2019
-          - vs: 2022
+            test_task: check
+          - vs: 2019
+            test_task: test-bundled-gems
+          # - vs: 2022
+          #   test_task: check
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
@@ -40,11 +45,11 @@ jobs:
       || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }}
+    name: VisualStudio ${{ matrix.vc || matrix.vs }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -100,6 +105,7 @@ jobs:
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
+          scoop install vcpkg
         shell: pwsh
 
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
@@ -156,6 +162,7 @@ jobs:
         run: >-
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          --with-gmp
 
       - run: nmake prepare-vcpkg
 
@@ -169,30 +176,21 @@ jobs:
 
       - run: nmake
 
-      - run: nmake test
-        timeout-minutes: 5
-
-      - run: nmake test-spec
-        timeout-minutes: 10
-
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
-          test-task: test-all
-          # If we support a new test task, we need to change this test-opts.
-          test-opts: -j${{ env.TEST_JOBS || 4 }} --job-status=normal
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
+          test-task: ${{ matrix.test_task || 'check' }}
         continue-on-error: true
+        if: ${{ matrix.test_task != 'test-bundled-gems' }}
 
-      - run: nmake test-all
+      - run: nmake ${{ matrix.test_task || 'check' }}
         env:
-          RUBY_TESTOPTS: >-
-            -j${{ env.TEST_JOBS || 4 }}
-            --job-status=normal
-        timeout-minutes: 60
+          RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+        timeout-minutes: 70
 
       - uses: ./.github/actions/slack
         with:

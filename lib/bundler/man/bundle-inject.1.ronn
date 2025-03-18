@@ -3,7 +3,7 @@ bundle-inject(1) -- Add named gem(s) with version requirements to Gemfile
 
 ## SYNOPSIS
 
-`bundle inject` [GEM] [VERSION]
+`bundle inject` [GEM] [VERSION] [--source=SOURCE] [--group=GROUP]
 
 ## DESCRIPTION
 
@@ -22,3 +22,11 @@ This will inject the 'rack' gem with a version greater than 0 in your
 [`Gemfile(5)`][Gemfile(5)] and Gemfile.lock.
 
 The `bundle inject` command was deprecated in Bundler 2.1 and will be removed in Bundler 3.0.
+
+## OPTIONS
+
+* `--source=SOURCE`:
+  Install gem from the given source.
+
+* `--group=GROUP`:
+  Install gem into a bundler group.

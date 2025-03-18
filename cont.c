@@ -35,7 +35,6 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/sanitizers.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
-#include "rjit.h"
 #include "yjit.h"
 #include "vm_core.h"
 #include "vm_sync.h"
@@ -277,7 +276,12 @@ static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
 void
 rb_free_shared_fiber_pool(void)
 {
-    xfree(shared_fiber_pool.allocations);
+    struct fiber_pool_allocation *allocations = shared_fiber_pool.allocations;
+    while (allocations) {
+        struct fiber_pool_allocation *next = allocations->next;
+        xfree(allocations);
+        allocations = next;
+    }
 }
 
 static ID fiber_initialize_keywords[3] = {0};
@@ -475,18 +479,20 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
         }
 #else
         errno = 0;
-        void * base = mmap(NULL, (*count)*stride, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
+        size_t mmap_size = (*count)*stride;
+        void * base = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
 
         if (base == MAP_FAILED) {
             // If the allocation fails, count = count / 2, and try again.
             *count = (*count) >> 1;
         }
         else {
+            ruby_annotate_mmap(base, mmap_size, "Ruby:fiber_pool_allocate_memory");
 #if defined(MADV_FREE_REUSE)
             // On Mac MADV_FREE_REUSE is necessary for the task_info api
             // to keep the accounting accurate as possible when a page is marked as reusable
             // it can possibly not occurring at first call thus re-iterating if necessary.
-            while (madvise(base, (*count)*stride, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
+            while (madvise(base, mmap_size, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
 #endif
             return base;
         }
@@ -545,6 +551,9 @@ fiber_pool_expand(struct fiber_pool * fiber_pool, size_t count)
             VirtualFree(allocation->base, 0, MEM_RELEASE);
             rb_raise(rb_eFiberError, "can't set a guard page: %s", ERRNOMSG);
         }
+#elif defined(__wasi__)
+        // wasi-libc's mprotect emulation doesn't support PROT_NONE.
+        (void)page;
 #else
         if (mprotect(page, RB_PAGE_SIZE, PROT_NONE) < 0) {
             munmap(allocation->base, count*stride);
@@ -820,6 +829,10 @@ fiber_restore_thread(rb_thread_t *th, rb_fiber_t *fiber)
     VM_ASSERT(th->ec->fiber_ptr == fiber);
 }
 
+#ifndef COROUTINE_DECL
+# define COROUTINE_DECL COROUTINE
+#endif
+NORETURN(static COROUTINE_DECL fiber_entry(struct coroutine_context * from, struct coroutine_context * to));
 static COROUTINE
 fiber_entry(struct coroutine_context * from, struct coroutine_context * to)
 {
@@ -1584,9 +1597,9 @@ cont_restore_1(rb_context_t *cont)
     cont_restore_thread(cont);
 
     /* restore machine stack */
-#if defined(_M_AMD64) && !defined(__MINGW64__)
+#if (defined(_M_AMD64) && !defined(__MINGW64__)) || defined(_M_ARM64)
     {
-        /* workaround for x64 SEH */
+        /* workaround for x64 and arm64 SEH on Windows */
         jmp_buf buf;
         setjmp(buf);
         _JUMP_BUFFER *bp = (void*)&cont->jmpbuf;
@@ -1885,7 +1898,7 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  == Non-blocking Fibers
  *
  *  The concept of <em>non-blocking fiber</em> was introduced in Ruby 3.0.
- *  A non-blocking fiber, when reaching a operation that would normally block
+ *  A non-blocking fiber, when reaching an operation that would normally block
  *  the fiber (like <code>sleep</code>, or wait for another process or I/O)
  *  will yield control to other fibers and allow the <em>scheduler</em> to
  *  handle blocking and waking up (resuming) this fiber when it can proceed.
@@ -2113,7 +2126,7 @@ rb_fiber_storage_set(VALUE self, VALUE value)
 static VALUE
 rb_fiber_storage_aref(VALUE class, VALUE key)
 {
-    Check_Type(key, T_SYMBOL);
+    key = rb_to_symbol(key);
 
     VALUE storage = fiber_storage_get(fiber_current(), FALSE);
     if (storage == Qnil) return Qnil;
@@ -2134,7 +2147,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
 static VALUE
 rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 {
-    Check_Type(key, T_SYMBOL);
+    key = rb_to_symbol(key);
 
     VALUE storage = fiber_storage_get(fiber_current(), value != Qnil);
     if (storage == Qnil) return Qnil;
@@ -3425,6 +3438,10 @@ Init_Cont(void)
     rb_define_singleton_method(rb_cFiber, "schedule", rb_fiber_s_schedule, -1);
 
 #ifdef RB_EXPERIMENTAL_FIBER_POOL
+    /*
+     * Document-class: Fiber::Pool
+     * :nodoc: experimental
+     */
     rb_cFiberPool = rb_define_class_under(rb_cFiber, "Pool", rb_cObject);
     rb_define_alloc_func(rb_cFiberPool, fiber_pool_alloc);
     rb_define_method(rb_cFiberPool, "initialize", rb_fiber_pool_initialize, -1);

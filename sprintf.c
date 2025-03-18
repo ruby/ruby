@@ -67,7 +67,8 @@ sign_bits(int base, const char *p)
 
 #define CHECK(l) do {\
     int cr = ENC_CODERANGE(result);\
-    while ((l) >= bsiz - blen) {\
+    RUBY_ASSERT(bsiz >= blen); \
+    while ((l) > bsiz - blen) {\
         bsiz*=2;\
         if (bsiz<0) rb_raise(rb_eArgError, "too big specifier");\
     }\
@@ -247,8 +248,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     }
 
 #define update_coderange(partial) do { \
-        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen \
-            && rb_enc_to_index(enc) /* != ENCINDEX_ASCII_8BIT */) { \
+        if (coderange != ENC_CODERANGE_BROKEN && scanned < blen) { \
             int cr = coderange; \
             scanned += rb_str_coderange_scan_restartable(buf+scanned, buf+blen, enc, &cr); \
             ENC_CODERANGE_SET(result, \
@@ -808,7 +808,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                 if (FIXNUM_P(num)) {
                     if ((SIGNED_VALUE)num < 0) {
                         long n = -FIX2LONG(num);
-                        num = LONG2FIX(n);
+                        num = LONG2NUM(n);
                         sign = -1;
                     }
                 }

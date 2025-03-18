@@ -163,7 +163,7 @@ def main
   BT.tty = nil
   BT.quiet = false
   BT.timeout = 180
-  BT.timeout_scale = (defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 3 : 1) # for --jit-wait
+  BT.timeout_scale = 1
   if (ts = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_i) > 1
     BT.timeout_scale *= ts
   end
@@ -236,7 +236,19 @@ End
         return true
       end
 
-      require_relative '../tool/lib/launchable'
+      begin
+        require_relative '../tool/lib/launchable'
+      rescue LoadError
+        # The following error sometimes happens, so we're going to skip writing Launchable report files in this case.
+        #
+        # ```
+        # /tmp/tmp.bISss9CtXZ/.ext/common/json/ext.rb:15:in 'Kernel#require':
+        #   /tmp/tmp.bISss9CtXZ/.ext/x86_64-linux/json/ext/parser.so:
+        #     undefined symbol: ruby_abi_version - ruby_abi_version (LoadError)
+        # ```
+        #
+        return true
+      end
       BT.launchable_test_reports = writer = Launchable::JsonStreamWriter.new($1)
       writer.write_array('testCases')
       at_exit {
@@ -342,6 +354,7 @@ def concurrent_exec_test
   begin
     while BT.wn != term_wn
       if r = rq.pop
+        BT_STATE.count += 1
         case
         when BT.quiet
         when BT.tty
@@ -399,7 +412,7 @@ module Launchable
           }
         )
         @@duration = 0
-        @@failure_log.clear
+        @@failure_log = ''
       end
       @@last_test_name = relative_path
       @@duration += t
@@ -876,11 +889,6 @@ end
 
 def yjit_enabled?
   ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
-end
-
-def rjit_enabled?
-  # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
-  ENV.fetch('RUN_OPTS', '').include?('rjit')
 end
 
 exit main

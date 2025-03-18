@@ -19,6 +19,7 @@ This project is open source and falls under the same license as CRuby.
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:
 
+- MPLR 2023 talk: [Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach](https://www.youtube.com/watch?v=pVRmPZcNUhc)
 - RubyKaigi 2023 keynote: [Optimizing YJIT’s Performance, from Inception to Production](https://www.youtube.com/watch?v=X0JRhh8w_4I)
 - RubyKaigi 2023 keynote: [Fitting Rust YJIT into CRuby](https://www.youtube.com/watch?v=GI7vvAgP_Qs)
 - RubyKaigi 2022 keynote: [Stories from developing YJIT](https://www.youtube.com/watch?v=EMchdR9C8XM)
@@ -35,7 +36,7 @@ If you wish to learn more about the approach taken, here are some conference tal
 
 To cite YJIT in your publications, please cite the MPLR 2023 paper:
 
-```
+```BibTeX
 @inproceedings{yjit_mplr_2023,
 author = {Chevalier-Boisvert, Maxime and Kokubun, Takashi and Gibbs, Noah and Wu, Si Xing (Alan) and Patterson, Aaron and Issroff, Jemma},
 title = {Evaluating YJIT’s Performance in a Production Context: A Pragmatic Approach},
@@ -64,12 +65,19 @@ You can change how much executable memory is allocated using [YJIT's command-lin
 ### Requirements
 
 You will need to install:
-- A C compiler such as GCC or Clang
-- GNU Make and Autoconf
-- The Rust compiler `rustc` and Cargo (if you want to build in dev/debug mode)
-  - The Rust version must be [>= 1.58.0](../../yjit/Cargo.toml).
 
-To install the Rust build toolchain, we suggest following the [recommended installation method][rust-install]. Rust also provides first class [support][editor-tools] for many source code editors.
+ - All the usual build tools for Ruby. See [Building Ruby](../contributing/building_ruby.md)
+ - The Rust compiler `rustc`
+    - The Rust version must be [>= 1.58.0](../../yjit/Cargo.toml).
+ - Optionally, only if you wish to build in dev/debug mode, Rust's `cargo`
+
+If you don't intend on making code changes to YJIT itself, we recommend
+obtaining `rustc` through your OS's package manager since that
+likely reuses the same vendor which provides the C toolchain.
+
+If you will be changing YJIT's Rust code, we suggest using the
+[first-party installation method][rust-install] for Rust. Rust also provides
+first class [support][editor-tools] for many source code editors.
 
 [rust-install]: https://www.rust-lang.org/tools/install
 [editor-tools]: https://www.rust-lang.org/tools
@@ -159,6 +167,12 @@ You can dump statistics about compilation and execution by running YJIT with the
 ./miniruby --yjit-stats myscript.rb
 ```
 
+You can see what YJIT has compiled by running YJIT with the `--yjit-log` command-line option:
+
+```sh
+./miniruby --yjit-log myscript.rb
+```
+
 The machine code generated for a given method can be printed by adding `puts RubyVM::YJIT.disasm(method(:method_name))` to a Ruby script. Note that no code will be generated if the method is not compiled.
 
 <h3 id="command-line-options">Command-Line Options</h3>
@@ -166,13 +180,16 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 48 MiB)
+- `--yjit-mem-size=N`: soft limit on YJIT memory usage in MiB (default: 128). Tries to limit `code_region_size + yjit_alloc_size`
+- `--yjit-exec-mem-size=N`: hard limit on executable memory block in MiB. Limits `code_region_size`
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function.
   It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
 - `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
   compiled, lower values mean less code is compiled (default 200K)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
+- `--yjit-log[=file|dir]`: log all compilation events to the specified file or directory. If no name is supplied, the last 1024 log entries will be printed to stderr when the application exits.
+- `--yjit-log=quiet`: gather a circular buffer of recent YJIT compilations. The compilation log entries are accessible through `RubyVM::YJIT.log` and old entries will be discarded if the buffer is not drained quickly. (incurs a run-time cost)
 - `--yjit-disable`: disable YJIT despite other `--yjit*` flags for lazily enabling it with `RubyVM::YJIT.enable`
 - `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3).
   It will cause all machine code to be discarded when the executable memory size limit is hit, meaning JIT compilation will then start over.
@@ -212,15 +229,18 @@ they might not necessarily be the best configuration for your application.
 This section covers tips on improving YJIT performance in case YJIT does not
 speed up your application in production.
 
-### Increasing --yjit-exec-mem-size
+### Increasing --yjit-mem-size
 
-When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
-YJIT stops compiling new code. Increasing the executable memory size means more code
+The `--yjit-mem-size` value can be used to set the maximum amount of memory that YJIT
+is allowed to use. This corresponds to the total of `RubyVM::YJIT.runtime_stats[:code_region_size]`
+and `RubyVM::YJIT.runtime_stats[:yjit_alloc_size]`
+Increasing the `--yjit-mem-size` value means more code
 can be optimized by YJIT, at the cost of more memory usage.
 
 If you start Ruby with `--yjit-stats`, e.g. using an environment variable `RUBYOPT=--yjit-stats`,
-`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the ratio of YJIT-executed instructions in %.
-Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-exec-mem-size` often
+`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the percentage of total YARV instructions
+executed by YJIT as opposed to the CRuby interpreter.
+Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-mem-size` often
 helps improving `ratio_in_yjit`.
 
 ### Running workers as long as possible
@@ -238,16 +258,13 @@ you may want to reduce the killing frequency or increase the limit.
 YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
 This section goes over tips on minimizing YJIT memory usage in case it uses more than your capacity.
 
-### Decreasing --yjit-exec-mem-size
+### Decreasing --yjit-mem-size
 
-The `--yjit-exec-mem-size` option specifies the JIT code size, but YJIT also uses memory for its metadata,
-which often consumes more memory than JIT code. Generally, YJIT adds memory overhead by roughly
-3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.3. You should multiply that by the number
-of worker processes to estimate the worst case memory overhead.
-
-`--yjit-exec-mem-size=48` is the default since Ruby 3.3.1,
-but smaller values like 32 MiB might make sense for your application.
-While doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
+YJIT uses memory for compiled code and metadata. You can change the maximum amount of memory
+that YJIT can use by specifying a different `--yjit-mem-size` command-line option. The default value
+is currently `128`.
+When changing this value, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]`
+as explained above.
 
 ### Enabling YJIT lazily
 
@@ -271,7 +288,7 @@ This section contains tips on writing Ruby code that will run as fast as possibl
 - Ruby method calls are costly. Avoid things such as methods that only return a value from a hash
 - Try to write code so that the same variables and method arguments always have the same type
 - Avoid using `TracePoint` as it can cause YJIT to deoptimize code
-- Avoid using `Binding` as it can cause YJIT to deoptimize code
+- Avoid using `binding` as it can cause YJIT to deoptimize code
 
 You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
@@ -423,7 +440,7 @@ instructions below, but there are a few caveats listed further down.
 
 First, install Rosetta:
 
-```sh
+```console
 $ softwareupdate --install-rosetta
 ```
 
@@ -431,13 +448,13 @@ Now any command can be run with Rosetta via the `arch` command line tool.
 
 Then you can start your shell in an x86 environment:
 
-```sh
+```console
 $ arch -x86_64 zsh
 ```
 
 You can double check your current architecture via the `arch` command:
 
-```sh
+```console
 $ arch -x86_64 zsh
 $ arch
 i386
@@ -445,7 +462,7 @@ i386
 
 You may need to set the default target for `rustc` to x86-64, e.g.
 
-```sh
+```console
 $ rustup default stable-x86_64-apple-darwin
 ```
 

@@ -8,7 +8,6 @@ require_relative '../lib/jit_support'
 require_relative '../lib/parser_support'
 
 class TestRubyOptions < Test::Unit::TestCase
-  def self.rjit_enabled? = defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
   def self.yjit_enabled? = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   # Here we're defining our own RUBY_DESCRIPTION without "+PRISM". We do this
@@ -22,9 +21,8 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
   NO_JIT_DESCRIPTION =
-    if rjit_enabled?
-      RUBY_DESCRIPTION.sub(/\+RJIT /, '')
-    elsif yjit_enabled?
+    case
+    when yjit_enabled?
       RUBY_DESCRIPTION.sub(/\+YJIT( (dev|dev_nodebug|stats))? /, '')
     else
       RUBY_DESCRIPTION
@@ -118,7 +116,7 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(-We) + ['p $-W'], "", %w(2), [])
     assert_in_out_err(%w(-w -W0 -e) + ['p $-W'], "", %w(0), [])
 
-    categories = {deprecated: 1, experimental: 0, performance: 2}
+    categories = {deprecated: 1, experimental: 0, performance: 2, strict_unused_block: 3}
     assert_equal categories.keys.sort, Warning.categories.sort
 
     categories.each do |category, level|
@@ -173,21 +171,10 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   private_constant :VERSION_PATTERN
 
-  VERSION_PATTERN_WITH_RJIT =
-    case RUBY_ENGINE
-    when 'ruby'
-      /^ruby #{q[RUBY_VERSION]}(?:[p ]|dev|rc).*? \+RJIT (\+MN )?(\+PRISM )?\[#{q[RUBY_PLATFORM]}\]$/
-    else
-      VERSION_PATTERN
-    end
-  private_constant :VERSION_PATTERN_WITH_RJIT
-
   def test_verbose
     assert_in_out_err([{'RUBY_YJIT_ENABLE' => nil}, "-vve", ""]) do |r, e|
       assert_match(VERSION_PATTERN, r[0])
-      if self.class.rjit_enabled? && !JITSupport.rjit_force_enabled?
-        assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif self.class.yjit_enabled? && !JITSupport.yjit_force_enabled?
+      if self.class.yjit_enabled? && !JITSupport.yjit_force_enabled?
         assert_equal(NO_JIT_DESCRIPTION, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -212,11 +199,6 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_in_out_err(%w(--enable all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable-all -e) + [""], "", [], [])
       assert_in_out_err(%w(--enable=all -e) + [""], "", [], [])
-    elsif JITSupport.rjit_supported?
-      # Avoid failing tests by RJIT warnings
-      assert_in_out_err(%w(--enable all --disable rjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable-all --disable-rjit -e) + [""], "", [], [])
-      assert_in_out_err(%w(--enable=all --disable=rjit -e) + [""], "", [], [])
     end
     assert_in_out_err(%w(--enable foobarbazqux -e) + [""], "", [],
                       /unknown argument for --enable: 'foobarbazqux'/)
@@ -258,7 +240,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_match(VERSION_PATTERN, r[0])
       if ENV['RUBY_YJIT_ENABLE'] == '1'
         assert_equal(NO_JIT_DESCRIPTION, r[0])
-      elsif self.class.rjit_enabled? || self.class.yjit_enabled? # checking -D(M|Y)JIT_FORCE_ENABLE
+      elsif self.class.yjit_enabled? # checking -DYJIT_FORCE_ENABLE
         assert_equal(EnvUtil.invoke_ruby(['-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
       else
         assert_equal(RUBY_DESCRIPTION, r[0])
@@ -267,43 +249,13 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
-  def test_rjit_disabled_version
-    return unless JITSupport.rjit_supported?
-    return if JITSupport.yjit_force_enabled?
+  def test_enabled_gc
+    omit unless /linux|darwin/ =~ RUBY_PLATFORM
 
-    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
-    [
-      %w(--version --rjit --disable=rjit),
-      %w(--version --enable=rjit --disable=rjit),
-      %w(--version --enable-rjit --disable-rjit),
-    ].each do |args|
-      assert_in_out_err([env] + args) do |r, e|
-        assert_match(VERSION_PATTERN, r[0])
-        assert_match(NO_JIT_DESCRIPTION, r[0])
-        assert_equal([], e)
-      end
-    end
-  end
-
-  def test_rjit_version
-    return unless JITSupport.rjit_supported?
-    return if JITSupport.yjit_force_enabled?
-
-    env = { 'RUBY_YJIT_ENABLE' => nil } # unset in children
-    [
-      %w(--version --rjit),
-      %w(--version --enable=rjit),
-      %w(--version --enable-rjit),
-    ].each do |args|
-      assert_in_out_err([env] + args) do |r, e|
-        assert_match(VERSION_PATTERN_WITH_RJIT, r[0])
-        if JITSupport.rjit_force_enabled?
-          assert_equal(RUBY_DESCRIPTION, r[0])
-        else
-          assert_equal(EnvUtil.invoke_ruby([env, '--rjit', '-e', 'print RUBY_DESCRIPTION'], '', true).first, r[0])
-        end
-        assert_equal([], e)
-      end
+    if RbConfig::CONFIG['modular_gc_dir'].length > 0
+      assert_match(/\+GC/, RUBY_DESCRIPTION)
+    else
+      assert_no_match(/\+GC/, RUBY_DESCRIPTION)
     end
   end
 
@@ -366,7 +318,7 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal([], e)
     end
 
-    Dir.mktmpdir(d) do |base|
+    Dir.mktmpdir(nil, d) do |base|
       # "test" in Japanese and N'Ko
       test = base + "/\u{30c6 30b9 30c8}_\u{7e1 7ca 7dd 7cc 7df 7cd 7eb}"
       Dir.mkdir(test)
@@ -431,11 +383,15 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%W(-\r -e) + [""], "", [], [])
 
-    assert_in_out_err(%W(-\rx), "", [], /invalid option -[\r\n]  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\rx), "", [], /invalid option -\\r  \(-h will show valid options\) \(RuntimeError\)/)
 
-    assert_in_out_err(%W(-\x01), "", [], /invalid option -\x01  \(-h will show valid options\) \(RuntimeError\)/)
+    assert_in_out_err(%W(-\x01), "", [], /invalid option -\\x01  \(-h will show valid options\) \(RuntimeError\)/)
 
     assert_in_out_err(%w(-Z), "", [], /invalid option -Z  \(-h will show valid options\) \(RuntimeError\)/)
+
+    assert_in_out_err(%W(-\u{1f608}), "", [],
+                      /invalid option -(\\xf0|\u{1f608})  \(-h will show valid options\) \(RuntimeError\)/,
+                      encoding: Encoding::UTF_8)
   end
 
   def test_rubyopt
@@ -836,7 +792,7 @@ class TestRubyOptions < Test::Unit::TestCase
         -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
       )x,
       %r(
-        #{ Regexp.quote((TestRubyOptions.rjit_enabled? && !JITSupport.rjit_force_enabled?) ? NO_JIT_DESCRIPTION : RUBY_DESCRIPTION) }\n\n
+        #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
       )x,
       %r(
         (?:--\s(?:.+\n)*\n)?
@@ -876,7 +832,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
-    pend "macOS 15 beta is not working with this assertion" if macos?(15)
+    pend "macOS 15 is not working with this assertion" if macos?(15)
 
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
@@ -921,7 +877,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def assert_crash_report(path, cmd = nil, &block)
-    pend "macOS 15 beta is not working with this assertion" if macos?(15)
+    pend "macOS 15 is not working with this assertion" if macos?(15)
 
     Dir.mktmpdir("ruby_crash_report") do |dir|
       list = SEGVTest::ExpectedStderrList
@@ -1262,9 +1218,8 @@ class TestRubyOptions < Test::Unit::TestCase
     code = <<~RUBY
       "foo" << "bar"
     RUBY
-    warning = ["-:1: warning: literal string will be frozen in the future"]
-    assert_in_out_err(["-W:deprecated"], code, [], warning)
-    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], warning)
+    assert_in_out_err(["-W:deprecated"], code, [], ["-:1: warning: literal string will be frozen in the future (run with --debug-frozen-string-literal for more information)"])
+    assert_in_out_err(["-W:deprecated", "--debug-frozen-string-literal"], code, [], ["-:1: warning: literal string will be frozen in the future", "-:1: info: the string was created here"])
     assert_in_out_err(["-W:deprecated", "--disable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], [])
     assert_in_out_err(["-W:deprecated", "--enable-frozen-string-literal", "--debug-frozen-string-literal"], code, [], ["-:1:in '<main>': can't modify frozen String: \"foo\", created at -:1 (FrozenError)"])
   end
@@ -1316,5 +1271,9 @@ class TestRubyOptions < Test::Unit::TestCase
     env = {"RUBY_FREE_AT_EXIT"=>"1"}
     assert_ruby_status([env, "-e;"])
     assert_in_out_err([env, "-W"], "", [], /Free at exit is experimental and may be unstable/)
+  end
+
+  def test_toplevel_ruby
+    assert_instance_of Module, ::Ruby
   end
 end

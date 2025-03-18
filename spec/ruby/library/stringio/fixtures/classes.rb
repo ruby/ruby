@@ -4,12 +4,12 @@ class StringSubclass < String; end
 
 module StringIOSpecs
   def self.build
-  str = <<-EOS
+    str = <<-EOS
     each
     peach
     pear
     plum
-  EOS
+    EOS
     StringIO.new(str)
   end
 end

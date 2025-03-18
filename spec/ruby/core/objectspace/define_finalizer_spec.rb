@@ -156,7 +156,7 @@ describe "ObjectSpace.define_finalizer" do
   end
 
   it "allows multiple finalizers with different 'callables' to be defined" do
-    code = <<-RUBY
+    code = <<-'RUBY'
       obj = Object.new
 
       ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized1\n" })
@@ -166,6 +166,31 @@ describe "ObjectSpace.define_finalizer" do
     RUBY
 
     ruby_exe(code).lines.sort.should == ["finalized1\n", "finalized2\n"]
+  end
+
+  it "defines same finalizer only once" do
+    code = <<~RUBY
+      obj = Object.new
+      p = proc { |id| print "ok" }
+      ObjectSpace.define_finalizer(obj, p.dup)
+      ObjectSpace.define_finalizer(obj, p.dup)
+    RUBY
+
+    ruby_exe(code).should == "ok"
+  end
+
+  it "returns the defined finalizer" do
+    obj = Object.new
+    p = proc { |id| }
+    p2 = p.dup
+
+    ret = ObjectSpace.define_finalizer(obj, p)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
+
+    ret = ObjectSpace.define_finalizer(obj, p2)
+    ret.should == [0, p]
+    ret[1].should.equal?(p)
   end
 
   ruby_version_is "3.1" do

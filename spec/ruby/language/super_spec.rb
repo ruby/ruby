@@ -70,7 +70,7 @@ describe "The super keyword" do
     SuperSpecs::S4::B.new.foo([],"test").should == ["B#foo(a,test)", "A#foo"]
   end
 
-  it "raises an error error when super method does not exist" do
+  it "raises an error when super method does not exist" do
     sup = Class.new
     sub_normal = Class.new(sup) do
       def foo

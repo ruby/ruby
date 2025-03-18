@@ -13,7 +13,7 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.1.2.dev";
+STRINGIO_VERSION = "3.1.6.dev";
 
 #include <stdbool.h>
 
@@ -179,6 +179,9 @@ check_modifiable(struct StringIO *ptr)
     }
     else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
+    }
+    else {
+	rb_str_modify(ptr->string);
     }
 }
 
@@ -930,6 +933,18 @@ strio_extend(struct StringIO *ptr, long pos, long len)
     }
 }
 
+static void
+strio_unget_string(struct StringIO *ptr, VALUE c)
+{
+    const char *cp = NULL;
+    long cl = RSTRING_LEN(c);
+    if (cl > 0) {
+	if (c != ptr->string) cp = RSTRING_PTR(c);
+	strio_unget_bytes(ptr, cp, cl);
+	RB_GC_GUARD(c);
+    }
+}
+
 /*
  * call-seq:
  *   ungetc(character) -> nil
@@ -952,19 +967,22 @@ strio_ungetc(VALUE self, VALUE c)
 
 	enc = rb_enc_get(ptr->string);
 	len = rb_enc_codelen(cc, enc);
-	if (len <= 0) rb_enc_uint_chr(cc, enc);
+	if (len <= 0) {
+	    rb_enc_uint_chr(cc, enc); /* to raise an exception */
+	    UNREACHABLE;
+	}
 	rb_enc_mbcput(cc, buf, enc);
 	return strio_unget_bytes(ptr, buf, len);
     }
     else {
-	SafeStringValue(c);
+	StringValue(c);
+	if (RSTRING_LEN(c) == 0) return Qnil;
 	enc = rb_enc_get(ptr->string);
 	enc2 = rb_enc_get(c);
 	if (enc != enc2 && enc != rb_ascii8bit_encoding()) {
 	    c = rb_str_conv_enc(c, enc2, enc);
 	}
-	strio_unget_bytes(ptr, RSTRING_PTR(c), RSTRING_LEN(c));
-	RB_GC_GUARD(c);
+	strio_unget_string(ptr, c);
 	return Qnil;
     }
 }
@@ -991,13 +1009,8 @@ strio_ungetbyte(VALUE self, VALUE c)
 	strio_unget_bytes(ptr, &cc, 1);
     }
     else {
-	long cl;
-	SafeStringValue(c);
-	cl = RSTRING_LEN(c);
-	if (cl > 0) {
-	    strio_unget_bytes(ptr, RSTRING_PTR(c), cl);
-	    RB_GC_GUARD(c);
-	}
+	StringValue(c);
+	strio_unget_string(ptr, c);
     }
     return Qnil;
 }
@@ -1028,7 +1041,7 @@ strio_unget_bytes(struct StringIO *ptr, const char *cp, long cl)
 	if (rest > cl) memset(s + len, 0, rest - cl);
 	pos -= cl;
     }
-    memcpy(s + pos, cp, cl);
+    memcpy(s + pos, (cp ? cp : s), cl);
     ptr->pos = pos;
     return Qnil;
 }

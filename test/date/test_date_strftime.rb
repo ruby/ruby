@@ -412,6 +412,15 @@ class TestDateStrftime < Test::Unit::TestCase
     assert_equal('H31.04.30', Date.parse('2019-04-30').jisx0301)
     assert_equal('R01.05.01', Date.parse('2019-05-01').jisx0301)
 
+    assert_equal(d2, DateTime.iso8601('2001-02-03T04:05:06.123456+00:00', limit: 64))
+    assert_equal(d2, DateTime.rfc3339('2001-02-03T04:05:06.123456+00:00', limit: 64))
+    assert_equal(d2, DateTime.jisx0301('H13.02.03T04:05:06.123456+00:00', limit: 64))
+
+    exceeds = /string length \(\d+\) exceeds/
+    assert_raise_with_message(ArgumentError, exceeds) {DateTime.iso8601('2001-02-03T04:05:06.123456+00:00', limit: 1)}
+    assert_raise_with_message(ArgumentError, exceeds) {DateTime.rfc3339('2001-02-03T04:05:06.123456+00:00', limit: 1)}
+    assert_raise_with_message(ArgumentError, exceeds) {DateTime.jisx0301('H13.02.03T04:05:06.123456+00:00', limit: 1)}
+
     %w(M06.01.01
        M45.07.29
        T01.07.30

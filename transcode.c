@@ -4529,91 +4529,77 @@ InitVM_transcode(void)
     rb_define_method(rb_cEncodingConverter, "replacement=", econv_set_replacement, 1);
     rb_define_method(rb_cEncodingConverter, "==", econv_equal, 1);
 
-    /* Document-const: INVALID_MASK
-     *
-     * Mask for invalid byte sequences
+    /*
+     *Mask for invalid byte sequences
      */
     rb_define_const(rb_cEncodingConverter, "INVALID_MASK", INT2FIX(ECONV_INVALID_MASK));
 
-    /* Document-const: INVALID_REPLACE
-     *
+    /*
      * Replace invalid byte sequences
      */
     rb_define_const(rb_cEncodingConverter, "INVALID_REPLACE", INT2FIX(ECONV_INVALID_REPLACE));
 
-    /* Document-const: UNDEF_MASK
-     *
+    /*
      * Mask for a valid character in the source encoding but no related
      * character(s) in destination encoding.
      */
     rb_define_const(rb_cEncodingConverter, "UNDEF_MASK", INT2FIX(ECONV_UNDEF_MASK));
 
-    /* Document-const: UNDEF_REPLACE
-     *
+    /*
      * Replace byte sequences that are undefined in the destination encoding.
      */
     rb_define_const(rb_cEncodingConverter, "UNDEF_REPLACE", INT2FIX(ECONV_UNDEF_REPLACE));
 
-    /* Document-const: UNDEF_HEX_CHARREF
-     *
+    /*
      * Replace byte sequences that are undefined in the destination encoding
      * with an XML hexadecimal character reference.  This is valid for XML
      * conversion.
      */
     rb_define_const(rb_cEncodingConverter, "UNDEF_HEX_CHARREF", INT2FIX(ECONV_UNDEF_HEX_CHARREF));
 
-    /* Document-const: PARTIAL_INPUT
-     *
+    /*
      * Indicates the source may be part of a larger string.  See
      * primitive_convert for an example.
      */
     rb_define_const(rb_cEncodingConverter, "PARTIAL_INPUT", INT2FIX(ECONV_PARTIAL_INPUT));
 
-    /* Document-const: AFTER_OUTPUT
-     *
+    /*
      * Stop converting after some output is complete but before all of the
      * input was consumed.  See primitive_convert for an example.
      */
     rb_define_const(rb_cEncodingConverter, "AFTER_OUTPUT", INT2FIX(ECONV_AFTER_OUTPUT));
 
-    /* Document-const: UNIVERSAL_NEWLINE_DECORATOR
-     *
+    /*
      * Decorator for converting CRLF and CR to LF
      */
     rb_define_const(rb_cEncodingConverter, "UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
 
-    /* Document-const: LF_NEWLINE_DECORATOR
-     *
+    /*
      * Decorator for converting CRLF and CR to LF when writing
      */
     rb_define_const(rb_cEncodingConverter, "LF_NEWLINE_DECORATOR", INT2FIX(ECONV_LF_NEWLINE_DECORATOR));
 
-    /* Document-const: CRLF_NEWLINE_DECORATOR
-     *
+    /*
      * Decorator for converting LF to CRLF
      */
     rb_define_const(rb_cEncodingConverter, "CRLF_NEWLINE_DECORATOR", INT2FIX(ECONV_CRLF_NEWLINE_DECORATOR));
 
-    /* Document-const: CR_NEWLINE_DECORATOR
-     *
+    /*
      * Decorator for converting LF to CR
      */
     rb_define_const(rb_cEncodingConverter, "CR_NEWLINE_DECORATOR", INT2FIX(ECONV_CR_NEWLINE_DECORATOR));
 
-    /* Document-const: XML_TEXT_DECORATOR
-     *
+    /*
      * Escape as XML CharData
      */
     rb_define_const(rb_cEncodingConverter, "XML_TEXT_DECORATOR", INT2FIX(ECONV_XML_TEXT_DECORATOR));
 
-    /* Document-const: XML_ATTR_CONTENT_DECORATOR
-     *
+    /*
      * Escape as XML AttValue
      */
     rb_define_const(rb_cEncodingConverter, "XML_ATTR_CONTENT_DECORATOR", INT2FIX(ECONV_XML_ATTR_CONTENT_DECORATOR));
 
-    /* Document-const: XML_ATTR_QUOTE_DECORATOR
-     *
+    /*
      * Escape as XML AttValue
      */
     rb_define_const(rb_cEncodingConverter, "XML_ATTR_QUOTE_DECORATOR", INT2FIX(ECONV_XML_ATTR_QUOTE_DECORATOR));

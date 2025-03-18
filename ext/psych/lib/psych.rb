@@ -1,4 +1,6 @@
 # frozen_string_literal: true
+require 'date'
+
 require_relative 'psych/versions'
 case RUBY_ENGINE
 when 'jruby'
@@ -84,7 +86,7 @@ require_relative 'psych/class_loader'
 #   Psych.safe_load_file("data.yml", permitted_classes: [Date])
 #   Psych.load_file("trusted_database.yml")
 #
-# ==== Exception handling
+# ==== \Exception handling
 #
 #   begin
 #     # The second argument changes only the exception contents
@@ -148,7 +150,7 @@ require_relative 'psych/class_loader'
 #   # Returns Psych::Nodes::Document
 #   Psych.parse_file('database.yml')
 #
-# ==== Exception handling
+# ==== \Exception handling
 #
 #   begin
 #     # The second argument changes only the exception contents

@@ -254,7 +254,7 @@ static inline VALUE
 rb_uint2num_inline(unsigned int v)
 {
     if (RB_POSFIXABLE(v))
-        return RB_LONG2FIX(v);
+        return RB_LONG2FIX(RBIMPL_CAST((long)v));
     else
         return rb_uint2big(v);
 }

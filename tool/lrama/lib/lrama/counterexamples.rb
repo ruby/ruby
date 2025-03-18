@@ -32,8 +32,10 @@ module Lrama
       conflict_state.conflicts.flat_map do |conflict|
         case conflict.type
         when :shift_reduce
+          # @type var conflict: State::ShiftReduceConflict
           shift_reduce_example(conflict_state, conflict)
         when :reduce_reduce
+          # @type var conflict: State::ReduceReduceConflict
           reduce_reduce_examples(conflict_state, conflict)
         end
       end.compact
@@ -48,7 +50,7 @@ module Lrama
       @reverse_transitions = {}
 
       @states.states.each do |src_state|
-        trans = {}
+        trans = {} #: Hash[Grammar::Symbol, State]
 
         src_state.transitions.each do |shift, next_state|
           trans[shift.next_sym] = next_state
@@ -66,6 +68,7 @@ module Lrama
 
             @transitions[[src_state_item, sym]] = dest_state_item
 
+            # @type var key: [StateItem, Grammar::Symbol]
             key = [dest_state_item, sym]
             @reverse_transitions[key] ||= Set.new
             @reverse_transitions[key] << src_state_item
@@ -82,7 +85,7 @@ module Lrama
 
       @states.states.each do |state|
         # LHS => Set(Item)
-        h = {}
+        h = {} #: Hash[Grammar::Symbol, Set[States::Item]]
 
         state.closure.each do |item|
           sym = item.lhs
@@ -97,6 +100,7 @@ module Lrama
 
           sym = item.next_sym
           state_item = StateItem.new(state, item)
+          # @type var key: [State, Grammar::Symbol]
           key = [state, sym]
 
           @productions[state_item] = h[sym]
@@ -109,6 +113,7 @@ module Lrama
 
     def shift_reduce_example(conflict_state, conflict)
       conflict_symbol = conflict.symbols.first
+      # @type var shift_conflict_item: ::Lrama::States::Item
       shift_conflict_item = conflict_state.items.find { |item| item.next_sym == conflict_symbol }
       path2 = shortest_path(conflict_state, conflict.reduce.item, conflict_symbol)
       path1 = find_shift_conflict_shortest_path(path2, conflict_state, shift_conflict_item)
@@ -153,12 +158,14 @@ module Lrama
         prev_state_item = prev_path&.to
 
         if target_state_item == state_item || target_state_item.item.start_item?
-          result.concat(reversed_reduce_path[_j..-1].map(&:to))
+          result.concat(
+            reversed_reduce_path[_j..-1] #: Array[StartPath|TransitionPath|ProductionPath]
+              .map(&:to))
           break
         end
 
         if target_state_item.item.beginning_of_rule?
-          queue = []
+          queue = [] #: Array[Array[StateItem]]
           queue << [target_state_item]
 
           # Find reverse production
@@ -174,15 +181,17 @@ module Lrama
             end
 
             if si.item.beginning_of_rule?
+              # @type var key: [State, Grammar::Symbol]
               key = [si.state, si.item.lhs]
               @reverse_productions[key].each do |item|
                 state_item = StateItem.new(si.state, item)
                 queue << (sis + [state_item])
               end
             else
+              # @type var key: [StateItem, Grammar::Symbol]
               key = [si, si.item.previous_sym]
               @reverse_transitions[key].each do |prev_target_state_item|
-                next if prev_target_state_item.state != prev_state_item.state
+                next if prev_target_state_item.state != prev_state_item&.state
                 sis.shift
                 result.concat(sis)
                 result << prev_target_state_item
@@ -195,9 +204,10 @@ module Lrama
           end
         else
           # Find reverse transition
+          # @type var key: [StateItem, Grammar::Symbol]
           key = [target_state_item, target_state_item.item.previous_sym]
           @reverse_transitions[key].each do |prev_target_state_item|
-            next if prev_target_state_item.state != prev_state_item.state
+            next if prev_target_state_item.state != prev_state_item&.state
             result << prev_target_state_item
             target_state_item = prev_target_state_item
             i = j
@@ -224,9 +234,9 @@ module Lrama
 
     def shortest_path(conflict_state, conflict_reduce_item, conflict_term)
       # queue: is an array of [Triple, [Path]]
-      queue = []
-      visited = {}
-      start_state = @states.states.first
+      queue = [] #: Array[[Triple, Array[StartPath|TransitionPath|ProductionPath]]]
+      visited = {} #: Hash[Triple, true]
+      start_state = @states.states.first #: Lrama::State
       raise "BUG: Start state should be just one kernel." if start_state.kernels.count != 1
 
       start = Triple.new(start_state, start_state.kernels.first, Set.new([@states.eof_symbol]))

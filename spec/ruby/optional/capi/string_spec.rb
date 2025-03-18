@@ -449,6 +449,20 @@ describe "C-API String function" do
     end
   end
 
+  describe "rb_str_strlen" do
+    it 'returns 0 as the length of an empty string' do
+      @s.rb_str_strlen('').should == 0
+    end
+
+    it 'returns the number of characters in a string' do
+      @s.rb_str_strlen('hello').should == 5
+    end
+
+    it 'returns the number of characters in a string with multi-byte characters' do
+      @s.rb_str_strlen('こんにちは').should == 5
+    end
+  end
+
   describe "rb_str_split" do
     it "splits strings over a splitter" do
       @s.rb_str_split("Hello,Goodbye").should == ["Hello", "Goodbye"]
@@ -888,16 +902,20 @@ describe "C-API String function" do
     end
 
     it "returns the original String if a transcoding error occurs" do
-      a = [0xEE].pack('C').force_encoding("utf-8")
-      @s.rb_str_conv_enc(a, Encoding::UTF_8, Encoding::EUC_JP).should equal(a)
+      a = [0xEE].pack('C').force_encoding(Encoding::UTF_8)
+      @s.rb_str_conv_enc(a, Encoding::UTF_8, Encoding::EUC_JP).should.equal?(a)
+      a.encoding.should == Encoding::UTF_8
+
+      a = "\x80".b
+      @s.rb_str_conv_enc(a, Encoding::BINARY, Encoding::UTF_8).should.equal?(a)
+      a.encoding.should == Encoding::BINARY
     end
 
     it "returns a transcoded String" do
-      a = "\xE3\x81\x82\xE3\x82\x8C".dup.force_encoding("utf-8")
+      a = "\xE3\x81\x82\xE3\x82\x8C".dup.force_encoding(Encoding::UTF_8)
       result = @s.rb_str_conv_enc(a, Encoding::UTF_8, Encoding::EUC_JP)
-      x = [0xA4, 0xA2, 0xA4, 0xEC].pack('C4').force_encoding('utf-8')
-      result.should == x.force_encoding("euc-jp")
-      result.encoding.should equal(Encoding::EUC_JP)
+      result.should == [0xA4, 0xA2, 0xA4, 0xEC].pack('C4').force_encoding(Encoding::EUC_JP)
+      result.encoding.should == Encoding::EUC_JP
     end
 
     describe "when the String encoding is equal to the destination encoding" do
@@ -1096,7 +1114,7 @@ end
     end
 
     it "tries to convert the passed argument to a string by calling #to_s" do
-      @s.rb_String({"bar" => "foo"}).should == '{"bar"=>"foo"}'
+      @s.rb_String({"bar" => "foo"}).should == {"bar" => "foo"}.to_s
     end
   end
 
@@ -1242,6 +1260,51 @@ end
       it "uses the default encoding if encoding is null" do
         str = "hello"
         val = @s.rb_enc_interned_str_cstr(str, nil)
+        val.encoding.should == Encoding::ASCII_8BIT
+      end
+    end
+  end
+
+  describe "rb_enc_interned_str" do
+    it "returns a frozen string" do
+      str = "hello"
+      val = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+
+      val.should.is_a?(String)
+      val.encoding.should == Encoding::US_ASCII
+      val.should.frozen?
+    end
+
+    it "returns the same frozen string" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result1.should.equal?(result2)
+    end
+
+    it "returns different frozen strings for different encodings" do
+      str = "hello"
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::US_ASCII)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result1.should_not.equal?(result2)
+    end
+
+    it 'returns the same string when using non-ascii characters' do
+      str = 'こんにちは'
+      result1 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result2 = @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8)
+      result1.should.equal?(result2)
+    end
+
+    it "returns the same string as String#-@" do
+      str = "hello"
+      @s.rb_enc_interned_str(str, str.bytesize, Encoding::UTF_8).should.equal?(-str)
+    end
+
+    ruby_bug "#20322", ""..."3.4" do
+      it "uses the default encoding if encoding is null" do
+        str = "hello"
+        val = @s.rb_enc_interned_str(str, str.bytesize, nil)
         val.encoding.should == Encoding::ASCII_8BIT
       end
     end

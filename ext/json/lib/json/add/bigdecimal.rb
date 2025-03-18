@@ -1,4 +1,4 @@
-#frozen_string_literal: false
+# frozen_string_literal: true
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
@@ -35,7 +35,7 @@ class BigDecimal
   def as_json(*)
     {
       JSON.create_id => self.class.name,
-      'b'            => _dump,
+      'b'            => _dump.force_encoding(Encoding::UTF_8),
     }
   end
 

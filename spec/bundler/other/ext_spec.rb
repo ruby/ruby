@@ -34,19 +34,21 @@ RSpec.describe "Bundler::GemHelpers#generic" do
     expect(generic(pl("x86-mswin32"))).to eq(pl("x86-mswin32"))
   end
 
-  it "converts 32-bit mingw platform variants into x86-mingw32" do
-    expect(generic(pl("mingw32"))).to eq(pl("x86-mingw32"))
-    expect(generic(pl("i386-mingw32"))).to eq(pl("x86-mingw32"))
-    expect(generic(pl("x86-mingw32"))).to eq(pl("x86-mingw32"))
+  it "converts 32-bit mingw platform variants into universal-mingw" do
+    expect(generic(pl("i386-mingw32"))).to eq(pl("universal-mingw"))
+    expect(generic(pl("x86-mingw32"))).to eq(pl("universal-mingw"))
   end
 
-  it "converts 64-bit mingw platform variants into x64-mingw32" do
-    expect(generic(pl("x64-mingw32"))).to eq(pl("x64-mingw32"))
-    expect(generic(pl("x86_64-mingw32"))).to eq(pl("x64-mingw32"))
+  it "converts 64-bit mingw platform variants into universal-mingw" do
+    expect(generic(pl("x64-mingw32"))).to eq(pl("universal-mingw"))
   end
 
-  it "converts 64-bit mingw UCRT platform variants into x64-mingw-ucrt" do
-    expect(generic(pl("x64-mingw-ucrt"))).to eq(pl("x64-mingw-ucrt"))
+  it "converts x64 mingw UCRT platform variants into universal-mingw" do
+    expect(generic(pl("x64-mingw-ucrt"))).to eq(pl("universal-mingw"))
+  end
+
+  it "converts aarch64 mingw UCRT platform variants into universal-mingw" do
+    expect(generic(pl("aarch64-mingw-ucrt"))).to eq(pl("universal-mingw"))
   end
 end
 

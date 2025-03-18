@@ -15,7 +15,7 @@ struct rb_builtin_function {
 
 #define RB_BUILTIN_FUNCTION(_i, _name, _fname, _arity) {\
   .name = _i < 0 ? NULL : #_name, \
-  .func_ptr = (void *)_fname, \
+  .func_ptr = (void *)(uintptr_t)_fname, \
   .argc = _arity, \
   .index = _i, \
 }
@@ -104,6 +104,12 @@ rb_vm_lvar(rb_execution_context_t *ec, int index)
 #else
     return rb_vm_lvar_exposed(ec, index);
 #endif
+}
+
+static inline VALUE
+rb_builtin_basic_definition_p(rb_execution_context_t *ec, VALUE klass, VALUE id_sym)
+{
+    return rb_method_basic_definition_p(klass, rb_sym2id(id_sym)) ? Qtrue : Qfalse;
 }
 
 #define LOCAL_PTR(local) local ## __ptr

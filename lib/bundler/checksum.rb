@@ -126,7 +126,7 @@ module Bundler
       end
 
       def removable?
-        type == :lock || type == :gem
+        [:lock, :gem].include?(type)
       end
 
       def ==(other)

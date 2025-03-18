@@ -1,0 +1,9 @@
+# encoding: binary
+
+"\xcd"
+
+:"\xcd"
+
+/#{"\xcd"}/
+
+%W[\xC0]

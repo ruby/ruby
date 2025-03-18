@@ -597,7 +597,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
         rb_io_wait(socket, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
 #endif
 
-        ssize_t n = (ssize_t)BLOCKING_REGION_FD(func, &arg);
+        ssize_t n = (ssize_t)rb_io_blocking_region(fptr, func, &arg);
 
         if (n >= 0) return SSIZET2NUM(n);
 

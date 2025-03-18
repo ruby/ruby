@@ -1682,7 +1682,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     int scopes_count = 0;
     do {
         scopes_count++;
-    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq) && (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP));
+    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq));
     pm_options_scopes_init(&result.options, scopes_count + 1);
 
     // Walk over the scope tree, adding known locals at the correct depths. The
@@ -1690,17 +1690,33 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
+    rb_encoding *encoding = rb_enc_get(src);
+
+#define FORWARDING_POSITIONALS_CHR '*'
+#define FORWARDING_POSITIONALS_STR "*"
+#define FORWARDING_KEYWORDS_CHR ':'
+#define FORWARDING_KEYWORDS_STR ":"
+#define FORWARDING_BLOCK_CHR '&'
+#define FORWARDING_BLOCK_STR "&"
+#define FORWARDING_ALL_CHR '.'
+#define FORWARDING_ALL_STR "."
+
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        VALUE iseq_value = (VALUE)iseq;
         int locals_count = ISEQ_BODY(iseq)->local_table_size;
+
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
         pm_options_scope_init(options_scope, locals_count);
+
+        uint8_t forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             pm_string_t *scope_local = &options_scope->locals[local_index];
             ID local = ISEQ_BODY(iseq)->local_table[local_index];
 
             if (rb_is_local_id(local)) {
-                const char *name = rb_id2name(local);
+                VALUE name_obj = rb_id2str(local);
+                const char *name = RSTRING_PTR(name_obj);
                 size_t length = strlen(name);
 
                 // Explicitly skip numbered parameters. These should not be sent
@@ -1709,11 +1725,45 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                     continue;
                 }
 
-                pm_string_constant_init(scope_local, name, strlen(name));
+                // Check here if this local can be represented validly in the
+                // encoding of the source string. If it _cannot_, then it should
+                // not be added to the constant pool as it would not be able to
+                // be referenced anyway.
+                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
+                    continue;
+                }
+
+                /* We need to duplicate the string because the Ruby string may
+                 * be embedded so compaction could move the string and the pointer
+                 * will change. */
+                char *name_dup = xmalloc(length + 1);
+                strlcpy(name_dup, name, length + 1);
+
+                RB_GC_GUARD(name_obj);
+
+                pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
+            } else if (local == idMULT) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
+                pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
+            } else if (local == idPow) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
+                pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
+            } else if (local == idAnd) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
+                pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
+            } else if (local == idDot3) {
+                forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
+                pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
             }
         }
 
+        pm_options_scope_forwarding_set(options_scope, forwarding);
         iseq = ISEQ_BODY(iseq)->parent_iseq;
+
+        /* We need to GC guard the iseq because the code above malloc memory
+         * which could trigger a GC. Since we only use ISEQ_BODY, the compiler
+         * may optimize out the iseq local variable so we need to GC guard it. */
+        RB_GC_GUARD(iseq_value);
     }
 
     // Add our empty local scope at the very end of the array for our eval
@@ -1750,14 +1800,38 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
         for (int local_index = 0; local_index < locals_count; local_index++) {
             const pm_string_t *scope_local = &options_scope->locals[local_index];
-
             pm_constant_id_t constant_id = 0;
-            if (pm_string_length(scope_local) > 0) {
-                constant_id = pm_constant_pool_insert_constant(
-                        &result.parser.constant_pool, pm_string_source(scope_local),
-                        pm_string_length(scope_local));
-                st_insert(parent_scope->index_lookup_table, (st_data_t)constant_id, (st_data_t)local_index);
+
+            const uint8_t *source = pm_string_source(scope_local);
+            size_t length = pm_string_length(scope_local);
+
+            if (length > 0) {
+                if (length == 1) {
+                    switch (*source) {
+                      case FORWARDING_POSITIONALS_CHR:
+                        constant_id = PM_CONSTANT_MULT;
+                        break;
+                      case FORWARDING_KEYWORDS_CHR:
+                        constant_id = PM_CONSTANT_POW;
+                        break;
+                      case FORWARDING_BLOCK_CHR:
+                        constant_id = PM_CONSTANT_AND;
+                        break;
+                      case FORWARDING_ALL_CHR:
+                        constant_id = PM_CONSTANT_DOT3;
+                        break;
+                      default:
+                        constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                        break;
+                    }
+                }
+                else {
+                    constant_id = pm_constant_pool_insert_constant(&result.parser.constant_pool, source, length);
+                }
+
+                st_insert(parent_scope->index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
             }
+
             pm_constant_id_list_append(&parent_scope->locals, constant_id);
         }
 
@@ -1766,7 +1840,17 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
 
-    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0);
+#undef FORWARDING_POSITIONALS_CHR
+#undef FORWARDING_POSITIONALS_STR
+#undef FORWARDING_KEYWORDS_CHR
+#undef FORWARDING_KEYWORDS_STR
+#undef FORWARDING_BLOCK_CHR
+#undef FORWARDING_BLOCK_STR
+#undef FORWARDING_ALL_CHR
+#undef FORWARDING_ALL_STR
+
+    int error_state;
+    iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, 0, &error_state);
 
     pm_scope_node_t *prev = result.node.previous;
     while (prev) {
@@ -1778,6 +1862,13 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     }
 
     pm_parse_result_free(&result);
+
+    // If there was an error, raise it after memory has been cleaned up
+    if (error_state) {
+        RUBY_ASSERT(iseq == NULL);
+        rb_jump_tag(error_state);
+    }
+
     rb_exec_event_hook_script_compiled(GET_EC(), iseq, src);
 
     return iseq;
@@ -1787,7 +1878,7 @@ static const rb_iseq_t *
 eval_make_iseq(VALUE src, VALUE fname, int line,
                const struct rb_block *base_block)
 {
-    if (*rb_ruby_prism_ptr()) {
+    if (rb_ruby_prism_p()) {
         return pm_eval_make_iseq(src, fname, line, base_block);
     }
     const VALUE parser = rb_parser_new();
@@ -2570,11 +2661,31 @@ local_var_list_update(st_data_t *key, st_data_t *value, st_data_t arg, int exist
     return ST_CONTINUE;
 }
 
+extern int rb_numparam_id_p(ID id);
+
 static void
 local_var_list_add(const struct local_var_list *vars, ID lid)
 {
-    if (lid && rb_is_local_id(lid)) {
-        /* should skip temporary variable */
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip numbered parameters as well */
+    if (rb_numparam_id_p(lid)) return;
+
+    st_data_t idx = 0;	/* tbl->num_entries */
+    rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
+}
+
+static void
+numparam_list_add(const struct local_var_list *vars, ID lid)
+{
+    /* should skip temporary variable */
+    if (!lid) return;
+    if (!rb_is_local_id(lid)) return;
+
+    /* should skip anything but numbered parameters */
+    if (rb_numparam_id_p(lid)) {
         st_data_t idx = 0;	/* tbl->num_entries */
         rb_hash_stlike_update(vars->tbl, ID2SYM(lid), local_var_list_update, idx);
     }
@@ -2700,6 +2811,17 @@ rb_current_realfilepath(void)
         return path;
     }
     return Qnil;
+}
+
+// Assert that an internal function is running and return
+// the imemo object that represents it.
+struct vm_ifunc *
+rb_current_ifunc(void)
+{
+    // Search VM_FRAME_MAGIC_IFUNC to see ifunc imemos put on the iseq field.
+    VALUE ifunc = (VALUE)GET_EC()->cfp->iseq;
+    RUBY_ASSERT_ALWAYS(imemo_type_p(ifunc, imemo_ifunc));
+    return (struct vm_ifunc *)ifunc;
 }
 
 void

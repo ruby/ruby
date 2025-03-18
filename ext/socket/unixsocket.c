@@ -14,15 +14,14 @@
 struct unixsock_arg {
     struct sockaddr_un *sockaddr;
     socklen_t sockaddrlen;
-    int fd;
+    VALUE io;
 };
 
 static VALUE
 unixsock_connect_internal(VALUE a)
 {
     struct unixsock_arg *arg = (struct unixsock_arg *)a;
-    return (VALUE)rsock_connect(arg->fd, (struct sockaddr*)arg->sockaddr,
-                                arg->sockaddrlen, 0, NULL);
+    return (VALUE)rsock_connect(arg->io, (struct sockaddr*)arg->sockaddr, arg->sockaddrlen, 0, RUBY_IO_TIMEOUT_DEFAULT);
 }
 
 static VALUE
@@ -51,7 +50,7 @@ unixsock_path_value(VALUE path)
 }
 
 VALUE
-rsock_init_unixsock(VALUE sock, VALUE path, int server)
+rsock_init_unixsock(VALUE self, VALUE path, int server)
 {
     struct sockaddr_un sockaddr;
     socklen_t sockaddrlen;
@@ -73,43 +72,46 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
         rsock_sys_fail_path("socket(2)", path);
     }
 
+    VALUE io = rsock_init_sock(self, fd);
+    RB_IO_POINTER(io, fptr);
+
     if (server) {
         status = bind(fd, (struct sockaddr*)&sockaddr, sockaddrlen);
     }
     else {
-        int prot;
+        int error_tag;
         struct unixsock_arg arg;
         arg.sockaddr = &sockaddr;
         arg.sockaddrlen = sockaddrlen;
-        arg.fd = fd;
-        status = (int)rb_protect(unixsock_connect_internal, (VALUE)&arg, &prot);
-        if (prot) {
-            close(fd);
-            rb_jump_tag(prot);
+        arg.io = io;
+
+        status = (int)rb_protect(unixsock_connect_internal, (VALUE)&arg, &error_tag);
+
+        if (error_tag) {
+            rb_io_close(io);
+            rb_jump_tag(error_tag);
         }
     }
 
     if (status < 0) {
         int e = errno;
-        close(fd);
+        rb_io_close(io);
         rsock_syserr_fail_path(e, "connect(2)", path);
     }
 
     if (server) {
         if (listen(fd, SOMAXCONN) < 0) {
             int e = errno;
-            close(fd);
+            rb_io_close(io);
             rsock_syserr_fail_path(e, "listen(2)", path);
         }
     }
 
-    rsock_init_sock(sock, fd);
     if (server) {
-        GetOpenFile(sock, fptr);
         fptr->pathv = rb_str_new_frozen(path);
     }
 
-    return sock;
+    return io;
 }
 
 /*
@@ -125,9 +127,9 @@ rsock_init_unixsock(VALUE sock, VALUE path, int server)
  *
  */
 static VALUE
-unix_init(VALUE sock, VALUE path)
+unix_init(VALUE self, VALUE path)
 {
-    return rsock_init_unixsock(sock, path, 0);
+    return rsock_init_unixsock(self, path, 0);
 }
 
 /*
@@ -288,7 +290,7 @@ unix_send_io(VALUE sock, VALUE val)
 #endif
 
     arg.fd = fptr->fd;
-    while ((int)BLOCKING_REGION_FD(sendmsg_blocking, &arg) == -1) {
+    while ((int)rb_io_blocking_region(fptr, sendmsg_blocking, &arg) == -1) {
         if (!rb_io_wait_writable(arg.fd))
             rsock_sys_fail_path("sendmsg(2)", fptr->pathv);
     }
@@ -390,7 +392,7 @@ retry:
 #endif
 
     arg.fd = fptr->fd;
-    while ((int)BLOCKING_REGION_FD(recvmsg_blocking, &arg) == -1) {
+    while ((int)rb_io_blocking_region(fptr, recvmsg_blocking, &arg) == -1) {
         int e = errno;
         if (e == EMSGSIZE && !(gc_reason & GC_REASON_EMSGSIZE)) {
             /* FreeBSD gets here when we're out of FDs */

@@ -163,23 +163,23 @@ VALUE mASN1;
 VALUE eASN1Error;
 
 VALUE cASN1Data;
-VALUE cASN1Primitive;
-VALUE cASN1Constructive;
+static VALUE cASN1Primitive;
+static VALUE cASN1Constructive;
 
-VALUE cASN1EndOfContent;
-VALUE cASN1Boolean;                           /* BOOLEAN           */
-VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
-VALUE cASN1BitString;                         /* BIT STRING        */
-VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
-VALUE cASN1NumericString, cASN1PrintableString;
-VALUE cASN1T61String, cASN1VideotexString;
-VALUE cASN1IA5String, cASN1GraphicString;
-VALUE cASN1ISO64String, cASN1GeneralString;
-VALUE cASN1UniversalString, cASN1BMPString;
-VALUE cASN1Null;                              /* NULL              */
-VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
-VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
-VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
+static VALUE cASN1EndOfContent;
+static VALUE cASN1Boolean;                           /* BOOLEAN           */
+static VALUE cASN1Integer, cASN1Enumerated;          /* INTEGER           */
+static VALUE cASN1BitString;                         /* BIT STRING        */
+static VALUE cASN1OctetString, cASN1UTF8String;      /* STRINGs           */
+static VALUE cASN1NumericString, cASN1PrintableString;
+static VALUE cASN1T61String, cASN1VideotexString;
+static VALUE cASN1IA5String, cASN1GraphicString;
+static VALUE cASN1ISO64String, cASN1GeneralString;
+static VALUE cASN1UniversalString, cASN1BMPString;
+static VALUE cASN1Null;                              /* NULL              */
+static VALUE cASN1ObjectId;                          /* OBJECT IDENTIFIER */
+static VALUE cASN1UTCTime, cASN1GeneralizedTime;     /* TIME              */
+static VALUE cASN1Sequence, cASN1Set;                /* CONSTRUCTIVE      */
 
 static VALUE sym_IMPLICIT, sym_EXPLICIT;
 static VALUE sym_UNIVERSAL, sym_APPLICATION, sym_CONTEXT_SPECIFIC, sym_PRIVATE;
@@ -1167,30 +1167,6 @@ ossl_asn1obj_get_ln(VALUE self)
     return ret;
 }
 
-/*
- *  call-seq:
- *     oid == other_oid => true or false
- *
- *  Returns +true+ if _other_oid_ is the same as _oid_
- */
-static VALUE
-ossl_asn1obj_eq(VALUE self, VALUE other)
-{
-    VALUE valSelf, valOther;
-    int nidSelf, nidOther;
-
-    valSelf = ossl_asn1_get_value(self);
-    valOther = ossl_asn1_get_value(other);
-
-    if ((nidSelf = OBJ_txt2nid(StringValueCStr(valSelf))) == NID_undef)
-	ossl_raise(eASN1Error, "OBJ_txt2nid");
-
-    if ((nidOther = OBJ_txt2nid(StringValueCStr(valOther))) == NID_undef)
-	ossl_raise(eASN1Error, "OBJ_txt2nid");
-
-    return nidSelf == nidOther ? Qtrue : Qfalse;
-}
-
 static VALUE
 asn1obj_get_oid_i(VALUE vobj)
 {
@@ -1233,6 +1209,25 @@ ossl_asn1obj_get_oid(VALUE self)
     if (state)
 	rb_jump_tag(state);
     return str;
+}
+
+/*
+ *  call-seq:
+ *     oid == other_oid => true or false
+ *
+ *  Returns +true+ if _other_oid_ is the same as _oid_.
+ */
+static VALUE
+ossl_asn1obj_eq(VALUE self, VALUE other)
+{
+    VALUE oid1, oid2;
+
+    if (!rb_obj_is_kind_of(other, cASN1ObjectId))
+        return Qfalse;
+
+    oid1 = ossl_asn1obj_get_oid(self);
+    oid2 = ossl_asn1obj_get_oid(other);
+    return rb_str_equal(oid1, oid2);
 }
 
 #define OSSL_ASN1_IMPL_FACTORY_METHOD(klass) \

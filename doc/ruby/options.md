@@ -5,13 +5,13 @@
 Some examples here use command-line option `-e`,
 which passes the Ruby code to be executed on the command line itself:
 
-```sh
+```console
 $ ruby -e 'puts "Hello, World."'
 ```
 
 Some examples here assume that file `desiderata.txt` exists:
 
-```
+```console
 $ cat desiderata.txt
 Go placidly amid the noise and the haste,
 and remember what peace there may be in silence.
@@ -21,7 +21,7 @@ be on good terms with all persons.
 
 ## Options
 
-### `-0`: \Set `$/` (Input Record Separator)
+### `-0`: Set `$/` (Input Record Separator)
 
 Option `-0` defines the input record separator `$/`
 for the invoked Ruby program.
@@ -44,7 +44,7 @@ argument values:
 
 Examples:
 
-```sh
+```console
 $ ruby -0 -e 'p $/'
 "\x00"
 ruby -00 -e 'p $/'
@@ -64,9 +64,9 @@ See also:
 - {Option -a}[rdoc-ref:ruby/options.md@a-3A+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
 - {Option -F}[rdoc-ref:ruby/options.md@F-3A+Set+Input+Field+Separator]:
-  \Set input field separator.
+  Set input field separator.
 - {Option -l}[rdoc-ref:ruby/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
-  \Set output record separator; chop lines.
+  Set output record separator; chop lines.
 - {Option -n}[rdoc-ref:ruby/options.md@n-3A+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 - {Option -p}[rdoc-ref:ruby/options.md@p-3A+-n-2C+with+Printing]:
@@ -77,7 +77,7 @@ See also:
 Option `-a`, when given with either of options `-n` or `-p`,
 splits the string at `$_` into an array of strings at `$F`:
 
-```sh
+```console
 $ ruby -an -e 'p $F' desiderata.txt
 ["Go", "placidly", "amid", "the", "noise", "and", "the", "haste,"]
 ["and", "remember", "what", "peace", "there", "may", "be", "in", "silence."]
@@ -92,11 +92,11 @@ and the default field separator  is `$;`.
 See also:
 
 - {Option -0}[rdoc-ref:ruby/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
-  \Set `$/` (input record separator).
+  Set `$/` (input record separator).
 - {Option -F}[rdoc-ref:ruby/options.md@F-3A+Set+Input+Field+Separator]:
-  \Set input field separator.
+  Set input field separator.
 - {Option -l}[rdoc-ref:ruby/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
-  \Set output record separator; chop lines.
+  Set output record separator; chop lines.
 - {Option -n}[rdoc-ref:ruby/options.md@n-3A+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 - {Option -p}[rdoc-ref:ruby/options.md@p-3A+-n-2C+with+Printing]:
@@ -107,20 +107,20 @@ See also:
 Option `-c` specifies that the specified Ruby program
 should be checked for syntax, but not actually executed:
 
-```
+```console
 $ ruby -e 'puts "Foo"'
 Foo
 $ ruby -c -e 'puts "Foo"'
 Syntax OK
 ```
 
-### `-C`: \Set Working Directory
+### `-C`: Set Working Directory
 
 The argument to option `-C` specifies a working directory
 for the invoked Ruby program;
 does not change the working directory for the current process:
 
-```sh
+```console
 $ basename `pwd`
 ruby
 $ ruby -C lib -e 'puts File.basename(Dir.pwd)'
@@ -131,7 +131,7 @@ ruby
 
 Whitespace between the option and its argument may be omitted.
 
-### `-d`: \Set `$DEBUG` to `true`
+### `-d`: Set `$DEBUG` to `true`
 
 Some code in (or called by) the Ruby program may include statements or blocks
 conditioned by the global variable `$DEBUG` (e.g., `if $DEBUG`);
@@ -140,7 +140,7 @@ these commonly write to `$stdout` or `$stderr`.
 The default value for `$DEBUG` is `false`;
 option `-d` sets it to `true`:
 
-```sh
+```console
 $ ruby -e 'p $DEBUG'
 false
 $ ruby -d -e 'p $DEBUG'
@@ -154,7 +154,7 @@ Option `--debug` is an alias for option `-d`.
 Option `-e` requires an argument, which is Ruby code to be executed;
 the option may be given more than once:
 
-```
+```console
 $ ruby -e 'puts "Foo"' -e 'puts "Bar"'
 Foo
 Bar
@@ -165,12 +165,12 @@ Whitespace between the option and its argument may be omitted.
 The command may include other options,
 but should not include arguments (which, if given, are ignored).
 
-### `-E`: \Set Default Encodings
+### `-E`: Set Default Encodings
 
 Option `-E` requires an argument, which specifies either the default external encoding,
 or both the default external and internal encodings for the invoked Ruby program:
 
-```
+```console
 # No option -E.
 $ ruby -e 'p [Encoding::default_external, Encoding::default_internal]'
 [#<Encoding:UTF-8>, nil]
@@ -187,18 +187,18 @@ Whitespace between the option and its argument may be omitted.
 See also:
 
 - {Option --external-encoding}[options_md.html#label--external-encoding-3A+Set+Default+External+Encoding]:
-  \Set default external encoding.
+  Set default external encoding.
 - {Option --internal-encoding}[options_md.html#label--internal-encoding-3A+Set+Default+Internal+Encoding]:
-  \Set default internal encoding.
+  Set default internal encoding.
 
 Option `--encoding` is an alias for option `-E`.
 
-### `-F`: \Set Input Field Separator
+### `-F`: Set Input Field Separator
 
 Option `-F`, when given with option `-a`,
 specifies that its argument is to be the input field separator to be used for splitting:
 
-```sh
+```console
 $ ruby -an -Fs -e 'p $F' desiderata.txt
 ["Go placidly amid the noi", "e and the ha", "te,\n"]
 ["and remember what peace there may be in ", "ilence.\n"]
@@ -208,7 +208,7 @@ $ ruby -an -Fs -e 'p $F' desiderata.txt
 
 The argument may be a regular expression:
 
-```
+```console
 $ ruby -an -F'[.,]\s*' -e 'p $F' desiderata.txt
 ["Go placidly amid the noise and the haste"]
 ["and remember what peace there may be in silence"]
@@ -222,11 +222,11 @@ The argument must immediately follow the option
 See also:
 
 - {Option -0}[rdoc-ref:ruby/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
-  \Set `$/` (input record separator).
+  Set `$/` (input record separator).
 - {Option -a}[rdoc-ref:ruby/options.md@a-3A+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
 - {Option -l}[rdoc-ref:ruby/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
-  \Set output record separator; chop lines.
+  Set output record separator; chop lines.
 - {Option -n}[rdoc-ref:ruby/options.md@n-3A+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 - {Option -p}[rdoc-ref:ruby/options.md@p-3A+-n-2C+with+Printing]:
@@ -242,12 +242,12 @@ Arguments and additional options are ignored.
 
 For a longer help message, use option `--help`.
 
-### `-i`: \Set \ARGF In-Place Mode
+### `-i`: Set \ARGF In-Place Mode
 
 Option `-i` sets the \ARGF in-place mode for the invoked Ruby program;
 see ARGF#inplace_mode=:
 
-```
+```console
 $ ruby -e 'p ARGF.inplace_mode'
 nil
 $ ruby -i -e 'p ARGF.inplace_mode'
@@ -262,7 +262,7 @@ The argument to option `-I` specifies a directory
 to be added to the array in global variable `$LOAD_PATH`;
 the option may be given more than once:
 
-```sh
+```console
 $ pushd /tmp
 $ ruby -e 'p $LOAD_PATH.size'
 8
@@ -275,7 +275,7 @@ $ popd
 
 Whitespace between the option and its argument may be omitted.
 
-### `-l`: \Set Output Record Separator; Chop Lines
+### `-l`: Set Output Record Separator; Chop Lines
 
 Option `-l`, when given with option `-n` or `-p`,
 modifies line-ending processing by:
@@ -287,7 +287,7 @@ modifies line-ending processing by:
 
 Without option `-l` (unchopped):
 
-```sh
+```console
 $ ruby -n -e 'p $_' desiderata.txt
 "Go placidly amid the noise and the haste,\n"
 "and remember what peace there may be in silence.\n"
@@ -297,7 +297,7 @@ $ ruby -n -e 'p $_' desiderata.txt
 
 With option `-l' (chopped):
 
-```sh
+```console
 $ ruby -ln -e 'p $_' desiderata.txt
 "Go placidly amid the noise and the haste,"
 "and remember what peace there may be in silence."
@@ -308,11 +308,11 @@ $ ruby -ln -e 'p $_' desiderata.txt
 See also:
 
 - {Option -0}[rdoc-ref:ruby/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
-  \Set `$/` (input record separator).
+  Set `$/` (input record separator).
 - {Option -a}[rdoc-ref:ruby/options.md@a-3A+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
 - {Option -F}[rdoc-ref:ruby/options.md@F-3A+Set+Input+Field+Separator]:
-  \Set input field separator.
+  Set input field separator.
 - {Option -n}[rdoc-ref:ruby/options.md@n-3A+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 - {Option -p}[rdoc-ref:ruby/options.md@p-3A+-n-2C+with+Printing]:
@@ -320,9 +320,9 @@ See also:
 
 ### `-n`: Run Program in `gets` Loop
 
-Option `-n` runs your program in a Kernel#gets loop:
+Option `-n` runs your program in a `Kernel#gets` loop:
 
-```
+```ruby
 while gets
   # Your Ruby code.
 end
@@ -331,7 +331,7 @@ end
 Note that `gets` reads the next line and sets global variable `$_`
 to the last read line:
 
-```sh
+```console
 $ ruby -n -e 'puts $_' desiderata.txt
 Go placidly amid the noise and the haste,
 and remember what peace there may be in silence.
@@ -342,13 +342,13 @@ be on good terms with all persons.
 See also:
 
 - {Option -0}[rdoc-ref:ruby/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
-  \Set `$/` (input record separator).
+  Set `$/` (input record separator).
 - {Option -a}[rdoc-ref:ruby/options.md@a-3A+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
 - {Option -F}[rdoc-ref:ruby/options.md@F-3A+Set+Input+Field+Separator]:
-  \Set input field separator.
+  Set input field separator.
 - {Option -l}[rdoc-ref:ruby/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
-  \Set output record separator; chop lines.
+  Set output record separator; chop lines.
 - {Option -p}[rdoc-ref:ruby/options.md@p-3A+-n-2C+with+Printing]:
   `-n`, with printing.
 
@@ -356,7 +356,7 @@ See also:
 
 Option `-p` is like option `-n`, but also prints each line:
 
-```sh
+```console
 $ ruby -p -e 'puts $_.size' desiderata.txt
 42
 Go placidly amid the noise and the haste,
@@ -371,13 +371,13 @@ be on good terms with all persons.
 See also:
 
 - {Option -0}[rdoc-ref:ruby/options.md@0-3A+Set+-24-2F+-28Input+Record+Separator-29]:
-  \Set `$/` (input record separator).
+  Set `$/` (input record separator).
 - {Option -a}[rdoc-ref:ruby/options.md@a-3A+Split+Input+Lines+into+Fields]:
   Split input lines into fields.
 - {Option -F}[rdoc-ref:ruby/options.md@F-3A+Set+Input+Field+Separator]:
-  \Set input field separator.
+  Set input field separator.
 - {Option -l}[rdoc-ref:ruby/options.md@l-3A+Set+Output+Record+Separator-3B+Chop+Lines]:
-  \Set output record separator; chop lines.
+  Set output record separator; chop lines.
 - {Option -n}[rdoc-ref:ruby/options.md@n-3A+Run+Program+in+gets+Loop]:
   Run program in `gets` loop.
 
@@ -387,7 +387,7 @@ The argument to option `-r` specifies a library to be required
 before executing the Ruby program;
 the option may be given more than once:
 
-```sh
+```console
 $ ruby -e 'p defined?(JSON); p defined?(CSV)'
 nil
 nil
@@ -413,7 +413,7 @@ in the invoked Ruby program:
 
 More than one custom option may be given:
 
-```
+```console
 $ cat t.rb
 p [$foo, $bar]
 $ ruby t.rb
@@ -439,18 +439,18 @@ the program is executed in the shell's current working directory
 
 This example uses adds path `'tmp/'` to the `PATH` environment variable:
 
-```sh
+```console
 $ export PATH=/tmp:$PATH
 $ echo "puts File.basename(Dir.pwd)" > /tmp/t.rb
 $ ruby -S t.rb
 ruby
 ```
 
-### `-v`: Print Version; \Set `$VERBOSE`
+### `-v`: Print Version; Set `$VERBOSE`
 
 Options `-v` prints the Ruby version and sets global variable `$VERBOSE`:
 
-```
+```console
 $ ruby -e 'p $VERBOSE'
 false
 $ ruby -v -e 'p $VERBOSE'
@@ -462,7 +462,7 @@ true
 
 Option `-w` (lowercase letter) is equivalent to option `-W1` (uppercase letter).
 
-### `-W`: \Set \Warning Policy
+### `-W`: Set \Warning Policy
 
 Any Ruby code can create a <i>warning message</i> by calling method Kernel#warn;
 methods in the Ruby core and standard libraries can also create warning messages.
@@ -482,7 +482,7 @@ by setting the initial value of global variable `$-W`:
 The value of `$-W`, in turn, determines which warning messages (if any)
 are to be printed to `$stdout` (see Kernel#warn):
 
-```sh
+```console
 $ ruby -W1 -e 'p $foo'
 nil
 $ ruby -W2 -e 'p $foo'
@@ -493,14 +493,15 @@ nil
 Ruby code may also define warnings for certain categories;
 these are the default settings for the defined categories:
 
-```
+```rb
 Warning[:experimental] # => true
 Warning[:deprecated]   # => false
 Warning[:performance]  # => false
 ```
 
 They may also be set:
-```
+
+```rb
 Warning[:experimental] = false
 Warning[:deprecated]   = true
 Warning[:performance]  = true
@@ -508,7 +509,7 @@ Warning[:performance]  = true
 
 You can suppress a category by prefixing `no-` to the category name:
 
-```
+```console
 $ ruby -W:no-experimental -e 'p IO::Buffer.new'
 #<IO::Buffer>
 ```
@@ -529,7 +530,7 @@ The ruby code:
 
 Example:
 
-```sh
+```console
 $ cat t.txt
 Leading garbage.
 #!ruby
@@ -545,7 +546,7 @@ The optional argument specifies the directory where the text file
 is to be found;
 the Ruby code is executed in that directory:
 
-```sh
+```console
 $ cp t.txt /tmp/
 $ ruby -x/tmp t.txt
 tmp
@@ -556,7 +557,7 @@ $
 If an argument is given, it must immediately follow the option
 (no intervening whitespace or equal-sign character `'='`).
 
-### `--backtrace-limit`: \Set Backtrace Limit
+### `--backtrace-limit`: Set Backtrace Limit
 
 Option `--backtrace-limit` sets a limit on the number of entries
 to be displayed in a backtrace.
@@ -567,7 +568,7 @@ See Thread::Backtrace.limit.
 
 Option `--copyright` prints a copyright message:
 
-```sh
+```console
 $ ruby --copyright
 ruby - Copyright (C) 1993-2024 Yukihiro Matsumoto
 ```
@@ -635,14 +636,14 @@ see {option --disable}[options_md.html#label--disable-3A+Disable+Features].
 Option `--encoding` is an alias for
 {option -E}[rdoc-ref:ruby/options.md@E-3A+Set+Default+Encodings].
 
-### `--external-encoding`: \Set Default External \Encoding
+### `--external-encoding`: Set Default External \Encoding
 
 Option `--external-encoding`
 sets the default external encoding for the invoked Ruby program;
 for values of +encoding+,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
-```sh
+```console
 $ ruby -e 'puts Encoding::default_external'
 UTF-8
 $ ruby --external-encoding=cesu-8 -e 'puts Encoding::default_external'
@@ -657,21 +658,21 @@ Arguments and additional options are ignored.
 
 For a shorter help message, use option `-h`.
 
-### `--internal-encoding`: \Set Default Internal \Encoding
+### `--internal-encoding`: Set Default Internal \Encoding
 
 Option `--internal-encoding`
 sets the default internal encoding for the invoked Ruby program;
 for values of +encoding+,
 see {Encoding: Names and Aliases}[rdoc-ref:encodings.rdoc@Names+and+Aliases].
 
-```sh
+```console
 $ ruby -e 'puts Encoding::default_internal.nil?'
 true
 $ ruby --internal-encoding=cesu-8 -e 'puts Encoding::default_internal'
 CESU-8
 ```
 
-### `--verbose`: \Set `$VERBOSE`
+### `--verbose`: Set `$VERBOSE`
 
 Option `--verbose` sets global variable `$VERBOSE` to `true`
 and disables input from `$stdin`.

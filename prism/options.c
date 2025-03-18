@@ -84,6 +84,11 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4", 3) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5", 3) == 0) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
@@ -98,6 +103,11 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         }
 
         if (strncmp(version, "3.4.", 4) == 0 && is_number(version + 4, length - 4)) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_4;
+            return true;
+        }
+
+        if (strncmp(version, "3.5.", 4) == 0 && is_number(version + 4, length - 4)) {
             options->version = PM_OPTIONS_VERSION_LATEST;
             return true;
         }
@@ -127,6 +137,14 @@ pm_options_main_script_set(pm_options_t *options, bool main_script) {
 PRISM_EXPORTED_FUNCTION void
 pm_options_partial_script_set(pm_options_t *options, bool partial_script) {
     options->partial_script = partial_script;
+}
+
+/**
+ * Set the freeze option on the given options struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_freeze_set(pm_options_t *options, bool freeze) {
+    options->freeze = freeze;
 }
 
 // For some reason, GCC analyzer thinks we're leaking allocated scopes and
@@ -163,6 +181,7 @@ PRISM_EXPORTED_FUNCTION bool
 pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
     scope->locals_count = locals_count;
     scope->locals = xcalloc(locals_count, sizeof(pm_string_t));
+    scope->forwarding = PM_OPTIONS_SCOPE_FORWARDING_NONE;
     return scope->locals != NULL;
 }
 
@@ -172,6 +191,14 @@ pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count) {
 PRISM_EXPORTED_FUNCTION const pm_string_t *
 pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index) {
     return &scope->locals[index];
+}
+
+/**
+ * Set the forwarding option on the given scope struct.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding) {
+    scope->forwarding = forwarding;
 }
 
 /**
@@ -264,6 +291,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->encoding_locked = ((uint8_t) *data++) > 0;
     options->main_script = ((uint8_t) *data++) > 0;
     options->partial_script = ((uint8_t) *data++) > 0;
+    options->freeze = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;
@@ -280,6 +308,9 @@ pm_options_read(pm_options_t *options, const char *data) {
                 pm_options_free(options);
                 return;
             }
+
+            uint8_t forwarding = (uint8_t) *data++;
+            pm_options_scope_forwarding_set(&options->scopes[scope_index], forwarding);
 
             for (size_t local_index = 0; local_index < locals_count; local_index++) {
                 uint32_t local_length = pm_options_read_u32(data);

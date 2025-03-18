@@ -25,6 +25,6 @@ describe "PP.pp" do
     hash = { 'key' => 42 }
     -> {
       PP.pp hash
-    }.should output('{"key"=>42}' + "\n")
+    }.should output("#{hash.inspect}\n")
   end
 end

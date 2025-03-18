@@ -3,11 +3,7 @@
 require 'socket'
 require_relative '../../timeout/lib/timeout'
 require 'io/wait'
-
-begin
-  require_relative '../../../vendored_securerandom'
-rescue LoadError
-end
+require_relative '../../../vendored_securerandom'
 
 # Gem::Resolv is a thread-aware DNS resolver library written in Ruby.  Gem::Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -37,7 +33,7 @@ end
 
 class Gem::Resolv
 
-  VERSION = "0.4.0"
+  VERSION = "0.6.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -83,9 +79,22 @@ class Gem::Resolv
 
   ##
   # Creates a new Gem::Resolv using +resolvers+.
+  #
+  # If +resolvers+ is not given, a hash, or +nil+, uses a Hosts resolver and
+  # and a DNS resolver.  If +resolvers+ is a hash, uses the hash as
+  # configuration for the DNS resolver.
 
-  def initialize(resolvers=nil, use_ipv6: nil)
-    @resolvers = resolvers || [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(use_ipv6: use_ipv6))]
+  def initialize(resolvers=(arg_not_set = true; nil), use_ipv6: (keyword_not_set = true; nil))
+    if !keyword_not_set && !arg_not_set
+      warn "Support for separate use_ipv6 keyword is deprecated, as it is ignored if an argument is provided. Do not provide a positional argument if using the use_ipv6 keyword argument.", uplevel: 1
+    end
+
+    @resolvers = case resolvers
+    when Hash, nil
+      [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(resolvers || {}))]
+    else
+      resolvers
+    end
   end
 
   ##
@@ -396,13 +405,15 @@ class Gem::Resolv
     # be a Gem::Resolv::IPv4 or Gem::Resolv::IPv6
 
     def each_address(name)
-      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
       if use_ipv6?
         each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
       end
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
     end
 
     def use_ipv6? # :nodoc:
+      @config.lazy_initialize unless @config.instance_variable_get(:@initialized)
+
       use_ipv6 = @config.use_ipv6?
       unless use_ipv6.nil?
         return use_ipv6
@@ -513,35 +524,40 @@ class Gem::Resolv
 
     def fetch_resource(name, typeclass)
       lazy_initialize
-      begin
-        requester = make_udp_requester
+      truncated = {}
+      requesters = {}
+      udp_requester = begin
+        make_udp_requester
       rescue Errno::EACCES
         # fall back to TCP
       end
       senders = {}
+
       begin
-        @config.resolv(name) {|candidate, tout, nameserver, port|
-          requester ||= make_tcp_requester(nameserver, port)
+        @config.resolv(name) do |candidate, tout, nameserver, port|
           msg = Message.new
           msg.rd = 1
           msg.add_question(candidate, typeclass)
-          unless sender = senders[[candidate, nameserver, port]]
+
+          requester = requesters.fetch([nameserver, port]) do
+            if !truncated[candidate] && udp_requester
+              udp_requester
+            else
+              requesters[[nameserver, port]] = make_tcp_requester(nameserver, port)
+            end
+          end
+
+          unless sender = senders[[candidate, requester, nameserver, port]]
             sender = requester.sender(msg, candidate, nameserver, port)
             next if !sender
-            senders[[candidate, nameserver, port]] = sender
+            senders[[candidate, requester, nameserver, port]] = sender
           end
           reply, reply_name = requester.request(sender, tout)
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
-              requester.close
               # Retry via TCP:
-              requester = make_tcp_requester(nameserver, port)
-              senders = {}
-              # This will use TCP for all remaining candidates (assuming the
-              # current candidate does not already respond successfully via
-              # TCP).  This makes sense because we already know the full
-              # response will not fit in an untruncated UDP packet.
+              truncated[candidate] = true
               redo
             else
               yield(reply, reply_name)
@@ -552,9 +568,10 @@ class Gem::Resolv
           else
             raise Config::OtherResolvError.new(reply_name.to_s)
           end
-        }
+        end
       ensure
-        requester&.close
+        udp_requester&.close
+        requesters.each_value { |requester| requester&.close }
       end
     end
 
@@ -569,6 +586,11 @@ class Gem::Resolv
 
     def make_tcp_requester(host, port) # :nodoc:
       return Requester::TCP.new(host, port)
+    rescue Errno::ECONNREFUSED
+      # Treat a refused TCP connection attempt to a nameserver like a timeout,
+      # as Gem::Resolv::DNS::Config#resolv considers ResolvTimeout exceptions as a
+      # hint to try the next nameserver:
+      raise ResolvTimeout
     end
 
     def extract_resources(msg, name, typeclass) # :nodoc:
@@ -602,16 +624,10 @@ class Gem::Resolv
       }
     end
 
-    if defined? Gem::SecureRandom
-      def self.random(arg) # :nodoc:
-        begin
-          Gem::SecureRandom.random_number(arg)
-        rescue NotImplementedError
-          rand(arg)
-        end
-      end
-    else
-      def self.random(arg) # :nodoc:
+    def self.random(arg) # :nodoc:
+      begin
+        Gem::SecureRandom.random_number(arg)
+      rescue NotImplementedError
         rand(arg)
       end
     end
@@ -1800,7 +1816,6 @@ class Gem::Resolv
       end
     end
 
-
     ##
     # Base class for SvcParam. [RFC9460]
 
@@ -2498,7 +2513,6 @@ class Gem::Resolv
         # in centimeters as an unsigned 32bit integer
 
         attr_reader :altitude
-
 
         def encode_rdata(msg) # :nodoc:
           msg.put_bytes(@version)
@@ -3439,4 +3453,3 @@ class Gem::Resolv
   AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 
 end
-

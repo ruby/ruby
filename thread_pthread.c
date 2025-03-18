@@ -13,7 +13,6 @@
 
 #include "internal/gc.h"
 #include "internal/sanitizers.h"
-#include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -316,13 +315,6 @@ static void threadptr_trap_interrupt(rb_thread_t *);
 #else
 #define native_thread_yield() ((void)0)
 #endif
-
-/* 100ms.  10ms is too small for user level thread scheduling
- * on recent Linux (tested on 2.6.35)
- */
-#define TIME_QUANTUM_MSEC (100)
-#define TIME_QUANTUM_USEC (TIME_QUANTUM_MSEC * 1000)
-#define TIME_QUANTUM_NSEC (TIME_QUANTUM_USEC * 1000)
 
 static void native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
 static void native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
@@ -845,7 +837,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
     ASSERT_thread_sched_locked(sched, th);
-    VM_ASSERT(th == GET_THREAD());
+    VM_ASSERT(th == rb_ec_thread_ptr(rb_current_ec_noinline()));
 
     if (th != sched->running) {
         // already deleted from running threads
@@ -900,12 +892,12 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                     thread_sched_set_lock_owner(sched, th);
                 }
 
-                VM_ASSERT(GET_EC() == th->ec);
+                VM_ASSERT(rb_current_ec_noinline() == th->ec);
             }
         }
 
         VM_ASSERT(th->nt != NULL);
-        VM_ASSERT(GET_EC() == th->ec);
+        VM_ASSERT(rb_current_ec_noinline() == th->ec);
         VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
 
         // add th to running threads
@@ -1320,7 +1312,7 @@ void
 rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf)
 {
     // ractor lock of cr is acquired
-    // r is sleeping statuss
+    // r is sleeping status
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
     cr->sync.wait.waiting_thread = th; // TODO: multi-thread
@@ -1933,62 +1925,6 @@ space_size(size_t stack_size)
     }
 }
 
-#ifdef __linux__
-static __attribute__((noinline)) void
-reserve_stack(volatile char *limit, size_t size)
-{
-# ifdef C_ALLOCA
-#   error needs alloca()
-# endif
-    struct rlimit rl;
-    volatile char buf[0x100];
-    enum {stack_check_margin = 0x1000}; /* for -fstack-check */
-
-    STACK_GROW_DIR_DETECTION;
-
-    if (!getrlimit(RLIMIT_STACK, &rl) && rl.rlim_cur == RLIM_INFINITY)
-        return;
-
-    if (size < stack_check_margin) return;
-    size -= stack_check_margin;
-
-    size -= sizeof(buf); /* margin */
-    if (IS_STACK_DIR_UPPER()) {
-        const volatile char *end = buf + sizeof(buf);
-        limit += size;
-        if (limit > end) {
-            /* |<-bottom (=limit(a))                                     top->|
-             * | .. |<-buf 256B |<-end                          | stack check |
-             * |  256B  |              =size=                   | margin (4KB)|
-             * |              =size=         limit(b)->|  256B  |             |
-             * |                |       alloca(sz)     |        |             |
-             * | .. |<-buf      |<-limit(c)    [sz-1]->0>       |             |
-             */
-            size_t sz = limit - end;
-            limit = alloca(sz);
-            limit[sz-1] = 0;
-        }
-    }
-    else {
-        limit -= size;
-        if (buf > limit) {
-            /* |<-top (=limit(a))                                     bottom->|
-             * | .. | 256B buf->|                               | stack check |
-             * |  256B  |              =size=                   | margin (4KB)|
-             * |              =size=         limit(b)->|  256B  |             |
-             * |                |       alloca(sz)     |        |             |
-             * | .. |      buf->|           limit(c)-><0>       |             |
-             */
-            size_t sz = buf - limit;
-            limit = alloca(sz);
-            limit[0] = 0;
-        }
-    }
-}
-#else
-# define reserve_stack(limit, size) ((void)(limit), (void)(size))
-#endif
-
 static void
 native_thread_init_main_thread_stack(void *addr)
 {
@@ -2005,7 +1941,6 @@ native_thread_init_main_thread_stack(void *addr)
         if (get_main_stack(&stackaddr, &size) == 0) {
             native_main_thread.stack_maxsize = size;
             native_main_thread.stack_start = stackaddr;
-            reserve_stack(stackaddr, size);
             goto bound_check;
         }
     }
@@ -2215,10 +2150,13 @@ native_thread_create_dedicated(rb_thread_t *th)
     rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
     th->sched.context_stack = vm_stack;
 
-    // setup
-    thread_sched_to_ready(TH_SCHED(th), th);
 
-    return native_thread_create0(th->nt);
+    int err = native_thread_create0(th->nt);
+    if (!err) {
+        // setup
+        thread_sched_to_ready(TH_SCHED(th), th);
+    }
+    return err;
 }
 
 static void

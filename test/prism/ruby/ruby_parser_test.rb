@@ -26,6 +26,7 @@ Sexp.prepend(
 module Prism
   class RubyParserTest < TestCase
     todos = [
+      "encoding_euc_jp.txt",
       "newline_terminated.txt",
       "regex_char_width.txt",
       "seattlerb/bug169.txt",
@@ -34,10 +35,14 @@ module Prism
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
       "seattlerb/regexp_esc_C_slash.txt",
       "seattlerb/str_lit_concat_bad_encodings.txt",
+      "strings.txt",
       "unescaping.txt",
       "unparser/corpus/literal/kwbegin.txt",
       "unparser/corpus/literal/send.txt",
       "whitequark/masgn_const.txt",
+      "whitequark/pattern_matching_constants.txt",
+      "whitequark/pattern_matching_implicit_array_match.txt",
+      "whitequark/pattern_matching_single_match.txt",
       "whitequark/ruby_bug_12402.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/space_args_block.txt"
@@ -46,7 +51,9 @@ module Prism
     # https://github.com/seattlerb/ruby_parser/issues/344
     failures = [
       "alias.txt",
+      "dsym_str.txt",
       "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "method_calls.txt",
       "methods.txt",
@@ -64,6 +71,7 @@ module Prism
       "seattlerb/heredoc_with_only_carriage_returns.txt",
       "spanning_heredoc_newlines.txt",
       "spanning_heredoc.txt",
+      "symbols.txt",
       "tilde_heredocs.txt",
       "unparser/corpus/literal/literal.txt",
       "while.txt",
@@ -80,6 +88,8 @@ module Prism
       "whitequark/pattern_matching_single_line_allowed_omission_of_parentheses.txt",
       "whitequark/pattern_matching_single_line.txt",
       "whitequark/ruby_bug_11989.txt",
+      "whitequark/ruby_bug_18878.txt",
+      "whitequark/ruby_bug_19281.txt",
       "whitequark/slash_newline_in_heredocs.txt"
     ]
 

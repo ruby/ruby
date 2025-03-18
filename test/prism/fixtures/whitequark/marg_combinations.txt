@@ -1,0 +1,19 @@
+def f (((a))); end
+
+def f ((*)); end
+
+def f ((*, p)); end
+
+def f ((*r)); end
+
+def f ((*r, p)); end
+
+def f ((a, *)); end
+
+def f ((a, *, p)); end
+
+def f ((a, *r)); end
+
+def f ((a, *r, p)); end
+
+def f ((a, a1)); end

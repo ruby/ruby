@@ -46,10 +46,11 @@ jobs:
 
       - name: Download previous gems list
         run: |
-          data=bundled_gems.json
           mkdir -p .downloaded-cache
-          ln -s .downloaded-cache/$data .
-          curl -O -R -z ./$data https://stdgems.org/$data
+          for data in bundled_gems.json default_gems.json; do
+            ln -s .downloaded-cache/$data .
+            curl -O -R -z ./$data https://stdgems.org/$data
+          done
 
       - name: Update bundled gems list
         id: bundled_gems

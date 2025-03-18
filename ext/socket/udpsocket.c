@@ -45,22 +45,18 @@ udp_init(int argc, VALUE *argv, VALUE sock)
 
 struct udp_arg
 {
+    VALUE io;
     struct rb_addrinfo *res;
-    rb_io_t *fptr;
 };
 
 static VALUE
 udp_connect_internal(VALUE v)
 {
     struct udp_arg *arg = (void *)v;
-    rb_io_t *fptr;
-    int fd;
     struct addrinfo *res;
 
-    rb_io_check_closed(fptr = arg->fptr);
-    fd = fptr->fd;
     for (res = arg->res->ai; res; res = res->ai_next) {
-        if (rsock_connect(fd, res->ai_addr, res->ai_addrlen, 0, NULL) >= 0) {
+        if (rsock_connect(arg->io, res->ai_addr, res->ai_addrlen, 0, RUBY_IO_TIMEOUT_DEFAULT) >= 0) {
             return Qtrue;
         }
     }
@@ -84,16 +80,17 @@ udp_connect_internal(VALUE v)
  *
  */
 static VALUE
-udp_connect(VALUE sock, VALUE host, VALUE port)
+udp_connect(VALUE self, VALUE host, VALUE port)
 {
-    struct udp_arg arg;
-    VALUE ret;
+    struct udp_arg arg = {.io = self};
 
-    GetOpenFile(sock, arg.fptr);
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
-    ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
-                    rsock_freeaddrinfo, (VALUE)arg.res);
-    if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0);
+
+    int result = (int)rb_ensure(udp_connect_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
+    if (!result) {
+        rsock_sys_fail_host_port("connect(2)", host, port);
+    }
+
     return INT2FIX(0);
 }
 
@@ -101,14 +98,13 @@ static VALUE
 udp_bind_internal(VALUE v)
 {
     struct udp_arg *arg = (void *)v;
-    rb_io_t *fptr;
-    int fd;
     struct addrinfo *res;
 
-    rb_io_check_closed(fptr = arg->fptr);
-    fd = fptr->fd;
+    rb_io_t *fptr;
+    RB_IO_POINTER(arg->io, fptr);
+
     for (res = arg->res->ai; res; res = res->ai_next) {
-        if (bind(fd, res->ai_addr, res->ai_addrlen) < 0) {
+        if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
             continue;
         }
         return Qtrue;
@@ -129,22 +125,23 @@ udp_bind_internal(VALUE v)
  *
  */
 static VALUE
-udp_bind(VALUE sock, VALUE host, VALUE port)
+udp_bind(VALUE self, VALUE host, VALUE port)
 {
-    struct udp_arg arg;
-    VALUE ret;
+    struct udp_arg arg = {.io = self};
 
-    GetOpenFile(sock, arg.fptr);
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
-    ret = rb_ensure(udp_bind_internal, (VALUE)&arg,
-                    rsock_freeaddrinfo, (VALUE)arg.res);
-    if (!ret) rsock_sys_fail_host_port("bind(2)", host, port);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(rb_io_descriptor(self)), SOCK_DGRAM, 0);
+
+    VALUE result = rb_ensure(udp_bind_internal, (VALUE)&arg, rsock_freeaddrinfo, (VALUE)arg.res);
+    if (!result) {
+        rsock_sys_fail_host_port("bind(2)", host, port);
+    }
+
     return INT2FIX(0);
 }
 
 struct udp_send_arg {
-    struct rb_addrinfo *res;
     rb_io_t *fptr;
+    struct rb_addrinfo *res;
     struct rsock_send_arg sarg;
 };
 
@@ -166,7 +163,7 @@ udp_send_internal(VALUE v)
         rb_io_wait(fptr->self, RB_INT2NUM(RUBY_IO_WRITABLE), Qnil);
 #endif
 
-        ssize_t n = (ssize_t)BLOCKING_REGION_FD(rsock_sendto_blocking, &arg->sarg);
+        ssize_t n = (ssize_t)rb_io_blocking_region(fptr, rsock_sendto_blocking, &arg->sarg);
 
         if (n >= 0) return RB_SSIZE2NUM(n);
 

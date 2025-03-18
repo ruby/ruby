@@ -170,17 +170,56 @@ class Gem::SpecFetcher
   # alternative gem names.
 
   def suggest_gems_from_name(gem_name, type = :latest, num_results = 5)
-    gem_name        = gem_name.downcase.tr("_-", "")
-    max             = gem_name.size / 2
-    names           = available_specs(type).first.values.flatten(1)
+    gem_name = gem_name.downcase.tr("_-", "")
 
-    matches = names.map do |n|
+    # All results for 3-character-or-shorter (minus hyphens/underscores) gem
+    # names get rejected, so we just return an empty array immediately instead.
+    return [] if gem_name.length <= 3
+
+    max   = gem_name.size / 2
+    names = available_specs(type).first.values.flatten(1)
+
+    min_length = gem_name.length - max
+    max_length = gem_name.length + max
+
+    gem_name_with_postfix = "#{gem_name}ruby"
+    gem_name_with_prefix = "ruby#{gem_name}"
+
+    matches = names.filter_map do |n|
+      len = n.name.length
+      # If the gem doesn't support the current platform, bail early.
       next unless n.match_platform?
-      distance = levenshtein_distance gem_name, n.name.downcase.tr("_-", "")
+
+      # If the length is min_length or shorter, we've done `max` deletions.
+      # This would be rejected later, so we skip it for performance.
+      next if len <= min_length
+
+      # The candidate name, normalized the same as gem_name.
+      normalized_name = n.name.downcase
+      normalized_name.tr!("_-", "")
+
+      # If the gem is "{NAME}-ruby" and "ruby-{NAME}", we want to return it.
+      # But we already removed hyphens, so we check "{NAME}ruby" and "ruby{NAME}".
+      next [n.name, 0] if normalized_name == gem_name_with_postfix
+      next [n.name, 0] if normalized_name == gem_name_with_prefix
+
+      # If the length is max_length or longer, we've done `max` insertions.
+      # This would be rejected later, so we skip it for performance.
+      next if len >= max_length
+
+      # If we found an exact match (after stripping underscores and hyphens),
+      # that's our most likely candidate.
+      # Return it immediately, and skip the rest of the loop.
+      return [n.name] if normalized_name == gem_name
+
+      distance = levenshtein_distance gem_name, normalized_name
+
+      # Skip current candidate, if the edit distance is greater than allowed.
       next if distance >= max
-      return [n.name] if distance == 0
+
+      # If all else fails, return the name and the calculated distance.
       [n.name, distance]
-    end.compact
+    end
 
     matches = if matches.empty? && type != :prerelease
       suggest_gems_from_name gem_name, :prerelease

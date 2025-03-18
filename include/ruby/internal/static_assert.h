@@ -23,6 +23,7 @@
 #include <assert.h>
 #include "ruby/internal/has/extension.h"
 #include "ruby/internal/compiler_since.h"
+#include "ruby/internal/attr/maybe_unused.h"
 
 /** @cond INTERNAL_MACRO */
 #if defined(__cplusplus) && defined(__cpp_static_assert)
@@ -71,7 +72,7 @@
 
 #else
 # define RBIMPL_STATIC_ASSERT(name, expr) \
-    MAYBE_UNUSED(typedef int static_assert_ ## name ## _check[1 - 2 * !(expr)])
+    RBIMPL_ATTR_MAYBE_UNUSED() typedef int static_assert_ ## name ## _check[1 - 2 * !(expr)]
 #endif
 
 #endif /* RBIMPL_STATIC_ASSERT_H */

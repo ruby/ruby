@@ -16,6 +16,7 @@ module Lrama
       %union
       %token
       %type
+      %nterm
       %left
       %right
       %nonassoc
@@ -168,12 +169,11 @@ module Lrama
     def lex_comment
       until @scanner.eos? do
         case
-        when @scanner.scan(/\n/)
-          newline
-        when @scanner.scan(/\*\//)
+        when @scanner.scan_until(/[\s\S]*?\*\//)
+          @scanner.matched.count("\n").times { newline }
           return
-        else
-          @scanner.getch
+        when @scanner.scan_until(/\n/)
+          newline
         end
       end
     end

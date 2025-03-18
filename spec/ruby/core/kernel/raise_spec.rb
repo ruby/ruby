@@ -46,6 +46,22 @@ describe "Kernel#raise" do
     cause = StandardError.new
     -> { raise(cause: cause) }.should raise_error(ArgumentError)
   end
+
+  it "re-raises a rescued exception" do
+    -> do
+      begin
+        raise StandardError, "aaa"
+      rescue Exception
+        begin
+          raise ArgumentError
+        rescue ArgumentError
+        end
+
+        # should raise StandardError "aaa"
+        raise
+      end
+    end.should raise_error(StandardError, "aaa")
+  end
 end
 
 describe "Kernel#raise" do

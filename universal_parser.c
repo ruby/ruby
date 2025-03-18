@@ -23,7 +23,7 @@
 # define FALSE   0
 #endif
 #define numberof(array) ((int)(sizeof(array) / sizeof((array)[0])))
-#define rb_strlen_lit(str) (sizeof(str "") - 1)
+#define rb_strlen_lit(str) ((sizeof(str "") / sizeof(str ""[0])) - 1)
 #undef FIXNUM_MAX
 #define FIXNUM_MAX (LONG_MAX / 2)
 
@@ -86,8 +86,6 @@
 
 #define rb_attr_get p->config->attr_get
 
-#define rb_ary_new           p->config->ary_new
-#define rb_ary_push          p->config->ary_push
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
 #define rb_ary_unshift       p->config->ary_unshift
@@ -109,8 +107,6 @@
 #define rb_id2str                p->config->id2str
 #undef ID2SYM
 #define ID2SYM                   p->config->id2sym
-#undef SYM2ID
-#define SYM2ID                   p->config->sym2id
 
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
@@ -128,7 +124,6 @@
 #define RSTRING_PTR                       p->config->rstring_ptr
 #undef RSTRING_LEN
 #define RSTRING_LEN                       p->config->rstring_len
-#define rb_obj_as_string                  p->config->obj_as_string
 
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
@@ -152,7 +147,6 @@
 #define rb_enc_get              p->config->enc_get
 #define rb_enc_asciicompat      p->config->enc_asciicompat
 #define rb_utf8_encoding        p->config->utf8_encoding
-#define rb_enc_associate        p->config->enc_associate
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput
@@ -161,7 +155,6 @@
 #define rb_enc_isspace          p->config->enc_isspace
 #define ENC_CODERANGE_7BIT      p->config->enc_coderange_7bit
 #define ENC_CODERANGE_UNKNOWN   p->config->enc_coderange_unknown
-#define rb_usascii_encoding     p->config->usascii_encoding
 
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
@@ -172,7 +165,6 @@
 
 #define rb_errinfo p->config->errinfo
 #define rb_set_errinfo p->config->set_errinfo
-#define rb_exc_raise p->config->exc_raise
 #define rb_make_exception p->config->make_exception
 
 #define ruby_sized_xfree p->config->sized_xfree

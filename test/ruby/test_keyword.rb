@@ -2794,6 +2794,12 @@ class TestKeywordArguments < Test::Unit::TestCase
       assert_nil(c.send(:ruby2_keywords, :bar))
     end
 
+    utf16_sym = "abcdef".encode("UTF-16LE").to_sym
+    c.send(:define_method, utf16_sym, c.instance_method(:itself))
+    assert_warn(/abcdef/) do
+      assert_nil(c.send(:ruby2_keywords, utf16_sym))
+    end
+
     o = Object.new
     class << o
       alias bar p
@@ -2863,7 +2869,7 @@ class TestKeywordArguments < Test::Unit::TestCase
   end
 
   def test_top_ruby2_keywords
-    assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
+    assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{k: 1}"], [])
       def bar(*a, **kw)
         p a, kw
       end

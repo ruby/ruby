@@ -69,6 +69,7 @@ ossl_ssl_session_initialize(VALUE self, VALUE arg1)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
 {

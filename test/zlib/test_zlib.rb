@@ -545,7 +545,7 @@ if defined? Zlib
       zd = Zlib::Deflate.new
 
       s = SecureRandom.random_bytes(1024**2)
-      assert_raise(Zlib::InProgressError) do
+      assert_raise(ThreadError) do
         zd.deflate(s) do
           zd.deflate(s)
         end
@@ -563,7 +563,7 @@ if defined? Zlib
 
       s = Zlib.deflate(SecureRandom.random_bytes(1024**2))
 
-      assert_raise(Zlib::InProgressError) do
+      assert_raise(ThreadError) do
         zi.inflate(s) do
           zi.inflate(s)
         end

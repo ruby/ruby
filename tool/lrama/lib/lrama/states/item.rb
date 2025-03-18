@@ -64,6 +64,10 @@ module Lrama
         rhs[position..-1]
       end
 
+      def symbols_after_transition
+        rhs[position+1..-1]
+      end
+
       def to_s
         "#{lhs.id.s_value}: #{display_name}"
       end
@@ -77,6 +81,10 @@ module Lrama
       def display_rest
         r = symbols_after_dot.map(&:display_name).join(" ")
         ". #{r}  (rule #{rule_id})"
+      end
+
+      def predecessor_item_of?(other_item)
+        rule == other_item.rule && position == other_item.position - 1
       end
     end
   end

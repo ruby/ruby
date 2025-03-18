@@ -14,6 +14,24 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_do_not_mutate_shared_buffers
+    # Ensure we have two strings that are not embedded but have the same shared
+    # string reference.
+    #
+    # In this case, we must use eval because we need two strings literals that
+    # are long enough they cannot be embedded, but also contain the same bytes.
+
+    a = eval("+"+("x" * 1024).dump)
+    b = eval("+"+("x" * 1024).dump)
+
+    s = StringIO.new(b)
+    s.getc
+    s.ungetc '#'
+
+    # We mutated b, so a should not be mutated
+    assert_equal("x", a[0])
+  end
+
   def test_version
     assert_kind_of(String, StringIO::VERSION)
   end
@@ -46,6 +64,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.gets
     io.puts "abc"
     assert_nil io.string
+
+    # Null device StringIO just drop ungot string
+    io.ungetc '#'
+    assert_nil io.getc
   end
 
   def test_truncate
@@ -465,6 +487,11 @@ class TestStringIO < Test::Unit::TestCase
     f.close unless f.closed?
   end
 
+  def test_seek_frozen_string
+    f = StringIO.new(-"1234")
+    assert_equal(0, f.seek(1))
+  end
+
   def test_each_byte
     f = StringIO.new("1234")
     a = []
@@ -842,6 +869,17 @@ class TestStringIO < Test::Unit::TestCase
     assert_match(/\Ab+\z/, s.string)
   end
 
+  def test_ungetc_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
+  end
+
   def test_ungetbyte_pos
     b = '\\b00010001 \\B00010001 \\b1 \\B1 \\b000100011'
     s = StringIO.new( b )
@@ -874,6 +912,17 @@ class TestStringIO < Test::Unit::TestCase
     s.ungetbyte('b' * (count * 5))
     assert_equal((count * 5), s.string.size)
     assert_match(/\Ab+\z/, s.string)
+  end
+
+  def test_ungetbyte_same_string
+    s = StringIO.new("abc" * 30)
+    s.ungetc(s.string)
+    assert_match(/\A(?:abc){60}\z/, s.string)
+
+    s = StringIO.new("abc" * 30)
+    s.pos = 70 # ("abc".size * 30 - 70).divmod(3) == [6, 2]
+    s.ungetbyte(s.string)
+    assert_match(/\A(?:abc){30}bc(?:abc){6}\z/, s.string)
   end
 
   def test_frozen

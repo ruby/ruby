@@ -79,6 +79,9 @@ The options that can be configured are:
 
 * `only`:
    A space-separated list of groups to install only gems of the specified groups.
+   Please check carefully if you want to install also gems without a group, cause
+   they get put inside `default` group. For example `only test:default` will install
+   all gems specified in test group and without one.
 
 * `path`:
    The location to install the specified gems to. This defaults to Rubygems'
@@ -88,10 +91,12 @@ The options that can be configured are:
    installed to other locations will not get listed.
 
 * `without`:
-   A space-separated list of groups referencing gems to skip during installation.
+   A space-separated or `:`-separated list of groups referencing gems to skip during
+   installation.
 
 * `with`:
-  A space-separated list of **optional** groups referencing gems to include during installation.
+   A space-separated or `:`-separated list of **optional** groups referencing gems to
+   include during installation.
 
 ## BUILD OPTIONS
 
@@ -217,6 +222,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can install in parallel. Defaults to the number of
    available processors.
+* `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
+   Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
@@ -278,16 +285,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    `system` will use the system version of Bundler, and `x.y.z` will use
    the specified version of Bundler.
 * `with` (`BUNDLE_WITH`):
-   A `:`-separated list of groups whose gems bundler should install.
+   A space-separated or `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
-   A `:`-separated list of groups whose gems bundler should not install.
-
-In general, you should set these settings per-application by using the applicable
-flag to the [bundle install(1)](bundle-install.1.html) or [bundle cache(1)](bundle-cache.1.html) command.
-
-You can set them globally either via environment variables or `bundle config`,
-whichever is preferable for your setup. If you use both, environment variables
-will take preference over global settings.
+   A space-separated or `:`-separated list of groups whose gems bundler should not install.
 
 ## LOCAL GIT REPOS
 

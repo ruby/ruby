@@ -1,0 +1,3 @@
+[a:1,,]
+     ^ unexpected ','; expected a `]` to close the array
+

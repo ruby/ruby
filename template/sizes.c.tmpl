@@ -47,8 +47,8 @@ Init_sizeof(void)
     VALUE mRbConfig = rb_define_module("RbConfig");
     rb_define_const(mRbConfig, "SIZEOF", s);
 
-#define DEFINE(type, size) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(SIZEOF_##size))
-#define DEFINE_SIZE(type) rb_hash_aset(s, rb_str_new_cstr(#type), INT2FIX(sizeof(type)))
+#define DEFINE(type, size) rb_hash_aset(s, rb_usascii_str_new_lit(#type), INT2FIX(SIZEOF_##size))
+#define DEFINE_SIZE(type) rb_hash_aset(s, rb_usascii_str_new_lit(#type), INT2FIX(sizeof(type)))
 
 % types.each do |type|
 %   if sizes[type]

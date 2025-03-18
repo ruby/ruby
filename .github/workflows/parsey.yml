@@ -30,34 +30,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - test_task: test
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
-          - test_task: test-all
-            run_opts: '--parser=parse.y'
-            testopts: '-q --tty=no --excludes-dir="../src/test/.excludes-parsey"'
-            timeout: 40
-          - test_task: test-spec
-            run_opts: '--parser=parse.y'
-            specopts: '-T --parser=parse.y'
-            timeout: 10
-          - test_task: test-tool
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
+          - test_task: check
           - test_task: test-bundler-parallel
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 50
           - test_task: test-bundled-gems
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
-          - test_task: test-syntax-suggest
-            run_opts: '--parser=parse.y'
-            testopts: '-v --tty=no'
-            timeout: 30
       fail-fast: false
 
     env:
@@ -73,7 +48,7 @@ jobs:
       || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
@@ -94,17 +69,19 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG
+        run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG --with-parser=parse.y
 
       - run: make
 
+      - run: make TESTRUN_SCRIPT='-e "exit !RUBY_DESCRIPTION.include?(%[+PRISM])"' run
+
       - name: make ${{ matrix.test_task }}
         run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
-        timeout-minutes: ${{ matrix.timeout }}
         env:
           RUBY_TESTOPTS: ${{ matrix.testopts }}
-          RUN_OPTS: ${{ matrix.run_opts }}
-          SPECOPTS: ${{ matrix.specopts }}
+          EXCLUDES: '../src/test/.excludes-parsey'
+          RUN_OPTS: ${{ matrix.run_opts || '--parser=parse.y' }}
+          SPECOPTS: ${{ matrix.specopts || '-T --parser=parse.y' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
 
       - uses: ./.github/actions/slack

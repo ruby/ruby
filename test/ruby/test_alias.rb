@@ -292,4 +292,53 @@ class TestAlias < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_alias_complemented_method
+    assert_in_out_err(%w[-w], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      module M
+        def foo = 1
+        self.extend M
+      end
+
+      3.times{|i|
+        module M
+          alias foo2 foo
+          remove_method :foo
+          def foo = 2
+        ensure
+          remove_method :foo
+          alias foo foo2
+          remove_method :foo2
+        end
+
+        M.foo
+
+        original_foo = M.method(:foo)
+
+        M.class_eval do
+          remove_method :foo
+          def foo = 3
+        end
+
+        M.class_eval do
+          remove_method :foo
+          define_method :foo, original_foo
+        end
+      }
+    end;
+  end
+
+  def test_undef_method_error_message_with_zsuper_method
+    modules = [
+      Module.new { private :class },
+      Module.new { prepend Module.new { private :class } },
+    ]
+    message = "undefined method 'class' for module '%s'"
+    modules.each do |mod|
+      assert_raise_with_message(NameError, message % mod) do
+        mod.alias_method :xyz, :class
+      end
+    end
+  end
 end

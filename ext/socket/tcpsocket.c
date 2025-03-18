@@ -12,13 +12,30 @@
 
 /*
  * call-seq:
- *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, connect_timeout: nil)
+ *    TCPSocket.new(remote_host, remote_port, local_host=nil, local_port=nil, resolv_timeout: nil, connect_timeout: nil, fast_fallback: true)
  *
  * Opens a TCP connection to +remote_host+ on +remote_port+.  If +local_host+
  * and +local_port+ are specified, then those parameters are used on the local
  * end to establish the connection.
  *
- * [:connect_timeout] specify the timeout in seconds.
+ * Starting from Ruby 3.4, this method operates according to the
+ * Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
+ * algorithm by default, except on Windows.
+ *
+ * For details on Happy Eyeballs Version 2,
+ * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
+ *
+ * To make it behave the same as in Ruby 3.3 and earlier,
+ * explicitly specify the option fast_fallback:false.
+ * Or, setting Socket.tcp_fast_fallback=false will disable
+ * Happy Eyeballs Version 2 not only for this method but for all Socket globally.
+ *
+ * When using TCPSocket.new on Windows, Happy Eyeballs Version 2 is not provided,
+ * and it behaves the same as in Ruby 3.3 and earlier.
+ *
+ * [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
+ * [:connect_timeout] This method sequentially attempts connecting to all candidate destination addresses.<br>The +connect_timeout+ specifies the timeout in seconds from the start of the connection attempt to the last candidate.<br>By default, all connection attempts continue until the timeout occurs.<br>When +fast_fallback:false+ is explicitly specified,<br>a timeout is set for each connection attempt and any connection attempt that exceeds its timeout will be canceled.
+ * [:fast_fallback] Enables the Happy Eyeballs Version 2 algorithm (enabled by default).
  */
 static VALUE
 tcp_init(int argc, VALUE *argv, VALUE sock)
@@ -26,28 +43,40 @@ tcp_init(int argc, VALUE *argv, VALUE sock)
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
     VALUE opt;
-    static ID keyword_ids[2];
-    VALUE kwargs[2];
+    static ID keyword_ids[4];
+    VALUE kwargs[4];
     VALUE resolv_timeout = Qnil;
     VALUE connect_timeout = Qnil;
+    VALUE fast_fallback = Qnil;
+    VALUE test_mode_settings = Qnil;
 
     if (!keyword_ids[0]) {
         CONST_ID(keyword_ids[0], "resolv_timeout");
         CONST_ID(keyword_ids[1], "connect_timeout");
+        CONST_ID(keyword_ids[2], "fast_fallback");
+        CONST_ID(keyword_ids[3], "test_mode_settings");
     }
 
     rb_scan_args(argc, argv, "22:", &remote_host, &remote_serv,
                         &local_host, &local_serv, &opt);
 
     if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+        rb_get_kwargs(opt, keyword_ids, 0, 4, kwargs);
         if (kwargs[0] != Qundef) { resolv_timeout = kwargs[0]; }
         if (kwargs[1] != Qundef) { connect_timeout = kwargs[1]; }
+        if (kwargs[2] != Qundef) { fast_fallback = kwargs[2]; }
+        if (kwargs[3] != Qundef) { test_mode_settings = kwargs[3]; }
+    }
+
+    if (fast_fallback == Qnil) {
+        fast_fallback = rb_ivar_get(rb_cSocket, tcp_fast_fallback);
+        if (fast_fallback == Qnil) fast_fallback = Qtrue;
     }
 
     return rsock_init_inetsock(sock, remote_host, remote_serv,
                                local_host, local_serv, INET_CLIENT,
-                               resolv_timeout, connect_timeout);
+                               resolv_timeout, connect_timeout, fast_fallback,
+                               test_mode_settings);
 }
 
 static VALUE

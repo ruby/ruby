@@ -245,7 +245,7 @@ describe "Module#refine" do
 
     ruby_version_is ""..."3.2" do
       it "looks in the included modules for builtin methods" do
-          result = ruby_exe(<<-RUBY)
+        result = ruby_exe(<<-RUBY)
           a = Module.new do
             def /(other) quo(other) end
           end

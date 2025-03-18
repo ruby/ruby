@@ -139,6 +139,19 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
+  def test_iseq_compile_under_gc_stress_bug_21180
+    Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        EnvUtil.under_gc_stress do
+          RubyVM::InstructionSequence.compile_file(File::NULL)
+        end
+      end
+    end.join
+  end
+
   def test_deadlock
     mutex = Thread::Mutex.new
     condition = Thread::ConditionVariable.new
@@ -181,5 +194,33 @@ class TestFiberScheduler < Test::Unit::TestCase
     signaller.kill
     thread.join
     signaller.join
+  end
+
+  def test_condition_variable
+    condition_variable = ::Thread::ConditionVariable.new
+    mutex = ::Thread::Mutex.new
+
+    error = nil
+
+    thread = Thread.new do
+      Thread.current.report_on_exception = false
+
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      fiber = Fiber.schedule do
+        begin
+          mutex.synchronize do
+            condition_variable.wait(mutex)
+          end
+        rescue => error
+        end
+      end
+
+      fiber.raise(RuntimeError)
+    end
+
+    thread.join
+    assert_kind_of RuntimeError, error
   end
 end

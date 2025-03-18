@@ -22,7 +22,8 @@ Gem::Specification.new do |spec|
   spec.metadata["source_code_uri"] = spec.homepage
 
   spec.files         = %w[
-    LICENSE.txt
+    BSDL
+    COPYING
     lib/pp.rb
     pp.gemspec
   ]

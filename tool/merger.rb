@@ -115,6 +115,9 @@ class << Merger = Object.new
     end
     tagname = "v#{v.join('_')}#{("_#{pl}" if v[0] < "2" || (v[0] == "2" && v[1] < "1") || /^(?:preview|rc)/ =~ pl)}"
 
+    unless execute('git', 'diff', '--exit-code')
+      abort 'uncommitted changes'
+    end
     unless execute('git', 'tag', tagname)
       abort 'specfied tag already exists. check tag name and remove it if you want to force re-tagging'
     end

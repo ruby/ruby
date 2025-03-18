@@ -1,0 +1,12 @@
+def f=(k,v)=1
+    ^~ invalid method name; a setter method cannot be defined in an endless method definition
+
+def obj.f=(k,v)=1
+        ^~ invalid method name; a setter method cannot be defined in an endless method definition
+
+def []=(k,v)=1
+    ^~~ invalid method name; a setter method cannot be defined in an endless method definition
+
+def obj.[]=(k,v)=1
+        ^~~ invalid method name; a setter method cannot be defined in an endless method definition
+

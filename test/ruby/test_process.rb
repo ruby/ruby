@@ -275,12 +275,12 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB RJIT_SEARCH_BUILD_DIR]
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH]
   case RbConfig::CONFIG['target_os']
   when /linux/
     MANDATORY_ENVS << 'LD_PRELOAD'
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
   when /darwin/
     MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
   end
@@ -922,15 +922,29 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
-  def test_popen_fork
-    IO.popen("-") {|io|
-      if !io
-        puts "fooo"
-      else
-        assert_equal("fooo\n", io.read)
+  if Process.respond_to?(:fork)
+    def test_popen_fork
+      IO.popen("-") do |io|
+        if !io
+          puts "fooo"
+        else
+          assert_equal("fooo\n", io.read)
+        end
       end
-    }
-  rescue NotImplementedError
+    end
+
+    def test_popen_fork_ensure
+      IO.popen("-") do |io|
+        if !io
+          STDERR.reopen(STDOUT)
+          raise "fooo"
+        else
+          assert_empty io.read
+        end
+      end
+    rescue RuntimeError
+      abort "[Bug #20995] should not reach here"
+    end
   end
 
   def test_fd_inheritance
@@ -1454,15 +1468,6 @@ class TestProcess < Test::Unit::TestCase
       assert_equal(s, s)
       assert_equal(s, s.to_i)
 
-      assert_deprecated_warn(/\buse .*Process::Status/) do
-        assert_equal(s.to_i & 0x55555555, s & 0x55555555)
-      end
-      assert_deprecated_warn(/\buse .*Process::Status/) do
-        assert_equal(s.to_i >> 1, s >> 1)
-      end
-      assert_raise(ArgumentError) do
-        s >> -1
-      end
       assert_equal(false, s.stopped?)
       assert_equal(nil, s.stopsig)
 
@@ -1688,12 +1693,7 @@ class TestProcess < Test::Unit::TestCase
       if g = Etc.getgrgid(Process.gid)
         assert_equal(Process.gid, Process::GID.from_name(g.name), g.name)
       end
-      expected_excs = [ArgumentError]
-      expected_excs << Errno::ENOENT if defined?(Errno::ENOENT)
-      expected_excs << Errno::ESRCH if defined?(Errno::ESRCH) # WSL 2 actually raises Errno::ESRCH
-      expected_excs << Errno::EBADF if defined?(Errno::EBADF)
-      expected_excs << Errno::EPERM if defined?(Errno::EPERM)
-      exc = assert_raise(*expected_excs) do
+      exc = assert_raise_kind_of(ArgumentError, SystemCallError) do
         Process::GID.from_name("\u{4e0d 5b58 5728}") # fu son zai ("absent" in Kanji)
       end
       assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
@@ -1748,11 +1748,7 @@ class TestProcess < Test::Unit::TestCase
       end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # checking -DRJIT_FORCE_ENABLE. It may trigger extra SIGCHLD.
-      assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
-    else
-      assert_equal [true], signal_received, "[ruby-core:19744]"
-    end
+    assert_equal [true], signal_received, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -1874,8 +1870,6 @@ class TestProcess < Test::Unit::TestCase
     end
 
     def test_daemon_noclose
-      pend "macOS 15.0 is not working with this test" if macos?(15, 0)
-
       data = IO.popen("-", "r+") do |f|
         break f.read if f
         Process.daemon(false, true)

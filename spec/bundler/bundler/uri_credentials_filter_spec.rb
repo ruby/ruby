@@ -31,6 +31,16 @@ RSpec.describe Bundler::URICredentialsFilter do
 
           it_behaves_like "original type of uri is maintained"
         end
+
+        context "specified without empty username" do
+          let(:credentials) { "oauth_token@" }
+
+          it "returns the uri without the oauth token" do
+            expect(subject.credential_filtered_uri(uri).to_s).to eq(Gem::URI("https://github.com/company/private-repo").to_s)
+          end
+
+          it_behaves_like "original type of uri is maintained"
+        end
       end
 
       context "authentication using login credentials" do

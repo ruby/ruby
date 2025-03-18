@@ -30,7 +30,7 @@ class Gem::Uri
     begin
       Gem::URI.parse(uri)
     rescue Gem::URI::InvalidURIError
-      Gem::URI.parse(Gem::URI::DEFAULT_PARSER.escape(uri))
+      Gem::URI.parse(Gem::URI::RFC2396_PARSER.escape(uri))
     end
   end
 

@@ -50,35 +50,30 @@ module Bundler
       Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE_ALL, dependencies)
 
       dependencies.each do |dep|
-        required_file = nil
         Plugin.hook(Plugin::Events::GEM_BEFORE_REQUIRE, dep)
 
-        begin
-          # Loop through all the specified autorequires for the
-          # dependency. If there are none, use the dependency's name
-          # as the autorequire.
-          Array(dep.autorequire || dep.name).each do |file|
-            # Allow `require: true` as an alias for `require: <name>`
-            file = dep.name if file == true
-            required_file = file
-            begin
-              Kernel.require file
-            rescue RuntimeError => e
-              raise e if e.is_a?(LoadError) # we handle this a little later
+        # Loop through all the specified autorequires for the
+        # dependency. If there are none, use the dependency's name
+        # as the autorequire.
+        Array(dep.autorequire || dep.name).each do |file|
+          # Allow `require: true` as an alias for `require: <name>`
+          file = dep.name if file == true
+          required_file = file
+          begin
+            Kernel.require required_file
+          rescue LoadError => e
+            if dep.autorequire.nil? && e.path == required_file
+              if required_file.include?("-")
+                required_file = required_file.tr("-", "/")
+                retry
+              end
+            else
               raise Bundler::GemRequireError.new e,
                 "There was an error while trying to load the gem '#{file}'."
             end
-          end
-        rescue LoadError => e
-          raise if dep.autorequire || e.path != required_file
-
-          if dep.autorequire.nil? && dep.name.include?("-")
-            begin
-              namespaced_file = dep.name.tr("-", "/")
-              Kernel.require namespaced_file
-            rescue LoadError => e
-              raise if e.path != namespaced_file
-            end
+          rescue RuntimeError => e
+            raise Bundler::GemRequireError.new e,
+              "There was an error while trying to load the gem '#{file}'."
           end
         end
 
@@ -136,7 +131,16 @@ module Bundler
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
         next if spec.source.is_a?(Source::Gemspec)
-        spec.source.cache(spec, custom_path) if spec.source.respond_to?(:cache)
+        if spec.source.respond_to?(:migrate_cache)
+          spec.source.migrate_cache(custom_path, local: local)
+        elsif spec.source.respond_to?(:cache)
+          spec.source.cache(spec, custom_path)
+        end
+      end
+
+      Dir[cache_path.join("*/.git")].each do |git_dir|
+        FileUtils.rm_rf(git_dir)
+        FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
 
       prune_cache(cache_path) unless Bundler.settings[:no_prune]
@@ -263,10 +267,10 @@ module Bundler
 
     def setup_manpath
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
-      manuals = $LOAD_PATH.map do |path|
+      manuals = $LOAD_PATH.filter_map do |path|
         man_subdir = path.sub(/lib$/, "man")
         man_subdir unless Dir[man_subdir + "/man?/"].empty?
-      end.compact
+      end
 
       return if manuals.empty?
       Bundler::SharedHelpers.set_env "MANPATH", manuals.concat(

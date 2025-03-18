@@ -84,6 +84,9 @@ module NoMethodErrorSpecs
 
   class InstanceException < Exception
   end
+
+  class AClass; end
+  module AModule; end
 end
 
 class NameErrorSpecs

@@ -1,5 +1,6 @@
 @echo off
 @setlocal disabledelayedexpansion
+set PROMPT=$E[94m+$E[m$S
 set witharg=
 
 for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
@@ -10,16 +11,21 @@ for %%I in (%0) do if /%%~dpI/ == /%CD%\/ (
 set XINCFLAGS=
 set XLDFLAGS=
 
-echo> ~tmp~.mak ####
-echo>> ~tmp~.mak conf = %0
-echo>> ~tmp~.mak $(conf): nul
-echo>> ~tmp~.mak 	@del ~setup~.mak
-echo>> ~tmp~.mak 	@$(MAKE) -l$(MAKEFLAGS) -f $(@D)/setup.mak \
-if exist pathlist.tmp del pathlist.tmp
-echo>confargs.tmp #define CONFIGURE_ARGS \
+set conf=%0
+set pathlist=
+set config_make=confargs~%RANDOM%.mak
+set confargs=%config_make:.mak=.c%
+echo>%config_make% # CONFIGURE
+(
+  echo #define $ $$ //
+  echo !ifndef CONFIGURE_ARGS
+  echo #define CONFIGURE_ARGS \
+) >%confargs%
 :loop
 set opt=%1
 if "%1" == "" goto :end
+if "%1" == "--debug-configure" (echo on & shift & goto :loop)
+if "%1" == "--no-debug-configure" (echo off & shift & goto :loop)
 if "%1" == "--prefix" goto :prefix
 if "%1" == "--srcdir" goto :srcdir
 if "%1" == "srcdir" goto :srcdir
@@ -28,6 +34,7 @@ if "%1" == "target" goto :target
 if "%1" == "--with-static-linked-ext" goto :extstatic
 if "%1" == "--program-prefix" goto :pprefix
 if "%1" == "--program-suffix" goto :suffix
+if "%1" == "--program-transform-name" goto :transform_name
 if "%1" == "--program-name" goto :installname
 if "%1" == "--install-name" goto :installname
 if "%1" == "--so-name" goto :soname
@@ -59,166 +66,179 @@ if "%opt:~0,7%" == "--with-" goto :witharg
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
   if "%opt:~0,1%" == "-" (
-    echo>>confargs.tmp  %1 \
+    echo>>%confargs%  %1 \
     set witharg=
   ) else if "%witharg%" == "" (
-    echo>>confargs.tmp  %1 \
+    echo>>%confargs%  %1 \
   ) else (
-    echo>>confargs.tmp ,%1\
+    echo>>%confargs% ,%1\
   )
   shift
 goto :loop ;
 :srcdir
-  echo>> ~tmp~.mak 	"srcdir=%~2" \
-  echo>>confargs.tmp --srcdir=%2 \
+  echo>> %config_make% srcdir = %~2
+  echo>>%confargs% --srcdir=%2 \
   shift
   shift
 goto :loop ;
 :prefix
-  echo>> ~tmp~.mak 	"prefix=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% prefix = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :pprefix
-  echo>> ~tmp~.mak 	"PROGRAM_PREFIX=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% PROGRAM_PREFIX = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :suffix
-  echo>> ~tmp~.mak 	"PROGRAM_SUFFIX=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% PROGRAM_SUFFIX = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :installname
-  echo>> ~tmp~.mak 	"RUBY_INSTALL_NAME=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% RUBY_INSTALL_NAME = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :soname
-  echo>> ~tmp~.mak 	"RUBY_SO_NAME=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% RUBY_SO_NAME = %~2
+  echo>>%confargs%  %1=%2 \
+  shift
+  shift
+goto :loop ;
+:transform_name
+
   shift
   shift
 goto :loop ;
 :target
-  echo>> ~tmp~.mak 	"%~2" \
-  echo>>confargs.tmp --target=%2 \
-  if NOT "%~2" == "x64-mswin64" goto target3
-:target2
-  echo>> ~tmp~.mak 	"TARGET_OS=mswin64" \
-:target3
+  echo>> %config_make% target = %~2
+  echo>>%confargs% --target=%2 \
+  if "%~2" == "x64-mswin64" (
+    echo>> %config_make% TARGET_OS = mswin64
+  )
   shift
   shift
 goto :loop ;
 :extstatic
-  echo>> ~tmp~.mak 	"EXTSTATIC=static" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% EXTSTATIC = static
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :enable-rdoc
-  echo>> ~tmp~.mak 	"RDOCTARGET=rdoc" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% RDOCTARGET = rdoc
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :disable-rdoc
-  echo>> ~tmp~.mak 	"RDOCTARGET=nodoc" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% RDOCTARGET = nodoc
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :enable-lib
-  echo>> ~tmp~.mak 	"INSTALL_STATIC_LIBRARY=yes" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% INSTALL_STATIC_LIBRARY = yes
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :disable-lib
-  echo>> ~tmp~.mak 	"INSTALL_STATIC_LIBRARY=no" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% INSTALL_STATIC_LIBRARY = no
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :enable-debug-env
-  echo>> ~tmp~.mak 	"ENABLE_DEBUG_ENV=yes" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% ENABLE_DEBUG_ENV = yes
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :disable-debug-env
-  echo>> ~tmp~.mak 	"ENABLE_DEBUG_ENV=no" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% ENABLE_DEBUG_ENV = no
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :enable-devel
-  echo>> ~tmp~.mak 	"RUBY_DEVEL=yes" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% RUBY_DEVEL = yes
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :disable-devel
-  echo>> ~tmp~.mak 	"RUBY_DEVEL=no" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% RUBY_DEVEL = no
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :enable-rubygems
-  echo>> ~tmp~.mak 	"USE_RUBYGEMS=yes" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% USE_RUBYGEMS = yes
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :disable-rubygems
-  echo>> ~tmp~.mak 	"USE_RUBYGEMS=no" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% USE_RUBYGEMS = no
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :ntver
-  echo>> ~tmp~.mak 	"NTVER=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  ::- For version constants, see
+  ::- https://learn.microsoft.com/en-us/cpp/porting/modifying-winver-and-win32-winnt#remarks
+  set NTVER=%~2
+  if /i not "%NTVER:~0,2%" == "0x" if /i not "%NTVER:~0,13%" == "_WIN32_WINNT_" (
+    for %%i in (A B C D E F G H I J K L M N O P Q R S T U V W X Y Z) do (
+      call set NTVER=%%NTVER:%%i=%%i%%
+    )
+    call set NTVER=_WIN32_WINNT_%%NTVER%%
+  )
+  echo>> %config_make% NTVER = %NTVER%
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :extout
-  echo>> ~tmp~.mak 	"EXTOUT=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  if not "%~2" == ".ext" (echo>> %config_make% EXTOUT = %~2)
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :path
-  echo>>pathlist.tmp %~2;\
-  echo>>confargs.tmp  %1=%2 \
+  set pathlist=%pathlist%%~2;
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :baseruby
-  echo>> ~tmp~.mak 	"BASERUBY=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% BASERUBY = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :nobaseruby
-  echo>> ~tmp~.mak 	"HAVE_BASERUBY=no" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% HAVE_BASERUBY = no
+  echo>>%confargs%  %1=%2 \
   shift
 goto :loop ;
 :libdir
-  echo>> ~tmp~.mak 	"libdir_basename=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% libdir_basename = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :git
-  echo>> ~tmp~.mak 	"GIT=%~2" \
-  echo>>confargs.tmp  %1=%2 \
+  echo>> %config_make% GIT = %~2
+  echo>>%confargs%  %1=%2 \
   shift
   shift
 goto :loop ;
 :nogit
-  echo>> ~tmp~.mak 	"GIT=never-use" \
-  echo>> ~tmp~.mak 	"HAVE_GIT=no" \
-  echo>>confargs.tmp  %1 \
+  echo>> %config_make% GIT = never-use
+  echo>> %config_make% HAVE_GIT = no
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :gmp
-  echo>> ~tmp~.mak 	"WITH_GMP=yes" \
-  echo>>confargs.tmp  %1=1 \
+  echo>> %config_make% WITH_GMP = yes
+  echo>>%confargs%  %1=1 \
   shift
   shift
 goto :loop ;
@@ -226,20 +246,21 @@ goto :loop ;
 :opt-dir
   set opt=%~2
   for %%I in (%opt:;= %) do (
-    pushd %%I && (
+    set d=%%I
+    call pushd %%d:/=\%% && (
       call set XINCFLAGS=%%XINCFLAGS%% -I%%CD:\=/%%/include
       call set XLDFLAGS=%%XLDFLAGS%% -libpath:%%CD:\=/%%/lib
       popd
     )
   )
 :witharg
-  echo>>confargs.tmp  %1=%2\
+  echo>>%confargs%  %1=%2\
   set witharg=1
   shift
   shift
 goto :loop ;
 :withoutarg
-  echo>>confargs.tmp  %1 \
+  echo>>%confargs%  %1 \
   shift
 goto :loop ;
 :help
@@ -258,36 +279,44 @@ goto :loop ;
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by `;'
   echo   --disable-install-doc   do not install rdoc indexes during install
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
+  echo   --with-ntver=_WIN32_WINNT_XXXX
+  echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
   echo Note that `,' and `;' need to be enclosed within double quotes in batch file command line.
-  del *.tmp
-  del ~tmp~.mak
+  del %confargs% %config_make%
 goto :exit
 :end
-echo>> ~tmp~.mak 	WIN32DIR=$(@D:\=/)
-echo.>>confargs.tmp
-echo>confargs.c #define $ $$ //
-echo>>confargs.c !ifndef CONFIGURE_ARGS
-type>>confargs.c confargs.tmp
-echo>>confargs.c configure_args = CONFIGURE_ARGS
-echo>>confargs.c !endif
-echo>>confargs.c #undef $
-if exist pathlist.tmp echo>>confargs.c #define PATH_LIST \
-if exist pathlist.tmp type>>confargs.c pathlist.tmp
-if exist pathlist.tmp echo.>>confargs.c
-if exist pathlist.tmp echo>>confargs.c pathlist = PATH_LIST
-cl -EP confargs.c > ~setup~.mak 2>nul
-if exist pathlist.tmp echo>>~setup~.mak PATH = $(pathlist:;=/bin;)$(PATH)
-if exist pathlist.tmp echo>>~setup~.mak INCLUDE = $(pathlist:;=/include;)
-if exist pathlist.tmp echo>>~setup~.mak LIB = $(pathlist:;=/lib;)
-echo>>~setup~.mak XINCFLAGS = %XINCFLAGS%
-echo>>~setup~.mak XLDFLAGS = %XLDFLAGS%
-type>>~setup~.mak ~tmp~.mak
-del *.tmp > nul
-del ~tmp~.mak > nul
-echo>>~setup~.mak 	@if exist Makefile.old del Makefile.old
-echo>>~setup~.mak 	@if exist Makefile ren Makefile Makefile.old
-echo>>~setup~.mak 	@ren Makefile.new Makefile
-nmake -alf ~setup~.mak MAKEFILE=Makefile.new
+(
+  echo //
+  echo configure_args = CONFIGURE_ARGS
+  echo !endif
+  echo #undef $
+) >> %confargs%
+(
+  cl -EP %confargs% 2>nul | findstr "! ="
+  echo.
+  if NOT "%XINCFLAGS%" == "" echo XINCFLAGS = %XINCFLAGS%
+  if NOT "%XLDFLAGS%" == "" echo XLDFLAGS = %XLDFLAGS%
+  if NOT "%pathlist%" == "" (
+    call echo PATH = %%pathlist:;=/bin;%%$^(PATH^)
+    call echo INCLUDE = %%pathlist:;=/include;%%$^(INCLUDE^)
+    call echo LIB = %%pathlist:;=/lib;%%$^(LIB^)
+  )
+) >> %config_make%
+del %confargs% > nul
+
+set setup_make=%config_make:confargs=setup%
+(
+  echo #### -*- makefile -*-
+  echo conf = %conf%
+  echo $^(conf^): nul
+  echo 	@del %setup_make%
+  echo 	@$^(MAKE^) -l$^(MAKEFLAGS^) -f $^(@D^)/setup.mak \
+  echo 	WIN32DIR=$^(@D:\=/^) config_make=%config_make%
+  echo 	-@move /y Makefile Makefile.old ^> nul 2^> nul
+  echo 	@ren Makefile.new Makefile
+) > %setup_make%
+nmake -alf %setup_make% MAKEFILE=Makefile.new
+
 exit /b %ERRORLEVEL%
 :exit
 @endlocal

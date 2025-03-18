@@ -579,7 +579,7 @@ flatten_rest_args(rb_execution_context_t * const ec, struct args_info *args, VAL
     args->argc += rest_len;
     if (rest_len) {
         CHECK_VM_STACK_OVERFLOW(ec->cfp, rest_len+1);
-        for (i, j=0; rest_len > 0; rest_len--, i++, j++) {
+        for (j=0; rest_len > 0; rest_len--, i++, j++) {
             locals[i] = argv[j];
         }
     }
@@ -1177,7 +1177,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
 
     *adjusted_ci = VM_CI_ON_STACK(
             site_mid,
-            (caller_flag | (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            ((caller_flag & ~VM_CALL_ARGS_SIMPLE) | (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
             site_argc + caller_argc,
             kw
             );

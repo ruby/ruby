@@ -186,6 +186,10 @@ module Prism
       assert_valid_regexp("foo{1, 2}")
     end
 
+    def test_fake_range_quantifier_because_unclosed
+      assert_valid_regexp("\\A{")
+    end
+
     ############################################################################
     # These test that flag values are correct.
     ############################################################################

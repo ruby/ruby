@@ -31,14 +31,13 @@ RSpec.describe "bundle install with git sources" do
     end
 
     it "does not write to cache on bundler/setup" do
-      cache_path = default_bundle_path("cache")
-      FileUtils.rm_rf(cache_path)
+      FileUtils.rm_r(default_cache_path)
       ruby "require 'bundler/setup'"
-      expect(cache_path).not_to exist
+      expect(default_cache_path).not_to exist
     end
 
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
-      simulate_new_machine
+      pristine_system_gems :bundler
       bundle "config set global_gem_cache true"
       bundle :install
       expect(Dir["#{home}/.bundle/cache/git/foo-1.0-*"]).to have_attributes size: 1
@@ -1039,7 +1038,7 @@ RSpec.describe "bundle install with git sources" do
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    FileUtils.rm_rf(lib_path("foo-1.0"))
+    FileUtils.rm_r(lib_path("foo-1.0"))
 
     bundle "install"
     expect(out).not_to match(/updating/i)
@@ -1068,7 +1067,7 @@ RSpec.describe "bundle install with git sources" do
       gem "foo", :git => "#{lib_path("foo-1.0")}"
     G
 
-    expect(exitstatus).to_not eq(0)
+    expect(last_command).to be_failure
     expect(err).to include("Bundler could not install a gem because it " \
                            "needs to create a directory, but a file exists " \
                            "- #{default_bundle_path("bundler")}")
@@ -1218,7 +1217,7 @@ RSpec.describe "bundle install with git sources" do
         gem "valim", "= 1.0", :git => "#{lib_path("valim")}"
       G
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       bundle "config set --local deployment true"
       bundle :install
@@ -1605,7 +1604,7 @@ In Gemfile:
       G
       bundle "config set --global path vendor/bundle"
       bundle :install
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       bundle "install", env: { "PATH" => "" }
       expect(out).to_not include("You need to install git to be able to use gems from git repositories.")

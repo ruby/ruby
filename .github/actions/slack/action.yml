@@ -9,7 +9,7 @@ inputs:
     required: true
     description: >-
       The URL to post the payload.  This is an input because it tends
-      to be stored in a secrets valut and a composite action cannot
+      to be stored in a secrets vault and a composite action cannot
       look into one.
 
   label:

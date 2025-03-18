@@ -84,17 +84,17 @@ describe "BasicObject#instance_exec" do
     end.should raise_error(TypeError)
   end
 
-quarantine! do # Not clean, leaves cvars lying around to break other specs
-  it "scopes class var accesses in the caller when called on an Integer" do
-    # Integer can take instance vars
-    Integer.class_eval "@@__tmp_instance_exec_spec = 1"
-    (defined? @@__tmp_instance_exec_spec).should == nil
+  quarantine! do # Not clean, leaves cvars lying around to break other specs
+    it "scopes class var accesses in the caller when called on an Integer" do
+      # Integer can take instance vars
+      Integer.class_eval "@@__tmp_instance_exec_spec = 1"
+      (defined? @@__tmp_instance_exec_spec).should == nil
 
-    @@__tmp_instance_exec_spec = 2
-    1.instance_exec { @@__tmp_instance_exec_spec }.should == 2
-    Integer.__send__(:remove_class_variable, :@@__tmp_instance_exec_spec)
+      @@__tmp_instance_exec_spec = 2
+      1.instance_exec { @@__tmp_instance_exec_spec }.should == 2
+      Integer.__send__(:remove_class_variable, :@@__tmp_instance_exec_spec)
+    end
   end
-end
 
   it "raises a TypeError when defining methods on numerics" do
     -> do

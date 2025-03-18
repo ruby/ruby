@@ -141,6 +141,7 @@ errors:
   - INSTANCE_VARIABLE_BARE
   - INVALID_BLOCK_EXIT
   - INVALID_CHARACTER
+  - INVALID_COMMA
   - INVALID_ENCODING_MAGIC_COMMENT
   - INVALID_ESCAPE_CHARACTER
   - INVALID_FLOAT_EXPONENT
@@ -718,6 +719,11 @@ flags:
       - name: REPEATED_PARAMETER
         comment: "a parameter name that has been repeated in the method signature"
     comment: Flags for parameter nodes.
+  - name: ParenthesesNodeFlags
+    values:
+      - name: MULTIPLE_STATEMENTS
+        comment: "parentheses that contain multiple potentially void statements"
+    comment: Flags for parentheses nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
@@ -854,6 +860,11 @@ nodes:
                               ^^^^^^^^^
       - name: keyword_loc
         type: location
+        comment: |
+          Represents the location of the `alias` keyword.
+
+              alias foo bar
+              ^^^^^
     comment: |
       Represents the use of the `alias` keyword to alias a method.
 
@@ -931,6 +942,11 @@ nodes:
       - name: arguments
         type: node[]
         kind: non-void expression
+        comment: |
+          The list of arguments, if present. These can be any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo(bar, baz)
+                  ^^^^^^^^
     comment: |
       Represents a set of arguments to a method or a keyword.
 
@@ -976,16 +992,41 @@ nodes:
       - name: requireds
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the required elements of the array pattern.
+
+              foo in [1, 2]
+                      ^  ^
       - name: rest
         type: node?
         kind: pattern expression
+        comment: |
+          Represents the rest element of the array pattern.
+
+              foo in *bar
+                     ^^^^
       - name: posts
         type: node[]
         kind: pattern expression
+        comment: |
+          Represents the elements after the rest element of the array pattern.
+
+              foo in *bar, baz
+                           ^^^
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the opening location of the array pattern.
+
+              foo in [1, 2]
+                     ^
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the closing location of the array pattern.
+
+              foo in [1, 2]
+                          ^
     comment: |
       Represents an array pattern in pattern matching.
 
@@ -995,8 +1036,8 @@ nodes:
           foo in [1, 2]
           ^^^^^^^^^^^^^
 
-          foo in *1
-          ^^^^^^^^^
+          foo in *bar
+          ^^^^^^^^^^^
 
           foo in Bar[]
           ^^^^^^^^^^^^
@@ -1083,20 +1124,50 @@ nodes:
     fields:
       - name: begin_keyword_loc
         type: location?
+        comment: |
+          Represents the location of the `begin` keyword.
+
+              begin x end
+              ^^^^^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the statements within the begin block.
+
+              begin x end
+                    ^
       - name: rescue_clause
         type: node?
         kind: RescueNode
+        comment: |
+          Represents the rescue clause within the begin block.
+
+              begin x; rescue y; end
+                       ^^^^^^^^
       - name: else_clause
         type: node?
         kind: ElseNode
+        comment: |
+          Represents the else clause within the begin block.
+
+              begin x; rescue y; else z; end
+                                 ^^^^^^
       - name: ensure_clause
         type: node?
         kind: EnsureNode
+        comment: |
+          Represents the ensure clause within the begin block.
+
+              begin x; ensure y; end
+                       ^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          Represents the location of the `end` keyword.
+
+              begin x end
+                      ^^^
     newline: false
     comment: |
       Represents a begin statement.
@@ -1110,8 +1181,18 @@ nodes:
       - name: expression
         type: node?
         kind: non-void expression
+        comment: |
+          The expression that is being passed as a block argument. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo(&args)
+                  ^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&` operator.
+
+              foo(&args)
+                  ^
     comment: |
       Represents a block argument using `&`.
 
@@ -1122,6 +1203,11 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the block local variable.
+
+              a { |; b| } # name `:b`
+                     ^
     comment: |
       Represents a block local variable.
 
@@ -1131,21 +1217,50 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+        comment: |
+          The local variables declared in the block.
+
+              [1, 2, 3].each { |i| puts x } # locals: [:i]
+                                ^
       - name: parameters
         type: node?
         kind:
           - BlockParametersNode
           - NumberedParametersNode
           - ItParametersNode
+        comment: |
+          The parameters of the block.
+
+              [1, 2, 3].each { |i| puts x }
+                               ^^^
+              [1, 2, 3].each { puts _1 }
+                             ^^^^^^^^^^^
+              [1, 2, 3].each { puts it }
+                             ^^^^^^^^^^^
       - name: body
         type: node?
         kind:
           - StatementsNode
           - BeginNode
+        comment: |
+          The body of the block.
+
+              [1, 2, 3].each { |i| puts x }
+                                   ^^^^^^
       - name: opening_loc
         type: location
+        comment: |
+          Represents the location of the opening `|`.
+
+              [1, 2, 3].each { |i| puts x }
+                               ^
       - name: closing_loc
         type: location
+        comment: |
+          Represents the location of the closing `|`.
+
+              [1, 2, 3].each { |i| puts x }
+                                 ^
     comment: |
       Represents a block of ruby code.
 
@@ -1156,10 +1271,27 @@ nodes:
     fields:
       - name: name
         type: constant?
+        comment: |
+          The name of the block parameter.
+
+              def a(&b) # name `:b`
+                     ^
+              end
       - name: name_loc
         type: location?
+        comment: |
+          Represents the location of the block parameter name.
+
+              def a(&b)
+                     ^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&` operator.
+
+              def a(&b)
+                    ^
+              end
     comment: |
       Represents a block parameter of a method, block, or lambda definition.
 
@@ -1171,13 +1303,49 @@ nodes:
       - name: parameters
         type: node?
         kind: ParametersNode
+        comment: |
+          Represents the parameters of the block.
+
+              -> (a, b = 1; local) { }
+                  ^^^^^^^^
+
+              foo do |a, b = 1; local|
+                      ^^^^^^^^
+              end
       - name: locals
         type: node[]
         kind: BlockLocalVariableNode
+        comment: |
+          Represents the local variables of the block.
+
+              -> (a, b = 1; local) { }
+                            ^^^^^
+
+              foo do |a, b = 1; local|
+                                ^^^^^
+              end
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the opening location of the block parameters.
+
+              -> (a, b = 1; local) { }
+                 ^
+
+              foo do |a, b = 1; local|
+                     ^
+              end
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the closing location of the block parameters.
+
+              -> (a, b = 1; local) { }
+                                 ^
+
+              foo do |a, b = 1; local|
+                                     ^
+              end
     comment: |
       Represents a block's parameters declaration.
 
@@ -1215,19 +1383,54 @@ nodes:
       - name: receiver
         type: node?
         kind: non-void expression
+        comment: |
+          The object that the method is being called on. This can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo.bar &&= value
+              ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar &&= value
+                 ^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar &&= value
+                  ^^^
       - name: read_name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar &&= value # read_name `:bar`
+                  ^^^
       - name: write_name
         type: constant
+        comment: |
+          Represents the name of the method being written to.
+
+              foo.bar &&= value # write_name `:bar=`
+                  ^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the operator.
+
+              foo.bar &&= value
+                      ^^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned.
+
+              foo.bar &&= value
+                          ^^^^^
     comment: |
       Represents the use of the `&&=` operator on a call.
 
@@ -1252,22 +1455,59 @@ nodes:
               ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar
+                 ^
+
+              foo&.bar
+                 ^^
       - name: name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar # name `:foo`
+              ^^^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar
+                  ^^^
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the location of the left parenthesis.
+              foo(bar)
+                 ^
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: |
+          Represents the arguments to the method call. These can be any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo(bar)
+                  ^^^
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the location of the right parenthesis.
+
+              foo(bar)
+                     ^
       - name: block
         type: node?
         kind:
           - BlockNode
           - BlockArgumentNode
+        comment: |
+          Represents the block that is being passed to the method.
+
+              foo { |a| a }
+                  ^^^^^^^^^
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -1294,21 +1534,61 @@ nodes:
       - name: receiver
         type: node?
         kind: non-void expression
+        comment: |
+          The object that the method is being called on. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo.bar += value
+              ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar += value
+                 ^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar += value
+                  ^^^
       - name: read_name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar += value # read_name `:bar`
+                  ^^^
       - name: write_name
         type: constant
+        comment: |
+          Represents the name of the method being written to.
+
+              foo.bar += value # write_name `:bar=`
+                  ^^^
       - name: binary_operator
         type: constant
+        comment: |
+          Represents the binary operator being used.
+
+              foo.bar += value # binary_operator `:+`
+                      ^
       - name: binary_operator_loc
         type: location
+        comment: |
+          Represents the location of the binary operator.
+
+              foo.bar += value
+                      ^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned.
+
+              foo.bar += value
+                         ^^^^^
     comment: |
       Represents the use of an assignment operator on a call.
 
@@ -1320,19 +1600,54 @@ nodes:
       - name: receiver
         type: node?
         kind: non-void expression
+        comment: |
+          The object that the method is being called on. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo.bar ||= value
+              ^^^
       - name: call_operator_loc
         type: location?
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar ||= value
+                 ^
       - name: message_loc
         type: location?
+        comment: |
+          Represents the location of the message.
+
+              foo.bar ||= value
+                  ^^^
       - name: read_name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar ||= value # read_name `:bar`
+                  ^^^
       - name: write_name
         type: constant
+        comment: |
+          Represents the name of the method being written to.
+
+              foo.bar ||= value # write_name `:bar=`
+                  ^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the operator.
+
+              foo.bar ||= value
+                      ^^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned.
+
+              foo.bar ||= value
+                          ^^^^^
     comment: |
       Represents the use of the `||=` operator on a call.
 
@@ -1344,12 +1659,32 @@ nodes:
       - name: receiver
         type: node
         kind: non-void expression
+        comment: |
+          The object that the method is being called on. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              foo.bar = 1
+              ^^^
       - name: call_operator_loc
         type: location
+        comment: |
+          Represents the location of the call operator.
+
+              foo.bar = 1
+                 ^
       - name: name
         type: constant
+        comment: |
+          Represents the name of the method being called.
+
+              foo.bar = 1 # name `:foo`
+              ^^^
       - name: message_loc
         type: location
+        comment: |
+          Represents the location of the message.
+
+              foo.bar = 1
+                  ^^^
     comment: |
       Represents assigning to a method call.
 
@@ -1368,11 +1703,26 @@ nodes:
       - name: value
         type: node
         kind: pattern expression
+        comment: |
+          Represents the value to capture.
+
+              foo => bar
+                     ^^^
       - name: target
         type: node
         kind: LocalVariableTargetNode
+        comment: |
+          Represents the target of the capture.
+
+              foo => bar
+              ^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `=>` operator.
+
+              foo => bar
+                  ^^
     comment: |
       Represents assigning to a local variable in pattern matching.
 
@@ -1383,16 +1733,41 @@ nodes:
       - name: predicate
         type: node?
         kind: non-void expression
+        comment: |
+          Represents the predicate of the case match. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              case true; in false; end
+              ^^^^
       - name: conditions
         type: node[]
         kind: InNode
+        comment: |
+          Represents the conditions of the case match.
+
+              case true; in false; end
+                         ^^^^^^^^
       - name: else_clause
         type: node?
         kind: ElseNode
+        comment: |
+          Represents the else clause of the case match.
+
+              case true; in false; else; end
+                                   ^^^^
       - name: case_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `case` keyword.
+
+              case true; in false; end
+              ^^^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `end` keyword.
+
+              case true; in false; end
+                                   ^^^
     comment: |
       Represents the use of a case statement for pattern matching.
 
@@ -1405,16 +1780,41 @@ nodes:
       - name: predicate
         type: node?
         kind: non-void expression
+        comment: |
+          Represents the predicate of the case statement. This can be either `nil` or any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              case true; when false; end
+              ^^^^
       - name: conditions
         type: node[]
         kind: WhenNode
+        comment: |
+          Represents the conditions of the case statement.
+
+              case true; when false; end
+                         ^^^^^^^^^^
       - name: else_clause
         type: node?
         kind: ElseNode
+        comment: |
+          Represents the else clause of the case statement.
+
+              case true; when false; else; end
+                                     ^^^^
       - name: case_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `case` keyword.
+
+              case true; when false; end
+              ^^^^
       - name: end_keyword_loc
         type: location
+        comment: |
+          Represents the location of the `end` keyword.
+
+              case true; when false; end
+                                     ^^^
     comment: |
       Represents the use of a case statement.
 
@@ -1457,13 +1857,33 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+
+              @@target &&= value # name `:@@target`
+              ^^^^^^^^
       - name: name_loc
         type: location
+        comment: |
+          Represents the location of the variable name.
+
+              @@target &&= value
+              ^^^^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          Represents the location of the `&&=` operator.
+
+              @@target &&= value
+                       ^^^
       - name: value
         type: node
         kind: non-void expression
+        comment: |
+          Represents the value being assigned. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              @@target &&= value
+                           ^^^^^
     comment: |
       Represents the use of the `&&=` operator for assignment to a class variable.
 
@@ -2725,6 +3145,7 @@ nodes:
           - EmbeddedStatementsNode
           - EmbeddedVariableNode
           - InterpolatedStringNode # `"a" "#{b}"`
+          - on error: XStringNode # `<<`FOO` "bar"
       - name: closing_loc
         type: location?
     newline: parts
@@ -3436,6 +3857,7 @@ nodes:
                 ^^^^^^^
           end
   - name: ParenthesesNode
+    flags: ParenthesesNodeFlags
     fields:
       - name: body
         type: node?
@@ -3669,6 +4091,8 @@ nodes:
           - on error: BackReferenceReadNode # => begin; rescue => $&; end
           - on error: NumberedReferenceReadNode # => begin; rescue => $1; end
           - on error: MissingNode # begin; rescue =>; end
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode
@@ -3684,7 +4108,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end
 
-      `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `exception` field.
+      `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `reference` field.
   - name: RestParameterNode
     flags: ParameterFlags
     fields:
@@ -3966,6 +4390,8 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+      - name: do_keyword_loc
+        type: location?
       - name: closing_loc
         type: location?
       - name: predicate
@@ -4007,6 +4433,8 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+      - name: do_keyword_loc
+        type: location?
       - name: closing_loc
         type: location?
       - name: predicate

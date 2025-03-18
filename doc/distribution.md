@@ -19,7 +19,8 @@ See the Snapshots section of the [Ruby website](https://www.ruby-lang.org/en/dow
 This can be useful if the nightly tarball does not have all changes yet.
 
 At Ruby source tree cloned using git:
-```sh-session
+
+```console
 $ ./autogen.sh
 $ ./configure -C
 $ make

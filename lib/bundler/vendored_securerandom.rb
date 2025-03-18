@@ -7,8 +7,6 @@
 begin
   require "rubygems/vendored_securerandom"
 rescue LoadError
-  module Bundler::Random; end
   require_relative "vendor/securerandom/lib/securerandom"
   Gem::SecureRandom = Bundler::SecureRandom
-  Gem::Random = Bundler::Random
 end

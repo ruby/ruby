@@ -3,7 +3,10 @@
 require "bundler/setup"
 require "syntax_suggest/api"
 
-require "benchmark"
+begin
+  require "benchmark"
+rescue LoadError
+end
 require "tempfile"
 
 RSpec.configure do |config|

@@ -79,6 +79,9 @@ Older versions may not support all of these.
 - <tt>\p{Hyphen}</tt>
 - <tt>\p{IDS_Binary_Operator}</tt>, <tt>\p{IDSB}</tt>
 - <tt>\p{IDS_Trinary_Operator}</tt>, <tt>\p{IDST}</tt>
+- <tt>\p{IDS_Unary_Operator}</tt>, <tt>\p{IDSU}</tt>
+- <tt>\p{ID_Compat_Math_Continue}</tt>
+- <tt>\p{ID_Compat_Math_Start}</tt>
 - <tt>\p{Ideographic}</tt>, <tt>\p{Ideo}</tt>
 - <tt>\p{Join_Control}</tt>, <tt>\p{Join_C}</tt>
 - <tt>\p{Logical_Order_Exception}</tt>, <tt>\p{LOE}</tt>
@@ -120,6 +123,9 @@ Older versions may not support all of these.
 - <tt>\p{Grapheme_Link}</tt>, <tt>\p{Gr_Link}</tt>
 - <tt>\p{ID_Continue}</tt>, <tt>\p{IDC}</tt>
 - <tt>\p{ID_Start}</tt>, <tt>\p{IDS}</tt>
+- <tt>\p{InCB_Consonant}</tt>
+- <tt>\p{InCB_Extend}</tt>
+- <tt>\p{InCB_Linker}</tt>
 - <tt>\p{Lowercase}</tt>, <tt>\p{Lower}</tt>
 - <tt>\p{Math}</tt>
 - <tt>\p{Uppercase}</tt>, <tt>\p{Upper}</tt>
@@ -348,6 +354,7 @@ Older versions may not support all of these.
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_F}</tt>
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_G}</tt>
 - <tt>\p{In_CJK_Unified_Ideographs_Extension_H}</tt>
+- <tt>\p{In_CJK_Unified_Ideographs_Extension_I}</tt>
 - <tt>\p{In_Carian}</tt>
 - <tt>\p{In_Caucasian_Albanian}</tt>
 - <tt>\p{In_Chakma}</tt>
@@ -658,6 +665,7 @@ Older versions may not support all of these.
 - <tt>\p{Age_13_0}</tt>
 - <tt>\p{Age_14_0}</tt>
 - <tt>\p{Age_15_0}</tt>
+- <tt>\p{Age_15_1}</tt>
 - <tt>\p{Age_1_1}</tt>
 - <tt>\p{Age_2_0}</tt>
 - <tt>\p{Age_2_1}</tt>

@@ -56,12 +56,12 @@ RSpec.describe "bundle info" do
       expect(out).to eq("2.3.2")
     end
 
-    it "doesn't claim that bundler has been deleted, even if using a custom path without bundler there" do
+    it "doesn't claim that bundler is missing, even if using a custom path without bundler there" do
       bundle "config set --local path vendor/bundle"
       bundle "install"
       bundle "info bundler"
       expect(out).to include("\tPath: #{root}")
-      expect(err).not_to match(/The gem bundler has been deleted/i)
+      expect(err).not_to match(/The gem bundler is missing/i)
     end
 
     it "complains if gem not in bundle" do
@@ -69,27 +69,27 @@ RSpec.describe "bundle info" do
       expect(err).to eq("Could not find gem 'missing'.")
     end
 
-    it "warns if path no longer exists on disk" do
-      FileUtils.rm_rf(default_bundle_path("gems", "rails-2.3.2"))
+    it "warns if path does not exist on disk, but specification is there" do
+      FileUtils.rm_r(default_bundle_path("gems", "rails-2.3.2"))
 
       bundle "info rails --path"
 
-      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include("The gem rails is missing.")
       expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rail --path"
-      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include("The gem rails is missing.")
       expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rails"
-      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include("The gem rails is missing.")
       expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     context "given a default gem shippped in ruby", :ruby_repo do
       it "prints information about the default gem" do
-        bundle "info rdoc"
-        expect(out).to include("* rdoc")
+        bundle "info json"
+        expect(out).to include("* json")
         expect(out).to include("Default Gem: yes")
       end
     end

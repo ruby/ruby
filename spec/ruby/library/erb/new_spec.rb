@@ -130,7 +130,7 @@ END
 <b><%#= item %></b>
 <%# end %>
 END
-  ERBSpecs.new_erb(input).result.should == "\n<b></b>\n\n"
+    ERBSpecs.new_erb(input).result.should == "\n<b></b>\n\n"
     ERBSpecs.new_erb(input, trim_mode: '<>').result.should == "<b></b>\n"
   end
 

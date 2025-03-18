@@ -180,6 +180,7 @@ struct rb_ractor_struct {
 
     st_table *local_storage;
     struct rb_id_table *idkey_local_storage;
+    VALUE local_storage_store_lock;
 
     VALUE r_stdin;
     VALUE r_stdout;
@@ -222,6 +223,8 @@ void rb_ractor_terminate_interrupt_main_thread(rb_ractor_t *r);
 void rb_ractor_terminate_all(void);
 bool rb_ractor_main_p_(void);
 void rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th);
+VALUE rb_ractor_require(VALUE feature);
+VALUE rb_ractor_autoload_load(VALUE space, ID id);
 
 VALUE rb_ractor_ensure_shareable(VALUE obj, VALUE name);
 
@@ -304,18 +307,15 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
 }
 
 #define rb_ractor_set_current_ec(cr, ec) rb_ractor_set_current_ec_(cr, ec, __FILE__, __LINE__)
+#ifdef RB_THREAD_LOCAL_SPECIFIER
+void rb_current_ec_set(rb_execution_context_t *ec);
+#endif
 
 static inline void
 rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const char *file, int line)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-
-# ifdef __APPLE__
     rb_current_ec_set(ec);
-# else
-    ruby_current_ec = ec;
-# endif
-
 #else
     native_tls_set(ruby_current_ec_key, ec);
 #endif

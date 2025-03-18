@@ -259,11 +259,15 @@ module EnvUtil
 
   def under_gc_compact_stress(val = :empty, &block)
     raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-    auto_compact = GC.auto_compact
-    GC.auto_compact = val
+
+    if GC.respond_to?(:auto_compact)
+      auto_compact = GC.auto_compact
+      GC.auto_compact = val
+    end
+
     under_gc_stress(&block)
   ensure
-    GC.auto_compact = auto_compact
+    GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact)
   end
   module_function :under_gc_compact_stress
 
@@ -275,7 +279,8 @@ module EnvUtil
   end
   module_function :without_gc
 
-  def with_default_external(enc)
+  def with_default_external(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_external = enc }
     yield
   ensure
@@ -283,7 +288,8 @@ module EnvUtil
   end
   module_function :with_default_external
 
-  def with_default_internal(enc)
+  def with_default_internal(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_internal = enc }
     yield
   ensure

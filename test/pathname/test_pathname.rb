@@ -1333,6 +1333,14 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_mktmpdir
+    Pathname.mktmpdir do |dir|
+      assert_equal Pathname(dir), dir
+      assert dir.directory?
+      assert dir.exist?
+    end
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
@@ -1467,7 +1475,8 @@ class TestPathname < Test::Unit::TestCase
 
   def test_mkpath
     with_tmpchdir('rubytest-pathname') {|dir|
-      Pathname("a/b/c/d").mkpath
+      path = Pathname("a/b/c/d")
+      assert_equal(path, path.mkpath)
       assert_file.directory?("a/b/c/d")
       unless File.stat(dir).world_readable?
         # mktmpdir should make unreadable
@@ -1483,7 +1492,8 @@ class TestPathname < Test::Unit::TestCase
     with_tmpchdir('rubytest-pathname') {|dir|
       Pathname("a/b/c/d").mkpath
       assert_file.exist?("a/b/c/d")
-      Pathname("a").rmtree
+      path = Pathname("a")
+      assert_equal(path, path.rmtree)
       assert_file.not_exist?("a")
     }
   end

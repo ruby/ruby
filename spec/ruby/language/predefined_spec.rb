@@ -243,6 +243,16 @@ describe "Predefined global $stdout" do
 end
 
 describe "Predefined global $!" do
+  it "is Fiber-local" do
+    Fiber.new do
+      raise "hi"
+    rescue
+      Fiber.yield
+    end.resume
+
+    $!.should == nil
+  end
+
   # See http://jira.codehaus.org/browse/JRUBY-5550
   it "remains nil after a failed core class \"checked\" coercion against a class that defines method_missing" do
     $!.should == nil

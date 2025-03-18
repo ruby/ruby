@@ -59,12 +59,14 @@ class TestFiberProcess < Test::Unit::TestCase
 
   def test_fork
     omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    pid = Process.fork{}
+
     Thread.new do
       scheduler = Scheduler.new
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        pid = Process.fork {}
         Process.wait(pid)
 
         assert_predicate $?, :success?

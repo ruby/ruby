@@ -146,25 +146,43 @@ wmap_memsize(const void *ptr)
     return size;
 }
 
-static int
-wmap_compact_table_i(struct weakmap_entry *entry, st_data_t data)
-{
-    st_table *table = (st_table *)data;
+struct wmap_compact_table_data {
+    st_table *table;
+    struct weakmap_entry *dead_entry;
+};
 
-    VALUE new_key = rb_gc_location(entry->key);
+static int
+wmap_compact_table_i(st_data_t key, st_data_t val, st_data_t d)
+{
+    struct wmap_compact_table_data *data = (struct wmap_compact_table_data *)d;
+    if (data->dead_entry != NULL) {
+        ruby_sized_xfree(data->dead_entry, sizeof(struct weakmap_entry));
+        data->dead_entry = NULL;
+    }
+
+    struct weakmap_entry *entry = (struct weakmap_entry *)key;
 
     entry->val = rb_gc_location(entry->val);
 
-    /* If the key object moves, then we must reinsert because the hash is
-        * based on the pointer rather than the object itself. */
-    if (entry->key != new_key) {
-        entry->key = new_key;
+    VALUE new_key = rb_gc_location(entry->key);
 
+    /* If the key object moves, then we must reinsert because the hash is
+     * based on the pointer rather than the object itself. */
+    if (entry->key != new_key) {
         DURING_GC_COULD_MALLOC_REGION_START();
         {
-            st_insert(table, (st_data_t)&entry->key, (st_data_t)&entry->val);
+            struct weakmap_entry *new_entry = xmalloc(sizeof(struct weakmap_entry));
+            new_entry->key = new_key;
+            new_entry->val = entry->val;
+            st_insert(data->table, (st_data_t)&new_entry->key, (st_data_t)&new_entry->val);
         }
         DURING_GC_COULD_MALLOC_REGION_END();
+
+        /* We cannot free the weakmap_entry here because the ST_DELETE could
+         * hash the key which would read the weakmap_entry and would cause a
+         * use-after-free. Instead, we store this entry and free it on the next
+         * iteration. */
+        data->dead_entry = entry;
 
         return ST_DELETE;
     }
@@ -178,7 +196,14 @@ wmap_compact(void *ptr)
     struct weakmap *w = ptr;
 
     if (w->table) {
-        wmap_foreach(w, wmap_compact_table_i, (st_data_t)w->table);
+        struct wmap_compact_table_data compact_data = {
+            .table = w->table,
+            .dead_entry = NULL,
+        };
+
+        st_foreach(w->table, wmap_compact_table_i, (st_data_t)&compact_data);
+
+        ruby_sized_xfree(compact_data.dead_entry, sizeof(struct weakmap_entry));
     }
 }
 
@@ -196,7 +221,15 @@ static const rb_data_type_t weakmap_type = {
 static int
 wmap_cmp(st_data_t x, st_data_t y)
 {
-    return *(VALUE *)x != *(VALUE *)y;
+    VALUE x_obj = *(VALUE *)x;
+    VALUE y_obj = *(VALUE *)y;
+
+    if (!wmap_live_p(x_obj) && !wmap_live_p(y_obj)) {
+        return x != y;
+    }
+    else {
+        return x_obj != y_obj;
+    }
 }
 
 static st_index_t
@@ -406,18 +439,6 @@ wmap_values(VALUE self)
     return ary;
 }
 
-static VALUE
-nonspecial_obj_id(VALUE obj)
-{
-#if SIZEOF_LONG == SIZEOF_VOIDP
-    return (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG);
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return LL2NUM((SIGNED_VALUE)(obj) / 2);
-#else
-# error not supported
-#endif
-}
-
 static int
 wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int existing)
 {
@@ -430,7 +451,7 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
     else {
         struct weakmap_entry *entry = xmalloc(sizeof(struct weakmap_entry));
 
-        *key = (st_data_t)&entry->key;;
+        *key = (st_data_t)&entry->key;
         *val = (st_data_t)&entry->val;
     }
 
@@ -462,7 +483,7 @@ wmap_aset(VALUE self, VALUE key, VALUE val)
     RB_OBJ_WRITTEN(self, Qundef, key);
     RB_OBJ_WRITTEN(self, Qundef, val);
 
-    return nonspecial_obj_id(val);
+    return Qnil;
 }
 
 /* Retrieves a weakly referenced object with the given key */
@@ -615,10 +636,8 @@ static int
 wkmap_mark_table_i(st_data_t key, st_data_t val_obj, st_data_t data)
 {
     VALUE **dead_entry = (VALUE **)data;
-    if (dead_entry != NULL) {
-        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
-        *dead_entry = NULL;
-    }
+    ruby_sized_xfree(*dead_entry, sizeof(VALUE));
+    *dead_entry = NULL;
 
     VALUE *key_ptr = (VALUE *)key;
 
@@ -681,10 +700,8 @@ static int
 wkmap_compact_table_i(st_data_t key, st_data_t val_obj, st_data_t data, int _error)
 {
     VALUE **dead_entry = (VALUE **)data;
-    if (dead_entry != NULL) {
-        ruby_sized_xfree(*dead_entry, sizeof(VALUE));
-        *dead_entry = NULL;
-    }
+    ruby_sized_xfree(*dead_entry, sizeof(VALUE));
+    *dead_entry = NULL;
 
     VALUE *key_ptr = (VALUE *)key;
 
@@ -842,7 +859,7 @@ wkmap_aset(VALUE self, VALUE key, VALUE val)
     TypedData_Get_Struct(self, struct weakkeymap, &weakkeymap_type, w);
 
     if (!FL_ABLE(key) || SYMBOL_P(key) || RB_BIGNUM_TYPE_P(key) || RB_TYPE_P(key, T_FLOAT)) {
-        rb_raise(rb_eArgError, "WeakKeyMap must be garbage collectable");
+        rb_raise(rb_eArgError, "WeakKeyMap keys must be garbage collectable");
         UNREACHABLE_RETURN(Qnil);
     }
 
@@ -1113,7 +1130,7 @@ wkmap_inspect(VALUE self)
  *    end
  *
  *  This will result in +make_value+ returning the same object for same set of attributes
- *  always, but the values that aren't needed anymore woudn't be sitting in the cache forever.
+ *  always, but the values that aren't needed anymore wouldn't be sitting in the cache forever.
  */
 
 void

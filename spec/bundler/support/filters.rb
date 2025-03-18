@@ -1,11 +1,18 @@
 # frozen_string_literal: true
 
 class RequirementChecker < Proc
-  def self.against(present)
+  def self.against(present, major_only: false)
+    present = present.split(".")[0] if major_only
     provided = Gem::Version.new(present)
 
     new do |required|
-      !Gem::Requirement.new(required).satisfied_by?(provided)
+      requirement = Gem::Requirement.new(required)
+
+      if major_only && !requirement.requirements.map(&:last).all? {|version| version.segments.one? }
+        raise "this filter only supports major versions, but #{required} was given"
+      end
+
+      !requirement.satisfied_by?(provided)
     end.tap do |checker|
       checker.provided = provided
     end
@@ -21,10 +28,7 @@ end
 RSpec.configure do |config|
   config.filter_run_excluding realworld: true
 
-  git_version = Bundler::Source::Git::GitProxy.new(nil, nil).version
-
-  config.filter_run_excluding git: RequirementChecker.against(git_version)
-  config.filter_run_excluding bundler: RequirementChecker.against(Bundler::VERSION.split(".")[0])
+  config.filter_run_excluding bundler: RequirementChecker.against(Bundler::VERSION, major_only: true)
   config.filter_run_excluding rubygems: RequirementChecker.against(Gem::VERSION)
   config.filter_run_excluding ruby_repo: !ENV["GEM_COMMAND"].nil?
   config.filter_run_excluding no_color_tty: Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?

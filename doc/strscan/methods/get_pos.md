@@ -4,7 +4,7 @@ call-seq:
 Returns the integer [byte position][2],
 which may be different from the [character position][7]:
 
-```
+```rb
 scanner = StringScanner.new(HIRAGANA_TEXT)
 scanner.string  # => "こんにちは"
 scanner.pos     # => 0

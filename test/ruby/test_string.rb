@@ -164,6 +164,15 @@ CODE
     assert_raise(ArgumentError) { "foo"[] }
   end
 
+  def test_AREF_underflow
+    require "rbconfig/sizeof"
+    assert_equal(nil, S("\u{3042 3044 3046}")[RbConfig::LIMITS["LONG_MIN"], 1])
+  end
+
+  def test_AREF_invalid_encoding
+    assert_equal(S("\x80"), S("A"*39+"\x80")[-1, 1])
+  end
+
   def test_ASET # '[]='
     s = S("FooBar")
     s[0] = S('A')
@@ -662,8 +671,8 @@ CODE
     assert_equal(Encoding::UTF_8, "#{s}x".encoding)
   end
 
-  def test_string_interpolations_across_size_pools_get_embedded
-    omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+  def test_string_interpolations_across_heaps_get_embedded
+    omit if GC::INTERNAL_CONSTANTS[:HEAP_COUNT] == 1
 
     require 'objspace'
     base_slot_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
@@ -3386,6 +3395,12 @@ CODE
 
     bar = -%w(test uplus minus str).join('_')
     assert_same(str, bar, "uminus deduplicates [Feature #13077] str: #{ObjectSpace.dump(str)} bar: #{ObjectSpace.dump(bar)}")
+  end
+
+  def test_uminus_dedup_in_place
+    dynamic = "this string is unique and frozen #{rand}".freeze
+    assert_same dynamic, -dynamic
+    assert_same dynamic, -dynamic.dup
   end
 
   def test_uminus_frozen

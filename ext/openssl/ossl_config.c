@@ -22,7 +22,7 @@ static const rb_data_type_t ossl_config_type = {
     {
         0, nconf_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 CONF *
@@ -87,6 +87,7 @@ config_s_parse(VALUE klass, VALUE str)
 
     bio = ossl_obj2bio(&str);
     config_load_bio(conf, bio); /* Consumes BIO */
+    rb_obj_freeze(obj);
     return obj;
 }
 
@@ -144,6 +145,7 @@ config_initialize(int argc, VALUE *argv, VALUE self)
             ossl_raise(eConfigError, "BIO_new_file");
         config_load_bio(conf, bio); /* Consumes BIO */
     }
+    rb_obj_freeze(self);
     return self;
 }
 
@@ -158,6 +160,7 @@ config_initialize_copy(VALUE self, VALUE other)
     rb_check_frozen(self);
     bio = ossl_obj2bio(&str);
     config_load_bio(conf, bio); /* Consumes BIO */
+    rb_obj_freeze(self);
     return self;
 }
 
@@ -305,18 +308,16 @@ static IMPLEMENT_LHASH_DOALL_ARG_FN(dump_conf_value, CONF_VALUE, VALUE)
  *
  * Gets the parsable form of the current configuration.
  *
- * Given the following configuration being created:
+ * Given the following configuration file being loaded:
  *
- *   config = OpenSSL::Config.new
- *     #=> #<OpenSSL::Config sections=[]>
- *   config['default'] = {"foo"=>"bar","baz"=>"buz"}
- *     #=> {"foo"=>"bar", "baz"=>"buz"}
+ *   config = OpenSSL::Config.load('baz.cnf')
+ *     #=> #<OpenSSL::Config sections=["default"]>
  *   puts config.to_s
  *     #=> [ default ]
  *     #   foo=bar
  *     #   baz=buz
  *
- * You can parse get the serialized configuration using #to_s and then parse
+ * You can get the serialized configuration using #to_s and then parse
  * it later:
  *
  *   serialized_config = config.to_s
@@ -455,6 +456,6 @@ Init_ossl_config(void)
      * The default system configuration file for OpenSSL.
      */
     path = CONF_get1_default_config_file();
-    path_str = ossl_buf2str(path, rb_long2int(strlen(path)));
+    path_str = rb_obj_freeze(ossl_buf2str(path, rb_long2int(strlen(path))));
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE", path_str);
 }

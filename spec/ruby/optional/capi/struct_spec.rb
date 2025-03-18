@@ -209,3 +209,52 @@ describe "C-API Struct function" do
     end
   end
 end
+
+ruby_version_is "3.3" do
+  describe "C-API Data function" do
+    before :each do
+      @s = CApiStructSpecs.new
+    end
+
+    describe "rb_data_define" do
+      it "returns a subclass of Data class when passed nil as the first argument" do
+        klass = @s.rb_data_define(nil, "a", "b", "c")
+
+        klass.should.is_a? Class
+        klass.superclass.should == Data
+      end
+
+      it "returns a subclass of a class when passed as the first argument" do
+        superclass = Class.new(Data)
+        klass = @s.rb_data_define(superclass, "a", "b", "c")
+
+        klass.should.is_a? Class
+        klass.superclass.should == superclass
+      end
+
+      it "creates readers for the members" do
+        klass = @s.rb_data_define(nil, "a", "b", "c")
+        obj = klass.new(1, 2, 3)
+
+        obj.a.should == 1
+        obj.b.should == 2
+        obj.c.should == 3
+      end
+
+      it "returns the member names as Symbols" do
+        klass = @s.rb_data_define(nil, "a", "b", "c")
+        obj = klass.new(0, 0, 0)
+
+        obj.members.should == [:a, :b, :c]
+      end
+
+      it "raises an ArgumentError if arguments contain duplicate member name" do
+        -> { @s.rb_data_define(nil, "a", "b", "a") }.should raise_error(ArgumentError)
+      end
+
+      it "raises when first argument is not a class" do
+        -> { @s.rb_data_define([], "a", "b", "c") }.should raise_error(TypeError, "wrong argument type Array (expected Class)")
+      end
+    end
+  end
+end

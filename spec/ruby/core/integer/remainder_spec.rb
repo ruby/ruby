@@ -15,8 +15,8 @@ describe "Integer#remainder" do
     end
 
     it "keeps sign of self" do
-       5.remainder( 3).should ==  2
-       5.remainder(-3).should ==  2
+      5.remainder( 3).should == 2
+      5.remainder(-3).should == 2
       -5.remainder( 3).should == -2
       -5.remainder(-3).should == -2
     end

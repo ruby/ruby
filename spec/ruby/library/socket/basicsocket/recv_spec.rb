@@ -32,25 +32,6 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == 'hello'
   end
 
-  ruby_version_is "3.3" do
-    it "returns nil on a closed stream socket" do
-      t = Thread.new do
-        client = @server.accept
-        packet = client.recv(10)
-        client.close
-        packet
-      end
-
-      Thread.pass while t.status and t.status != "sleep"
-      t.status.should_not be_nil
-
-      socket = TCPSocket.new('127.0.0.1', @port)
-      socket.close
-
-      t.value.should be_nil
-    end
-  end
-
   platform_is_not :solaris do
     it "accepts flags to specify unusual receiving behaviour" do
       t = Thread.new do
@@ -187,6 +168,83 @@ describe 'BasicSocket#recv' do
 
           @server.recv(2, Socket::MSG_PEEK).should == 'he'
           @server.recv(2).should == 'he'
+        end
+      end
+    end
+  end
+end
+
+describe "BasicSocket#recv" do
+  context "when recvfrom(2) returns 0 (if no messages are available to be received and the peer has performed an orderly shutdown)" do
+    describe "stream socket" do
+      before :each do
+        @server = TCPServer.new('127.0.0.1', 0)
+        @port = @server.addr[1]
+      end
+
+      after :each do
+        @server.close unless @server.closed?
+      end
+
+      ruby_version_is ""..."3.3" do
+        it "returns an empty String on a closed stream socket" do
+          t = Thread.new do
+            client = @server.accept
+            client.recv(10)
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          socket = TCPSocket.new('127.0.0.1', @port)
+          socket.close
+
+          t.value.should == ""
+        end
+      end
+
+      ruby_version_is "3.3" do
+        it "returns nil on a closed stream socket" do
+          t = Thread.new do
+            client = @server.accept
+            client.recv(10)
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          socket = TCPSocket.new('127.0.0.1', @port)
+          socket.close
+
+          t.value.should be_nil
+        end
+      end
+    end
+
+    describe "datagram socket" do
+      SocketSpecs.each_ip_protocol do |family, ip_address|
+        before :each do
+          @server = UDPSocket.new(family)
+          @client = UDPSocket.new(family)
+        end
+
+        after :each do
+          @server.close unless @server.closed?
+          @client.close unless @client.closed?
+        end
+
+        it "returns empty String" do
+          @server.bind(ip_address, 0)
+          addr = @server.connect_address
+          @client.connect(addr.ip_address, addr.ip_port)
+
+          @client.send('', 0)
+
+          @server.recv(1).should == ""
         end
       end
     end

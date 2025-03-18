@@ -39,7 +39,25 @@ typedef struct pm_options_scope {
 
     /** The names of the locals in the scope. */
     pm_string_t *locals;
+
+    /** Flags for the set of forwarding parameters in this scope. */
+    uint8_t forwarding;
 } pm_options_scope_t;
+
+/** The default value for parameters. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_NONE = 0x0;
+
+/** When the scope is fowarding with the * parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS = 0x1;
+
+/** When the scope is fowarding with the ** parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS = 0x2;
+
+/** When the scope is fowarding with the & parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_BLOCK = 0x4;
+
+/** When the scope is fowarding with the ... parameter. */
+static const uint8_t PM_OPTIONS_SCOPE_FORWARDING_ALL = 0x8;
 
 // Forward declaration needed by the callback typedef.
 struct pm_options;
@@ -68,7 +86,10 @@ typedef enum {
     PM_OPTIONS_VERSION_LATEST = 0,
 
     /** The vendored version of prism in CRuby 3.3.x. */
-    PM_OPTIONS_VERSION_CRUBY_3_3 = 1
+    PM_OPTIONS_VERSION_CRUBY_3_3 = 1,
+
+    /** The vendored version of prism in CRuby 3.4.x. */
+    PM_OPTIONS_VERSION_CRUBY_3_4 = 2
 } pm_options_version_t;
 
 /**
@@ -157,6 +178,13 @@ typedef struct pm_options {
      * inside another script.
      */
     bool partial_script;
+
+    /**
+     * Whether or not the parser should freeze the nodes that it creates. This
+     * makes it possible to have a deeply frozen AST that is safe to share
+     * between concurrency primitives.
+     */
+    bool freeze;
 } pm_options_t;
 
 /**
@@ -283,6 +311,14 @@ PRISM_EXPORTED_FUNCTION void pm_options_main_script_set(pm_options_t *options, b
 PRISM_EXPORTED_FUNCTION void pm_options_partial_script_set(pm_options_t *options, bool partial_script);
 
 /**
+ * Set the freeze option on the given options struct.
+ *
+ * @param options The options struct to set the freeze value on.
+ * @param freeze The freeze value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze);
+
+/**
  * Allocate and zero out the scopes array on the given options struct.
  *
  * @param options The options struct to initialize the scopes array on.
@@ -320,6 +356,14 @@ PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, si
 PRISM_EXPORTED_FUNCTION const pm_string_t * pm_options_scope_local_get(const pm_options_scope_t *scope, size_t index);
 
 /**
+ * Set the forwarding option on the given scope struct.
+ *
+ * @param scope The scope struct to set the forwarding on.
+ * @param forwarding The forwarding value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_scope_forwarding_set(pm_options_scope_t *scope, uint8_t forwarding);
+
+/**
  * Free the internal memory associated with the options.
  *
  * @param options The options struct whose internal memory should be freed.
@@ -352,6 +396,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | `1`     | encoding locked            |
  * | `1`     | main script                |
  * | `1`     | partial script             |
+ * | `1`     | freeze                     |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
  *
@@ -367,6 +412,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | # bytes | field                      |
  * | ------- | -------------------------- |
  * | `4`     | the number of locals       |
+ * | `1`     | the forwarding flags       |
  * | ...     | the locals                 |
  *
  * Each local is laid out as follows:

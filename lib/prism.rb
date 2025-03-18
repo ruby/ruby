@@ -24,7 +24,9 @@ module Prism
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
+  autoload :Relocation, "prism/relocation"
   autoload :Serialize, "prism/serialize"
+  autoload :StringQuery, "prism/string_query"
   autoload :Translation, "prism/translation"
   autoload :Visitor, "prism/visitor"
 
@@ -57,11 +59,11 @@ module Prism
   end
 
   # :call-seq:
-  #   Prism::load(source, serialized) -> ParseResult
+  #   Prism::load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
-  def self.load(source, serialized)
-    Serialize.load(source, serialized)
+  def self.load(source, serialized, freeze = false)
+    Serialize.load_parse(source, serialized, freeze)
   end
 end
 
@@ -75,13 +77,13 @@ require_relative "prism/parse_result"
 # it's going to require the built library. Otherwise, it's going to require a
 # module that uses FFI to call into the library.
 if RUBY_ENGINE == "ruby" and !ENV["PRISM_FFI_BACKEND"]
-  require "prism/prism"
-
   # The C extension is the default backend on CRuby.
   Prism::BACKEND = :CEXT
-else
-  require_relative "prism/ffi"
 
+  require "prism/prism"
+else
   # The FFI backend is used on other Ruby implementations.
   Prism::BACKEND = :FFI
+
+  require_relative "prism/ffi"
 end

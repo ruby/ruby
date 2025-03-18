@@ -428,6 +428,22 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/README.md").read).not_to include("github.com/bundleuser")
       end
     end
+
+    describe "test task name on readme" do
+      shared_examples_for "test task name on readme" do |framework, task_name|
+        before do
+          bundle "gem #{gem_name} --test=#{framework}"
+        end
+
+        it "renders with correct name" do
+          expect(bundled_app("#{gem_name}/README.md").read).to include("Then, run `rake #{task_name}` to run the tests.")
+        end
+      end
+
+      it_behaves_like "test task name on readme", "test-unit", "test"
+      it_behaves_like "test task name on readme", "minitest", "test"
+      it_behaves_like "test task name on readme", "rspec", "spec"
+    end
   end
 
   it "creates a new git repository" do
@@ -462,9 +478,12 @@ RSpec.describe "bundle gem" do
 
     prepare_gemspec(bundled_app("newgem", "newgem.gemspec"))
 
-    gems = ["rake-#{rake_version}"]
+    build_repo2 do
+      build_dummy_irb "9.9.9"
+    end
+    gems = ["rake-#{rake_version}", "irb-9.9.9"]
     path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(base: bundled_app("newgem")) : system_gem_path
-    system_gems gems, path: path
+    system_gems gems, path: path, gem_repo: gem_repo2
     bundle "exec rake build", dir: bundled_app("newgem")
 
     expect(last_command.stdboth).not_to include("ERROR")
@@ -1518,7 +1537,7 @@ RSpec.describe "bundle gem" do
       it "includes rake-compiler, but no Rust related changes" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
 
-        expect(bundled_app("#{gem_name}/Gemfile").read).to_not include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to_not include('spec.add_dependency "rb_sys"')
         expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to_not include('spec.required_rubygems_version = ">= ')
       end
 
@@ -1578,7 +1597,7 @@ RSpec.describe "bundle gem" do
 
       it "includes rake-compiler, rb_sys gems and required_rubygems_version constraint" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
-        expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rb_sys"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "rb_sys"')
         expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.required_rubygems_version = ">= ')
       end
 

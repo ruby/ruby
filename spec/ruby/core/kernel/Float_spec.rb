@@ -157,6 +157,24 @@ describe :kernel_float, shared: true do
     @object.send(:Float, "1\t\n").should == 1.0
   end
 
+  ruby_version_is ""..."3.4" do
+    it "raises ArgumentError if a fractional part is missing" do
+      -> { @object.send(:Float, "1.") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "+1.") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "-1.") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "1.e+0") }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.4" do
+    it "allows String representation without a fractional part" do
+      @object.send(:Float, "1.").should == 1.0
+      @object.send(:Float, "+1.").should == 1.0
+      @object.send(:Float, "-1.").should == -1.0
+      @object.send(:Float, "1.e+0").should == 1.0
+    end
+  end
+
   %w(e E).each do |e|
     it "raises an ArgumentError if #{e} is the trailing character" do
       -> { @object.send(:Float, "2#{e}") }.should raise_error(ArgumentError)
@@ -280,7 +298,7 @@ describe :kernel_float, shared: true do
     nan2.should equal(nan)
   end
 
-  it "returns the identical Infinity if to_f is called and it returns Infinity" do
+  it "returns the identical Infinity if #to_f is called and it returns Infinity" do
     infinity = infinity_value
     (infinity_to_f = mock('Infinity')).should_receive(:to_f).once.and_return(infinity)
     infinity2 = @object.send(:Float, infinity_to_f)

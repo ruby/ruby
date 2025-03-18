@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "../../support/silent_logger"
-
 RSpec.describe "gemcutter's dependency API" do
   context "when Gemcutter API takes too long to respond" do
     before do
@@ -11,9 +9,7 @@ RSpec.describe "gemcutter's dependency API" do
       @server_uri = "http://127.0.0.1:#{port}"
 
       require_relative "../../support/artifice/endpoint_timeout"
-
-      # mustermann depends on URI::RFC2396_PARSER behavior
-      URI.parser = URI::RFC2396_PARSER if URI.respond_to?(:parser=)
+      require_relative "../../support/silent_logger"
 
       require "rackup/server"
 
@@ -36,8 +32,6 @@ RSpec.describe "gemcutter's dependency API" do
       Artifice.deactivate
       @t.kill
       @t.join
-
-      URI.parser = URI::DEFAULT_PARSER if URI.respond_to?(:parser=)
     end
 
     it "times out and falls back on the modern index" do

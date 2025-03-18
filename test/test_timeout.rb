@@ -31,6 +31,12 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_raise_for_neg_second
+    assert_raise(ArgumentError) do
+      Timeout.timeout(-1) { sleep(0.01) }
+    end
+  end
+
   def test_included
     c = Class.new do
       include Timeout
@@ -114,7 +120,7 @@ class TestTimeout < Test::Unit::TestCase
   def test_cannot_convert_into_time_interval
     bug3168 = '[ruby-dev:41010]'
     def (n = Object.new).zero?; false; end
-    assert_raise(TypeError, bug3168) {Timeout.timeout(n) { sleep 0.1 }}
+    assert_raise(ArgumentError, bug3168) {Timeout.timeout(n) { sleep 0.1 }}
   end
 
   def test_skip_rescue_standarderror

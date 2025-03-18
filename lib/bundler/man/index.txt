@@ -8,13 +8,17 @@ bundle-clean(1)       bundle-clean.1
 bundle-config(1)      bundle-config.1
 bundle-console(1)     bundle-console.1
 bundle-doctor(1)      bundle-doctor.1
+bundle-env(1)         bundle-env.1
 bundle-exec(1)        bundle-exec.1
+bundle-fund(1)        bundle-fund.1
 bundle-gem(1)         bundle-gem.1
 bundle-help(1)        bundle-help.1
 bundle-info(1)        bundle-info.1
 bundle-init(1)        bundle-init.1
 bundle-inject(1)      bundle-inject.1
 bundle-install(1)     bundle-install.1
+bundle-issue(1)       bundle-issue.1
+bundle-licenses(1)    bundle-licenses.1
 bundle-list(1)        bundle-list.1
 bundle-lock(1)        bundle-lock.1
 bundle-open(1)        bundle-open.1

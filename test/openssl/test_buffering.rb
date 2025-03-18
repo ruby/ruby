@@ -31,7 +31,7 @@ class OpenSSL::TestBuffering < OpenSSL::TestCase
     end
 
     def syswrite(str)
-      @io << str
+      @io.append_as_bytes(str)
       str.size
     end
   end

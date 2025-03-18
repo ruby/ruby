@@ -13,24 +13,51 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module Bundler::URI
-  include RFC2396_REGEXP
+  # The default parser instance for RFC 2396.
+  RFC2396_PARSER = RFC2396_Parser.new
+  Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
-  REGEXP = RFC2396_REGEXP
-  Parser = RFC2396_Parser
+  # The default parser instance for RFC 3986.
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
-  # Bundler::URI::Parser.new
-  DEFAULT_PARSER = Parser.new
-  DEFAULT_PARSER.pattern.each_pair do |sym, str|
-    unless REGEXP::PATTERN.const_defined?(sym)
-      REGEXP::PATTERN.const_set(sym, str)
+  # The default parser instance.
+  DEFAULT_PARSER = RFC3986_PARSER
+  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
+
+  # Set the default parser instance.
+  def self.parser=(parser = RFC3986_PARSER)
+    remove_const(:Parser) if defined?(::Bundler::URI::Parser)
+    const_set("Parser", parser.class)
+
+    remove_const(:REGEXP) if defined?(::Bundler::URI::REGEXP)
+    remove_const(:PATTERN) if defined?(::Bundler::URI::PATTERN)
+    if Parser == RFC2396_Parser
+      const_set("REGEXP", Bundler::URI::RFC2396_REGEXP)
+      const_set("PATTERN", Bundler::URI::RFC2396_REGEXP::PATTERN)
+    end
+
+    Parser.new.regexp.each_pair do |sym, str|
+      remove_const(sym) if const_defined?(sym, false)
+      const_set(sym, str)
     end
   end
-  DEFAULT_PARSER.regexp.each_pair do |sym, str|
-    const_set(sym, str)
+  self.parser = RFC3986_PARSER
+
+  def self.const_missing(const) # :nodoc:
+    if const == :REGEXP
+      warn "Bundler::URI::REGEXP is obsolete. Use Bundler::URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
+      Bundler::URI::RFC2396_REGEXP
+    elsif value = RFC2396_PARSER.regexp[const]
+      warn "Bundler::URI::#{const} is obsolete. Use RFC2396_PARSER.regexp[#{const.inspect}] explicitly.", uplevel: 1 if $VERBOSE
+      value
+    elsif value = RFC2396_Parser.const_get(const)
+      warn "Bundler::URI::#{const} is obsolete. Use RFC2396_Parser::#{const} explicitly.", uplevel: 1 if $VERBOSE
+      value
+    else
+      super
+    end
   end
-  Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
   module Util # :nodoc:
     def make_components_hash(klass, array_hash)
@@ -64,7 +91,7 @@ module Bundler::URI
     module_function :make_components_hash
   end
 
-  module Schemes
+  module Schemes # :nodoc:
   end
   private_constant :Schemes
 
@@ -168,7 +195,7 @@ module Bundler::URI
   #    ["fragment", "top"]]
   #
   def self.split(uri)
-    RFC3986_PARSER.split(uri)
+    DEFAULT_PARSER.split(uri)
   end
 
   # Returns a new \Bundler::URI object constructed from the given string +uri+:
@@ -182,7 +209,7 @@ module Bundler::URI
   # if it may contain invalid Bundler::URI characters.
   #
   def self.parse(uri)
-    RFC3986_PARSER.parse(uri)
+    DEFAULT_PARSER.parse(uri)
   end
 
   # Merges the given Bundler::URI strings +str+
@@ -209,7 +236,7 @@ module Bundler::URI
   #   # => #<Bundler::URI::HTTP http://example.com/foo/bar>
   #
   def self.join(*str)
-    RFC3986_PARSER.join(*str)
+    DEFAULT_PARSER.join(*str)
   end
 
   #
@@ -282,7 +309,7 @@ module Bundler::URI
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
-  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze # :nodoc:
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:

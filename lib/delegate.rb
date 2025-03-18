@@ -39,7 +39,7 @@
 # Be advised, RDoc will not detect delegated methods.
 #
 class Delegator < BasicObject
-  VERSION = "0.3.1"
+  VERSION = "0.4.0"
 
   kernel = ::Kernel.dup
   kernel.class_eval do

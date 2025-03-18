@@ -43,12 +43,12 @@ jobs:
     env:
       RUBY_TESTOPTS: '-q --tty=no'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      WASI_SDK_VERSION_MAJOR: 20
+      WASI_SDK_VERSION_MAJOR: 25
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 113
       WASMTIME_VERSION: v15.0.0
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -56,7 +56,7 @@ jobs:
       || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
@@ -78,7 +78,7 @@ jobs:
           sudo apt-get update -q || :
           sudo apt-get install --no-install-recommends -q -y ruby make autoconf git wget
 
-          wasi_sdk_deb="wasi-sdk_${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}_amd64.deb"
+          wasi_sdk_deb="wasi-sdk-${WASI_SDK_VERSION_MAJOR}.${WASI_SDK_VERSION_MINOR}-x86_64-linux.deb"
           wget "https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-${WASI_SDK_VERSION_MAJOR}/${wasi_sdk_deb}"
           sudo dpkg -i "$wasi_sdk_deb"
           rm -f "$wasi_sdk_deb"
@@ -114,6 +114,12 @@ jobs:
           make
           make install
 
+      - name: Download config.guess with wasi version
+        run: |
+          rm tool/config.guess tool/config.sub
+          ruby tool/downloader.rb -d tool -e gnu config.guess config.sub
+        working-directory: src
+
       - name: Run configure
         run: |
           ../src/configure \
@@ -136,7 +142,7 @@ jobs:
       - run: tar cfz ../install.tar.gz -C ../install .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         with:
           name: ruby-wasm-install
           path: ${{ github.workspace }}/install.tar.gz
@@ -164,7 +170,7 @@ jobs:
       - name: Save Pull Request number
         if: ${{ github.event_name == 'pull_request' }}
         run: echo "${{ github.event.pull_request.number }}" >> ${{ github.workspace }}/github-pr-info.txt
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+      - uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: github-pr-info

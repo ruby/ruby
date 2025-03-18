@@ -85,5 +85,18 @@ describe "C-API Mutex functions" do
       callback = -> { @m.locked?.should be_true }
       @s.rb_mutex_synchronize(@m, callback)
     end
+
+    it "returns a value returned from a callback" do
+      callback = -> { :foo }
+      @s.rb_mutex_synchronize(@m, callback).should == :foo
+    end
+
+    it "calls a C-function that accepts and returns non-VALUE values" do
+      @s.rb_mutex_synchronize_with_naughty_callback(@m).should == 42
+    end
+
+    it "calls a native function" do
+      @s.rb_mutex_synchronize_with_native_callback(@m, 42).should == 42
+    end
   end
 end

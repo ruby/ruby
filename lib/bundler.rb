@@ -10,7 +10,6 @@ require_relative "bundler/plugin"
 require_relative "bundler/rubygems_ext"
 require_relative "bundler/rubygems_integration"
 require_relative "bundler/version"
-require_relative "bundler/constants"
 require_relative "bundler/current_ruby"
 require_relative "bundler/build_metadata"
 
@@ -52,6 +51,7 @@ module Bundler
   autoload :Env,                    File.expand_path("bundler/env", __dir__)
   autoload :Fetcher,                File.expand_path("bundler/fetcher", __dir__)
   autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
+  autoload :FREEBSD,                File.expand_path("bundler/constants", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
   autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
@@ -62,6 +62,8 @@ module Bundler
   autoload :LazySpecification,      File.expand_path("bundler/lazy_specification", __dir__)
   autoload :LockfileParser,         File.expand_path("bundler/lockfile_parser", __dir__)
   autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
+  autoload :Materialization,        File.expand_path("bundler/materialization", __dir__)
+  autoload :NULL,                   File.expand_path("bundler/constants", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -80,6 +82,7 @@ module Bundler
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
   autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
+  autoload :WINDOWS,                File.expand_path("bundler/constants", __dir__)
   autoload :SafeMarshal,            File.expand_path("bundler/safe_marshal", __dir__)
 
   class << self
@@ -209,7 +212,6 @@ module Bundler
     #    Bundler.require(:test)   # requires second_gem
     #
     def require(*groups)
-      load_plugins
       setup(*groups).require(*groups)
     end
 
@@ -251,12 +253,6 @@ module Bundler
           lock = Bundler.read_file(Bundler.default_lockfile)
           LockfileParser.new(lock)
         end
-    end
-
-    def most_specific_locked_platform?(platform)
-      return false unless defined?(@definition) && @definition
-
-      definition.most_specific_locked_platform == platform
     end
 
     def ruby_scope
@@ -493,22 +489,31 @@ module Bundler
     end
 
     def mkdir_p(path)
-      SharedHelpers.filesystem_access(path, :write) do |p|
+      SharedHelpers.filesystem_access(path, :create) do |p|
         FileUtils.mkdir_p(p)
       end
     end
 
     def which(executable)
-      if File.file?(executable) && File.executable?(executable)
-        executable
-      elsif paths = ENV["PATH"]
+      executable_path = find_executable(executable)
+      return executable_path if executable_path
+
+      if (paths = ENV["PATH"])
         quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
-          executable_path = File.expand_path(executable, path)
-          return executable_path if File.file?(executable_path) && File.executable?(executable_path)
+          executable_path = find_executable(File.expand_path(executable, path))
+          return executable_path if executable_path
         end
       end
+    end
+
+    def find_executable(path)
+      extensions = RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split
+      extensions = [RbConfig::CONFIG["EXEEXT"]] unless extensions&.any?
+      candidates = extensions.map {|ext| "#{path}#{ext}" }
+
+      candidates.find {|candidate| File.file?(candidate) && File.executable?(candidate) }
     end
 
     def read_file(file)
@@ -542,15 +547,7 @@ module Bundler
     def load_gemspec_uncached(file, validate = false)
       path = Pathname.new(file)
       contents = read_file(file)
-      spec = if contents.start_with?("---") # YAML header
-        eval_yaml_gemspec(path, contents)
-      else
-        # Eval the gemspec from its parent directory, because some gemspecs
-        # depend on "./" relative paths.
-        SharedHelpers.chdir(path.dirname.to_s) do
-          eval_gemspec(path, contents)
-        end
-      end
+      spec = eval_gemspec(path, contents)
       return unless spec
       spec.loaded_from = path.expand_path.to_s
       Bundler.rubygems.validate(spec) if validate
@@ -563,28 +560,11 @@ module Bundler
 
     def git_present?
       return @git_present if defined?(@git_present)
-      @git_present = Bundler.which("git#{RbConfig::CONFIG["EXEEXT"]}")
+      @git_present = Bundler.which("git")
     end
 
     def feature_flag
       @feature_flag ||= FeatureFlag.new(VERSION)
-    end
-
-    def load_plugins(definition = Bundler.definition)
-      return if defined?(@load_plugins_ran)
-
-      Bundler.rubygems.load_plugins
-
-      requested_path_gems = definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
-      path_plugin_files = requested_path_gems.map do |spec|
-        Bundler.rubygems.spec_matches_for_glob(spec, "rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
-      rescue TypeError
-        error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
-        raise Gem::InvalidSpecificationException, error_message
-      end.flatten
-      Bundler.rubygems.load_plugin_files(path_plugin_files)
-      Bundler.rubygems.load_env_plugins
-      @load_plugins_ran = true
     end
 
     def reset!
@@ -669,12 +649,18 @@ module Bundler
       Kernel.require "psych"
 
       Gem::Specification.from_yaml(contents)
-    rescue ::Psych::SyntaxError, ArgumentError, Gem::EndOfYAMLException, Gem::Exception
-      eval_gemspec(path, contents)
     end
 
     def eval_gemspec(path, contents)
-      eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
+      if contents.start_with?("---") # YAML header
+        eval_yaml_gemspec(path, contents)
+      else
+        # Eval the gemspec from its parent directory, because some gemspecs
+        # depend on "./" relative paths.
+        SharedHelpers.chdir(path.dirname.to_s) do
+          eval(contents, TOPLEVEL_BINDING.dup, path.expand_path.to_s)
+        end
+      end
     rescue ScriptError, StandardError => e
       msg = "There was an error while loading `#{path.basename}`: #{e.message}"
 

@@ -8,8 +8,8 @@ end
 
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
-    def supports_auto_compact?
-      GC::OPTS.include?("GC_COMPACTION_SUPPORTED")
+    def supports_compact?
+      GC.respond_to?(:compact)
     end
   end
 
@@ -17,7 +17,7 @@ class TestGCCompact < Test::Unit::TestCase
     include CompactionSupportInspector
 
     def setup
-      omit "autocompact not supported on this platform" unless supports_auto_compact?
+      omit "GC compaction not supported on this platform" unless supports_compact?
       super
     end
   end
@@ -83,7 +83,7 @@ class TestGCCompact < Test::Unit::TestCase
     include CompactionSupportInspector
 
     def assert_not_implemented(method, *args)
-      omit "autocompact is supported on this platform" if supports_auto_compact?
+      omit "autocompact is supported on this platform" if supports_compact?
 
       assert_raise(NotImplementedError) { GC.send(method, *args) }
       refute(GC.respond_to?(method), "GC.#{method} should be defined as rb_f_notimplement")
@@ -283,7 +283,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_arrays_down_size_pools
+  def test_moving_arrays_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
@@ -305,7 +305,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_arrays_up_size_pools
+  def test_moving_arrays_up_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10)
@@ -329,7 +329,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_objects_between_size_pools
+  def test_moving_objects_between_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 60)
@@ -361,7 +361,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_strings_up_size_pools
+  def test_moving_strings_up_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
@@ -382,7 +382,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_strings_down_size_pools
+  def test_moving_strings_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30)
@@ -402,7 +402,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_hashes_down_size_pools
+  def test_moving_hashes_down_heaps
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
@@ -425,7 +425,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_objects_between_size_pools_keeps_shape_frozen_status
+  def test_moving_objects_between_heaps_keeps_shape_frozen_status
     # [Bug #19536]
     assert_separately([], "#{<<~"begin;"}\n#{<<~"end;"}")
     begin;
@@ -451,5 +451,22 @@ class TestGCCompact < Test::Unit::TestCase
 
       assert_raise(FrozenError) { a.set_a }
     end;
+  end
+
+  def test_moving_too_complex_generic_ivar
+    omit "not compiled with SHAPE_DEBUG" unless defined?(RubyVM::Shape)
+
+    assert_separately([], <<~RUBY)
+      RubyVM::Shape.exhaust_shapes
+
+      obj = []
+      obj.instance_variable_set(:@fixnum, 123)
+      obj.instance_variable_set(:@str, "hello")
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_equal(123, obj.instance_variable_get(:@fixnum))
+      assert_equal("hello", obj.instance_variable_get(:@str))
+    RUBY
   end
 end

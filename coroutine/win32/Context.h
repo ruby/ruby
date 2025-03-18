@@ -16,6 +16,7 @@
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void __fastcall
+#define COROUTINE_DECL void __fastcall
 #define COROUTINE_LIMITED_ADDRESS_SPACE
 
 /* This doesn't include thread information block */
@@ -45,7 +46,7 @@ static inline void coroutine_initialize(
     char * top = (char*)stack + size;
     context->stack_pointer = (void**)((uintptr_t)top & ~0xF);
 
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
 
     /* Windows Thread Information Block */
     *--context->stack_pointer = (void*)0xFFFFFFFF; /* fs:[0] */

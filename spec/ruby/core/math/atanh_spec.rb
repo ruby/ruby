@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
-require_relative '../../fixtures/math/common'
-require_relative '../../shared/math/atanh'
+require_relative 'fixtures/common'
+require_relative 'shared/atanh'
 
 describe "Math.atanh" do
   it_behaves_like :math_atanh_base, :atanh, Math

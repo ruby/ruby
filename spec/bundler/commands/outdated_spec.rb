@@ -417,7 +417,7 @@ RSpec.describe "bundle outdated" do
     end
 
     it "doesn't hit repo2" do
-      FileUtils.rm_rf(gem_repo2)
+      FileUtils.rm_r(gem_repo2)
 
       bundle "outdated --local"
       expect(out).not_to match(/Fetching (gem|version|dependency) metadata from/)
@@ -525,6 +525,44 @@ RSpec.describe "bundle outdated" do
       TABLE
 
       expect(out).to match(Regexp.new(expected_output))
+    end
+
+    it "does not require gems to be installed" do
+      build_repo4 do
+        build_gem "zeitwerk", "1.0.0"
+        build_gem "zeitwerk", "2.0.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem "zeitwerk"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            zeitwerk (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          zeitwerk
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated zeitwerk", raise_on_error: false
+
+      expected_output = <<~TABLE.tr(".", "\.").strip
+        Gem       Current  Latest  Requested  Groups
+        zeitwerk  1.0.0    2.0.0   >= 0       default
+      TABLE
+
+      expect(out).to match(Regexp.new(expected_output))
+      expect(err).to be_empty
     end
   end
 
@@ -936,7 +974,7 @@ RSpec.describe "bundle outdated" do
         gem "terranova", '8'
       G
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       update_git "foo", path: lib_path("foo")
       update_repo2 do

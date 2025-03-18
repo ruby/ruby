@@ -194,6 +194,8 @@ nt_alloc_thread_stack_chunk(void)
         return NULL;
     }
 
+    ruby_annotate_mmap(m, MSTACK_CHUNK_SIZE, "Ruby:nt_alloc_thread_stack_chunk");
+
     size_t msz = nt_thread_stack_size();
     int header_page_cnt = 1;
     int stack_count = ((MSTACK_CHUNK_PAGE_NUM - header_page_cnt) * MSTACK_PAGE_SIZE) / msz;
@@ -427,7 +429,12 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
     }
 }
 
-static COROUTINE
+#ifdef __APPLE__
+# define co_start ruby_coroutine_start
+#else
+static
+#endif
+COROUTINE
 co_start(struct coroutine_context *from, struct coroutine_context *self)
 {
 #ifdef RUBY_ASAN_ENABLED
@@ -475,8 +482,8 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         if (!has_ready_ractor && next_th && !next_th->nt) {
             // switch to the next thread
             thread_sched_set_lock_owner(sched, NULL);
-            thread_sched_switch0(th->sched.context, next_th, nt, true);
             th->sched.finished = true;
+            thread_sched_switch0(th->sched.context, next_th, nt, true);
         }
         else {
             // switch to the next Ractor

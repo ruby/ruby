@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.6.0.dev"
+  VERSION = "3.7.0.dev"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -107,7 +107,7 @@ require_relative "rubygems/target_rbconfig"
 #
 # == License
 #
-# See {LICENSE.txt}[rdoc-ref:lib/rubygems/LICENSE.txt] for permissions.
+# See {LICENSE.txt}[https://github.com/rubygems/rubygems/blob/master/LICENSE.txt] for permissions.
 #
 # Thanks!
 #
@@ -496,9 +496,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     gem_specifications = @gemdeps ? Gem.loaded_specs.values : Gem::Specification.stubs
 
-    files.concat gem_specifications.map {|spec|
+    files.concat gem_specifications.flat_map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
-    }.flatten
+    }
 
     # $LOAD_PATH might contain duplicate entries or reference
     # the spec dirs directly, so we prune.
@@ -509,9 +509,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   def self.find_files_from_load_path(glob) # :nodoc:
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
-    $LOAD_PATH.map do |load_path|
+    $LOAD_PATH.flat_map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select {|file| File.file? file }
+    end.select {|file| File.file? file }
   end
 
   ##
@@ -531,9 +531,9 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     files = find_files_from_load_path glob if check_load_path
 
-    files.concat Gem::Specification.latest_specs(true).map {|spec|
+    files.concat Gem::Specification.latest_specs(true).flat_map {|spec|
       spec.matches_for_glob("#{glob}#{Gem.suffix_pattern}")
-    }.flatten
+    }
 
     # $LOAD_PATH might contain duplicate entries or reference
     # the spec dirs directly, so we prune.
@@ -801,6 +801,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     file_lock = "#{path}.lock"
     open_file_with_flock(file_lock, &block)
   ensure
+    require "fileutils"
     FileUtils.rm_f file_lock
   end
 
@@ -808,15 +809,21 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   # Open a file with given flags, and protect access with flock
 
   def self.open_file_with_flock(path, &block)
-    mode = IO::RDONLY | IO::APPEND | IO::CREAT | IO::BINARY
+    # read-write mode is used rather than read-only in order to support NFS
+    mode = IO::RDWR | IO::APPEND | IO::CREAT | IO::BINARY
     mode |= IO::SHARE_DELETE if IO.const_defined?(:SHARE_DELETE)
 
     File.open(path, mode) do |io|
       begin
-        io.flock(File::LOCK_EX)
+        # Try to get a lock without blocking.
+        # If we do, the file is locked.
+        # Otherwise, explain why we're waiting and get a lock, but block this time.
+        if io.flock(File::LOCK_EX | File::LOCK_NB) != 0
+          warn "Waiting for another process to let go of lock: #{path}"
+          io.flock(File::LOCK_EX)
+        end
+        io.puts(Process.pid)
       rescue Errno::ENOSYS, Errno::ENOTSUP
-      rescue Errno::ENOLCK # NFS
-        raise unless Thread.main == Thread.current
       end
       yield io
     end
@@ -1385,17 +1392,6 @@ begin
 
   require "rubygems/defaults/#{RUBY_ENGINE}"
 rescue LoadError
-end
-
-# TruffleRuby >= 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY in defaults/truffleruby.
-# However, TruffleRuby < 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY directly in its copy
-# of lib/rubygems/platform.rb, so it is not defined if RubyGems is updated (gem update --system).
-# Instead, we define it here in that case, similar to bundler/lib/bundler/rubygems_ext.rb.
-# We must define it here and not in platform.rb because platform.rb is loaded before defaults/truffleruby.
-class Gem::Platform
-  if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
-    REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
-  end
 end
 
 ##

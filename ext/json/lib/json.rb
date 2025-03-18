@@ -1,4 +1,4 @@
-#frozen_string_literal: false
+# frozen_string_literal: true
 require 'json/common'
 
 ##
@@ -378,13 +378,13 @@ require 'json/common'
 #   json1 = JSON.generate(ruby)
 #   ruby1 = JSON.parse(json1, create_additions: true)
 #   # Make a nice display.
-#   display = <<EOT
-#   Generated JSON:
-#     Without addition:  #{json0} (#{json0.class})
-#     With addition:     #{json1} (#{json1.class})
-#   Parsed JSON:
-#     Without addition:  #{ruby0.inspect} (#{ruby0.class})
-#     With addition:     #{ruby1.inspect} (#{ruby1.class})
+#   display = <<~EOT
+#     Generated JSON:
+#       Without addition:  #{json0} (#{json0.class})
+#       With addition:     #{json1} (#{json1.class})
+#     Parsed JSON:
+#       Without addition:  #{ruby0.inspect} (#{ruby0.class})
+#       With addition:     #{ruby1.inspect} (#{ruby1.class})
 #   EOT
 #   puts display
 #
@@ -562,13 +562,13 @@ require 'json/common'
 #   json1 = JSON.generate(foo1)
 #   obj1 = JSON.parse(json1, create_additions: true)
 #   #   Make a nice display.
-#   display = <<EOT
-#   Generated JSON:
-#     Without custom addition:  #{json0} (#{json0.class})
-#     With custom addition:     #{json1} (#{json1.class})
-#   Parsed JSON:
-#     Without custom addition:  #{obj0.inspect} (#{obj0.class})
-#     With custom addition:     #{obj1.inspect} (#{obj1.class})
+#   display = <<~EOT
+#     Generated JSON:
+#       Without custom addition:  #{json0} (#{json0.class})
+#       With custom addition:     #{json1} (#{json1.class})
+#     Parsed JSON:
+#       Without custom addition:  #{obj0.inspect} (#{obj0.class})
+#       With custom addition:     #{obj1.inspect} (#{obj1.class})
 #   EOT
 #   puts display
 #
@@ -583,10 +583,5 @@ require 'json/common'
 #
 module JSON
   require 'json/version'
-
-  begin
-    require 'json/ext'
-  rescue LoadError
-    require 'json/pure'
-  end
+  require 'json/ext'
 end

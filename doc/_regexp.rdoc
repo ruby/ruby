@@ -78,9 +78,9 @@ A regular expression may be created with:
     %r(foo) # => /foo/
     %r<foo> # => /foo/
 
-- \Method Regexp.new.
+- Method Regexp.new.
 
-== \Method <tt>match</tt>
+== Method <tt>match</tt>
 
 Each of the methods Regexp#match, String#match, and Symbol#match
 returns a MatchData object if a match was found, +nil+ otherwise;
@@ -99,7 +99,7 @@ each also sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
   'foo bar' =~ /bar/ # => 4
   /baz/ =~ 'foo bar' # => nil
 
-== \Method <tt>match?</tt>
+== Method <tt>match?</tt>
 
 Each of the methods Regexp#match?, String#match?, and Symbol#match?
 returns +true+ if a match was found, +false+ otherwise;
@@ -126,6 +126,9 @@ The affected global variables are:
   matched group, or +nil+.
   Note that <tt>$0</tt> is quite different;
   it returns the name of the currently executing program.
+
+These variables, except for <tt>$~</tt>, are shorthands for methods of
+<tt>$~</tt>.  See MatchData@Global+variables+equivalence.
 
 Examples:
 
@@ -477,7 +480,7 @@ Each alternative is a subexpression, and may be composed of other subexpressions
   re.match('bar') # => #<MatchData "b" 1:"b">
   re.match('ooz') # => #<MatchData "z" 1:"z">
 
-\Method Regexp.union provides a convenient way to construct
+Method Regexp.union provides a convenient way to construct
 a regexp with alternatives.
 
 === Quantifiers
@@ -682,7 +685,7 @@ the captured substrings are assigned to local variables with corresponding names
   dollars # => "3"
   cents   # => "67"
 
-\Method Regexp#named_captures returns a hash of the capture names and substrings;
+Method Regexp#named_captures returns a hash of the capture names and substrings;
 method Regexp#names returns an array of the capture names.
 
 ==== Atomic Grouping
@@ -836,8 +839,9 @@ Some commonly-used properties correspond to POSIX bracket expressions:
 These are also commonly used:
 
 - <tt>/\p{Emoji}/</tt>: Unicode emoji.
-- <tt>/\p{Graph}/</tt>: Non-blank character
-  (excludes spaces, control characters, and similar).
+- <tt>/\p{Graph}/</tt>: Characters excluding <tt>/\p{Cntrl}/</tt> and <tt>/\p{Space}/</tt>.
+  Note that invisible characters under the Unicode
+  {"Format"}[https://www.compart.com/en/unicode/category/Cf] category are included.
 - <tt>/\p{Word}/</tt>: A member in one of these Unicode character
   categories (see below) or having one of these Unicode properties:
 
@@ -897,7 +901,7 @@ Numbers:
 - {Nl, Letter_Number}[https://www.compart.com/en/unicode/category/Nl].
 - {No, Other_Number}[https://www.compart.com/en/unicode/category/No].
 
-Punctation:
+Punctuation:
 
 - +P+, +Punctuation+: +Pc+, +Pd+, +Pe+, +Pf+, +Pi+, +Po+, or +Ps+.
 - {Pc, Connector_Punctuation}[https://www.compart.com/en/unicode/category/Pc].
@@ -1056,7 +1060,7 @@ Example:
   re.match('tEst') # => #<MatchData "tEst">
   re.match('tEST') # => nil
 
-\Method Regexp#options returns an integer whose value showing
+Method Regexp#options returns an integer whose value showing
 the settings for case-insensitivity mode, multiline mode, and extended mode.
 
 === Case-Insensitive Mode
@@ -1070,7 +1074,7 @@ Modifier +i+ enables case-insensitive mode:
   /foo/i.match('FOO')
   # => #<MatchData "FOO">
 
-\Method Regexp#casefold? returns whether the mode is case-insensitive.
+Method Regexp#casefold? returns whether the mode is case-insensitive.
 
 === Multiline Mode
 

@@ -881,6 +881,7 @@ module Prism
         # Visit the interpolated content of the string-like node.
         private def visit_interpolated_parts(parts)
           visited = []
+
           parts.each do |part|
             result = visit(part)
 
@@ -892,6 +893,7 @@ module Prism
               else
                 visited << result
               end
+              visited << :space
             elsif result[0] == :dstr
               if !visited.empty? && part.parts[0].is_a?(StringNode)
                 # If we are in the middle of an implicitly concatenated string,
@@ -907,8 +909,9 @@ module Prism
           end
 
           state = :beginning #: :beginning | :string_content | :interpolated_content
+          results = []
 
-          visited.each_with_object([]) do |result, results|
+          visited.each_with_index do |result, index|
             case state
             when :beginning
               if result.is_a?(String)
@@ -923,23 +926,29 @@ module Prism
                 state = :interpolated_content
               end
             when :string_content
-              if result.is_a?(String)
-                results[0] << result
+              if result == :space
+                # continue
+              elsif result.is_a?(String)
+                results[0] = "#{results[0]}#{result}"
               elsif result.is_a?(Array) && result[0] == :str
-                results[0] << result[1]
+                results[0] = "#{results[0]}#{result[1]}"
               else
                 results << result
                 state = :interpolated_content
               end
             when :interpolated_content
-              if result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
-                results[-1][1] << result[1]
+              if result == :space
+                # continue
+              elsif visited[index - 1] != :space && result.is_a?(Array) && result[0] == :str && results[-1][0] == :str && (results[-1].line_max == result.line)
+                results[-1][1] = "#{results[-1][1]}#{result[1]}"
                 results[-1].line_max = result.line_max
               else
                 results << result
               end
             end
           end
+
+          results
         end
 
         # -> { it }
@@ -1431,6 +1440,7 @@ module Prism
           unescaped = node.unescaped
 
           if node.forced_binary_encoding?
+            unescaped = unescaped.dup
             unescaped.force_encoding(Encoding::BINARY)
           end
 
@@ -1549,7 +1559,7 @@ module Prism
           else
             parameters =
               case block.parameters
-              when nil, NumberedParametersNode
+              when nil, ItParametersNode, NumberedParametersNode
                 0
               else
                 visit(block.parameters)
@@ -1596,13 +1606,13 @@ module Prism
       # Parse the given source and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse(source, filepath = "(string)")
-        translate(Prism.parse(source, filepath: filepath, scopes: [[]]), filepath)
+        translate(Prism.parse(source, filepath: filepath, partial_script: true), filepath)
       end
 
       # Parse the given file and translate it into the seattlerb/ruby_parser
       # gem's Sexp format.
       def parse_file(filepath)
-        translate(Prism.parse_file(filepath, scopes: [[]]), filepath)
+        translate(Prism.parse_file(filepath, partial_script: true), filepath)
       end
 
       class << self

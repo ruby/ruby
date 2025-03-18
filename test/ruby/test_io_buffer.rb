@@ -450,9 +450,11 @@ class TestIOBuffer < Test::Unit::TestCase
     input.close
   end
 
-  def hello_world_tempfile
+  def hello_world_tempfile(repeats = 1)
     io = Tempfile.new
-    io.write("Hello World")
+    repeats.times do
+      io.write("Hello World")
+    end
     io.seek(0)
 
     yield io
@@ -484,6 +486,15 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_read_with_length_and_offset
+    hello_world_tempfile(100) do |io|
+      buffer = IO::Buffer.new(1024)
+      # Only read 24 bytes from the file, as we are starting at offset 1000 in the buffer.
+      assert_equal 24, buffer.read(io, 0, 1000)
+      assert_equal "Hello World", buffer.get_string(1000, 11)
+    end
+  end
+
   def test_write
     io = Tempfile.new
 
@@ -493,6 +504,19 @@ class TestIOBuffer < Test::Unit::TestCase
 
     io.seek(0)
     assert_equal "Hello", io.read(5)
+  ensure
+    io.close!
+  end
+
+  def test_write_with_length_and_offset
+    io = Tempfile.new
+
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("Hello")
+    buffer.write(io, 4, 1)
+
+    io.seek(0)
+    assert_equal "ello", io.read(4)
   ensure
     io.close!
   end
@@ -608,5 +632,55 @@ class TestIOBuffer < Test::Unit::TestCase
         buffer&.free
       end
     end
+  end
+
+  def test_copy_overlapped_fwd
+    buf = IO::Buffer.for('0123456789').dup
+    buf.copy(buf, 3, 7)
+    assert_equal '0120123456', buf.get_string
+  end
+
+  def test_copy_overlapped_bwd
+    buf = IO::Buffer.for('0123456789').dup
+    buf.copy(buf, 0, 7, 3)
+    assert_equal '3456789789', buf.get_string
+  end
+
+  def test_copy_null_destination
+    buf = IO::Buffer.new(0)
+    assert_predicate buf, :null?
+    buf.copy(IO::Buffer.for('a'), 0, 0)
+    assert_predicate buf, :empty?
+  end
+
+  def test_copy_null_source
+    buf = IO::Buffer.for('a').dup
+    src = IO::Buffer.new(0)
+    assert_predicate src, :null?
+    buf.copy(src, 0, 0)
+    assert_equal 'a', buf.get_string
+  end
+
+  def test_set_string_overlapped_fwd
+    str = +'0123456789'
+    IO::Buffer.for(str) do |buf|
+      buf.set_string(str, 3, 7)
+    end
+    assert_equal '0120123456', str
+  end
+
+  def test_set_string_overlapped_bwd
+    str = +'0123456789'
+    IO::Buffer.for(str) do |buf|
+      buf.set_string(str, 0, 7, 3)
+    end
+    assert_equal '3456789789', str
+  end
+
+  def test_set_string_null_destination
+    buf = IO::Buffer.new(0)
+    assert_predicate buf, :null?
+    buf.set_string('a', 0, 0)
+    assert_predicate buf, :empty?
   end
 end

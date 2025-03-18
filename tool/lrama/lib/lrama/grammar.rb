@@ -28,14 +28,14 @@ module Lrama
     attr_reader :percent_codes, :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol, :aux, :parameterizing_rule_resolver
     attr_accessor :union, :expect, :printers, :error_tokens, :lex_param, :parse_param, :initial_action,
                   :after_shift, :before_reduce, :after_reduce, :after_shift_error_token, :after_pop_stack,
-                  :symbols_resolver, :types, :rules, :rule_builders, :sym_to_rules, :no_stdlib, :locations
+                  :symbols_resolver, :types, :rules, :rule_builders, :sym_to_rules, :no_stdlib, :locations, :define
 
-    def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term,
+    def_delegators "@symbols_resolver", :symbols, :nterms, :terms, :add_nterm, :add_term, :find_term_by_s_value,
                                         :find_symbol_by_number!, :find_symbol_by_id!, :token_to_symbol,
                                         :find_symbol_by_s_value!, :fill_symbol_number, :fill_nterm_type,
                                         :fill_printer, :fill_destructor, :fill_error_token, :sort_by_number!
 
-    def initialize(rule_counter)
+    def initialize(rule_counter, define = {})
       @rule_counter = rule_counter
 
       # Code defined by "%code"
@@ -57,6 +57,7 @@ module Lrama
       @aux = Auxiliary.new
       @no_stdlib = false
       @locations = false
+      @define = define.map {|d| d.split('=') }.to_h
 
       append_special_symbols
     end
@@ -169,6 +170,10 @@ module Lrama
 
     def find_rules_by_symbol(sym)
       @sym_to_rules[sym.number]
+    end
+
+    def ielr_defined?
+      @define.key?('lr.type') && @define['lr.type'] == 'ielr'
     end
 
     private
@@ -294,7 +299,7 @@ module Lrama
     end
 
     def resolve_inline_rules
-      while @rule_builders.any? {|r| r.has_inline_rules? } do
+      while @rule_builders.any?(&:has_inline_rules?) do
         @rule_builders = @rule_builders.flat_map do |builder|
           if builder.has_inline_rules?
             builder.resolve_inline_rules
@@ -382,7 +387,7 @@ module Lrama
     end
 
     def validate_rule_lhs_is_nterm!
-      errors = []
+      errors = [] #: Array[String]
 
       rules.each do |rule|
         next if rule.lhs.nterm?

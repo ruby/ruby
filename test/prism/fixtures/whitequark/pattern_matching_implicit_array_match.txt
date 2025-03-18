@@ -1,0 +1,15 @@
+case foo; in * then nil; end
+
+case foo; in *x then nil; end
+
+case foo; in *x, y, z then nil; end
+
+case foo; in 1, "a", [], {} then nil; end
+
+case foo; in x, *y, z then nil; end
+
+case foo; in x, then nil; end
+
+case foo; in x, y then nil; end
+
+case foo; in x, y, then nil; end

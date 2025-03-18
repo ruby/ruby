@@ -2473,10 +2473,10 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object from rectangular coordinates with:
  *
- * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
- * - \Method Complex.rect.
- * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
- * - \Method String#to_c, for certain strings.
+ * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
+ * - Method Complex.rect.
+ * - Method Kernel#Complex, either with numeric arguments or with certain string arguments.
+ * - Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
  * Complex, Float, Integer, or Rational;
@@ -2502,9 +2502,9 @@ float_arg(VALUE self)
  *
  * You can create a \Complex object from polar coordinates with:
  *
- * - \Method Complex.polar.
- * - \Method Kernel#Complex, with certain string arguments.
- * - \Method String#to_c, for certain strings.
+ * - Method Complex.polar.
+ * - Method Kernel#Complex, with certain string arguments.
+ * - Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
  * Complex, Float, Integer, or Rational;
@@ -2522,7 +2522,7 @@ float_arg(VALUE self)
  *
  * First, what's elsewhere:
  *
- * - \Class \Complex inherits (directly or indirectly)
+ * - Class \Complex inherits (directly or indirectly)
  *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
  *   and {Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@What-27s+Here].
@@ -2588,7 +2588,7 @@ float_arg(VALUE self)
  * - #as_json: Returns a serialized hash constructed from +self+.
  * - #to_json: Returns a JSON string representing +self+.
  *
- * These methods are provided by the {JSON gem}[https://github.com/flori/json]. To make these methods available:
+ * These methods are provided by the {JSON gem}[https://github.com/ruby/json]. To make these methods available:
  *
  *   require 'json/add/complex'
  *

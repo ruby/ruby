@@ -1,0 +1,3 @@
+matrix[5, &block] = 8
+          ^~~~~~ unexpected block arg given in index assignment; blocks are not allowed in index assignment expressions
+

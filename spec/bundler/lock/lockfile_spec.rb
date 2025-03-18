@@ -84,7 +84,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version", rubygems: ">= 3.3.0.a" do
+  it "does not update the lockfile's bundler version if nothing changed during bundle install, but uses the locked version" do
     version = "2.3.0"
 
     build_repo4 do
@@ -130,61 +130,6 @@ RSpec.describe "the lockfile format" do
       DEPENDENCIES
         myrack
 
-      BUNDLED WITH
-         #{version}
-    G
-  end
-
-  it "does not update the lockfile's bundler version if nothing changed during bundle install, and uses the latest version", rubygems: "< 3.3.0.a" do
-    version = "#{Bundler::VERSION.split(".").first}.0.0.a"
-
-    build_repo4 do
-      build_gem "myrack", "1.0.0"
-
-      build_bundler version
-    end
-
-    checksums = checksums_section do |c|
-      c.checksum(gem_repo4, "myrack", "1.0.0")
-    end
-
-    lockfile <<-L
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          myrack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        myrack
-      #{checksums}
-      BUNDLED WITH
-         #{version}
-    L
-
-    install_gemfile <<-G, verbose: true
-      source "https://gem.repo4"
-
-      gem "myrack"
-    G
-
-    expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{version}.")
-    expect(out).to include("Using bundler #{Bundler::VERSION}")
-
-    expect(lockfile).to eq <<~G
-      GEM
-        remote: https://gem.repo4/
-        specs:
-          myrack (1.0.0)
-
-      PLATFORMS
-        #{lockfile_platforms}
-
-      DEPENDENCIES
-        myrack
-      #{checksums}
       BUNDLED WITH
          #{version}
     G
@@ -1601,7 +1546,7 @@ RSpec.describe "the lockfile format" do
     G
   end
 
-  it "raises a helpful error message when the lockfile is missing deps" do
+  it "automatically fixes the lockfile when it's missing deps" do
     lockfile <<-L
       GEM
         remote: https://gem.repo2/
@@ -1613,15 +1558,229 @@ RSpec.describe "the lockfile format" do
 
       DEPENDENCIES
         myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
     L
 
-    install_gemfile <<-G, raise_on_error: false
+    install_gemfile <<-G
       source "https://gem.repo2"
       gem "myrack_middleware"
     G
 
-    expect(err).to include("Downloading myrack_middleware-1.0 revealed dependencies not in the API or the lockfile (#{Gem::Dependency.new("myrack", "= 0.9.1")}).").
-      and include("Running `bundle update myrack_middleware` should fix the problem.")
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack (0.9.1)
+          myrack_middleware (1.0)
+            myrack (= 0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "raises a clear error when frozen mode is set and lockfile is missing deps, and does not install any gems" do
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack_middleware (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      source "https://gem.repo2"
+      gem "myrack_middleware"
+    G
+
+    expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
+  end
+
+  it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
+    build_repo4 do
+      build_gem "other_dep", "0.9"
+      build_gem "other_dep", "1.0"
+
+      build_gem "myrack", "0.9.1"
+
+      build_gem "myrack_middleware", "1.0" do |s|
+        s.add_dependency "myrack", "= 0.9.1"
+        s.add_dependency "other_dep", "= 0.9"
+      end
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack_middleware (1.0)
+          other_dep (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+        other_dep
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack_middleware"
+      gem "other_dep"
+    G
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack (0.9.1)
+          myrack_middleware (1.0)
+            myrack (= 0.9.1)
+            other_dep (= 0.9)
+          other_dep (0.9)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+        other_dep
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "automatically fixes the lockfile when it's missing multiple deps, they conflict with other locked deps, but conflicts are fixable" do
+    build_repo4 do
+      build_gem "other_dep", "0.9"
+      build_gem "other_dep", "1.0"
+
+      build_gem "myrack", "0.9.1"
+
+      build_gem "myrack_middleware", "1.0" do |s|
+        s.add_dependency "myrack", "= 0.9.1"
+      end
+
+      build_gem "another_dep_middleware", "1.0" do |s|
+        s.add_dependency "other_dep", "= 0.9"
+      end
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack_middleware (1.0)
+          another_dep_middleware (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+        another_dep_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack_middleware"
+      gem "another_dep_middleware"
+    G
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          another_dep_middleware (1.0)
+            other_dep (= 0.9)
+          myrack (0.9.1)
+          myrack_middleware (1.0)
+            myrack (= 0.9.1)
+          other_dep (0.9)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        another_dep_middleware
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "raises a resolution error when lockfile is missing deps, they conflict with other locked deps, and conflicts are not fixable" do
+    build_repo4 do
+      build_gem "other_dep", "0.9"
+      build_gem "other_dep", "1.0"
+
+      build_gem "myrack", "0.9.1"
+
+      build_gem "myrack_middleware", "1.0" do |s|
+        s.add_dependency "myrack", "= 0.9.1"
+        s.add_dependency "other_dep", "= 0.9"
+      end
+    end
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack_middleware (1.0)
+          other_dep (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+        other_dep
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G, raise_on_error: false
+      source "https://gem.repo4"
+      gem "myrack_middleware"
+      gem "other_dep", "1.0"
+    G
+
+    expect(err).to eq <<~ERROR.strip
+      Could not find compatible versions
+
+      Because every version of myrack_middleware depends on other_dep = 0.9
+        and Gemfile depends on myrack_middleware >= 0,
+        other_dep = 0.9 is required.
+      So, because Gemfile depends on other_dep = 1.0,
+        version solving has failed.
+    ERROR
   end
 
   it "regenerates a lockfile with no specs" do
@@ -1665,7 +1824,7 @@ RSpec.describe "the lockfile format" do
           indirect_dependency (1.2.3)
 
       PLATFORMS
-        #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
+        #{lockfile_platforms(generic_default_locked_platform || local_platform, defaults: ["ruby"])}
 
       DEPENDENCIES
         direct_dependency
@@ -1673,6 +1832,103 @@ RSpec.describe "the lockfile format" do
       BUNDLED WITH
          #{Bundler::VERSION}
     G
+  end
+
+  it "automatically fixes the lockfile when it's missing deps and the full index is in use" do
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack_middleware (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo2)}"
+      gem "myrack_middleware"
+    G
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo2)}/
+        specs:
+          myrack (0.9.1)
+          myrack_middleware (1.0)
+            myrack (= 0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack_middleware
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
+  it "automatically fixes the lockfile when it has incorrect deps, keeping the locked version" do
+    build_repo4 do
+      build_gem "net-smtp", "0.5.0" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-smtp", "0.5.1" do |s|
+        s.add_dependency "net-protocol"
+      end
+
+      build_gem "net-protocol", "0.2.2"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "net-smtp"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          net-protocol (0.2.2)
+          net-smtp (0.5.0)
+            net-protocol
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        net-smtp
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
   end
 
   shared_examples_for "a lockfile missing dependent specs" do

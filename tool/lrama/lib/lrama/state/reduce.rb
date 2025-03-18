@@ -26,9 +26,8 @@ module Lrama
       end
 
       def selected_look_ahead
-        if @look_ahead
-          # @type ivar @look_ahead: Array<Grammar::Symbol>
-          @look_ahead - @not_selected_symbols
+        if look_ahead
+          look_ahead - @not_selected_symbols
         else
           []
         end

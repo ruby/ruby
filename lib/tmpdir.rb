@@ -16,10 +16,6 @@ class Dir
   # Class variables are inaccessible from non-main Ractor.
   # And instance variables too, in Ruby 3.0.
 
-  # System-wide temporary directory path
-  SYSTMPDIR = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
-  private_constant :SYSTMPDIR
-
   ##
   # Returns the operating system's temporary file path.
   #
@@ -27,7 +23,7 @@ class Dir
   #   Dir.tmpdir # => "/tmp"
 
   def self.tmpdir
-    ['TMPDIR', 'TMP', 'TEMP', ['system temporary path', SYSTMPDIR], ['/tmp']*2, ['.']*2].find do |name, dir|
+    Tmpname::TMPDIR_CANDIDATES.find do |name, dir|
       unless dir
         next if !(dir = ENV[name] rescue next) or dir.empty?
       end
@@ -36,7 +32,9 @@ class Dir
       case
       when !stat.directory?
         warn "#{name} is not a directory: #{dir}"
-      when !stat.writable?
+      when !File.writable?(dir)
+        # We call File.writable?, not stat.writable?, because you can't tell if a dir is actually
+        # writable just from stat; OS mechanisms other than user/group/world bits can affect this.
         warn "#{name} is not writable: #{dir}"
       when stat.world_writable? && !stat.sticky?
         warn "#{name} is world-writable: #{dir}"
@@ -96,13 +94,13 @@ class Dir
   #    FileUtils.remove_entry dir
   #  end
   #
-  def self.mktmpdir(prefix_suffix=nil, *rest, **options)
+  def self.mktmpdir(prefix_suffix=nil, *rest, **options, &block)
     base = nil
     path = Tmpname.create(prefix_suffix || "d", *rest, **options) {|path, _, _, d|
       base = d
       mkdir(path, 0700)
     }
-    if block_given?
+    if block
       begin
         yield path.dup
       ensure
@@ -123,6 +121,18 @@ class Dir
   # Temporary name generator
   module Tmpname # :nodoc:
     module_function
+
+    # System-wide temporary directory path
+    systmpdir = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
+
+    # Temporary directory candidates consisting of environment variable
+    # names or description and path pairs.
+    TMPDIR_CANDIDATES = [
+      'TMPDIR', 'TMP', 'TEMP',
+      ['system temporary path', systmpdir],
+      %w[/tmp /tmp],
+      %w[. .],
+    ].each(&:freeze).freeze
 
     def tmpdir
       Dir.tmpdir
@@ -147,8 +157,8 @@ class Dir
 
     # Generates and yields random names to create a temporary name
     def create(basename, tmpdir=nil, max_try: nil, **opts)
-      origdir = tmpdir
       if tmpdir
+        origdir = tmpdir = File.path(tmpdir)
         raise ArgumentError, "empty parent path" if tmpdir.empty?
       else
         tmpdir = tmpdir()

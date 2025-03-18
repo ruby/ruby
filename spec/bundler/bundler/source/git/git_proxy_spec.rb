@@ -211,4 +211,45 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       subject.checkout
     end
   end
+
+  describe "#installed_to?" do
+    let(:destination) { "install/dir" }
+    let(:destination_dir_exists) { true }
+    let(:children) { ["gem.gemspec", "README.me", ".git", "Rakefile"] }
+
+    before do
+      allow(Dir).to receive(:exist?).with(destination).and_return(destination_dir_exists)
+      allow(Dir).to receive(:children).with(destination).and_return(children)
+    end
+
+    context "when destination dir exists with children other than just .git" do
+      it "returns true" do
+        expect(git_proxy.installed_to?(destination)).to be true
+      end
+    end
+
+    context "when destination dir does not exist" do
+      let(:destination_dir_exists) { false }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+
+    context "when destination dir is empty" do
+      let(:children) { [] }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+
+    context "when destination dir has only .git directory" do
+      let(:children) { [".git"] }
+
+      it "returns false" do
+        expect(git_proxy.installed_to?(destination)).to be false
+      end
+    end
+  end
 end

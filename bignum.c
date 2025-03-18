@@ -2699,7 +2699,7 @@ bigdivrem_restoring(BDIGIT *zds, size_t zn, BDIGIT *yds, size_t yn)
     if (bds.zn > 10000 || bds.yn > 10000) {
       retry:
         bds.stop = Qfalse;
-        rb_nogvl(bigdivrem1, &bds, rb_big_stop, &bds, RB_NOGVL_UBF_ASYNC_SAFE);
+        rb_nogvl(bigdivrem1, &bds, rb_big_stop, &bds, RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_OFFLOAD_SAFE);
 
         if (bds.stop == Qtrue) {
             /* execute trap handler, but exception was not raised. */
@@ -5914,6 +5914,8 @@ bigsq(VALUE x)
     BDIGIT *xds, *zds;
 
     xn = BIGNUM_LEN(x);
+    if (MUL_OVERFLOW_LONG_P(2, xn))
+        rb_raise(rb_eArgError, "square overflow");
     zn = 2 * xn;
 
     z = bignew(zn, 1);
@@ -5942,6 +5944,8 @@ bigmul0(VALUE x, VALUE y)
 
     xn = BIGNUM_LEN(x);
     yn = BIGNUM_LEN(y);
+    if (ADD_OVERFLOW_LONG_P(xn, yn))
+        rb_raise(rb_eArgError, "multiplication overflow");
     zn = xn + yn;
 
     z = bignew(zn, BIGNUM_SIGN(x)==BIGNUM_SIGN(y));
@@ -6287,8 +6291,7 @@ rb_big_pow(VALUE x, VALUE y)
         y = bignorm(y);
         if (FIXNUM_P(y))
             goto again;
-        rb_warn("in a**b, b may be too big");
-        d = rb_big2dbl(y);
+        rb_raise(rb_eArgError, "exponent is too large");
     }
     else if (FIXNUM_P(y)) {
         yy = FIX2LONG(y);
@@ -6304,13 +6307,17 @@ rb_big_pow(VALUE x, VALUE y)
             VALUE z = 0;
             SIGNED_VALUE mask;
             const size_t xbits = rb_absint_numwords(x, 1, NULL);
-            const size_t BIGLEN_LIMIT = 32*1024*1024;
+#if SIZEOF_SIZE_T == 4
+            const size_t BIGLEN_LIMIT = 1ULL << 31; // 2 GB
+#else // SIZEOF_SIZE_T == 8
+            const size_t BIGLEN_LIMIT = 1ULL << 34; // 16 GB
+#endif
 
             if (xbits == (size_t)-1 ||
                 (xbits > BIGLEN_LIMIT) ||
+                MUL_OVERFLOW_LONG_P(yy, xbits) ||
                 (xbits * yy > BIGLEN_LIMIT)) {
-                rb_warn("in a**b, b may be too big");
-                d = (double)yy;
+                rb_raise(rb_eArgError, "exponent is too large");
             }
             else {
                 for (mask = FIXNUM_MAX + 1; mask; mask >>= 1) {

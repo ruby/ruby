@@ -2,6 +2,7 @@
 # frozen_string_literal: false
 require 'test/unit'
 require 'stringio'
+require_relative '../lib/parser_support'
 
 class TestParse < Test::Unit::TestCase
   def setup
@@ -182,6 +183,15 @@ class TestParse < Test::Unit::TestCase
       begin;
         c::FOO &= 1
         ::FOO &= 1
+      end;
+    end
+
+    c = Class.new
+    c.freeze
+    assert_valid_syntax("#{<<~"begin;"}\n#{<<~'end;'}") do
+      begin;
+        c::FOO &= p 1
+        ::FOO &= p 1
       end;
     end
 
@@ -647,6 +657,8 @@ class TestParse < Test::Unit::TestCase
     assert_equal("\u{1234}", eval('?\u{1234}'))
     assert_equal("\u{1234}", eval('?\u1234'))
     assert_syntax_error('?\u{41 42}', 'Multiple codepoints at single character literal')
+    assert_syntax_error("?and", /unexpected '\?'/)
+    assert_syntax_error("?\u1234and", /unexpected '\?'/)
     e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
     assert_not_match(/end-of-input/, e.message)
 
@@ -1609,6 +1621,23 @@ x = __ENCODING__
     assert_ractor_shareable(a[0])
   end
 
+  def test_shareable_constant_value_hash_with_keyword_splat
+    a, b = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      # [Bug #20927]
+      x = { x: {} }
+      y = { y: {} }
+      A = { **x }
+      B = { x: {}, **y }
+      [A, B]
+    end;
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+    assert_equal({ x: {}}, a)
+    assert_equal({ x: {}, y: {}}, b)
+  end
+
   def test_shareable_constant_value_unshareable_literal
     assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
@@ -1701,6 +1730,15 @@ x = __ENCODING__
       def o.freeze; self; end
       C = [o]
     end;
+  end
+
+  def test_shareable_constant_value_massign
+    a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: experimental_everything
+      A, = 1
+    end;
+    assert_equal(1, a)
   end
 
   def test_if_after_class

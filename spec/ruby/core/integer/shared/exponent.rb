@@ -48,10 +48,18 @@ describe :integer_exponent, shared: true do
       (-1).send(@method, 4611686018427387905).should eql(-1)
     end
 
-    it "returns Float::INFINITY when the number is too big" do
-      -> {
-        2.send(@method, 427387904).should == Float::INFINITY
-      }.should complain(/warning: in a\*\*b, b may be too big/)
+    ruby_version_is ""..."3.4" do
+      it "returns Float::INFINITY when the number is too big" do
+        -> {
+          2.send(@method, 427387904).should == Float::INFINITY
+        }.should complain(/warning: in a\*\*b, b may be too big/)
+      end
+    end
+
+    ruby_version_is "3.4" do
+      it "raises an ArgumentError when the number is too big" do
+        -> { 100000000.send(@method, 1000000000) }.should raise_error(ArgumentError)
+      end
     end
 
     it "raises a ZeroDivisionError for 0 ** -1" do
@@ -108,13 +116,23 @@ describe :integer_exponent, shared: true do
       -> { @bignum.send(@method, :symbol) }.should raise_error(TypeError)
     end
 
-    it "switch to a Float when the values is too big" do
-      flt = nil
-      -> {
-        flt = @bignum.send(@method, @bignum)
-      }.should complain(/warning: in a\*\*b, b may be too big/)
-      flt.should be_kind_of(Float)
-      flt.infinite?.should == 1
+    ruby_version_is ""..."3.4" do
+      it "switch to a Float when the values is too big" do
+        flt = nil
+        -> {
+          flt = @bignum.send(@method, @bignum)
+        }.should complain(/warning: in a\*\*b, b may be too big/)
+        flt.should be_kind_of(Float)
+        flt.infinite?.should == 1
+      end
+    end
+
+    ruby_version_is "3.4" do
+      it "does not switch to a Float when the values is too big" do
+        -> {
+          @bignum.send(@method, @bignum)
+        }.should raise_error(ArgumentError)
+      end
     end
 
     it "returns a complex number when negative and raised to a fractional power" do

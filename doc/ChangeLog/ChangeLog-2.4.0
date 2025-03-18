@@ -2668,8 +2668,8 @@ Wed Jul  6 07:11:27 2016  Shugo Maeda  <shugo@ruby-lang.org>
 Tue Jul  5 20:49:30 2016  SHIBATA Hiroshi  <hsbt@ruby-lang.org>
 
 	* ext/json/*, test/json/*: Update json-2.0.1.
-	  Changes of 2.0.0: https://github.com/flori/json/blob/f679ebd0c69a94e3e70a897ac9a229f5779c2ee1/CHANGES.md#2015-09-11-200
-	  Changes of 2.0.1: https://github.com/flori/json/blob/f679ebd0c69a94e3e70a897ac9a229f5779c2ee1/CHANGES.md#2016-07-01-201
+	  Changes of 2.0.0: https://github.com/ruby/json/blob/f679ebd0c69a94e3e70a897ac9a229f5779c2ee1/CHANGES.md#2015-09-11-200
+	  Changes of 2.0.1: https://github.com/ruby/json/blob/f679ebd0c69a94e3e70a897ac9a229f5779c2ee1/CHANGES.md#2016-07-01-201
 	  [Feature #12542][ruby-dev:49706][fix GH-1395]
 
 Tue Jul  5 19:39:49 2016  Naohisa Goto  <ngotogenome@gmail.com>

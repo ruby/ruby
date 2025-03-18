@@ -62,11 +62,11 @@ describe "IO#set_encoding_by_bom" do
     @io.rewind
     @io.set_encoding(Encoding::ASCII_8BIT)
 
-    File.binwrite(@name, "\xFE\xFFabc")
+    File.binwrite(@name, "\xFE\xFFabcd")
 
     @io.set_encoding_by_bom.should == Encoding::UTF_16BE
     @io.external_encoding.should == Encoding::UTF_16BE
-    @io.read.b.should == "abc".b
+    @io.read.b.should == "abcd".b
   end
 
   it "returns the result encoding if found BOM UTF_32LE sequence" do
@@ -94,11 +94,11 @@ describe "IO#set_encoding_by_bom" do
     @io.rewind
     @io.set_encoding(Encoding::ASCII_8BIT)
 
-    File.binwrite(@name, "\x00\x00\xFE\xFFabc")
+    File.binwrite(@name, "\x00\x00\xFE\xFFabcd")
 
     @io.set_encoding_by_bom.should == Encoding::UTF_32BE
     @io.external_encoding.should == Encoding::UTF_32BE
-    @io.read.b.should == "abc".b
+    @io.read.b.should == "abcd".b
   end
 
   it "returns nil if io is empty" do

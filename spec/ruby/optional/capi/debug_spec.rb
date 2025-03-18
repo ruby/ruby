@@ -37,9 +37,12 @@ describe "C-API Debug function" do
 
     it "matches the locations in rb_debug_inspector_backtrace_locations" do
       frames = @o.rb_debug_inspector_open(42)
-      frames.each do |_s, _klass, binding, _iseq, backtrace_location|
+      frames.each do |_s, klass, binding, iseq, backtrace_location|
         if binding
-          binding.source_location.should == [backtrace_location.path, backtrace_location.lineno]
+          # YJIT modifies Array#each backtraces but leaves its source_location as is
+          unless defined?(RubyVM::YJIT) && klass == Array && iseq.label == "each"
+            binding.source_location.should == [backtrace_location.path, backtrace_location.lineno]
+          end
           method_name = binding.eval('__method__')
           if method_name
             method_name.should == backtrace_location.base_label.to_sym

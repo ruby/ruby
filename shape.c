@@ -418,7 +418,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t * parent, enum shape_type type)
 {
     rb_shape_t * shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
     shape->type = (uint8_t)type;
-    shape->size_pool_index = parent->size_pool_index;
+    shape->heap_index = parent->heap_index;
     shape->capacity = parent->capacity;
     shape->edges = 0;
     return shape;
@@ -1024,7 +1024,6 @@ rb_shape_memsize(rb_shape_t *shape)
  * Exposing Shape to Ruby via RubyVM.debug_shape
  */
 
-/* :nodoc: */
 static VALUE
 rb_shape_too_complex(VALUE self)
 {
@@ -1059,7 +1058,7 @@ rb_shape_t_to_rb_cShape(rb_shape_t *shape)
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_iv_index),
-            INT2NUM(shape->size_pool_index),
+            INT2NUM(shape->heap_index),
             INT2NUM(shape->type),
             INT2NUM(shape->capacity));
     rb_obj_freeze(obj);
@@ -1073,7 +1072,6 @@ rb_edges_to_hash(ID key, VALUE value, void *ref)
     return ID_TABLE_CONTINUE;
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_edges(VALUE self)
 {
@@ -1108,7 +1106,6 @@ rb_shape_edge_name(rb_shape_t * shape)
     return Qnil;
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_export_depth(VALUE self)
 {
@@ -1117,7 +1114,6 @@ rb_shape_export_depth(VALUE self)
     return SIZET2NUM(rb_shape_depth(shape));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_parent(VALUE self)
 {
@@ -1131,28 +1127,24 @@ rb_shape_parent(VALUE self)
     }
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_shape(obj));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_root_shape(VALUE self)
 {
     return rb_shape_t_to_rb_cShape(rb_shape_get_root_shape());
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_shapes_available(VALUE self)
 {
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {
@@ -1183,7 +1175,6 @@ static VALUE edges(struct rb_id_table* edges)
     return hash;
 }
 
-/* :nodoc: */
 VALUE
 rb_obj_shape(rb_shape_t* shape)
 {
@@ -1203,14 +1194,12 @@ rb_obj_shape(rb_shape_t* shape)
     return rb_shape;
 }
 
-/* :nodoc: */
 static VALUE
 shape_transition_tree(VALUE self)
 {
     return rb_obj_shape(rb_shape_get_root_shape());
 }
 
-/* :nodoc: */
 static VALUE
 rb_shape_find_by_id(VALUE mod, VALUE id)
 {
@@ -1232,10 +1221,14 @@ Init_default_shapes(void)
     rb_shape_tree_ptr = xcalloc(1, sizeof(rb_shape_tree_t));
 
 #ifdef HAVE_MMAP
-    rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError),
+    size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
+    rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (GET_SHAPE_TREE()->shape_list == MAP_FAILED) {
         GET_SHAPE_TREE()->shape_list = 0;
+    }
+    else {
+        ruby_annotate_mmap(rb_shape_tree_ptr->shape_list, shape_list_mmap_size, "Ruby:Init_default_shapes:shape_list");
     }
 #else
     GET_SHAPE_TREE()->shape_list = xcalloc(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t));
@@ -1249,7 +1242,8 @@ Init_default_shapes(void)
     id_t_object = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
-    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError),
+    size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
+    rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     rb_shape_tree_ptr->cache_size = 0;
 
@@ -1260,13 +1254,16 @@ Init_default_shapes(void)
         GET_SHAPE_TREE()->shape_cache = 0;
         GET_SHAPE_TREE()->cache_size = REDBLACK_CACHE_SIZE;
     }
+    else {
+        ruby_annotate_mmap(rb_shape_tree_ptr->shape_cache, shape_cache_mmap_size, "Ruby:Init_default_shapes:shape_cache");
+    }
 #endif
 
     // Root shape
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
-    root->size_pool_index = 0;
+    root->heap_index = 0;
     GET_SHAPE_TREE()->root_shape = root;
     RUBY_ASSERT(rb_shape_id(GET_SHAPE_TREE()->root_shape) == ROOT_SHAPE_ID);
 
@@ -1282,16 +1279,16 @@ Init_default_shapes(void)
 
     rb_shape_t *too_complex_shape = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
     too_complex_shape->type = SHAPE_OBJ_TOO_COMPLEX;
-    too_complex_shape->size_pool_index = 0;
+    too_complex_shape->heap_index = 0;
     RUBY_ASSERT(OBJ_TOO_COMPLEX_SHAPE_ID == (GET_SHAPE_TREE()->next_shape_id - 1));
     RUBY_ASSERT(rb_shape_id(too_complex_shape) == OBJ_TOO_COMPLEX_SHAPE_ID);
 
     // Make shapes for T_OBJECT
-    size_t *sizes = rb_gc_size_pool_sizes();
+    size_t *sizes = rb_gc_heap_sizes();
     for (int i = 0; sizes[i] > 0; i++) {
         rb_shape_t *t_object_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
         t_object_shape->type = SHAPE_T_OBJECT;
-        t_object_shape->size_pool_index = i;
+        t_object_shape->heap_index = i;
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
@@ -1303,12 +1300,14 @@ void
 Init_shape(void)
 {
 #if SHAPE_DEBUG
+    /* Document-class: RubyVM::Shape
+     * :nodoc: */
     VALUE rb_cShape = rb_struct_define_under(rb_cRubyVM, "Shape",
             "id",
             "parent_id",
             "edge_name",
             "next_iv_index",
-            "size_pool_index",
+            "heap_index",
             "type",
             "capacity",
             NULL);

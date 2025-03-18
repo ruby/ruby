@@ -480,15 +480,30 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_redefine_method_which_may_case_serious_problem
-    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining 'object_id' may cause serious problems$")
-      $VERBOSE = false
-      def (Object.new).object_id; end
-    INPUT
+    %w(object_id __id__ __send__).each do |m|
+      assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '#{m}' may cause serious problems$")
+        $VERBOSE = false
+        def (Object.new).#{m}; end
+      INPUT
 
-    assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '__send__' may cause serious problems$")
-      $VERBOSE = false
-      def (Object.new).__send__; end
-    INPUT
+      assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '#{m}' may cause serious problems$")
+        $VERBOSE = false
+        Class.new.define_method(:#{m}) {}
+      INPUT
+
+      assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '#{m}' may cause serious problems$")
+        $VERBOSE = false
+        Class.new.attr_reader(:#{m})
+      INPUT
+
+      assert_in_out_err([], <<-INPUT, [], %r"warning: redefining '#{m}' may cause serious problems$")
+        $VERBOSE = false
+        Class.new do
+          def foo; end
+          alias #{m} foo
+        end
+      INPUT
+    end
 
     bug10421 = '[ruby-dev:48691] [Bug #10421]'
     assert_in_out_err([], <<-INPUT, ["1"], [], bug10421)
@@ -527,7 +542,7 @@ class TestObject < Test::Unit::TestCase
     bug2202 = '[ruby-core:26074]'
     assert_raise(NoMethodError, bug2202) {o2.meth2}
 
-    %w(object_id __send__ initialize).each do |m|
+    %w(object_id __id__ __send__ initialize).each do |m|
       assert_in_out_err([], <<-INPUT, %w(:ok), %r"warning: removing '#{m}' may cause serious problems$")
         $VERBOSE = false
         begin

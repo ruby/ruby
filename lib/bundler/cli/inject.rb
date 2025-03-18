@@ -35,8 +35,8 @@ module Bundler
         Bundler.ui.confirm(added.map do |d|
           name = "'#{d.name}'"
           requirement = ", '#{d.requirement}'"
-          group = ", :group => #{d.groups.inspect}" if d.groups != Array(:default)
-          source = ", :source => '#{d.source}'" unless d.source.nil?
+          group = ", group: #{d.groups.inspect}" if d.groups != Array(:default)
+          source = ", source: '#{d.source}'" unless d.source.nil?
           %(gem #{name}#{requirement}#{group}#{source})
         end.join("\n"))
       else
@@ -48,7 +48,7 @@ module Bundler
 
     def last_version_number
       definition = Bundler.definition(true)
-      definition.resolve_remotely!
+      definition.remotely!
       specs = definition.index[name].sort_by(&:version)
       unless options[:pre]
         specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }

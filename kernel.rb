@@ -40,7 +40,7 @@ module Kernel
   #     s1.inspect          #=> "#<Klass:0x401b3a38 @str=\"Hi\">"
   #     s2.inspect          #=> "#<Klass:0x401b3998 @str=\"Hi\">"
   #
-  #  This method may have class-specific behavior.  If so, that
+  #  This method may have class-specific behavior. If so, that
   #  behavior will be documented under the #+initialize_copy+ method of
   #  the class.
   #
@@ -73,7 +73,7 @@ module Kernel
   #  call-seq:
   #     obj.tap {|x| block }    -> obj
   #
-  #  Yields self to the block, and then returns self.
+  #  Yields self to the block and then returns self.
   #  The primary purpose of this method is to "tap into" a method chain,
   #  in order to perform operations on intermediate results within the chain.
   #
@@ -100,7 +100,7 @@ module Kernel
   #
   #     3.next.then {|x| x**x }.to_s             #=> "256"
   #
-  #  Good usage for +then+ is value piping in method chains:
+  #  A good use of +then+ is value piping in method chains:
   #
   #     require 'open-uri'
   #     require 'json'
@@ -109,13 +109,13 @@ module Kernel
   #       .then {|url| URI(url).read }
   #       .then {|response| JSON.parse(response) }
   #
-  #  When called without block, the method returns +Enumerator+,
+  #  When called without a block, the method returns an +Enumerator+,
   #  which can be used, for example, for conditional
   #  circuit-breaking:
   #
-  #     # meets condition, no-op
+  #     # Meets condition, no-op
   #     1.then.detect(&:odd?)            # => 1
-  #     # does not meet condition, drop value
+  #     # Does not meet condition, drop value
   #     2.then.detect(&:odd?)            # => nil
   #
   def then
@@ -145,7 +145,7 @@ module Kernel
   #      # ...
   #    end
   #
-  # StopIteration raised in the block breaks the loop.  In this case,
+  # A StopIteration raised in the block breaks the loop. In this case,
   # loop returns the "result" value stored in the exception.
   #
   #    enum = Enumerator.new { |y|
@@ -178,10 +178,10 @@ module Kernel
   #
   #  Returns <i>arg</i> converted to a float. Numeric types are
   #  converted directly, and with exception to String and
-  #  <code>nil</code> the rest are converted using
-  #  <i>arg</i><code>.to_f</code>.  Converting a String with invalid
-  #  characters will result in a ArgumentError.  Converting
-  #  <code>nil</code> generates a TypeError.  Exceptions can be
+  #  <code>nil</code>, the rest are converted using
+  #  <i>arg</i><code>.to_f</code>. Converting a String with invalid
+  #  characters will result in an ArgumentError. Converting
+  #  <code>nil</code> generates a TypeError. Exceptions can be
   #  suppressed by passing <code>exception: false</code>.
   #
   #     Float(1)                 #=> 1.0
@@ -210,22 +210,22 @@ module Kernel
   # With a non-zero +base+, +object+ must be a string or convertible
   # to a string.
   #
-  # ==== numeric objects
+  # ==== \Numeric objects
   #
-  # With integer argument +object+ given, returns +object+:
+  # With an integer argument +object+ given, returns +object+:
   #
   #   Integer(1)                # => 1
   #   Integer(-1)               # => -1
   #
-  # With floating-point argument +object+ given,
+  # With a floating-point argument +object+ given,
   # returns +object+ truncated to an integer:
   #
   #   Integer(1.9)              # => 1  # Rounds toward zero.
   #   Integer(-1.9)             # => -1 # Rounds toward zero.
   #
-  # ==== string objects
+  # ==== \String objects
   #
-  # With string argument +object+ and zero +base+ given,
+  # With a string argument +object+ and zero +base+ given,
   # returns +object+ converted to an integer in base 10:
   #
   #   Integer('100')    # => 100
@@ -235,7 +235,7 @@ module Kernel
   # to specify the actual base (radix indicator):
   #
   #   Integer('0100')  # => 64  # Leading '0' specifies base 8.
-  #   Integer('0b100') # => 4   # Leading '0b', specifies base 2.
+  #   Integer('0b100') # => 4   # Leading '0b' specifies base 2.
   #   Integer('0x100') # => 256 # Leading '0x' specifies base 16.
   #
   # With a positive +base+ (in range 2..36) given, returns +object+
@@ -246,8 +246,8 @@ module Kernel
   #   Integer('-100', 16) # => -256
   #
   # With a negative +base+ (in range -36..-2) given, returns +object+
-  # converted to an integer in the radix indicator if exists or
-  # +-base+:
+  # converted to the radix indicator if it exists or
+  # +base+:
   #
   #   Integer('0x100', -2)   # => 256
   #   Integer('100', -2)     # => 4
@@ -256,7 +256,7 @@ module Kernel
   #   Integer('0o100', -10)  # => 64
   #   Integer('100', -10)    # => 100
   #
-  # +base+ -1 is equal the -10 case.
+  # +base+ -1 is equivalent to the -10 case.
   #
   # When converting strings, surrounding whitespace and embedded underscores
   # are allowed and ignored:
@@ -264,7 +264,7 @@ module Kernel
   #   Integer(' 100 ')      # => 100
   #   Integer('-1_0_0', 16) # => -256
   #
-  # ==== other classes
+  # ==== Other classes
   #
   # Examples with +object+ of various other classes:
   #
@@ -272,22 +272,32 @@ module Kernel
   #   Integer(Complex(2, 0))   # => 2  # Imaginary part must be zero.
   #   Integer(Time.now)        # => 1650974042
   #
-  # ==== keywords
+  # ==== Keywords
   #
-  # With optional keyword argument +exception+ given as +true+ (the default):
+  # With the optional keyword argument +exception+ given as +true+ (the default):
   #
   # - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
   # - Raises TypeError if +object+ is +nil+.
-  # - Raise ArgumentError if +object+ is an invalid string.
+  # - Raises ArgumentError if +object+ is an invalid string.
   #
   # With +exception+ given as +false+, an exception of any kind is suppressed
   # and +nil+ is returned.
-
+  #
   def Integer(arg, base = 0, exception: true)
     if Primitive.mandatory_only?
       Primitive.rb_f_integer1(arg)
     else
-      Primitive.rb_f_integer(arg, base, exception);
+      Primitive.rb_f_integer(arg, base, exception)
+    end
+  end
+end
+
+class Module
+  # Internal helper for built-in initializations to define methods only when YJIT is enabled.
+  # This method is removed in yjit_hook.rb.
+  private def with_yjit(&block) # :nodoc:
+    if defined?(RubyVM::YJIT)
+      RubyVM::YJIT.send(:add_yjit_hook, block)
     end
   end
 end

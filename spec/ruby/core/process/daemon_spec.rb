@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
 platform_is_not :windows do
-  # macOS 15 beta is not working this examples
+  # macOS 15 is not working this examples
   return if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
 
   describe :process_daemon_keep_stdio_open_false, shared: true do

@@ -310,17 +310,25 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_self_stop
-    assert_ruby_status([], <<-'end;')
-      begin
-        fork{
-          sleep 1
-          Process.kill(:CONT, Process.ppid)
-        }
-        Process.kill(:STOP, Process.pid)
-      rescue NotImplementedError
-        # ok
-      end
-    end;
+    omit unless Process.respond_to?(:fork)
+    omit unless defined?(Process::WUNTRACED)
+
+    # Make a process that stops itself
+    child_pid = fork do
+      Process.kill(:STOP, Process.pid)
+    end
+
+    # The parent should be notified about the stop
+    _, status = Process.waitpid2(child_pid, Process::WUNTRACED)
+    assert status.stopped?
+
+    # It can be continued
+    Process.kill(:CONT, child_pid)
+
+    # And the child then runs to completion
+    _, status = Process.waitpid2(child_pid)
+    assert status.exited?
+    assert status.success?
   end
 
   def test_sigwait_fd_unused

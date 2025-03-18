@@ -1,5 +1,4 @@
-# encoding: utf-8
-# frozen_string_literal: false
+# frozen_string_literal: true
 require_relative 'test_helper'
 require 'stringio'
 require 'tempfile'
@@ -20,24 +19,28 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 'test', parser.source
   end
 
-  def test_argument_encoding
-    source = "{}".encode("UTF-16")
+  def test_argument_encoding_unmodified
+    source = "{}".encode(Encoding::UTF_16)
     JSON::Parser.new(source)
     assert_equal Encoding::UTF_16, source.encoding
-  end if defined?(Encoding::UTF_16)
+  end
+
+  def test_argument_encoding_for_binary_unmodified
+    source = "{}".b
+    JSON::Parser.new(source)
+    assert_equal Encoding::ASCII_8BIT, source.encoding
+  end
 
   def test_error_message_encoding
-    # https://github.com/flori/json/actions/runs/6478148162/job/17589572890
-    pend if RUBY_ENGINE == 'truffleruby'
-
     bug10705 = '[ruby-core:67386] [Bug #10705]'
-    json = ".\"\xE2\x88\x9A\"".force_encoding(Encoding::UTF_8)
+    json = ".\"\xE2\x88\x9A\""
+    assert_equal(Encoding::UTF_8, json.encoding)
     e = assert_raise(JSON::ParserError) {
       JSON::Ext::Parser.new(json).parse
     }
     assert_equal(Encoding::UTF_8, e.message.encoding, bug10705)
     assert_include(e.message, json, bug10705)
-  end if defined?(Encoding::UTF_8) and defined?(JSON::Ext::Parser)
+  end
 
   def test_parsing
     parser = JSON::Parser.new('"test"')
@@ -101,6 +104,14 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('+23') }
     assert_raise(JSON::ParserError) { parse('.23') }
     assert_raise(JSON::ParserError) { parse('023') }
+    assert_raise(JSON::ParserError) { parse('-023') }
+    assert_raise(JSON::ParserError) { parse('023.12') }
+    assert_raise(JSON::ParserError) { parse('-023.12') }
+    assert_raise(JSON::ParserError) { parse('023e12') }
+    assert_raise(JSON::ParserError) { parse('-023e12') }
+    assert_raise(JSON::ParserError) { parse('-') }
+    assert_raise(JSON::ParserError) { parse('-.1') }
+    assert_raise(JSON::ParserError) { parse('-e0') }
     assert_equal(23, parse('23'))
     assert_equal(-23, parse('-23'))
     assert_equal_float(3.141, parse('3.141'))
@@ -128,23 +139,21 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(["éé"], JSON.parse("[\"\\u00e9é\"]"))
   end
 
-  if Array.method_defined?(:permutation)
-    def test_parse_more_complex_arrays
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      a.permutation.each do |perm|
-        json = pretty_generate(perm)
-        assert_equal perm, parse(json)
-      end
+  def test_parse_more_complex_arrays
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation.each do |perm|
+      json = pretty_generate(perm)
+      assert_equal perm, parse(json)
     end
+  end
 
-    def test_parse_complex_objects
-      a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
-      a.permutation.each do |perm|
-        s = "a"
-        orig_obj = perm.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
-        json = pretty_generate(orig_obj)
-        assert_equal orig_obj, parse(json)
-      end
+  def test_parse_complex_objects
+    a = [ nil, false, true, "foßbar", [ "n€st€d", true ], { "nested" => true, "n€ßt€ð2" => {} }]
+    a.permutation.each do |perm|
+      s = "a"
+      orig_obj = perm.inject({}) { |h, x| h[s.dup] = x; s = s.succ; h }
+      json = pretty_generate(orig_obj)
+      assert_equal orig_obj, parse(json)
     end
   end
 
@@ -179,7 +188,93 @@ class JSONParserTest < Test::Unit::TestCase
     assert parse('NaN', :allow_nan => true).nan?
     assert parse('Infinity', :allow_nan => true).infinite?
     assert parse('-Infinity', :allow_nan => true).infinite?
-    assert_raise(JSON::ParserError) { parse('[ 1, ]') }
+  end
+
+  def test_parse_arrays_with_allow_trailing_comma
+    assert_equal([], parse('[]', allow_trailing_comma: true))
+    assert_equal([], parse('[]', allow_trailing_comma: false))
+    assert_raise(JSON::ParserError) { parse('[,]', allow_trailing_comma: true) }
+    assert_raise(JSON::ParserError) { parse('[,]', allow_trailing_comma: false) }
+
+    assert_equal([1], parse('[1]', allow_trailing_comma: true))
+    assert_equal([1], parse('[1]', allow_trailing_comma: false))
+    assert_equal([1], parse('[1,]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[1,]', allow_trailing_comma: false) }
+
+    assert_equal([1, 2, 3], parse('[1,2,3]', allow_trailing_comma: true))
+    assert_equal([1, 2, 3], parse('[1,2,3]', allow_trailing_comma: false))
+    assert_equal([1, 2, 3], parse('[1,2,3,]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[1,2,3,]', allow_trailing_comma: false) }
+
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ]', allow_trailing_comma: true))
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ]', allow_trailing_comma: false))
+    assert_equal([1, 2, 3], parse('[  1  ,  2  ,  3  ,  ]', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('[  1  ,  2  ,  3  ,  ]', allow_trailing_comma: false) }
+
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3] }', allow_trailing_comma: true))
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3] }', allow_trailing_comma: false))
+    assert_equal({'foo' => [1, 2, 3]}, parse('{ "foo": [1,2,3,] }', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('{ "foo": [1,2,3,] }', allow_trailing_comma: false) }
+  end
+
+  def test_parse_object_with_allow_trailing_comma
+    assert_equal({}, parse('{}', allow_trailing_comma: true))
+    assert_equal({}, parse('{}', allow_trailing_comma: false))
+    assert_raise(JSON::ParserError) { parse('{,}', allow_trailing_comma: true) }
+    assert_raise(JSON::ParserError) { parse('{,}', allow_trailing_comma: false) }
+
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar"}', allow_trailing_comma: true))
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar"}', allow_trailing_comma: false))
+    assert_equal({'foo'=>'bar'}, parse('{"foo":"bar",}', allow_trailing_comma: true))
+    assert_raise(JSON::ParserError) { parse('{"foo":"bar",}', allow_trailing_comma: false) }
+
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply"}', allow_trailing_comma: true)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply"}', allow_trailing_comma: false)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{"foo":"bar","baz":"qux","quux":"garply",}', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('{"foo":"bar","baz":"qux","quux":"garply",}', allow_trailing_comma: false)
+    }
+
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  }', allow_trailing_comma: true)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  }', allow_trailing_comma: false)
+    )
+    assert_equal(
+      {'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'},
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  ,  }', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('{  "foo":"bar"  ,  "baz":"qux"  ,  "quux":"garply"  ,  }', allow_trailing_comma: false)
+    }
+
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply"}]', allow_trailing_comma: true)
+    )
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply"}]', allow_trailing_comma: false)
+    )
+    assert_equal(
+      [{'foo'=>'bar', 'baz'=>'qux', 'quux'=>'garply'}],
+      parse('[{"foo":"bar","baz":"qux","quux":"garply",}]', allow_trailing_comma: true)
+    )
+    assert_raise(JSON::ParserError) {
+      parse('[{"foo":"bar","baz":"qux","quux":"garply",}]', allow_trailing_comma: false)
+    }
   end
 
   def test_parse_some_strings
@@ -191,6 +286,36 @@ class JSONParserTest < Test::Unit::TestCase
       ["\"\b\n\r\t\0\037"],
       parse('["\"\b\n\r\t\u0000\u001f"]')
     )
+  end
+
+  if RUBY_ENGINE != "jruby" # https://github.com/ruby/json/issues/138
+    def test_parse_broken_string
+      s = parse(%{["\x80"]})[0]
+      assert_equal("\x80", s)
+      assert_equal Encoding::UTF_8, s.encoding
+      assert_equal false, s.valid_encoding?
+
+      s = parse(%{["\x80"]}.b)[0]
+      assert_equal("\x80", s)
+      assert_equal Encoding::UTF_8, s.encoding
+      assert_equal false, s.valid_encoding?
+
+      input = %{["\x80"]}.dup.force_encoding(Encoding::US_ASCII)
+      assert_raise(Encoding::InvalidByteSequenceError) { parse(input) }
+    end
+  end
+
+  def test_invalid_unicode_escape
+    assert_raise(JSON::ParserError) { parse('"\u"') }
+    assert_raise(JSON::ParserError) { parse('"\ua"') }
+    assert_raise(JSON::ParserError) { parse('"\uaa"') }
+    assert_raise(JSON::ParserError) { parse('"\uaaa"') }
+    assert_equal "\uaaaa", parse('"\uaaaa"')
+
+    assert_raise(JSON::ParserError) { parse('"\u______"') }
+    assert_raise(JSON::ParserError) { parse('"\u1_____"') }
+    assert_raise(JSON::ParserError) { parse('"\u11____"') }
+    assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
   def test_parse_big_integers
@@ -244,43 +369,56 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_comments
-    json = <<EOT
-{
-  "key1":"value1", // eol comment
-  "key2":"value2"  /* multi line
-                    *  comment */,
-  "key3":"value3"  /* multi line
-                    // nested eol comment
-                    *  comment */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1", // eol comment
+        "key2":"value2"  /* multi line
+                          *  comment */,
+        "key3":"value3"  /* multi line
+                          // nested eol comment
+                          *  comment */
+      }
+    JSON
     assert_equal(
       { "key1" => "value1", "key2" => "value2", "key3" => "value3" },
       parse(json))
-    json = <<EOT
-{
-  "key1":"value1"  /* multi line
-                    // nested eol comment
-                    /* illegal nested multi line comment */
-                    *  comment */
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                          // nested eol comment
+                          /* illegal nested multi line comment */
+                          *  comment */
+      }
+    JSON
     assert_raise(ParserError) { parse(json) }
-    json = <<EOT
-{
-  "key1":"value1"  /* multi line
-                   // nested eol comment
-                   closed multi comment */
-                   and again, throw an Error */
-}
-EOT
-    assert_raise(ParserError) { parse(json) }
-    json = <<EOT
-{
-  "key1":"value1"  /*/*/
-}
-EOT
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                          // nested eol comment
+                          /* legal nested multi line comment start sequence */
+      }
+    JSON
     assert_equal({ "key1" => "value1" }, parse(json))
+    json = <<~JSON
+      {
+        "key1":"value1"  /* multi line
+                         // nested eol comment
+                         closed multi comment */
+                         and again, throw an Error */
+      }
+    JSON
+    assert_raise(ParserError) { parse(json) }
+    json = <<~JSON
+      {
+        "key1":"value1"  /*/*/
+      }
+    JSON
+    assert_equal({ "key1" => "value1" }, parse(json))
+    assert_equal({}, parse('{} /**/'))
+    assert_raise(ParserError) { parse('{} /* comment not closed') }
+    assert_raise(ParserError) { parse('{} /*/') }
+    assert_raise(ParserError) { parse('{} /x wrong comment') }
+    assert_raise(ParserError) { parse('{} /') }
   end
 
   def test_nesting
@@ -489,8 +627,50 @@ EOT
   def test_parsing_frozen_ascii8bit_string
     assert_equal(
       { 'foo' => 'bar' },
-      JSON('{ "foo": "bar" }'.force_encoding(Encoding::ASCII_8BIT).freeze)
+      JSON('{ "foo": "bar" }'.b.freeze)
     )
+  end
+
+  def test_parse_error_message_length
+    # Error messages aren't consistent across backends, but we can at least
+    # enforce that if they include fragments of the source it should be of
+    # reasonable size.
+    error = assert_raise(JSON::ParserError) do
+      JSON.parse('{"foo": ' + ('A' * 500) + '}')
+    end
+    assert_operator 60, :>, error.message.bytesize
+  end
+
+  def test_parse_error_incomplete_hash
+    error = assert_raise(JSON::ParserError) do
+      JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
+    end
+    if RUBY_ENGINE == "ruby"
+      assert_equal %(expected ',' or '}' after object value, got: ''), error.message
+    end
+  end
+
+  def test_parse_error_snippet
+    omit "C ext only test" unless RUBY_ENGINE == "ruby"
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'ああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("aあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'aああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abあああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abcあああああああああ'", error.message
+  end
+
+  def test_parse_leading_slash
+    # ref: https://github.com/ruby/ruby/pull/12598
+    assert_raise(JSON::ParserError) do
+      JSON.parse("/foo/bar")
+    end
   end
 
   private

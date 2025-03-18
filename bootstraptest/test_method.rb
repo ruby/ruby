@@ -1374,3 +1374,24 @@ assert_equal 'ok', %q{
   foo(:foo, b: :ok)
   foo(*["foo"], b: :ok)
 }
+
+assert_equal 'ok', %q{
+  Thing = Struct.new(:value)
+
+  Obj = Thing.new("ok")
+
+  def delegate(...)
+    Obj.value(...)
+  end
+
+  def no_args
+    delegate
+  end
+
+  def splat_args(*args)
+    delegate(*args)
+  end
+
+  no_args
+  splat_args
+}

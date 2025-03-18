@@ -53,22 +53,16 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_full_mark_by_default
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     config = GC.config
     assert_not_empty(config)
     assert_true(config[:rgengc_allow_full_mark])
   end
 
   def test_gc_config_invalid_args
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     assert_raise(ArgumentError) { GC.config(0) }
   end
 
   def test_gc_config_setting_returns_updated_config_hash
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     old_value = GC.config[:rgengc_allow_full_mark]
     assert_true(old_value)
 
@@ -82,8 +76,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_setting_returns_nil_for_missing_keys
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     missing_value = GC.config(no_such_key: true)[:no_such_key]
     assert_nil(missing_value)
   ensure
@@ -92,8 +84,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_disable_major
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     GC.enable
     GC.start
 
@@ -116,8 +106,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_config_disable_major_gc_start_always_works
-    omit "unsupoported platform/GC" unless defined?(GC.config)
-
     GC.config(full_mark: false)
 
     major_count = GC.stat[:major_gc_count]
@@ -127,6 +115,19 @@ class TestGc < Test::Unit::TestCase
   ensure
     GC.config(full_mark: true)
     GC.start
+  end
+
+  def test_gc_config_implementation
+    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+
+    gc_name = (ENV['RUBY_GC_LIBRARY'] || "default")
+    assert_equal gc_name, GC.config[:implementation]
+  end
+
+  def test_gc_config_implementation_is_readonly
+    omit unless /darwin|linux/.match(RUBY_PLATFORM)
+
+    assert_raise(ArgumentError) { GC.config(implementation: "somethingelse") }
   end
 
   def test_start_full_mark
@@ -226,7 +227,7 @@ class TestGc < Test::Unit::TestCase
     GC.stat_heap(0, stat_heap)
     GC.stat(stat)
 
-    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+    GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
       EnvUtil.without_gc do
         GC.stat_heap(i, stat_heap)
         GC.stat(stat)
@@ -248,18 +249,17 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat_heap[:slot_size], GC.stat_heap(0)[:slot_size]
 
     assert_raise(ArgumentError) { GC.stat_heap(-1) }
-    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT]) }
+    assert_raise(ArgumentError) { GC.stat_heap(GC::INTERNAL_CONSTANTS[:HEAP_COUNT]) }
   end
 
   def test_stat_heap_all
-    omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
     # Initialize to prevent GC in future calls
     GC.stat_heap(0, stat_heap)
     GC.stat_heap(nil, stat_heap_all)
 
-    GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+    GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
       GC.stat_heap(nil, stat_heap_all)
       GC.stat_heap(i, stat_heap)
 
@@ -356,13 +356,14 @@ class TestGc < Test::Unit::TestCase
     3.times { GC.start }
     assert_nil GC.latest_gc_info(:need_major_by)
 
-    # allocate objects until need_major_by is set or major GC happens
-    objects = []
-    while GC.latest_gc_info(:need_major_by).nil?
-      objects.append(100.times.map { '*' })
-    end
-
     EnvUtil.without_gc do
+      # allocate objects until need_major_by is set or major GC happens
+      objects = []
+      while GC.latest_gc_info(:need_major_by).nil?
+        objects.append(100.times.map { '*' })
+        GC.start(full_mark: false)
+      end
+
       # We need to ensure that no GC gets ran before the call to GC.start since
       # it would trigger a major GC. Assertions could allocate objects and
       # trigger a GC so we don't run assertions until we perform the major GC.
@@ -417,8 +418,8 @@ class TestGc < Test::Unit::TestCase
       # Run full GC again to collect stats about weak references
       GC.start
 
-      # Sometimes the WeakMap has one element, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 1)
+      # Sometimes the WeakMap has a few elements, which might be held on by registers.
+      assert_operator(wmap.size, :<=, 2)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
@@ -538,7 +539,7 @@ class TestGc < Test::Unit::TestCase
 
       gc_count = GC.stat(:count)
       # Fill up all of the size pools to the init slots
-      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
         capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
         while GC.stat_heap(i, :heap_eden_slots) < GC_HEAP_INIT_SLOTS
           Array.new(capa)
@@ -558,7 +559,7 @@ class TestGc < Test::Unit::TestCase
 
       gc_count = GC.stat(:count)
       # Fill up all of the size pools to the init slots
-      GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
+      GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times do |i|
         capa = (GC.stat_heap(i, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
         while GC.stat_heap(i, :heap_eden_slots) < SIZES[i]
           Array.new(capa)
@@ -648,8 +649,19 @@ class TestGc < Test::Unit::TestCase
       # Warmup to make sure heap stabilizes
       1_000_000.times { Object.new }
 
-      before_stats = GC.stat
+      # We need to pre-allocate all the hashes for GC.stat calls, because
+      # otherwise the call to GC.stat/GC.stat_heap itself could cause a new
+      # page to be allocated and the before/after assertions will fail
+      before_stats = {}
+      after_stats = {}
+      # stat_heap needs a hash of hashes for each heap; easiest way to get the
+      # right shape for that is just to call stat_heap with no argument
       before_stat_heap = GC.stat_heap
+      after_stat_heap = GC.stat_heap
+
+      # Now collect the actual stats
+      GC.stat before_stats
+      GC.stat_heap nil, before_stat_heap
 
       1_000_000.times { Object.new }
 
@@ -657,8 +669,8 @@ class TestGc < Test::Unit::TestCase
       # running a minor GC here will guarantee that GC will be complete
       GC.start(full_mark: false)
 
-      after_stats = GC.stat
-      after_stat_heap = GC.stat_heap
+      GC.stat after_stats
+      GC.stat_heap nil, after_stat_heap
 
       # Debugging output to for failures in trunk-repeat50@phosphorus-docker
       debug_msg = "before_stats: #{before_stats}\nbefore_stat_heap: #{before_stat_heap}\nafter_stats: #{after_stats}\nafter_stat_heap: #{after_stat_heap}"

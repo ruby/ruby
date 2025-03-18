@@ -16,8 +16,8 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
-#ifndef USE_SHARED_GC
-# define USE_SHARED_GC 0
+#ifndef USE_MODULAR_GC
+# define USE_MODULAR_GC 0
 #endif
 
 #if defined(__x86_64__) && !defined(_ILP32) && defined(__GNUC__)
@@ -127,7 +127,13 @@ struct rb_objspace; /* in vm_core.h */
             rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
             rb_wb_unprotected_newobj_of((c), (f), s))
 
-#define RB_OBJ_GC_FLAGS_MAX 6   /* used in ext/objspace */
+#ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+# define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
+struct rb_gc_object_metadata_entry {
+    ID name;
+    VALUE val;
+};
+#endif
 
 #ifndef USE_UNALIGNED_MEMBER_ACCESS
 # define UNALIGNED_MEMBER_ACCESS(expr) (expr)
@@ -175,7 +181,6 @@ struct rb_objspace; /* in vm_core.h */
     if (_already_disabled == Qfalse) rb_gc_enable()
 
 /* gc.c */
-extern int ruby_disable_gc;
 RUBY_ATTR_MALLOC void *ruby_mimmalloc(size_t size);
 RUBY_ATTR_MALLOC void *ruby_mimcalloc(size_t num, size_t size);
 void ruby_mimfree(void *ptr);
@@ -197,12 +202,12 @@ static inline void *ruby_sized_xrealloc_inlined(void *ptr, size_t new_size, size
 static inline void *ruby_sized_xrealloc2_inlined(void *ptr, size_t new_count, size_t elemsiz, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 static inline void ruby_sized_xfree_inlined(void *ptr, size_t size);
 
-void *rb_gc_ractor_cache_alloc(void);
+void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 
 bool rb_gc_size_allocatable_p(size_t size);
-size_t *rb_gc_size_pool_sizes(void);
-size_t rb_gc_size_pool_id_for_size(size_t size);
+size_t *rb_gc_heap_sizes(void);
+size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
@@ -212,6 +217,9 @@ void rb_gc_remove_weak(VALUE parent_obj, VALUE *ptr);
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
 void rb_gc_initial_stress_set(VALUE flag);
+
+void rb_gc_before_fork(void);
+void rb_gc_after_fork(rb_pid_t pid);
 
 #define rb_gc_mark_and_move_ptr(ptr) do { \
     VALUE _obj = (VALUE)*(ptr); \
@@ -225,6 +233,7 @@ void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), v
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
+bool rb_gc_pointer_to_heap_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
@@ -234,13 +243,14 @@ size_t rb_gc_obj_slot_size(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
 
+#define RB_GC_MAX_NAME_LEN 20
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
 VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
-size_t rb_obj_gc_flags(VALUE, ID[], size_t);
+struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
@@ -248,14 +258,15 @@ void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR
 void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
 void ruby_sized_xfree(void *x, size_t size);
 
-#if USE_SHARED_GC
-void ruby_load_external_gc_from_argv(int argc, char **argv);
-#endif
+const char *rb_gc_active_gc_name(void);
+int rb_gc_modular_gc_loaded_p(void);
+
 RUBY_SYMBOL_EXPORT_END
 
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 const char *rb_obj_info(VALUE obj);
+void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
 #if defined(HAVE_MALLOC_USABLE_SIZE) || defined(HAVE_MALLOC_SIZE) || defined(_WIN32)
 

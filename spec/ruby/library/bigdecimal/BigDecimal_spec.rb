@@ -98,7 +98,11 @@ describe "Kernel#BigDecimal" do
       BigDecimal("invalid", exception: false).should be_nil
       BigDecimal("0invalid", exception: false).should be_nil
       BigDecimal("invalid0", exception: false).should be_nil
-      BigDecimal("0.", exception: false).should be_nil
+      if BigDecimal::VERSION >= "3.1.9"
+        BigDecimal("0.", exception: false).to_i.should == 0
+      else
+        BigDecimal("0.", exception: false).should be_nil
+      end
     end
   end
 

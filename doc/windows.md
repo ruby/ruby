@@ -16,7 +16,7 @@ editor.
 
 Ruby core development can be done either in Windows `cmd` like:
 
-```
+```batch
 ridk enable ucrt64
 
 pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
@@ -34,7 +34,7 @@ make
 
 or in MSYS2 `bash` like:
 
-```
+```bash
 ridk enable ucrt64
 bash
 
@@ -68,31 +68,31 @@ make
 
 3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
     to run required commands properly from the command line.
+    These are set properly by `vcvarall*.bat` usually.
 
     **Note** building ruby requires following commands.
 
-    * nmake
-    * cl
-    * ml
-    * lib
-    * dumpbin
+    * `nmake`
+    * `cl`
+    * `ml`
+    * `lib`
+    * `dumpbin`
 
 4.  If you want to build from GIT source, following commands are required.
-    * git
-    * patch
-    * sed
-    * ruby 3.0 or later
+    * `git`
+    * `sed`
+    * `ruby` 3.0 or later
 
     You can use [scoop](https://scoop.sh/) to install them like:
 
-    ```
-    scoop install git patch sed ruby
+    ```batch
+    scoop install git sed ruby
     ```
 
 5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
     directory of ruby repository like:
 
-    ```
+    ```batch
     vcpkg --triplet x64-windows install
     ```
 
@@ -104,29 +104,33 @@ make
 
 1.  Execute `win32\configure.bat` on your build directory.
     You can specify the target platform as an argument.
-    For example, run `configure --target=i686-mswin32`
+    For example, run `configure --target=i686-mswin32`.
     You can also specify the install directory.
-    For example, run `configure --prefix=<install_directory>`
+    For example, run `configure --prefix=<install_directory>`.
     Default of the install directory is `/usr` .
-    The default _PLATFORM_ is `i386-mswin32_`_MSRTVERSION_ on 32-bit
-    platforms, or `x64-mswin64_`_MSRTVERSION_ on x64 platforms.
-    _MSRTVERSION_ is the 2- or 3-digits version of the Microsoft
-    Runtime Library.
 
-2.  Change _RUBY_INSTALL_NAME_ and _RUBY_SO_NAME_ in `Makefile`
-    if you want to change the name of the executable files.
-    And add _RUBYW_INSTALL_NAME_ to change the name of the
-    executable without console window if also you want.
+2.  If you want to append to the executable and DLL file names,
+    specify `--program-prefix` and `--program-suffix`, like
+    `win32\configure.bat --program-suffix=-$(MAJOR)$(MINOR)`.
+
+    Also, the `--install-name` and `--so-name` options specify the
+    exact base names of the executable and DLL files, respectively,
+    like `win32\configure.bat --install-name=$(RUBY_BASE_NAME)-$(MAJOR)$(MINOR)`.
+
+    By default, the name for the executable without a console window
+    is generated from the _RUBY_INSTALL_NAME_ specified as above by
+    replacing `ruby` with `rubyw`.  If you want to make it different
+    more, modify _RUBYW_INSTALL_NAME_ directly in the Makefile.
 
 3.  You need specify vcpkg directory to use `--with-opt-dir`
-    option like `win32\configure.bat --with-opt-dir=vcpkg_installed\x64-windows`
+    option like `win32\configure.bat --with-opt-dir=C:/vcpkg_installed/x64-windows`
 
 4.  Run `nmake up` if you are building from GIT source.
 
 5.  Run `nmake`
 
-6.  Run `nmake prepare-vcpkg` if you need to copy
-    vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
+6.  Run `nmake prepare-vcpkg` with administrator privilege if you need to
+    copy vcpkg installed libraries like `libssl-3-x64.dll` to the build directory.
 
 7.  Run `nmake check`
 
@@ -142,7 +146,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     win32\configure --prefix=/usr/local
@@ -159,7 +163,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     mkdir mswin32
@@ -178,7 +182,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     D:
     cd D:\build\ruby
     C:\src\ruby\win32\configure --prefix=/usr/local
@@ -195,7 +199,7 @@ make
     install directory:      C:\usr\local
     ```
 
-    ```
+    ```batch
     C:
     cd \ruby
     win32\configure --prefix=/usr/local --target=x64-mswin64
@@ -220,7 +224,7 @@ Ruby uses [vcpkg](https://vcpkg.io/) to manage dependencies on mswin platform.
 
 You can update and install it under the build directory like:
 
-```
+```batch
 nmake update-vcpkg # Update baseline version of vcpkg
 nmake install-vcpkg # Install vcpkg from build directory
 ```

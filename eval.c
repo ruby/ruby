@@ -32,7 +32,6 @@
 #include "internal/variable.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "ruby/vm.h"
@@ -782,16 +781,37 @@ rb_f_raise(int argc, VALUE *argv)
  *
  *  See {Messages}[rdoc-ref:exceptions.md@Messages].
  *
- *  Argument +backtrace+ sets the stored backtrace in the new exception,
- *  which may be retrieved by method Exception#backtrace;
- *  the backtrace must be an array of strings or +nil+:
+ *  Argument +backtrace+ might be used to modify the backtrace of the new exception,
+ *  as reported by Exception#backtrace and Exception#backtrace_locations;
+ *  the backtrace must be an array of Thread::Backtrace::Location, an array of
+ *  strings, a single string, or +nil+.
+ *
+ *  Using the array of Thread::Backtrace::Location instances is the most consistent option
+ *  and should be preferred when possible. The necessary value might be obtained
+ *  from #caller_locations, or copied from Exception#backtrace_locations of another
+ *  error:
  *
  *    begin
- *      raise(StandardError, 'Boom', %w[foo bar baz])
- *    rescue => x
- *      p x.backtrace
+ *      do_some_work()
+ *    rescue ZeroDivisionError => ex
+ *      raise(LogicalError, "You have an error in your math", ex.backtrace_locations)
  *    end
- *    # => ["foo", "bar", "baz"]
+ *
+ *  The ways, both Exception#backtrace and Exception#backtrace_locations of the
+ *  raised error are set to the same backtrace.
+ *
+ *  When the desired stack of locations is not available and should
+ *  be constructed from scratch, an array of strings or a singular
+ *  string can be used. In this case, only Exception#backtrace is set:
+ *
+ *    begin
+ *      raise(StandardError, 'Boom', %w[dsl.rb:3 framework.rb:1])
+ *    rescue => ex
+ *      p ex.backtrace
+ *      # => ["dsl.rb:3", "framework.rb:1"]
+ *      p ex.backtrace_locations
+ *      # => nil
+ *    end
  *
  *  If argument +backtrace+ is not given,
  *  the backtrace is set according to an array of Thread::Backtrace::Location objects,
@@ -1401,21 +1421,6 @@ rb_refinement_module_get_refined_class(VALUE module)
 
     CONST_ID(id_refined_class, "__refined_class__");
     return rb_attr_get(module, id_refined_class);
-}
-
-/*
- *  call-seq:
- *     refined_class    -> class
- *
- *  Deprecated; prefer #target.
- *
- *  Return the class refined by the receiver.
- */
-static VALUE
-rb_refinement_refined_class(VALUE module)
-{
-    rb_warn_deprecated_to_remove("3.4", "Refinement#refined_class", "Refinement#target");
-    return rb_refinement_module_get_refined_class(module);
 }
 
 static void
@@ -2131,7 +2136,6 @@ Init_eval(void)
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
     rb_define_method(rb_cRefinement, "target", rb_refinement_module_get_refined_class, 0);
-    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_refined_class, 0);
     rb_undef_method(rb_cRefinement, "append_features");
     rb_undef_method(rb_cRefinement, "prepend_features");
     rb_undef_method(rb_cRefinement, "extend_object");

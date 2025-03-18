@@ -96,14 +96,16 @@ module Bundler
     #   given block
     #
     # @example
-    #   filesystem_access("vendor/cache", :write) do
+    #   filesystem_access("vendor/cache", :create) do
     #     FileUtils.mkdir_p("vendor/cache")
     #   end
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
       yield(path.dup)
-    rescue Errno::EACCES
+    rescue Errno::EACCES => e
+      raise unless e.message.include?(path.to_s) || action == :create
+
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
       raise TemporaryResourceError.new(path, action)
@@ -113,10 +115,14 @@ module Bundler
       raise NoSpaceOnDeviceError.new(path, action)
     rescue Errno::ENOTSUP
       raise OperationNotSupportedError.new(path, action)
+    rescue Errno::EPERM
+      raise OperationNotPermittedError.new(path, action)
+    rescue Errno::EROFS
+      raise ReadOnlyFileSystemError.new(path, action)
     rescue Errno::EEXIST, Errno::ENOENT
       raise
     rescue SystemCallError => e
-      raise GenericSystemCallError.new(e, "There was an error accessing `#{path}`.")
+      raise GenericSystemCallError.new(e, "There was an error #{[:create, :write].include?(action) ? "creating" : "accessing"} `#{path}`.")
     end
 
     def major_deprecation(major_version, message, removed_message: nil, print_caller_location: false)
@@ -160,10 +166,10 @@ module Bundler
       extra_deps = new_deps - old_deps
       return if extra_deps.empty?
 
-      Bundler.ui.debug "#{spec.full_name} from #{spec.remote} has either corrupted API or lockfile dependencies" \
+      Bundler.ui.debug "#{spec.full_name} from #{spec.remote} has corrupted API dependencies" \
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
-        "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
+        "Downloading #{spec.full_name} revealed dependencies not in the API (#{extra_deps.join(", ")})." \
         "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 
@@ -274,15 +280,7 @@ module Bundler
       until !File.directory?(current) || current == previous
         if ENV["BUNDLER_SPEC_RUN"]
           # avoid stepping above the tmp directory when testing
-          gemspec = if ENV["GEM_COMMAND"]
-            # for Ruby Core
-            "lib/bundler/bundler.gemspec"
-          else
-            "bundler.gemspec"
-          end
-
-          # avoid stepping above the tmp directory when testing
-          return nil if File.file?(File.join(current, gemspec))
+          return nil if File.directory?(File.join(current, "tmp"))
         end
 
         names.each do |name|
@@ -314,17 +312,35 @@ module Bundler
 
     def bundle_bin_path
       # bundler exe & lib folders have same root folder, typical gem installation
-      exe_file = File.expand_path("../../exe/bundle", __dir__)
+      exe_file = File.join(source_root, "exe/bundle")
 
       # for Ruby core repository testing
-      exe_file = File.expand_path("../../libexec/bundle", __dir__) unless File.exist?(exe_file)
+      exe_file = File.join(source_root, "libexec/bundle") unless File.exist?(exe_file)
 
       # bundler is a default gem, exe path is separate
-      exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
+      exe_file = Gem.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
 
       exe_file
     end
     public :bundle_bin_path
+
+    def gemspec_path
+      # inside a gem repository, typical gem installation
+      gemspec_file = File.join(source_root, "../../specifications/bundler-#{VERSION}.gemspec")
+
+      # for Ruby core repository testing
+      gemspec_file = File.expand_path("bundler.gemspec", __dir__) unless File.exist?(gemspec_file)
+
+      # bundler is a default gem
+      gemspec_file = File.join(Gem.default_specifications_dir, "bundler-#{VERSION}.gemspec") unless File.exist?(gemspec_file)
+
+      gemspec_file
+    end
+    public :gemspec_path
+
+    def source_root
+      File.expand_path("../..", __dir__)
+    end
 
     def set_path
       validate_bundle_path

@@ -217,7 +217,7 @@ module Bundler
     method_option "full-index", type: :boolean, banner: "Fall back to using the single-file index of all gems"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "jobs", aliases: "-j", type: :numeric, banner: "Specify the number of jobs to run in parallel"
-    method_option "local", type: :boolean, banner:       "Do not attempt to fetch gems remotely and use the gem cache instead"
+    method_option "local", type: :boolean, banner: "Do not attempt to fetch gems remotely and use the gem cache instead"
     method_option "prefer-local", type: :boolean, banner: "Only attempt to fetch gems remotely if not present locally, even if newer versions are available remotely"
     method_option "no-cache", type: :boolean, banner: "Don't update the existing gem cache."
     method_option "redownload", type: :boolean, aliases: "--force", banner: "Force downloading every gem."
@@ -227,10 +227,8 @@ module Bundler
     method_option "shebang", type: :string, banner: "Specify a different shebang executable name than the default (usually 'ruby')"
     method_option "standalone", type: :array, lazy_default: [], banner: "Make a bundle that can work without the Bundler runtime"
     method_option "system", type: :boolean, banner: "Install to the system location ($BUNDLE_PATH or $GEM_HOME) even if the bundle was previously installed somewhere else for this application"
-    method_option "trust-policy", alias: "P", type: :string, banner:       "Gem trust policy (like gem install -P). Must be one of " +
-                                                                           Bundler.rubygems.security_policy_keys.join("|")
-    method_option "target-rbconfig", type: :string, banner: "rbconfig.rb for the deployment target platform"
-
+    method_option "trust-policy", alias: "P", type: :string, banner: "Gem trust policy (like gem install -P). Must be one of #{Bundler.rubygems.security_policy_keys.join("|")}"
+    method_option "target-rbconfig", type: :string, banner: "Path to rbconfig.rb for the deployment target platform"
     method_option "without", type: :array, banner: "Exclude gems that are part of the specified named group."
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group."
     def install
@@ -288,10 +286,8 @@ module Bundler
       Show lists the names and versions of all gems that are required by your Gemfile.
       Calling show with [GEM] will list the exact location of that gem on your machine.
     D
-    method_option "paths", type: :boolean,
-                           banner: "List the paths of all gems that are required by your Gemfile."
-    method_option "outdated", type: :boolean,
-                              banner: "Show verbose output including whether gems are outdated."
+    method_option "paths", type: :boolean, banner: "List the paths of all gems that are required by your Gemfile."
+    method_option "outdated", type: :boolean, banner: "Show verbose output including whether gems are outdated."
     def show(gem_name = nil)
       if ARGV.include?("--outdated")
         message = "the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement"
@@ -353,6 +349,7 @@ module Bundler
     method_option "branch", type: :string
     method_option "ref", type: :string
     method_option "glob", type: :string, banner: "The location of a dependency's .gemspec, expanded within Ruby (single quotes recommended)"
+    method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "skip-install", type: :boolean, banner: "Adds gem to the Gemfile but does not install it"
     method_option "optimistic", type: :boolean, banner: "Adds optimistic declaration of version to gem"
     method_option "strict", type: :boolean, banner: "Adds strict declaration of version to gem"
@@ -399,9 +396,7 @@ module Bundler
     end
 
     desc "cache [OPTIONS]", "Locks and then caches all of the gems into vendor/cache"
-    method_option "all", type: :boolean,
-                         default: Bundler.feature_flag.cache_all?,
-                         banner: "Include all sources (including path and git)."
+    method_option "all", type: :boolean, default: Bundler.feature_flag.cache_all?, banner: "Include all sources (including path and git)."
     method_option "all-platforms", type: :boolean, banner: "Include gems for all platforms present in the lockfile, not only the current one"
     method_option "cache-path", type: :string, banner: "Specify a different cache path than the default (vendor/cache)."
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
@@ -439,8 +434,8 @@ module Bundler
     map aliases_for("cache")
 
     desc "exec [OPTIONS]", "Run the command in context of the bundle"
-    method_option :keep_file_descriptors, type: :boolean, default: true
-    method_option :gemfile, type: :string, required: false
+    method_option :keep_file_descriptors, type: :boolean, default: true, banner: "Passes all file descriptors to the new processes. Default is true, and setting it to false is deprecated"
+    method_option :gemfile, type: :string, required: false, banner: "Use the specified gemfile instead of Gemfile"
     long_desc <<-D
       Exec runs a command, providing it access to the gems in the bundle. While using
       bundle exec you can require and call the bundled gems as if they were installed
@@ -481,12 +476,10 @@ module Bundler
       Open.new(options, name).run
     end
 
-    unless Bundler.feature_flag.bundler_3_mode?
-      desc "console [GROUP]", "Opens an IRB session with the bundle pre-loaded"
-      def console(group = nil)
-        require_relative "cli/console"
-        Console.new(options, group).run
-      end
+    desc "console [GROUP]", "Opens an IRB session with the bundle pre-loaded"
+    def console(group = nil)
+      require_relative "cli/console"
+      Console.new(options, group).run
     end
 
     desc "version", "Prints Bundler version information"
@@ -538,54 +531,27 @@ module Bundler
       end
     end
 
-    old_gem = instance_method(:gem)
-
     desc "gem NAME [OPTIONS]", "Creates a skeleton for creating a rubygem"
     method_option :exe, type: :boolean, default: false, aliases: ["--bin", "-b"], desc: "Generate a binary executable for your library."
     method_option :coc, type: :boolean, desc: "Generate a code of conduct file. Set a default with `bundle config set --global gem.coc true`."
-    method_option :edit, type: :string, aliases: "-e", required: false, banner: "EDITOR",
-                         lazy_default: [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? },
-                         desc: "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
+    method_option :edit, type: :string, aliases: "-e", required: false, banner: "EDITOR", lazy_default: [ENV["BUNDLER_EDITOR"], ENV["VISUAL"], ENV["EDITOR"]].find {|e| !e.nil? && !e.empty? }, desc: "Open generated gemspec in the specified editor (defaults to $EDITOR or $BUNDLER_EDITOR)"
     method_option :ext, type: :string, desc: "Generate the boilerplate for C extension code.", enum: EXTENSIONS
     method_option :git, type: :boolean, default: true, desc: "Initialize a git repo inside your library."
     method_option :mit, type: :boolean, desc: "Generate an MIT license file. Set a default with `bundle config set --global gem.mit true`."
     method_option :rubocop, type: :boolean, desc: "Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`."
     method_option :changelog, type: :boolean, desc: "Generate changelog file. Set a default with `bundle config set --global gem.changelog true`."
-    method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library",
-                         enum: %w[rspec minitest test-unit],
-                         desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
-    method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "",
-                       enum: %w[github gitlab circle],
-                       desc: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
-    method_option :linter, type: :string, lazy_default: Bundler.settings["gem.linter"] || "",
-                           enum: %w[rubocop standard],
-                           desc: "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
+    method_option :test, type: :string, lazy_default: Bundler.settings["gem.test"] || "", aliases: "-t", banner: "Use the specified test framework for your library", enum: %w[rspec minitest test-unit], desc: "Generate a test directory for your library, either rspec, minitest or test-unit. Set a default with `bundle config set --global gem.test (rspec|minitest|test-unit)`."
+    method_option :ci, type: :string, lazy_default: Bundler.settings["gem.ci"] || "", enum: %w[github gitlab circle], desc: "Generate CI configuration, either GitHub Actions, GitLab CI or CircleCI. Set a default with `bundle config set --global gem.ci (github|gitlab|circle)`"
+    method_option :linter, type: :string, lazy_default: Bundler.settings["gem.linter"] || "", enum: %w[rubocop standard], desc: "Add a linter and code formatter, either RuboCop or Standard. Set a default with `bundle config set --global gem.linter (rubocop|standard)`"
     method_option :github_username, type: :string, default: Bundler.settings["gem.github_username"], banner: "Set your username on GitHub", desc: "Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`."
 
     def gem(name)
+      require_relative "cli/gem"
+      cmd_args = args + [self]
+      cmd_args.unshift(options)
+
+      Gem.new(*cmd_args).run
     end
-
-    commands["gem"].tap do |gem_command|
-      def gem_command.run(instance, args = [])
-        arity = 1 # name
-
-        require_relative "cli/gem"
-        cmd_args = args + [instance]
-        cmd_args.unshift(instance.options)
-
-        cmd = begin
-          Gem.new(*cmd_args)
-        rescue ArgumentError => e
-          instance.class.handle_argument_error(self, e, args, arity)
-        end
-
-        cmd.run
-      end
-    end
-
-    undef_method(:gem)
-    define_method(:gem, old_gem)
-    private :gem
 
     def self.source_root
       File.expand_path("templates", __dir__)
@@ -622,8 +588,10 @@ module Bundler
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
+    method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
     method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
     method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
     method_option "major", type: :boolean, banner: "If updating, prefer updating to next major version (default)"

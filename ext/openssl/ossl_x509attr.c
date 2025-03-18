@@ -28,7 +28,7 @@
  * Classes
  */
 VALUE cX509Attr;
-VALUE eX509AttrError;
+static VALUE eX509AttrError;
 
 static void
 ossl_x509attr_free(void *ptr)
@@ -123,6 +123,7 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_x509attr_initialize_copy(VALUE self, VALUE other)
 {

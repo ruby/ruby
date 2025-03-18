@@ -164,53 +164,36 @@ RSpec.describe Bundler do
   end
 
   describe "#which" do
-    let(:executable) { "executable" }
+    it "can detect relative path" do
+      script_path = bundled_app("tmp/test_command")
+      create_file(script_path, "#!/usr/bin/env ruby\n")
 
-    let(:path) do
-      if Gem.win_platform?
-        %w[C:/a C:/b C:/c C:/../d C:/e]
-      else
-        %w[/a /b c ../d /e]
+      result = Dir.chdir script_path.dirname.dirname do
+        Bundler.which("test_command")
       end
+      expect(result).to eq(nil)
+
+      result = Dir.chdir script_path.dirname do
+        Bundler.which("test_command")
+      end
+
+      expect(result).to eq("test_command") unless Gem.win_platform?
+      expect(result).to eq("test_command.bat") if Gem.win_platform?
     end
 
-    let(:expected) { "executable" }
+    it "can detect absolute path" do
+      create_file("test_command", "#!/usr/bin/env ruby\n")
 
-    before do
-      ENV["PATH"] = path.join(File::PATH_SEPARATOR)
+      ENV["PATH"] = bundled_app("test_command").parent.to_s
 
-      allow(File).to receive(:file?).and_return(false)
-      allow(File).to receive(:executable?).and_return(false)
-      if expected
-        expect(File).to receive(:file?).with(expected).and_return(true)
-        expect(File).to receive(:executable?).with(expected).and_return(true)
-      end
+      result = Bundler.which("test_command")
+      expect(result).to eq(bundled_app("test_command").to_s) unless Gem.win_platform?
+      expect(result).to eq(bundled_app("test_command.bat").to_s) if Gem.win_platform?
     end
 
-    subject { described_class.which(executable) }
-
-    shared_examples_for "it returns the correct executable" do
-      it "returns the expected file" do
-        expect(subject).to eq(expected)
-      end
-    end
-
-    it_behaves_like "it returns the correct executable"
-
-    context "when the executable in inside a quoted path" do
-      let(:expected) do
-        if Gem.win_platform?
-          "C:/e/executable"
-        else
-          "/e/executable"
-        end
-      end
-      it_behaves_like "it returns the correct executable"
-    end
-
-    context "when the executable is not found" do
-      let(:expected) { nil }
-      it_behaves_like "it returns the correct executable"
+    it "returns nil when not found" do
+      result = Bundler.which("test_command")
+      expect(result).to eq(nil)
     end
   end
 

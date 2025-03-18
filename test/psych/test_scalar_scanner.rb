@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require_relative 'helper'
-require 'date'
 
 module Psych
   class TestScalarScanner < TestCase

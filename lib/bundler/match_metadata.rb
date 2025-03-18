@@ -13,5 +13,18 @@ module Bundler
     def matches_current_rubygems?
       @required_rubygems_version.satisfied_by?(Gem.rubygems_version)
     end
+
+    def expanded_dependencies
+      runtime_dependencies + [
+        metadata_dependency("Ruby", @required_ruby_version),
+        metadata_dependency("RubyGems", @required_rubygems_version),
+      ].compact
+    end
+
+    def metadata_dependency(name, requirement)
+      return if requirement.nil? || requirement.none?
+
+      Gem::Dependency.new("#{name}\0", requirement)
+    end
   end
 end

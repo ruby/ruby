@@ -180,7 +180,8 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module Bundler::FileUtils
-  VERSION = "1.7.2"
+  # The version number.
+  VERSION = "1.7.3"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -1651,7 +1652,7 @@ module Bundler::FileUtils
       when "a"
         mask | 07777
       else
-        raise ArgumentError, "invalid `who' symbol in file mode: #{chr}"
+        raise ArgumentError, "invalid 'who' symbol in file mode: #{chr}"
       end
     end
   end
@@ -1705,7 +1706,7 @@ module Bundler::FileUtils
             copy_mask = user_mask(chr)
             (current_mode & copy_mask) / (copy_mask & 0111) * (user_mask & 0111)
           else
-            raise ArgumentError, "invalid `perm' symbol in file mode: #{chr}"
+            raise ArgumentError, "invalid 'perm' symbol in file mode: #{chr}"
           end
         end
 
@@ -2028,21 +2029,22 @@ module Bundler::FileUtils
 
   private
 
-  module StreamUtils_
+  module StreamUtils_ # :nodoc:
+
     private
 
     case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
     when /mswin|mingw/
-      def fu_windows?; true end
+      def fu_windows?; true end #:nodoc:
     else
-      def fu_windows?; false end
+      def fu_windows?; false end #:nodoc:
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
       IO.copy_stream(src, dest)
     end
 
-    def fu_stream_blksize(*streams)
+    def fu_stream_blksize(*streams) #:nodoc:
       streams.each do |s|
         next unless s.respond_to?(:stat)
         size = fu_blksize(s.stat)
@@ -2051,14 +2053,14 @@ module Bundler::FileUtils
       fu_default_blksize()
     end
 
-    def fu_blksize(st)
+    def fu_blksize(st) #:nodoc:
       s = st.blksize
       return nil unless s
       return nil if s == 0
       s
     end
 
-    def fu_default_blksize
+    def fu_default_blksize #:nodoc:
       1024
     end
   end
@@ -2503,7 +2505,7 @@ module Bundler::FileUtils
   end
   private_module_function :fu_output_message
 
-  def fu_split_path(path)
+  def fu_split_path(path) #:nodoc:
     path = File.path(path)
     list = []
     until (parent, base = File.split(path); parent == path or parent == ".")
@@ -2524,7 +2526,7 @@ module Bundler::FileUtils
   end
   private_module_function :fu_relative_components_from
 
-  def fu_clean_components(*comp)
+  def fu_clean_components(*comp) #:nodoc:
     comp.shift while comp.first == "."
     return comp if comp.empty?
     clean = [comp.shift]
@@ -2543,11 +2545,11 @@ module Bundler::FileUtils
   private_module_function :fu_clean_components
 
   if fu_windows?
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?(%r(\w:|/))
     end
   else
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?("/")
     end
   end

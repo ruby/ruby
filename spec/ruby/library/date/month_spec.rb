@@ -1,9 +1,7 @@
 require_relative '../../spec_helper'
+require_relative 'shared/month'
 require 'date'
 
 describe "Date#month" do
-  it "returns the month" do
-    m = Date.new(2000, 7, 1).month
-    m.should == 7
-  end
+  it_behaves_like :date_month, :month
 end

@@ -438,6 +438,33 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal %w[lib/code.rb], reader.contents
   end
 
+  def test_build_modified_platform
+    spec = quick_gem "a", "1" do |s|
+      s.files = %w[lib/code.rb]
+      s.platform = Gem::Platform.new "x86_64-linux"
+    end
+
+    spec.platform = Gem::Platform.new "java"
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    package = Gem::Package.new spec.file_name
+    package.spec = spec
+
+    package.build
+
+    assert_path_exist spec.file_name
+
+    reader = Gem::Package.new spec.file_name
+    assert reader.verify
+
+    assert_equal spec, reader.spec
+  end
+
   def test_raw_spec
     data_tgz = util_tar_gz {}
 

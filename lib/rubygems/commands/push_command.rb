@@ -30,7 +30,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   end
 
   def initialize
-    super "push", "Push a gem up to the gem server", host: host
+    super "push", "Push a gem up to the gem server", host: host, attestations: []
 
     @user_defined_host = false
 
@@ -43,6 +43,11 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
                "  (e.g. https://rubygems.org)") do |value, options|
       options[:host] = value
       @user_defined_host = true
+    end
+
+    add_option("--attestation FILE",
+                "Push with sigstore attestations") do |value, options|
+      options[:attestations] << value
     end
 
     @host = nil
@@ -88,10 +93,18 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
   def send_push_request(name, args)
     rubygems_api_request(*args, scope: get_push_scope) do |request|
-      request.body = Gem.read_binary name
-      request.add_field "Content-Length", request.body.size
-      request.add_field "Content-Type",   "application/octet-stream"
-      request.add_field "Authorization",  api_key
+      body = Gem.read_binary name
+      if options[:attestations].any?
+        request.set_form([
+          ["gem", body, { filename: name, content_type: "application/octet-stream" }],
+          get_attestations_part,
+        ], "multipart/form-data")
+      else
+        request.body = body
+        request.add_field "Content-Type",   "application/octet-stream"
+        request.add_field "Content-Length", request.body.size
+      end
+      request.add_field "Authorization", api_key
     end
   end
 
@@ -106,5 +119,16 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
 
   def get_push_scope
     :push_rubygem
+  end
+
+  def get_attestations_part
+    bundles = "[" + options[:attestations].map do |attestation|
+      Gem.read_binary(attestation)
+    end.join(",") + "]"
+    [
+      "attestations",
+      bundles,
+      { content_type: "application/json" },
+    ]
   end
 end

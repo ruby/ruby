@@ -53,35 +53,24 @@ void Init_ossl_pkey(void);
  * RSA
  */
 extern VALUE cRSA;
-extern VALUE eRSAError;
-
 void Init_ossl_rsa(void);
 
 /*
  * DSA
  */
 extern VALUE cDSA;
-extern VALUE eDSAError;
-
 void Init_ossl_dsa(void);
 
 /*
  * DH
  */
 extern VALUE cDH;
-extern VALUE eDHError;
-
 void Init_ossl_dh(void);
 
 /*
  * EC
  */
 extern VALUE cEC;
-extern VALUE eECError;
-extern VALUE cEC_GROUP;
-extern VALUE eEC_GROUP;
-extern VALUE cEC_POINT;
-extern VALUE eEC_POINT;
 VALUE ossl_ec_new(EVP_PKEY *);
 void Init_ossl_ec(void);
 
@@ -136,7 +125,7 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2, VALU
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
 		BN_clear_free(bn3);					\
-		ossl_raise(eBNError, NULL);				\
+		ossl_raise(ePKeyError, "BN_dup");			\
 	}								\
 									\
 	if (!_type##_set0_##_group(obj, bn1, bn2, bn3)) {		\
@@ -164,7 +153,7 @@ static VALUE ossl_##_keytype##_set_##_group(VALUE self, VALUE v1, VALUE v2) \
             (orig_bn2 && !(bn2 = BN_dup(orig_bn2)))) {			\
 		BN_clear_free(bn1);					\
 		BN_clear_free(bn2);					\
-		ossl_raise(eBNError, NULL);				\
+		ossl_raise(ePKeyError, "BN_dup");			\
 	}								\
 									\
 	if (!_type##_set0_##_group(obj, bn1, bn2)) {			\

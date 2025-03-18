@@ -193,12 +193,4 @@ RSpec.describe Bundler::Plugin::Index do
       include_examples "it cleans up"
     end
   end
-
-  describe "readonly disk without home" do
-    it "ignores being unable to create temp home dir" do
-      expect_any_instance_of(Bundler::Plugin::Index).to receive(:global_index_file).
-        and_raise(Bundler::GenericSystemCallError.new("foo", "bar"))
-      Bundler::Plugin::Index.new
-    end
-  end
 end

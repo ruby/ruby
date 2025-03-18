@@ -5,7 +5,7 @@ see {Option --dump}[options_md.html#label--dump-3A+Dump+Items].
 
 For the examples here, we use this program:
 
-```sh
+```console
 $ cat t.rb
 puts 'Foo'
 ```
@@ -26,7 +26,7 @@ The supported dump items:
 - `parsetree`: {Abstract syntax tree}[https://en.wikipedia.org/wiki/Abstract_syntax_tree]
   (AST):
 
-    ```sh
+    ```console
     $ ruby --dump=parsetree t.rb
     ###########################################################
     ## Do NOT use this node dump for any purpose other than  ##
@@ -50,46 +50,9 @@ The supported dump items:
     #             (null node)
     ```
 
-- `parsetree_with_comment`: AST with comments:
-
-    ```sh
-    $ ruby --dump=parsetree_with_comment t.rb
-    ###########################################################
-    ## Do NOT use this node dump for any purpose other than  ##
-    ## debug and research.  Compatibility is not guaranteed. ##
-    ###########################################################
-
-    # @ NODE_SCOPE (line: 1, location: (1,0)-(1,10))
-    # | # new scope
-    # | # format: [nd_tbl]: local table, [nd_args]: arguments, [nd_body]: body
-    # +- nd_tbl (local table): (empty)
-    # +- nd_args (arguments):
-    # |   (null node)
-    # +- nd_body (body):
-    #     @ NODE_FCALL (line: 1, location: (1,0)-(1,10))*
-    #     | # function call
-    #     | # format: [nd_mid]([nd_args])
-    #     | # example: foo(1)
-    #     +- nd_mid (method id): :puts
-    #     +- nd_args (arguments):
-    #         @ NODE_LIST (line: 1, location: (1,5)-(1,10))
-    #         | # list constructor
-    #         | # format: [ [nd_head], [nd_next].. ] (length: [nd_alen])
-    #         | # example: [1, 2, 3]
-    #         +- nd_alen (length): 1
-    #         +- nd_head (element):
-    #         |   @ NODE_STR (line: 1, location: (1,5)-(1,10))
-    #         |   | # string literal
-    #         |   | # format: [nd_lit]
-    #         |   | # example: 'foo'
-    #         |   +- nd_lit (literal): "Foo"
-    #         +- nd_next (next element):
-    #             (null node)
-    ```
-
 - `yydebug`: Debugging information from yacc parser generator:
 
-    ```sh
+    ```
     $ ruby --dump=yydebug t.rb
     Starting parse
     Entering state 0
@@ -295,3 +258,8 @@ The supported dump items:
     Cleanup: popping nterm program (1.0-1.10: )
     ```
 
+Additional flags can follow dump items.
+
+- `+comment`: Add comments to AST.
+- `+error-tolerant`: Parse in error-tolerant mode.
+- `-optimize`: Disable optimizations for instruction sequences.

@@ -83,6 +83,23 @@ typedef enum {
 } pm_heredoc_indent_t;
 
 /**
+ * All of the information necessary to store to lexing a heredoc.
+ */
+typedef struct {
+    /** A pointer to the start of the heredoc identifier. */
+    const uint8_t *ident_start;
+
+    /** The length of the heredoc identifier. */
+    size_t ident_length;
+
+    /** The type of quote that the heredoc uses. */
+    pm_heredoc_quote_t quote;
+
+    /** The type of indentation that the heredoc uses. */
+    pm_heredoc_indent_t indent;
+} pm_heredoc_lex_mode_t;
+
+/**
  * When lexing Ruby source, the lexer has a small amount of state to tell which
  * kind of token it is currently lexing. For example, when we find the start of
  * a string, the first token that we return is a TOKEN_STRING_BEGIN token. After
@@ -210,17 +227,10 @@ typedef struct pm_lex_mode {
         } string;
 
         struct {
-            /** A pointer to the start of the heredoc identifier. */
-            const uint8_t *ident_start;
-
-            /** The length of the heredoc identifier. */
-            size_t ident_length;
-
-            /** The type of quote that the heredoc uses. */
-            pm_heredoc_quote_t quote;
-
-            /** The type of indentation that the heredoc uses. */
-            pm_heredoc_indent_t indent;
+            /**
+             * All of the data necessary to lex a heredoc.
+             */
+            pm_heredoc_lex_mode_t base;
 
             /**
              * This is the pointer to the character where lexing should resume
@@ -233,7 +243,7 @@ typedef struct pm_lex_mode {
              * line so that we know how much to dedent each line in the case of
              * a tilde heredoc.
              */
-            size_t common_whitespace;
+            size_t *common_whitespace;
 
             /** True if the previous token ended with a line continuation. */
             bool line_continuation;
@@ -381,6 +391,9 @@ typedef enum {
 
     /** a rescue statement within a module statement */
     PM_CONTEXT_MODULE_RESCUE,
+
+    /** a multiple target expression */
+    PM_CONTEXT_MULTI_TARGET,
 
     /** a parenthesized expression */
     PM_CONTEXT_PARENS,

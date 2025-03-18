@@ -34,6 +34,10 @@ class PPTest < Test::Unit::TestCase
     assert_equal("0...1\n", PP.pp(0...1, "".dup))
     assert_equal("0...\n", PP.pp(0..., "".dup))
     assert_equal("...1\n", PP.pp(...1, "".dup))
+    assert_equal("..false\n", PP.pp(..false, "".dup))
+    assert_equal("false..\n", PP.pp(false.., "".dup))
+    assert_equal("false..false\n", PP.pp(false..false, "".dup))
+    assert_equal("nil..nil\n", PP.pp(nil..nil, "".dup))
   end
 end
 
@@ -125,6 +129,11 @@ class PPInspectTest < Test::Unit::TestCase
     result = PP.pp(a, ''.dup)
     assert_equal("#{a.inspect}\n", result)
   end
+
+  def test_basic_object
+    a = BasicObject.new
+    assert_match(/\A#<BasicObject:0x[\da-f]+>\n\z/, PP.pp(a, ''.dup))
+  end
 end
 
 class PPCycleTest < Test::Unit::TestCase
@@ -138,7 +147,6 @@ class PPCycleTest < Test::Unit::TestCase
   def test_hash
     a = {}
     a[0] = a
-    assert_equal("{0=>{...}}\n", PP.pp(a, ''.dup))
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
@@ -159,6 +167,22 @@ class PPCycleTest < Test::Unit::TestCase
 
       b = Data.define(:a).new(42)
       assert_equal("#{b.inspect}\n", PP.pp(b, ''.dup))
+    end
+
+    D2 = Data.define(:aaa, :bbb) do
+      private :aaa
+    end
+    def test_data_private_member
+      a = D2.new("aaa", "bbb")
+      assert_equal("#<data PPTestModule::PPCycleTest::D2\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
+    end
+
+    D3 = Data.define(:aaa, :bbb) do
+      remove_method :aaa
+    end
+    def test_data_removed_member
+      a = D3.new("aaa", "bbb")
+      assert_equal("#<data PPTestModule::PPCycleTest::D3\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
     end
   end
 
@@ -194,14 +218,46 @@ end
 
 class PPSingleLineTest < Test::Unit::TestCase
   def test_hash
-    assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, ''.dup)) # [ruby-core:02699]
+    assert_equal({1 => 1}.inspect, PP.singleline_pp({1 => 1}, ''.dup)) # [ruby-core:02699]
     assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''.dup))
+  end
+
+  def test_hash_symbol_colon_key
+    omit if RUBY_VERSION < "3.4."
+    no_quote = "{a: 1, a!: 1, a?: 1}"
+    unicode_quote = "{\u{3042}: 1}"
+    quote0 = '{"": 1}'
+    quote1 = '{"0": 1, "!": 1, "%": 1, "&": 1, "*": 1, "+": 1, "-": 1, "/": 1, "<": 1, ">": 1, "^": 1, "`": 1, "|": 1, "~": 1}'
+    quote2 = '{"@a": 1, "$a": 1, "+@": 1, "a=": 1, "[]": 1}'
+    quote3 = '{"a\"b": 1, "@@a": 1, "<=>": 1, "===": 1, "[]=": 1}'
+    assert_equal(no_quote, PP.singleline_pp(eval(no_quote), ''.dup))
+    assert_equal({ "\u3042": 1 }.inspect, PP.singleline_pp(eval(unicode_quote), ''.dup))
+    assert_equal(quote0, PP.singleline_pp(eval(quote0), ''.dup))
+    assert_equal(quote1, PP.singleline_pp(eval(quote1), ''.dup))
+    assert_equal(quote2, PP.singleline_pp(eval(quote2), ''.dup))
+    assert_equal(quote3, PP.singleline_pp(eval(quote3), ''.dup))
   end
 
   def test_hash_in_array
     omit if RUBY_ENGINE == "jruby"
     assert_equal("[{}]", PP.singleline_pp([->(*a){a.last.clear}.ruby2_keywords.call(a: 1)], ''.dup))
     assert_equal("[{}]", PP.singleline_pp([Hash.ruby2_keywords_hash({})], ''.dup))
+  end
+
+  def test_direct_pp
+    buffer = String.new
+
+    a = []
+    a << a
+
+    # Isolate the test from any existing Thread.current[:__recursive_key__][:inspect].
+    Thread.new do
+      q = PP::SingleLine.new(buffer)
+      q.pp(a)
+      q.flush
+    end.join
+
+    assert_equal("[[...]]", buffer)
   end
 end
 
@@ -250,7 +306,7 @@ class PPInheritedTest < Test::Unit::TestCase
     def pp_hash_pair(k, v)
       case k
       when Symbol
-        text k.inspect.delete_prefix(":")
+        text k.inspect.delete_prefix(":").tr('"', "'")
         text ":"
         group(1) {
           breakable
@@ -264,8 +320,9 @@ class PPInheritedTest < Test::Unit::TestCase
 
   def test_hash_override
     obj = {k: 1, "": :null, "0": :zero, 100 => :ten}
+    sep = RUBY_VERSION >= "3.4." ? " => " : "=>"
     assert_equal <<~EXPECT, PPSymbolHash.pp(obj, "".dup)
-    {k: 1, "": :null, "0": :zero, 100=>:ten}
+    {k: 1, '': :null, '0': :zero, 100#{sep}:ten}
     EXPECT
   end
 end

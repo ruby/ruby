@@ -68,7 +68,7 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
     assert_equal(now.getutc, cert.not_after)
   end
 
-  def test_extension
+  def test_extension_factory
     ca_exts = [
       ["basicConstraints","CA:TRUE",true],
       ["keyUsage","keyCertSign, cRLSign",true],
@@ -76,9 +76,6 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["authorityKeyIdentifier","issuer:always,keyid:always",false],
     ]
     ca_cert = issue_cert(@ca, @rsa2048, 1, ca_exts, nil, nil)
-    keyid = get_subject_key_id(ca_cert.to_der, hex: false)
-    assert_equal keyid, ca_cert.authority_key_identifier
-    assert_equal keyid, ca_cert.subject_key_identifier
     ca_cert.extensions.each_with_index{|ext, i|
       assert_equal(ca_exts[i].first, ext.oid)
       assert_equal(ca_exts[i].last, ext.critical?)
@@ -90,7 +87,6 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["authorityKeyIdentifier","issuer:always,keyid:always",false],
       ["extendedKeyUsage","clientAuth, emailProtection, codeSigning",false],
       ["subjectAltName","email:ee1@ruby-lang.org",false],
-      ["authorityInfoAccess","caIssuers;URI:http://www.example.com/caIssuers,OCSP;URI:http://www.example.com/ocsp",false],
     ]
     ee1_cert = issue_cert(@ee1, @rsa1024, 2, ee1_exts, ca_cert, @rsa2048)
     assert_equal(ca_cert.subject.to_der, ee1_cert.issuer.to_der)
@@ -98,15 +94,54 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       assert_equal(ee1_exts[i].first, ext.oid)
       assert_equal(ee1_exts[i].last, ext.critical?)
     }
-    assert_nil(ee1_cert.crl_uris)
+  end
 
+  def test_akiski
+    ca_cert = generate_cert(@ca, @rsa2048, 4, nil)
+    ef = OpenSSL::X509::ExtensionFactory.new(ca_cert, ca_cert)
+    ca_cert.add_extension(
+      ef.create_extension("subjectKeyIdentifier", "hash", false))
+    ca_cert.add_extension(
+      ef.create_extension("authorityKeyIdentifier", "issuer:always,keyid:always", false))
+    ca_cert.sign(@rsa2048, "sha256")
+
+    ca_keyid = get_subject_key_id(ca_cert.to_der, hex: false)
+    assert_equal ca_keyid, ca_cert.authority_key_identifier
+    assert_equal ca_keyid, ca_cert.subject_key_identifier
+
+    ee_cert = generate_cert(@ee1, Fixtures.pkey("p256"), 5, ca_cert)
+    ef = OpenSSL::X509::ExtensionFactory.new(ca_cert, ee_cert)
+    ee_cert.add_extension(
+      ef.create_extension("subjectKeyIdentifier", "hash", false))
+    ee_cert.add_extension(
+      ef.create_extension("authorityKeyIdentifier", "issuer:always,keyid:always", false))
+    ee_cert.sign(@rsa2048, "sha256")
+
+    ee_keyid = get_subject_key_id(ee_cert.to_der, hex: false)
+    assert_equal ca_keyid, ee_cert.authority_key_identifier
+    assert_equal ee_keyid, ee_cert.subject_key_identifier
+  end
+
+  def test_akiski_missing
+    cert = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
+    assert_nil(cert.authority_key_identifier)
+    assert_nil(cert.subject_key_identifier)
+  end
+
+  def test_crl_uris_no_crl_distribution_points
+    cert = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
+    assert_nil(cert.crl_uris)
+  end
+
+  def test_crl_uris
+    # Multiple DistributionPoint contains a single general name each
     ef = OpenSSL::X509::ExtensionFactory.new
     ef.config = OpenSSL::Config.parse(<<~_cnf_)
       [crlDistPts]
       URI.1 = http://www.example.com/crl
       URI.2 = ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
     _cnf_
-    cdp_cert = generate_cert(@ee1, @rsa1024, 3, ca_cert)
+    cdp_cert = generate_cert(@ee1, @rsa2048, 3, nil)
     ef.subject_certificate = cdp_cert
     cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "@crlDistPts"))
     cdp_cert.sign(@rsa2048, "sha256")
@@ -114,9 +149,50 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["http://www.example.com/crl", "ldap://ldap.example.com/cn=ca?certificateRevocationList;binary"],
       cdp_cert.crl_uris
     )
+  end
 
+  def test_crl_uris_multiple_general_names
+    # Single DistributionPoint contains multiple general names of type URI
     ef = OpenSSL::X509::ExtensionFactory.new
-    aia_cert = generate_cert(@ee1, @rsa1024, 4, ca_cert)
+    ef.config = OpenSSL::Config.parse(<<~_cnf_)
+      [crlDistPts_section]
+      fullname = URI:http://www.example.com/crl, URI:ldap://ldap.example.com/cn=ca?certificateRevocationList;binary
+    _cnf_
+    cdp_cert = generate_cert(@ee1, @rsa2048, 3, nil)
+    ef.subject_certificate = cdp_cert
+    cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "crlDistPts_section"))
+    cdp_cert.sign(@rsa2048, "sha256")
+    assert_equal(
+      ["http://www.example.com/crl", "ldap://ldap.example.com/cn=ca?certificateRevocationList;binary"],
+      cdp_cert.crl_uris
+    )
+  end
+
+  def test_crl_uris_no_uris
+    # The only DistributionPointName is a directoryName
+    ef = OpenSSL::X509::ExtensionFactory.new
+    ef.config = OpenSSL::Config.parse(<<~_cnf_)
+      [crlDistPts_section]
+      fullname = dirName:dirname_section
+      [dirname_section]
+      CN = dirname
+    _cnf_
+    cdp_cert = generate_cert(@ee1, @rsa2048, 3, nil)
+    ef.subject_certificate = cdp_cert
+    cdp_cert.add_extension(ef.create_extension("crlDistributionPoints", "crlDistPts_section"))
+    cdp_cert.sign(@rsa2048, "sha256")
+    assert_nil(cdp_cert.crl_uris)
+  end
+
+  def test_aia_missing
+    cert = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
+    assert_nil(cert.ca_issuer_uris)
+    assert_nil(cert.ocsp_uris)
+  end
+
+  def test_aia
+    ef = OpenSSL::X509::ExtensionFactory.new
+    aia_cert = generate_cert(@ee1, @rsa2048, 4, nil)
     ef.subject_certificate = aia_cert
     aia_cert.add_extension(
       ef.create_extension(
@@ -137,13 +213,6 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
       ["http://www.example.com/ocsp", "ldap://ldap.example.com/cn=ca?authorityInfoAccessOcsp;binary"],
       aia_cert.ocsp_uris
     )
-
-    no_exts_cert = issue_cert(@ca, @rsa2048, 5, [], nil, nil)
-    assert_equal nil, no_exts_cert.authority_key_identifier
-    assert_equal nil, no_exts_cert.subject_key_identifier
-    assert_equal nil, no_exts_cert.crl_uris
-    assert_equal nil, no_exts_cert.ca_issuer_uris
-    assert_equal nil, no_exts_cert.ocsp_uris
   end
 
   def test_invalid_extension
@@ -223,24 +292,9 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_sign_and_verify_ed25519
-    # See test_ed25519 in test_pkey.rb
-
     # Ed25519 is not FIPS-approved.
     omit_on_fips
-
-    begin
-      ed25519  = OpenSSL::PKey::generate_key("ED25519")
-    rescue OpenSSL::PKey::PKeyError => e
-      # OpenSSL < 1.1.1
-      #
-      pend "Ed25519 is not implemented" unless openssl?(1, 1, 1)
-
-      raise e
-    end
-
-    # See ASN1_item_sign_ctx in ChangeLog for 3.8.1: https://github.com/libressl/portable/blob/master/ChangeLog
-    pend 'ASN1 signing with Ed25519 not yet working' unless openssl? or libressl?(3, 8, 1)
-
+    ed25519 = OpenSSL::PKey::generate_key("ED25519")
     cert = issue_cert(@ca, ed25519, 1, [], nil, nil, digest: nil)
     assert_equal(true, cert.verify(ed25519))
   end
@@ -314,40 +368,57 @@ class OpenSSL::TestX509Certificate < OpenSSL::TestCase
   end
 
   def test_load_file_empty_pem
-    empty_path = Fixtures.file_path("pkey", "empty.pem")
-    assert_raise(OpenSSL::X509::CertificateError) do
-      OpenSSL::X509::Certificate.load_file(empty_path)
+    Tempfile.create("empty.pem") do |f|
+      f.close
+
+      assert_raise(OpenSSL::X509::CertificateError) do
+        OpenSSL::X509::Certificate.load_file(f.path)
+      end
     end
   end
 
   def test_load_file_fullchain_pem
-    fullchain_path = Fixtures.file_path("pkey", "fullchain.pem")
-    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
-    assert_equal 2, certificates.size
-    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
-    assert_equal "/C=US/O=Let's Encrypt/CN=R3", certificates[1].subject.to_s
+    cert1 = issue_cert(@ee1, @rsa2048, 1, [], nil, nil)
+    cert2 = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+
+    Tempfile.create("fullchain.pem") do |f|
+      f.puts cert1.to_pem
+      f.puts cert2.to_pem
+      f.close
+
+      certificates = OpenSSL::X509::Certificate.load_file(f.path)
+      assert_equal 2, certificates.size
+      assert_equal @ee1, certificates[0].subject
+      assert_equal @ca, certificates[1].subject
+    end
   end
 
   def test_load_file_certificate_der
-    fullchain_path = Fixtures.file_path("pkey", "certificate.der")
-    certificates = OpenSSL::X509::Certificate.load_file(fullchain_path)
+    cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
+    Tempfile.create("certificate.der", binmode: true) do |f|
+      f.write cert.to_der
+      f.close
 
-    # DER encoding can only contain one certificate:
-    assert_equal 1, certificates.size
-    assert_equal "/CN=www.codeotaku.com", certificates[0].subject.to_s
+      certificates = OpenSSL::X509::Certificate.load_file(f.path)
+
+      # DER encoding can only contain one certificate:
+      assert_equal 1, certificates.size
+      assert_equal cert.to_der, certificates[0].to_der
+    end
   end
 
   def test_load_file_fullchain_garbage
-    fullchain_path = Fixtures.file_path("pkey", "garbage.txt")
+    Tempfile.create("garbage.txt") do |f|
+      f.puts "not a certificate"
+      f.close
 
-    assert_raise(OpenSSL::X509::CertificateError) do
-      OpenSSL::X509::Certificate.load_file(fullchain_path)
+      assert_raise(OpenSSL::X509::CertificateError) do
+        OpenSSL::X509::Certificate.load_file(f.path)
+      end
     end
   end
 
   def test_tbs_precert_bytes
-    pend "LibreSSL < 3.5 does not have i2d_re_X509_tbs" if libressl? && !libressl?(3, 5, 0)
-
     cert = issue_cert(@ca, @rsa2048, 1, [], nil, nil)
     seq = OpenSSL::ASN1.decode(cert.tbs_bytes)
 

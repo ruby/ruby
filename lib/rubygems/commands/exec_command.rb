@@ -222,8 +222,11 @@ to the same gem path as user-installed gems.
       terminate_interaction 1
     end
 
+    old_exe = $0
+    $0 = exe
     load Gem.activate_bin_path(contains_executable.first.name, exe, ">= 0.a")
   ensure
+    $0 = old_exe if old_exe
     ARGV.replace argv
   end
 

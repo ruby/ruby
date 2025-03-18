@@ -2,7 +2,6 @@
 
 require "rbconfig"
 require "shellwords"
-require "fiddle"
 
 module Bundler
   class CLI::Doctor
@@ -32,11 +31,11 @@ module Bundler
 
     def dylibs_ldd(path)
       output = `/usr/bin/ldd #{path.shellescape}`.chomp
-      output.split("\n").map do |l|
+      output.split("\n").filter_map do |l|
         match = l.match(LDD_REGEX)
         next if match.nil?
         match.captures[0]
-      end.compact
+      end
     end
 
     def dylibs(path)
@@ -57,6 +56,14 @@ module Bundler
       Dir.glob("#{spec.full_gem_path}/**/*.bundle")
     end
 
+    def lookup_with_fiddle(path)
+      require "fiddle"
+      Fiddle.dlopen(path)
+      false
+    rescue Fiddle::DLError
+      true
+    end
+
     def check!
       require_relative "check"
       Bundler::CLI::Check.new({}).run
@@ -73,10 +80,7 @@ module Bundler
       definition.specs.each do |spec|
         bundles_for_gem(spec).each do |bundle|
           bad_paths = dylibs(bundle).select do |f|
-            Fiddle.dlopen(f)
-            false
-          rescue Fiddle::DLError
-            true
+            lookup_with_fiddle(f)
           end
           if bad_paths.any?
             broken_links[spec] ||= []
@@ -89,13 +93,13 @@ module Bundler
 
       if broken_links.any?
         message = "The following gems are missing OS dependencies:"
-        broken_links.map do |spec, paths|
+        broken_links.flat_map do |spec, paths|
           paths.uniq.map do |path|
             "\n * #{spec.name}: #{path}"
           end
-        end.flatten.sort.each {|m| message += m }
+        end.sort.each {|m| message += m }
         raise ProductionError, message
-      elsif !permissions_valid
+      elsif permissions_valid
         Bundler.ui.info "No issues found with the installed bundle"
       end
     end
@@ -104,21 +108,21 @@ module Bundler
 
     def check_home_permissions
       require "find"
-      files_not_readable_or_writable = []
-      files_not_rw_and_owned_by_different_user = []
-      files_not_owned_by_current_user_but_still_rw = []
+      files_not_readable = []
+      files_not_readable_and_owned_by_different_user = []
+      files_not_owned_by_current_user_but_still_readable = []
       broken_symlinks = []
       Find.find(Bundler.bundle_path.to_s).each do |f|
         if !File.exist?(f)
           broken_symlinks << f
-        elsif !File.writable?(f) || !File.readable?(f)
+        elsif !File.readable?(f)
           if File.stat(f).uid != Process.uid
-            files_not_rw_and_owned_by_different_user << f
+            files_not_readable_and_owned_by_different_user << f
           else
-            files_not_readable_or_writable << f
+            files_not_readable << f
           end
         elsif File.stat(f).uid != Process.uid
-          files_not_owned_by_current_user_but_still_rw << f
+          files_not_owned_by_current_user_but_still_readable << f
         end
       end
 
@@ -130,23 +134,23 @@ module Bundler
         ok = false
       end
 
-      if files_not_owned_by_current_user_but_still_rw.any?
+      if files_not_owned_by_current_user_but_still_readable.any?
         Bundler.ui.warn "Files exist in the Bundler home that are owned by another " \
-          "user, but are still readable/writable. These files are:\n - #{files_not_owned_by_current_user_but_still_rw.join("\n - ")}"
+          "user, but are still readable. These files are:\n - #{files_not_owned_by_current_user_but_still_readable.join("\n - ")}"
 
         ok = false
       end
 
-      if files_not_rw_and_owned_by_different_user.any?
+      if files_not_readable_and_owned_by_different_user.any?
         Bundler.ui.warn "Files exist in the Bundler home that are owned by another " \
-          "user, and are not readable/writable. These files are:\n - #{files_not_rw_and_owned_by_different_user.join("\n - ")}"
+          "user, and are not readable. These files are:\n - #{files_not_readable_and_owned_by_different_user.join("\n - ")}"
 
         ok = false
       end
 
-      if files_not_readable_or_writable.any?
+      if files_not_readable.any?
         Bundler.ui.warn "Files exist in the Bundler home that are not " \
-          "readable/writable by the current user. These files are:\n - #{files_not_readable_or_writable.join("\n - ")}"
+          "readable by the current user. These files are:\n - #{files_not_readable.join("\n - ")}"
 
         ok = false
       end

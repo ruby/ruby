@@ -255,7 +255,6 @@ ripper_token2eventid(enum yytokentype tok)
         [tRATIONAL]		= O(rational),
         [tREGEXP_BEG]		= O(regexp_beg),
         [tREGEXP_END]		= O(regexp_end),
-        [tRPAREN]		= O(rparen),
         [tRSHFT]		= O(op),
         [tSTAR] 		= O(op),
         [tDSTAR]		= O(op),

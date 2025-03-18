@@ -3,10 +3,12 @@ name: Rubyspec Version Guards Check
 on:
   push:
     paths:
+      - '.github/workflows/spec_guards.yml'
       - 'spec/**'
       - '!spec/*.md'
   pull_request:
     paths:
+      - '.github/workflows/spec_guards.yml'
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
@@ -22,7 +24,7 @@ jobs:
   rubyspec:
     name: Rubyspec
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -30,7 +32,7 @@ jobs:
       || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
@@ -43,11 +45,12 @@ jobs:
           - ruby-3.1
           - ruby-3.2
           - ruby-3.3
+          - ruby-3.4
 
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
 
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@4a9ddd6f338a97768b8006bf671dfbad383215f4 # v1.207.0
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler: none

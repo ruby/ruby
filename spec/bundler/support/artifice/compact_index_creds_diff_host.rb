@@ -24,7 +24,7 @@ class CompactIndexCredsDiffHost < CompactIndexAPI
   end
 
   get "/gems/:id" do
-    redirect "http://diffhost.com/no/creds/#{params[:id]}"
+    redirect "http://diffhost.test/no/creds/#{params[:id]}"
   end
 
   get "/no/creds/:id" do

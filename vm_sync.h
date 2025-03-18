@@ -21,9 +21,9 @@ void rb_vm_lock_body(LOCATION_ARGS);
 void rb_vm_unlock_body(LOCATION_ARGS);
 
 struct rb_ractor_struct;
-void rb_vm_lock_enter_body_cr(struct rb_ractor_struct *cr, unsigned int *lev APPEND_LOCATION_ARGS);
-void rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS);
-void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS);
+NOINLINE(void rb_vm_lock_enter_body_cr(struct rb_ractor_struct *cr, unsigned int *lev APPEND_LOCATION_ARGS));
+NOINLINE(void rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS));
+NOINLINE(void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS));
 void rb_vm_lock_leave_body(unsigned int *lev APPEND_LOCATION_ARGS);
 void rb_vm_barrier(void);
 

@@ -157,7 +157,7 @@ require 'tmpdir'
 class Tempfile < DelegateClass(File)
 
   # The version
-  VERSION = "0.2.1"
+  VERSION = "0.3.1"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
@@ -593,9 +593,7 @@ private def create_with_filename(basename="", tmpdir=nil, mode: 0, **options)
   end
 end
 
-File.open(IO::NULL) do |f|
-  File.new(f.fileno, autoclose: false, path: "").path
-rescue IOError
+if RUBY_VERSION < "3.2"
   module PathAttr               # :nodoc:
     attr_reader :path
 

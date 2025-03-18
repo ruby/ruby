@@ -31,9 +31,6 @@ id2str(ID id)
 }
 #define rb_id2str(id) id2str(id)
 
-#define BACKTRACE_START 0
-#define ALL_BACKTRACE_LINES -1
-
 inline static int
 calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 {
@@ -265,10 +262,26 @@ retry:
     }
 }
 
+// Return true if a given location is a C method or supposed to behave like one.
+static inline bool
+location_cfunc_p(rb_backtrace_location_t *loc)
+{
+    if (!loc->cme) return false;
+
+    switch (loc->cme->def->type) {
+      case VM_METHOD_TYPE_CFUNC:
+        return true;
+      case VM_METHOD_TYPE_ISEQ:
+        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+      default:
+        return false;
+    }
+}
+
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
@@ -314,7 +327,7 @@ location_label_m(VALUE self)
 static VALUE
 location_base_label(rb_backtrace_location_t *loc)
 {
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         return rb_id2str(loc->cme->def->original_id);
     }
 
@@ -448,7 +461,7 @@ location_to_str(rb_backtrace_location_t *loc)
     VALUE file, owner = Qnil, name;
     int lineno;
 
-    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+    if (location_cfunc_p(loc)) {
         if (loc->iseq && loc->pc) {
             file = rb_iseq_path(loc->iseq);
             lineno = calc_lineno(loc->iseq, loc->pc);
@@ -684,13 +697,21 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         const VALUE *pc = cfp->pc;
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                        RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                        loc->pc = pc;
-                        bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
-                        if (do_yield) {
-                            bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                        // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
+                        if (rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
+                            loc->iseq = NULL;
+                            loc->pc = NULL;
+                            cfunc_counter++;
                         }
-                        cfunc_counter = 0;
+                        else {
+                            RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                            loc->pc = pc;
+                            bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                            if (do_yield) {
+                                bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                            }
+                            cfunc_counter = 0;
+                        }
                     }
                     skip_next_frame = is_rescue_or_ensure_frame(cfp);
                 }
@@ -734,7 +755,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
 VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
-    return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
+    return rb_ec_partial_backtrace_object(ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
 }
 
 static VALUE
@@ -1167,7 +1188,7 @@ rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output)
 VALUE
 rb_make_backtrace(void)
 {
-    return rb_ec_backtrace_str_ary(GET_EC(), BACKTRACE_START, ALL_BACKTRACE_LINES);
+    return rb_ec_backtrace_str_ary(GET_EC(), RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES);
 }
 
 static long
@@ -1186,7 +1207,7 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
     switch (argc) {
       case 0:
         lev = lev_default + lev_plus;
-        n = ALL_BACKTRACE_LINES;
+        n = RUBY_ALL_BACKTRACE_LINES;
         break;
       case 1:
         {
@@ -1198,7 +1219,7 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
                     rb_raise(rb_eArgError, "negative level (%ld)", lev);
                 }
                 lev += lev_plus;
-                n = ALL_BACKTRACE_LINES;
+                n = RUBY_ALL_BACKTRACE_LINES;
                 break;
               case Qnil:
                 return -1;
@@ -1602,7 +1623,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 
     dbg_context.ec = ec;
     dbg_context.cfp = dbg_context.ec->cfp;
-    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, FALSE);
+    dbg_context.backtrace = rb_ec_backtrace_location_ary(ec, RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES, FALSE);
     dbg_context.backtrace_size = RARRAY_LEN(dbg_context.backtrace);
     dbg_context.contexts = collect_caller_bindings(ec);
 

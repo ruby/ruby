@@ -21,6 +21,14 @@ module Lrama
       def display_name
         l = lhs.id.s_value
         r = empty_rule? ? "ε" : rhs.map {|r| r.id.s_value }.join(" ")
+        "#{l} -> #{r}"
+      end
+
+      def display_name_without_action
+        l = lhs.id.s_value
+        r = empty_rule? ? "ε" : rhs.map do |r|
+          r.id.s_value if r.first_set.any?
+        end.compact.join(" ")
 
         "#{l} -> #{r}"
       end

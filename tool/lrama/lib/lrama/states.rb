@@ -41,6 +41,8 @@ module Lrama
       # value is array of [state.id, nterm.token_id].
       @reads_relation = {}
 
+      # `Read(p, A) =s DR(p, A) ∪ ∪{Read(r, C) | (p, A) reads (r, C)}`
+      #
       # `@read_sets` is a hash whose
       # key is [state.id, nterm.token_id],
       # value is bitmap of term.
@@ -62,6 +64,8 @@ module Lrama
       # value is array of [state.id, nterm.token_id].
       @lookback_relation = {}
 
+      # `Follow(p, A) =s Read(p, A) ∪ ∪{Follow(p', B) | (p, A) includes (p', B)}`
+      #
       # `@follow_sets` is a hash whose
       # key is [state.id, rule.id],
       # value is bitmap of term.
@@ -87,6 +91,20 @@ module Lrama
       report_duration(:compute_look_ahead_sets) { compute_look_ahead_sets }
 
       # Conflicts
+      report_duration(:compute_conflicts) { compute_conflicts }
+
+      report_duration(:compute_default_reduction) { compute_default_reduction }
+    end
+
+    def compute_ielr
+      report_duration(:split_states) { split_states }
+      report_duration(:compute_direct_read_sets) { compute_direct_read_sets }
+      report_duration(:compute_reads_relation) { compute_reads_relation }
+      report_duration(:compute_read_sets) { compute_read_sets }
+      report_duration(:compute_includes_relation) { compute_includes_relation }
+      report_duration(:compute_lookback_relation) { compute_lookback_relation }
+      report_duration(:compute_follow_sets) { compute_follow_sets }
+      report_duration(:compute_look_ahead_sets) { compute_look_ahead_sets }
       report_duration(:compute_conflicts) { compute_conflicts }
 
       report_duration(:compute_default_reduction) { compute_default_reduction }
@@ -235,7 +253,7 @@ module Lrama
       # Trace
       previous = state.kernels.first.previous_sym
       trace_state do |out|
-        out << sprintf("state_list_append (state = %d, symbol = %d (%s))",
+        out << sprintf("state_list_append (state = %d, symbol = %d (%s))\n",
           @states.count, previous.number, previous.display_name)
       end
 
@@ -265,7 +283,10 @@ module Lrama
         state.shifts.each do |shift|
           new_state, created = create_state(shift.next_sym, shift.next_items, states_created)
           state.set_items_to_state(shift.next_items, new_state)
-          enqueue_state(states, new_state) if created
+          if created
+            enqueue_state(states, new_state)
+            new_state.append_predecessor(state)
+          end
         end
       end
     end
@@ -522,6 +543,52 @@ module Lrama
         end.min_by do |rule, rule_id, count|
           [-count, rule_id]
         end.first
+      end
+    end
+
+    def split_states
+      @states.each do |state|
+        state.transitions.each do |shift, next_state|
+          compute_state(state, shift, next_state)
+        end
+      end
+    end
+
+    def merge_lookaheads(state, filtered_lookaheads)
+      return if state.kernels.all? {|item| (filtered_lookaheads[item] - state.item_lookahead_set[item]).empty? }
+
+      state.item_lookahead_set = state.item_lookahead_set.merge {|_, v1, v2| v1 | v2 }
+      state.transitions.each do |shift, next_state|
+        next if next_state.lookaheads_recomputed
+        compute_state(state, shift, next_state)
+      end
+    end
+
+    def compute_state(state, shift, next_state)
+      filtered_lookaheads = state.propagate_lookaheads(next_state)
+      s = next_state.ielr_isocores.find {|st| st.compatible_lookahead?(filtered_lookaheads) }
+
+      if s.nil?
+        s = next_state.ielr_isocores.last
+        new_state = State.new(@states.count, s.accessing_symbol, s.kernels)
+        new_state.closure = s.closure
+        new_state.compute_shifts_reduces
+        s.transitions.each do |sh, next_state|
+          new_state.set_items_to_state(sh.next_items, next_state)
+        end
+        @states << new_state
+        new_state.lalr_isocore = s
+        s.ielr_isocores << new_state
+        s.ielr_isocores.each do |st|
+          st.ielr_isocores = s.ielr_isocores
+        end
+        new_state.item_lookahead_set = filtered_lookaheads
+        state.update_transition(shift, new_state)
+      elsif(!s.lookaheads_recomputed)
+        s.item_lookahead_set = filtered_lookaheads
+      else
+        state.update_transition(shift, s)
+        merge_lookaheads(s, filtered_lookaheads)
       end
     end
   end

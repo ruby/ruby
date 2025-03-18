@@ -803,7 +803,7 @@ dummy
       "puts RubyVM::AbstractSyntaxTree.of(->{ 1 + 2 }, keep_script_lines: true).script_lines",
       "p SCRIPT_LINES__"
     ]
-    test_stdout = lines + ['{"-e"=>[]}']
+    test_stdout = lines + ['{"-e" => []}']
     assert_in_out_err(["-e", lines.join("\n")], "", test_stdout, [])
   end
 
@@ -1376,6 +1376,100 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 4], [1, 14, 1, 17]])
     end
 
+    def test_class_locations
+      node = ast_parse("class A end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 5], nil, [1, 8, 1, 11]])
+
+      node = ast_parse("class A < B; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 5], [1, 8, 1, 9], [1, 13, 1, 16]])
+    end
+
+    def test_dot2_locations
+      node = ast_parse("1..2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])
+
+      node = ast_parse("foo(1..2)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 8], [1, 5, 1, 7]])
+
+      node = ast_parse("foo(1..2, 3)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 8], [1, 5, 1, 7]])
+
+      node = ast_parse("foo(..2)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 7], [1, 4, 1, 6]])
+    end
+
+    def test_dot3_locations
+      node = ast_parse("1...2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 5], [1, 1, 1, 4]])
+
+      node = ast_parse("foo(1...2)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 9], [1, 5, 1, 8]])
+
+      node = ast_parse("foo(1...2, 3)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 9], [1, 5, 1, 8]])
+
+      node = ast_parse("foo(...2)")
+      assert_locations(node.children[-1].children[-1].children[0].locations, [[1, 4, 1, 8], [1, 4, 1, 7]])
+    end
+
+    def test_evstr_locations
+      node = ast_parse('"#{foo}"')
+      assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 8], [1, 1, 1, 3], [1, 6, 1, 7]])
+
+      node = ast_parse('"#$1"')
+      assert_locations(node.children[-1].children[1].locations, [[1, 0, 1, 5], [1, 1, 1, 2], nil])
+    end
+
+    def test_flip2_locations
+      node = ast_parse("if 'a'..'z'; foo; end")
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 11], [1, 6, 1, 8]])
+
+      node = ast_parse('if 1..5; foo; end')
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 7], [1, 4, 1, 6]])
+    end
+
+    def test_flip3_locations
+      node = ast_parse("if 'a'...('z'); foo; end")
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 14], [1, 6, 1, 9]])
+
+      node = ast_parse('if 1...5; foo; end')
+      assert_locations(node.children[-1].children[0].locations, [[1, 3, 1, 8], [1, 4, 1, 7]])
+    end
+
+    def test_for_locations
+      node = ast_parse("for a in b; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 3], [1, 6, 1, 8], nil, [1, 12, 1, 15]])
+
+      node = ast_parse("for a in b do; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 3], [1, 6, 1, 8], [1, 11, 1, 13], [1, 15, 1, 18]])
+    end
+
+    def test_lambda_locations
+      node = ast_parse("-> (a, b) { foo }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 17], [1, 0, 1, 2], [1, 10, 1, 11], [1, 16, 1, 17]])
+
+      node = ast_parse("-> (a, b) do foo end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
+    end
+
+    def test_if_locations
+      node = ast_parse("if cond then 1 else 2 end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 25], [1, 0, 1, 2], [1, 8, 1, 12], [1, 22, 1, 25]])
+
+      node = ast_parse("1 if 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 2, 1, 4], nil, nil])
+
+      node = ast_parse("if 1; elsif 2; else end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 23], [1, 0, 1, 2], [1, 4, 1, 5], [1, 20, 1, 23]])
+      assert_locations(node.children[-1].children[-1].locations, [[1, 6, 1, 19], [1, 6, 1, 11], [1, 13, 1, 14], [1, 20, 1, 23]])
+
+      node = ast_parse("true ? 1 : 2")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 12], nil, [1, 9, 1, 10], nil])
+
+      node = ast_parse("case a; in b if c; end")
+      assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 17], [1, 13, 1, 15], nil, nil])
+    end
+
     def test_next_locations
       node = ast_parse("loop { next 1 }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 13], [1, 7, 1, 11]])
@@ -1411,9 +1505,25 @@ dummy
       assert_locations(node.children[-1].children[-1].locations, [[1, 4, 1, 15], [1, 8, 1, 9], [1, 9, 1, 10], [1, 11, 1, 13]])
     end
 
+    def test_postexe_locations
+      node = ast_parse("END {  }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 3], [1, 4, 1, 5], [1, 7, 1, 8]])
+
+      node = ast_parse("END { 1 }")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 0, 1, 3], [1, 4, 1, 5], [1, 8, 1, 9]])
+    end
+
     def test_redo_locations
       node = ast_parse("loop { redo }")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 7, 1, 11], [1, 7, 1, 11]])
+    end
+
+    def test_regx_locations
+      node = ast_parse("/foo/")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 5], [1, 0, 1, 1], [1, 1, 1, 4], [1, 4, 1, 5]])
+
+      node = ast_parse("/foo/i")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 1], [1, 1, 1, 4], [1, 4, 1, 6]])
     end
 
     def test_return_locations
@@ -1438,6 +1548,14 @@ dummy
       assert_locations(node.children[-1].children[1].children[0].children[0].locations, [[1, 13, 1, 15], [1, 13, 1, 14]])
     end
 
+    def test_super_locations
+      node = ast_parse("super 1")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 0, 1, 5], nil, nil])
+
+      node = ast_parse("super(1)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 8], [1, 0, 1, 5], [1, 5, 1, 6], [1, 7, 1, 8]])
+    end
+
     def test_unless_locations
       node = ast_parse("unless cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 29], [1, 0, 1, 6], [1, 12, 1, 16], [1, 26, 1, 29]])
@@ -1459,6 +1577,15 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 15], [1, 0, 1, 5]])
 
       node = ast_parse("alias $foo $&")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $`")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $'")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
+
+      node = ast_parse("alias $foo $+")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 13], [1, 0, 1, 5]])
     end
 
@@ -1483,10 +1610,24 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
     end
 
+    def test_yield_locations
+      node = ast_parse("def foo; yield end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 14], [1, 9, 1, 14], nil, nil])
+
+      node = ast_parse("def foo; yield() end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 16], [1, 9, 1, 14], [1, 14, 1, 15], [1, 15, 1, 16]])
+
+      node = ast_parse("def foo; yield 1, 2 end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 19], [1, 9, 1, 14], nil, nil])
+
+      node = ast_parse("def foo; yield(1, 2) end")
+      assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
+  end
+
     private
     def ast_parse(src, **options)
       begin
-        verbose_bak, $VERBOSE = $VERBOSE, false
+        verbose_bak, $VERBOSE = $VERBOSE, nil
         RubyVM::AbstractSyntaxTree.parse(src, **options)
       ensure
         $VERBOSE = verbose_bak

@@ -1,5 +1,5 @@
 bundle-gem(1) -- Generate a project skeleton for creating a rubygem
-====================================================================
+===================================================================
 
 ## SYNOPSIS
 
@@ -24,7 +24,7 @@ configuration file using the following names:
 
 ## OPTIONS
 
-* `--exe` or `-b` or `--bin`:
+* `--exe`, `--bin`, `-b`:
   Specify that Bundler should create a binary executable (as `exe/GEM_NAME`)
   in the generated rubygem project. This binary will also be added to the
   `GEM_NAME.gemspec` manifest. This behavior is disabled by default.
@@ -41,13 +41,28 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
-* `--ext=c`, `--ext=rust`
+* `--changelog`
+  Add a `CHANGELOG.md` file to the root of the generated project. If
+  this option is unspecified, an interactive prompt will be displayed and the
+  answer will be saved in Bundler's global config for future `bundle gem` use.
+
+* `--no-changelog`:
+  Do not create a `CHANGELOG.md` (overrides `--changelog` specified in the
+  global config).
+
+* `--ext=c`, `--ext=rust`:
   Add boilerplate for C or Rust (currently [magnus](https://docs.rs/magnus) based) extension code to the generated project. This behavior
   is disabled by default.
 
 * `--no-ext`:
   Do not add extension code (overrides `--ext` specified in the global
   config).
+
+* `--git`:
+  Initialize a git repo inside your library.
+
+* `--github-username=GITHUB_USERNAME`:
+  Fill in GitHub username on README so that you don't have to do it manually. Set a default with `bundle config set --global gem.github_username <your_username>`.
 
 * `--mit`:
   Add an MIT license to a `LICENSE.txt` file in the root of the generated
@@ -80,7 +95,10 @@ configuration file using the following names:
   Do not use a test framework (overrides `--test` specified in the global
   config).
 
-* `--ci`, `--ci=github`, `--ci=gitlab`, `--ci=circle`:
+* `--changelog`:
+  Generate changelog file. Set a default with `bundle config set --global gem.changelog true`.
+
+* `--ci`, `--ci=circle`, `--ci=github`, `--ci=gitlab`:
   Specify the continuous integration service that Bundler should use when
   generating the project. Acceptable values are `github`, `gitlab`
   and `circle`. A configuration file will be generated in the project directory.
@@ -119,8 +137,11 @@ configuration file using the following names:
 * `--no-linter`:
   Do not add a linter (overrides `--linter` specified in the global config).
 
-* `-e`, `--edit[=EDITOR]`:
-  Open the resulting GEM_NAME.gemspec in EDITOR, or the default editor if not
+* `--rubocop`:
+  Add rubocop to the generated Rakefile and gemspec. Set a default with `bundle config set --global gem.rubocop true`.
+
+* `--edit=EDIT`, `-e=EDIT`:
+  Open the resulting GEM_NAME.gemspec in EDIT, or the default editor if not
   specified. The default is `$BUNDLER_EDITOR`, `$VISUAL`, or `$EDITOR`.
 
 ## SEE ALSO

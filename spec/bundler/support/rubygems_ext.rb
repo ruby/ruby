@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-abort "RubyGems only supports Ruby 3.0 or higher" if RUBY_VERSION < "3.0.0"
+abort "RubyGems only supports Ruby 3.1 or higher" if RUBY_VERSION < "3.1.0"
 
 require_relative "path"
 
@@ -62,8 +62,7 @@ module Spec
         source = Path.tmp_root("1")
         destination = Path.tmp_root(n.to_s)
 
-        FileUtils.rm_rf destination
-        FileUtils.cp_r source, destination
+        FileUtils.cp_r source, destination, remove_destination: true
       end
     end
 
@@ -125,14 +124,7 @@ module Spec
     def gem_activate_and_possibly_install(gem_name)
       gem_activate(gem_name)
     rescue Gem::LoadError => e
-      # Windows 3.0 puts a Windows stub script as  `rake` while it should be
-      # named `rake.bat`. RubyGems does not like that and avoids overwriting it
-      # unless explicitly instructed to do so with `force`.
-      if RUBY_VERSION.start_with?("3.0") && Gem.win_platform?
-        Gem.install(gem_name, e.requirement, force: true)
-      else
-        Gem.install(gem_name, e.requirement)
-      end
+      Gem.install(gem_name, e.requirement)
       retry
     end
 
@@ -157,8 +149,9 @@ module Spec
         ENV["BUNDLE_PATH__SYSTEM"] = "true"
       end
 
-      puts `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install --verbose`
-      raise unless $?.success?
+      # We don't use `Open3` here because it does not work on JRuby + Windows
+      output = `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install`
+      raise output unless $?.success?
     ensure
       if path
         ENV["BUNDLE_PATH"] = old_path

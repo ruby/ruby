@@ -92,7 +92,7 @@
 #    p a.strip #  => nil
 #
 module Singleton
-  VERSION = "0.2.0"
+  VERSION = "0.3.0"
 
   module SingletonInstanceMethods
     # Raises a TypeError to prevent cloning.

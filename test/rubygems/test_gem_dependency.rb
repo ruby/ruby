@@ -22,7 +22,7 @@ class TestGemDependency < Gem::TestCase
       Gem::Dependency.new "monkey" => "1.0"
     end
 
-    assert_equal 'dependency name must be a String, was {"monkey"=>"1.0"}',
+    assert_equal "dependency name must be a String, was #{{ "monkey" => "1.0" }.inspect}",
                  e.message
   end
 

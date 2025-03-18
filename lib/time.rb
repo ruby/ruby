@@ -24,9 +24,10 @@ require 'date'
 
 # :startdoc:
 
+# #
 class Time
 
-  VERSION = "0.4.0"
+  VERSION = "0.4.1"             # :nodoc:
 
   class << Time
 
@@ -280,7 +281,7 @@ class Time
     #
     # This method **does not** function as a validator.  If the input
     # string does not match valid formats strictly, you may get a
-    # cryptic result.  Should consider to use `Time.strptime` instead
+    # cryptic result.  Should consider to use Time.strptime instead
     # of this method as possible.
     #
     #     require 'time'
@@ -391,7 +392,7 @@ class Time
     # heuristic to detect the format of the input string, you provide
     # a second argument that describes the format of the string.
     #
-    # Raises `ArgumentError` if the date or format is invalid.
+    # Raises ArgumentError if the date or format is invalid.
     #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
@@ -407,7 +408,7 @@ class Time
     # %c :: The preferred local date and time representation
     # %C :: Century (20 in 2009)
     # %d :: Day of the month (01..31)
-    # %D :: Date (%m/%d/%y)
+    # %D :: \Date (%m/%d/%y)
     # %e :: Day of the month, blank-padded ( 1..31)
     # %F :: Equivalent to %Y-%m-%d (the ISO 8601 date format)
     # %g :: The last two digits of the commercial year
@@ -444,8 +445,8 @@ class Time
     # %X :: Preferred representation for the time alone, no date
     # %y :: Year without a century (00..99)
     # %Y :: Year which may include century, if provided
-    # %z :: Time zone as  hour offset from UTC (e.g. +0900)
-    # %Z :: Time zone name
+    # %z :: \Time zone as hour offset from UTC (e.g. +0900)
+    # %Z :: \Time zone name
     # %% :: Literal "%" character
     # %+ :: date(1) (%a %b %e %H:%M:%S %Z %Y)
     #

@@ -173,6 +173,46 @@ pm_buffer_append_double(pm_buffer_t *buffer, double value) {
 }
 
 /**
+ * Append a unicode codepoint to the buffer.
+ */
+bool
+pm_buffer_append_unicode_codepoint(pm_buffer_t *buffer, uint32_t value) {
+    if (value <= 0x7F) {
+        pm_buffer_append_byte(buffer, (uint8_t) value); // 0xxxxxxx
+        return true;
+    } else if (value <= 0x7FF) {
+        uint8_t bytes[] = {
+            (uint8_t) (0xC0 | ((value >> 6) & 0x3F)), // 110xxxxx
+            (uint8_t) (0x80 | (value & 0x3F))         // 10xxxxxx
+        };
+
+        pm_buffer_append_bytes(buffer, bytes, 2);
+        return true;
+    } else if (value <= 0xFFFF) {
+        uint8_t bytes[] = {
+            (uint8_t) (0xE0 | ((value >> 12) & 0x3F)), // 1110xxxx
+            (uint8_t) (0x80 | ((value >> 6) & 0x3F)),  // 10xxxxxx
+            (uint8_t) (0x80 | (value & 0x3F))          // 10xxxxxx
+        };
+
+        pm_buffer_append_bytes(buffer, bytes, 3);
+        return true;
+    } else if (value <= 0x10FFFF) {
+        uint8_t bytes[] = {
+            (uint8_t) (0xF0 | ((value >> 18) & 0x3F)), // 11110xxx
+            (uint8_t) (0x80 | ((value >> 12) & 0x3F)), // 10xxxxxx
+            (uint8_t) (0x80 | ((value >> 6) & 0x3F)),  // 10xxxxxx
+            (uint8_t) (0x80 | (value & 0x3F))          // 10xxxxxx
+        };
+
+        pm_buffer_append_bytes(buffer, bytes, 4);
+        return true;
+    } else {
+        return false;
+    }
+}
+
+/**
  * Append a slice of source code to the buffer.
  */
 void

@@ -119,11 +119,9 @@ RSpec.describe "Bundler.require" do
       end
     G
 
-    load_error_run <<-R, "fail"
-      Bundler.require
-    R
+    run "Bundler.require", raise_on_error: false
 
-    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+    expect(err_without_deprecations).to include("cannot load such file -- fail")
   end
 
   it "displays a helpful message if the required gem throws an error" do
@@ -155,16 +153,9 @@ RSpec.describe "Bundler.require" do
       end
     G
 
-    cmd = <<-RUBY
-      begin
-        Bundler.require
-      rescue LoadError => e
-        warn "ZOMG LOAD ERROR: \#{e.message}"
-      end
-    RUBY
-    run(cmd)
+    run "Bundler.require", raise_on_error: false
 
-    expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+    expect(err_without_deprecations).to include("cannot load such file -- load-bar")
   end
 
   describe "with namespaced gems" do
@@ -215,10 +206,9 @@ RSpec.describe "Bundler.require" do
         end
       G
 
-      load_error_run <<-R, "jquery-rails"
-        Bundler.require
-      R
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+      run "Bundler.require", raise_on_error: false
+
+      expect(err_without_deprecations).to include("cannot load such file -- jquery-rails")
     end
 
     it "handles the case where regex fails" do
@@ -233,16 +223,9 @@ RSpec.describe "Bundler.require" do
         end
       G
 
-      cmd = <<-RUBY
-        begin
-          Bundler.require
-        rescue LoadError => e
-          warn "ZOMG LOAD ERROR" if e.message.include?("Could not open library 'libfuuu-1.0'")
-        end
-      RUBY
-      run(cmd)
+      run "Bundler.require", raise_on_error: false
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+      expect(err_without_deprecations).to include("libfuuu-1.0").and include("cannot open shared object file")
     end
 
     it "doesn't swallow the error when the library has an unrelated error" do
@@ -257,16 +240,9 @@ RSpec.describe "Bundler.require" do
         end
       G
 
-      cmd = <<-RUBY
-        begin
-          Bundler.require
-        rescue LoadError => e
-          warn "ZOMG LOAD ERROR: \#{e.message}"
-        end
-      RUBY
-      run(cmd)
+      run "Bundler.require", raise_on_error: false
 
-      expect(err_without_deprecations).to eq("ZOMG LOAD ERROR: cannot load such file -- load-bar")
+      expect(err_without_deprecations).to include("cannot load such file -- load-bar")
     end
   end
 
@@ -375,10 +351,9 @@ RSpec.describe "Bundler.require" do
           gem "busted_require"
         G
 
-        load_error_run <<-R, "no_such_file_omg"
-          Bundler.require
-        R
-        expect(err_without_deprecations).to eq("ZOMG LOAD ERROR")
+        run "Bundler.require", raise_on_error: false
+
+        expect(err_without_deprecations).to include("cannot load such file -- no_such_file_omg")
       end
     end
   end
@@ -424,6 +399,22 @@ RSpec.describe "Bundler.require" do
     R
 
     run <<-R
+      Bundler.require
+      puts "WIN"
+    R
+
+    expect(out).to eq("WIN")
+  end
+
+  it "does not load plugins" do
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    create_file "plugins/rubygems_plugin.rb", "puts 'FAIL'"
+
+    run <<~R, env: { "RUBYLIB" => rubylib.unshift(bundled_app("plugins").to_s).join(File::PATH_SEPARATOR) }
       Bundler.require
       puts "WIN"
     R

@@ -69,8 +69,16 @@ class YAML::Store < PStore
   end
 
   def load(content)
-    table = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(content) : YAML.load(content)
-    if table == false
+    table =  if YAML.respond_to?(:safe_load)
+      if Psych::VERSION >= "3.1"
+        YAML.safe_load(content, permitted_classes: [Symbol])
+      else
+        YAML.safe_load(content, [Symbol])
+      end
+    else
+      YAML.load(content)
+    end
+    if table == false || table == nil
       {}
     else
       table

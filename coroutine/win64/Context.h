@@ -16,6 +16,7 @@
 #include <string.h>
 
 #define COROUTINE __declspec(noreturn) void
+#define COROUTINE_DECL void
 
 enum {
     COROUTINE_REGISTERS = 8,
@@ -53,7 +54,7 @@ static inline void coroutine_initialize(
 
     /* Return address */
     *--context->stack_pointer = 0;
-    *--context->stack_pointer = (void*)start;
+    *--context->stack_pointer = (void*)(uintptr_t)start;
     *--context->stack_pointer = (void*)coroutine_trampoline;
 
     /* Windows Thread Information Block */

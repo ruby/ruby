@@ -1358,7 +1358,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no block given, the sort compares
- *  using the elements' own method <tt><=></tt>:
+ *  using the elements' own method <tt>#<=></tt>:
  *
  *    %w[b c a d].sort              # => ["a", "b", "c", "d"]
  *    {foo: 0, bar: 1, baz: 2}.sort # => [[:bar, 1], [:baz, 2], [:foo, 0]]
@@ -2327,7 +2327,7 @@ min_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).min                   # => 1
  *    (-4..-1).min                 # => -4
@@ -2449,7 +2449,7 @@ max_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the maximum element,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).max                   # => 4
  *    (-4..-1).max                 # => -1
@@ -2638,7 +2638,7 @@ minmax_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, _memo))
  *  The ordering of equal elements is indeterminate and may be unstable.
  *
  *  With no argument and no block, returns the minimum and maximum elements,
- *  using the elements' own method <tt><=></tt> for comparison:
+ *  using the elements' own method <tt>#<=></tt> for comparison:
  *
  *    (1..4).minmax                   # => [1, 4]
  *    (-4..-1).minmax                 # => [-4, -1]
@@ -2984,13 +2984,12 @@ enum_member(VALUE obj, VALUE val)
 }
 
 static VALUE
-each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
+each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, index))
 {
-    struct MEMO *m = MEMO_CAST(memo);
-    VALUE n = imemo_count_value(m);
+    struct vm_ifunc *ifunc = rb_current_ifunc();
+    ifunc->data = (const void *)rb_int_succ(index);
 
-    imemo_count_up(m);
-    return rb_yield_values(2, rb_enum_values_pack(argc, argv), n);
+    return rb_yield_values(2, rb_enum_values_pack(argc, argv), index);
 }
 
 /*
@@ -2998,7 +2997,8 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
  *    each_with_index(*args) {|element, i| ..... } -> self
  *    each_with_index(*args)                       -> enumerator
  *
- *  With a block given, calls the block with each element and its index;
+ *  Invoke <tt>self.each</tt> with <tt>*args</tt>.
+ *  With a block given, the block receives each element and its index;
  *  returns +self+:
  *
  *    h = {}
@@ -3023,12 +3023,9 @@ each_with_index_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo))
 static VALUE
 enum_each_with_index(int argc, VALUE *argv, VALUE obj)
 {
-    struct MEMO *memo;
-
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
-    memo = MEMO_NEW(0, 0, 0);
-    rb_block_call(obj, id_each, argc, argv, each_with_index_i, (VALUE)memo);
+    rb_block_call(obj, id_each, argc, argv, each_with_index_i, INT2FIX(0));
     return obj;
 }
 
@@ -3915,7 +3912,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    e.next # => [2, [6, 7, 8]]
  *    e.next # => [3, [9, 10]]
  *
- *  \Method +chunk+ is especially useful for an enumerable that is already sorted.
+ *  Method +chunk+ is especially useful for an enumerable that is already sorted.
  *  This example counts words for each initial letter in a large array of words:
  *
  *    # Get sorted words from a web page.
@@ -4707,7 +4704,7 @@ sum_iter(VALUE i, struct enum_sum_memo *memo)
     }
     else switch (TYPE(memo->v)) {
       default:      sum_iter_some_value(i, memo);    return;
-      case T_FLOAT: sum_iter_Kahan_Babuska(i, memo); return;
+      case T_FLOAT:
       case T_FIXNUM:
       case T_BIGNUM:
       case T_RATIONAL:
@@ -4942,7 +4939,7 @@ enum_compact(VALUE obj)
 /*
  * == What's Here
  *
- * \Module \Enumerable provides methods that are useful to a collection class for:
+ * Module \Enumerable provides methods that are useful to a collection class for:
  *
  * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
  * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
@@ -4980,9 +4977,9 @@ enum_compact(VALUE obj)
  * <i>Minimum and maximum value elements</i>:
  *
  * - #min: Returns the elements whose values are smallest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #max: Returns the elements whose values are largest among the elements,
- *   as determined by <tt><=></tt> or a given block.
+ *   as determined by <tt>#<=></tt> or a given block.
  * - #minmax: Returns a 2-element Array containing the smallest and largest elements.
  * - #min_by: Returns the smallest element, as determined by the given block.
  * - #max_by: Returns the largest element, as determined by the given block.
@@ -5015,7 +5012,7 @@ enum_compact(VALUE obj)
  *
  * These methods return elements in sorted order:
  *
- * - #sort: Returns the elements, sorted by <tt><=></tt> or the given block.
+ * - #sort: Returns the elements, sorted by <tt>#<=></tt> or the given block.
  * - #sort_by: Returns the elements, sorted by the given block.
  *
  * === Methods for Iterating
@@ -5036,7 +5033,7 @@ enum_compact(VALUE obj)
  * - #flat_map (aliased as #collect_concat): Returns flattened objects returned by the block.
  * - #grep: Returns elements selected by a given object
  *   or objects returned by a given block.
- * - #grep_v: Returns elements selected by a given object
+ * - #grep_v: Returns elements not selected by a given object
  *   or objects returned by a given block.
  * - #inject (aliased as #reduce): Returns the object formed by combining all elements.
  * - #sum: Returns the sum of the elements, using method <tt>+</tt>.

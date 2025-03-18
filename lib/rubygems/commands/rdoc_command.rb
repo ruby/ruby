@@ -64,9 +64,9 @@ Use --overwrite to force rebuilding of documentation.
     specs = if options[:all]
       Gem::Specification.to_a
     else
-      get_all_gem_names.map do |name|
+      get_all_gem_names.flat_map do |name|
         Gem::Specification.find_by_name name, options[:version]
-      end.flatten.uniq
+      end.uniq
     end
 
     if specs.empty?

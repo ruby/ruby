@@ -5,6 +5,13 @@ BEGIN {
 
   color = Colorize.new
 
+  if ARGV.first.start_with?("BUNDLED_GEMS=")
+    bundled_gems = ARGV.shift[13..-1]
+    sep = bundled_gems.include?(",") ? "," : " "
+    bundled_gems = bundled_gems.split(sep)
+    bundled_gems = nil if bundled_gems.empty?
+  end
+
   dir = ARGV.shift
   ARGF.eof?
   FileUtils.mkdir_p(dir)
@@ -15,6 +22,7 @@ n, v, u, r = $F
 
 next unless n
 next if n =~ /^#/
+next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
 if File.directory?(n)
   puts "updating #{color.notice(n)} ..."

@@ -2,15 +2,20 @@ require 'rbconfig'
 require 'timeout'
 require 'fileutils'
 require_relative 'lib/colorize'
+require_relative 'lib/gem_env'
 
 ENV.delete("GNUMAKEFLAGS")
 
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
-allowed_failures = allowed_failures.split(',').reject(&:empty?)
+if RUBY_PLATFORM =~ /mswin|mingw/
+  allowed_failures = [allowed_failures, "rbs,debug,irb"].join(',')
+end
+allowed_failures = allowed_failures.split(',').uniq.reject(&:empty?)
 
-ENV["GEM_PATH"] = [File.realpath('.bundle'), File.realpath('../.bundle', __dir__)].join(File::PATH_SEPARATOR)
+# make test-bundled-gems BUNDLED_GEMS=gem1,gem2,gem3
+bundled_gems = ARGV.first || ''
 
 colorize = Colorize.new
 rake = File.realpath("../../.bundle/bin/rake", __FILE__)
@@ -22,20 +27,19 @@ failed = []
 File.foreach("#{gem_dir}/bundled_gems") do |line|
   next if /^\s*(?:#|$)/ =~ line
   gem = line.split.first
-  next if ARGV.any? {|pat| !File.fnmatch?(pat, gem)}
-  # 93(bright yellow) is copied from .github/workflows/mingw.yml
-  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
+  next unless bundled_gems.empty? || bundled_gems.split(",").include?(gem)
+  next unless File.directory?("#{gem_dir}/src/#{gem}/test")
 
   test_command = "#{ruby} -C #{gem_dir}/src/#{gem} #{rake} test"
   first_timeout = 600 # 10min
 
   toplib = gem
-  case gem
-  when "resolv-replace"
-    # Skip test suite
-    next
-  when "typeprof"
+  unless File.exist?("#{gem_dir}/src/#{gem}/lib/#{toplib}.rb")
+    toplib = gem.tr("-", "/")
+    next unless File.exist?("#{gem_dir}/src/#{gem}/lib/#{toplib}.rb")
+  end
 
+  case gem
   when "rbs"
     # TODO: We should skip test file instead of test class/methods
     skip_test_files = %w[
@@ -58,20 +62,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "test-unit"
     test_command = "#{ruby} -C #{gem_dir}/src/#{gem} test/run-test.rb"
 
-  when /\Anet-/
-    toplib = gem.tr("-", "/")
+  when "win32ole"
+    next unless /mswin|mingw/ =~ RUBY_PLATFORM
 
   end
 
   if load_path
     libs = IO.popen([ruby, "-e", "old = $:.dup; require '#{toplib}'; puts $:-old"], &:read)
     next unless $?.success?
-    puts libs
     ENV["RUBYLIB"] = [libs.split("\n"), rubylib].join(File::PATH_SEPARATOR)
   else
     ENV["RUBYLIB"] = rubylib
   end
 
+  # 93(bright yellow) is copied from .github/workflows/mingw.yml
+  puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
   puts test_command
   pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)

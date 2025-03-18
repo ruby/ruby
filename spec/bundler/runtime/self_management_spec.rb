@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Self management", rubygems: ">= 3.3.0.dev" do
+RSpec.describe "Self management" do
   describe "auto switching" do
     let(:previous_minor) do
       "2.3.0"
@@ -192,6 +192,48 @@ RSpec.describe "Self management", rubygems: ">= 3.3.0.dev" do
 
       bundle "install --verbose"
       expect(out).to include("Using bundler #{Bundler::VERSION}")
+    end
+
+    it "uses the right original script when re-execing, if `$0` has been changed to something that's not a script", :ruby_repo do
+      bundle "config path vendor/bundle"
+
+      system_gems "bundler-9.9.9", path: vendored_gems
+
+      test = bundled_app("test.rb")
+
+      create_file test, <<~RUBY
+        $0 = "this is the program name"
+        require "bundler/setup"
+      RUBY
+
+      lockfile_bundled_with("9.9.9")
+
+      sys_exec "#{Gem.ruby} #{test}", artifice: nil, raise_on_error: false
+      expect(err).to include("Could not find myrack-1.0.0")
+      expect(err).not_to include("this is the program name")
+    end
+
+    it "uses modified $0 when re-execing, if `$0` has been changed to a script", :ruby_repo do
+      bundle "config path vendor/bundle"
+
+      system_gems "bundler-9.9.9", path: vendored_gems
+
+      runner = bundled_app("runner.rb")
+
+      create_file runner, <<~RUBY
+        $0 = ARGV.shift
+        load $0
+      RUBY
+
+      script = bundled_app("script.rb")
+      create_file script, <<~RUBY
+        require "bundler/setup"
+      RUBY
+
+      lockfile_bundled_with("9.9.9")
+
+      sys_exec "#{Gem.ruby} #{runner} #{script}", artifice: nil, raise_on_error: false
+      expect(err).to include("Could not find myrack-1.0.0")
     end
 
     private

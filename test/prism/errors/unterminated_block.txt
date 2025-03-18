@@ -1,0 +1,4 @@
+foo {
+     ^ unexpected end-of-input, assuming it is closing the parent top level context
+     ^ expected a block beginning with `{` to end with `}`
+

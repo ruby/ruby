@@ -94,6 +94,22 @@ class TestSetTraceFunc < Test::Unit::TestCase
     assert_equal([[:req]], parameters)
   end
 
+  def test_c_call_aliased_method
+    # [Bug #20915]
+    klass = Class.new do
+      alias_method :new_method, :method
+    end
+
+    instance = klass.new
+    parameters = nil
+
+    TracePoint.new(:c_call) do |tp|
+      parameters = tp.parameters
+    end.enable { instance.new_method(:to_s) }
+
+    assert_equal([[:req]], parameters)
+  end
+
   def test_call
     events = []
     name = "#{self.class}\##{__method__}"
@@ -152,13 +168,13 @@ class TestSetTraceFunc < Test::Unit::TestCase
                  events.shift)
     assert_equal(["line", 4, __method__, self.class],
                  events.shift)
-    assert_equal(["c-call", 4, :const_added, Module],
-                 events.shift)
-    assert_equal(["c-return", 4, :const_added, Module],
-                 events.shift)
     assert_equal(["c-call", 4, :inherited, Class],
                  events.shift)
     assert_equal(["c-return", 4, :inherited, Class],
+                 events.shift)
+    assert_equal(["c-call", 4, :const_added, Module],
+                 events.shift)
+    assert_equal(["c-return", 4, :const_added, Module],
                  events.shift)
     assert_equal(["class", 4, nil, nil],
                  events.shift)
@@ -395,10 +411,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
     [["c-return", 2, :add_trace_func, Thread],
      ["line", 3, __method__, self.class],
-     ["c-call", 3, :const_added, Module],
-     ["c-return", 3, :const_added, Module],
      ["c-call", 3, :inherited, Class],
      ["c-return", 3, :inherited, Class],
+     ["c-call", 3, :const_added, Module],
+     ["c-return", 3, :const_added, Module],
      ["class", 3, nil, nil],
      ["line", 4, nil, nil],
      ["c-call", 4, :method_added, Module],
@@ -542,10 +558,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
      [:c_return, 4, "xyzzy", Array,       :reverse_each,    [1],         nil, [1]],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
-     [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, :nothing],
-     [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, nil],
      [:c_call,   7, "xyzzy", Class,       :inherited,       Object,      nil, :nothing],
      [:c_return, 7, "xyzzy", Class,       :inherited,       Object,      nil, nil],
+     [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, :nothing],
+     [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, nil],
      [:class,    7, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     8, "xyzzy", nil,         nil,              xyzzy.class, nil,    :nothing],
      [:line,     9, "xyzzy", nil,         nil,              xyzzy.class, :XYZZY_outer, :nothing],
@@ -658,7 +674,7 @@ CODE
     1: set_trace_func(lambda{|event, file, line, id, binding, klass|
     2:   events << [event, line, file, klass, id, binding&.eval('self'), binding&.eval("_local_var")] if file == 'xyzzy'
     3: })
-    4: [1].map{|;_local_var| _local_var = :inner
+    4: [1].map!{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
@@ -829,6 +845,9 @@ CODE
     args = nil
     trace = TracePoint.trace(:call){|tp|
       next if !target_thread?
+      # In parallel testing, unexpected events like IO operations may be traced,
+      # so we filter out events here.
+      next unless [TracePoint, TestSetTraceFunc].include?(tp.defined_class)
       ary << tp.method_id
     }
     foo
@@ -1062,7 +1081,7 @@ CODE
         /return/ =~ tp.event ? tp.return_value : nil
       ]
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{
@@ -1072,10 +1091,10 @@ CODE
     # pp events
     # expected_events =
     [[:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
-     [:c_call, :map, Array, Array, nil],
+     [:c_call, :map!, Array, Array, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 3],
-     [:c_return, :map, Array, Array, [3]],
+     [:c_return, :map!, Array, Array, [3]],
      [:call, :method_for_test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_call, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, nil],
      [:b_return, :test_tracepoint_block, TestSetTraceFunc, TestSetTraceFunc, 4],
@@ -1382,7 +1401,7 @@ CODE
       events << tp.event
       log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{
@@ -1406,7 +1425,7 @@ CODE
       events << tp.event
       log << "| event:#{ tp.event } method_id:#{ tp.method_id } #{ tp.path }:#{ tp.lineno }"
     }.enable{
-      [1].map{
+      [1].map!{
         3
       }
       method_for_test_tracepoint_block{
@@ -2246,9 +2265,6 @@ CODE
     }
     # it is dirty hack. usually we shouldn't use such technique
     Thread.pass until t.status == 'sleep'
-    # When RJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
-    # This sleep forces it to reach m2t_q.pop for --jit-wait.
-    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__

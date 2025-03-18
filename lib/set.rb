@@ -216,7 +216,7 @@
 #   has been modified while an element in the set.
 #
 class Set
-  VERSION = "1.1.0"
+  VERSION = "1.1.1"
 
   include Enumerable
 
@@ -353,16 +353,19 @@ class Set
     klass.new(self, *args, &block)
   end
 
-  def flatten_merge(set, seen = Set.new) # :nodoc:
+  def flatten_merge(set, seen = {}) # :nodoc:
     set.each { |e|
       if e.is_a?(Set)
-        if seen.include?(e_id = e.object_id)
+        case seen[e_id = e.object_id]
+        when true
           raise ArgumentError, "tried to flatten recursive Set"
+        when false
+          next
         end
 
-        seen.add(e_id)
+        seen[e_id] = true
         flatten_merge(e, seen)
-        seen.delete(e_id)
+        seen[e_id] = false
       else
         add(e)
       end
@@ -659,7 +662,7 @@ class Set
   #     Set[1, 2] ^ Set[2, 3]                   #=> #<Set: {3, 1}>
   #     Set[1, 'b', 'c'] ^ ['b', 'd']           #=> #<Set: {"d", 1, "c"}>
   def ^(enum)
-    n = Set.new(enum)
+    n = self.class.new(enum)
     each { |o| n.add(o) unless n.delete?(o) }
     n
   end

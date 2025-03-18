@@ -11,7 +11,7 @@ If the match succeeds:
 - Sets [match values][9].
 - Returns the size (bytes) of the matched substring.
 
-```
+```rb
 scanner = StringScanner.new(HIRAGANA_TEXT)
 scanner.string                  # => "こんにちは"
 scanner.pos = 6

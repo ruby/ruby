@@ -119,7 +119,7 @@ RSpec.describe "gemcutter's dependency API" do
   end
 
   it "falls back when the API errors out" do
-    simulate_platform x86_mswin32 do
+    simulate_platform "x86-mswin32" do
       build_repo2 do
         # The rcov gem is platform mswin32, but has no arch
         build_gem "rcov" do |s|
@@ -260,7 +260,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -278,7 +278,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -343,7 +343,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -366,7 +366,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "endpoint_extra_missing"
@@ -385,7 +385,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "endpoint_extra_missing"
@@ -403,7 +403,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -423,7 +423,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -707,14 +707,14 @@ RSpec.describe "gemcutter's dependency API" do
       end
     end
 
-    it "explains what to do to get it" do
+    it "explains what to do to get it, and includes original error" do
       gemfile <<-G
         source "#{source_uri.gsub(/http/, "https")}"
         gem "myrack"
       G
 
       bundle :install, artifice: "fail", env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false
-      expect(err).to include("OpenSSL")
+      expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end
 

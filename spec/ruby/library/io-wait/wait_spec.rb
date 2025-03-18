@@ -91,14 +91,17 @@ describe "IO#wait" do
       t.join # Thread#kill doesn't wait for the thread to end
     end
 
-    it "changes thread status to 'sleep' when waits for WRITABLE event" do
-      IOSpec.exhaust_write_buffer(@w)
+    # https://github.com/ruby/ruby/actions/runs/11948300522/job/33305664284?pr=12139
+    platform_is_not :windows do
+      it "changes thread status to 'sleep' when waits for WRITABLE event" do
+        IOSpec.exhaust_write_buffer(@w)
 
-      t = Thread.new { @w.wait(IO::WRITABLE, 10) }
-      sleep 1
-      t.status.should == 'sleep'
-      t.kill
-      t.join # Thread#kill doesn't wait for the thread to end
+        t = Thread.new { @w.wait(IO::WRITABLE, 10) }
+        sleep 1
+        t.status.should == 'sleep'
+        t.kill
+        t.join # Thread#kill doesn't wait for the thread to end
+      end
     end
 
     it "can be interrupted when waiting for READABLE event" do

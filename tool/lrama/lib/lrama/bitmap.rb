@@ -1,7 +1,9 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 module Lrama
   module Bitmap
+    # @rbs (Array[Integer] ary) -> Integer
     def self.from_array(ary)
       bit = 0
 
@@ -12,8 +14,9 @@ module Lrama
       bit
     end
 
+    # @rbs (Integer int) -> Array[Integer]
     def self.to_array(int)
-      a = []
+      a = [] #: Array[Integer]
       i = 0
 
       while int > 0 do

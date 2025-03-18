@@ -119,8 +119,8 @@ module Prism
         if expected.is_a?(Array) && actual.is_a?(Array)
           if expected.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:") &&
               actual.last.start_with?("/.../n has a non escaped non ASCII character in non ASCII-8BIT script:")
-              expected.last.clear
-              actual.last.clear
+            expected.pop
+            actual.pop
           end
         end
 

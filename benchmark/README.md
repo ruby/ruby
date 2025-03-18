@@ -27,6 +27,7 @@ benchmark-driver benchmark/*.yml
 See also:
 
 ```console
+benchmark-driver --help
 Usage: benchmark-driver [options] RUBY|YAML...
     -r, --runner TYPE                Specify runner type: ips, time, memory, once, block (default: ips)
     -o, --output TYPE                Specify output type: compare, simple, markdown, record, all (default: compare)

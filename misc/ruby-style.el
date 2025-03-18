@@ -56,7 +56,9 @@
    (c-basic-offset . 4)
    (tab-width . 8)
    (indent-tabs-mode . nil)
-   (setq show-trailing-whitespace t)
+   (show-trailing-whitespace . t)
+   (c-backslash-column . 1)
+   (c-backslash-max-column . 1)
    (c-offsets-alist
     (case-label . *)
     (label . (ruby-style-label-indent *))
@@ -72,7 +74,7 @@
    (c-basic-offset . 4)
    (tab-width . 8)
    (indent-tabs-mode . nil)
-   (setq show-trailing-whitespace t)
+   (show-trailing-whitespace . t)
    (c-offsets-alist
     (case-label . +)
     )))

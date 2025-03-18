@@ -39,9 +39,13 @@ __EOD__
     assert_equal("[ default ]\n\n", c.to_s)
     c = OpenSSL::Config.parse(@it.to_s)
     assert_equal(['CA_default', 'ca', 'default'], c.sections.sort)
+    assert_predicate(c, :frozen?)
   end
 
   def test_s_parse_format
+    # AWS-LC removed support for parsing $foo variables.
+    return if aws_lc?
+
     c = OpenSSL::Config.parse(<<__EOC__)
  baz =qx\t                # "baz = qx"
 
@@ -188,6 +192,7 @@ __EOC__
     c = OpenSSL::Config.new
     assert_equal("", c.to_s)
     assert_equal([], c.sections)
+    assert_predicate(c, :frozen?)
   end
 
   def test_initialize_with_empty_file
@@ -211,13 +216,15 @@ __EOC__
     assert_raise(TypeError) do
       @it.get_value(nil, 'HOME') # not allowed unlike Config#value
     end
-    # fallback to 'default' ugly...
-    assert_equal('.', @it.get_value('unknown', 'HOME'))
+    unless aws_lc? # AWS-LC does not support the fallback
+      # fallback to 'default' ugly...
+      assert_equal('.', @it.get_value('unknown', 'HOME'))
+    end
   end
 
   def test_get_value_ENV
-    # LibreSSL removed support for NCONF_get_string(conf, "ENV", str)
-    return if libressl?
+    # LibreSSL and AWS-LC removed support for NCONF_get_string(conf, "ENV", str)
+    return if libressl? || aws_lc?
 
     key = ENV.keys.first
     assert_not_nil(key) # make sure we have at least one ENV var.
@@ -268,9 +275,20 @@ __EOC__
   def test_dup
     assert_equal(['CA_default', 'ca', 'default'], @it.sections.sort)
     c1 = @it.dup
+    assert_predicate(c1, :frozen?)
     assert_equal(@it.sections.sort, c1.sections.sort)
     c2 = @it.clone
+    assert_predicate(c2, :frozen?)
     assert_equal(@it.sections.sort, c2.sections.sort)
+  end
+
+  if respond_to?(:ractor)
+    ractor
+    def test_ractor
+      assert(Ractor.shareable?(@it))
+      assert(Ractor.shareable?(OpenSSL::Config.parse("[empty]\n")))
+      assert(Ractor.shareable?(OpenSSL::Config::DEFAULT_CONFIG_FILE))
+    end
   end
 
   private

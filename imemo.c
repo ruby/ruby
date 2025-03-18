@@ -40,9 +40,8 @@ rb_imemo_name(enum imemo_type type)
  * ========================================================================= */
 
 VALUE
-rb_imemo_new(enum imemo_type type, VALUE v0)
+rb_imemo_new(enum imemo_type type, VALUE v0, size_t size)
 {
-    size_t size = RVALUE_SIZE;
     VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT);
     NEWOBJ_OF(obj, void, v0, flags, size, 0);
 
@@ -109,16 +108,6 @@ rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 
     return tmpbuf;
 }
-
-#if IMEMO_DEBUG
-VALUE
-rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line)
-{
-    VALUE memo = rb_imemo_new(type, v0);
-    fprintf(stderr, "memo %p (type: %d) @ %s:%d\n", (void *)memo, imemo_type(memo), file, line);
-    return memo;
-}
-#endif
 
 /* =========================================================================
  * memsize
@@ -320,7 +309,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             }
         }
         else {
-            if (vm_cc_super_p(cc) || vm_cc_refinement_p(cc)) {
+            if (cc->klass && (vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
                 rb_gc_mark_movable((VALUE)cc->cme_);
                 rb_gc_mark_movable((VALUE)cc->klass);
             }
@@ -461,21 +450,15 @@ vm_ccs_free(struct rb_class_cc_entries *ccs, int alive, VALUE klass)
         for (int i=0; i<ccs->len; i++) {
             const struct rb_callcache *cc = ccs->entries[i].cc;
             if (!alive) {
-                void *ptr = asan_unpoison_object_temporary((VALUE)cc);
                 // ccs can be free'ed.
-                if (!rb_objspace_garbage_object_p((VALUE)cc) &&
+                if (rb_gc_pointer_to_heap_p((VALUE)cc) &&
+                    !rb_objspace_garbage_object_p((VALUE)cc) &&
                     IMEMO_TYPE_P(cc, imemo_callcache) &&
                     cc->klass == klass) {
                     // OK. maybe target cc.
                 }
                 else {
-                    if (ptr) {
-                        asan_poison_object((VALUE)cc);
-                    }
                     continue;
-                }
-                if (ptr) {
-                    asan_poison_object((VALUE)cc);
                 }
             }
 
@@ -532,7 +515,6 @@ rb_imemo_free(VALUE obj)
       case imemo_callinfo:{
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
-        rb_vm_ci_free(ci);
         if (ci->kwarg) {
             ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
             if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);

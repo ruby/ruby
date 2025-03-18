@@ -14,10 +14,6 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#ifndef IMEMO_DEBUG
-# define IMEMO_DEBUG 0
-#endif
-
 #define IMEMO_MASK   0x0f
 
 /* FL_USER0 to FL_USER3 is for type */
@@ -79,7 +75,12 @@ struct vm_ifunc_argc {
 #endif
 };
 
-/*! IFUNC (Internal FUNCtion) */
+/*! IFUNC (Internal FUNCtion)
+ *
+ * Bookkeeping for converting a C function and some closed-over data into a
+ * block passable to methods. Like Ruby Proc, but not directly accessible at
+ * Ruby level since this is an imemo. See rb_block_call() and friends.
+ */
 struct vm_ifunc {
     VALUE flags;
     VALUE *svar_lep;
@@ -114,7 +115,7 @@ struct MEMO {
     } u3;
 };
 
-#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0)))
+#define IMEMO_NEW(T, type, v0) ((T *)rb_imemo_new((type), (v0), sizeof(T)))
 
 /* ment is in method.h */
 
@@ -151,12 +152,7 @@ void rb_cc_table_free(VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
-#if IMEMO_DEBUG
-VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line);
-#define rb_imemo_new(type, v1, v2, v3, v0) rb_imemo_new_debug(type, v1, v2, v3, v0, __FILE__, __LINE__)
-#else
-VALUE rb_imemo_new(enum imemo_type type, VALUE v0);
-#endif
+VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size);
 const char *rb_imemo_name(enum imemo_type type);
 RUBY_SYMBOL_EXPORT_END
 
@@ -209,7 +205,7 @@ rb_vm_ifunc_proc_new(rb_block_call_func_t func, const void *data)
 static inline VALUE
 rb_imemo_tmpbuf_auto_free_pointer(void)
 {
-    return rb_imemo_new(imemo_tmpbuf, 0);
+    return rb_imemo_new(imemo_tmpbuf, 0, sizeof(rb_imemo_tmpbuf_t));
 }
 
 static inline void *

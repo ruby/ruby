@@ -279,7 +279,7 @@ class Gem::Dependency
       end
     end
 
-    matches
+    matches.reject(&:ignored?)
   end
 
   ##

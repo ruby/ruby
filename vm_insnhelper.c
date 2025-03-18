@@ -469,15 +469,8 @@ rb_vm_pop_frame(rb_execution_context_t *ec)
 VALUE
 rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    void *ptr = ruby_xcalloc(sizeof(struct rb_iseq_constant_body) + sizeof(struct rb_iseq_struct), 1);
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, ptr);
-
-    struct rb_iseq_struct *dmy_iseq = (struct rb_iseq_struct *)ptr;
-    struct rb_iseq_constant_body *dmy_body = (struct rb_iseq_constant_body *)&dmy_iseq[1];
-    dmy_iseq->body = dmy_body;
-    dmy_body->type = ISEQ_TYPE_TOP;
-    dmy_body->location.pathobj = fname;
+    rb_iseq_t *rb_iseq_alloc_with_dummy_path(VALUE fname);
+    rb_iseq_t *dmy_iseq = rb_iseq_alloc_with_dummy_path(fname);
 
     vm_push_frame(ec,
                   dmy_iseq, //const rb_iseq_t *iseq,
@@ -490,7 +483,7 @@ rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
                   0, // int local_size,
                   0); // int stack_max
 
-    return tmpbuf;
+    return (VALUE)dmy_iseq;
 }
 
 /* method dispatch */
@@ -2189,7 +2182,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
 
-    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS), "klass=%"PRIxVALUE", type=%d", klass, TYPE(klass));
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
     RB_VM_LOCK_ENTER();
     {
@@ -2309,8 +2302,10 @@ typedef union {
     VALUE (*f15)(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE);
     VALUE (*fm1)(int, union { VALUE *x; const VALUE *y; } __attribute__((__transparent_union__)), VALUE);
 } __attribute__((__transparent_union__)) cfunc_type;
+# define make_cfunc_type(f) (cfunc_type){.anyargs = (VALUE (*)(ANYARGS))(f)}
 #else
 typedef VALUE (*cfunc_type)(ANYARGS);
+# define make_cfunc_type(f) (cfunc_type)(f)
 #endif
 
 static inline int
@@ -2337,12 +2332,21 @@ check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 }
 
 static inline int
+check_method_basic_definition(const rb_callable_method_entry_t *me)
+{
+    return me && METHOD_ENTRY_BASIC(me);
+}
+
+static inline int
 vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
     VM_ASSERT(iseq != NULL);
     const struct rb_callcache *cc = vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(vm_cc_cme(cc), func);
 }
+
+#define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
+#define vm_method_cfunc_is(iseq, cd, recv, func) vm_method_cfunc_is(iseq, cd, recv, make_cfunc_type(func))
 
 #define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
 
@@ -3018,7 +3022,8 @@ vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t
 {
     const struct rb_builtin_function *bf = calling->cc->aux_.bf;
     cfp->sp -= (calling->argc + 1);
-    return builtin_invoker0(ec, calling->recv, NULL, (rb_insn_func_t)bf->func_ptr);
+    rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
+    return builtin_invoker0(ec, calling->recv, NULL, func_ptr);
 }
 
 VALUE rb_gen_method_name(VALUE owner, VALUE name); // in vm_backtrace.c
@@ -3029,6 +3034,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     rb_vm_t *vm = GET_VM();
     st_table *dup_check_table = vm->unused_block_warning_table;
     st_data_t key;
+    bool strict_unused_block = rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK);
 
     union {
         VALUE v;
@@ -3040,7 +3046,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     };
 
     // relax check
-    if (!vm->unused_block_warning_strict) {
+    if (!strict_unused_block) {
         key = (st_data_t)cme->def->original_id;
 
         if (st_lookup(dup_check_table, key, NULL)) {
@@ -3066,16 +3072,16 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     if (st_insert(dup_check_table, key, 1)) {
         // already shown
     }
-    else {
+    else if (RTEST(ruby_verbose) || strict_unused_block) {
         VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
         VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
 
         if (!NIL_P(m_loc)) {
-            rb_warning("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
-                       name, RARRAY_AREF(m_loc, 0), RARRAY_AREF(m_loc, 1));
+            rb_warn("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
+                    name, RARRAY_AREF(m_loc, 0), RARRAY_AREF(m_loc, 1));
         }
         else {
-            rb_warning("the block may be ignored because '%"PRIsVALUE"' does not use a block", name);
+            rb_warn("the block may be ignored because '%"PRIsVALUE"' does not use a block", name);
         }
     }
 }
@@ -4138,7 +4144,7 @@ aliased_callable_method_entry(const rb_callable_method_entry_t *me)
 
     if (orig_me->defined_class == 0) {
         VALUE defined_class = rb_find_defined_class_by_owner(me->defined_class, orig_me->owner);
-        VM_ASSERT(RB_TYPE_P(orig_me->owner, T_MODULE));
+        VM_ASSERT_TYPE(orig_me->owner, T_MODULE);
         cme = rb_method_entry_complement_defined_class(orig_me, me->called_id, defined_class);
 
         if (me->def->reference_count == 1) {
@@ -5739,29 +5745,25 @@ vm_check_if_module(ID id, VALUE mod)
 }
 
 static VALUE
-declare_under(ID id, VALUE cbase, VALUE c)
-{
-    rb_set_class_path_string(c, cbase, rb_id2str(id));
-    rb_const_set(cbase, id, c);
-    return c;
-}
-
-static VALUE
 vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
     /* new class declaration */
     VALUE s = VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) ? super : rb_cObject;
-    VALUE c = declare_under(id, cbase, rb_define_class_id(id, s));
+    VALUE c = rb_define_class_id(id, s);
     rb_define_alloc_func(c, rb_get_alloc_func(c));
+    rb_set_class_path_string(c, cbase, rb_id2str(id));
     rb_class_inherited(s, c);
+    rb_const_set(cbase, id, c);
     return c;
 }
 
 static VALUE
 vm_declare_module(ID id, VALUE cbase)
 {
-    /* new module declaration */
-    return declare_under(id, cbase, rb_module_new());
+    VALUE m = rb_module_new();
+    rb_set_class_path_string(m, cbase, rb_id2str(id));
+    rb_const_set(cbase, id, m);
+    return m;
 }
 
 NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));
@@ -6056,13 +6058,6 @@ VALUE rb_mod_name(VALUE);
 static VALUE
 vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 {
-    // Debugging code for ASAN issues such as:
-    // http://ci.rvm.jp/logfiles/brlog.trunk_asan.20240922-002945
-    if (!RB_IMMEDIATE_P(recv) && asan_poisoned_object_p(recv)) {
-        asan_unpoison_object(recv, false);
-        rb_bug("vm_objtostring: recv is poisoned (type %d)", TYPE(recv));
-    }
-
     int type = TYPE(recv);
     if (type == T_STRING) {
         return recv;
@@ -6072,7 +6067,7 @@ vm_objtostring(const rb_iseq_t *iseq, VALUE recv, CALL_DATA cd)
 
     switch (type) {
       case T_SYMBOL:
-        if (check_cfunc(vm_cc_cme(cc), rb_sym_to_s)) {
+        if (check_method_basic_definition(vm_cc_cme(cc))) {
             // rb_sym_to_s() allocates a mutable string, but since we are only
             // going to use this string for interpolation, it's fine to use the
             // frozen string.
@@ -6151,6 +6146,29 @@ vm_opt_str_freeze(VALUE str, int bop, ID id)
 
 /* this macro is mandatory to use OPTIMIZED_CMP. What a design! */
 #define id_cmp idCmp
+
+static VALUE
+vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE target)
+{
+    if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
+        return rb_ary_includes(ary, target);
+    }
+    else {
+        VALUE args[1] = {target};
+
+        // duparray
+        RUBY_DTRACE_CREATE_HOOK(ARRAY, RARRAY_LEN(ary));
+        VALUE dupary = rb_ary_resurrect(ary);
+
+        return rb_vm_call_with_refinements(ec, dupary, idIncludeP, 1, args, RB_NO_KEYWORDS);
+    }
+}
+
+VALUE
+rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE target)
+{
+    return vm_opt_duparray_include_p(ec, ary, target);
+}
 
 static VALUE
 vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr)
@@ -6234,6 +6252,26 @@ VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
+vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+{
+    if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
+        struct RArray fake_ary;
+        VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, num);
+        return rb_ary_includes(ary, target);
+    }
+    else {
+        VALUE args[1] = {target};
+        return rb_vm_call_with_refinements(ec, rb_ary_new4(num, ptr), idIncludeP, 1, args, RB_NO_KEYWORDS);
+    }
+}
+
+VALUE
+rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE target)
+{
+    return vm_opt_newarray_include_p(ec, num, ptr, target);
+}
+
+static VALUE
 vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t num, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
     if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
@@ -6274,12 +6312,11 @@ rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t num, const VALUE *p
 
 #undef id_cmp
 
-#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
-
 static void
 vm_track_constant_cache(ID id, void *ic)
 {
-    struct rb_id_table *const_cache = GET_VM()->constant_cache;
+    rb_vm_t *vm = GET_VM();
+    struct rb_id_table *const_cache = vm->constant_cache;
     VALUE lookup_result;
     st_table *ics;
 
@@ -6291,7 +6328,23 @@ vm_track_constant_cache(ID id, void *ic)
         rb_id_table_insert(const_cache, id, (VALUE)ics);
     }
 
+    /* The call below to st_insert could allocate which could trigger a GC.
+     * If it triggers a GC, it may free an iseq that also holds a cache to this
+     * constant. If that iseq is the last iseq with a cache to this constant, then
+     * it will free this ST table, which would cause an use-after-free during this
+     * st_insert.
+     *
+     * So to fix this issue, we store the ID that is currently being inserted
+     * and, in remove_from_constant_cache, we don't free the ST table for ID
+     * equal to this one.
+     *
+     * See [Bug #20921].
+     */
+    vm->inserting_constant_cache_id = id;
+
     st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+
+    vm->inserting_constant_cache_id = (ID)0;
 }
 
 static void
@@ -6308,7 +6361,7 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
     RB_VM_LOCK_LEAVE();
 }
 
-// For RJIT inlining
+// For JIT inlining
 static inline bool
 vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
 {
@@ -6353,7 +6406,6 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
     rb_yjit_constant_ic_update(iseq, ic, pos);
-    rb_rjit_constant_ic_update(iseq, ic, pos);
 }
 
 VALUE
@@ -7327,7 +7379,8 @@ invoke_bf(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const struct 
 {
     const bool canary_p = ISEQ_BODY(reg_cfp->iseq)->builtin_attrs & BUILTIN_ATTR_LEAF; // Verify an assumption of `Primitive.attr! :leaf`
     SETUP_CANARY(canary_p);
-    VALUE ret = (*lookup_builtin_invoker(bf->argc))(ec, reg_cfp->self, argv, (rb_insn_func_t)bf->func_ptr);
+    rb_insn_func_t func_ptr = (rb_insn_func_t)(uintptr_t)bf->func_ptr;
+    VALUE ret = (*lookup_builtin_invoker(bf->argc))(ec, reg_cfp->self, argv, func_ptr);
     CHECK_CANARY(canary_p, BIN(invokebuiltin));
     return ret;
 }
@@ -7346,7 +7399,8 @@ vm_invoke_builtin_delegate(rb_execution_context_t *ec, rb_control_frame_t *cfp, 
         for (int i=0; i<bf->argc; i++) {
             ruby_debug_printf(":%s ", rb_id2name(ISEQ_BODY(cfp->iseq)->local_table[i+start_index]));
         }
-        ruby_debug_printf("\n" "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc, bf->func_ptr);
+        ruby_debug_printf("\n" "%s %s(%d):%p\n", RUBY_FUNCTION_NAME_STRING, bf->name, bf->argc,
+                          (void *)(uintptr_t)bf->func_ptr);
     }
 
     if (bf->argc == 0) {

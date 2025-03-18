@@ -2,7 +2,6 @@
 # frozen_string_literal: true
 
 require_relative 'helper'
-require 'ostruct'
 
 # [ruby-core:01946]
 module Psych_Tests
@@ -15,8 +14,14 @@ class Psych_Unit_Tests < Psych::TestCase
     end
 
     def test_y_method
-      assert_raise(NoMethodError) do
-        OpenStruct.new.y 1
+      begin
+        require 'ostruct'
+
+        assert_raise(NoMethodError) do
+          OpenStruct.new.y 1
+        end
+      rescue LoadError
+        omit("OpenStruct is not available")
       end
     end
 

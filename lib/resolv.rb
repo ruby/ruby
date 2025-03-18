@@ -3,11 +3,7 @@
 require 'socket'
 require 'timeout'
 require 'io/wait'
-
-begin
-  require 'securerandom'
-rescue LoadError
-end
+require 'securerandom'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -37,7 +33,7 @@ end
 
 class Resolv
 
-  VERSION = "0.4.0"
+  VERSION = "0.6.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -83,9 +79,22 @@ class Resolv
 
   ##
   # Creates a new Resolv using +resolvers+.
+  #
+  # If +resolvers+ is not given, a hash, or +nil+, uses a Hosts resolver and
+  # and a DNS resolver.  If +resolvers+ is a hash, uses the hash as
+  # configuration for the DNS resolver.
 
-  def initialize(resolvers=nil, use_ipv6: nil)
-    @resolvers = resolvers || [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(use_ipv6: use_ipv6))]
+  def initialize(resolvers=(arg_not_set = true; nil), use_ipv6: (keyword_not_set = true; nil))
+    if !keyword_not_set && !arg_not_set
+      warn "Support for separate use_ipv6 keyword is deprecated, as it is ignored if an argument is provided. Do not provide a positional argument if using the use_ipv6 keyword argument.", uplevel: 1
+    end
+
+    @resolvers = case resolvers
+    when Hash, nil
+      [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(resolvers || {}))]
+    else
+      resolvers
+    end
   end
 
   ##
@@ -164,13 +173,16 @@ class Resolv
 
   class ResolvTimeout < Timeout::Error; end
 
+  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+  private_constant :WINDOWS
+
   ##
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|mingw|cygwin/ =~ RUBY_PLATFORM and
+    if WINDOWS
       begin
-        require 'win32/resolv'
+        require 'win32/resolv' unless defined?(Win32::Resolv)
         DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
@@ -396,13 +408,15 @@ class Resolv
     # be a Resolv::IPv4 or Resolv::IPv6
 
     def each_address(name)
-      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
       if use_ipv6?
         each_resource(name, Resource::IN::AAAA) {|resource| yield resource.address}
       end
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
     end
 
     def use_ipv6? # :nodoc:
+      @config.lazy_initialize unless @config.instance_variable_get(:@initialized)
+
       use_ipv6 = @config.use_ipv6?
       unless use_ipv6.nil?
         return use_ipv6
@@ -613,16 +627,10 @@ class Resolv
       }
     end
 
-    if defined? SecureRandom
-      def self.random(arg) # :nodoc:
-        begin
-          SecureRandom.random_number(arg)
-        rescue NotImplementedError
-          rand(arg)
-        end
-      end
-    else
-      def self.random(arg) # :nodoc:
+    def self.random(arg) # :nodoc:
+      begin
+        SecureRandom.random_number(arg)
+      rescue NotImplementedError
         rand(arg)
       end
     end
@@ -654,8 +662,20 @@ class Resolv
       }
     end
 
-    def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
-      begin
+    case RUBY_PLATFORM
+    when *[
+      # https://www.rfc-editor.org/rfc/rfc6056.txt
+      # Appendix A. Survey of the Algorithms in Use by Some Popular Implementations
+      /freebsd/, /linux/, /netbsd/, /openbsd/, /solaris/,
+      /darwin/, # the same as FreeBSD
+    ] then
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        udpsock.bind(bind_host, 0)
+      end
+    else
+      # Sequential port assignment
+      def self.bind_random_port(udpsock, bind_host="0.0.0.0") # :nodoc:
+        # Ephemeral port number range recommended by RFC 6056
         port = random(1024..65535)
         udpsock.bind(bind_host, port)
       rescue Errno::EADDRINUSE, # POSIX
@@ -1002,8 +1022,8 @@ class Resolv
         if File.exist? filename
           config_hash = Config.parse_resolv_conf(filename)
         else
-          if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM
-            require 'win32/resolv'
+          if WINDOWS
+            require 'win32/resolv' unless defined?(Win32::Resolv)
             search, nameserver = Win32::Resolv.get_resolv_info
             config_hash = {}
             config_hash[:nameserver] = nameserver if nameserver

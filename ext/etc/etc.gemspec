@@ -24,7 +24,8 @@ Gem::Specification.new do |spec|
 
   changelogs = Dir.glob("logs/ChangeLog-[1-9]*[^~]", base: __dir__)
   spec.files         = %w[
-    LICENSE.txt
+    BSDL
+    COPYING
     README.md
     ChangeLog
     ext/etc/constdefs.h

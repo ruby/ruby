@@ -95,16 +95,6 @@ struct RObject {
         struct {
             /** Pointer to a C array that holds instance variables. */
             VALUE *ivptr;
-
-            /**
-             * This  is a  table that  holds  instance variable  name to  index
-             * mapping.  Used when accessing instance variables using names.
-             *
-             * @internal
-             *
-             * This is a shortcut for `RCLASS_IV_INDEX_TBL(rb_obj_class(obj))`.
-             */
-            struct rb_id_table *iv_index_tbl;
         } heap;
 
         /* Embedded instance variables. When an object is small enough, it

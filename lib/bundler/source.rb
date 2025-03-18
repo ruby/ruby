@@ -35,6 +35,8 @@ module Bundler
       spec.source == self
     end
 
+    def prefer_local!; end
+
     def local!; end
 
     def local_only!; end

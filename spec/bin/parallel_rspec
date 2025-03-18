@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative "../../spec/bundler/support/rubygems_ext"
+
+require_relative "../../spec/bundler/support/switch_rubygems"
+
+require "rubygems"
+$LOAD_PATH.unshift(File.expand_path("../../lib", __FILE__))
+
+require "turbo_tests"
+TurboTests::CLI.new(ARGV).run

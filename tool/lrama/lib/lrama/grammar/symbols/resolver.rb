@@ -57,6 +57,10 @@ module Lrama
           nterm
         end
 
+        def find_term_by_s_value(s_value)
+          terms.find { |s| s.id.s_value == s_value }
+        end
+
         def find_symbol_by_s_value(s_value)
           symbols.find { |s| s.id.s_value == s_value }
         end

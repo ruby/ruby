@@ -9,6 +9,7 @@
 **********************************************************************/
 
 #include "ruby/internal/config.h"
+#include "ruby/fiber/scheduler.h"
 
 #ifdef HAVE_UCONTEXT_H
 # include <ucontext.h>
@@ -509,6 +510,15 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <libunwind.h>
 #  include <sys/mman.h>
 #  undef backtrace
+
+static bool
+is_coroutine_start(unw_word_t ip)
+{
+    struct coroutine_context;
+    extern void ruby_coroutine_start(struct coroutine_context *, struct coroutine_context *);
+    return ((void *)(ip) == (void *)ruby_coroutine_start);
+}
+
 int
 backtrace(void **trace, int size)
 {
@@ -616,6 +626,9 @@ darwin_sigtramp:
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
+
+        // Apple's libunwind can't handle our coroutine switching code
+        if (is_coroutine_start(ip)) break;
     }
     return n;
 #  endif
@@ -755,7 +768,7 @@ dump_thread(void *arg)
                     frame.AddrFrame.Offset = context.Rbp;
                     frame.AddrStack.Mode = AddrModeFlat;
                     frame.AddrStack.Offset = context.Rsp;
-#elif defined(__aarch64__)
+#elif defined(_M_ARM64) || defined(__aarch64__)
                     mac = IMAGE_FILE_MACHINE_ARM64;
                     frame.AddrPC.Mode = AddrModeFlat;
                     frame.AddrPC.Offset = context.Pc;
@@ -1000,23 +1013,23 @@ rb_dump_machine_register(FILE *errout, const ucontext_t *ctx)
 #   elif defined __loongarch64
         dump_machine_register(mctx->__gregs[LARCH_REG_SP], "sp");
         dump_machine_register(mctx->__gregs[LARCH_REG_A0], "a0");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A1], "a1");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A2], "a2");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A3], "a3");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A4], "a4");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A5], "a5");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A6], "a6");
-        dump_machine_register(mctx->__gregs[LARCH_REG_A7], "a7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_FP], "fp");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+1], "a1");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+2], "a2");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+3], "a3");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+4], "a4");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+5], "a5");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+6], "a6");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+7], "a7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_A0+8], "fp");
         dump_machine_register(mctx->__gregs[LARCH_REG_S0], "s0");
         dump_machine_register(mctx->__gregs[LARCH_REG_S1], "s1");
         dump_machine_register(mctx->__gregs[LARCH_REG_S2], "s2");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S3], "s3");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S4], "s4");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S5], "s5");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S6], "s6");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S7], "s7");
-        dump_machine_register(mctx->__gregs[LARCH_REG_S8], "s8");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+3], "s3");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+4], "s4");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+5], "s5");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+6], "s6");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+7], "s7");
+        dump_machine_register(mctx->__gregs[LARCH_REG_S0+8], "s8");
 #   endif
     }
 # elif defined __APPLE__
@@ -1140,6 +1153,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 "---------------------------------------------------\n");
         kprintf("Total ractor count: %u\n", vm->ractor.cnt);
         kprintf("Ruby thread count for this ractor: %u\n", rb_ec_ractor_ptr(ec)->threads.cnt);
+        if (rb_fiber_scheduler_get() != Qnil) {
+            kprintf("Note that the Fiber scheduler is enabled\n");
+        }
         kputs("\n");
     }
 
@@ -1208,7 +1224,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifdef PROC_MAPS_NAME
+#ifndef RUBY_ASAN_ENABLED
+# ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
             if (fp) {
@@ -1225,9 +1242,9 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                 kprintf("\n\n");
             }
         }
-#endif /* __linux__ */
-#ifdef HAVE_LIBPROCSTAT
-# define MIB_KERN_PROC_PID_LEN 4
+# endif /* __linux__ */
+# ifdef HAVE_LIBPROCSTAT
+#  define MIB_KERN_PROC_PID_LEN 4
         int mib[MIB_KERN_PROC_PID_LEN];
         struct kinfo_proc kp;
         size_t len = sizeof(struct kinfo_proc);
@@ -1245,8 +1262,8 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
             procstat_close(prstat);
             kprintf("\n");
         }
-#endif /* __FreeBSD__ */
-#ifdef __APPLE__
+# endif /* __FreeBSD__ */
+# ifdef __APPLE__
         vm_address_t addr = 0;
         vm_size_t size = 0;
         struct vm_region_submap_info map;
@@ -1269,18 +1286,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
                         ((map.protection & VM_PROT_READ) != 0 ? "r" : "-"),
                         ((map.protection & VM_PROT_WRITE) != 0 ? "w" : "-"),
                     ((map.protection & VM_PROT_EXECUTE) != 0 ? "x" : "-"));
-#ifdef HAVE_LIBPROC_H
+#  ifdef HAVE_LIBPROC_H
                 char buff[PATH_MAX];
                 if (proc_regionfilename(getpid(), addr, buff, sizeof(buff)) > 0) {
                     kprintf(" %s", buff);
                 }
-#endif
+#  endif
                 kprintf("\n");
             }
 
             addr += size;
             size = 0;
         }
+# endif
 #endif
     }
     return true;

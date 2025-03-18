@@ -1,0 +1,7 @@
+case foo; in *, 42, * then true; end
+
+case foo; in Array[*, 1, *] then true; end
+
+case foo; in String(*, 1, *) then true; end
+
+case foo; in [*x, 1 => a, *y] then true; end

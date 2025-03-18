@@ -130,7 +130,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_dash_i_respects_default_library_extension_priority
-    pend "extensions don't quite work on jruby" if Gem.java_platform?
+    pend "needs investigation" if Gem.java_platform?
     pend "not installed yet" unless RbConfig::TOPDIR
 
     dash_i_ext_arg = util_install_extension_file("a")
@@ -721,11 +721,11 @@ class TestGemRequire < Gem::TestCase
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--disable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
         _, err = capture_subprocess_io do
           system(*ruby_with_rubygems_in_load_path, "-w", "--enable=gems", "-C", dir, "main.rb")
         end
-        assert_match(/{:x=>1}\n{:y=>2}\n$/, err)
+        assert_match(/#{{ x: 1 }.inspect}\n#{{ y: 2 }.inspect}\n$/, err)
       end
     end
   end

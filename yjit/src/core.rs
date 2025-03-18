@@ -447,25 +447,9 @@ impl RegMapping {
         self.0.iter().filter_map(|&reg_opnd| reg_opnd).collect()
     }
 
-    /// Return TypeDiff::Compatible(diff) if dst has a mapping that can be made by moving registers
-    /// in self `diff` times. TypeDiff::Incompatible if they have different things in registers.
-    pub fn diff(&self, dst: RegMapping) -> TypeDiff {
-        let src_opnds = self.get_reg_opnds();
-        let dst_opnds = dst.get_reg_opnds();
-        if src_opnds.len() != dst_opnds.len() {
-            return TypeDiff::Incompatible;
-        }
-
-        let mut diff = 0;
-        for &reg_opnd in src_opnds.iter() {
-            match (self.get_reg(reg_opnd), dst.get_reg(reg_opnd)) {
-                (Some(src_idx), Some(dst_idx)) => if src_idx != dst_idx {
-                    diff += 1;
-                }
-                _ => return TypeDiff::Incompatible,
-            }
-        }
-        TypeDiff::Compatible(diff)
+    /// Count the number of registers that store a different operand from `dst`.
+    pub fn diff(&self, dst: RegMapping) -> usize {
+        self.0.iter().enumerate().filter(|&(reg_idx, &reg)| reg != dst.0[reg_idx]).count()
     }
 }
 
@@ -974,13 +958,13 @@ impl Context {
             if CTX_DECODE_CACHE == None {
                 // Here we use the vec syntax to avoid allocating the large table on the stack,
                 // as this can cause a stack overflow
-                let tbl = vec![(Context::default(), 0); CTX_ENCODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
+                let tbl = vec![(Context::default(), 0); CTX_DECODE_CACHE_SIZE].into_boxed_slice().try_into().unwrap();
                 CTX_DECODE_CACHE = Some(tbl);
             }
 
             // Write a cache entry for this context
             let cache = CTX_DECODE_CACHE.as_mut().unwrap();
-            cache[idx as usize % CTX_ENCODE_CACHE_SIZE] = (*ctx, idx);
+            cache[idx as usize % CTX_DECODE_CACHE_SIZE] = (*ctx, idx);
         }
     }
 
@@ -1521,6 +1505,7 @@ impl std::fmt::Debug for Branch {
 impl PendingBranch {
     /// Set up a branch target at `target_idx`. Find an existing block to branch to
     /// or generate a stub for one.
+    #[must_use]
     fn set_target(
         &self,
         target_idx: u32,
@@ -1594,6 +1579,7 @@ impl PendingBranch {
         }
 
         branch.assert_layout();
+        incr_counter!(compiled_branch_count);
 
         branchref
     }
@@ -1763,7 +1749,7 @@ pub struct IseqPayload {
     // Basic block versions
     pub version_map: VersionMap,
 
-    // Indexes of code pages used by this this ISEQ
+    // Indexes of code pages used by this ISEQ
     pub pages: HashSet<usize>,
 
     // List of ISEQ entry codes
@@ -2238,13 +2224,12 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     return best_version;
 }
 
-/// Basically find_block_version() but allows RegMapping incompatibility
-/// that can be fixed by register moves and returns Context
-pub fn find_block_ctx_with_same_regs(blockid: BlockId, ctx: &Context) -> Option<Context> {
+/// Find the closest RegMapping among ones that have already been compiled.
+pub fn find_most_compatible_reg_mapping(blockid: BlockId, ctx: &Context) -> Option<RegMapping> {
     let versions = get_version_list(blockid)?;
 
     // Best match found
-    let mut best_ctx: Option<Context> = None;
+    let mut best_mapping: Option<RegMapping> = None;
     let mut best_diff = usize::MAX;
 
     // For each version matching the blockid
@@ -2252,17 +2237,17 @@ pub fn find_block_ctx_with_same_regs(blockid: BlockId, ctx: &Context) -> Option<
         let block = unsafe { blockref.as_ref() };
         let block_ctx = Context::decode(block.ctx);
 
-        // Discover the best block that is compatible if we move registers
-        match ctx.diff_with_same_regs(&block_ctx) {
+        // Discover the best block that is compatible if we load/spill registers
+        match ctx.diff_allowing_reg_mismatch(&block_ctx) {
             TypeDiff::Compatible(diff) if diff < best_diff => {
-                best_ctx = Some(block_ctx);
+                best_mapping = Some(block_ctx.get_reg_mapping());
                 best_diff = diff;
             }
             _ => {}
         }
     }
 
-    best_ctx
+    best_mapping
 }
 
 /// Allow inlining a Block up to MAX_INLINE_VERSIONS times.
@@ -2307,7 +2292,9 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
 
         return generic_ctx;
     }
-    incr_counter_to!(max_inline_versions, next_versions);
+    if ctx.inline() {
+        incr_counter_to!(max_inline_versions, next_versions);
+    }
 
     return *ctx;
 }
@@ -2365,6 +2352,9 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     }
 
     incr_counter!(compiled_block_count);
+    if Context::decode(block.ctx).inline() {
+        incr_counter!(inline_block_count);
+    }
 
     // Mark code pages for code GC
     let iseq_payload = get_iseq_payload(block.iseq.get()).unwrap();
@@ -2587,6 +2577,14 @@ impl Context {
     pub fn ep_opnd(&self, offset: i32) -> Opnd {
         let ep_offset = self.get_stack_size() as i32 + 1;
         self.sp_opnd(-ep_offset + offset)
+    }
+
+    /// Start using a register for a given stack temp or a local.
+    pub fn alloc_reg(&mut self, opnd: RegOpnd) {
+        let mut reg_mapping = self.get_reg_mapping();
+        if reg_mapping.alloc_reg(opnd) {
+            self.set_reg_mapping(reg_mapping);
+        }
     }
 
     /// Stop using a register for a given stack temp or a local.
@@ -2891,19 +2889,26 @@ impl Context {
         return TypeDiff::Compatible(diff);
     }
 
-    /// Basically diff() but allows RegMapping incompatibility that can be fixed
-    /// by register moves.
-    pub fn diff_with_same_regs(&self, dst: &Context) -> TypeDiff {
+    /// Basically diff() but allows RegMapping incompatibility that could be fixed by
+    /// spilling, loading, or shuffling registers.
+    pub fn diff_allowing_reg_mismatch(&self, dst: &Context) -> TypeDiff {
+        // We shuffle only RegOpnd::Local and spill any other RegOpnd::Stack.
+        // If dst has RegOpnd::Stack, we can't reuse the block as a callee.
+        for reg_opnd in dst.get_reg_mapping().get_reg_opnds() {
+            if matches!(reg_opnd, RegOpnd::Stack(_)) {
+                return TypeDiff::Incompatible;
+            }
+        }
+
         // Prepare a Context with the same registers
         let mut dst_with_same_regs = dst.clone();
         dst_with_same_regs.set_reg_mapping(self.get_reg_mapping());
 
         // Diff registers and other stuff separately, and merge them
-        match (self.diff(&dst_with_same_regs), self.get_reg_mapping().diff(dst.get_reg_mapping())) {
-            (TypeDiff::Compatible(ctx_diff), TypeDiff::Compatible(reg_diff)) => {
-                TypeDiff::Compatible(ctx_diff + reg_diff)
-            }
-            _ => TypeDiff::Incompatible
+        if let TypeDiff::Compatible(ctx_diff) = self.diff(&dst_with_same_regs) {
+            TypeDiff::Compatible(ctx_diff + self.get_reg_mapping().diff(dst.get_reg_mapping()))
+        } else {
+            TypeDiff::Incompatible
         }
     }
 
@@ -3196,16 +3201,33 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
     let cb = CodegenGlobals::get_inline_cb();
     let ocb = CodegenGlobals::get_outlined_cb();
 
-    // Write the interpreter entry prologue. Might be NULL when out of memory.
-    let code_ptr = gen_entry_prologue(cb, ocb, iseq, insn_idx, jit_exception);
-
-    // Try to generate code for the entry block
-    let mut ctx = Context::default();
-    ctx.stack_size = stack_size;
-    let block = gen_block_series(blockid, &ctx, ec, cb, ocb);
+    let code_ptr = gen_entry_point_body(blockid, stack_size, ec, jit_exception, cb, ocb);
 
     cb.mark_all_executable();
     ocb.unwrap().mark_all_executable();
+
+    code_ptr
+}
+
+fn gen_entry_point_body(blockid: BlockId, stack_size: u8, ec: EcPtr, jit_exception: bool, cb: &mut CodeBlock, ocb: &mut OutlinedCb) -> Option<*const u8> {
+    // Write the interpreter entry prologue. Might be NULL when out of memory.
+    let (code_ptr, reg_mapping) = gen_entry_prologue(cb, ocb, blockid, stack_size, jit_exception)?;
+
+    // Find or compile a block version
+    let mut ctx = Context::default();
+    ctx.stack_size = stack_size;
+    ctx.reg_mapping = reg_mapping;
+    let block = match find_block_version(blockid, &ctx) {
+        // If an existing block is found, generate a jump to the block.
+        Some(blockref) => {
+            let mut asm = Assembler::new_without_iseq();
+            asm.jmp(unsafe { blockref.as_ref() }.start_addr.into());
+            asm.compile(cb, Some(ocb))?;
+            Some(blockref)
+        }
+        // If this block hasn't yet been compiled, generate blocks after the entry guard.
+        None => gen_block_series(blockid, &ctx, ec, cb, ocb),
+    };
 
     match block {
         // Compilation failed
@@ -3230,7 +3252,7 @@ pub fn gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exception: bool) -> Option<
     incr_counter!(compiled_iseq_entry);
 
     // Compilation successful and block not empty
-    code_ptr.map(|ptr| ptr.raw_ptr(cb))
+    Some(code_ptr.raw_ptr(cb))
 }
 
 // Change the entry's jump target from an entry stub to a next entry
@@ -3305,20 +3327,22 @@ fn entry_stub_hit_body(
     let cfp = unsafe { get_ec_cfp(ec) };
     let iseq = unsafe { get_cfp_iseq(cfp) };
     let insn_idx = iseq_pc_to_insn_idx(iseq, unsafe { get_cfp_pc(cfp) })?;
+    let blockid = BlockId { iseq, idx: insn_idx };
     let stack_size: u8 = unsafe {
         u8::try_from(get_cfp_sp(cfp).offset_from(get_cfp_bp(cfp))).ok()?
     };
 
     // Compile a new entry guard as a next entry
     let next_entry = cb.get_write_ptr();
-    let mut asm = Assembler::new_without_iseq();
-    let pending_entry = gen_entry_chain_guard(&mut asm, ocb, iseq, insn_idx)?;
+    let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
+    let pending_entry = gen_entry_chain_guard(&mut asm, ocb, blockid)?;
+    let reg_mapping = gen_entry_reg_mapping(&mut asm, blockid, stack_size);
     asm.compile(cb, Some(ocb))?;
 
     // Find or compile a block version
-    let blockid = BlockId { iseq, idx: insn_idx };
     let mut ctx = Context::default();
     ctx.stack_size = stack_size;
+    ctx.reg_mapping = reg_mapping;
     let blockref = match find_block_version(blockid, &ctx) {
         // If an existing block is found, generate a jump to the block.
         Some(blockref) => {
@@ -3342,8 +3366,9 @@ fn entry_stub_hit_body(
         get_or_create_iseq_payload(iseq).entries.push(pending_entry.into_entry());
     }
 
-    // Let the stub jump to the block
-    blockref.map(|block| unsafe { block.as_ref() }.start_addr.raw_ptr(cb))
+    // Return a code pointer if the block is successfully compiled. The entry stub needs
+    // to jump to the entry preceding the block to load the registers in reg_mapping.
+    blockref.map(|_block| next_entry.raw_ptr(cb))
 }
 
 /// Generate a stub that calls entry_stub_hit
@@ -3449,8 +3474,6 @@ fn new_pending_branch(jit: &mut JITState, gen_fn: BranchGenFn) -> PendingBranchR
         end_addr: Cell::new(None),
         targets: [Cell::new(None), Cell::new(None)],
     });
-
-    incr_counter!(compiled_branch_count); // TODO not true. count at finalize time
 
     // Add to the list of outgoing branches for the block
     jit.queue_outgoing_branch(branch.clone());
@@ -3782,7 +3805,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 
 /// Return registers to be pushed and popped on branch_stub_hit.
 pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
-    let temp_regs = Assembler::get_temp_regs2().iter();
+    let temp_regs = Assembler::get_temp_regs().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG
     // needs to survive the branch_stub_hit() call.
@@ -3846,6 +3869,7 @@ impl Assembler
     }
 }
 
+#[must_use]
 pub fn gen_branch(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -3854,17 +3878,17 @@ pub fn gen_branch(
     target1: Option<BlockId>,
     ctx1: Option<&Context>,
     gen_fn: BranchGenFn,
-) {
+) -> Option<()> {
     let branch = new_pending_branch(jit, gen_fn);
 
     // Get the branch targets or stubs
-    let target0_addr = branch.set_target(0, target0, ctx0, jit);
+    let target0_addr = branch.set_target(0, target0, ctx0, jit)?;
     let target1_addr = if let Some(ctx) = ctx1 {
         let addr = branch.set_target(1, target1.unwrap(), ctx, jit);
         if addr.is_none() {
             // target1 requested but we're out of memory.
             // Avoid unwrap() in gen_fn()
-            return;
+            return None;
         }
 
         addr
@@ -3872,10 +3896,10 @@ pub fn gen_branch(
 
     // Call the branch generation function
     asm.mark_branch_start(&branch);
-    if let Some(dst_addr) = target0_addr {
-        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
-    }
+    branch.gen_fn.call(asm, Target::CodePtr(target0_addr), target1_addr.map(|addr| Target::CodePtr(addr)));
     asm.mark_branch_end(&branch);
+
+    Some(())
 }
 
 pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm: &mut Assembler) {
@@ -3915,10 +3939,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
 }
 
 /// Create a stub to force the code up to this point to be executed
-pub fn defer_compilation(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-) {
+pub fn defer_compilation(jit: &mut JITState, asm: &mut Assembler) -> Result<(), ()> {
     if asm.ctx.is_deferred() {
         panic!("Double defer!");
     }
@@ -3935,7 +3956,7 @@ pub fn defer_compilation(
     };
 
     // Likely a stub since the context is marked as deferred().
-    let target0_address = branch.set_target(0, blockid, &next_ctx, jit);
+    let dst_addr = branch.set_target(0, blockid, &next_ctx, jit).ok_or(())?;
 
     // Pad the block if it has the potential to be invalidated. This must be
     // done before gen_fn() in case the jump is overwritten by a fallthrough.
@@ -3946,9 +3967,7 @@ pub fn defer_compilation(
     // Call the branch generation function
     asm_comment!(asm, "defer_compilation");
     asm.mark_branch_start(&branch);
-    if let Some(dst_addr) = target0_address {
-        branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
-    }
+    branch.gen_fn.call(asm, Target::CodePtr(dst_addr), None);
     asm.mark_branch_end(&branch);
 
     // If the block we're deferring from is empty
@@ -3957,6 +3976,8 @@ pub fn defer_compilation(
     }
 
     incr_counter!(defer_count);
+
+    Ok(())
 }
 
 /// Remove a block from the live control flow graph.
@@ -4014,7 +4035,7 @@ unsafe fn remove_from_graph(blockref: BlockRef) {
 
 /// Tear down a block and deallocate it.
 /// Caller has to ensure that the code tracked by the block is not
-/// running, as running code may hit [branch_stub_hit] who exepcts
+/// running, as running code may hit [branch_stub_hit] who expects
 /// [Branch] to be live.
 ///
 /// We currently ensure this through the `jit_cont` system in cont.c

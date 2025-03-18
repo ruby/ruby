@@ -189,6 +189,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
+        close(fd);
         return PM_STRING_INIT_ERROR_GENERIC;
     }
 

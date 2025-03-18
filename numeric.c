@@ -552,39 +552,6 @@ num_clone(int argc, VALUE *argv, VALUE x)
 # define num_clone rb_immutable_obj_clone
 #endif
 
-#if 0
-/*
- *  call-seq:
- *    dup -> self
- *
- *  Returns +self+.
- *
- *  Related: Numeric#clone.
- *
- */
-static VALUE
-num_dup(VALUE x)
-{
-    return x;
-}
-#else
-# define num_dup num_uplus
-#endif
-
-/*
- *  call-seq:
- *    +self -> self
- *
- *  Returns +self+.
- *
- */
-
-static VALUE
-num_uplus(VALUE num)
-{
-    return num;
-}
-
 /*
  *  call-seq:
  *    i -> complex
@@ -862,7 +829,7 @@ rb_int_zero_p(VALUE num)
  *  Of the Core and Standard Library classes,
  *  Integer, Float, Rational, and Complex use this implementation.
  *
- * Related: #zero?
+ *  Related: #zero?
  *
  */
 
@@ -890,7 +857,7 @@ num_nonzero_p(VALUE num)
  *    Rational(1, 2).to_int # => 0
  *    Rational(2, 1).to_int # => 2
  *    Complex(2, 0).to_int  # => 2
- *    Complex(2, 1)         # Raises RangeError (non-zero imaginary part)
+ *    Complex(2, 1).to_int  # Raises RangeError (non-zero imaginary part)
  *
  */
 
@@ -959,11 +926,11 @@ num_negative_p(VALUE num)
  *
  *  You can convert certain objects to Floats with:
  *
- *  - \Method #Float.
+ *  - Method #Float.
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Float:
+ *  First, what's elsewhere. Class \Float:
  *
  *  - Inherits from
  *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
@@ -1047,16 +1014,15 @@ rb_float_new_in_heap(double d)
  *  may contain:
  *
  *  - A fixed-point number.
+ *      3.14.to_s         # => "3.14"
  *  - A number in "scientific notation" (containing an exponent).
+ *      (10.1**50).to_s   # => "1.644631821843879e+50"
  *  - 'Infinity'.
+ *      (10.1**500).to_s  # => "Infinity"
  *  - '-Infinity'.
+ *      (-10.1**500).to_s # => "-Infinity"
  *  - 'NaN' (indicating not-a-number).
- *
- *    3.14.to_s         # => "3.14"
- *    (10.1**50).to_s   # => "1.644631821843879e+50"
- *    (10.1**500).to_s  # => "Infinity"
- *    (-10.1**500).to_s # => "-Infinity"
- *    (0.0/0.0).to_s    # => "NaN"
+ *      (0.0/0.0).to_s    # => "NaN"
  *
  */
 
@@ -1555,7 +1521,7 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *  \Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
+ *  Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
  *  while <tt>==</tt> does not.
  *
  */
@@ -3573,14 +3539,14 @@ rb_num2ull(VALUE val)
  *
  * You can convert certain objects to Integers with:
  *
- * - \Method #Integer.
+ * - Method #Integer.
  *
  * An attempt to add a singleton method to an instance of this class
  * causes an exception to be raised.
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Integer:
+ * First, what's elsewhere. Class \Integer:
  *
  * - Inherits from
  *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
@@ -3626,6 +3592,7 @@ rb_num2ull(VALUE val)
  * - #>>: Returns the value of +self+ after a rightward bit-shift.
  * - #[]: Returns a slice of bits from +self+.
  * - #^: Returns the bitwise EXCLUSIVE OR of +self+ and the given value.
+ * - #|: Returns the bitwise OR of +self+ and the given value.
  * - #ceil: Returns the smallest number greater than or equal to +self+.
  * - #chr: Returns a 1-character string containing the character
  *   represented by the value of +self+.
@@ -3645,7 +3612,6 @@ rb_num2ull(VALUE val)
  * - #to_s (aliased as #inspect): Returns a string containing the place-value
  *   representation of +self+ in the given radix.
  * - #truncate: Returns +self+ truncated to the given precision.
- * - #|: Returns the bitwise OR of +self+ and the given value.
  *
  * === Other
  *
@@ -6224,7 +6190,7 @@ int_s_try_convert(VALUE self, VALUE num)
  *
  * == What's Here
  *
- * First, what's elsewhere. \Class \Numeric:
+ * First, what's elsewhere. Class \Numeric:
  *
  * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
  * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
@@ -6323,10 +6289,8 @@ Init_Numeric(void)
     rb_include_module(rb_cNumeric, rb_mComparable);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
     rb_define_method(rb_cNumeric, "clone", num_clone, -1);
-    rb_define_method(rb_cNumeric, "dup", num_dup, 0);
 
     rb_define_method(rb_cNumeric, "i", num_imaginary, 0);
-    rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);
     rb_define_method(rb_cNumeric, "<=>", num_cmp, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);

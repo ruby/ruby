@@ -23,6 +23,8 @@ MSPEC = ARGV.delete('--mspec')
 CHECK_LAST_MERGE = !MSPEC && ENV['CHECK_LAST_MERGE'] != 'false'
 TEST_MASTER = ENV['TEST_MASTER'] != 'false'
 
+ONLY_FILTER = ENV['ONLY_FILTER'] == 'true'
+
 MSPEC_REPO = File.expand_path("../../..", __FILE__)
 raise MSPEC_REPO if !Dir.exist?(MSPEC_REPO) or !Dir.exist?("#{MSPEC_REPO}/.git")
 
@@ -230,15 +232,17 @@ def main(impls)
     impl = RubyImplementation.new(impl, data)
     update_repo(impl)
     filter_commits(impl)
-    rebase_commits(impl)
-    if new_commits?(impl)
-      test_new_specs
-      verify_commits(impl)
-      fast_forward_master(impl)
-      check_ci
-    else
-      STDERR.puts "#{BRIGHT_YELLOW}No new commits#{RESET}"
-      fast_forward_master(impl)
+    unless ONLY_FILTER
+      rebase_commits(impl)
+      if new_commits?(impl)
+        test_new_specs
+        verify_commits(impl)
+        fast_forward_master(impl)
+        check_ci
+      else
+        STDERR.puts "#{BRIGHT_YELLOW}No new commits#{RESET}"
+        fast_forward_master(impl)
+      end
     end
   end
 end

@@ -27,6 +27,38 @@ class TestAssertion < Test::Unit::TestCase
     end
   end
 
+  def test_assert_raise_with_message
+    my_error = Class.new(StandardError)
+
+    assert_raise_with_message(my_error, "with message") do
+      raise my_error, "with message"
+    end
+
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_raise_with_message(RuntimeError, "with message") do
+        raise my_error, "with message"
+      end
+    end
+
+    assert_raise(Test::Unit::AssertionFailedError) do
+      assert_raise_with_message(my_error, "without message") do
+        raise my_error, "with message"
+      end
+    end
+  end
+
+  def test_assert_raise_kind_of
+    my_error = Class.new(StandardError)
+
+    assert_raise_kind_of(my_error) do
+      raise my_error
+    end
+
+    assert_raise_kind_of(StandardError) do
+      raise my_error
+    end
+  end
+
   def test_assert_pattern_list
     assert_pattern_list([/foo?/], "foo")
     assert_not_pattern_list([/foo?/], "afoo")

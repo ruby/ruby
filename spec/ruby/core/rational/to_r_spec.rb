@@ -1,8 +1,13 @@
 require_relative "../../spec_helper"
-require_relative '../../shared/rational/to_r'
 
 describe "Rational#to_r" do
-  it_behaves_like :rational_to_r, :to_r
+  it "returns self" do
+    a = Rational(3, 4)
+    a.to_r.should equal(a)
+
+    a = Rational(bignum_value, 4)
+    a.to_r.should equal(a)
+  end
 
   it "raises TypeError trying to convert BasicObject" do
     obj = BasicObject.new

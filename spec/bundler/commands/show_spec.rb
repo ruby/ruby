@@ -35,12 +35,12 @@ RSpec.describe "bundle show", bundler: "< 3" do
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    it "warns if path no longer exists on disk" do
-      FileUtils.rm_rf(default_bundle_path("gems", "rails-2.3.2"))
+    it "warns if specification is installed, but path does not exist on disk" do
+      FileUtils.rm_r(default_bundle_path("gems", "rails-2.3.2"))
 
       bundle "show rails"
 
-      expect(err).to match(/has been deleted/i)
+      expect(err).to match(/is missing/i)
       expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 

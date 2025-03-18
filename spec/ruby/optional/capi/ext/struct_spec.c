@@ -28,7 +28,7 @@ static VALUE struct_spec_rb_struct_aset(VALUE self, VALUE st, VALUE key, VALUE v
 }
 
 /* Only allow setting three attributes, should be sufficient for testing. */
-static VALUE struct_spec_struct_define(VALUE self, VALUE name,
+static VALUE struct_spec_rb_struct_define(VALUE self, VALUE name,
   VALUE attr1, VALUE attr2, VALUE attr3) {
 
   const char *a1 = StringValuePtr(attr1);
@@ -42,7 +42,7 @@ static VALUE struct_spec_struct_define(VALUE self, VALUE name,
 }
 
 /* Only allow setting three attributes, should be sufficient for testing. */
-static VALUE struct_spec_struct_define_under(VALUE self, VALUE outer,
+static VALUE struct_spec_rb_struct_define_under(VALUE self, VALUE outer,
   VALUE name, VALUE attr1, VALUE attr2, VALUE attr3) {
 
   const char *nm = StringValuePtr(name);
@@ -62,6 +62,23 @@ static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st) {
   return rb_struct_size(st);
 }
 
+#if defined(RUBY_VERSION_IS_3_3)
+/* Only allow setting three attributes, should be sufficient for testing. */
+static VALUE struct_spec_rb_data_define(VALUE self, VALUE superclass,
+  VALUE attr1, VALUE attr2, VALUE attr3) {
+
+  const char *a1 = StringValuePtr(attr1);
+  const char *a2 = StringValuePtr(attr2);
+  const char *a3 = StringValuePtr(attr3);
+
+  if (superclass == Qnil) {
+    superclass = 0;
+  }
+
+  return rb_data_define(superclass, a1, a2, a3, NULL);
+}
+#endif
+
 void Init_struct_spec(void) {
   VALUE cls = rb_define_class("CApiStructSpecs", rb_cObject);
   rb_define_method(cls, "rb_struct_aref", struct_spec_rb_struct_aref, 2);
@@ -69,10 +86,13 @@ void Init_struct_spec(void) {
   rb_define_method(cls, "rb_struct_s_members", struct_spec_rb_struct_s_members, 1);
   rb_define_method(cls, "rb_struct_members", struct_spec_rb_struct_members, 1);
   rb_define_method(cls, "rb_struct_aset", struct_spec_rb_struct_aset, 3);
-  rb_define_method(cls, "rb_struct_define", struct_spec_struct_define, 4);
-  rb_define_method(cls, "rb_struct_define_under", struct_spec_struct_define_under, 5);
+  rb_define_method(cls, "rb_struct_define", struct_spec_rb_struct_define, 4);
+  rb_define_method(cls, "rb_struct_define_under", struct_spec_rb_struct_define_under, 5);
   rb_define_method(cls, "rb_struct_new", struct_spec_rb_struct_new, 4);
   rb_define_method(cls, "rb_struct_size", struct_spec_rb_struct_size, 1);
+#if defined(RUBY_VERSION_IS_3_3)
+  rb_define_method(cls, "rb_data_define", struct_spec_rb_data_define, 4);
+#endif
 }
 
 #ifdef __cplusplus

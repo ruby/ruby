@@ -139,6 +139,11 @@ class TestSyntax < Test::Unit::TestCase
         inner(&)
       end
       assert_equal(10, all_kwrest(nil, nil, nil, nil, okw1: nil, okw2: nil){10})
+
+      def evaled(&)
+        eval("inner(&)")
+      end
+      assert_equal(1, evaled{1})
     end;
   end
 
@@ -156,8 +161,10 @@ class TestSyntax < Test::Unit::TestCase
       def b(*); c(*) end
       def c(*a); a end
       def d(*); b(*, *) end
+      def e(*); eval("b(*)") end
       assert_equal([1, 2], b(1, 2))
       assert_equal([1, 2, 1, 2], d(1, 2))
+      assert_equal([1, 2], e(1, 2))
     end;
   end
 
@@ -177,10 +184,12 @@ class TestSyntax < Test::Unit::TestCase
       def d(**); b(k: 1, **) end
       def e(**); b(**, k: 1) end
       def f(a: nil, **); b(**) end
+      def g(**); eval("b(**)") end
       assert_equal({a: 1, k: 3}, b(a: 1, k: 3))
       assert_equal({a: 1, k: 3}, d(a: 1, k: 3))
       assert_equal({a: 1, k: 1}, e(a: 1, k: 3))
       assert_equal({k: 3}, f(a: 1, k: 3))
+      assert_equal({a: 1, k: 3}, g(a: 1, k: 3))
     end;
   end
 
@@ -1920,6 +1929,7 @@ eom
     assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
     assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
     assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
+    assert_equal([7, 8], eval('a=[]; [7].each { a << it; [8].each { a << it } }; a'))
     assert_raise_with_message(NameError, /undefined local variable or method 'it'/) do
       eval('it')
     end
@@ -1975,6 +1985,7 @@ eom
     assert_valid_syntax('def nil(...) end')
     assert_valid_syntax('def true(...) end')
     assert_valid_syntax('def false(...) end')
+    assert_valid_syntax('->a=1...{}')
     unexpected = /unexpected \.{3}/
     assert_syntax_error('iter do |...| end', /unexpected/)
     assert_syntax_error('iter {|...|}', /unexpected/)
@@ -2008,6 +2019,7 @@ eom
     obj4 = obj1.clone
     obj5 = obj1.clone
     obj1.instance_eval('def foo(...) bar(...) end', __FILE__, __LINE__)
+    obj1.instance_eval('def foo(...) eval("bar(...)") end', __FILE__, __LINE__)
     obj4.instance_eval("def foo ...\n  bar(...)\n""end", __FILE__, __LINE__)
     obj5.instance_eval("def foo ...; bar(...); end", __FILE__, __LINE__)
 
@@ -2203,6 +2215,20 @@ eom
     assert_syntax_error('def foo(...) super(1, ...) {}; end', /both block arg and actual block/)
   end
 
+  def test_argument_forwarding_with_super_memory_leak
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+      code = proc do
+        eval("def foo(...) super(...) {}; end")
+        raise "unreachable"
+      rescue SyntaxError
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_class_module_Object_ancestors
     assert_separately([], <<-RUBY)
       m = Module.new
@@ -2247,11 +2273,11 @@ eom
     conds.each do |cond|
       code = %Q{
         def my_method
-          var = nil
+          var = "there"
           if #{cond}
-            "here"
+            var = "here"
           end
-          raise
+          raise var
         end
         begin
           my_method

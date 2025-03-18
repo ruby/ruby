@@ -405,7 +405,7 @@ module Lrama
       @check = []
       # Key is froms_and_tos, value is index position
       pushed = {}
-      userd_res = {}
+      used_res = {}
       lowzero = 0
       high = 0
 
@@ -430,7 +430,7 @@ module Lrama
             end
           end
 
-          if ok && userd_res[res]
+          if ok && used_res[res]
             ok = false
           end
 
@@ -458,7 +458,7 @@ module Lrama
 
         @base[state_id] = res
         pushed[froms_and_tos] = res
-        userd_res[res] = true
+        used_res[res] = true
       end
 
       @yylast = high

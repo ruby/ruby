@@ -45,7 +45,7 @@ benchmark:
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}" \
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}" \
       "#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}#{CHUNK}"
-  interpolation_same_size_pool: |
+  interpolation_same_heap: |
     buffer = "#{SHORT}#{SHORT}"
-  interpolation_switching_size_pools: |
+  interpolation_switching_heaps: |
     buffer = "#{SHORT}#{LONG}"

@@ -258,8 +258,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ensures bundler's ruby version lib path is in ENV['RUBYLIB']" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths).to include(ruby_lib_path)
+        expect(rubylib).to include(ruby_lib_path)
       end
     end
 
@@ -276,8 +275,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       subject.set_bundle_environment
 
-      paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-      expect(paths.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
+      expect(rubylib.count(RbConfig::CONFIG["rubylibdir"])).to eq(0)
     end
 
     it "exits if bundle path contains the unix-like path separator" do
@@ -356,7 +354,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['PATH'] should only contain one instance of bundle bin path" do
         subject.set_bundle_environment
-        paths = (ENV["PATH"]).split(File::PATH_SEPARATOR)
+        paths = ENV["PATH"].split(File::PATH_SEPARATOR)
         expect(paths.count(bundle_path)).to eq(1)
       end
     end
@@ -441,8 +439,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['RUBYLIB'] should only contain one instance of bundler's ruby version lib path" do
         subject.set_bundle_environment
-        paths = (ENV["RUBYLIB"]).split(File::PATH_SEPARATOR)
-        expect(paths.count(ruby_lib_path)).to eq(1)
+        expect(rubylib.count(ruby_lib_path)).to eq(1)
       end
     end
   end
@@ -458,7 +455,7 @@ RSpec.describe Bundler::SharedHelpers do
     end
 
     context "system throws Errno::EACESS" do
-      let(:file_op_block) { proc {|_path| raise Errno::EACCES } }
+      let(:file_op_block) { proc {|_path| raise Errno::EACCES.new("/path") } }
 
       it "raises a PermissionError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
@@ -513,7 +510,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "raises a GenericSystemCallError" do
         expect { subject.filesystem_access("/path", &file_op_block) }.to raise_error(
-          Bundler::GenericSystemCallError, /error accessing.+underlying.+Shields down/m
+          Bundler::GenericSystemCallError, /error creating.+underlying.+Shields down/m
         )
       end
     end

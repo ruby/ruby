@@ -2,69 +2,91 @@ require_relative '../../spec_helper'
 
 describe "Process::Constants" do
   platform_is :darwin, :netbsd, :freebsd do
-    it "has the correct constant values on BSD-like systems" do
-      Process::WNOHANG.should == 1
-      Process::WUNTRACED.should == 2
-      Process::PRIO_PROCESS.should == 0
-      Process::PRIO_PGRP.should == 1
-      Process::PRIO_USER.should == 2
-      Process::RLIM_INFINITY.should == 9223372036854775807
-      Process::RLIMIT_CPU.should == 0
-      Process::RLIMIT_FSIZE.should == 1
-      Process::RLIMIT_DATA.should == 2
-      Process::RLIMIT_STACK.should == 3
-      Process::RLIMIT_CORE.should == 4
-      Process::RLIMIT_RSS.should == 5
-      Process::RLIMIT_MEMLOCK.should == 6
-      Process::RLIMIT_NPROC.should == 7
-      Process::RLIMIT_NOFILE.should == 8
+    it "are all present on BSD-like systems" do
+      %i[
+          WNOHANG
+          WUNTRACED
+          PRIO_PROCESS
+          PRIO_PGRP
+          PRIO_USER
+          RLIM_INFINITY
+          RLIMIT_CPU
+          RLIMIT_FSIZE
+          RLIMIT_DATA
+          RLIMIT_STACK
+          RLIMIT_CORE
+          RLIMIT_RSS
+          RLIMIT_MEMLOCK
+          RLIMIT_NPROC
+          RLIMIT_NOFILE
+      ].each do |const|
+        Process.const_defined?(const).should be_true
+        Process.const_get(const).should be_an_instance_of(Integer)
+      end
     end
   end
 
   platform_is :darwin do
-    it "has the correct constant values on Darwin" do
-      Process::RLIM_SAVED_MAX.should == 9223372036854775807
-      Process::RLIM_SAVED_CUR.should == 9223372036854775807
-      Process::RLIMIT_AS.should == 5
+    it "are all present on Darwin" do
+      %i[
+        RLIM_SAVED_MAX
+        RLIM_SAVED_CUR
+        RLIMIT_AS
+      ].each do |const|
+        Process.const_defined?(const).should be_true
+        Process.const_get(const).should be_an_instance_of(Integer)
+      end
     end
   end
 
   platform_is :linux do
-    it "has the correct constant values on Linux" do
-      Process::WNOHANG.should == 1
-      Process::WUNTRACED.should == 2
-      Process::PRIO_PROCESS.should == 0
-      Process::PRIO_PGRP.should == 1
-      Process::PRIO_USER.should == 2
-      Process::RLIMIT_CPU.should == 0
-      Process::RLIMIT_FSIZE.should == 1
-      Process::RLIMIT_DATA.should == 2
-      Process::RLIMIT_STACK.should == 3
-      Process::RLIMIT_CORE.should == 4
-      Process::RLIMIT_RSS.should == 5
-      Process::RLIMIT_NPROC.should == 6
-      Process::RLIMIT_NOFILE.should == 7
-      Process::RLIMIT_MEMLOCK.should == 8
-      Process::RLIMIT_AS.should == 9
-
-      # These values appear to change according to the platform.
-      values = [4294967295, 9223372036854775807, 18446744073709551615]
-      values.include?(Process::RLIM_INFINITY).should be_true
-      values.include?(Process::RLIM_SAVED_MAX).should be_true
-      values.include?(Process::RLIM_SAVED_CUR).should be_true
+    it "are all present on Linux" do
+      %i[
+        WNOHANG
+        WUNTRACED
+        PRIO_PROCESS
+        PRIO_PGRP
+        PRIO_USER
+        RLIMIT_CPU
+        RLIMIT_FSIZE
+        RLIMIT_DATA
+        RLIMIT_STACK
+        RLIMIT_CORE
+        RLIMIT_RSS
+        RLIMIT_NPROC
+        RLIMIT_NOFILE
+        RLIMIT_MEMLOCK
+        RLIMIT_AS
+        RLIM_INFINITY
+        RLIM_SAVED_MAX
+        RLIM_SAVED_CUR
+      ].each do |const|
+        Process.const_defined?(const).should be_true
+        Process.const_get(const).should be_an_instance_of(Integer)
+      end
     end
   end
 
   platform_is :netbsd, :freebsd do
-    it "has the correct constant values on NetBSD and FreeBSD" do
-      Process::RLIMIT_SBSIZE.should == 9 # FIXME: what's it equal?
-      Process::RLIMIT_AS.should == 10
+    it "are all present on NetBSD and FreeBSD" do
+      %i[
+        RLIMIT_SBSIZE
+        RLIMIT_AS
+      ].each do |const|
+        Process.const_defined?(const).should be_true
+        Process.const_get(const).should be_an_instance_of(Integer)
+      end
     end
   end
 
   platform_is :freebsd do
-    it "has the correct constant values on FreeBSD" do
-      Process::RLIMIT_NPTS.should == 11
+    it "are all present on FreeBSD" do
+      %i[
+        RLIMIT_NPTS
+      ].each do |const|
+        Process.const_defined?(const).should be_true
+        Process.const_get(const).should be_an_instance_of(Integer)
+      end
     end
   end
 

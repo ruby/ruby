@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle viz", bundler: "< 3", if: Bundler.which("dot"), realworld: true do
+RSpec.describe "bundle viz", bundler: "< 3", if: Bundler.which("dot") do
   before do
     realworld_system_gems "ruby-graphviz --version 1.2.5"
   end

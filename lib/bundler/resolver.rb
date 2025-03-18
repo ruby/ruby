@@ -15,10 +15,11 @@ module Bundler
 
     include GemHelpers
 
-    def initialize(base, gem_version_promoter)
+    def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
       @gem_version_promoter = gem_version_promoter
+      @most_specific_locked_platform = most_specific_locked_platform
     end
 
     def start
@@ -79,8 +80,8 @@ module Bundler
     def solve_versions(root:, logger:)
       solver = PubGrub::VersionSolver.new(source: self, root: root, logger: logger)
       result = solver.solve
-      resolved_specs = result.map {|package, version| version.to_specs(package) }.flatten
-      resolved_specs |= @base.specs_compatible_with(SpecSet.new(resolved_specs))
+      resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -236,7 +237,7 @@ module Bundler
             sorted_versions[high]
           end
 
-        range = PubGrub::VersionRange.new(min: low, max: high, include_min: true)
+        range = PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
         self_constraint = PubGrub::VersionConstraint.new(package, range: range)
 
@@ -388,9 +389,18 @@ module Bundler
     end
 
     def filter_remote_specs(specs, package)
-      return specs unless package.prefer_local?
+      if package.prefer_local?
+        local_specs = specs.select {|s| s.is_a?(StubSpecification) }
 
-      specs.select {|s| s.is_a?(StubSpecification) }
+        if local_specs.empty?
+          package.consider_remote_versions!
+          specs
+        else
+          local_specs
+        end
+      else
+        specs
+      end
     end
 
     # Ignore versions that depend on themselves incorrectly
@@ -417,7 +427,7 @@ module Bundler
     end
 
     def prepare_dependencies(requirements, packages)
-      to_dependency_hash(requirements, packages).map do |dep_package, dep_constraint|
+      to_dependency_hash(requirements, packages).filter_map do |dep_package, dep_constraint|
         name = dep_package.name
 
         next [dep_package, dep_constraint] if name == "bundler"
@@ -443,7 +453,7 @@ module Bundler
         next unless dep_package.current_platform?
 
         raise_not_found!(dep_package)
-      end.compact.to_h
+      end.to_h
     end
 
     def select_sorted_versions(package, range)

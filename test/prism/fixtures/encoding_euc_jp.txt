@@ -1,0 +1,6 @@
+# encoding: euc-jp
+
+# \x8E indicates a double-byte character, \x01 is not a valid second byte in euc-jp
+"\x8E\x01"
+
+%W["\x8E\x01"]

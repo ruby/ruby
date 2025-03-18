@@ -1,9 +1,9 @@
 #include <ruby.h>
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
-# define NUM2PTR(x) (void *)NUM2ULONG(x)
+# define NUM2PTR(x) NUM2ULONG(x)
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-# define NUM2PTR(x) (void *)NUM2ULL(x)
+# define NUM2PTR(x) NUM2ULL(x)
 #endif
 
 static VALUE

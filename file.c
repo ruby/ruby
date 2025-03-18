@@ -310,8 +310,16 @@ rb_CFString_class_initialize_before_fork(void)
     const char small_str[] = "/";
     long len = sizeof(small_str) - 1;
     CFStringRef s;
-    CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
-    mutable_CFString_release(m, s);
+    /*
+     * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
+     * shipped with macOS 15.0 24A5331b does not return `NSTaggedPointerString`
+     * instance for the first call (totally not sure why). CoreFoundation
+     * shipped with macOS 15.1 does not have this issue.
+     */
+    for (int i = 0; i < 2; i++) {
+        CFMutableStringRef m = mutable_CFString_new(&s, small_str, len);
+        mutable_CFString_release(m, s);
+    }
 }
 # endif /* HAVE_WORKING_FORK */
 
@@ -1145,14 +1153,14 @@ no_gvl_fstat(void *data)
 }
 
 static int
-fstat_without_gvl(int fd, struct stat *st)
+fstat_without_gvl(rb_io_t *fptr, struct stat *st)
 {
     no_gvl_stat_data data;
 
-    data.file.fd = fd;
+    data.file.fd = fptr->fd;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_io_blocking_region(no_gvl_fstat, &data, fd);
+    return (int)rb_io_blocking_region(fptr, no_gvl_fstat, &data);
 }
 
 static void *
@@ -1224,12 +1232,12 @@ statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
 }
 
 static int
-fstatx_without_gvl(int fd, struct statx *stx, unsigned int mask)
+fstatx_without_gvl(rb_io_t *fptr, struct statx *stx, unsigned int mask)
 {
-    no_gvl_statx_data data = {stx, fd, "", AT_EMPTY_PATH, mask};
+    no_gvl_statx_data data = {stx, fptr->fd, "", AT_EMPTY_PATH, mask};
 
     /* call statx(2) with fd */
-    return (int)rb_thread_io_blocking_region(io_blocking_statx, &data, fd);
+    return (int)rb_io_blocking_region(fptr, io_blocking_statx, &data);
 }
 
 static int
@@ -1242,7 +1250,7 @@ rb_statx(VALUE file, struct statx *stx, unsigned int mask)
     if (!NIL_P(tmp)) {
         rb_io_t *fptr;
         GetOpenFile(tmp, fptr);
-        result = fstatx_without_gvl(fptr->fd, stx, mask);
+        result = fstatx_without_gvl(fptr, stx, mask);
         file = tmp;
     }
     else {
@@ -1283,7 +1291,7 @@ typedef struct statx statx_data;
 
 #elif defined(HAVE_STAT_BIRTHTIME)
 # define statx_without_gvl(path, st, mask) stat_without_gvl(path, st)
-# define fstatx_without_gvl(fd, st, mask) fstat_without_gvl(fd, st)
+# define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
 # define statx_birthtime(st, fname) stat_birthtime(st)
 # define statx_has_birthtime(st) 1
 # define rb_statx(file, st, mask) rb_stat(file, st)
@@ -1303,7 +1311,7 @@ rb_stat(VALUE file, struct stat *st)
         rb_io_t *fptr;
 
         GetOpenFile(tmp, fptr);
-        result = fstat_without_gvl(fptr->fd, st);
+        result = fstat_without_gvl(fptr, st);
         file = tmp;
     }
     else {
@@ -2501,7 +2509,7 @@ rb_file_birthtime(VALUE obj)
     statx_data st;
 
     GetOpenFile(obj, fptr);
-    if (fstatx_without_gvl(fptr->fd, &st, STATX_BTIME) == -1) {
+    if (fstatx_without_gvl(fptr, &st, STATX_BTIME) == -1) {
         rb_sys_fail_path(fptr->pathv);
     }
     return statx_birthtime(&st, fptr->pathv);
@@ -5280,7 +5288,7 @@ rb_file_truncate(VALUE obj, VALUE len)
     }
     rb_io_flush_raw(obj, 0);
     fa.fd = fptr->fd;
-    if ((int)rb_thread_io_blocking_region(nogvl_ftruncate, &fa, fa.fd) < 0) {
+    if ((int)rb_io_blocking_region(fptr, nogvl_ftruncate, &fa) < 0) {
         rb_sys_fail_path(fptr->pathv);
     }
     return INT2FIX(0);
@@ -5380,7 +5388,7 @@ rb_file_flock(VALUE obj, VALUE operation)
     if (fptr->mode & FMODE_WRITABLE) {
         rb_io_flush_raw(obj, 0);
     }
-    while ((int)rb_thread_io_blocking_region(rb_thread_flock, op, fptr->fd) < 0) {
+    while ((int)rb_io_blocking_region(fptr, rb_thread_flock, op) < 0) {
         int e = errno;
         switch (e) {
           case EAGAIN:
@@ -5457,14 +5465,14 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid.                |
  *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid).         |
  *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe).                         |
- *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid.          |
+ *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effective uid/gid.         |
  *      | <tt>'R'</tt> | Like <tt>'r'</tt>, but uses the real uid/gid (not the effective uid/gid). |
  *      | <tt>'S'</tt> | Whether the entity is a socket.                                           |
  *      | <tt>'u'</tt> | Whether the entity's setuid bit is set.                                   |
  *      | <tt>'w'</tt> | Whether the entity is writable by the caller's effective uid/gid.         |
  *      | <tt>'W'</tt> | Like <tt>'w'</tt>, but uses the real uid/gid (not the effective uid/gid). |
  *      | <tt>'x'</tt> | Whether the entity is executable by the caller's effective uid/gid.       |
- *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effecive uid/git).  |
+ *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effective uid/git). |
  *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
  *
  *  - This test operates only on the entity at `path0`,
@@ -5671,7 +5679,6 @@ rb_stat_s_alloc(VALUE klass)
 
 /*
  * call-seq:
- *
  *   File::Stat.new(file_name)  -> stat
  *
  * Create a File::Stat object for the given file name (raising an
@@ -6418,6 +6425,7 @@ path_check_0(VALUE path)
 int
 rb_path_check(const char *path)
 {
+    rb_warn_deprecated_to_remove_at(3.6, "rb_path_check", NULL);
 #if ENABLE_PATH_CHECK
     const char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
@@ -6644,7 +6652,7 @@ const char ruby_null_device[] =
 /*
  *  A \File object is a representation of a file in the underlying platform.
  *
- *  \Class \File extends module FileTest, supporting such singleton methods
+ *  Class \File extends module FileTest, supporting such singleton methods
  *  as <tt>File.exist?</tt>.
  *
  *  == About the Examples
@@ -7301,7 +7309,7 @@ const char ruby_null_device[] =
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \File:
+ *  First, what's elsewhere. Class \File:
  *
  *  - Inherits from {class IO}[rdoc-ref:IO@What-27s+Here],
  *    in particular, methods for creating, reading, and writing files
@@ -7547,7 +7555,7 @@ Init_File(void)
     /*
      * Document-module: File::Constants
      *
-     * \Module +File::Constants+ defines file-related constants.
+     * Module +File::Constants+ defines file-related constants.
      *
      * There are two families of constants here:
      *

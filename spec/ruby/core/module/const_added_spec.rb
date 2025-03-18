@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'fixtures/const_added'
 
 describe "Module#const_added" do
   ruby_version_is "3.2" do
@@ -63,6 +64,27 @@ describe "Module#const_added" do
       ScratchPad.recorded.should == [:SubModule]
     end
 
+    it "is called when a new module is defined under a named module (assigned to a constant)" do
+      ScratchPad.record []
+
+      ModuleSpecs::ConstAddedSpecs::NamedModule = Module.new do
+        def self.const_added(name)
+          ScratchPad << name
+        end
+
+        module self::A
+          def self.const_added(name)
+            ScratchPad << name
+          end
+
+          module self::B
+          end
+        end
+      end
+
+      ScratchPad.recorded.should == [:A, :B]
+    end
+
     it "is called when a new class is defined under self" do
       ScratchPad.record []
 
@@ -81,6 +103,27 @@ describe "Module#const_added" do
       RUBY
 
       ScratchPad.recorded.should == [:SubClass]
+    end
+
+    it "is called when a new class is defined under a named module (assigned to a constant)" do
+      ScratchPad.record []
+
+      ModuleSpecs::ConstAddedSpecs::NamedModuleB = Module.new do
+        def self.const_added(name)
+          ScratchPad << name
+        end
+
+        class self::A
+          def self.const_added(name)
+            ScratchPad << name
+          end
+
+          class self::B
+          end
+        end
+      end
+
+      ScratchPad.recorded.should == [:A, :B]
     end
 
     it "is called when an autoload is defined" do

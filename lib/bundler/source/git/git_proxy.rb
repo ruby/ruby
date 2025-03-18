@@ -84,12 +84,6 @@ module Bundler
           end
         end
 
-        def not_a_repository?
-          _, status = git_null("rev-parse", "--resolve-git-dir", path.to_s, dir: path)
-
-          !status.success?
-        end
-
         def contains?(commit)
           allowed_with_path do
             result, status = git_null("branch", "--contains", commit, dir: path)
@@ -151,6 +145,12 @@ module Bundler
             inner_command = "git -C $toplevel submodule deinit --force $sm_path"
             git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
           end
+        end
+
+        def installed_to?(destination)
+          # if copy_to is interrupted, it may leave a partially installed directory that
+          # contains .git but no other files -- consider this not to be installed
+          Dir.exist?(destination) && (Dir.children(destination) - [".git"]).any?
         end
 
         private

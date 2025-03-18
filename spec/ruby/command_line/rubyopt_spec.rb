@@ -22,15 +22,15 @@ describe "Processing RUBYOPT" do
     result.should =~ /value of \$DEBUG is true/
   end
 
-  guard -> { not CROSS_COMPILING } do
+  guard -> { RbConfig::CONFIG["CROSS_COMPILING"] != "yes" } do
     it "prints the version number for '-v'" do
       ENV["RUBYOPT"] = '-v'
-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
+      ruby_exe("").sub("+PRISM ", "").sub(/\+GC(\[\w+\]\s|\s)?/, "")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "").sub(/\+GC(\[\w+\]\s|\s)?/, "")
     end
 
     it "ignores whitespace around the option" do
       ENV["RUBYOPT"] = ' -v '
-      ruby_exe("")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "")
+      ruby_exe("").sub("+PRISM ", "").sub(/\+GC(\[\w+\]\s|\s)?/, "")[/\A.*/].should == RUBY_DESCRIPTION.sub("+PRISM ", "").sub(/\+GC(\[\w+\]\s|\s)?/, "")
     end
   end
 

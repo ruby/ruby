@@ -7,6 +7,38 @@ use crate::options::DumpDisasm;
 
 use std::fmt::Write;
 
+#[cfg_attr(not(feature = "disasm"), allow(dead_code))]
+#[derive(Copy, Clone, Debug)]
+pub struct TerminalColor {
+    pub blue_begin: &'static str,
+    pub blue_end: &'static str,
+    pub bold_begin: &'static str,
+    pub bold_end: &'static str,
+}
+
+pub static TTY_TERMINAL_COLOR: TerminalColor = TerminalColor {
+    blue_begin: "\x1b[34m",
+    blue_end: "\x1b[0m",
+    bold_begin: "\x1b[1m",
+    bold_end: "\x1b[22m",
+};
+
+pub static NON_TTY_TERMINAL_COLOR: TerminalColor = TerminalColor {
+    blue_begin: "",
+    blue_end: "",
+    bold_begin: "",
+    bold_end: "",
+};
+
+/// Terminal escape codes for colors, font weight, etc. Only enabled if stdout is a TTY.
+pub fn get_colors() -> &'static TerminalColor {
+    if crate::utils::stdout_supports_colors() {
+        &TTY_TERMINAL_COLOR
+    } else {
+        &NON_TTY_TERMINAL_COLOR
+    }
+}
+
 /// Primitive called in yjit.rb
 /// Produce a string representing the disassembly for an ISEQ
 #[no_mangle]
@@ -120,7 +152,7 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
                     // Write with the fd opened during boot
                     let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
                     file.write_all(disasm.as_bytes()).unwrap();
-                    file.into_raw_fd(); // keep the fd open
+                    let _ = file.into_raw_fd(); // keep the fd open
                 }
             };
         }
@@ -158,6 +190,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     #[cfg(test)]
     let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
+    let colors = get_colors();
 
     // For each instruction in this block
     for insn in insns.as_ref() {
@@ -165,17 +198,17 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
                 if cb.outlined {
-                    write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+                    write!(&mut out, "{}", colors.blue_begin).unwrap(); // Make outlined code blue
                 }
-                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
+                writeln!(&mut out, "  {}# {comment}{}", colors.bold_begin, colors.bold_end).unwrap(); // Make comments bold
             }
         }
         if cb.outlined {
-            write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+            write!(&mut out, "{}", colors.blue_begin).unwrap(); // Make outlined code blue
         }
         writeln!(&mut out, "  {insn}").unwrap();
         if cb.outlined {
-            write!(&mut out, "\x1b[0m").unwrap(); // Disable blue
+            write!(&mut out, "{}", colors.blue_end).unwrap(); // Disable blue
         }
     }
 
@@ -188,6 +221,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     let mut out = String::new();
     let mut line_byte_idx = 0;
     const MAX_BYTES_PER_LINE: usize = 16;
+    let colors = get_colors();
 
     for addr in start_addr..end_addr {
         if let Some(comment_list) = cb.comments_at(addr) {
@@ -197,7 +231,7 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
                 line_byte_idx = 0;
             }
             for comment in comment_list {
-                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
+                writeln!(&mut out, "  {}# {comment}{}", colors.bold_begin, colors.bold_end).unwrap(); // Make comments bold
             }
         }
         if line_byte_idx == 0 {

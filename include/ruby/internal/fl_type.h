@@ -370,7 +370,7 @@ ruby_fl_type {
      * 3rd parties.  It must be an implementation detail that they should never
      * know.  Might better be hidden.
      */
-    RUBY_ELTS_SHARED  = RUBY_FL_USER2,
+    RUBY_ELTS_SHARED  = RUBY_FL_USER0,
 
     /**
      * This flag has something to do with an object's class.  There are kind of

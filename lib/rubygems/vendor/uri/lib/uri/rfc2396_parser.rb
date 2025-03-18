@@ -140,11 +140,11 @@ module Gem::URI
 
         if !scheme
           raise InvalidURIError,
-            "bad Gem::URI(absolute but no scheme): #{uri}"
+            "bad Gem::URI (absolute but no scheme): #{uri}"
         end
         if !opaque && (!path && (!host && !registry))
           raise InvalidURIError,
-            "bad Gem::URI(absolute but no path): #{uri}"
+            "bad Gem::URI (absolute but no path): #{uri}"
         end
 
       when @regexp[:REL_URI]
@@ -173,7 +173,7 @@ module Gem::URI
         # server        = [ [ userinfo "@" ] hostport ]
 
       else
-        raise InvalidURIError, "bad Gem::URI(is not Gem::URI?): #{uri}"
+        raise InvalidURIError, "bad Gem::URI (is not Gem::URI?): #{uri}"
       end
 
       path = '' if !path && !opaque # (see RFC2396 Section 5.2)
@@ -321,14 +321,14 @@ module Gem::URI
       str.gsub(escaped) { [$&[1, 2]].pack('H2').force_encoding(enc) }
     end
 
-    @@to_s = Kernel.instance_method(:to_s)
-    if @@to_s.respond_to?(:bind_call)
-      def inspect
-        @@to_s.bind_call(self)
+    TO_S = Kernel.instance_method(:to_s) # :nodoc:
+    if TO_S.respond_to?(:bind_call)
+      def inspect # :nodoc:
+        TO_S.bind_call(self)
       end
     else
-      def inspect
-        @@to_s.bind(self).call
+      def inspect # :nodoc:
+        TO_S.bind(self).call
       end
     end
 
@@ -536,4 +536,11 @@ module Gem::URI
     end
 
   end # class Parser
+
+  # Backward compatibility for Gem::URI::REGEXP::PATTERN::*
+  RFC2396_Parser.new.pattern.each_pair do |sym, str|
+    unless RFC2396_REGEXP::PATTERN.const_defined?(sym, false)
+      RFC2396_REGEXP::PATTERN.const_set(sym, str)
+    end
+  end
 end # module Gem::URI

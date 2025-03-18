@@ -9,3 +9,19 @@
 -> foo = bar do end
 
 -> foo: bar do end
+
+def foo(*, **)
+  ->() { bar(*, **) }
+end
+
+p{|a:
+b|}
+
+->(a:
+b){}
+
+->a:
+b{}
+
+->a:
+{}

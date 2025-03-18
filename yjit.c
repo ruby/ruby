@@ -41,7 +41,6 @@
 // Field offsets for the RObject struct
 enum robject_offsets {
     ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr),
-    ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 };
 
@@ -272,7 +271,7 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)&rb_yjit_reserve_addr_space;
+        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_yjit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
         uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
@@ -291,11 +290,15 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
 
             // If we succeeded, stop
             if (mem_block != MAP_FAILED) {
+                ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space");
                 break;
             }
 
-            // +4MB
-            req_addr += 4 * 1024 * 1024;
+            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
+            // main_code_addr < heap_addr, and in case we are in a shared
+            // library mapped higher than the heap, downwards is still better
+            // since it's towards the end of the heap rather than the stack.)
+            req_addr -= 4 * 1024 * 1024;
         } while (req_addr < probe_region_end);
 
     // On MacOS and other platforms
@@ -322,6 +325,10 @@ rb_yjit_reserve_addr_space(uint32_t mem_size)
             -1,
             0
         );
+
+        if (mem_block != MAP_FAILED) {
+            ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_yjit_reserve_addr_space:fallback");
+        }
     }
 
     // Check that the memory mapping was successful
@@ -583,7 +590,7 @@ rb_get_mct_argc(const rb_method_cfunc_t *mct)
 void *
 rb_get_mct_func(const rb_method_cfunc_t *mct)
 {
-    return (void*)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
+    return (void*)(uintptr_t)mct->func; // this field is defined as type VALUE (*func)(ANYARGS)
 }
 
 const rb_iseq_t *
@@ -1062,6 +1069,12 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
     return IMEMO_TYPE_P(imemo, imemo_type);
 }
 
+bool
+rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 void
 rb_assert_cme_handle(VALUE handle)
 {
@@ -1082,8 +1095,8 @@ for_each_iseq_i(void *vstart, void *vend, size_t stride, void *data)
     const struct iseq_callback_data *callback_data = (struct iseq_callback_data *)data;
     VALUE v = (VALUE)vstart;
     for (; v != (VALUE)vend; v += stride) {
-        void *ptr = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *ptr = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (rb_obj_is_iseq(v)) {
             rb_iseq_t *iseq = (rb_iseq_t *)v;
@@ -1139,7 +1152,7 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
 
     // Compile a block version starting at the current instruction
     uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
-    uint8_t *code_ptr = rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
+    uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
     if (jit_exception) {
         iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
@@ -1226,15 +1239,26 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_log_enabled_p(rb_execution_context_t *c, VALUE self);
+VALUE rb_yjit_print_log_p(rb_execution_context_t *c, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
+VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_code_gc(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
-VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats);
+VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log, VALUE mem_size, VALUE call_threshold);
+VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self);
+
+// Allow YJIT_C_BUILTIN macro to force --yjit-c-builtin
+#ifdef YJIT_C_BUILTIN
+static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Qtrue; }
+#else
+#define yjit_c_builtin_p rb_yjit_c_builtin_p
+#endif
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"

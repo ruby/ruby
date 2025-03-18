@@ -18,6 +18,7 @@
 #include "darray.h"
 #include "ruby/encoding.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 
 static VALUE ruby_dln_libmap;
 
@@ -596,7 +597,7 @@ rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expa
 
     loading_tbl = get_loading_table(vm);
     f = 0;
-    if (!expanded) {
+    if (!expanded && !rb_is_absolute_path(feature)) {
         struct loaded_feature_searching fs;
         fs.name = feature;
         fs.len = len;
@@ -743,7 +744,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         rb_thread_t *th = rb_ec_thread_ptr(ec);
         VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
 
-        if (*rb_ruby_prism_ptr()) {
+        if (rb_ruby_prism_p()) {
             pm_parse_result_t result = { 0 };
             result.options.line = 1;
             result.node.coverage_enabled = 1;
@@ -751,8 +752,15 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             VALUE error = pm_load_parse_file(&result, fname, NULL);
 
             if (error == Qnil) {
-                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL);
+                int error_state;
+                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL, &error_state);
+
                 pm_parse_result_free(&result);
+
+                if (error_state) {
+                    RUBY_ASSERT(iseq == NULL);
+                    rb_jump_tag(error_state);
+                }
             }
             else {
                 rb_vm_pop_frame(ec);
@@ -1116,6 +1124,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         ftptr = RSTRING_PTR(lookup_name);
         if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
             *path = rb_filesystem_str_new_cstr(ftptr);
+            RB_GC_GUARD(lookup_name);
             return 's';
         }
     }
@@ -1383,17 +1392,25 @@ static VALUE
 rb_require_string_internal(VALUE fname, bool resurrect)
 {
     rb_execution_context_t *ec = GET_EC();
-    int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    if (result > TAG_RETURN) {
-        EC_JUMP_TAG(ec, result);
-    }
-    if (result < 0) {
+    // main ractor check
+    if (!rb_ractor_main_p()) {
         if (resurrect) fname = rb_str_resurrect(fname);
-        load_failed(fname);
+        return rb_ractor_require(fname);
     }
+    else {
+        int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
-    return RBOOL(result);
+        if (result > TAG_RETURN) {
+            EC_JUMP_TAG(ec, result);
+        }
+        if (result < 0) {
+            if (resurrect) fname = rb_str_resurrect(fname);
+            load_failed(fname);
+        }
+
+        return RBOOL(result);
+    }
 }
 
 VALUE
@@ -1454,6 +1471,9 @@ ruby_init_ext(const char *name, void (*init)(void))
  *  If _const_ in _mod_ is defined as autoload, the file name to be
  *  loaded is replaced with _filename_.  If _const_ is defined but not
  *  as autoload, does nothing.
+ *
+ *  Files that are currently being loaded must not be registered for
+ *  autoload.
  */
 
 static VALUE
@@ -1518,6 +1538,9 @@ rb_mod_autoload_p(int argc, VALUE *argv, VALUE mod)
  *  If _const_ is defined as autoload, the file name to be loaded is
  *  replaced with _filename_.  If _const_ is defined but not as
  *  autoload, does nothing.
+ *
+ *  Files that are currently being loaded must not be registered for
+ *  autoload.
  */
 
 static VALUE

@@ -252,8 +252,7 @@ EOF
 
   def rustc_dynamic_linker_flags(dest_dir, crate_name)
     split_flags("DLDFLAGS").
-      map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }.
-      compact.
+      filter_map {|arg| maybe_resolve_ldflag_variable(arg, dest_dir, crate_name) }.
       flat_map {|arg| ldflag_to_link_modifier(arg) }
   end
 

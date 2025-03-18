@@ -27,6 +27,15 @@ jobs:
         include:
           - test_task: check
             os: macos-14
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gcc=gcc-14'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
+          - test_task: check
+            os: macos-14
+            configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-14
@@ -35,7 +44,7 @@ jobs:
           - test_task: test-bundled-gems
             os: macos-14
           - test_task: check
-            os: macos-12
+            os: macos-15
           - test_task: check
             os: macos-13
       fail-fast: false
@@ -51,7 +60,7 @@ jobs:
       || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.title, 'Document')
-      || contains(github.event.pull_request.labels.*.name, 'Document')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
@@ -89,24 +98,14 @@ jobs:
         continue-on-error: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${ruby_configure_args}
+        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
 
-      - run: |
-          make golf
-          case "${{ matrix.configure }}" in
-          *'--enable-shared'*)
-            make runnable
-            ./bin/goruby -veh
-            ;;
-          *)
-            ./goruby -veh
-            ;;
-          esac
+      - run: make hello
 
       - name: Set test options for skipped tests
         run: |
@@ -133,6 +132,12 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
+          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
+            exec
+            > >(tee launchable_stdout.log) \
+            2> >(tee launchable_stderr.log)
+          fi
+
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
         timeout-minutes: 60

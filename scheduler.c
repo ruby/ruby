@@ -13,6 +13,9 @@
 #include "ruby/io.h"
 #include "ruby/io/buffer.h"
 
+#include "ruby/thread.h"
+
+// For `ruby_thread_has_gvl_p`.
 #include "internal/thread.h"
 
 static ID id_close;
@@ -32,6 +35,8 @@ static ID id_io_select;
 static ID id_io_close;
 
 static ID id_address_resolve;
+
+static ID id_blocking_operation_wait;
 
 static ID id_fiber_schedule;
 
@@ -70,6 +75,7 @@ static ID id_fiber_schedule;
  *  * #timeout_after
  *  * #address_resolve
  *  * #block and #unblock
+ *  * #blocking_operation_wait
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
  *  When not specified otherwise, the hook implementations are mandatory: if they are not
@@ -109,6 +115,8 @@ Init_Fiber_Scheduler(void)
 
     id_address_resolve = rb_intern_const("address_resolve");
 
+    id_blocking_operation_wait = rb_intern_const("blocking_operation_wait");
+
     id_fiber_schedule = rb_intern_const("fiber");
 
 #if 0 /* for RDoc */
@@ -127,16 +135,17 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "block", rb_fiber_scheduler_block, 2);
     rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_unblock, 2);
     rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler, -2);
+    rb_define_method(rb_cFiberScheduler, "blocking_operation_wait", rb_fiber_scheduler_blocking_operation_wait, -2);
 #endif
 }
 
 VALUE
 rb_fiber_scheduler_get(void)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     rb_thread_t *thread = GET_THREAD();
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     return thread->scheduler;
 }
@@ -179,10 +188,10 @@ fiber_scheduler_close_ensure(VALUE _thread)
 VALUE
 rb_fiber_scheduler_set(VALUE scheduler)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     rb_thread_t *thread = GET_THREAD();
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     if (scheduler != Qnil) {
         verify_interface(scheduler);
@@ -205,7 +214,7 @@ rb_fiber_scheduler_set(VALUE scheduler)
 static VALUE
 rb_fiber_scheduler_current_for_threadptr(rb_thread_t *thread)
 {
-    VM_ASSERT(thread);
+    RUBY_ASSERT(thread);
 
     if (thread->blocking == 0) {
         return thread->scheduler;
@@ -239,7 +248,7 @@ VALUE rb_fiber_scheduler_current_for_thread(VALUE thread)
 VALUE
 rb_fiber_scheduler_close(VALUE scheduler)
 {
-    VM_ASSERT(ruby_thread_has_gvl_p());
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
 
     VALUE result;
 
@@ -262,7 +271,7 @@ VALUE
 rb_fiber_scheduler_make_timeout(struct timeval *timeout)
 {
     if (timeout) {
-        return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
+        return rb_float_new((double)timeout->tv_sec + (0.000001 * timeout->tv_usec));
     }
 
     return Qnil;
@@ -401,9 +410,17 @@ rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 VALUE
 rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 {
-    VM_ASSERT(rb_obj_is_fiber(fiber));
+    RUBY_ASSERT(rb_obj_is_fiber(fiber));
 
-    return rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    // `rb_fiber_scheduler_unblock` can be called from points where `errno` is expected to be preserved. Therefore, we should save and restore it. For example `io_binwrite` calls `rb_fiber_scheduler_unblock` and if `errno` is reset to 0 by user code, it will break the error handling in `io_write`.
+    // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
+    int saved_errno = errno;
+
+    VALUE result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+
+    errno = saved_errno;
+
+    return result;
 }
 
 /*
@@ -691,6 +708,62 @@ rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname)
     };
 
     return rb_check_funcall(scheduler, id_address_resolve, 1, arguments);
+}
+
+struct rb_blocking_operation_wait_arguments {
+    void *(*function)(void *);
+    void *data;
+    rb_unblock_function_t *unblock_function;
+    void *data2;
+    int flags;
+
+    struct rb_fiber_scheduler_blocking_operation_state *state;
+};
+
+static VALUE
+rb_fiber_scheduler_blocking_operation_wait_proc(RB_BLOCK_CALL_FUNC_ARGLIST(value, _arguments))
+{
+    struct rb_blocking_operation_wait_arguments *arguments = (struct rb_blocking_operation_wait_arguments*)_arguments;
+
+    if (arguments->state == NULL) {
+        rb_raise(rb_eRuntimeError, "Blocking function was already invoked!");
+    }
+
+    arguments->state->result = rb_nogvl(arguments->function, arguments->data, arguments->unblock_function, arguments->data2, arguments->flags);
+    arguments->state->saved_errno = rb_errno();
+
+    // Make sure it's only invoked once.
+    arguments->state = NULL;
+
+    return Qnil;
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#blocking_operation_wait
+ *  call-seq: blocking_operation_wait(work)
+ *
+ *  Invoked by Ruby's core methods to run a blocking operation in a non-blocking way.
+ *
+ *  Minimal suggested implementation is:
+ *
+ *     def blocking_operation_wait(work)
+ *       Thread.new(&work).join
+ *     end
+ */
+VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_operation_state *state)
+{
+    struct rb_blocking_operation_wait_arguments arguments = {
+        .function = function,
+        .data = data,
+        .unblock_function = unblock_function,
+        .data2 = data2,
+        .flags = flags,
+        .state = state
+    };
+
+    VALUE proc = rb_proc_new(rb_fiber_scheduler_blocking_operation_wait_proc, (VALUE)&arguments);
+
+    return rb_check_funcall(scheduler, id_blocking_operation_wait, 1, &proc);
 }
 
 /*

@@ -128,6 +128,30 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_equal pt, cipher.update(ct) << cipher.final
   end
 
+  def test_update_with_buffer
+    cipher = OpenSSL::Cipher.new("aes-128-ecb").encrypt
+    cipher.random_key
+    expected = cipher.update("data") << cipher.final
+    assert_equal 16, expected.bytesize
+
+    # Buffer is supplied
+    cipher.reset
+    buf = String.new
+    assert_same buf, cipher.update("data", buf)
+    assert_equal expected, buf + cipher.final
+
+    # Buffer is frozen
+    cipher.reset
+    assert_raise(FrozenError) { cipher.update("data", String.new.freeze) }
+
+    # Buffer is a shared string [ruby-core:120141] [Bug #20937]
+    cipher.reset
+    buf = "x" * 1024
+    shared = buf[-("data".bytesize + 32)..-1]
+    assert_same shared, cipher.update("data", shared)
+    assert_equal expected, shared + cipher.final
+  end
+
   def test_ciphers
     ciphers = OpenSSL::Cipher.ciphers
     assert_kind_of Array, ciphers

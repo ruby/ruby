@@ -30,11 +30,16 @@ $(YJIT_LIBS):
 	$(ECHO) 'Error: Tried to build YJIT without configuring it first. Check `make showconfig`?'
 	@false
 else ifeq ($(YJIT_SUPPORT),$(filter dev dev_nodebug stats,$(YJIT_SUPPORT)))
+# NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
+#    ld: warning: object file (yjit/target/debug/libyjit.a(<libcapstone object>)) was built for
+#    newer macOS version (15.2) than being linked (15.0)
+# We don't use newer macOS feature as of yet.
 $(YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT ($(YJIT_SUPPORT) mode)'
 	+$(Q)$(CHDIR) $(top_srcdir)/yjit && \
 	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	        CARGO_TERM_PROGRESS_WHEN='never' \
+	        MACOSX_DEPLOYMENT_TARGET=11.0 \
 	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
 	$(YJIT_LIB_TOUCH)
 else

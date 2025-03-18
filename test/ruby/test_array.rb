@@ -1114,6 +1114,33 @@ class TestArray < Test::Unit::TestCase
     assert_not_include(a, [1,2])
   end
 
+  def test_monkey_patch_include?
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      $-w = false
+      class Array
+        alias :old_include? :include?
+        def include? x
+          return true if x == :always
+          old_include?(x)
+        end
+      end
+      def test
+        a, c, always = :a, :c, :always
+        [
+          [:a, :b].include?(a),
+          [:a, :b].include?(c),
+          [:a, :b].include?(always),
+        ]
+      end
+      v = test
+      class Array
+        alias :include? :old_include?
+      end
+      assert_equal [true, false, true], v
+    end;
+  end
+
   def test_intersect?
     a = @cls[ 1, 2, 3]
     assert_send([a, :intersect?, [3]])
@@ -2689,6 +2716,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal(2, [0, 1].fetch(2, 2))
   end
 
+  def test_fetch_values
+    ary = @cls[1, 2, 3]
+    assert_equal([], ary.fetch_values())
+    assert_equal([1], ary.fetch_values(0))
+    assert_equal([3, 1, 3], ary.fetch_values(2, 0, -1))
+    assert_raise(TypeError) {ary.fetch_values("")}
+    assert_raise(IndexError) {ary.fetch_values(10)}
+    assert_raise(IndexError) {ary.fetch_values(-20)}
+    assert_equal(["10 not found"], ary.fetch_values(10) {|i| "#{i} not found"})
+    assert_equal(["10 not found", 3], ary.fetch_values(10, 2) {|i| "#{i} not found"})
+  end
+
   def test_index2
     a = [0, 1, 2]
     assert_equal(a, a.index.to_a)
@@ -3005,13 +3044,12 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
-  def test_shuffle_random
-    gen = proc do
-      10000000
-    end
-    class << gen
-      alias rand call
-    end
+  def test_shuffle_random_out_of_range
+    gen = random_generator {10000000}
+    assert_raise(RangeError) {
+      [*0..2].shuffle(random: gen)
+    }
+    gen = random_generator {-1}
     assert_raise(RangeError) {
       [*0..2].shuffle(random: gen)
     }
@@ -3019,27 +3057,16 @@ class TestArray < Test::Unit::TestCase
 
   def test_shuffle_random_clobbering
     ary = (0...10000).to_a
-    gen = proc do
+    gen = random_generator do
       ary.replace([])
       0.5
-    end
-    class << gen
-      alias rand call
     end
     assert_raise(RuntimeError) {ary.shuffle!(random: gen)}
   end
 
   def test_shuffle_random_zero
-    zero = Object.new
-    def zero.to_int
-      0
-    end
-    gen_to_int = proc do |max|
-      zero
-    end
-    class << gen_to_int
-      alias rand call
-    end
+    zero = Struct.new(:to_int).new(0)
+    gen_to_int = random_generator {|max| zero}
     ary = (0...10000).to_a
     assert_equal(ary.rotate, ary.shuffle(random: gen_to_int))
   end
@@ -3107,18 +3134,10 @@ class TestArray < Test::Unit::TestCase
   def test_sample_random_generator
     ary = (0...10000).to_a
     assert_raise(ArgumentError) {ary.sample(1, 2, random: nil)}
-    gen0 = proc do |max|
-      max/2
-    end
-    class << gen0
-      alias rand call
-    end
-    gen1 = proc do |max|
+    gen0 = random_generator {|max| max/2}
+    gen1 = random_generator do |max|
       ary.replace([])
       max/2
-    end
-    class << gen1
-      alias rand call
     end
     assert_equal(5000, ary.sample(random: gen0))
     assert_nil(ary.sample(random: gen1))
@@ -3150,18 +3169,21 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_sample_random_generator_half
-    half = Object.new
-    def half.to_int
-      5000
-    end
-    gen_to_int = proc do |max|
-      half
-    end
-    class << gen_to_int
-      alias rand call
-    end
+    half = Struct.new(:to_int).new(5000)
+    gen_to_int = random_generator {|max| half}
     ary = (0...10000).to_a
     assert_equal(5000, ary.sample(random: gen_to_int))
+  end
+
+  def test_sample_random_out_of_range
+    gen = random_generator {10000000}
+    assert_raise(RangeError) {
+      [*0..2].sample(random: gen)
+    }
+    gen = random_generator {-1}
+    assert_raise(RangeError) {
+      [*0..2].sample(random: gen)
+    }
   end
 
   def test_sample_random_invalid_generator
@@ -3593,6 +3615,13 @@ class TestArray < Test::Unit::TestCase
       EnvUtil.suppress_warning {require 'continuation'}
     end
     omit 'requires callcc support' unless respond_to?(:callcc, true)
+  end
+
+  def random_generator(&block)
+    class << block
+      alias rand call
+    end
+    block
   end
 end
 

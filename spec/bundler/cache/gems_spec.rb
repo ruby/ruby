@@ -113,6 +113,11 @@ RSpec.describe "bundle cache" do
         expect(out).to include("Using json #{default_json_version}")
       end
 
+      it "does not use remote gems when installing with --prefer-local flag" do
+        install_gemfile %(source "https://gem.repo2"; gem 'json', '#{default_json_version}'), verbose: true, "prefer-local": true
+        expect(out).to include("Using json #{default_json_version}")
+      end
+
       it "caches remote and builtin gems" do
         install_gemfile <<-G
           source "https://gem.repo2"
@@ -167,7 +172,7 @@ RSpec.describe "bundle cache" do
         G
 
         bundle :cache, raise_on_error: false
-        expect(exitstatus).to_not eq(0)
+        expect(last_command).to be_failure
         expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
       end
     end
@@ -286,7 +291,7 @@ RSpec.describe "bundle cache" do
         expect(cached_gem("platform_specific-1.0-java")).to exist
       end
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       simulate_platform "x86-darwin-100" do
         install_gemfile <<-G
@@ -307,7 +312,8 @@ RSpec.describe "bundle cache" do
         path: cached_myrack.parent,
         rubygems_version: "1.3.2"
 
-      simulate_new_machine
+      FileUtils.rm_r default_bundle_path
+      system_gems :bundler
 
       FileUtils.rm bundled_app_lock
       bundle :install, raise_on_error: false
@@ -339,7 +345,8 @@ RSpec.describe "bundle cache" do
         c.checksum gem_repo1, "myrack", "1.0.0"
       end
 
-      simulate_new_machine
+      FileUtils.rm_r default_bundle_path
+      system_gems :bundler
 
       lockfile <<-L
         GEM
@@ -364,7 +371,7 @@ RSpec.describe "bundle cache" do
       setup_main_repo
       cached_gem("myrack-1.0.0").rmtree
       build_gem "myrack", "1.0.0", path: bundled_app("vendor/cache")
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       lockfile <<-L
         GEM

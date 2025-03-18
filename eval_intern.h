@@ -300,6 +300,8 @@ void rb_vm_set_progname(VALUE filename);
 VALUE rb_vm_cbase(void);
 
 /* vm_backtrace.c */
+#define RUBY_BACKTRACE_START 0
+#define RUBY_ALL_BACKTRACE_LINES -1
 VALUE rb_ec_backtrace_object(const rb_execution_context_t *ec);
 VALUE rb_ec_backtrace_str_ary(const rb_execution_context_t *ec, long lev, long n);
 VALUE rb_ec_backtrace_location_ary(const rb_execution_context_t *ec, long lev, long n, bool skip_internal);

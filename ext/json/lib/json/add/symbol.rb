@@ -1,5 +1,4 @@
-
-#frozen_string_literal: false
+# frozen_string_literal: true
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
@@ -37,8 +36,13 @@ class Symbol
   #
   #   # {"json_class":"Symbol","s":"foo"}
   #
-  def to_json(*a)
-    as_json.to_json(*a)
+  def to_json(state = nil, *a)
+    state = ::JSON::State.from_state(state)
+    if state.strict?
+      super
+    else
+      as_json.to_json(state, *a)
+    end
   end
 
   # See #as_json.

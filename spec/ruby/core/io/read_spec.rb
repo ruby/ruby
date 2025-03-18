@@ -217,19 +217,19 @@ describe "IO.read from a pipe" do
     end
   end
 
-quarantine! do # The process tried to write to a nonexistent pipe.
-  platform_is :windows do
-    # TODO: It should raise Errno::ESPIPE on Windows as well
-    # once https://bugs.ruby-lang.org/issues/12230 is fixed.
-    it "raises Errno::EINVAL if passed an offset" do
-      -> {
-        suppress_warning do # https://bugs.ruby-lang.org/issues/19630
-          IO.read("|cmd.exe /C echo hello", 1, 1)
-        end
-      }.should raise_error(Errno::EINVAL)
+  quarantine! do # The process tried to write to a nonexistent pipe.
+    platform_is :windows do
+      # TODO: It should raise Errno::ESPIPE on Windows as well
+      # once https://bugs.ruby-lang.org/issues/12230 is fixed.
+      it "raises Errno::EINVAL if passed an offset" do
+        -> {
+          suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+            IO.read("|cmd.exe /C echo hello", 1, 1)
+          end
+        }.should raise_error(Errno::EINVAL)
+      end
     end
   end
-end
 
   ruby_version_is "3.3" do
     # https://bugs.ruby-lang.org/issues/19630

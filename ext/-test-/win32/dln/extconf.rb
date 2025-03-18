@@ -7,6 +7,7 @@ if $mingw or $mswin
   testdll = "dlntest.dll"
   $cleanfiles << testdll
   $cleanfiles << "dlntest.#{$LIBEXT}"
+  $cleanfiles << "libdlntest.#{$OBJEXT}"
   config_string('cleanobjs') {|t| $cleanfiles.concat(t.gsub(/\$\*/, 'dlntest').split)}
 
   create_makefile("-test-/win32/dln") do |m|

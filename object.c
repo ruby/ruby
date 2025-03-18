@@ -135,7 +135,7 @@ rb_class_allocate_instance(VALUE klass)
     RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
 
     // Set the shape to the specific T_OBJECT shape.
-    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_size_pool_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
+    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_heap_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
@@ -358,7 +358,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     rb_shape_t * initial_shape = rb_shape_get_shape(dest);
 
-    if (initial_shape->size_pool_index != src_shape->size_pool_index) {
+    if (initial_shape->heap_index != src_shape->heap_index) {
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
@@ -500,10 +500,12 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
       case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
-        if (CHILLED_STRING_P(obj)) {
-            STR_CHILL_RAW(clone);
+
+        if (RB_TYPE_P(obj, T_STRING)) {
+            FL_SET_RAW(clone, FL_TEST_RAW(obj, STR_CHILLED));
         }
-        else if (RB_OBJ_FROZEN(obj)) {
+
+        if (RB_OBJ_FROZEN(obj)) {
             rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                 rb_evict_ivars_to_hash(clone);
@@ -1354,6 +1356,10 @@ rb_obj_frozen_p(VALUE obj)
  * - #to_h
  * - #to_r
  * - #to_s
+ *
+ * While +nil+ doesn't have an explicitly defined #to_hash method,
+ * it can be used in <code>**</code> unpacking, not adding any
+ * keyword arguments.
  *
  * Another method provides inspection:
  *
@@ -3399,6 +3405,13 @@ rb_f_integer(rb_execution_context_t *ec, VALUE obj, VALUE arg, VALUE base, VALUE
     return rb_convert_to_integer(arg, NUM2INT(base), exc);
 }
 
+static bool
+is_digit_char(unsigned char c, int base)
+{
+    int i = ruby_digit36_to_number_table[c];
+    return (i >= 0 && i < base);
+}
+
 static double
 rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, int *error)
 {
@@ -3440,23 +3453,37 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
         char *e = init_e;
         char prev = 0;
         int dot_seen = FALSE;
+        int base = 10;
+        char exp_letter = 'e';
 
         switch (*p) {case '+': case '-': prev = *n++ = *p++;}
         if (*p == '0') {
             prev = *n++ = '0';
-            while (*++p == '0');
+            switch (*++p) {
+              case 'x': case 'X':
+                prev = *n++ = 'x';
+                base = 16;
+                exp_letter = 'p';
+                if (*++p != '0') break;
+                /* fallthrough */
+              case '0': /* squeeze successive zeros */
+                while (*++p == '0');
+                break;
+            }
         }
         while (p < end && n < e) prev = *n++ = *p++;
         while (*p) {
             if (*p == '_') {
                 /* remove an underscore between digits */
-                if (n == buf || !ISDIGIT(prev) || (++p, !ISDIGIT(*p))) {
+                if (n == buf ||
+                    !is_digit_char(prev, base) ||
+                    !is_digit_char(*++p, base)) {
                     if (badcheck) goto bad;
                     break;
                 }
             }
             prev = *p++;
-            if (e == init_e && (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P')) {
+            if (e == init_e && (rb_tolower(prev) == exp_letter)) {
                 e = buf + sizeof(buf) - 1;
                 *n++ = prev;
                 switch (*p) {case '+': case '-': prev = *n++ = *p++;}
@@ -3464,6 +3491,10 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     prev = *n++ = '0';
                     while (*++p == '0');
                 }
+
+                /* reset base to decimal for underscore check of
+                 * binary exponent part */
+                base = 10;
                 continue;
             }
             else if (ISSPACE(prev)) {
@@ -3473,7 +3504,7 @@ rb_cstr_to_dbl_raise(const char *p, rb_encoding *enc, int badcheck, int raise, i
                     break;
                 }
             }
-            else if (prev == '.' ? dot_seen++ : !ISDIGIT(prev)) {
+            else if (prev == '.' ? dot_seen++ : !is_digit_char(prev, base)) {
                 if (badcheck) goto bad;
                 break;
             }
@@ -3821,7 +3852,7 @@ rb_String(VALUE val)
  *
  *    String([0, 1, 2])        # => "[0, 1, 2]"
  *    String(0..5)             # => "0..5"
- *    String({foo: 0, bar: 1}) # => "{:foo=>0, :bar=>1}"
+ *    String({foo: 0, bar: 1}) # => "{foo: 0, bar: 1}"
  *
  *  Raises +TypeError+ if +object+ cannot be converted to a string.
  */
@@ -4085,7 +4116,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *    BasicObject.superclass # => nil
  *
- *  \Class +BasicObject+ can be used to create an object hierarchy
+ *  Class +BasicObject+ can be used to create an object hierarchy
  *  (e.g., class Delegator) that is independent of Ruby's object hierarchy.
  *  Such objects:
  *
@@ -4156,7 +4187,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  == What's Here
  *
- *  First, what's elsewhere. \Class \Object:
+ *  First, what's elsewhere. Class \Object:
  *
  *  - Inherits from {class BasicObject}[rdoc-ref:BasicObject@What-27s+Here].
  *  - Includes {module Kernel}[rdoc-ref:Kernel@What-27s+Here].
@@ -4180,7 +4211,7 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *  - #instance_of?: Returns whether +self+ is an instance of the given class.
  *  - #instance_variable_defined?: Returns whether the given instance variable
  *    is defined in +self+.
- *  - #method: Returns the Method object for the given method in +self+.
+ *  - #method: Returns the +Method+ object for the given method in +self+.
  *  - #methods: Returns an array of symbol names of public and protected methods
  *    in +self+.
  *  - #nil?: Returns +false+. (Only +nil+ responds +true+ to method <tt>nil?</tt>.)
@@ -4190,12 +4221,12 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *    of the private methods in +self+.
  *  - #protected_methods: Returns an array of the symbol names
  *    of the protected methods in +self+.
- *  - #public_method: Returns the Method object for the given public method in +self+.
+ *  - #public_method: Returns the +Method+ object for the given public method in +self+.
  *  - #public_methods: Returns an array of the symbol names
  *    of the public methods in +self+.
  *  - #respond_to?: Returns whether +self+ responds to the given method.
  *  - #singleton_class: Returns the singleton class of +self+.
- *  - #singleton_method: Returns the Method object for the given singleton method
+ *  - #singleton_method: Returns the +Method+ object for the given singleton method
  *    in +self+.
  *  - #singleton_methods: Returns an array of the symbol names
  *    of the singleton methods in +self+.
@@ -4276,7 +4307,7 @@ InitVM_Object(void)
      *
      * == What's Here
      *
-     * \Module \Kernel provides methods that are useful for:
+     * Module \Kernel provides methods that are useful for:
      *
      * - {Converting}[rdoc-ref:Kernel@Converting]
      * - {Querying}[rdoc-ref:Kernel@Querying]
@@ -4344,7 +4375,7 @@ InitVM_Object(void)
      * - #print: Prints the given objects to standard output without a newline.
      * - #printf: Prints the string resulting from applying the given format string
      *   to any additional arguments.
-     * - #putc: Equivalent to <tt.$stdout.putc(object)</tt> for the given object.
+     * - #putc: Equivalent to <tt>$stdout.putc(object)</tt> for the given object.
      * - #puts: Equivalent to <tt>$stdout.puts(*objects)</tt> for the given objects.
      * - #readline: Similar to #gets, but raises an exception at the end of file.
      * - #readlines: Returns an array of the remaining lines from the current input.

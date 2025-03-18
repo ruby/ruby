@@ -4,7 +4,7 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.7.2";
+IO_CONSOLE_VERSION = "0.8.0";
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -84,6 +84,11 @@ getattr(int fd, conmode *t)
 static ID id_getc, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
 
+#ifndef HAVE_RB_INTERNED_STR_CSTR
+# define rb_str_to_interned_str(str) rb_str_freeze(str)
+# define rb_interned_str_cstr(str) rb_str_freeze(rb_usascii_str_new_cstr(str))
+#endif
+
 #if defined HAVE_RUBY_FIBER_SCHEDULER_H
 # include "ruby/fiber/scheduler.h"
 #elif defined HAVE_RB_SCHEDULER_TIMEOUT
@@ -125,7 +130,14 @@ io_get_write_io_fallback(VALUE io)
 #define rb_io_get_write_io io_get_write_io_fallback
 #endif
 
-#define sys_fail(io) rb_sys_fail_str(rb_io_path(io))
+#ifndef DHAVE_RB_SYSERR_FAIL_STR
+# define rb_syserr_fail_str(e, mesg) rb_exc_raise(rb_syserr_new_str(e, mesg))
+#endif
+
+#define sys_fail(io) do { \
+    int err = errno; \
+    rb_syserr_fail_str(err, rb_io_path(io)); \
+} while (0)
 
 #ifndef HAVE_RB_F_SEND
 #ifndef RB_PASS_CALLED_KEYWORDS
@@ -1811,6 +1823,61 @@ io_getpass(int argc, VALUE *argv, VALUE io)
     return str_chomp(str);
 }
 
+#if defined(_WIN32) || defined(HAVE_TTYNAME_R) || defined(HAVE_TTYNAME)
+/*
+ * call-seq:
+ *   io.ttyname       -> string or nil
+ *
+ * Returns name of associated terminal (tty) if +io+ is not a tty.
+ * Returns +nil+ otherwise.
+ */
+static VALUE
+console_ttyname(VALUE io)
+{
+    int fd = rb_io_descriptor(io);
+    if (!isatty(fd)) return Qnil;
+# if defined _WIN32
+    return rb_usascii_str_new_lit("con");
+# elif defined HAVE_TTYNAME_R
+    {
+	char termname[1024], *tn = termname;
+	size_t size = sizeof(termname);
+	int e;
+	if (ttyname_r(fd, tn, size) == 0)
+	    return rb_interned_str_cstr(tn);
+	if ((e = errno) == ERANGE) {
+	    VALUE s = rb_str_new(0, size);
+	    while (1) {
+		tn = RSTRING_PTR(s);
+		size = rb_str_capacity(s);
+		if (ttyname_r(fd, tn, size) == 0) {
+		    return rb_str_to_interned_str(rb_str_resize(s, strlen(tn)));
+		}
+		if ((e = errno) != ERANGE) break;
+		if ((size *= 2) >= INT_MAX/2) break;
+		rb_str_resize(s, size);
+	    }
+	}
+	rb_syserr_fail_str(e, rb_sprintf("ttyname_r(%d)", fd));
+	UNREACHABLE_RETURN(Qnil);
+    }
+# elif defined HAVE_TTYNAME
+    {
+	const char *tn = ttyname(fd);
+	if (!tn) {
+	    int e = errno;
+	    rb_syserr_fail_str(e, rb_sprintf("ttyname(%d)", fd));
+	}
+	return rb_interned_str_cstr(tn);
+    }
+# else
+#   error No ttyname function
+# endif
+}
+#else
+# define console_ttyname rb_f_notimplement
+#endif
+
 /*
  * IO console methods
  */
@@ -1878,6 +1945,7 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "pressed?", console_key_pressed_p, 1);
     rb_define_method(rb_cIO, "check_winsize_changed", console_check_winsize_changed, 0);
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
+    rb_define_method(rb_cIO, "ttyname", console_ttyname, 0);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
 	/* :stopdoc: */
@@ -1889,7 +1957,7 @@ InitVM_console(void)
     {
 	/* :stopdoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
-        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(IO_CONSOLE_VERSION));
+        rb_define_const(cConmode, "VERSION", rb_obj_freeze(rb_str_new_cstr(IO_CONSOLE_VERSION)));
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);

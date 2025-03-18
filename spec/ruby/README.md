@@ -44,7 +44,7 @@ For *testing* the development version of a Ruby implementation, one should alway
 Also, this repository doesn't always contain the latest spec changes from MRI (it's synchronized monthly), and does not contain tags (specs marked as failing on that Ruby implementation).
 Running specs on a Ruby implementation can be done with:
 
-```
+```console
 $ cd ruby_implementation/spec/ruby
 # Add ../ruby_implementation/bin in PATH, or pass -t /path/to/bin/ruby
 $ ../mspec/bin/mspec

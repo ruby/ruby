@@ -45,6 +45,10 @@
 #include "ruby/util.h"
 #include "timev.h"
 
+#if defined(_WIN32)
+# include "timezoneapi.h" /* DYNAMIC_TIME_ZONE_INFORMATION */
+#endif
+
 #include "builtin.h"
 
 static ID id_submicro, id_nano_num, id_nano_den, id_offset, id_zone;
@@ -331,6 +335,8 @@ v2w(VALUE v)
 #endif
     return WIDEVAL_WRAP(v);
 }
+
+#define NUM2WV(v) v2w(rb_Integer(v))
 
 static int
 weq(wideval_t wx, wideval_t wy)
@@ -701,10 +707,51 @@ static VALUE tm_from_time(VALUE klass, VALUE time);
 
 bool ruby_tz_uptodate_p;
 
+#ifdef _WIN32
+enum {tzkey_max = numberof(((DYNAMIC_TIME_ZONE_INFORMATION *)NULL)->TimeZoneKeyName)};
+static struct {
+    char use_tzkey;
+    char name[tzkey_max * 4 + 1];
+} w32_tz;
+
+static char *
+get_tzname(int dst)
+{
+    if (w32_tz.use_tzkey) {
+        if (w32_tz.name[0]) {
+            return w32_tz.name;
+        }
+        else {
+            /*
+             * Use GetDynamicTimeZoneInformation::TimeZoneKeyName, Windows
+             * time zone ID, which is not localized because it is the key
+             * for "Dynamic DST" keys under the "Time Zones" registry.
+             * Available since Windows Vista and Windows Server 2008.
+             */
+            DYNAMIC_TIME_ZONE_INFORMATION tzi;
+            WCHAR *const wtzkey = tzi.TimeZoneKeyName;
+            DWORD tzret = GetDynamicTimeZoneInformation(&tzi);
+            if (tzret != TIME_ZONE_ID_INVALID && *wtzkey) {
+                int wlen = (int)wcsnlen(wtzkey, tzkey_max);
+                int clen = WideCharToMultiByte(CP_UTF8, 0, wtzkey, wlen,
+                                               w32_tz.name, sizeof(w32_tz.name) - 1,
+                                               NULL, NULL);
+                w32_tz.name[clen] = '\0';
+                return w32_tz.name;
+            }
+        }
+    }
+    return _tzname[_daylight && dst];
+}
+#endif
+
 void
-ruby_reset_timezone(void)
+ruby_reset_timezone(const char *val)
 {
     ruby_tz_uptodate_p = false;
+#ifdef _WIN32
+    w32_tz.use_tzkey = !val || !*val;
+#endif
     ruby_reset_leap_second_info();
 }
 
@@ -940,17 +987,25 @@ zone_str(const char *zone)
         return rb_fstring_lit("(NO-TIMEZONE-ABBREVIATION)");
     }
 
-    for (p = zone; *p; p++)
+    for (p = zone; *p; p++) {
         if (!ISASCII(*p)) {
             ascii_only = 0;
+            p += strlen(p);
             break;
         }
-    len = p - zone + strlen(p);
+    }
+    len = p - zone;
     if (ascii_only) {
         str = rb_usascii_str_new(zone, len);
     }
     else {
+#ifdef _WIN32
+        str = rb_utf8_str_new(zone, len);
+        /* until we move to UTF-8 on Windows completely */
+        str = rb_str_export_locale(str);
+#else
         str = rb_enc_str_new(zone, len, rb_locale_encoding());
+#endif
     }
     return rb_fstring(str);
 }
@@ -1440,7 +1495,7 @@ guess_local_offset(struct vtm *vtm_utc, int *isdst_ret, VALUE *zone_ret)
     if (lt(vtm_utc->year, INT2FIX(1916))) {
         VALUE off = INT2FIX(0);
         int isdst = 0;
-        zone = rb_fstring_lit("UTC");
+        zone = str_utc;
 
 # if defined(NEGATIVE_TIME_T)
 #  if SIZEOF_TIME_T <= 4
@@ -1649,11 +1704,9 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
         if (zone) {
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
+#elif defined(_WIN32)
+            *zone = zone_str(get_tzname(tm.tm_isdst));
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
-# if defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 140
-#  define tzname _tzname
-#  define daylight _daylight
-# endif
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
 #else
@@ -2153,6 +2206,9 @@ invalid_utc_offset(VALUE zone)
              zone);
 }
 
+#define have_2digits(ptr) (ISDIGIT((ptr)[0]) && ISDIGIT((ptr)[1]))
+#define num_from_2digits(ptr) ((ptr)[0] * 10 + (ptr)[1] - '0' * 11)
+
 static VALUE
 utc_offset_arg(VALUE arg)
 {
@@ -2207,18 +2263,19 @@ utc_offset_arg(VALUE arg)
             goto invalid_utc_offset;
         }
         if (sec) {
-            if (!ISDIGIT(sec[0]) || !ISDIGIT(sec[1])) goto invalid_utc_offset;
-            n += (sec[0] * 10 + sec[1] - '0' * 11);
+            if (!have_2digits(sec)) goto invalid_utc_offset;
+            if (sec[0] > '5') goto invalid_utc_offset;
+            n += num_from_2digits(sec);
             ASSUME(min);
         }
         if (min) {
-            if (!ISDIGIT(min[0]) || !ISDIGIT(min[1])) goto invalid_utc_offset;
+            if (!have_2digits(min)) goto invalid_utc_offset;
             if (min[0] > '5') goto invalid_utc_offset;
-            n += (min[0] * 10 + min[1] - '0' * 11) * 60;
+            n += num_from_2digits(min) * 60;
         }
         if (s[0] != '+' && s[0] != '-') goto invalid_utc_offset;
-        if (!ISDIGIT(s[1]) || !ISDIGIT(s[2])) goto invalid_utc_offset;
-        n += (s[1] * 10 + s[2] - '0' * 11) * 3600;
+        if (!have_2digits(s+1)) goto invalid_utc_offset;
+        n += num_from_2digits(s+1) * 3600;
         if (s[0] == '-') {
             if (n == 0) return UTC_ZONE;
             n = -n;
@@ -2252,7 +2309,7 @@ extract_time(VALUE time)
     const ID id_to_i = idTo_i;
 
 #define EXTRACT_TIME() do { \
-        t = v2w(rb_Integer(AREF(to_i))); \
+        t = NUM2WV(AREF(to_i)); \
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
@@ -2295,7 +2352,7 @@ extract_vtm(VALUE time, VALUE orig_time, struct time_object *orig_tobj, VALUE su
         vtm->sec = obj2subsecx(AREF(sec), &subsecx); \
         vtm->isdst = RTEST(AREF(isdst));             \
         vtm->utc_offset = Qnil; \
-        t = v2w(rb_Integer(AREF(to_i))); \
+        t = NUM2WV(AREF(to_i)); \
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
@@ -2528,8 +2585,7 @@ static int
 two_digits(const char *ptr, const char *end, const char **endp, const char *name)
 {
     ssize_t len = end - ptr;
-    if (len < 2 || (!ISDIGIT(ptr[0]) || !ISDIGIT(ptr[1])) ||
-        ((len > 2) && ISDIGIT(ptr[2]))) {
+    if (len < 2 || !have_2digits(ptr) || ((len > 2) && ISDIGIT(ptr[2]))) {
         VALUE mesg = rb_sprintf("two digits %s is expected", name);
         if (ptr[-1] == '-' || ptr[-1] == ':') {
             rb_str_catf(mesg, " after '%c'", ptr[-1]);
@@ -2538,7 +2594,7 @@ two_digits(const char *ptr, const char *end, const char **endp, const char *name
         rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));
     }
     *endp = ptr + 2;
-    return (ptr[0] - '0') * 10 + (ptr[1] - '0');
+    return num_from_2digits(ptr);
 }
 
 static VALUE
@@ -2647,11 +2703,11 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, V
     }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
-        if (ndigits < TIME_SCALE_NUMDIGITS) {
+        if (ndigits < (size_t)TIME_SCALE_NUMDIGITS) {
             VALUE mul = rb_int_positive_pow(10, TIME_SCALE_NUMDIGITS - ndigits);
             subsec = rb_int_mul(subsec, mul);
         }
-        else if (ndigits > TIME_SCALE_NUMDIGITS) {
+        else if (ndigits > (size_t)TIME_SCALE_NUMDIGITS) {
             VALUE num = rb_int_positive_pow(10, ndigits - TIME_SCALE_NUMDIGITS);
             subsec = rb_rational_new(subsec, num);
         }
@@ -3959,9 +4015,17 @@ time_eql(VALUE time1, VALUE time2)
  *    now = Time.now
  *    # => 2022-08-18 10:24:13.5398485 -0500
  *    now.utc? # => false
+ *    now.getutc.utc? # => true
  *    utc = Time.utc(2000, 1, 1, 20, 15, 1)
  *    # => 2000-01-01 20:15:01 UTC
  *    utc.utc? # => true
+ *
+ *  Note that only +Time+ objects created with these methods
+ *  considered in UTC:
+ *
+ *  * Time.utc
+ *  * Time#utc
+ *  * Time#getutc
  *
  *  Related: Time.utc.
  */
@@ -5215,6 +5279,27 @@ time_strftime(VALUE time, VALUE format)
     }
 }
 
+/*
+ *  call-seq:
+ *    xmlschema(fraction_digits=0) -> string
+ *
+ *  Returns a string which represents the time as a dateTime defined by XML
+ *  Schema:
+ *
+ *    CCYY-MM-DDThh:mm:ssTZD
+ *    CCYY-MM-DDThh:mm:ss.sssTZD
+ *
+ *  where TZD is Z or [+-]hh:mm.
+ *
+ *  If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
+ *
+ *  +fraction_digits+ specifies a number of digits to use for fractional
+ *  seconds.  Its default value is 0.
+ *
+ *      t = Time.now
+ *      t.xmlschema  # => "2011-10-05T22:26:12-04:00"
+ */
+
 static VALUE
 time_xmlschema(int argc, VALUE *argv, VALUE time)
 {
@@ -5674,7 +5759,6 @@ time_load(VALUE klass, VALUE str)
 
 /*
  * call-seq:
- *
  *   Time::tm.from_time(t) -> tm
  *
  * Creates new Time::tm object from a Time object.
@@ -5705,7 +5789,6 @@ tm_from_time(VALUE klass, VALUE time)
 
 /*
  * call-seq:
- *
  *   Time::tm.new(year, month=nil, day=nil, hour=nil, min=nil, sec=nil, zone=nil) -> tm
  *
  * Creates new Time::tm object.
@@ -5729,7 +5812,6 @@ tm_initialize(int argc, VALUE *argv, VALUE time)
 }
 
 /* call-seq:
- *
  *   tm.to_time -> time
  *
  * Returns a new Time object.
@@ -5838,6 +5920,10 @@ rb_time_zone_abbreviation(VALUE zone, VALUE time)
 void
 Init_Time(void)
 {
+#ifdef _WIN32
+    ruby_reset_timezone(getenv("TZ"));
+#endif
+
     id_submicro = rb_intern_const("submicro");
     id_nano_num = rb_intern_const("nano_num");
     id_nano_den = rb_intern_const("nano_den");

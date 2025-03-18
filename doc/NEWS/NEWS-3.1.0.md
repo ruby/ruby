@@ -552,7 +552,7 @@ Example: `title = json[:article][:title]`
 
 If `json` is nil, it shows:
 
-```
+```console
 $ ruby test.rb
 test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
 
@@ -562,7 +562,7 @@ title = json[:article][:title]
 
 If `json[:article]` returns nil, it shows:
 
-```
+```console
 $ ruby test.rb
 test.rb:2:in `<main>': undefined method `[]' for nil:NilClass (NoMethodError)
 

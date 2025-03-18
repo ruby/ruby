@@ -70,17 +70,17 @@ module Bundler::URI
 
     # raise InvalidURIError
     def check_userinfo(user)
-      raise Bundler::URI::InvalidURIError, "can not set userinfo for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set userinfo for file Bundler::URI"
     end
 
     # raise InvalidURIError
     def check_user(user)
-      raise Bundler::URI::InvalidURIError, "can not set user for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set user for file Bundler::URI"
     end
 
     # raise InvalidURIError
     def check_password(user)
-      raise Bundler::URI::InvalidURIError, "can not set password for file Bundler::URI"
+      raise Bundler::URI::InvalidURIError, "cannot set password for file Bundler::URI"
     end
 
     # do nothing

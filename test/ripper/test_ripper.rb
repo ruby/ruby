@@ -148,6 +148,25 @@ end
     assert_nothing_raised { Ripper.lex src }
   end
 
+  def test_assignable_in_regexp
+    assert_separately(%w(-rripper), "", "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_nil(Ripper.parse('/(?<_1>)/ =~ s'))
+    end;
+  end
+
+  def test_invalid_multibyte_character_in_regexp
+    lex = Ripper::Lexer.new(%q[/#{"\xcd"}/]).scan.map(&:to_a)
+    assert_equal([[1, 0], :on_regexp_beg, "/", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 1], :on_embexpr_beg, "\#{", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 3], :on_tstring_beg, "\"", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 4], :on_tstring_content, "\\xcd", state(:EXPR_BEG)], lex.shift)
+    assert_equal([[1, 8], :on_tstring_end, "\"", state(:EXPR_END)], lex.shift)
+    assert_equal([[1, 9], :on_embexpr_end, "}", state(:EXPR_END)], lex.shift)
+    assert_equal([[1, 10], :on_regexp_end, "/", state(:EXPR_BEG)], lex.shift)
+    assert_empty(lex)
+  end
+
   def test_no_memory_leak
     assert_no_memory_leak(%w(-rripper), "", "#{<<~'end;'}", rss: true)
       2_000_000.times do
@@ -168,6 +187,13 @@ end
         Ripper.parse("-> {")
       end
     end;
+
+    # [Bug #21004]
+    assert_no_memory_leak(%w(-rripper), "", <<~RUBY, rss: true)
+      1_000_000.times do
+        Ripper.parse("-> do it end")
+      end
+    RUBY
   end
 
   def test_sexp_no_memory_leak
@@ -195,4 +221,7 @@ end
     end
   end
 
+  def state(name)
+    Ripper::Lexer::State.new(Ripper.const_get(name))
+  end
 end if ripper_test

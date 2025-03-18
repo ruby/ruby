@@ -10,7 +10,7 @@
 # variety in class and module configurations, including hierarchy,
 # containment, inclusion, singletons and toplevel.
 #
-# Constants are numbered for for uniqueness. The CS_ prefix is uniformly used
+# Constants are numbered for uniqueness. The CS_ prefix is uniformly used
 # and is to minimize clashes with other toplevel constants (see e.g. ModuleA
 # which is included in Object). Constant values are symbols. A numbered suffix
 # is used to distinguish constants with the same name defined in different

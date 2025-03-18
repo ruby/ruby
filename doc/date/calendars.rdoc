@@ -18,7 +18,7 @@ The reasons for the difference are religious/political histories.
 - On October 15, 1582, several countries changed
   from the Julian calendar to the Gregorian calendar;
   these included Italy, Poland, Portugal, and Spain.
-  Other contries in the Western world retained the Julian calendar.
+  Other countries in the Western world retained the Julian calendar.
 - On September 14, 1752, most of the British empire
   changed from the Julian calendar to the Gregorian calendar.
 
@@ -31,7 +31,7 @@ See also {a concrete example here}[rdoc-ref:DateTime@When+should+you+use+DateTim
 === Argument +start+
 
 Certain methods in class \Date handle differences in the
-{Julian and Gregorian calendars}[rdoc-ref:calendars.rdoc@Julian+and+Gregorian+Calendars]
+{Julian and Gregorian calendars}[rdoc-ref:date/calendars.rdoc@Julian+and+Gregorian+Calendars]
 by accepting an optional argument +start+, whose value may be:
 
 - Date::ITALY (the default): the created date is Julian

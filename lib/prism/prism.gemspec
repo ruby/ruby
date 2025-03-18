@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "1.0.0"
+  spec.version = "1.4.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -35,6 +35,7 @@ Gem::Specification.new do |spec|
     "docs/parser_translation.md",
     "docs/parsing_rules.md",
     "docs/releasing.md",
+    "docs/relocation.md",
     "docs/ripper_translation.md",
     "docs/ruby_api.md",
     "docs/ruby_parser_translation.md",
@@ -85,14 +86,19 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/errors.rb",
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/pattern.rb",
+    "lib/prism/polyfill/append_as_bytes.rb",
     "lib/prism/polyfill/byteindex.rb",
     "lib/prism/polyfill/unpack1.rb",
     "lib/prism/reflection.rb",
+    "lib/prism/relocation.rb",
     "lib/prism/serialize.rb",
+    "lib/prism/string_query.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
     "lib/prism/translation/parser33.rb",
     "lib/prism/translation/parser34.rb",
+    "lib/prism/translation/parser35.rb",
+    "lib/prism/translation/parser/builder.rb",
     "lib/prism/translation/parser/compiler.rb",
     "lib/prism/translation/parser/lexer.rb",
     "lib/prism/translation/ripper.rb",
@@ -109,9 +115,11 @@ Gem::Specification.new do |spec|
     "rbi/prism/node.rbi",
     "rbi/prism/parse_result.rbi",
     "rbi/prism/reflection.rbi",
+    "rbi/prism/string_query.rbi",
     "rbi/prism/translation/parser.rbi",
     "rbi/prism/translation/parser33.rbi",
     "rbi/prism/translation/parser34.rbi",
+    "rbi/prism/translation/parser35.rbi",
     "rbi/prism/translation/ripper.rbi",
     "rbi/prism/visitor.rbi",
     "sig/prism.rbs",
@@ -128,7 +136,9 @@ Gem::Specification.new do |spec|
     "sig/prism/parse_result.rbs",
     "sig/prism/pattern.rbs",
     "sig/prism/reflection.rbs",
+    "sig/prism/relocation.rbs",
     "sig/prism/serialize.rbs",
+    "sig/prism/string_query.rbs",
     "sig/prism/visitor.rbs",
     "src/diagnostic.c",
     "src/encoding.c",

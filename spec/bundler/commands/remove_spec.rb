@@ -729,4 +729,23 @@ RSpec.describe "bundle remove" do
       end
     end
   end
+
+  context "when gem definition has parentheses" do
+    it "removes the gem" do
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem("myrack")
+        gem("myrack", ">= 0")
+        gem("myrack", require: false)
+      G
+
+      bundle "remove myrack"
+
+      expect(out).to include("myrack was removed.")
+      expect(gemfile).to eq <<~G
+        source "https://gem.repo1"
+      G
+    end
+  end
 end

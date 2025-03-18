@@ -5,6 +5,8 @@ static VALUE
 econv_append(VALUE self, VALUE src, VALUE dst)
 {
     rb_econv_t *ec = DATA_PTR(self);
+    StringValue(src);
+    StringValue(dst);
     return rb_econv_str_append(ec, src, dst, 0);
 }
 

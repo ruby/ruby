@@ -169,6 +169,10 @@ class TestEtc < Test::Unit::TestCase
     assert_operator(1, :<=, n)
   end
 
+  def test_sysconfdir
+    assert_operator(File, :absolute_path?, Etc.sysconfdir)
+  end if File.method_defined?(:absolute_path?)
+
   def test_ractor
     return unless Etc.passwd # => skip test if no platform support
     Etc.endpwent

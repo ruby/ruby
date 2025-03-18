@@ -113,7 +113,7 @@ module Spec
     # that requires regenerating tmp/.
 
     def test_env_version
-      1
+      2
     end
 
     def scope
@@ -141,6 +141,10 @@ module Spec
       else
         default_bundle_path("cache/bundler", *path)
       end
+    end
+
+    def compact_index_cache_path
+      home(".bundle/cache/compact_index")
     end
 
     def bundled_app(*path)
@@ -278,6 +282,19 @@ module Spec
 
     def rake_path
       Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
+    end
+
+    def sinatra_dependency_paths
+      deps = %w[
+        mustermann
+        rack
+        tilt
+        sinatra
+        ruby2_keywords
+        base64
+        logger
+      ]
+      Dir[base_system_gem_path.join("gems/{#{deps.join(",")}}-*/lib")].map(&:to_s)
     end
 
     private

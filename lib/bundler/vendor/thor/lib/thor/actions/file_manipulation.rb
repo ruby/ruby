@@ -10,7 +10,6 @@ class Bundler::Thor
     # destination<String>:: the relative path to the destination root.
     # config<Hash>:: give :verbose => false to not log the status, and
     #                :mode => :preserve, to preserve the file mode from the source.
-
     #
     # ==== Examples
     #
@@ -275,9 +274,8 @@ class Bundler::Thor
       end
     end
 
-    # Uncomment all lines matching a given regex.  It will leave the space
-    # which existed before the comment hash in tact but will remove any spacing
-    # between the comment hash and the beginning of the line.
+    # Uncomment all lines matching a given regex. Preserves indentation before
+    # the comment hash and removes the hash and any immediate following space.
     #
     # ==== Parameters
     # path<String>:: path of the file to be changed
@@ -291,7 +289,7 @@ class Bundler::Thor
     def uncomment_lines(path, flag, *args)
       flag = flag.respond_to?(:source) ? flag.source : flag
 
-      gsub_file(path, /^(\s*)#[[:blank:]]*(.*#{flag})/, '\1\2', *args)
+      gsub_file(path, /^(\s*)#[[:blank:]]?(.*#{flag})/, '\1\2', *args)
     end
 
     # Comment all lines matching a given regex.  It will leave the space

@@ -10,10 +10,6 @@
 /* modified by Michal Rokos <m.rokos@sh.cvut.cz> */
 #include "ossl.h"
 
-#ifdef HAVE_RB_EXT_RACTOR_SAFE
-#include <ruby/ractor.h>
-#endif
-
 #define NewBN(klass) \
   TypedData_Wrap_Struct((klass), &ossl_bn_type, 0)
 #define SetBN(obj, bn) do { \
@@ -41,7 +37,7 @@ static const rb_data_type_t ossl_bn_type = {
     {
 	0, ossl_bn_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 /*
@@ -53,7 +49,7 @@ VALUE cBN;
  *
  * Generic Error for all of OpenSSL::BN (big num)
  */
-VALUE eBNError;
+static VALUE eBNError;
 
 /*
  * Public
@@ -156,19 +152,19 @@ ossl_bn_value_ptr(volatile VALUE *ptr)
  */
 
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
-void
+static void
 ossl_bn_ctx_free(void *ptr)
 {
     BN_CTX *ctx = (BN_CTX *)ptr;
     BN_CTX_free(ctx);
 }
 
-struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
+static struct rb_ractor_local_storage_type ossl_bn_ctx_key_type = {
     NULL, // mark
     ossl_bn_ctx_free,
 };
 
-rb_ractor_local_key_t ossl_bn_ctx_key;
+static rb_ractor_local_key_t ossl_bn_ctx_key;
 
 BN_CTX *
 ossl_bn_ctx_get(void)
@@ -244,7 +240,7 @@ ossl_bn_alloc(VALUE klass)
  *     number.
  *   - +10+ - Decimal number representation, with a leading '-' for a negative
  *     number.
- *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *   - +16+ - Hexadecimal number representation, with a leading '-' for a
  *     negative number.
  */
 static VALUE
@@ -263,6 +259,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(rb_eArgError, "invalid argument");
     }
 
+    rb_check_frozen(self);
     if (RB_INTEGER_TYPE_P(str)) {
 	GetBN(self, bn);
 	integer_to_bnptr(str, bn);
@@ -326,7 +323,7 @@ ossl_bn_initialize(int argc, VALUE *argv, VALUE self)
  *     the bignum is ignored.
  *   - +10+ - Decimal number representation, with a leading '-' for a negative
  *     bignum.
- *   - +16+ - Hexadeciaml number representation, with a leading '-' for a
+ *   - +16+ - Hexadecimal number representation, with a leading '-' for a
  *     negative bignum.
  */
 static VALUE
@@ -693,6 +690,7 @@ BIGNUM_3c(mod_exp)
     ossl_bn_##func(VALUE self, VALUE bit)		\
     {							\
 	BIGNUM *bn;					\
+	rb_check_frozen(self);				\
 	GetBN(self, bn);				\
 	if (BN_##func(bn, NUM2INT(bit)) <= 0) {		\
 	    ossl_raise(eBNError, NULL);			\
@@ -782,6 +780,7 @@ BIGNUM_SHIFT(rshift)
     {							\
 	BIGNUM *bn;					\
 	int b;						\
+	rb_check_frozen(self);				\
 	b = NUM2INT(bits);				\
 	GetBN(self, bn);				\
 	if (BN_##func(bn, bn, b) <= 0)			\
@@ -930,6 +929,7 @@ BIGNUM_NUM(num_bytes)
  */
 BIGNUM_NUM(num_bits)
 
+/* :nodoc: */
 static VALUE
 ossl_bn_copy(VALUE self, VALUE other)
 {
@@ -1191,6 +1191,7 @@ ossl_bn_set_flags(VALUE self, VALUE arg)
     BIGNUM *bn;
     GetBN(self, bn);
 
+    rb_check_frozen(self);
     BN_set_flags(bn, NUM2INT(arg));
     return Qnil;
 }

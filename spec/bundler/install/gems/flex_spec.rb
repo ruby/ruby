@@ -295,6 +295,30 @@ RSpec.describe "bundle flex_install" do
 
     it "should work when you update" do
       bundle "update myrack"
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo1, "myrack", "0.9.1"
+        c.checksum gem_repo1, "myrack-obama", "1.0"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (0.9.1)
+            myrack-obama (1.0)
+              myrack
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack (= 0.9.1)
+          myrack-obama
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
     end
   end
 

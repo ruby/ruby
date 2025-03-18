@@ -53,6 +53,14 @@ make_unique_str(st_table *tbl, const char *str, long len)
     }
 }
 
+static int
+delete_unique_str_dec(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    assert(existing);
+    *value = arg;
+    return ST_CONTINUE;
+}
+
 static void
 delete_unique_str(st_table *tbl, const char *str)
 {
@@ -66,7 +74,7 @@ delete_unique_str(st_table *tbl, const char *str)
             ruby_xfree((char *)n);
         }
         else {
-            st_insert(tbl, (st_data_t)str, n-1);
+            st_update(tbl, (st_data_t)str, delete_unique_str_dec, (st_data_t)(n-1));
         }
     }
 }
@@ -190,22 +198,23 @@ allocation_info_tracer_memsize(const void *ptr)
 }
 
 static int
-hash_foreach_should_replace_key(st_data_t key, st_data_t value, st_data_t argp, int error)
+allocation_info_tracer_compact_update_object_table_i(st_data_t key, st_data_t value, st_data_t data)
 {
-    VALUE allocated_object;
+    st_table *table = (st_table *)data;
 
-    allocated_object = (VALUE)value;
-    if (allocated_object != rb_gc_location(allocated_object)) {
-        return ST_REPLACE;
+    if (!rb_gc_pointer_to_heap_p(key)) {
+        return ST_DELETE;
     }
 
-    return ST_CONTINUE;
-}
+    if (key != rb_gc_location(key)) {
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            st_insert(table, rb_gc_location(key), value);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
 
-static int
-hash_replace_key(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    *key = rb_gc_location((VALUE)*key);
+        return ST_DELETE;
+    }
 
     return ST_CONTINUE;
 }
@@ -216,7 +225,10 @@ allocation_info_tracer_compact(void *ptr)
     struct traceobj_arg *trace_arg = (struct traceobj_arg *)ptr;
 
     if (trace_arg->object_table &&
-            st_foreach_with_replace(trace_arg->object_table, hash_foreach_should_replace_key, hash_replace_key, 0)) {
+            st_foreach(
+                trace_arg->object_table,
+                allocation_info_tracer_compact_update_object_table_i,
+                (st_data_t)trace_arg->object_table)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }

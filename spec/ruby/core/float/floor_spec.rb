@@ -1,6 +1,11 @@
 require_relative '../../spec_helper'
+require_relative '../integer/shared/integer_floor_precision'
 
 describe "Float#floor" do
+  context "with precision" do
+    it_behaves_like :integer_floor_precision, :Float
+  end
+
   it "returns the largest Integer less than or equal to self" do
     -1.2.floor.should eql( -2)
     -1.0.floor.should eql( -1)

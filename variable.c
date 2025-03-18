@@ -97,6 +97,8 @@ rb_namespace_p(VALUE obj)
  * to not be anonymous. <code>*permanent</code> is set to 1
  * if +classpath+ has no anonymous components. There is no builtin
  * Ruby level APIs that can change a permanent +classpath+.
+ *
+ * YJIT needs this function to not allocate.
  */
 static VALUE
 classname(VALUE klass, bool *permanent)
@@ -127,6 +129,7 @@ rb_mod_name0(VALUE klass, bool *permanent)
 VALUE
 rb_mod_name(VALUE mod)
 {
+    // YJIT needs this function to not allocate.
     bool permanent;
     return classname(mod, &permanent);
 }
@@ -161,6 +164,80 @@ is_constant_path(VALUE name)
     }
 
     return true;
+}
+
+struct sub_temporary_name_args {
+    VALUE names;
+    ID last;
+};
+
+static VALUE build_const_path(VALUE head, ID tail);
+static void set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, VALUE name);
+
+static VALUE
+set_sub_temporary_name_recursive(VALUE mod, VALUE data, int recursive)
+{
+    if (recursive) return Qfalse;
+
+    struct sub_temporary_name_args *args = (void *)data;
+    VALUE name = 0;
+    if (args->names) {
+        name = build_const_path(rb_ary_last(0, 0, args->names), args->last);
+    }
+    set_sub_temporary_name_foreach(mod, args, name);
+    return Qtrue;
+}
+
+static VALUE
+set_sub_temporary_name_topmost(VALUE mod, VALUE data, int recursive)
+{
+    if (recursive) return Qfalse;
+
+    struct sub_temporary_name_args *args = (void *)data;
+    VALUE name = args->names;
+    if (name) {
+        args->names = rb_ary_hidden_new(0);
+    }
+    set_sub_temporary_name_foreach(mod, args, name);
+    return Qtrue;
+}
+
+static enum rb_id_table_iterator_result
+set_sub_temporary_name_i(ID id, VALUE val, void *data)
+{
+    val = ((rb_const_entry_t *)val)->value;
+    if (rb_namespace_p(val) && !RCLASS_EXT(val)->permanent_classpath) {
+        VALUE arg = (VALUE)data;
+        struct sub_temporary_name_args *args = data;
+        args->last = id;
+        rb_exec_recursive_paired(set_sub_temporary_name_recursive, val, arg, arg);
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, VALUE name)
+{
+    RCLASS_SET_CLASSPATH(mod, name, FALSE);
+    struct rb_id_table *tbl = RCLASS_CONST_TBL(mod);
+    if (!tbl) return;
+    if (!name) {
+        rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
+    }
+    else {
+        long names_len = RARRAY_LEN(args->names); // paranoiac check?
+        rb_ary_push(args->names, name);
+        rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
+        rb_ary_set_len(args->names, names_len);
+    }
+}
+
+static void
+set_sub_temporary_name(VALUE mod, VALUE name)
+{
+    struct sub_temporary_name_args args = {name};
+    VALUE arg = (VALUE)&args;
+    rb_exec_recursive_paired(set_sub_temporary_name_topmost, mod, arg, arg);
 }
 
 /*
@@ -221,7 +298,9 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
 
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
-        RCLASS_SET_CLASSPATH(mod, 0, FALSE);
+        RB_VM_LOCK_ENTER();
+        set_sub_temporary_name(mod, 0);
+        RB_VM_LOCK_LEAVE();
     }
     else {
         // Ensure the name is a string:
@@ -235,8 +314,12 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
             rb_raise(rb_eArgError, "the temporary name must not be a constant path to avoid confusion");
         }
 
+        name = rb_str_new_frozen(name);
+
         // Set the temporary classpath to the given name:
-        RCLASS_SET_CLASSPATH(mod, name, FALSE);
+        RB_VM_LOCK_ENTER();
+        set_sub_temporary_name(mod, name);
+        RB_VM_LOCK_LEAVE();
     }
 
     return mod;
@@ -450,15 +533,27 @@ struct rb_global_entry {
     bool ractor_local;
 };
 
+static void
+free_global_variable(struct rb_global_variable *var)
+{
+    RUBY_ASSERT(var->counter == 0);
+
+    struct trace_var *trace = var->trace;
+    while (trace) {
+        struct trace_var *next = trace->next;
+        xfree(trace);
+        trace = next;
+    }
+    xfree(var);
+}
+
 static enum rb_id_table_iterator_result
 free_global_entry_i(VALUE val, void *arg)
 {
     struct rb_global_entry *entry = (struct rb_global_entry *)val;
-    if (entry->var->counter == 1) {
-        ruby_xfree(entry->var);
-    }
-    else {
-        entry->var->counter--;
+    entry->var->counter--;
+    if (entry->var->counter == 0) {
+        free_global_variable(entry->var);
     }
     ruby_xfree(entry);
     return ID_TABLE_DELETE;
@@ -1004,13 +1099,7 @@ rb_alias_variable(ID name1, ID name2)
         }
         var->counter--;
         if (var->counter == 0) {
-            struct trace_var *trace = var->trace;
-            while (trace) {
-                struct trace_var *next = trace->next;
-                xfree(trace);
-                trace = next;
-            }
-            xfree(var);
+            free_global_variable(var);
         }
     }
     else {
@@ -1054,6 +1143,12 @@ static inline struct st_table *
 generic_ivtbl_no_ractor_check(VALUE obj)
 {
     return generic_ivtbl(obj, 0, false);
+}
+
+struct st_table *
+rb_generic_ivtbl_get(void)
+{
+    return generic_iv_tbl_;
 }
 
 int
@@ -1107,9 +1202,9 @@ gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
 void
 rb_mark_generic_ivar(VALUE obj)
 {
-    struct gen_ivtbl *ivtbl;
-
-    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+    st_data_t data;
+    if (st_lookup(generic_ivtbl_no_ractor_check(obj), (st_data_t)obj, &data)) {
+        struct gen_ivtbl *ivtbl = (struct gen_ivtbl *)data;
         if (rb_shape_obj_too_complex(obj)) {
             rb_mark_tbl_no_pin(ivtbl->as.complex.table);
         }
@@ -1119,33 +1214,6 @@ rb_mark_generic_ivar(VALUE obj)
             }
         }
     }
-}
-
-void
-rb_ref_update_generic_ivar(VALUE obj)
-{
-    struct gen_ivtbl *ivtbl;
-
-    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-        if (rb_shape_obj_too_complex(obj)) {
-            rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
-        }
-        else {
-            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                ivtbl->as.shape.ivptr[i] = rb_gc_location(ivtbl->as.shape.ivptr[i]);
-            }
-        }
-    }
-}
-
-void
-rb_mv_generic_ivar(VALUE rsrc, VALUE dst)
-{
-    st_data_t key = (st_data_t)rsrc;
-    st_data_t ivtbl;
-
-    if (st_delete(generic_ivtbl_no_ractor_check(rsrc), &key, &ivtbl))
-        st_insert(generic_ivtbl_no_ractor_check(dst), (st_data_t)dst, ivtbl);
 }
 
 void
@@ -1811,7 +1879,7 @@ void rb_obj_freeze_inline(VALUE x)
     if (RB_FL_ABLE(x)) {
         RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
         if (TYPE(x) == T_STRING) {
-            RB_FL_UNSET_RAW(x, FL_USER3); // STR_CHILLED
+            RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
         }
 
         rb_shape_t * next_shape = rb_shape_transition_shape_frozen(x);
@@ -1909,7 +1977,6 @@ rb_ivar_defined(VALUE obj, ID id)
 }
 
 typedef int rb_ivar_foreach_callback_func(ID key, VALUE val, st_data_t arg);
-st_data_t rb_st_nth_key(st_table *tab, st_index_t index);
 
 struct iv_itr_data {
     VALUE obj;
@@ -2360,7 +2427,7 @@ autoload_table_memsize(const void *ptr)
 static void
 autoload_table_compact(void *ptr)
 {
-    rb_gc_update_tbl_refs((st_table *)ptr);
+    rb_gc_ref_update_table_values_only((st_table *)ptr);
 }
 
 static const rb_data_type_t autoload_table_type = {
@@ -2991,7 +3058,7 @@ rb_autoload_load(VALUE module, ID name)
 
     // At this point, we assume there might be autoloading, so fail if it's ractor:
     if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorUnsafeError, "require by autoload on non-main Ractor is not supported (%s)", rb_id2name(name));
+        return rb_ractor_autoload_load(module, name);
     }
 
     // This state is stored on the stack and is used during the autoload process.
@@ -3277,6 +3344,7 @@ rb_const_remove(VALUE mod, ID id)
         undefined_constant(mod, ID2SYM(id));
     }
 
+    rb_const_warn_if_deprecated(ce, mod, id);
     rb_clear_constant_cache_for_id(id);
 
     val = ce->value;

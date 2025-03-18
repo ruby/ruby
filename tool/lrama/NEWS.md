@@ -1,12 +1,107 @@
 # NEWS for Lrama
 
+## Lrama 0.7.0 (2025-01-21)
+
+## [EXPERIMENTAL] Support the generation of the IELR(1) parser described in this paper
+
+Support the generation of the IELR(1) parser described in this paper.
+https://www.sciencedirect.com/science/article/pii/S0167642309001191
+
+If you use IELR(1) parser, you can write the following directive in your grammar file.
+
+```yacc
+%define lr.type ielr
+```
+
+But, currently IELR(1) parser is experimental feature. If you find any bugs, please report it to us. Thank you.
+
+## Support `-t` option as same as `--debug` option
+
+Support to `-t` option as same as `--debug` option.
+These options align with Bison behavior. So same as `--debug` option.
+
+## Trace only explicit rules
+
+Support to trace only explicit rules.
+If you use `--trace=rules` option, it shows include mid-rule actions. If you want to show only explicit rules, you can use `--trace=only-explicit-rules` option.
+
+Example:
+
+```yacc
+%{
+%}
+%union {
+    int i;
+}
+%token <i> number
+%type <i> program
+%%
+program         : number { printf("%d", $1); } number { $$ = $1 + $3; }
+                ;
+%%
+```
+
+Result of `--trace=rules`:
+
+```console
+$ exe/lrama --trace=rules sample.y
+Grammar rules:
+$accept -> program YYEOF
+$@1 -> ε
+program -> number $@1 number
+```
+
+Result of `--trace=only-explicit-rules`:
+
+```console
+$ exe/lrama --trace=explicit-rules sample.y
+Grammar rules:
+$accept -> program YYEOF
+program -> number number
+```
+
+## Lrama 0.6.11 (2024-12-23)
+
+### Add support for %type declarations using %nterm in Nonterminal Symbols
+
+Allow to use `%nterm` in Nonterminal Symbols for `%type` declarations.
+
+```yacc
+%nterm <type> nonterminal…
+```
+
+This directive is also supported for compatibility with Bison, and only non-terminal symbols are allowed. In other words, definitions like the following will result in an error:
+
+```yacc
+%{
+// Prologue
+%}
+
+%token EOI 0 "EOI"
+%nterm EOI
+
+%%
+
+program: /* empty */
+        ;
+```
+
+It show an error message like the following:
+
+```command
+❯ exe/lrama nterm.y
+nterm.y:6:7: symbol EOI redeclared as a nonterminal
+%nterm EOI
+       ^^^
+```
+
 ## Lrama 0.6.10 (2024-09-11)
 
 ### Aliased Named References for actions of RHS in parameterizing rules
 
 Allow to use aliased named references for actions of RHS in parameterizing rules.
 
-```
+```yacc
 %rule sum(X, Y): X[summand] '+' Y[addend] { $$ = $summand + $addend }
                ;
 ```
@@ -18,7 +113,7 @@ https://github.com/ruby/lrama/pull/410
 
 Allow to use named references for actions of RHS in parameterizing rules caller side.
 
-```
+```yacc
 opt_nl: '\n'?[nl] <str> { $$ = $nl; }
       ;
 ```
@@ -29,7 +124,7 @@ https://github.com/ruby/lrama/pull/414
 
 Allow to define parameterizing rules in the middle of the grammar.
 
-```
+```yacc
 %rule defined_option(X): /* empty */
                        | X
                        ;
@@ -52,8 +147,8 @@ https://github.com/ruby/lrama/pull/420
 Support to report unused terminal symbols.
 Run `exe/lrama --report=terms` to show unused terminal symbols.
 
-```
-❯ exe/lrama --report=terms sample/calc.y
+```console
+$ exe/lrama --report=terms sample/calc.y
  11 Unused Terms
      0 YYerror
      1 YYUNDEF
@@ -74,8 +169,8 @@ https://github.com/ruby/lrama/pull/439
 Support to report unused rules.
 Run `exe/lrama --report=rules` to show unused rules.
 
-```
-❯ exe/lrama --report=rules sample/calc.y
+```console
+$ exe/lrama --report=rules sample/calc.y
   3 Unused Rules
      0 unused_option
      1 unused_list
@@ -96,8 +191,8 @@ https://github.com/ruby/lrama/pull/446
 Support to warning redefined parameterizing rules.
 Run `exe/lrama -W` or  `exe/lrama --warnings` to show redefined parameterizing rules.
 
-```
-❯ exe/lrama -W sample/calc.y
+```console
+$ exe/lrama -W sample/calc.y
 parameterizing rule redefined: redefined_method(X)
 parameterizing rule redefined: redefined_method(X)
 ```
@@ -117,7 +212,7 @@ https://github.com/ruby/lrama/pull/457
 
 Allow to specify tag on callee side of parameterizing rules.
 
-```
+```yacc
 %union {
     int i;
 }
@@ -130,7 +225,7 @@ Allow to specify tag on callee side of parameterizing rules.
 
 Allow to use named references for actions of RHS in parameterizing rules.
 
-```
+```yacc
 %rule option(number): /* empty */
                     | number { $$ = $number; }
                     ;
@@ -142,7 +237,7 @@ Allow to use named references for actions of RHS in parameterizing rules.
 
 Allow to nested parameterizing rules with tag.
 
-```
+```yacc
 %union {
     int i;
 }
@@ -179,8 +274,8 @@ User can use `'symbol'?`, `'symbol'+` and `'symbol'*` in RHS of user defined par
 Support trace actions for debugging.
 Run `exe/lrama --trace=actions` to show grammar rules with actions.
 
-```
-❯ exe/lrama --trace=actions sample/calc.y
+```console
+$ exe/lrama --trace=actions sample/calc.y
 Grammar rules with actions:
 $accept -> list, YYEOF {}
 list -> ε {}
@@ -199,7 +294,7 @@ expr -> '(', expr, ')' { $$ = $2; }
 Support inlining for rules.
 The `%inline` directive causes all references to symbols to be replaced with its definition.
 
-```
+```yacc
 %rule %inline op: PLUS { + }
                 | TIMES { * }
                 ;
@@ -213,7 +308,7 @@ expr : number { $$ = $1; }
 
 as same as
 
-```
+```yacc
 expr : number { $$ = $1; }
      | expr '+' expr { $$ = $1 + $3; }
      | expr '*' expr { $$ = $1 * $3; }
@@ -226,7 +321,7 @@ expr : number { $$ = $1; }
 
 User can specify the type of mid rule action by tag (`<bar>`) instead of specifying it with in an action.
 
-```
+```yacc
 primary: k_case expr_value terms?
            {
                $<val>$ = p->case_labels;
@@ -241,7 +336,7 @@ primary: k_case expr_value terms?
 
 can be written as
 
-```
+```yacc
 primary: k_case expr_value terms?
            {
                $$ = p->case_labels;
@@ -266,7 +361,7 @@ Bison supports this feature from 3.1.
 
 Support `preceded`, `terminated` and `delimited` rules.
 
-```
+```text
 program: preceded(opening, X)
 
 // Expanded to
@@ -302,7 +397,7 @@ In general, these resources are freed by actions or after parsing.
 However if syntax error happens in parsing, these codes may not be executed.
 Codes associated to `%destructor` are executed when semantic value is popped from the stack by an error.
 
-```
+```yacc
 %token <val1> NUM
 %type <val2> expr2
 %type <val3> expr
@@ -350,7 +445,7 @@ Lrama provides these five callbacks. Registered functions are called when each e
 User also needs to access semantic value of their stack in grammar action. `$:n` provides the way to access to it. `$:n` is translated to the minus index from the top of the stack.
 For example
 
-```
+```yacc
 primary: k_if expr_value then compstmt if_tail k_end
           {
           /*% ripper: if!($:2, $:4, $:5) %*/
@@ -375,7 +470,7 @@ https://github.com/ruby/lrama/pull/344
 
 Allow to pass an instantiated rule to other parameterizing rules.
 
-```
+```yacc
 %rule constant(X) : X
                   ;
 
@@ -392,7 +487,7 @@ program         : option(constant(number)) // Nested rule
 
 Allow to use nested parameterizing rules when define parameterizing rules.
 
-```
+```yacc
 %rule option(x) : /* empty */
                 | X
                 ;
@@ -419,7 +514,7 @@ https://github.com/ruby/lrama/pull/337
 
 Allow to define parameterizing rule by `%rule` directive.
 
-```
+```yacc
 %rule pair(X, Y): X Y { $$ = $1 + $2; }
                 ;
 
@@ -442,7 +537,7 @@ https://github.com/ruby/lrama/pull/285
 Allow to specify type of rules by specifying tag, `<i>` in below example.
 Tag is post-modification style.
 
-```
+```yacc
 %union {
     int i;
 }
@@ -469,7 +564,7 @@ https://github.com/ruby/lrama/pull/197
 
 Support `separated_list` and `separated_nonempty_list` parameterizing rules.
 
-```
+```text
 program: separated_list(',', number)
 
 // Expanded to
@@ -500,7 +595,7 @@ https://github.com/ruby/lrama/pull/204
 Parameterizing rules are template of rules.
 It's very common pattern to write "list" grammar rule like:
 
-```
+```yacc
 opt_args: /* none */
         | args
         ;
@@ -532,7 +627,7 @@ https://github.com/ruby/lrama/pull/62
 
 ### Runtime configuration for error recovery
 
-Meke error recovery function configurable on runtime by two new macros.
+Make error recovery function configurable on runtime by two new macros.
 
 * `YYMAXREPAIR`: Expected to return max length of repair operations. `%parse-param` is passed to this function.
 * `YYERROR_RECOVERY_ENABLED`: Expected to return bool value to determine error recovery is enabled or not. `%parse-param` is passed to this function.
@@ -555,7 +650,7 @@ https://github.com/ruby/lrama/pull/44
 Instead of positional references like `$1` or `$$`,
 named references allow to access to symbol by name.
 
-```
+```yacc
 primary: k_class cpath superclass bodystmt k_end
            {
              $primary = new_class($cpath, $bodystmt, $superclass);
@@ -564,7 +659,7 @@ primary: k_class cpath superclass bodystmt k_end
 
 Alias name can be declared.
 
-```
+```yacc
 expr[result]: expr[ex-left] '+' expr[ex.right]
                 {
                   $result = $[ex-left] + $[ex.right];

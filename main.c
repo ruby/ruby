@@ -24,9 +24,6 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-#if USE_SHARED_GC
-#include "internal/gc.h"
-#endif
 
 #if defined RUBY_DEVEL && !defined RUBY_DEBUG_ENV
 # define RUBY_DEBUG_ENV 1
@@ -34,6 +31,8 @@
 #if defined RUBY_DEBUG_ENV && !RUBY_DEBUG_ENV
 # undef RUBY_DEBUG_ENV
 #endif
+
+RUBY_GLOBAL_SETUP
 
 static int
 rb_main(int argc, char **argv)
@@ -43,9 +42,10 @@ rb_main(int argc, char **argv)
     return ruby_run_node(ruby_options(argc, argv));
 }
 
-#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
-int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv);
-#define rb_main(argc, argv) rb_wasm_rt_start(rb_main, argc, argv)
+#ifdef _WIN32
+#define main(argc, argv) w32_main(argc, argv)
+static int main(int argc, char **argv);
+int wmain(void) {return main(0, NULL);}
 #endif
 
 int
@@ -59,16 +59,5 @@ main(int argc, char **argv)
 #endif
 
     ruby_sysinit(&argc, &argv);
-    return rb_main(argc, argv);
+    return ruby_start_main(rb_main, argc, argv);
 }
-
-#ifdef RUBY_ASAN_ENABLED
-/* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
- * that even tests which fork ruby with a clean environment will run ASAN with the right
- * settings */
-const char *
-__asan_default_options(void)
-{
-    return "use_sigaltstack=0:detect_leaks=0";
-}
-#endif

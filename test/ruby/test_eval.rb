@@ -612,4 +612,44 @@ class TestEval < Test::Unit::TestCase
     x = orphan_lambda
     assert_equal(:ok, x.call)
   end
+
+  def test_syntax_error_no_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      100_000.times do
+        eval("/[/=~s")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+    begin;
+      a = 1
+
+      100_000.times do
+        eval("if a in [0, 0] | [0, a]; end")
+      rescue SyntaxError
+      else
+        raise "Expected SyntaxError to be raised"
+      end
+    end;
+  end
+
+  def test_outer_local_variable_under_gc_compact_stress
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+    omit "compaction is not supported on s390x" if /s390x/ =~ RUBY_PLATFORM
+
+    assert_separately([], <<~RUBY)
+      o = Object.new
+      def o.m = 1
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      EnvUtil.under_gc_compact_stress do
+        assert_equal(1, eval("o.m"))
+      end
+    RUBY
+  end
 end

@@ -77,6 +77,7 @@ VALUE rb_lambda_call(VALUE obj, ID mid, int argc, const VALUE *argv,
 void rb_check_stack_overflow(void);
 #define RB_BLOCK_NO_USE_PACKED_ARGS 2
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
+struct vm_ifunc *rb_current_ifunc(void);
 
 #if USE_YJIT
 /* vm_exec.c */
@@ -96,7 +97,6 @@ struct rb_iseq_struct;
 const struct rb_callcache *rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass);
 
 /* vm_method.c */
-struct rb_execution_context_struct;
 int rb_ec_obj_respond_to(struct rb_execution_context_struct *ec, VALUE obj, ID id, int priv);
 
 void rb_clear_constant_cache(void);

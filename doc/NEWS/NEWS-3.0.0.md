@@ -741,7 +741,7 @@ end
 foo(42)
 ```
 
-```
+```console
 $ typeprof test.rb
 # Classes
 class Object

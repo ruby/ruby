@@ -99,3 +99,74 @@ describe "Socket::BasicSocket#recv_nonblock" do
     end
   end
 end
+
+describe "Socket::BasicSocket#recv_nonblock" do
+  context "when recvfrom(2) returns 0 (if no messages are available to be received and the peer has performed an orderly shutdown)" do
+    describe "stream socket" do
+      before :each do
+        @server = TCPServer.new('127.0.0.1', 0)
+        @port = @server.addr[1]
+      end
+
+      after :each do
+        @server.close unless @server.closed?
+      end
+
+      ruby_version_is ""..."3.3" do
+        it "returns an empty String on a closed stream socket" do
+          ready = false
+
+          t = Thread.new do
+            client = @server.accept
+
+            Thread.pass while !ready
+            begin
+              client.recv_nonblock(10)
+            rescue IO::EAGAINWaitReadable
+              retry
+            end
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          socket = TCPSocket.new('127.0.0.1', @port)
+          socket.close
+          ready = true
+
+          t.value.should == ""
+        end
+      end
+
+      ruby_version_is "3.3" do
+        it "returns nil on a closed stream socket" do
+          ready = false
+
+          t = Thread.new do
+            client = @server.accept
+
+            Thread.pass while !ready
+            begin
+              client.recv_nonblock(10)
+            rescue IO::EAGAINWaitReadable
+              retry
+            end
+          ensure
+            client.close if client
+          end
+
+          Thread.pass while t.status and t.status != "sleep"
+          t.status.should_not be_nil
+
+          socket = TCPSocket.new('127.0.0.1', @port)
+          socket.close
+          ready = true
+
+          t.value.should be_nil
+        end
+      end
+    end
+  end
+end

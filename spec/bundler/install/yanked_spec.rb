@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.context "when installing a bundle that includes yanked gems" do
-  before(:each) do
+  it "throws an error when the original gem version is yanked" do
     build_repo4 do
       build_gem "foo", "9.0.0"
     end
-  end
 
-  it "throws an error when the original gem version is yanked" do
     lockfile <<-L
        GEM
          remote: https://gem.repo4
@@ -30,7 +28,29 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     expect(err).to include("Your bundle is locked to foo (10.0.0)")
   end
 
-  context "when a re-resolve is necessary, and a yanked version is considered by the resolver" do
+  context "when a platform specific yanked version is included in the lockfile, and a generic variant is available remotely" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            actiontext (6.1.6)
+              nokogiri (>= 1.8)
+            foo (1.0.0)
+            nokogiri (1.13.8-#{Bundler.local_platform})
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          actiontext (= 6.1.6)
+          foo (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
     before do
       skip "Materialization on Windows is not yet strict, so the example does not detect the gem has been yanked" if Gem.win_platform?
 
@@ -50,54 +70,54 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       end
 
       gemfile <<~G
-        source "#{source_uri}"
-        gem "foo", "1.0.1"
+        source "https://gem.repo4"
+        gem "foo", "1.0.0"
         gem "actiontext", "6.1.6"
       G
 
-      lockfile <<~L
-        GEM
-          remote: #{source_uri}/
-          specs:
-            actiontext (6.1.6)
-              nokogiri (>= 1.8)
-            foo (1.0.0)
-            nokogiri (1.13.8-#{Bundler.local_platform})
-
-        PLATFORMS
-          #{lockfile_platforms}
-
-        DEPENDENCIES
-          actiontext (= 6.1.6)
-          foo (= 1.0.0)
-
-        BUNDLED WITH
-           #{Bundler::VERSION}
-      L
+      lockfile original_lockfile
     end
 
-    context "and the old index is used" do
-      let(:source_uri) { "https://gem.repo4" }
+    context "and a re-resolve is necessary" do
+      before do
+        gemfile gemfile.sub('"foo", "1.0.0"', '"foo", "1.0.1"')
+      end
 
-      it "reports the yanked gem properly" do
-        bundle "install", artifice: "endpoint", raise_on_error: false, verbose: true
+      it "reresolves, and replaces the yanked gem with the generic version, printing a warning, when the old index is used" do
+        bundle "install", artifice: "endpoint", verbose: true
 
-        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
+        expect(out).to include("Installing nokogiri 1.13.8").and include("Installing foo 1.0.1")
+        expect(lockfile).to eq(original_lockfile.sub("nokogiri (1.13.8-#{Bundler.local_platform})", "nokogiri (1.13.8)").gsub("1.0.0", "1.0.1"))
+        expect(err).to include("Some locked specs have possibly been yanked (nokogiri-1.13.8-#{Bundler.local_platform}). Ignoring them...")
+      end
+
+      it "reresolves, and replaces the yanked gem with the generic version, printing a warning, when the compact index API is used" do
+        bundle "install", artifice: "compact_index", verbose: true
+
+        expect(out).to include("Installing nokogiri 1.13.8").and include("Installing foo 1.0.1")
+        expect(lockfile).to eq(original_lockfile.sub("nokogiri (1.13.8-#{Bundler.local_platform})", "nokogiri (1.13.8)").gsub("1.0.0", "1.0.1"))
+        expect(err).to include("Some locked specs have possibly been yanked (nokogiri-1.13.8-#{Bundler.local_platform}). Ignoring them...")
       end
     end
 
-    context "and the compact index API is used" do
-      let(:source_uri) { "https://gem.repo4" }
+    it "reports the yanked gem properly when the old index is used" do
+      bundle "install", artifice: "endpoint", raise_on_error: false
 
-      it "reports the yanked gem properly" do
-        bundle "install", artifice: "compact_index", raise_on_error: false
+      expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
+    end
 
-        expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
-      end
+    it "reports the yanked gem properly when the compact index API is used" do
+      bundle "install", artifice: "compact_index", raise_on_error: false
+
+      expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
     end
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
+    build_repo4 do
+      build_gem "foo", "9.0.0"
+    end
+
     bundle "config set force_ruby_platform true"
 
     install_gemfile <<-G, raise_on_error: false

@@ -604,9 +604,9 @@ MSG
     yield(opt, opts)
   end
 
-  def try_link0(src, opt = "", **opts, &b) # :nodoc:
+  def try_link0(src, opt = "", ldflags: "", **opts, &b) # :nodoc:
     exe = CONFTEST+$EXEEXT
-    cmd = link_command("", opt)
+    cmd = link_command(ldflags, opt)
     if $universal
       require 'tmpdir'
       Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
@@ -750,7 +750,7 @@ MSG
 
   # :nodoc:
   def try_ldflags(flags, werror: $mswin, **opts)
-    try_link(MAIN_DOES_NOTHING, flags, werror: werror, **opts)
+    try_link(MAIN_DOES_NOTHING, "", ldflags: flags, werror: werror, **opts)
   end
 
   # :startdoc:
@@ -1968,7 +1968,7 @@ SRC
       if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # if and only if package specific config command is given
       elsif ($PKGCONFIG ||=
-             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || "pkg-config"}) &&
+             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || ENV["PKG_CONFIG"] || "pkg-config"}) &&
              find_executable0(pkgconfig) && pkgconfig) and
            xsystem([*envs, $PKGCONFIG, "--exists", pkg])
         # default to pkg-config command
@@ -1984,7 +1984,20 @@ SRC
           opts = Array(opts).map { |o| "--#{o}" }
           opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
           Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
-          opts.strip if $?.success?
+          if $?.success?
+            opts = opts.strip
+            libarg, libpath = LIBARG, LIBPATHFLAG.strip
+            opts = opts.shellsplit.map { |s|
+              if s.start_with?('-l')
+                libarg % s[2..]
+              elsif s.start_with?('-L')
+                libpath % s[2..]
+              else
+                s
+              end
+            }.quote.join(" ")
+            opts
+          end
         }
       end
       orig_ldflags = $LDFLAGS
@@ -2368,6 +2381,19 @@ RULES
   # directory, i.e. the current directory.  It is included as part of the
   # +VPATH+ and added to the list of +INCFLAGS+.
   #
+  # Yields the configuration part of the makefile to be generated, as an array
+  # of strings, if the block is given.  The returned value will be used the
+  # new configuration part.
+  #
+  #   create_makefile('foo') {|conf|
+  #     [
+  #       *conf,
+  #       "MACRO_YOU_NEED = something",
+  #     ]
+  #   }
+  #
+  # If "depend" file exist in the source directory, that content will be
+  # included in the generated makefile, with formatted by depend_rules method.
   def create_makefile(target, srcprefix = nil)
     $target = target
     libpath = $DEFLIBPATH|$LIBPATH

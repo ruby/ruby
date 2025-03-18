@@ -9,7 +9,7 @@ and may need to be handled.
 Code throughout the Ruby core, Ruby standard library, and Ruby gems generates exceptions
 in certain circumstances:
 
-```
+```rb
 File.open('nope.txt') # Raises Errno::ENOENT: "No such file or directory"
 ```
 
@@ -24,9 +24,9 @@ If an exception not _rescued_
 execution transfers to code in the Ruby interpreter
 that prints a message and exits the program (or thread):
 
-```
+```console
 $ ruby -e "raise"
--e:1:in `<main>': unhandled exception
+-e:1:in '<main>': unhandled exception
 ```
 
 ### Rescued Exceptions
@@ -38,7 +38,7 @@ and may prevent the program from exiting.
 
 A simple example:
 
-```
+```rb
 begin
   raise 'Boom!'                # Raises an exception, transfers control.
   puts 'Will not get here.'
@@ -94,7 +94,7 @@ The rescue clause rescues both the specified class
 (or StandardError if none given) or any of its subclasses;
 see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
-```
+```rb
 begin
   1 / 0 # Raises ZeroDivisionError, a subclass of StandardError.
 rescue
@@ -113,7 +113,7 @@ only that class (or one of its subclasses) is rescued;
 this example exits with a ZeroDivisionError,
 which was not rescued because it is not ArgumentError or one of its subclasses:
 
-```
+```rb
 begin
   1 / 0
 rescue ArgumentError
@@ -125,7 +125,7 @@ A `rescue` statement may specify multiple classes,
 which means that its code rescues an exception
 of any of the given classes (or their subclasses):
 
-```
+```rb
 begin
   1 / 0
 rescue FloatDomainError, ZeroDivisionError
@@ -139,7 +139,7 @@ An exception handler may contain multiple rescue clauses;
 in that case, the first clause that rescues the exception does so,
 and those before and after are ignored:
 
-```
+```rb
 begin
   Dir.open('nosuch')
 rescue Errno::ENOTDIR
@@ -161,7 +161,7 @@ A `rescue` statement may specify a variable
 whose value becomes the rescued exception
 (an instance of Exception or one of its subclasses:
 
-```
+```rb
 begin
   1 / 0
 rescue => x
@@ -188,7 +188,7 @@ there:
 
 Example:
 
-```
+```rb
 begin
   1 / 0
 rescue
@@ -201,7 +201,7 @@ Output:
 
 ```
 #<ZeroDivisionError: divided by 0>
-["t.rb:2:in `/'", "t.rb:2:in `<main>'"]
+["t.rb:2:in 'Integer#/'", "t.rb:2:in '<main>'"]
 ```
 
 ##### Cause
@@ -212,7 +212,7 @@ elsewhere, the method returns `nil`.
 
 Example:
 
-```
+```rb
 begin
   raise('Boom 0')
 rescue => x0
@@ -246,7 +246,7 @@ The `else` clause:
 - Contains code that is to be executed if no exception is raised in the begin clause.
 - Ends with the first following `ensure` or `end` statement.
 
-```
+```rb
 begin
   puts 'Begin.'
 rescue
@@ -273,7 +273,7 @@ The ensure clause:
   and regardless of whether a raised exception is handled.
 - Ends with the first following `end` statement.
 
-```
+```rb
 def foo(boom: false)
   puts 'Begin.'
   raise 'Boom!' if boom
@@ -314,7 +314,7 @@ An exception handler may also be implemented as:
 
 - A method body:
 
-    ```
+    ```rb
     def foo(boom: false) # Serves as beginning of exception handler.
       puts 'Begin.'
       raise 'Boom!' if boom
@@ -327,7 +327,7 @@ An exception handler may also be implemented as:
 
 - A block:
 
-    ```
+    ```rb
     Dir.chdir('.') do |dir| # Serves as beginning of exception handler.
       raise 'Boom!'
     rescue
@@ -349,7 +349,7 @@ a rescuing clause:
   - Calls method `raise` with no argument,
     which raises the rescued exception:
 
-```
+```rb
 begin
   1 / 0
 rescue ZeroDivisionError
@@ -362,8 +362,8 @@ Output:
 
 ```
 ruby t.rb
-t.rb:2:in `/': divided by 0 (ZeroDivisionError)
-        from t.rb:2:in `<main>'
+t.rb:2:in 'Integer#/': divided by 0 (ZeroDivisionError)
+    from t.rb:2:in '<main>'
 ```
 
 #### Retrying
@@ -374,7 +374,7 @@ for example, if it must access a possibly-volatile resource
 it can be useful to try the access more than once
 (in the hope that it may become available):
 
-```
+```rb
 retries = 0
 begin
   puts "Try ##{retries}."
@@ -409,7 +409,7 @@ not just the part after the point of failure.
 
 ## Raising an \Exception
 
-\Method Kernel#raise raises an exception.
+Method Kernel#raise raises an exception.
 
 ## Custom Exceptions
 
@@ -419,7 +419,7 @@ Each should be a subclass of one of the built-in exception classes
 (commonly StandardError or RuntimeError);
 see [Built-In Exception Class Hierarchy](rdoc-ref:Exception@Built-In+Exception+Class+Hierarchy).
 
-```
+```rb
 class MyException < StandardError; end
 ```
 
@@ -501,28 +501,21 @@ These methods return backtrace information:
   of Thread::Backtrace::Location objects or `nil`.
   Each Thread::Backtrace::Location object gives detailed information about a called method.
 
-An `Exception` object stores its backtrace value as one of:
+By default, Ruby sets the backtrace of the exception to the location where it
+was raised.
 
-- An array of Thread::Backtrace::Location objects;
-  this is the common case: the exception was raised by the Ruby core or the Ruby standard library.
-  In this case:
+The developer might adjust this by either providing +backtrace+ argument
+to Kernel#raise, or using Exception#set_backtrace.
 
-    - Exception#backtrace_locations returns the array of Thread::Backtrace::Location objects.
-    - Exception#backtrace returns the array of their string values
-      (`Exception#backtrace_locations.map {|loc| loc.to_s }`).
+Note that:
 
-- An array of strings;
-  this is an uncommon case: the user manually set the backtrace to an array of strings;
-  In this case:
-
-    - Exception#backtrace returns the array of strings.
-    - Exception#backtrace_locations returns `nil`.
-
-- `nil`, in which case both methods return `nil`.
-
-These methods set the backtrace value:
-
-- Exception#set_backtrace: sets the backtrace value to an array of strings, or to `nil`.
-- Kernel#raise: sets the backtrace value to an array of Thread::Backtrace::Location objects,
-  or to an array of strings.
-
+- by default, both +backtrace+ and +backtrace_locations+ represent the same backtrace;
+- if the developer sets the backtrace by one of the above methods to an array of
+  Thread::Backtrace::Location, they still represent the same backtrace;
+- if the developer sets the backtrace to a string or an array of strings:
+  - by Kernel#raise: +backtrace_locations+ become +nil+;
+  - by Exception#set_backtrace: +backtrace_locations+ preserve the original
+    value;
+- if the developer sets the backtrace to +nil+ by Exception#set_backtrace,
+  +backtrace_locations+ preserve the original value; but if the exception is then
+  reraised, both +backtrace+ and +backtrace_locations+ become the location of reraise.

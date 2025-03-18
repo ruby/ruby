@@ -489,14 +489,13 @@ eom
         case expected
         when String
           assert = :assert_equal
-        when Regexp
-          assert = :assert_match
         else
-          raise TypeError, "Expected #{expected.inspect} to be a kind of String or Regexp, not #{expected.class}"
+          assert_respond_to(expected, :===)
+          assert = :assert_match
         end
 
         ex = m = nil
-        EnvUtil.with_default_internal(expected.encoding) do
+        EnvUtil.with_default_internal(of: expected) do
           ex = assert_raise(exception, msg || proc {"Exception(#{exception}) with message matches to #{expected.inspect}"}) do
             yield
           end
@@ -512,6 +511,43 @@ eom
           block.binding.eval("proc{|_|$~=_}").call($~)
         end
         ex
+      end
+
+      # :call-seq:
+      #   assert_raise_kind_of(*args, &block)
+      #
+      #Tests if the given block raises one of the given exceptions or
+      #sub exceptions of the given exceptions.  If the last argument
+      #is a String, it will be used as the error message.
+      #
+      #    assert_raise do #Fails, no Exceptions are raised
+      #    end
+      #
+      #    assert_raise SystemCallErr do
+      #      Dir.chdir(__FILE__) #Raises Errno::ENOTDIR, so assertion succeeds
+      #    end
+      def assert_raise_kind_of(*exp, &b)
+        case exp.last
+        when String, Proc
+          msg = exp.pop
+        end
+
+        begin
+          yield
+        rescue Test::Unit::PendedError => e
+          raise e unless exp.include? Test::Unit::PendedError
+        rescue *exp => e
+          pass
+        rescue Exception => e
+          flunk(message(msg) {"#{mu_pp(exp)} family exception expected, not #{mu_pp(e)}"})
+        ensure
+          unless e
+            exp = exp.first if exp.size == 1
+
+            flunk(message(msg) {"#{mu_pp(exp)} family expected but nothing was raised"})
+          end
+        end
+        e
       end
 
       TEST_DIR = File.join(__dir__, "test/unit") #:nodoc:
@@ -633,7 +669,7 @@ eom
 
       def assert_warning(pat, msg = nil)
         result = nil
-        stderr = EnvUtil.with_default_internal(pat.encoding) {
+        stderr = EnvUtil.with_default_internal(of: pat) {
           EnvUtil.verbose_warning {
             result = yield
           }

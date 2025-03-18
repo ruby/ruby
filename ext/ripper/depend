@@ -1,7 +1,7 @@
 GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(top_srcdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
-BISON = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
+LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 
 .SUFFIXES: .y
 
@@ -12,7 +12,7 @@ ripper.o: ripper.c
 
 .y.c:
 	$(ECHO) compiling compiler $<
-	$(Q) $(BISON) -t -v -o$@ - $< < $<
+	$(Q) $(LRAMA) -o$@ - $< < $<
 
 all: check
 static: check

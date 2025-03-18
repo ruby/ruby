@@ -93,11 +93,11 @@ typedef char * (pm_parse_stream_fgets_t)(char *string, int size, void *stream);
  * @param parser The parser to use.
  * @param buffer The buffer to use.
  * @param stream The stream to parse.
- * @param fgets The function to use to read from the stream.
+ * @param stream_fgets The function to use to read from the stream.
  * @param options The optional options to use when parsing.
  * @return The AST representing the source.
  */
-PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options);
+PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const pm_options_t *options);
 
 // We optionally support serializing to a binary string. For systems that don't
 // want or need this functionality, it can be turned off with the
@@ -110,10 +110,10 @@ PRISM_EXPORTED_FUNCTION pm_node_t * pm_parse_stream(pm_parser_t *parser, pm_buff
  *
  * @param buffer The buffer to serialize to.
  * @param stream The stream to parse.
- * @param fgets The function to use to read from the stream.
+ * @param stream_fgets The function to use to read from the stream.
  * @param data The optional data to pass to the parser.
  */
-PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data);
+PRISM_EXPORTED_FUNCTION void pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const char *data);
 
 /**
  * Serialize the given list of comments to the given buffer.
@@ -233,6 +233,53 @@ const char * pm_token_type_human(pm_token_type_t token_type);
 PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
 
 #endif
+
+/**
+ * Represents the results of a slice query.
+ */
+typedef enum {
+    /** Returned if the encoding given to a slice query was invalid. */
+    PM_STRING_QUERY_ERROR = -1,
+
+    /** Returned if the result of the slice query is false. */
+    PM_STRING_QUERY_FALSE,
+
+    /** Returned if the result of the slice query is true. */
+    PM_STRING_QUERY_TRUE
+} pm_string_query_t;
+
+/**
+ * Check that the slice is a valid local variable name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_local(const uint8_t *source, size_t length, const char *encoding_name);
+
+/**
+ * Check that the slice is a valid constant name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_constant(const uint8_t *source, size_t length, const char *encoding_name);
+
+/**
+ * Check that the slice is a valid method name.
+ *
+ * @param source The source to check.
+ * @param length The length of the source.
+ * @param encoding_name The name of the encoding of the source.
+ * @return PM_STRING_QUERY_TRUE if the query is true, PM_STRING_QUERY_FALSE if
+ *   the query is false, and PM_STRING_QUERY_ERROR if the encoding was invalid.
+ */
+PRISM_EXPORTED_FUNCTION pm_string_query_t pm_string_query_method_name(const uint8_t *source, size_t length, const char *encoding_name);
 
 /**
  * @mainpage

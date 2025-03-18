@@ -81,7 +81,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     script <<-RUBY, artifice: "endpoint"
       gemfile(true) do
-        source "https://notaserver.com"
+        source "https://notaserver.test"
         gem "activesupport", :require => true
       end
     RUBY
@@ -103,7 +103,7 @@ RSpec.describe "bundler/inline#gemfile" do
       my_ui = MyBundlerUI.new
       my_ui.level = "confirm"
       gemfile(true, :ui => my_ui) do
-        source "https://notaserver.com"
+        source "https://notaserver.test"
         gem "activesupport", :require => true
       end
     RUBY
@@ -116,7 +116,7 @@ RSpec.describe "bundler/inline#gemfile" do
       require 'bundler/inline'
 
       gemfile(true, :quiet => true) do
-        source "https://notaserver.com"
+        source "https://notaserver.test"
         gem "activesupport", :require => true
       end
     RUBY
@@ -363,7 +363,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "installs inline gems when a Gemfile.lock is present" do
     gemfile <<-G
-      source "https://notaserver.com"
+      source "https://notaserver.test"
       gem "rake"
     G
 
@@ -397,7 +397,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   it "does not leak Gemfile.lock versions to the installation output" do
     gemfile <<-G
-      source "https://notaserver.com"
+      source "https://notaserver.test"
       gem "rake"
     G
 

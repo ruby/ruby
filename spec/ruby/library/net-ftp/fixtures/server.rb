@@ -9,7 +9,7 @@ module NetFTPSpecs
     attr_reader :server_port
 
     def initialize
-      @hostname = "localhost"
+      @hostname = "127.0.0.1"
       @server = TCPServer.new(@hostname, 0)
       @server_port = @server.addr[1]
 

@@ -7,4 +7,7 @@ module ModuleSpecs
       Cß.name
     end
   end
+
+  module NameSpecs
+  end
 end

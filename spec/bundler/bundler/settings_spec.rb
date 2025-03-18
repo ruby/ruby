@@ -121,12 +121,13 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
-    context "when it's not possible to write to the file" do
+    context "when it's not possible to create the settings directory" do
       it "raises an PermissionError with explanation" do
-        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings.send(:local_config_file).dirname).
-          and_raise(Errno::EACCES)
+        settings_dir = settings.send(:local_config_file).dirname
+        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings_dir).
+          and_raise(Errno::EACCES.new(settings_dir.to_s))
         expect { settings.set_local :frozen, "1" }.
-          to raise_error(Bundler::PermissionError, /config/)
+          to raise_error(Bundler::PermissionError, /#{settings_dir}/)
       end
     end
   end
@@ -164,12 +165,13 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
   end
 
   describe "#set_global" do
-    context "when it's not possible to write to the file" do
+    context "when it's not possible to write to create the settings directory" do
       it "raises an PermissionError with explanation" do
-        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings.send(:global_config_file).dirname).
-          and_raise(Errno::EACCES)
+        settings_dir = settings.send(:global_config_file).dirname
+        expect(::Bundler::FileUtils).to receive(:mkdir_p).with(settings_dir).
+          and_raise(Errno::EACCES.new(settings_dir.to_s))
         expect { settings.set_global(:frozen, "1") }.
-          to raise_error(Bundler::PermissionError, %r{\.bundle/config})
+          to raise_error(Bundler::PermissionError, /#{settings_dir}/)
       end
     end
   end
@@ -198,7 +200,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     context "with a configured mirror" do
-      let(:mirror_uri) { Gem::URI("https://rubygems-mirror.org/") }
+      let(:mirror_uri) { Gem::URI("https://example-mirror.rubygems.org/") }
 
       before { settings.set_local "mirror.https://rubygems.org/", mirror_uri.to_s }
 
@@ -275,12 +277,12 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "normalizes HTTP URIs in mirror configuration" do
-      settings.set_local "mirror.http://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.http://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.all).to include("mirror.http://rubygems.org/")
     end
 
     it "normalizes HTTPS URIs in mirror configuration" do
-      settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.https://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.all).to include("mirror.https://rubygems.org/")
     end
 
@@ -295,9 +297,9 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "reads older keys without trailing slashes" do
-      settings.set_local "mirror.https://rubygems.org", "http://rubygems-mirror.org"
+      settings.set_local "mirror.https://rubygems.org", "http://example-mirror.rubygems.org"
       expect(settings.mirror_for("https://rubygems.org/")).to eq(
-        Gem::URI("http://rubygems-mirror.org/")
+        Gem::URI("http://example-mirror.rubygems.org/")
       )
     end
 
@@ -321,8 +323,8 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "converts older keys without trailing slashes and double underscore" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://rubygems-mirror.org")
-      expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://example-mirror.rubygems.org")
+      expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
     end
 
     it "ignores commented out keys" do
@@ -345,8 +347,8 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "reads newer keys format properly" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://rubygems-mirror.org")
-      expect(settings["mirror.https://rubygems.org/"]).to eq("http://rubygems-mirror.org")
+      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org")
+      expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
     end
   end
 end

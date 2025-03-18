@@ -51,8 +51,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         }
       end
 
-      if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
-           OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
+      if !OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL")
         DEFAULT_PARAMS.merge!(
           min_version: OpenSSL::SSL::TLS1_VERSION,
           ciphers: %w{
@@ -125,7 +124,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       # that this form is deprecated. New applications should use #min_version=
       # and #max_version= as necessary.
       def initialize(version = nil)
-        self.options |= OpenSSL::SSL::OP_ALL
         self.ssl_version = version if version
         self.verify_mode = OpenSSL::SSL::VERIFY_NONE
         self.verify_hostname = false
@@ -145,7 +143,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       # used.
       def set_params(params={})
         params = DEFAULT_PARAMS.merge(params)
-        self.options = params.delete(:options) # set before min_version/max_version
+        self.options |= params.delete(:options) # set before min_version/max_version
         params.each{|name, value| self.__send__("#{name}=", value) }
         if self.verify_mode != OpenSSL::SSL::VERIFY_NONE
           unless self.ca_file or self.ca_path or self.cert_store
@@ -153,43 +151,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
           end
         end
         return params
-      end
-
-      # call-seq:
-      #    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.min_version = :TLS1_2
-      #    ctx.min_version = nil
-      #
-      # Sets the lower bound on the supported SSL/TLS protocol version. The
-      # version may be specified by an integer constant named
-      # OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
-      #
-      # Be careful that you don't overwrite OpenSSL::SSL::OP_NO_{SSL,TLS}v*
-      # options by #options= once you have called #min_version= or
-      # #max_version=.
-      #
-      # === Example
-      #   ctx = OpenSSL::SSL::SSLContext.new
-      #   ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
-      #   ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      #
-      #   sock = OpenSSL::SSL::SSLSocket.new(tcp_sock, ctx)
-      #   sock.connect # Initiates a connection using either TLS 1.1 or TLS 1.2
-      def min_version=(version)
-        set_minmax_proto_version(version, @max_proto_version ||= nil)
-        @min_proto_version = version
-      end
-
-      # call-seq:
-      #    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      #    ctx.max_version = :TLS1_2
-      #    ctx.max_version = nil
-      #
-      # Sets the upper bound of the supported SSL/TLS protocol version. See
-      # #min_version= for the possible values.
-      def max_version=(version)
-        set_minmax_proto_version(@min_proto_version ||= nil, version)
-        @max_proto_version = version
       end
 
       # call-seq:
@@ -216,8 +177,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         end
         version = METHODS_MAP[meth.intern] or
           raise ArgumentError, "unknown SSL method `%s'" % meth
-        set_minmax_proto_version(version, version)
-        @min_proto_version = @max_proto_version = version
+        self.min_version = self.max_version = version
       end
 
       METHODS_MAP = {

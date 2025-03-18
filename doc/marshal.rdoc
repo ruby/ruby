@@ -188,9 +188,9 @@ bytes:
    result += (byte * 2 ** (exp * 8))
   end
 
-=== Class and Module
+=== +Class+ and +Module+
 
-"c" represents a Class object, "m" represents a Module and "M" represents
+"c" represents a +Class+ object, "m" represents a +Module+ and "M" represents
 either a class or module (this is an old-style for compatibility).  No class
 or module content is included, this type is only a reference.  Following the
 type byte is a byte sequence which is used to look up an existing class or
@@ -300,6 +300,11 @@ sequence containing the user-defined representation of the object.
 
 The class method +_load+ is called on the class with a string created from the
 byte-sequence.
+
+This type is not recommended for newly created classes, because of some
+restrictions:
+
+- cannot have recursive reference
 
 === User Marshal
 

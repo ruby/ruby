@@ -18,7 +18,7 @@ module Lrama
       alias :inspect :to_s
 
       def render_strings_for_report
-        result = []
+        result = [] #: Array[String]
         _render_for_report(self, 0, result, 0)
         result.map(&:rstrip)
       end
@@ -44,18 +44,19 @@ module Lrama
           str << "#{item.next_sym.display_name}"
           length = _render_for_report(derivation.left, len, strings, index + 1)
           # I want String#ljust!
-          str << " " * (length - str.length)
+          str << " " * (length - str.length) if length > str.length
         else
           str << " • #{item.symbols_after_dot.map(&:display_name).join(" ")} "
           return str.length
         end
 
         if derivation.right&.left
-          length = _render_for_report(derivation.right.left, str.length, strings, index + 1)
-          str << "#{item.symbols_after_dot[1..-1].map(&:display_name).join(" ")} "
+          left = derivation.right&.left #: Derivation
+          length = _render_for_report(left, str.length, strings, index + 1)
+          str << "#{item.symbols_after_dot[1..-1].map(&:display_name).join(" ")} " # steep:ignore
           str << " " * (length - str.length) if length > str.length
         elsif item.next_next_sym
-          str << "#{item.symbols_after_dot[1..-1].map(&:display_name).join(" ")} "
+          str << "#{item.symbols_after_dot[1..-1].map(&:display_name).join(" ")} " # steep:ignore
         end
 
         return str.length

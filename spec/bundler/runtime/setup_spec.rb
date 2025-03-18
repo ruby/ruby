@@ -366,7 +366,8 @@ RSpec.describe "Bundler.setup" do
 
       it "removes system gems from Gem.source_index" do
         run "require 'yard'"
-        expect(out).to eq("bundler-#{Bundler::VERSION}\nyard-1.0")
+        expect(out).to include("bundler-#{Bundler::VERSION}").and include("yard-1.0")
+        expect(out).not_to include("activesupport-2.3.5")
       end
 
       context "when the ruby stdlib is a substring of Gem.path" do
@@ -457,9 +458,8 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "works even when the cache directory has been deleted" do
-      bundle "config set --local path vendor/bundle"
       bundle :install
-      FileUtils.rm_rf vendored_gems("cache")
+      FileUtils.rm_r default_cache_path
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
@@ -496,7 +496,7 @@ RSpec.describe "Bundler.setup" do
       bundle %(config set local.myrack #{lib_path("local-myrack")})
       bundle :install
 
-      FileUtils.rm_rf(lib_path("local-myrack"))
+      FileUtils.rm_r(lib_path("local-myrack"))
       run "require 'myrack'", raise_on_error: false
       expect(err).to match(/Cannot use local override for myrack-0.8 because #{Regexp.escape(lib_path("local-myrack").to_s)} does not exist/)
     end
@@ -611,7 +611,7 @@ RSpec.describe "Bundler.setup" do
         gem 'foo', :path => 'vendor/foo', :group => :development
       G
 
-      FileUtils.rm_rf(path)
+      FileUtils.rm_r(path)
 
       ruby "require 'bundler'; Bundler.setup", env: { "DEBUG" => "1" }
       expect(out).to include("Assuming that source at `vendor/foo` has not changed since fetching its specs errored")
@@ -704,6 +704,21 @@ RSpec.describe "Bundler.setup" do
     R
 
     expect(out).to be_empty
+  end
+
+  it "has gem_dir pointing to local repo" do
+    build_lib "foo", "1.0", path: bundled_app
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+      gemspec
+    G
+
+    run <<-R
+      puts Gem.loaded_specs['foo'].gem_dir
+    R
+
+    expect(out).to eq(bundled_app.to_s)
   end
 
   it "does not load all gemspecs" do
@@ -865,7 +880,6 @@ end
   it "should clean $LOAD_PATH properly" do
     gem_name = "very_simple_binary"
     full_gem_name = gem_name + "-1.0"
-    ext_dir = File.join(tmp("extensions", full_gem_name))
 
     system_gems full_gem_name
 
@@ -874,12 +888,6 @@ end
     G
 
     ruby <<-R
-      s = Gem::Specification.find_by_name '#{gem_name}'
-      s.extension_dir = '#{ext_dir}'
-
-      # Don't build extensions.
-      s.class.send(:define_method, :build_extensions) { nil }
-
       require 'bundler'
       gem '#{gem_name}'
 
@@ -1399,8 +1407,6 @@ end
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
         exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
-        exempts << "set" unless Gem.rubygems_version >= Gem::Version.new("3.2.6")
-        exempts << "tsort" unless Gem.rubygems_version >= Gem::Version.new("3.2.31")
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
         exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
@@ -1547,7 +1553,7 @@ end
       RUBY
 
       expect(last_command.stdboth).not_to include "FAIL"
-      expect(err).to include "private method `gem'"
+      expect(err).to match(/private method [`']gem'/)
     end
 
     it "keeps Kernel#require private" do
@@ -1648,5 +1654,36 @@ end
     RUBY
     expect(err).to be_empty
     expect(out).to include("Installing myrack 1.0.0")
+  end
+
+  context "in a read-only filesystem" do
+    before do
+      gemfile <<-G
+        source "https://gem.repo4"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+
+        PLATFORMS
+          x86_64-darwin-19
+
+        DEPENDENCIES
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    it "should fail loudly if the lockfile platforms don't include the current platform" do
+      simulate_platform "x86_64-linux" do
+        ruby <<-RUBY, raise_on_error: false, env: { "BUNDLER_SPEC_READ_ONLY" => "true", "BUNDLER_FORCE_TTY" => "true" }
+          require "bundler/setup"
+        RUBY
+      end
+
+      expect(err).to include("Your lockfile does not include the current platform, but the lockfile can't be updated because file system is read-only")
+    end
   end
 end

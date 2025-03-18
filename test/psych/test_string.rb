@@ -50,6 +50,16 @@ module Psych
       assert_equal str, Psych.load(yaml)
     end
 
+    def test_single_quote_when_matching_date
+      pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
+
+      lib = File.expand_path("../../../lib", __FILE__)
+      assert_separately(["-I", lib, "-r", "psych"], __FILE__, __LINE__ + 1, <<~'RUBY')
+        yml = Psych.dump('2024-11-19')
+        assert_equal '2024-11-19', Psych.load(yml)
+      RUBY
+    end
+
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12

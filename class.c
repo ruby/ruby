@@ -1004,8 +1004,8 @@ rb_define_class(const char *name, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_vm_register_global_object(klass);
-    rb_const_set(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
+    rb_const_set(rb_cObject, id, klass);
 
     return klass;
 }
@@ -1043,8 +1043,8 @@ rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path_string(klass, outer, rb_id2str(id));
-    rb_const_set(outer, id, klass);
     rb_class_inherited(super, klass);
+    rb_const_set(outer, id, klass);
 
     return klass;
 }
@@ -1204,8 +1204,8 @@ rb_include_module(VALUE klass, VALUE module)
             iclass = iclass->next;
         }
 
-        int do_include = 1;
         while (iclass) {
+            int do_include = 1;
             VALUE check_class = iclass->klass;
             /* During lazy sweeping, iclass->klass could be a dead object that
              * has not yet been swept. */

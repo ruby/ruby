@@ -159,15 +159,14 @@ describe "Proc#curry with arity argument" do
   end
 
   it "can be passed more than _arity_ arguments if created from a proc" do
-    -> { @proc_add.curry(3)[1,2,3,4].should == 6 }.should_not
-      raise_error(ArgumentError)
-    -> { @proc_add.curry(1)[1,2].curry(3)[3,4,5,6].should == 6 }.should_not
-      raise_error(ArgumentError)
+    @proc_add.curry(3)[1,2,3,4].should == 6
+
+    @proc_add.curry(3)[1,2].curry(3)[3,4,5,6].should == 6
   end
 
   it "raises an ArgumentError if passed more than _arity_ arguments when created from a lambda" do
     -> { @lambda_add.curry(3)[1,2,3,4] }.should raise_error(ArgumentError)
-    -> { @lambda_add.curry(1)[1,2].curry(3)[3,4,5,6] }.should raise_error(ArgumentError)
+    -> { @lambda_add.curry(3)[1,2].curry(3)[3,4,5,6] }.should raise_error(ArgumentError)
   end
 
   it "returns Procs with arities of -1 regardless of the value of _arity_" do

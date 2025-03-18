@@ -115,6 +115,23 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         expect(local_path.read).to eq(full_body)
         expect(etag_path.read).to eq("NewEtag")
       end
+
+      it "tries the request again if the partial response is blank" do
+        allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:baddigest:" }
+        allow(response).to receive(:body) { "" }
+        allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
+        expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
+
+        full_response = double(:full_response, body: full_body, is_a?: false)
+        allow(full_response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
+        allow(full_response).to receive(:[]).with("ETag") { '"NewEtag"' }
+        expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => '"LocalEtag"' }).and_return(full_response)
+
+        updater.update(remote_path, local_path, etag_path)
+
+        expect(local_path.read).to eq(full_body)
+        expect(etag_path.read).to eq("NewEtag")
+      end
     end
 
     context "without an etag file" do

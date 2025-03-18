@@ -105,8 +105,8 @@ CC = cl -nologo
 !if !defined(CPP) || "$(CPP)" == "cl"
 CPP = $(CC) -E
 !endif
-!if !defined(YACC)
-YACC = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
+!if !defined(LRAMA)
+LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 !endif
 AR = lib -nologo
 PURIFY =
@@ -156,12 +156,18 @@ DEBUGFLAGS = -Zi
 !if "$(RUBY_DEVEL)" == "yes"
 XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 !endif
+!if "$(modular_gc_dir)" != ""
+XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
+!endif
 !if !defined(OPTFLAGS)
 !if $(MSC_VER) < 1400
 OPTFLAGS = -O2b2xg-
 !else
 OPTFLAGS = -O2sy-
 !endif
+!endif
+!if $(MSC_VER) >= 1900
+OPTFLAGS = $(OPTFLAGS) -Zc:inline
 !endif
 !if !defined(incflags)
 incflags =
@@ -173,7 +179,7 @@ PLATFORM = mswin32
 !error RT not defined.  Retry from configure pass.
 !endif
 !ifndef NTVER
-NTVER = 0x0600
+NTVER = _WIN32_WINNT_WIN8
 !endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
@@ -189,9 +195,6 @@ ruby_version = $(MAJOR).$(MINOR).0
 !endif
 !if defined(ABI_VERSION)
 ruby_version = $(ruby_version)+$(ABI_VERSION)
-!endif
-!if !defined(RUBY_VERSION_NAME)
-RUBY_VERSION_NAME = $(RUBY_BASE_NAME)-$(ruby_version)
 !endif
 RUBY_PROGRAM_VERSION = $(MAJOR).$(MINOR).$(TEENY)
 
@@ -279,7 +282,7 @@ COMPILERFLAG  = -Zm600
 !if $(MSC_VER) >= 1400
 WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
-	    -we4028 -we4142 -we4047
+	    -we4028 -we4142 -we4047 -we4013
 !else
 WARNFLAGS = -W2
 !endif
@@ -335,6 +338,9 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !elseif "$(ARCH)" == "i386"
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
+!elseif "$(ARCH)" == "arm64"
+COROUTINE_OBJ = coroutine/arm64/Context.obj
+COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
 !error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
@@ -343,7 +349,7 @@ COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
+XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 !if $(MSC_VER) >= 1800
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
 !elseif $(MSC_VER) >= 1400
@@ -356,9 +362,6 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
-!endif
-!ifndef RJIT_SUPPORT
-RJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -664,6 +667,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 !if defined(ABI_VERSION)
 #define RUBY_ABI_VERSION $(ABI_VERSION)
 !endif
+#define _WIN32_WINNT $(NTVER)
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -959,7 +963,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define USE_RJIT 0
 #endif /* $(guard) */
 <<
 
@@ -1033,7 +1036,7 @@ s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@CXX@,$$(CC),;t t
 s,@LD@,$$(CC),;t t
-s,@YACC@,$(YACC),;t t
+s,@LRAMA@,$(LRAMA),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
 s,@ARFLAGS@,$(ARFLAGS),;t t
@@ -1081,6 +1084,7 @@ s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
 s,@LIBRUBY_A@,$$(RUBY_SO_NAME)-static.lib,;t t
 s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
+s,@LIBRUBY_RELATIVE@,$(LIBRUBY_RELATIVE),;t t
 s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,;t t
 s,@LIBRUBYARG@,$$(LIBRUBYARG_SHARED),;t t
 s,@LIBRUBYARG_STATIC@,$$(LIBRUBY_A) $$(MAINLIBS),;t t
@@ -1130,6 +1134,11 @@ s,@TEENY@,$(TEENY),;t t
 s,@ruby_version@,$(ruby_version),;t t
 s,@RUBY_PROGRAM_VERSION@,$$(MAJOR).$$(MINOR).$$(TEENY),;t t
 s,@RUBY_API_VERSION@,$$(MAJOR).$$(MINOR),;t t
+!if defined(RUBY_VERSION_NAME)
+s,@RUBY_VERSION_NAME@,$(RUBY_VERSION_NAME),;t t
+!else
+s,@RUBY_VERSION_NAME@,$$(RUBY_BASE_NAME)-$$(ruby_version),;t t
+!endif
 s,@rubylibprefix@,$${prefix}/lib/$${RUBY_BASE_NAME},;t t
 s,@rubyarchdir@,$${rubylibdir}/$${arch},;t t
 s,@rubylibdir@,$${rubylibprefix}/$${ruby_version},;t t
@@ -1139,7 +1148,7 @@ s,@sitelibdir@,$${sitedir}/$${ruby_version},;t t
 s,@vendordir@,$${rubylibprefix}/vendor_ruby,;t t
 s,@vendorarchdir@,$${vendorlibdir}/$${sitearch},;t t
 s,@vendorlibdir@,$${vendordir}/$${ruby_version},;t t
-s,@rubyhdrdir@,$$(includedir)/$${RUBY_BASE_NAME}-$$(ruby_version),;t t
+s,@rubyhdrdir@,$$(includedir)/$$(RUBY_VERSION_NAME),;t t
 s,@sitehdrdir@,$$(rubyhdrdir)/site_ruby,;t t
 s,@vendorhdrdir@,$$(rubyhdrdir)/vendor_ruby,;t t
 s,@rubyarchhdrdir@,$$(rubyhdrdir)/$${arch},;t t
@@ -1153,7 +1162,7 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
-s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
+s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
 !if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
@@ -1265,11 +1274,21 @@ distclean-local::
 		$(Q)$(RM) ext\config.cache $(RBCONFIG:/=\) $(CONFIG_H:/=\)
 		-$(Q)$(RM) $(INSTALLED_LIST:/=\) $(arch_hdrdir:/=\)\ruby\config.h verconf.h
 		-$(Q)$(RMDIRS) $(arch_hdrdir:/=\)\ruby
+		-$(Q)$(RMDIR) win32
+
+.bundle/clean:: .bundle/clean.sub
+.bundle/distclean:: .bundle/distclean.sub
+.bundle/realclean:: .bundle/realclean.sub
+
+.bundle/clean.sub:: ext/clean.mk
+.bundle/distclean.sub:: ext/distclean.mk
+.bundle/realclean.sub:: ext/realclean.mk
 
 ext/clean.mk ext/distclean.mk ext/realclean.mk::
 	$(Q)if exist $(EXTS_MK) $(MAKE) -k -f $(EXTS_MK) top_srcdir=$(srcdir) $(*F)
 
-ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
+ext/clean.sub ext/distclean.sub ext/realclean.sub \
+.bundle/clean.sub .bundle/distclean.sub .bundle/realclean.sub::
 		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (.) \
 		do $(Q)if exist %I\Makefile ( \
 		    cd %I && ( \
@@ -1282,10 +1301,18 @@ ext/clean gems/clean ext/distclean gems/distclean ext/realclean gems/realclean::
 		    $(RMDIRS) %I \
 		))) || @
 
-ext/distclean gems/distclean ext/realclean gems/realclean::
+ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 		$(Q)cd $(@D) 2>nul && (for /R $(EXTS) %I in (exts.mk*) \
 		do $(Q)(del %I & rmdir %~dpI)) || @
 		-$(Q)rmdir $(@D) 2> nul || @
+
+.bundle/realclean::
+	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
+
+gc/clean gc/distclean gc/realclean::
+	- for /D %G in (gc\*) do (pushd %G && $(MAKE) TARGET_SO_DIR=./ $(@F) & popd) || $(NULLCMD)
+gc/distclean gc/realclean::
+	- for /D %G in (gc\*) do ($(RMDIR) %G) || $(NULLCMD)
 
 clean-enc distclean-enc realclean-enc:
 !if exist($(ENC_MK))
@@ -1309,12 +1336,21 @@ $(ruby_pc): $(RBCONFIG)
 		-output=$@ -mode=$(INSTALL_DATA_MODE) -config=rbconfig.rb \
 		$(srcdir)/template/ruby.pc.in
 
+modular-gc-precheck:
+!if "$(modular_gc_dir)" == ""
+	@echo You must configure with --with-modular-gc to use modular GC
+	@exit /b 1
+!endif
+
 {$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+{$(srcdir)/coroutine/arm64}.asm{coroutine/arm64}.obj:
+	$(ECHO) assembling $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
 
 {$(srcdir)/prism}.c.obj:
 	$(ECHO) compiling $(<:\=/)
@@ -1453,14 +1489,14 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 {$(RUBYSPEC_CAPIEXT_SRCDIR)}.c{$(RUBYSPEC_CAPIEXT)}.so:
 	$(ECHO) building $(@F)
 	$(Q)$(MAKEDIRS) $(@D)
-	$(Q)echo> $*.def EXPORTS
-	$(Q)echo>> $*.def Init_$(*F)
-	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 !if defined(LDSHARED_0)
 	$(Q)$(LDSHARED_0)
 	$(Q)$(LDSHARED_1)
 	$(Q)$(LDSHARED_2)
 !endif
+	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
 exts: rubyspec-capiext
 

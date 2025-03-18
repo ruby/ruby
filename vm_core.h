@@ -70,7 +70,30 @@
 #define RUBY_ASSERT_MUTEX_OWNED(mutex) VM_ASSERT(rb_mutex_owned_p(mutex))
 
 #if defined(RUBY_ASSERT_CRITICAL_SECTION)
-// TODO add documentation
+/*
+# Critical Section Assertions
+
+These assertions are used to ensure that context switching does not occur between two points in the code. In theory,
+such code should already be protected by a mutex, but these assertions are used to ensure that the mutex is held.
+
+The specific case where it can be useful is where a mutex is held further up the call stack, and the code in question
+may not directly hold the mutex. In this case, the critical section assertions can be used to ensure that the mutex is
+held by someone else.
+
+These assertions are only enabled when RUBY_ASSERT_CRITICAL_SECTION is defined, which is only defined if VM_CHECK_MODE
+is set.
+
+## Example Usage
+
+```c
+RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+// ... some code which does not invoke rb_vm_check_ints() ...
+RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+```
+
+If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
+`RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
+*/
 extern int ruby_assert_critical_section_entered;
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
@@ -230,6 +253,8 @@ union ic_serial_entry {
     VALUE data[2];
 };
 
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
@@ -340,8 +365,6 @@ pathobj_realpath(VALUE pathobj)
 }
 
 /* Forward declarations */
-struct rb_rjit_unit;
-
 typedef uintptr_t iseq_bits_t;
 
 #define ISEQ_IS_SIZE(body) (body->ic_size + body->ivc_size + body->ise_size + body->icvarc_size)
@@ -370,6 +393,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_SINGLE_NOARG_LEAF = 0x02,
     // This attribute signals JIT to duplicate the iseq for each block iseq so that its `yield` will be monomorphic.
     BUILTIN_ATTR_INLINE_BLOCK = 0x04,
+    // The iseq acts like a C method in backtraces.
+    BUILTIN_ATTR_C_TRACE = 0x08,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -509,7 +534,7 @@ struct rb_iseq_constant_body {
 
     const rb_iseq_t *mandatory_only_iseq;
 
-#if USE_RJIT || USE_YJIT
+#if USE_YJIT
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
     // Number of calls on jit_exec()
@@ -521,11 +546,6 @@ struct rb_iseq_constant_body {
     rb_jit_func_t jit_exception;
     // Number of calls on jit_exec_exception()
     long unsigned jit_exception_calls;
-#endif
-
-#if USE_RJIT
-    // RJIT stores some data on each iseq.
-    VALUE rjit_blocks;
 #endif
 
 #if USE_YJIT
@@ -577,6 +597,12 @@ rb_iseq_check(const rb_iseq_t *iseq)
         rb_iseq_complete((rb_iseq_t *)iseq);
     }
     return iseq;
+}
+
+static inline bool
+rb_iseq_attr_p(const rb_iseq_t *iseq, enum rb_builtin_attr attr)
+{
+    return (ISEQ_BODY(iseq)->builtin_attrs & attr) == attr;
 }
 
 static inline const rb_iseq_t *
@@ -766,13 +792,13 @@ typedef struct rb_vm_struct {
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
     st_table *unused_block_warning_table;
-    bool unused_block_warning_strict;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
     // and Qtrue as values. It is used when inline constant caches need to be
     // invalidated or ISEQs are being freed.
     struct rb_id_table *constant_cache;
+    ID inserting_constant_cache_id;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
@@ -1124,6 +1150,7 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
+    struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
 
@@ -1280,6 +1307,7 @@ enum vm_opt_newarray_send_type {
     VM_OPT_NEWARRAY_SEND_HASH = 3,
     VM_OPT_NEWARRAY_SEND_PACK = 4,
     VM_OPT_NEWARRAY_SEND_PACK_BUFFER = 5,
+    VM_OPT_NEWARRAY_SEND_INCLUDE_P = 6,
 };
 
 enum vm_special_object_type {
@@ -1487,22 +1515,13 @@ VM_ENV_ESCAPED_P(const VALUE *ep)
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
-#if VM_CHECK_MODE > 0
-static inline int
-vm_assert_env(VALUE obj)
-{
-    VM_ASSERT(imemo_type_p(obj, imemo_env));
-    return 1;
-}
-#endif
-
 RBIMPL_ATTR_NONNULL((1))
 static inline VALUE
 VM_ENV_ENVVAL(const VALUE *ep)
 {
     VALUE envval = ep[VM_ENV_DATA_INDEX_ENV];
     VM_ASSERT(VM_ENV_ESCAPED_P(ep));
-    VM_ASSERT(vm_assert_env(envval));
+    VM_ASSERT(envval == Qundef || imemo_type_p(envval, imemo_env));
     return envval;
 }
 
@@ -1834,6 +1853,7 @@ rb_vm_make_lambda(const rb_execution_context_t *ec, const struct rb_captured_blo
 
 VALUE rb_vm_make_binding(const rb_execution_context_t *ec, const rb_control_frame_t *src_cfp);
 VALUE rb_vm_env_local_variables(const rb_env_t *env);
+VALUE rb_vm_env_numbered_parameters(const rb_env_t *env);
 const rb_env_t *rb_vm_env_prev_env(const rb_env_t *env);
 const VALUE *rb_binding_add_dynavars(VALUE bindval, rb_binding_t *bind, int dyncount, const ID *dynvars);
 void rb_vm_inc_const_missing_count(void);
@@ -1945,11 +1965,13 @@ rb_ec_vm_ptr(const rb_execution_context_t *ec)
     }
 }
 
+NOINLINE(struct rb_execution_context_struct *rb_current_ec_noinline(void));
+
 static inline rb_execution_context_t *
 rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
-  #ifdef __APPLE__
+  #if defined(__arm64__) || defined(__aarch64__)
     rb_execution_context_t *ec = rb_current_ec();
   #else
     rb_execution_context_t *ec = ruby_current_ec;

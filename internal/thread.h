@@ -66,6 +66,8 @@ struct rb_io_close_wait_list {
 int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
 void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
+void rb_ec_check_ints(struct rb_execution_context_struct *ec);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 
 void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */
@@ -81,5 +83,26 @@ RUBY_SYMBOL_EXPORT_END
 
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
 bool rb_thread_mn_schedulable(VALUE thread);
+
+// interrupt exec
+
+typedef VALUE (rb_interrupt_exec_func_t)(void *data);
+
+enum rb_interrupt_exec_flag {
+    rb_interrupt_exec_flag_none = 0x00,
+    rb_interrupt_exec_flag_value_data = 0x01,
+};
+
+// interrupt the target_th and run func.
+struct rb_ractor_struct;
+
+void rb_threadptr_interrupt_exec(struct rb_thread_struct *target_th,
+                                 rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags);
+
+// create a thread in the target_r and run func on the created thread.
+void rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
+                              rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags);
+
+void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
 
 #endif /* INTERNAL_THREAD_H */

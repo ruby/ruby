@@ -68,35 +68,31 @@ class TestResolvDNS < Test::Unit::TestCase
     if port == 0
       # Automatic port; we might need to retry until we find a port which is free on both UDP _and_ TCP.
       retries_remaining = 10
-      t = nil
-      u = nil
+      ts = []
+      us = []
       begin
         begin
-          u = UDPSocket.new
-          u.bind(host, 0)
-          _, udp_port, _, _ = u.addr
-          t = TCPServer.new(host, udp_port)
-          t.listen(1)
+          us << UDPSocket.new
+          us.last.bind(host, 0)
+          _, udp_port, _, _ = us.last.addr
+          ts << TCPServer.new(host, udp_port)
+          ts.last.listen(1)
         rescue Errno::EADDRINUSE, Errno::EACCES
           # ADDRINUSE is what should get thrown if we try and bind a port which is already bound on UNIXen,
           # but windows can sometimes throw EACCESS.
           # See: https://stackoverflow.com/questions/48478869/cannot-bind-to-some-ports-due-to-permission-denied
           retries_remaining -= 1
-          if retries_remaining > 0
-            t&.close
-            t = nil
-            u&.close
-            u = nil
-            retry
-          end
+          retry if retries_remaining > 0
+          # Windows and MinGW CI can't bind to the same port with ten retries.
+          omit if /mswin|mingw/ =~ RUBY_PLATFORM
           raise
         end
 
         # If we get to this point, we have a valid t & u socket
-        yield u, t
+        yield us.last, ts.last
       ensure
-        t&.close
-        u&.close
+        ts.each(&:close)
+        us.each(&:close)
       end
     else
       # Explicitly specified port, don't retry the bind.
@@ -382,7 +378,7 @@ class TestResolvDNS < Test::Unit::TestCase
       _, server_port, _, server_address = u.addr
       begin
         client_thread = Thread.new {
-          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]], :search => ['bad1.com', 'bad2.com', 'good.com'], ndots: 5) {|dns|
+          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]], :search => ['bad1.com', 'bad2.com', 'good.com'], ndots: 5, use_ipv6: false) {|dns|
             dns.getaddress("example")
           }
         }

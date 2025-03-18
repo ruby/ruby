@@ -78,7 +78,7 @@ module Bundler::URI
       begin
         uri = uri.to_str
       rescue NoMethodError
-        raise InvalidURIError, "bad Bundler::URI(is not Bundler::URI?): #{uri.inspect}"
+        raise InvalidURIError, "bad Bundler::URI (is not Bundler::URI?): #{uri.inspect}"
       end
       uri.ascii_only? or
         raise InvalidURIError, "Bundler::URI must be ascii only #{uri.dump}"
@@ -127,7 +127,7 @@ module Bundler::URI
           m["fragment"]
         ]
       else
-        raise InvalidURIError, "bad Bundler::URI(is not Bundler::URI?): #{uri.inspect}"
+        raise InvalidURIError, "bad Bundler::URI (is not Bundler::URI?): #{uri.inspect}"
       end
     end
 
@@ -135,10 +135,33 @@ module Bundler::URI
       Bundler::URI.for(*self.split(uri), self)
     end
 
-
     def join(*uris) # :nodoc:
       uris[0] = convert_to_uri(uris[0])
       uris.inject :merge
+    end
+
+    # Compatibility for RFC2396 parser
+    def extract(str, schemes = nil, &block) # :nodoc:
+      warn "Bundler::URI::RFC3986_PARSER.extract is obsolete. Use Bundler::URI::RFC2396_PARSER.extract explicitly.", uplevel: 1 if $VERBOSE
+      RFC2396_PARSER.extract(str, schemes, &block)
+    end
+
+    # Compatibility for RFC2396 parser
+    def make_regexp(schemes = nil) # :nodoc:
+      warn "Bundler::URI::RFC3986_PARSER.make_regexp is obsolete. Use Bundler::URI::RFC2396_PARSER.make_regexp explicitly.", uplevel: 1 if $VERBOSE
+      RFC2396_PARSER.make_regexp(schemes)
+    end
+
+    # Compatibility for RFC2396 parser
+    def escape(str, unsafe = nil) # :nodoc:
+      warn "Bundler::URI::RFC3986_PARSER.escape is obsolete. Use Bundler::URI::RFC2396_PARSER.escape explicitly.", uplevel: 1 if $VERBOSE
+      unsafe ? RFC2396_PARSER.escape(str, unsafe) : RFC2396_PARSER.escape(str)
+    end
+
+    # Compatibility for RFC2396 parser
+    def unescape(str, escaped = nil) # :nodoc:
+      warn "Bundler::URI::RFC3986_PARSER.unescape is obsolete. Use Bundler::URI::RFC2396_PARSER.unescape explicitly.", uplevel: 1 if $VERBOSE
+      escaped ? RFC2396_PARSER.unescape(str, escaped) : RFC2396_PARSER.unescape(str)
     end
 
     @@to_s = Kernel.instance_method(:to_s)

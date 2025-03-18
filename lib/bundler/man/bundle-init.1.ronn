@@ -14,9 +14,10 @@ created [`Gemfile(5)`][Gemfile(5)].
 
 ## OPTIONS
 
-* `--gemspec`:
+* `--gemspec=GEMSPEC`:
   Use the specified .gemspec to create the [`Gemfile(5)`][Gemfile(5)]
-* `--gemfile`:
+
+* `--gemfile=GEMFILE`:
   Use the specified name for the gemfile instead of `Gemfile`
 
 ## FILES

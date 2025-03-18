@@ -81,15 +81,15 @@ heap_iter(void *vstart, void *vend, size_t stride, void *ptr)
     VALUE v;
 
     for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = asan_poisoned_object_p(v);
-        asan_unpoison_object(v, false);
+        void *poisoned = rb_asan_poisoned_object_p(v);
+        rb_asan_unpoison_object(v, false);
 
         if (RBASIC(v)->flags) {
             (*ctx->cb)(v, ctx->data);
         }
 
         if (poisoned) {
-            asan_poison_object(v);
+            rb_asan_poison_object(v);
         }
     }
 

@@ -29,7 +29,7 @@ module Bundler
     private
 
     def add_sources
-      definition.send(:sources).lock_sources.each_with_index do |source, idx|
+      definition.sources.lock_sources.each_with_index do |source, idx|
         out << "\n" unless idx.zero?
 
         # Add the source header

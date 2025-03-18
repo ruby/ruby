@@ -643,6 +643,11 @@ class TC_Set < Test::Unit::TestCase
     ret = set ^ [2,4,5,5]
     assert_not_same(set, ret)
     assert_equal(Set[1,3,5], ret)
+
+    set2 = Set2[1,2,3,4]
+    ret2 = set2 ^ [2,4,5,5]
+    assert_instance_of(Set2, ret2)
+    assert_equal(Set2[1,3,5], ret2)
   end
 
   def test_eq

@@ -1,7 +1,5 @@
 //! Everything related to the collection of runtime stats in YJIT
-//! See the stats feature and the --yjit-stats command-line option
-
-#![allow(dead_code)] // Counters are only used with the stats features
+//! See the --yjit-stats command-line option
 
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::ptr::addr_of_mut;
@@ -12,7 +10,7 @@ use std::collections::HashMap;
 use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
-use crate::yjit::yjit_enabled_p;
+use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
 
 /// Running total of how many ISeqs are in the system.
 #[no_mangle]
@@ -54,6 +52,11 @@ unsafe impl GlobalAlloc for StatsAlloc {
         }
         System.realloc(ptr, layout, new_size)
     }
+}
+
+/// The number of bytes YJIT has allocated on the Rust heap.
+pub fn yjit_alloc_size() -> usize {
+    GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
 }
 
 /// Mapping of C function / ISEQ name to integer indices
@@ -276,7 +279,9 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::deleted_defer_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
+    Counter::compilation_failure,
     Counter::max_inline_versions,
+    Counter::inline_block_count,
     Counter::num_contexts_encoded,
     Counter::context_cache_hits,
 
@@ -288,6 +293,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::invalidate_constant_ic_fill,
     Counter::invalidate_no_singleton_class,
     Counter::invalidate_ep_escape,
+    Counter::invalidate_everything,
 ];
 
 /// Macro to increase a counter by name and count
@@ -351,6 +357,7 @@ make_counters! {
 
     // Method calls that fallback to dynamic dispatch
     send_singleton_class,
+    send_forwarding,
     send_ivar_set_method,
     send_zsuper_method,
     send_undef_method,
@@ -378,7 +385,6 @@ make_counters! {
     send_iseq_block_arg_type,
     send_iseq_clobbering_block_arg,
     send_iseq_complex_discard_extras,
-    send_iseq_forwarding,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_mismatch,
@@ -414,6 +420,9 @@ make_counters! {
     send_bmethod_ractor,
     send_bmethod_block_arg,
     send_optimized_block_arg,
+    send_pred_not_fixnum,
+    send_pred_underflow,
+    send_str_dup_exivar,
 
     invokesuper_defined_class_mismatch,
     invokesuper_forwarding,
@@ -457,8 +466,10 @@ make_counters! {
     guard_send_not_fixnum_or_flonum,
     guard_send_not_string,
     guard_send_respond_to_mid_mismatch,
+    guard_send_str_aref_not_fixnum,
 
     guard_send_cfunc_bad_splat_vargs,
+    guard_send_cfunc_block_not_nil,
 
     guard_invokesuper_me_changed,
 
@@ -556,6 +567,7 @@ make_counters! {
     compiled_branch_count,
     compile_time_ns,
     compilation_failure,
+    abandoned_block_count,
     block_next_count,
     defer_count,
     defer_empty_count,
@@ -563,6 +575,7 @@ make_counters! {
     branch_insn_count,
     branch_known_count,
     max_inline_versions,
+    inline_block_count,
     num_contexts_encoded,
 
     freed_iseq_count,
@@ -577,6 +590,7 @@ make_counters! {
     invalidate_constant_ic_fill,
     invalidate_no_singleton_class,
     invalidate_ep_escape,
+    invalidate_everything,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
@@ -656,8 +670,7 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, key: VALUE) -
 
 /// Primitive called in yjit.rb
 ///
-/// Check if trace_exits generation is enabled. Requires the stats feature
-/// to be enabled.
+/// Check if trace_exits generation is enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
     if get_option!(trace_exits).is_some() {
@@ -681,7 +694,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
         return Qnil;
     }
 
-    // If the stats feature is enabled, pass yjit_raw_samples and yjit_line_samples
+    // Pass yjit_raw_samples and yjit_line_samples
     // to the C function called rb_yjit_exit_locations_dict for parsing.
     let yjit_raw_samples = YjitExitLocations::get_raw_samples();
     let yjit_line_samples = YjitExitLocations::get_line_samples();
@@ -770,7 +783,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "code_region_size", cb.mapped_region_size());
 
         // Rust global allocations in bytes
-        set_stat_usize!(hash, "yjit_alloc_size", GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst));
+        set_stat_usize!(hash, "yjit_alloc_size", yjit_alloc_size());
 
         // How many bytes we are using to store context data
         let context_data = CodegenGlobals::get_context_data();
@@ -778,12 +791,18 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        if rb_vm_insns_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
 
         set_stat!(hash, "object_shape_count", rb_object_shape_count());
+
+        // Time since YJIT init in nanoseconds
+        let time_nanos = Instant::now().duration_since(YJIT_INIT_TIME.unwrap()).as_nanos();
+        set_stat_usize!(hash, "yjit_active_ns", time_nanos as usize);
     }
 
     // If we're not generating stats, put only default counters
@@ -844,11 +863,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        let total_insns_count = retired_in_yjit + rb_vm_insns_count;
-        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
+        if rb_vm_insns_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+            set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
-        let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+            let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
+            set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+        }
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(
@@ -899,7 +920,7 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
 }
 
 /// Record the backtrace when a YJIT exit occurs. This functionality requires
-/// that the stats feature is enabled as well as the --yjit-trace-exits option.
+/// the --yjit-trace-exits option.
 ///
 /// This function will fill two Vec's in YjitExitLocations to record the raw samples
 /// and line samples. Their length should be the same, however the data stored in

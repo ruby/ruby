@@ -110,12 +110,14 @@ def self.column
   w
 end
 objext = RbConfig::CONFIG["OBJEXT"]
+sep = RbConfig::CONFIG['BUILD_FILE_SEPARATOR']
+sep = nil if sep and sep.empty?
 if gnumake
   submake = "$(MAKE) -C $(@D)"
 else
-  submake = "cd $(@D) && "
-  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << exec << " "
-  submake << "$(MAKE)"
+  submake = ["cd", (sep ? "$(@D:/=#{sep})" : "$(@D)"), "&&"]
+  exec = RbConfig::CONFIG["exec"] and !exec.empty? and submake << exec
+  submake = (submake << "$(MAKE)").join(" ")
   mflags = " $(MFLAGS)"
 end
 -%>

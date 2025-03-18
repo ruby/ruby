@@ -95,15 +95,31 @@ Init_sym(void)
 
     VALUE dsym_fstrs = rb_ident_hash_new();
     symbols->dsymbol_fstr_hash = dsym_fstrs;
-    rb_vm_register_global_object(dsym_fstrs);
     rb_obj_hide(dsym_fstrs);
 
     symbols->str_sym = st_init_table_with_size(&symhash, 1000);
     symbols->ids = rb_ary_hidden_new(0);
-    rb_vm_register_global_object(symbols->ids);
 
     Init_op_tbl();
     Init_id();
+}
+
+void
+rb_sym_global_symbols_mark(void)
+{
+    rb_symbols_t *symbols = &ruby_global_symbols;
+
+    rb_gc_mark_movable(symbols->ids);
+    rb_gc_mark_movable(symbols->dsymbol_fstr_hash);
+}
+
+void
+rb_sym_global_symbols_update_references(void)
+{
+    rb_symbols_t *symbols = &ruby_global_symbols;
+
+    symbols->ids = rb_gc_location(symbols->ids);
+    symbols->dsymbol_fstr_hash = rb_gc_location(symbols->dsymbol_fstr_hash);
 }
 
 WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_encoding *const enc, const ID type));

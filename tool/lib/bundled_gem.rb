@@ -12,7 +12,8 @@ module BundledGem
     "singleton", # prime
     "ipaddr", # rinda
     "forwardable", # prime, rinda
-    "strscan" # rexml
+    "strscan", # rexml
+    "psych" # rdoc
   ]
 
   module_function

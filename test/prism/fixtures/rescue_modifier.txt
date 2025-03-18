@@ -1,0 +1,7 @@
+a rescue b if c
+
+a = b rescue c if d
+
+a, = b rescue c if d
+
+def a = b rescue c if d

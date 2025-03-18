@@ -43,9 +43,9 @@ module LangSendSpecs
     attr_writer :foo
     private :foo=
 
-      def call_self_foo_equals(value)
-        self.foo = value
-      end
+    def call_self_foo_equals(value)
+      self.foo = value
+    end
 
     def call_self_foo_equals_masgn(value)
       a, self.foo = 1, value

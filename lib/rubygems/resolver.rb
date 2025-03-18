@@ -59,7 +59,7 @@ class Gem::Resolver
   def self.compose_sets(*sets)
     sets.compact!
 
-    sets = sets.map do |set|
+    sets = sets.flat_map do |set|
       case set
       when Gem::Resolver::BestSet then
         set
@@ -68,7 +68,7 @@ class Gem::Resolver
       else
         set
       end
-    end.flatten
+    end
 
     case sets.length
     when 0 then
@@ -183,7 +183,7 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.map(&:payload).compact
+    Gem::Molinillo::Resolver.new(self, self).resolve(@needed.map {|d| DependencyRequest.new d, nil }).tsort.filter_map(&:payload)
   rescue Gem::Molinillo::VersionConflict => e
     conflict = e.conflicts.values.first
     raise Gem::DependencyResolutionError, Conflict.new(conflict.requirement_trees.first.first, conflict.existing, conflict.requirement)

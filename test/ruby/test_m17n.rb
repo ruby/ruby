@@ -69,15 +69,6 @@ class TestM17N < Test::Unit::TestCase
     assert_regexp_fixed_encoding(r)
   end
 
-  def assert_regexp_usascii_literal(r, enc, ex = nil)
-    code = "# -*- encoding: US-ASCII -*-\n#{r}.encoding"
-    if ex
-      assert_raise(ex) { eval(code) }
-    else
-      assert_equal(enc, eval(code))
-    end
-  end
-
   def encdump(str)
     d = str.dump
     if /\.force_encoding\("[A-Za-z0-9.:_+-]*"\)\z/ =~ d
@@ -1436,31 +1427,42 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_regexp_usascii
-    assert_regexp_usascii_literal('//', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{ }/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{"a"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{%q"\x80"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/#{"\x80"}/', Encoding::ASCII_8BIT)
+    tests = [
+      [__LINE__, '//', Encoding::US_ASCII],
+      [__LINE__, '/#{ }/', Encoding::US_ASCII],
+      [__LINE__, '/#{"a"}/', Encoding::US_ASCII],
+      [__LINE__, '/#{%q"\x80"}/', Encoding::US_ASCII],
+      [__LINE__, '/#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/a/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{ }/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{"a"}/', Encoding::US_ASCII)
-    assert_regexp_usascii_literal('/a#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/a#{"\x80"}/', Encoding::ASCII_8BIT)
+      [__LINE__, '/a/', Encoding::US_ASCII],
+      [__LINE__, '/a#{ }/', Encoding::US_ASCII],
+      [__LINE__, '/a#{"a"}/', Encoding::US_ASCII],
+      [__LINE__, '/a#{%q"\x80"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/a#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/\x80/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{ }/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{"a"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT)
-    assert_regexp_usascii_literal('/\x80#{"\x80"}/', Encoding::ASCII_8BIT)
+      [__LINE__, '/\x80/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{ }/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{"a"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{%q"\x80"}/', Encoding::ASCII_8BIT],
+      [__LINE__, '/\x80#{"\x80"}/', Encoding::ASCII_8BIT],
 
-    assert_regexp_usascii_literal('/\u1234/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{ }/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{"a"}/', Encoding::UTF_8)
-    assert_regexp_usascii_literal('/\u1234#{%q"\x80"}/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{"\x80"}/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234\x80/', nil, SyntaxError)
-    assert_regexp_usascii_literal('/\u1234#{ }\x80/', nil, RegexpError)
+      [__LINE__, '/\u1234/', Encoding::UTF_8],
+      [__LINE__, '/\u1234#{ }/', Encoding::UTF_8],
+      [__LINE__, '/\u1234#{"a"}/', Encoding::UTF_8],
+
+      [__LINE__, '/\u1234#{%q"\x80"}/', nil, SyntaxError],
+      [__LINE__, '/\u1234#{"\x80"}/', nil, SyntaxError],
+      [__LINE__, '/\u1234\x80/', nil, SyntaxError],
+      [__LINE__, '/\u1234#{ }\x80/', nil, RegexpError],
+    ]
+    all_assertions_foreach(nil, *tests) do |line, r, enc, ex|
+      code = "# -*- encoding: US-ASCII -*-\n#{r}.encoding"
+      if ex
+        assert_raise(ex) {eval(code, nil, __FILE__, line-1)}
+      else
+        assert_equal(enc, eval(code, nil, __FILE__, line-1))
+      end
+    end
   end
 
   def test_gbk

@@ -1,4 +1,3 @@
-# frozen_string_literal: true
 a = 'string'
 b = a
 c = b

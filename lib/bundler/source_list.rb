@@ -91,7 +91,7 @@ module Bundler
     end
 
     def rubygems_remotes
-      rubygems_sources.map(&:remotes).flatten.uniq
+      rubygems_sources.flat_map(&:remotes).uniq
     end
 
     def all_sources
@@ -139,6 +139,10 @@ module Bundler
       lock_sources = dup_with_replaced_sources(replacement_sources).lock_sources
 
       different_sources?(lock_sources, replacement_sources)
+    end
+
+    def prefer_local!
+      all_sources.each(&:prefer_local!)
     end
 
     def local_only!

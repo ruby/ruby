@@ -30,7 +30,6 @@
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
 #include "vm_core.h"
@@ -136,7 +135,6 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
         rb_yjit_tracing_invalidate_all();
-        rb_rjit_tracing_invalidate_all(new_iseq_events);
     }
 }
 
@@ -937,6 +935,9 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
             const rb_method_entry_t *me;
             VALUE iclass = Qnil;
             me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->called_id, &iclass);
+            if (!me) {
+                me = rb_method_entry_without_refinements(trace_arg->klass, trace_arg->id, &iclass);
+            }
             return rb_unnamed_parameters(rb_method_entry_arity(me));
         }
         break;
@@ -1283,7 +1284,6 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     }
 
     rb_yjit_tracing_invalidate_all();
-    rb_rjit_tracing_invalidate_all(tp->events);
 
     ruby_vm_event_local_num++;
 
@@ -1760,7 +1760,7 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
     rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
     for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
-        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i], NULL, (void *)func);
+        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i].func, NULL, (void *)(uintptr_t)func);
         if (existing_func == NULL || existing_func == func) {
             /* Either this slot was NULL, and we set it to func, or, this slot was already equal to func.
              * In either case, clobber the data with our data. Note that concurrent calls to

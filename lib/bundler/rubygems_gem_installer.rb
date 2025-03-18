@@ -23,7 +23,9 @@ module Bundler
         FileUtils.mkdir_p gem_dir, mode: 0o755
       end
 
-      extract_files
+      SharedHelpers.filesystem_access(gem_dir, :write) do
+        extract_files
+      end
 
       build_extensions if spec.extensions.any?
       write_build_info_file
@@ -145,7 +147,6 @@ module Bundler
       SharedHelpers.filesystem_access(extension_dir, :create) do
         FileUtils.mkdir_p extension_dir
       end
-      require "shellwords" unless Bundler.rubygems.provides?(">= 3.2.25")
     end
 
     def strict_rm_rf(dir)

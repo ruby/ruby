@@ -34,7 +34,6 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
@@ -250,6 +249,18 @@ class TestFiber < Test::Unit::TestCase
     assert_equal(1,   Thread.current[:v]); }
     assert_equal(nil, Thread.current[:v]); fb.resume
     assert_equal(nil, Thread.current[:v]);
+  end
+
+  def test_fiber_variables
+    assert_equal "bar", Fiber.new {Fiber[:foo] = "bar"; Fiber[:foo]}.resume
+
+    key = :"#{self.class.name}#.#{self.object_id}"
+    Fiber[key] = 42
+    assert_equal 42, Fiber[key]
+
+    key = Object.new
+    def key.to_str; "foo"; end
+    assert_equal "Bar", Fiber.new {Fiber[key] = "Bar"; Fiber[key]}.resume
   end
 
   def test_alive
