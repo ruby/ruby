@@ -11,6 +11,7 @@ describe "Array#fetch_values" do
       it "returns the values for indexes" do
         @array.fetch_values(0).should == [:a]
         @array.fetch_values(0, 2).should == [:a, :c]
+        @array.fetch_values(-1).should == [:c]
       end
 
       it "returns the values for indexes ordered in the order of the requested indexes" do
