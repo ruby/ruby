@@ -1004,7 +1004,7 @@ opt_duparray_send
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)argc;
 // attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)argc;
 {
-    switch(method) {
+    switch (method) {
       case idIncludeP:
         val = vm_opt_duparray_include_p(ec, ary, TOPN(0));
         break;
@@ -1026,7 +1026,7 @@ opt_newarray_send
 // attr rb_snum_t sp_inc = 1 - (rb_snum_t)num;
 // attr rb_snum_t comptime_sp_inc = 1 - (rb_snum_t)num;
 {
-    switch(method) {
+    switch (method) {
       case VM_OPT_NEWARRAY_SEND_HASH:
         val = vm_opt_newarray_hash(ec, num, STACK_ADDR_FROM_TOP(num));
         break;
