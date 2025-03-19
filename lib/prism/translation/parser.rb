@@ -59,6 +59,12 @@ module Prism
       # should be implemented as needed.
       #
       def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
+        if !builder.is_a?(Prism::Translation::Parser::Builder)
+          warn(<<~MSG, uplevel: 1)
+            [deprecation]: The builder passed to `Prism::Translation::Parser.new` is not a \
+            `Prism::Translation::Parser::Builder` subclass. This will raise in the next major version.
+          MSG
+        end
         @parser = parser
 
         super(builder)

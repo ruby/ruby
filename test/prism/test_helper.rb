@@ -314,15 +314,16 @@ module Prism
       end
     end
 
-    def ignore_warnings
-      previous = $VERBOSE
-      $VERBOSE = nil
+    def capture_warnings
+      $stderr = StringIO.new
+      yield
+      $stderr.string
+    ensure
+      $stderr = STDERR
+    end
 
-      begin
-        yield
-      ensure
-        $VERBOSE = previous
-      end
+    def ignore_warnings
+      capture_warnings { return yield }
     end
   end
 end

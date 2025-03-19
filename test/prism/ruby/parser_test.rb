@@ -145,6 +145,16 @@ module Prism
       end
     end
 
+    def test_non_prism_builder_class_deprecated
+      warnings = capture_warnings { Prism::Translation::Parser33.new(Parser::Builders::Default.new) }
+
+      assert_include(warnings, "#{__FILE__}:#{__LINE__ - 2}")
+      assert_include(warnings, "is not a `Prism::Translation::Parser::Builder` subclass")
+
+      warnings = capture_warnings { Prism::Translation::Parser33.new }
+      assert_empty(warnings)
+    end
+
     def test_it_block_parameter_syntax
       it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
 
