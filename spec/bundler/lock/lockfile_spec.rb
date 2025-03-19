@@ -1908,6 +1908,63 @@ RSpec.describe "the lockfile format" do
     L
   end
 
+  it "automatically fixes the lockfile when it includes a gem under the correct GIT section, but also under an incorrect GEM section, with a higher version, and with no explicit Gemfile requirement" do
+    git = build_git "foo"
+
+    gemfile <<~G
+      source "https://gem.repo1/"
+      gem "foo", git: "#{lib_path("foo-1.0")}"
+    G
+
+    # If the lockfile erroneously lists platform versions of the gem
+    # that don't match the locked version of the git repo we should remove them.
+
+    lockfile <<~L
+      GIT
+        remote: #{lib_path("foo-1.0")}
+        revision: #{git.ref_for("main")}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: https://gem.repo1/
+        specs:
+          foo (1.1-x86_64-linux-gnu)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GIT
+        remote: #{lib_path("foo-1.0")}
+        revision: #{git.ref_for("main")}
+        specs:
+          foo (1.0)
+
+      GEM
+        remote: https://gem.repo1/
+        specs:
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        foo!
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+  end
+
   it "automatically fixes the lockfile when it includes a gem under the correct GIT section, but also under an incorrect GEM section, with a higher version" do
     git = build_git "foo"
 

@@ -955,9 +955,15 @@ module Bundler
 
           if locked_specs.empty?
             @missing_lockfile_dep = name if dep_changed == false
-          elsif !dep.matches_spec?(locked_specs.first)
-            @gems_to_unlock << name
-            dep_changed = true
+          else
+            if locked_specs.map(&:source).uniq.size > 1
+              @locked_specs.delete(locked_specs.select {|s| s.source != dep.source })
+            end
+
+            unless dep.matches_spec?(locked_specs.first)
+              @gems_to_unlock << name
+              dep_changed = true
+            end
           end
         end
 
