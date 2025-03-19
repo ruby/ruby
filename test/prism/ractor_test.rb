@@ -1,0 +1,77 @@
+# frozen_string_literal: true
+
+return unless defined?(Ractor)
+
+require_relative "test_helper"
+
+return if Prism::TestCase.windows?
+
+module Prism
+  class RactorTest < TestCase
+    def test_version
+      assert_match(/\A\d+\.\d+\.\d+\z/, with_ractor { Prism::VERSION })
+    end
+
+    def test_parse_file
+      assert_equal("Prism::ParseResult", with_ractor(__FILE__) { |filepath| Prism.parse_file(filepath).class })
+    end
+
+    def test_lex_file
+      assert_equal("Prism::LexResult", with_ractor(__FILE__) { |filepath| Prism.lex_file(filepath).class })
+    end
+
+    def test_parse_file_comments
+      assert_equal("Array", with_ractor(__FILE__) { |filepath| Prism.parse_file_comments(filepath).class })
+    end
+
+    def test_parse_lex_file
+      assert_equal("Prism::ParseLexResult", with_ractor(__FILE__) { |filepath| Prism.parse_lex_file(filepath).class })
+    end
+
+    def test_parse_success
+      assert_equal("true", with_ractor("1 + 1") { |source| Prism.parse_success?(source) })
+    end
+
+    def test_parse_failure
+      assert_equal("true", with_ractor("1 +") { |source| Prism.parse_failure?(source) })
+    end
+
+    def test_string_query_local
+      assert_equal("true", with_ractor("foo") { |source| StringQuery.local?(source) })
+    end
+
+    def test_string_query_constant
+      assert_equal("true", with_ractor("FOO") { |source| StringQuery.constant?(source) })
+    end
+
+    def test_string_query_method_name
+      assert_equal("true", with_ractor("foo?") { |source| StringQuery.method_name?(source) })
+    end
+
+    if !ENV["PRISM_BUILD_MINIMAL"]
+      def test_dump_file
+        result = with_ractor(__FILE__) { |filepath| Prism.dump_file(filepath) }
+        assert_operator(result, :start_with?, "PRISM")
+      end
+    end
+
+    private
+
+    # Note that this must be done in a subprocess, otherwise it can mess up
+    # CRuby's test suite.
+    def with_ractor(*arguments, &block)
+      reader, writer = IO.pipe
+
+      pid = fork do
+        reader.close
+        writer.puts(ignore_warnings { Ractor.new(*arguments, &block) }.take)
+      end
+
+      writer.close
+      result = reader.gets.chomp
+
+      Process.wait(pid)
+      result
+    end
+  end
+end

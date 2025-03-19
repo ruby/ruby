@@ -212,6 +212,11 @@ module Prism
       yield Encoding::EUC_TW, codepoints_euc_tw
     end
 
+    # True if the current platform is Windows.
+    def self.windows?
+      RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+    end
+
     private
 
     if RUBY_ENGINE == "ruby" && RubyVM::InstructionSequence.compile("").to_a[4][:parser] != :prism
