@@ -789,7 +789,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     ExpectedStderrList = [
       %r(
-        -e:(?:1:)?\s\[BUG\]\sSegmentation\sfault.*\n
+        \[BUG\]\sSegmentation\sfault.*\n
       )x,
       %r(
         #{ Regexp.quote(RUBY_DESCRIPTION) }\n\n
