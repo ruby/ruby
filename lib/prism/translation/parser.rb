@@ -60,7 +60,7 @@ module Prism
       #
       def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
         if !builder.is_a?(Prism::Translation::Parser::Builder)
-          warn(<<~MSG, uplevel: 1)
+          warn(<<~MSG, uplevel: 1, category: :deprecated)
             [deprecation]: The builder passed to `Prism::Translation::Parser.new` is not a \
             `Prism::Translation::Parser::Builder` subclass. This will raise in the next major version.
           MSG
