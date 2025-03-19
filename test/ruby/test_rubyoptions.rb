@@ -787,6 +787,8 @@ class TestRubyOptions < Test::Unit::TestCase
     end
     ExecOptions = opts.freeze
 
+    # The regexp list that should match the entire stderr output.
+    # see assert_pattern_list
     ExpectedStderrList = [
       %r(
         (?:-e:(?:1:)?)?\s\[BUG\]\sSegmentation\sfault.*\n
