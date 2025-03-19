@@ -1084,18 +1084,9 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     char* d = buffer->ptr + buffer->len;
     int len = fpconv_dtoa(value, d);
 
-    /* fpconv_dtoa converts a float to its shorted string representation. When
-     * converting a float that is exactly an integer (e.g. `Float(2)`) this
-     * returns in a string that looks like an integer. This is correct, since
-     * JSON treats ints and floats the same. However, to not break integrations
-     * that expect a string representation looking like a float, we append a
-     * "." in that case.
+    /* fpconv_dtoa converts a float to its shortest string representation,
+     * but it adds a ".0" if this is a plain integer.
      */
-    if(!memchr(d, '.', len) && !memchr(d, 'e', len)) {
-        d[len] = '.';
-        d[len+1] = '0';
-        len += 2;
-    }
     buffer->len += len;
 }
 

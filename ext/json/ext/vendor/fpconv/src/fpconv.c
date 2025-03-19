@@ -222,7 +222,11 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
         memcpy(dest, digits, ndigits);
         memset(dest + ndigits, '0', K);
 
-        return ndigits + K;
+        /* add a .0 to mark this as a float. */
+        dest[ndigits + K] = '.';
+        dest[ndigits + K + 1] = '0';
+
+        return ndigits + K + 2;
     }
 
     /* write decimal w/o scientific notation */
@@ -290,7 +294,9 @@ static int filter_special(double fp, char* dest)
 {
     if(fp == 0.0) {
         dest[0] = '0';
-        return 1;
+        dest[1] = '.';
+        dest[2] = '0';
+        return 3;
     }
 
     uint64_t bits = get_dbits(fp);
