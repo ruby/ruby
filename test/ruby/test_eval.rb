@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'tmpdir'
 
 class TestEval < Test::Unit::TestCase
 
