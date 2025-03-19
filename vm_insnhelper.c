@@ -1665,6 +1665,17 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     attr_index_t index;
     vm_ic_atomic_shape_and_index(ic, &dest_shape_id, &index);
 
+    bool ivar_set_event_enabled = (ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET) &&
+        (ruby_vm_event_flags & RUBY_EVENT_IVAR_SET);
+
+    if (ivar_set_event_enabled) {
+        VALUE pair = rb_ary_new_capa(2);
+        rb_ary_push(pair, rb_id2sym(id));
+        rb_ary_push(pair, val);
+
+        EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_IVAR_SET, obj, id, 0, 0, pair);
+    }
+
     if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
           case T_OBJECT:
@@ -4876,12 +4887,15 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
         rb_check_arity(calling->argc, 1, 1);
 
         const unsigned int aset_mask = (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG | VM_CALL_FORWARDING);
+        bool ivar_set_event_enabled = (ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET) && (ruby_vm_event_flags & RUBY_EVENT_IVAR_SET);
 
         if (vm_cc_markable(cc)) {
             vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
             VM_CALL_METHOD_ATTR(v,
                                 vm_call_attrset_direct(ec, cfp, cc, calling->recv),
-                                CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & aset_mask)));
+                                CC_SET_FASTPATH(cc, vm_call_attrset,
+                                    !(vm_ci_flag(ci) & aset_mask) &&
+                                    !ivar_set_event_enabled));
         }
         else {
             cc = &((struct rb_callcache) {
@@ -4901,8 +4915,19 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
             VM_CALL_METHOD_ATTR(v,
                                 vm_call_attrset_direct(ec, cfp, cc, calling->recv),
-                                CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & aset_mask)));
+                                CC_SET_FASTPATH(cc, vm_call_attrset,
+                                    !(vm_ci_flag(ci) & aset_mask) &&
+                                    !ivar_set_event_enabled));
         }
+
+        if (ivar_set_event_enabled) {
+            ID mid = vm_cc_cme(cc)->def->body.attr.id;
+            VALUE pair = rb_ary_new_capa(2);
+            rb_ary_push(pair, rb_id2sym(mid));
+            rb_ary_push(pair, v);
+            EXEC_EVENT_HOOK(ec, RUBY_EVENT_IVAR_SET, calling->recv, mid, mid, 0, pair);
+        }
+
         return v;
 
       case VM_METHOD_TYPE_IVAR:

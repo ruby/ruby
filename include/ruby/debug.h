@@ -532,6 +532,16 @@ VALUE rb_tracearg_parameters(rb_trace_arg_t *trace_arg);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
+ * Queries the name of the ivar that is set.
+ *
+ * @param[in]  trace_arg  A trace instance.
+ * @retval     RUBY_Qnil  There is no ivar.
+ * @retval     otherwise  Its ivar name, in Ruby level Symbol.
+ */
+VALUE rb_tracearg_ivar_name(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL((1))
+/**
  * Queries the method name of the point where the trace is at.
  *
  * @param[in]  trace_arg  A trace instance.

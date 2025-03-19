@@ -3024,6 +3024,16 @@ rb_obj_ivar_set_m(VALUE obj, VALUE iv, VALUE val)
 {
     ID id = id_for_var(obj, iv, instance);
     if (!id) id = rb_intern_str(iv);
+
+    bool ivar_set_event_enabled = (ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET) &&
+        (ruby_vm_event_flags & RUBY_EVENT_IVAR_SET);
+
+    if (ivar_set_event_enabled) {
+        VALUE pair = rb_ary_new_capa(2);
+        rb_ary_push(pair, iv);
+        rb_ary_push(pair, val);
+        EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_IVAR_SET, obj, id, 0, 0, pair);
+    }
     return rb_ivar_set(obj, id, val);
 }
 
