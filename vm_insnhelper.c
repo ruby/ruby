@@ -5752,8 +5752,9 @@ vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
     VALUE c = rb_define_class_id(id, s);
     rb_define_alloc_func(c, rb_get_alloc_func(c));
     rb_set_class_path_string(c, cbase, rb_id2str(id));
+    rb_const_set_raw(cbase, id, c);
     rb_class_inherited(s, c);
-    rb_const_set(cbase, id, c);
+    rb_const_added(cbase, id);
     return c;
 }
 

@@ -106,8 +106,8 @@ describe "Class.inherited" do
   ruby_version_is "3.5" do # https://bugs.ruby-lang.org/issues/21143
     it "is invoked before `const_added`" do
       CoreClassSpecs::Callbacks::ORDER.should == [
-        [:inherited, CoreClassSpecs::Callbacks::Child, nil],
-        [:const_added, :Child, "constant"],
+        [:inherited, CoreClassSpecs::Callbacks::Child, "constant", :location],
+        [:const_added, :Child, "constant", :location],
       ]
     end
   end
