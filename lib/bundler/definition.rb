@@ -953,11 +953,11 @@ module Bundler
         unless name == "bundler"
           locked_specs = @originally_locked_specs[name]
 
-          if locked_specs.any? && !dep.matches_spec?(locked_specs.first)
+          if locked_specs.empty?
+            @missing_lockfile_dep = name if dep_changed == false
+          elsif !dep.matches_spec?(locked_specs.first)
             @gems_to_unlock << name
             dep_changed = true
-          elsif locked_specs.empty? && dep_changed == false
-            @missing_lockfile_dep = name
           end
         end
 
