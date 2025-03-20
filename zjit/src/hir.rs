@@ -540,13 +540,10 @@ impl Function {
         let rpo = self.rpo();
         // Walk the graph, computing predecessor blocks
         for block in &rpo {
-            for insn in &self.blocks[block.0].insns {
-                match self.find(*insn) {
-                    Insn::IfTrue { target, .. }
-                    | Insn::IfFalse { target, .. }
-                    | Insn::Jump(target) =>
-                        preds[target.target.0].push(*insn),
-                    _ => {}
+            for insn_id in &self.blocks[block.0].insns {
+                let insn = self.find(*insn_id);
+                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = insn {
+                    preds[target.target.0].push(*insn_id);
                 }
             }
         }
