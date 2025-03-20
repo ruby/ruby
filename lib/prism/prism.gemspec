@@ -96,6 +96,7 @@ Gem::Specification.new do |spec|
     "lib/prism/string_query.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
+    "lib/prism/translation/parser_current.rb",
     "lib/prism/translation/parser33.rb",
     "lib/prism/translation/parser34.rb",
     "lib/prism/translation/parser35.rb",

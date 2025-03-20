@@ -155,6 +155,15 @@ module Prism
       assert_empty(warnings)
     end
 
+    if RUBY_VERSION >= "3.3"
+      def test_current_parser_for_current_ruby
+        major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
+        # Let's just hope there never is a Ruby 3.10 or similar
+        expected = major * 10 + minor
+        assert_equal(expected, Translation::ParserCurrent.new.version)
+      end
+    end
+
     def test_it_block_parameter_syntax
       it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
 
