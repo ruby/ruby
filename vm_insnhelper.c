@@ -4782,6 +4782,10 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
                                 vm_call_attrset_direct(ec, cfp, cc, calling->recv),
                                 CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & aset_mask)));
         }
+
+        ID mid = vm_ci_mid(ci);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_IVAR_SET, calling->recv, mid, mid, 0, v);
+
         return v;
 
       case VM_METHOD_TYPE_IVAR:
