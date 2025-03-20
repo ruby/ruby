@@ -1004,8 +1004,9 @@ rb_define_class(const char *name, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_vm_register_global_object(klass);
+    rb_const_set_raw(rb_cObject, id, klass);
     rb_class_inherited(super, klass);
-    rb_const_set(rb_cObject, id, klass);
+    rb_const_added(klass, id);
 
     return klass;
 }
@@ -1043,8 +1044,10 @@ rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path_string(klass, outer, rb_id2str(id));
+
+    rb_const_set_raw(outer, id, klass);
     rb_class_inherited(super, klass);
-    rb_const_set(outer, id, klass);
+    rb_const_added(outer, id);
 
     return klass;
 }
