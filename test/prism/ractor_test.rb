@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-return unless defined?(Ractor)
+return if !defined?(Ractor) || !defined?(fork)
 
 require_relative "test_helper"
-
-return if Prism::TestCase.windows?
 
 module Prism
   class RactorTest < TestCase
@@ -60,19 +58,13 @@ module Prism
     # Note that this must be done in a subprocess, otherwise it can mess up
     # CRuby's test suite.
     def with_ractor(*arguments, &block)
-      reader, writer = IO.pipe
-
-      pid = fork do
-        reader.close
-        writer.puts(ignore_warnings { Ractor.new(*arguments, &block) }.take)
+      IO.popen("-") do |reader|
+        if reader
+          reader.gets.chomp
+        else
+          puts(ignore_warnings { Ractor.new(*arguments, &block) }.take)
+        end
       end
-
-      writer.close
-      result = reader.gets.chomp
-      reader.close
-
-      Process.wait(pid)
-      result
     end
   end
 end
