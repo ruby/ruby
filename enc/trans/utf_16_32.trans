@@ -539,7 +539,8 @@ rb_to_UTF_32 = {
     NULL, NULL, NULL, fun_so_to_utf_32
 };
 
-TRANS_INIT(utf_16_32)
+void
+Init_utf_16_32_trans(void)
 {
     rb_register_transcoder(&rb_from_UTF_16BE);
     rb_register_transcoder(&rb_to_UTF_16BE);
