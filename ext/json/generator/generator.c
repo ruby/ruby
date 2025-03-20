@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "../fbuffer/fbuffer.h"
+#include "../vendor/fpconv.c"
 
 #include <math.h>
 #include <ctype.h>
@@ -1049,8 +1050,6 @@ static void generate_json_integer(FBuffer *buffer, struct generate_json_data *da
         generate_json_bignum(buffer, data, state, obj);
 }
 #endif
-
-#include "../vendor/fpconv/src/fpconv.c"
 
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
 {
