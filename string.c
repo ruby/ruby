@@ -42,6 +42,7 @@
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "vm_sync.h"
@@ -2578,6 +2579,8 @@ rb_check_lockedtmp(VALUE str)
 static inline void
 str_modifiable(VALUE str)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     if (RB_UNLIKELY(FL_ANY_RAW(str, STR_UNMODIFIABLE_MASK))) {
         if (CHILLED_STRING_P(str)) {
             CHILLED_STRING_MUTATED(str);
@@ -2604,6 +2607,8 @@ str_dependent_p(VALUE str)
 static inline int
 str_independent(VALUE str)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     if (RB_UNLIKELY(FL_ANY_RAW(str, STR_DEPENDANT_MASK))) {
         str_modifiable(str);
         return !str_dependent_p(str);
@@ -2614,6 +2619,8 @@ str_independent(VALUE str)
 static void
 str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     char *ptr;
     char *oldptr;
     long capa = len + expand;
@@ -2656,6 +2663,8 @@ rb_str_modify(VALUE str)
 void
 rb_str_modify_expand(VALUE str, long expand)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     int termlen = TERM_LEN(str);
     long len = RSTRING_LEN(str);
 
@@ -2719,6 +2728,8 @@ rb_must_asciicompat(VALUE str)
 VALUE
 rb_string_value(volatile VALUE *ptr)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     VALUE s = *ptr;
     if (!RB_TYPE_P(s, T_STRING)) {
         s = rb_str_to_str(s);
@@ -3276,6 +3287,8 @@ rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
 void
 rb_str_set_len(VALUE str, long len)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     long capa;
     const int termlen = TERM_LEN(str);
 
