@@ -69,6 +69,7 @@ module Prism
 
       writer.close
       result = reader.gets.chomp
+      reader.close
 
       Process.wait(pid)
       result
