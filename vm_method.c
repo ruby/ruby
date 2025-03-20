@@ -234,9 +234,6 @@ invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl
         if (rb_yjit_enabled_p) {
             rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
         }
-        if (rb_rjit_enabled) {
-            rb_rjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-        }
         rb_id_table_delete(tbl, mid);
         RB_DEBUG_COUNTER_INC(cc_invalidate_tree_callable);
     }
