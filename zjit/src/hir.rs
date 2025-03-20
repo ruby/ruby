@@ -4,7 +4,7 @@
 use crate::{
     cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
-use std::{collections::{HashMap, HashSet}, slice::Iter};
+use std::{cell::RefCell, collections::{HashMap, HashSet}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -43,16 +43,30 @@ fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -
 
 impl std::fmt::Display for VALUE {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
+        self.print(&PtrPrintMap::identity()).fmt(f)
+    }
+}
+
+impl VALUE {
+    pub fn print(self, ptr_map: &PtrPrintMap) -> VALUEPrinter {
+        VALUEPrinter { inner: self, ptr_map }
+    }
+}
+
+/// Print adaptor for [`VALUE`]. See [`PtrPrintMap`].
+pub struct VALUEPrinter<'a> {
+    inner: VALUE,
+    ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> std::fmt::Display for VALUEPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self.inner {
             val if val.fixnum_p() => write!(f, "{}", val.as_fixnum()),
-            &Qnil => write!(f, "nil"),
-            &Qtrue => write!(f, "true"),
-            &Qfalse => write!(f, "false"),
-            // For tests, we want to check HIR snippets textually. Addresses change between runs,
-            // making tests fail. Instead, pick an arbitrary hex value to use as a "pointer" so we
-            // can check the rest of the HIR.
-            _ if cfg!(test) => write!(f, "VALUE(0xffffffffffffffff)"),
-            val => write!(f, "VALUE({:#X?})", val.as_ptr::<u8>()),
+            Qnil => write!(f, "nil"),
+            Qtrue => write!(f, "true"),
+            Qfalse => write!(f, "false"),
+            val => write!(f, "VALUE({:p})", self.ptr_map.map_ptr(val.as_ptr::<VALUE>())),
         }
     }
 }
@@ -140,9 +154,88 @@ pub enum Const {
 
 impl std::fmt::Display for Const {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            Const::Value(val) => write!(f, "Value({val})"),
-            _ => write!(f, "{self:?}"),
+        self.print(&PtrPrintMap::identity()).fmt(f)
+    }
+}
+
+impl Const {
+    fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> ConstPrinter<'a> {
+        ConstPrinter { inner: self, ptr_map }
+    }
+}
+
+/// Print adaptor for [`Const`]. See [`PtrPrintMap`].
+struct ConstPrinter<'a> {
+    inner: &'a Const,
+    ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> std::fmt::Display for ConstPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self.inner {
+            Const::Value(val) => write!(f, "Value({})", val.print(self.ptr_map)),
+            Const::CPtr(val) => write!(f, "CPtr({:p})", self.ptr_map.map_ptr(val)),
+            _ => write!(f, "{:?}", self.inner),
+        }
+    }
+}
+
+/// For output stability in tests, we assign each pointer with a stable
+/// address the first time we see it. This mapping is off by default;
+/// set [`PtrPrintMap::map_ptrs`] to switch it on.
+///
+/// Because this is extra state external to any pointer being printed, a
+/// printing adapter struct that wraps the pointer along with this map is
+/// required to make use of this effectly. The [`std::fmt::Display`]
+/// implementation on the adapter struct can then be reused to implement
+/// `Display` on the inner type with a default [`PtrPrintMap`], which
+/// does not perform any mapping.
+pub struct PtrPrintMap {
+    inner: RefCell<PtrPrintMapInner>,
+    map_ptrs: bool,
+}
+
+struct PtrPrintMapInner {
+    map: HashMap<*const c_void, *const c_void>,
+    next_ptr: *const c_void,
+}
+
+impl PtrPrintMap {
+    /// Return a mapper that maps the pointer to itself.
+    pub fn identity() -> Self {
+        Self {
+            map_ptrs: false,
+            inner: RefCell::new(PtrPrintMapInner {
+                map: HashMap::default(), next_ptr:
+                ptr::without_provenance(0x1000) // Simulate 4 KiB zero page
+            })
+        }
+    }
+}
+
+impl PtrPrintMap {
+    /// Map a pointer for printing
+    fn map_ptr<T>(&self, ptr: *const T) -> *const T {
+        // When testing, address stability is not a concern so print real address to enable code
+        // reuse
+        if !self.map_ptrs {
+            return ptr;
+        }
+
+        use std::collections::hash_map::Entry::*;
+        let ptr = ptr.cast();
+        let inner = &mut *self.inner.borrow_mut();
+        match inner.map.entry(ptr) {
+            Occupied(entry) => entry.get().cast(),
+            Vacant(entry) => {
+                // Pick a fake address that is suitably aligns for T and remember it in the map
+                let mapped = inner.next_ptr.wrapping_add(inner.next_ptr.align_offset(align_of::<T>()));
+                entry.insert(mapped);
+
+                // Bump for the next pointer
+                inner.next_ptr = mapped.wrapping_add(size_of::<T>());
+                mapped.cast()
+            }
         }
     }
 }
@@ -241,15 +334,20 @@ impl Block {
 struct FunctionPrinter<'a> {
     fun: &'a Function,
     display_snapshot: bool,
+    ptr_map: PtrPrintMap,
 }
 
 impl<'a> FunctionPrinter<'a> {
-    fn without_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
-        FunctionPrinter { fun, display_snapshot: false }
+    fn without_snapshot(fun: &'a Function) -> Self {
+        let mut ptr_map = PtrPrintMap::identity();
+        ptr_map.map_ptrs = true;
+        Self { fun, display_snapshot: false, ptr_map }
     }
 
     fn with_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
-        FunctionPrinter { fun, display_snapshot: true }
+        let mut printer = Self::without_snapshot(fun);
+        printer.display_snapshot = true;
+        printer
     }
 }
 
@@ -652,7 +750,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     write!(f, "{sep}{param}")?;
                     let insn_type = fun.type_of(*param);
                     if !insn_type.is_subtype(types::Empty) {
-                        write!(f, ":{insn_type}")?;
+                        write!(f, ":{}", insn_type.print(&self.ptr_map))?;
                     }
                     sep = ", ";
                 }
@@ -669,11 +767,11 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                     if insn_type.is_subtype(types::Empty) {
                         write!(f, "{insn_id} = ")?;
                     } else {
-                        write!(f, "{insn_id}:{insn_type} = ")?;
+                        write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
                 match insn {
-                    Insn::Const { val } => { write!(f, "Const {val}")?; }
+                    Insn::Const { val } => { write!(f, "Const {}", val.print(&self.ptr_map))?; }
                     Insn::Param { idx } => { write!(f, "Param {idx}")?; }
                     Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
                     Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}")?; }
@@ -693,8 +791,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         // For tests, we want to check HIR snippets textually. Addresses change
                         // between runs, making tests fail. Instead, pick an arbitrary hex value to
                         // use as a "pointer" so we can check the rest of the HIR.
-                        let blockiseq = if cfg!(test) { "0xffffffffffffffff".into() } else { format!("{blockiseq:?}") };
-                        write!(f, "Send {self_val}, {blockiseq}, :{}", call_info.method_name)?;
+                        write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
                         for arg in args {
                             write!(f, ", {arg}")?;
                         }
@@ -1509,7 +1606,7 @@ mod tests {
         eval("def test = [1, 2, 3]");
         assert_method_hir("test", "
             bb0():
-              v1:ArrayExact[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:ArrayExact = ArrayDup v1
               Return v2
         ");
@@ -1522,7 +1619,7 @@ mod tests {
         eval("def test = \"hello\"");
         assert_method_hir("test", "
             bb0():
-              v1:StringExact[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy { val: InsnId(1) }
               Return v2
         ");
@@ -1533,7 +1630,7 @@ mod tests {
         eval("def test = 999999999999999999999999999999999999");
         assert_method_hir("test", "
             bb0():
-              v1:Bignum[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
         ");
     }
@@ -1543,7 +1640,7 @@ mod tests {
         eval("def test = 1.5");
         assert_method_hir("test", "
             bb0():
-              v1:Flonum[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
         ");
     }
@@ -1553,7 +1650,7 @@ mod tests {
         eval("def test = 1.7976931348623157e+308");
         assert_method_hir("test", "
             bb0():
-              v1:HeapFloat[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
         ");
     }
@@ -1563,7 +1660,7 @@ mod tests {
         eval("def test = :foo");
         assert_method_hir("test", "
             bb0():
-              v1:StaticSymbol[VALUE(0xffffffffffffffff)] = Const Value(VALUE(0xffffffffffffffff))
+              v1:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
         ");
     }
@@ -1927,8 +2024,29 @@ mod tests {
         ");
         assert_method_hir("test",  "
             bb0(v0:BasicObject):
-              v3:BasicObject = Send v0, 0xffffffffffffffff, :each
+              v3:BasicObject = Send v0, 0x1000, :each
               Return v3
+        ");
+    }
+
+    #[test]
+    fn different_objects_get_addresses() {
+        eval("def test = unknown_method([0], [1], '2', '2')");
+
+        // The 2 string literals have the same address because they're deduped.
+        assert_method_hir("test",  "
+            bb0():
+              v1:BasicObject = PutSelf
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v4:ArrayExact = ArrayDup v3
+              v6:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:ArrayExact = ArrayDup v6
+              v9:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v10:StringExact = StringCopy { val: InsnId(9) }
+              v12:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v13:StringExact = StringCopy { val: InsnId(12) }
+              v15:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v10, v13
+              Return v15
         ");
     }
 }

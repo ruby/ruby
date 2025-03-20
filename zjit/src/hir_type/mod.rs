@@ -2,6 +2,7 @@
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass};
 use crate::cruby::ClassRelationship;
+use crate::hir::PtrPrintMap;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 /// Specialization of the type. If we know additional information about the object, we put it here.
@@ -74,10 +75,11 @@ fn get_class_name(class: Option<VALUE>) -> String {
     }).unwrap_or_else(|| "Unknown".to_string())
 }
 
-fn write_spec(f: &mut std::fmt::Formatter, ty: Type) -> std::fmt::Result {
+fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::Result {
+    let ty = printer.inner;
     match ty.spec {
         Specialization::Any | Specialization::Empty => { Ok(()) },
-        Specialization::Object(val) => write!(f, "[{val}]"),
+        Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(Some(val))),
         Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(Some(val))),
         Specialization::Int(val) if ty.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
@@ -94,16 +96,23 @@ fn write_spec(f: &mut std::fmt::Formatter, ty: Type) -> std::fmt::Result {
     }
 }
 
-impl std::fmt::Display for Type {
+/// Print adaptor for [`Type`]. See [`PtrPrintMap`].
+pub struct TypePrinter<'a> {
+    inner: Type,
+    ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> std::fmt::Display for TypePrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let ty = self.inner;
         for (name, pattern) in bits::AllBitPatterns {
-            if self.bits == pattern {
+            if ty.bits == pattern {
                 write!(f, "{name}")?;
-                return write_spec(f, *self);
+                return write_spec(f, self);
             }
         }
         assert!(bits::AllBitPatterns.is_sorted_by(|(_, left), (_, right)| left > right));
-        let mut bits = self.bits;
+        let mut bits = ty.bits;
         let mut sep = "";
         for (name, pattern) in bits::AllBitPatterns {
             if bits == 0 { break; }
@@ -114,7 +123,13 @@ impl std::fmt::Display for Type {
             }
         }
         assert_eq!(bits, 0, "Should have eliminated all bits by iterating over all patterns");
-        write_spec(f, *self)
+        write_spec(f, self)
+    }
+}
+
+impl std::fmt::Display for Type {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.print(&PtrPrintMap::identity()).fmt(f)
     }
 }
 
@@ -361,6 +376,10 @@ impl Type {
 
     fn is_immediate(&self) -> bool {
         self.is_subtype(types::Immediate)
+    }
+
+    pub fn print(self, ptr_map: &PtrPrintMap) -> TypePrinter {
+        TypePrinter { inner: self, ptr_map }
     }
 }
 
