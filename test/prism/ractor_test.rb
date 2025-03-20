@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-return if !defined?(Ractor) || !defined?(fork)
+return unless defined?(Ractor) && Process.respond_to?(:fork)
 
 require_relative "test_helper"
 
