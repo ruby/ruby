@@ -4367,9 +4367,18 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     list = FIRST_ELEMENT(anchor);
 
     int do_block_optimization = 0;
+    LABEL * block_loop_label = NULL;
 
-    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK && !ISEQ_COMPILE_DATA(iseq)->catch_except_p) {
+    // If we're optimizing a block
+    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
         do_block_optimization = 1;
+
+        // If the block starts with a nop and a label,
+        // record the label so we can detect if it's a jump target
+        LINK_ELEMENT * le = FIRST_ELEMENT(anchor)->next;
+        if (IS_INSN(le) && IS_INSN_ID((INSN *)le, nop) && IS_LABEL(le->next)) {
+            block_loop_label = (LABEL *)le->next;
+        }
     }
 
     while (list) {
@@ -4386,8 +4395,26 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
             if (do_block_optimization) {
                 INSN * item = (INSN *)list;
-                if (IS_INSN_ID(item, jump)) {
+                // Give up if there is a throw
+                if (IS_INSN_ID(item, throw)) {
                     do_block_optimization = 0;
+                }
+                else {
+                    // If the instruction has a jump target, check if the
+                    // jump target is the block loop label
+                    const char *types = insn_op_types(item->insn_id);
+                    for (int j = 0; types[j]; j++) {
+                        if (types[j] == TS_OFFSET) {
+                            // If the jump target is equal to the block loop
+                            // label, then we can't do the optimization because
+                            // the leading `nop` instruction fires the block
+                            // entry tracepoint
+                            LABEL * target = (LABEL *)OPERAND_AT(item, j);
+                            if (target == block_loop_label) {
+                                do_block_optimization = 0;
+                            }
+                        }
+                    }
                 }
             }
         }
