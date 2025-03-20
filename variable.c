@@ -2591,7 +2591,7 @@ autoload_const_free(void *ptr)
 static const rb_data_type_t autoload_const_type = {
     "autoload_const",
     {autoload_const_mark, autoload_const_free, autoload_const_memsize, autoload_const_compact,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static struct autoload_data *
@@ -2699,11 +2699,11 @@ autoload_synchronized(VALUE _arguments)
     {
         struct autoload_const *autoload_const;
         VALUE autoload_const_value = TypedData_Make_Struct(0, struct autoload_const, &autoload_const_type, autoload_const);
-        autoload_const->module = arguments->module;
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->module, arguments->module);
         autoload_const->name = arguments->name;
-        autoload_const->value = Qundef;
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->value, Qundef);
         autoload_const->flag = CONST_PUBLIC;
-        autoload_const->autoload_data_value = autoload_data_value;
+        RB_OBJ_WRITE(autoload_const_value, &autoload_const->autoload_data_value, autoload_data_value);
         ccan_list_add_tail(&autoload_data->constants, &autoload_const->cnode);
         st_insert(autoload_table, (st_data_t)arguments->name, (st_data_t)autoload_const_value);
         RB_OBJ_WRITTEN(autoload_table_value, Qundef, autoload_const_value);
