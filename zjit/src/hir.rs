@@ -611,26 +611,35 @@ impl Function {
 
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     fn rpo(&self) -> Vec<BlockId> {
-        let mut result = vec![];
-        self.po_from(self.entry_block, &mut result, &mut HashSet::new());
+        let mut result = self.po_from(self.entry_block);
         result.reverse();
         result
     }
 
-    fn po_from(&self, block: BlockId, mut result: &mut Vec<BlockId>, mut seen: &mut HashSet<BlockId>) {
-        // TODO(max): Avoid using recursion for post-order traversal. For graphs, this is slightly
-        // trickier than it might seem.
-        if seen.contains(&block) { return; }
-        seen.insert(block);
-        for insn in &self.blocks[block.0].insns {
-            match self.find(*insn) {
-                Insn::Jump(edge) => self.po_from(edge.target, &mut result, &mut seen),
-                Insn::IfTrue { target, .. } => self.po_from(target.target, &mut result, &mut seen),
-                Insn::IfFalse { target, .. } => self.po_from(target.target, &mut result, &mut seen),
-                _ => {}
+    fn po_from(&self, start: BlockId) -> Vec<BlockId> {
+        #[derive(PartialEq)]
+        enum Action {
+            VisitEdges,
+            VisitSelf,
+        }
+        let mut result = vec![];
+        let mut seen = HashSet::new();
+        let mut stack = vec![(start, Action::VisitEdges)];
+        while let Some((block, action)) = stack.pop() {
+            if action == Action::VisitSelf {
+                result.push(block);
+                continue;
+            }
+            if !seen.insert(block) { continue; }
+            stack.push((block, Action::VisitSelf));
+            for insn_id in &self.blocks[block.0].insns {
+                let insn = self.find(*insn_id);
+                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = insn {
+                    stack.push((target.target, Action::VisitEdges));
+                }
             }
         }
-        result.push(block);
+        result
     }
 }
 
