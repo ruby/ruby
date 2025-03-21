@@ -2,12 +2,17 @@ use std::collections::BTreeMap;
 //use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::mem;
 use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
 #[rustfmt::skip]
 pub mod x86_64;
 pub mod arm64;
+
+/// Index to a label created by cb.new_label()
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct Label(pub usize);
 
 /// Reference to an ASM label
 #[derive(Clone)]
@@ -16,7 +21,7 @@ pub struct LabelRef {
     pos: usize,
 
     // Label which this refers to
-    label_idx: usize,
+    label: Label,
 
     /// The number of bytes that this label reference takes up in the memory.
     /// It's necessary to know this ahead of time so that when we come back to
@@ -32,8 +37,20 @@ pub struct CodeBlock {
     // Memory for storing the encoded instructions
     mem_block: Rc<RefCell<VirtualMem>>,
 
+    // Memory block size
+    mem_size: usize,
+
     // Current writing position
     write_pos: usize,
+
+    // Table of registered label addresses
+    label_addrs: Vec<usize>,
+
+    // Table of registered label names
+    label_names: Vec<String>,
+
+    // References to labels
+    label_refs: Vec<LabelRef>,
 
     // A switch for keeping comments. They take up memory.
     keep_comments: bool,
@@ -50,9 +67,14 @@ pub struct CodeBlock {
 impl CodeBlock {
     /// Make a new CodeBlock
     pub fn new(mem_block: Rc<RefCell<VirtualMem>>, keep_comments: bool) -> Self {
+        let mem_size = mem_block.borrow().virtual_region_size();
         Self {
             mem_block,
+            mem_size,
             write_pos: 0,
+            label_addrs: Vec::new(),
+            label_names: Vec::new(),
+            label_refs: Vec::new(),
             keep_comments,
             asm_comments: BTreeMap::new(),
             dropped_bytes: false,
@@ -144,21 +166,70 @@ impl CodeBlock {
         self.dropped_bytes
     }
 
+    /// Allocate a new label with a given name
+    pub fn new_label(&mut self, name: String) -> Label {
+        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+
+        // This label doesn't have an address yet
+        self.label_addrs.push(0);
+        self.label_names.push(name);
+
+        Label(self.label_addrs.len() - 1)
+    }
+
+    /// Write a label at the current address
+    pub fn write_label(&mut self, label: Label) {
+        self.label_addrs[label.0] = self.write_pos;
+    }
+
     // Add a label reference at the current write position
-    pub fn label_ref(&mut self, _label_idx: usize, _num_bytes: usize, _encode: fn(&mut CodeBlock, i64, i64)) {
-        // TODO: copy labels
+    pub fn label_ref(&mut self, label: Label, num_bytes: usize, encode: fn(&mut CodeBlock, i64, i64)) {
+        assert!(label.0 < self.label_addrs.len());
 
-        //assert!(label_idx < self.label_addrs.len());
+        // Keep track of the reference
+        self.label_refs.push(LabelRef { pos: self.write_pos, label, num_bytes, encode });
 
-        //// Keep track of the reference
-        //self.label_refs.push(LabelRef { pos: self.write_pos, label_idx, num_bytes, encode });
+        // Move past however many bytes the instruction takes up
+        if self.write_pos + num_bytes < self.mem_size {
+            self.write_pos += num_bytes;
+        } else {
+            self.dropped_bytes = true; // retry emitting the Insn after next_page
+        }
+    }
 
-        //// Move past however many bytes the instruction takes up
-        //if self.has_capacity(num_bytes) {
-        //    self.write_pos += num_bytes;
-        //} else {
-        //    self.dropped_bytes = true; // retry emitting the Insn after next_page
-        //}
+    // Link internal label references
+    pub fn link_labels(&mut self) {
+        let orig_pos = self.write_pos;
+
+        // For each label reference
+        for label_ref in mem::take(&mut self.label_refs) {
+            let ref_pos = label_ref.pos;
+            let label_idx = label_ref.label.0;
+            assert!(ref_pos < self.mem_size);
+
+            let label_addr = self.label_addrs[label_idx];
+            assert!(label_addr < self.mem_size);
+
+            self.write_pos = ref_pos;
+            (label_ref.encode)(self, (ref_pos + label_ref.num_bytes) as i64, label_addr as i64);
+
+            // Assert that we've written the same number of bytes that we
+            // expected to have written.
+            assert!(self.write_pos == ref_pos + label_ref.num_bytes);
+        }
+
+        self.write_pos = orig_pos;
+
+        // Clear the label positions and references
+        self.label_addrs.clear();
+        self.label_names.clear();
+        assert!(self.label_refs.is_empty());
+    }
+
+    pub fn clear_labels(&mut self) {
+        self.label_addrs.clear();
+        self.label_names.clear();
+        self.label_refs.clear();
     }
 
     /// Make all the code in the region executable. Call this at the end of a write session.

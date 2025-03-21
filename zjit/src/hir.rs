@@ -23,7 +23,7 @@ impl std::fmt::Display for InsnId {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct BlockId(usize);
+pub struct BlockId(pub usize);
 
 impl std::fmt::Display for BlockId {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -73,8 +73,8 @@ impl<'a> std::fmt::Display for VALUEPrinter<'a> {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct BranchEdge {
-    target: BlockId,
-    args: Vec<InsnId>,
+    pub target: BlockId,
+    pub args: Vec<InsnId>,
 }
 
 impl std::fmt::Display for BranchEdge {
@@ -329,6 +329,15 @@ pub struct Block {
 }
 
 impl Block {
+    /// Return an iterator over params
+    pub fn params(&self) -> Iter<InsnId> {
+        self.params.iter()
+    }
+
+    /// Return an iterator over insns
+    pub fn insns(&self) -> Iter<InsnId> {
+        self.insns.iter()
+    }
 }
 
 struct FunctionPrinter<'a> {
@@ -448,7 +457,7 @@ pub struct Function {
 
     // TODO: get method name and source location from the ISEQ
 
-    pub insns: Vec<Insn>,
+    insns: Vec<Insn>,
     union_find: UnionFind<InsnId>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
@@ -482,6 +491,11 @@ impl Function {
         id
     }
 
+    /// Return the number of instructions
+    pub fn num_insns(&self) -> usize {
+        self.insns.len()
+    }
+
     /// Store the given FrameState on the Function so that it can be cheaply referenced by
     /// instructions.
     fn push_frame_state(&mut self, state: FrameState) -> FrameStateId {
@@ -501,6 +515,16 @@ impl Function {
         id
     }
 
+    /// Return a reference to the Block at the given index.
+    pub fn block(&self, block_id: BlockId) -> &Block {
+        &self.blocks[block_id.0]
+    }
+
+    /// Return the number of blocks
+    pub fn num_blocks(&self) -> usize {
+        self.blocks.len()
+    }
+
     /// Return a copy of the instruction where the instruction and its operands have been read from
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
@@ -514,7 +538,7 @@ impl Function {
     ///   _ => {}
     /// }
     /// ```
-    fn find(&self, insn_id: InsnId) -> Insn {
+    pub fn find(&self, insn_id: InsnId) -> Insn {
         macro_rules! find {
             ( $x:expr ) => {
                 {
@@ -705,7 +729,7 @@ impl Function {
     }
 
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
-    fn rpo(&self) -> Vec<BlockId> {
+    pub fn rpo(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entry_block);
         result.reverse();
         result

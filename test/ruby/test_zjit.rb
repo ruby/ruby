@@ -161,39 +161,191 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_if
+    assert_compiles '[0, nil]', %q{
+      def test(n)
+        if n < 5
+          0
+        end
+      end
+      [test(3), test(7)]
+    }
+  end
 
+  def test_if_else
+    assert_compiles '[0, 1]', %q{
+      def test(n)
+        if n < 5
+          0
+        else
+          1
+        end
+      end
+      [test(3), test(7)]
+    }
+  end
 
-  # FIXME: missing IfFalse insn
-  #def test_if_else
-  #  assert_compiles '[0, 1]', %q{
-  #    def test(n)
-  #      if n < 5
-  #        0
-  #      else
-  #        1
-  #      end
-  #    end
-  #    [test(3), test(7)]
-  #  }, call_threshold: 2
-  #end
+  def test_if_else_params
+    assert_compiles '[1, 20]', %q{
+      def test(n, a, b)
+        if n < 5
+          a
+        else
+          b
+        end
+      end
+      [test(3, 1, 2), test(7, 10, 20)]
+    }
+  end
 
+  def test_if_else_nested
+    assert_compiles '[3, 8, 9, 14]', %q{
+      def test(a, b, c, d, e)
+        if 2 < a
+          if a < 4
+            b
+          else
+            c
+          end
+        else
+          if a < 0
+            d
+          else
+            e
+          end
+        end
+      end
+      [
+        test(-1,  1,  2,  3,  4),
+        test( 0,  5,  6,  7,  8),
+        test( 3,  9, 10, 11, 12),
+        test( 5, 13, 14, 15, 16),
+      ]
+    }
+  end
 
+  def test_if_else_chained
+    assert_compiles '[12, 11, 21]', %q{
+      def test(a)
+        (if 2 < a then 1 else 2 end) + (if a < 4 then 10 else 20 end)
+      end
+      [test(0), test(3), test(5)]
+    }
+  end
 
+  def test_if_elsif_else
+    assert_compiles '[0, 2, 1]', %q{
+      def test(n)
+        if n < 5
+          0
+        elsif 8 < n
+          1
+        else
+          2
+        end
+      end
+      [test(3), test(7), test(9)]
+    }
+  end
 
-  # FIXME: need to call twice because of call threshold 2, but
-  # then this fails because of missing FixnumLt
+  def test_ternary_operator
+    assert_compiles '[1, 20]', %q{
+      def test(n, a, b)
+        n < 5 ? a : b
+      end
+      [test(3, 1, 2), test(7, 10, 20)]
+    }
+  end
+
+  def test_ternary_operator_nested
+    assert_compiles '[2, 21]', %q{
+      def test(n, a, b)
+        (n < 5 ? a : b) + 1
+      end
+      [test(3, 1, 2), test(7, 10, 20)]
+    }
+  end
+
   def test_while_loop
     assert_compiles '10', %q{
-      def loop_fun(n)
+      def test(n)
         i = 0
         while i < n
           i = i + 1
         end
         i
       end
-      loop_fun(10)
-      #loop_fun(10)
-    }, call_threshold: 2
+      test(10)
+    }
+  end
+
+  def test_while_loop_chain
+    assert_compiles '[135, 270]', %q{
+      def test(n)
+        i = 0
+        while i < n
+          i = i + 1
+        end
+        while i < n * 10
+          i = i * 3
+        end
+        i
+      end
+      [test(5), test(10)]
+    }
+  end
+
+  def test_while_loop_nested
+    assert_compiles '[0, 4, 12]', %q{
+      def test(n, m)
+        i = 0
+        while i < n
+          j = 0
+          while j < m
+            j += 2
+          end
+          i += j
+        end
+        i
+      end
+      [test(0, 0), test(1, 3), test(10, 5)]
+    }
+  end
+
+  def test_while_loop_if_else
+    assert_compiles '[9, -1]', %q{
+      def test(n)
+        i = 0
+        while i < n
+          if n >= 10
+            return -1
+          else
+            i = i + 1
+          end
+        end
+        i
+      end
+      [test(9), test(10)]
+    }
+  end
+
+  def test_if_while_loop
+    assert_compiles '[9, 12]', %q{
+      def test(n)
+        i = 0
+        if n < 10
+          while i < n
+            i += 1
+          end
+        else
+          while i < n
+            i += 3
+          end
+        end
+        i
+      end
+      [test(9), test(10)]
+    }
   end
 
   private

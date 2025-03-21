@@ -1,6 +1,6 @@
 use std::mem::take;
 
-use crate::asm::{CodeBlock};
+use crate::asm::{CodeBlock, Label};
 use crate::asm::arm64::*;
 use crate::cruby::*;
 use crate::backend::lir::*;
@@ -72,8 +72,8 @@ impl From<Opnd> for A64Opnd {
             },
             Opnd::CArg(_) => panic!("attempted to lower an Opnd::CArg"),
             Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
+            Opnd::Param { .. } => panic!("attempted to lower an Opnd::Param"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
-            //Opnd::Stack { .. } => panic!("attempted to lower an Opnd::Stack"),
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
             ),
@@ -279,7 +279,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } /*| Opnd::Stack { .. }*/ => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Param { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -312,7 +312,7 @@ impl Assembler
         /// a certain size. If they don't then we need to load them first.
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Param { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => if ShiftedImmediate::try_from(imm as u64).is_ok() {
                     opnd
@@ -402,9 +402,9 @@ impl Assembler
                             *opnd = asm.load(*opnd);
                         }
                     },
-                    //Opnd::Stack { .. } => {
-                    //    *opnd = asm.lower_stack_opnd(opnd);
-                    //}
+                    Opnd::Param { idx } => {
+                        *opnd = Assembler::alloc_param_reg(*idx);
+                    }
                     _ => {}
                 };
             }
@@ -913,9 +913,8 @@ impl Assembler
                 Insn::Comment(text) => {
                     cb.add_comment(text);
                 },
-                Insn::Label(_target) => {
-                    //cb.write_label(target.unwrap_label_idx());
-                    unimplemented!("labels are not supported yet");
+                Insn::Label(target) => {
+                    cb.write_label(target.unwrap_label());
                 },
                 // Report back the current position in the generated code
                 Insn::PosMarker(..) => {
@@ -1053,9 +1052,9 @@ impl Assembler
                         Opnd::CArg { .. } => {
                             unreachable!("C argument operand was not lowered before arm64_emit");
                         }
-                        //Opnd::Stack { .. } => {
-                        //    unreachable!("Stack operand was not lowered before arm64_emit");
-                        //}
+                        Opnd::Param { .. } => {
+                            unreachable!("Param operand was not lowered before arm64_emit");
+                        }
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
@@ -1318,12 +1317,10 @@ impl Assembler
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
-        /*
         for (idx, name) in asm.label_names.iter().enumerate() {
-            let label_idx = cb.new_label(name.to_string());
-            assert!(label_idx == idx);
+            let label = cb.new_label(name.to_string());
+            assert_eq!(label, Label(idx));
         }
-        */
 
         let start_ptr = cb.get_write_ptr();
         /*
@@ -1346,14 +1343,14 @@ impl Assembler
         let emit_result = asm.arm64_emit(cb);
 
         if let (Ok(gc_offsets), false) = (emit_result, cb.has_dropped_bytes()) {
-            //cb.link_labels();
+            cb.link_labels();
 
             // Invalidate icache for newly written out region so we don't run stale code.
             unsafe { rb_zjit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
             Some((start_ptr, gc_offsets))
         } else {
-            //cb.clear_labels();
+            cb.clear_labels();
 
             None
         }

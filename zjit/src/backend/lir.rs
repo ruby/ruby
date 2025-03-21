@@ -1,9 +1,10 @@
+use std::collections::HashSet;
 use std::fmt;
 use std::mem::take;
 use crate::{cruby::VALUE, hir::FrameState};
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
-use crate::asm::CodeBlock;
+use crate::asm::{CodeBlock, Label};
 #[cfg(feature = "disasm")]
 use crate::options::*;
 
@@ -64,23 +65,8 @@ pub enum Opnd
     // Output of a preceding instruction in this block
     InsnOut{ idx: usize, num_bits: u8 },
 
-    /// Pointer to a slot on the VM stack
-    /*
-    Stack {
-        /// Index from stack top. Used for conversion to StackOpnd.
-        idx: i32,
-        /// Number of bits for Opnd::Reg and Opnd::Mem.
-        num_bits: u8,
-        /// ctx.stack_size when this operand is made. Used with idx for Opnd::Reg.
-        stack_size: u8,
-        /// The number of local variables in the current ISEQ. Used only for locals.
-        num_locals: Option<u32>,
-        /// ctx.sp_offset when this operand is made. Used with idx for Opnd::Mem.
-        sp_offset: i8,
-        /// ctx.reg_mapping when this operand is read. Used for register allocation.
-        reg_mapping: Option<RegMapping>
-    },
-    */
+    /// Basic block argument
+    Param{ idx: usize },
 
     // Low-level operands, for lowering
     Imm(i64),           // Raw signed immediate
@@ -96,8 +82,8 @@ impl fmt::Debug for Opnd {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
             CArg(reg) => write!(fmt, "CArg({reg:?})"),
-            //Stack { idx, sp_offset, .. } => write!(fmt, "SP[{}]", *sp_offset as i32 - idx - 1),
             InsnOut { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            Param { idx } => write!(fmt, "Param({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -137,6 +123,11 @@ impl Opnd
     /// Constructor for constant pointer operand
     pub fn const_ptr(ptr: *const u8) -> Self {
         Opnd::UImm(ptr as u64)
+    }
+
+    /// Constructor for a basic block argument
+    pub fn param(idx: usize) -> Self {
+        Opnd::Param { idx }
     }
 
     /// Constructor for a C argument operand
@@ -300,14 +291,14 @@ pub enum Target
     /// Pointer to a side exit code
     SideExitPtr(CodePtr),
     /// A label within the generated code
-    Label(usize),
+    Label(Label),
 }
 
 impl Target
 {
-    pub fn unwrap_label_idx(&self) -> usize {
+    pub fn unwrap_label(&self) -> Label {
         match self {
-            Target::Label(idx) => *idx,
+            Target::Label(label) => *label,
             _ => unreachable!("trying to unwrap {:?} into label", self)
         }
     }
@@ -1126,9 +1117,9 @@ impl Assembler
     {
         assert!(!name.contains(' '), "use underscores in label names, not spaces");
 
-        let label_idx = self.label_names.len();
+        let label = Label(self.label_names.len());
         self.label_names.push(name.to_string());
-        Target::Label(label_idx)
+        Target::Label(label)
     }
 
     /*
@@ -1325,12 +1316,23 @@ impl Assembler
         new_moves
     }
 
+    /// Allocate a register or memory for a basic block argument.
+    pub fn alloc_param_reg(idx: usize) -> Opnd {
+        assert!(idx < TEMP_REGS.len(), "alloc_param_reg() doesn't support spills yet");
+        Opnd::Reg(TEMP_REGS[idx])
+    }
+
     /// Sets the out field on the various instructions that require allocated
     /// registers because their output is used as the operand on a subsequent
     /// instruction. This is our implementation of the linear scan algorithm.
     pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
-        //dbg!(&self);
+        // This register allocator currently uses disjoint sets of registers
+        // for Opnd::InsnOut and Opnd::Param, which allows it to forget about
+        // resolving parallel moves when both of these operands are used.
+        // TODO: Refactor the backend to use virtual registers for both and
+        // assign a physical register from a shared register pool to them.
+        debug_assert!(regs.iter().collect::<HashSet<_>>().is_disjoint(&TEMP_REGS.iter().collect()));
 
         // First, create the pool of registers.
         let mut pool: u32 = 0;
@@ -1521,7 +1523,7 @@ impl Assembler
                 *out = Opnd::Reg(out_reg.unwrap().with_num_bits(out_num_bits));
             }
 
-            // Replace InsnOut operands by their corresponding register
+            // Replace InsnOut and Param operands by their corresponding register
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
@@ -1553,6 +1555,7 @@ impl Assembler
                         asm.load_into(Opnd::Reg(reg), opnd);
                     }
                 }
+
                 // Other instructions are pushed as is
                 asm.push_insn(insn);
             }
@@ -2083,7 +2086,7 @@ impl Assembler {
 
     /// Add a label at the current position
     pub fn write_label(&mut self, target: Target) {
-        assert!(target.unwrap_label_idx() < self.label_names.len());
+        assert!(target.unwrap_label().0 < self.label_names.len());
         self.push_insn(Insn::Label(target));
     }
 

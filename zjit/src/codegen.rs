@@ -2,7 +2,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{self, CallInfo};
+use crate::hir::{self, Block, BlockId, BranchEdge, CallInfo};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 
@@ -13,14 +13,18 @@ struct JITState {
 
     /// Low-level IR Operands indexed by High-level IR's Instruction ID
     opnds: Vec<Option<Opnd>>,
+
+    /// Labels for each basic block indexed by the BlockId
+    labels: Vec<Option<Target>>,
 }
 
 impl JITState {
     /// Create a new JITState instance
-    fn new(iseq: IseqPtr, insn_len: usize) -> Self {
+    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize) -> Self {
         JITState {
             iseq,
-            opnds: vec![None; insn_len],
+            opnds: vec![None; num_insns],
+            labels: vec![None; num_blocks],
         }
     }
 
@@ -31,6 +35,18 @@ impl JITState {
             debug!("Failed to get_opnd({insn_id})");
         }
         opnd
+    }
+
+    /// Find or create a label for a given BlockId
+    fn get_label(&mut self, asm: &mut Assembler, block_id: BlockId) -> Target {
+        match &self.labels[block_id.0] {
+            Some(label) => label.clone(),
+            None => {
+                let label = asm.new_label(&format!("{block_id}"));
+                self.labels[block_id.0] = Some(label.clone());
+                label
+            }
+        }
     }
 
     /// Assume that this ISEQ doesn't escape EP. Return false if it's known to escape EP.
@@ -86,15 +102,40 @@ fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
 /// Compile High-level IR into machine code
 fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Option<CodePtr> {
     // Set up special registers
-    let mut jit = JITState::new(iseq, function.insns.len());
+    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new();
     gen_entry_prologue(&jit, &mut asm);
 
-    // Compile each instruction in the IR
-    for (insn_idx, insn) in function.insns.iter().enumerate() {
-        if gen_insn(&mut jit, &mut asm, function, InsnId(insn_idx), insn).is_none() {
-            debug!("Failed to compile insn: {:04} {:?}", insn_idx, insn);
-            return None;
+    // Set method arguments to the arguments of the first basic block
+    gen_method_params(&mut jit, &mut asm, function.block(BlockId(0)));
+
+    // Compile each basic block
+    let reverse_post_order = function.rpo();
+    for &block_id in reverse_post_order.iter() {
+        let block = function.block(block_id);
+        asm_comment!(asm, "Block: {block_id}");
+
+        // Write a label to jump to the basic block
+        let label = jit.get_label(&mut asm, block_id);
+        asm.write_label(label);
+
+        // Compile all parameters
+        for &insn_id in block.params() {
+            match function.find(insn_id) {
+                Insn::Param { idx } => {
+                    jit.opnds[insn_id.0] = Some(gen_param(idx));
+                },
+                insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
+            }
+        }
+
+        // Compile all instructions
+        for &insn_id in block.insns() {
+            let insn = function.find(insn_id);
+            if gen_insn(&mut jit, &mut asm, function, &block, insn_id, &insn).is_none() {
+                debug!("Failed to compile insn: {insn_id} {insn:?}");
+                return None;
+            }
         }
     }
 
@@ -106,7 +147,7 @@ fn gen_function(cb: &mut CodeBlock, function: &Function, iseq: IseqPtr) -> Optio
 }
 
 /// Compile an instruction
-fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
+fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, block: &Block, insn_id: InsnId, insn: &Insn) -> Option<()> {
     // Convert InsnId to lir::Opnd
     macro_rules! opnd {
         ($insn_id:ident) => {
@@ -115,15 +156,18 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
     }
 
     if !matches!(*insn, Insn::Snapshot { .. }) {
-        asm_comment!(asm, "Insn: {:04} {:?}", insn_id.0, insn);
+        asm_comment!(asm, "Insn: {insn_id} {insn:?}");
     }
 
     let out_opnd = match insn {
         Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
-        Insn::Param { idx } => gen_param(jit, asm, *idx)?,
+        Insn::Param { idx } => gen_param(*idx),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
-        Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, function.frame_state(*state))?,
+        Insn::Jump(branch) => return gen_jump(jit, asm, branch),
+        Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
+        Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
+        Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, block, function.frame_state(*state))?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), function.frame_state(*state))?,
@@ -151,7 +195,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
 fn gen_entry_prologue(jit: &JITState, asm: &mut Assembler) {
-    asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(jit.iseq, 0));
+    asm_comment!(asm, "ZJIT entry point: {}", iseq_get_location(jit.iseq, 0));
     asm.frame_setup();
 
     // Save the registers we'll use for CFP, EP, SP
@@ -169,22 +213,23 @@ fn gen_entry_prologue(jit: &JITState, asm: &mut Assembler) {
     // TODO: Support entry chain guard when ISEQ has_opt
 }
 
-/// Compile self in the current frame
-fn gen_putself() -> lir::Opnd {
-    Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
+/// Assign method arguments to basic block arguments at JIT entry
+fn gen_method_params(jit: &mut JITState, asm: &mut Assembler, entry_block: &Block) {
+    let num_params = entry_block.params().len();
+    if num_params > 0 {
+        asm_comment!(asm, "method params: {num_params}");
+        for idx in 0..num_params {
+            let local = gen_getlocal(jit, asm, idx);
+            asm.load_into(gen_param(idx), local);
+        }
+    }
 }
 
-/// Compile a constant
-fn gen_const(val: VALUE) -> lir::Opnd {
-    // Just propagate the constant value and generate nothing
-    Opnd::Value(val)
-}
-
-/// Compile a method/block paramter read. For now, it only supports method parameters.
-fn gen_param(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> Option<lir::Opnd> {
+/// Get the local variable at the given index
+fn gen_getlocal(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> lir::Opnd {
     let ep_offset = local_idx_to_ep_offset(jit.iseq, local_idx);
 
-    let local_opnd = if jit.assume_no_ep_escape() {
+    if jit.assume_no_ep_escape() {
         // Create a reference to the local variable using the SP register. We assume EP == BP.
         // TODO: Implement the invalidation in rb_zjit_invalidate_ep_is_bp()
         let offs = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
@@ -197,9 +242,82 @@ fn gen_param(jit: &mut JITState, asm: &mut Assembler, local_idx: usize) -> Optio
         // Create a reference to the local variable using cfp->ep
         let offs = -(SIZEOF_VALUE_I32 * ep_offset);
         Opnd::mem(64, ep_reg, offs)
-    };
+    }
+}
 
-    Some(local_opnd)
+/// Compile self in the current frame
+fn gen_putself() -> lir::Opnd {
+    Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
+}
+
+/// Compile a constant
+fn gen_const(val: VALUE) -> lir::Opnd {
+    // Just propagate the constant value and generate nothing
+    Opnd::Value(val)
+}
+
+/// Compile a basic block argument
+fn gen_param(idx: usize) -> lir::Opnd {
+    Opnd::Param { idx }
+}
+
+/// Compile a jump to a basic block
+fn gen_jump(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) -> Option<()> {
+    // Set basic block arguments
+    asm_comment!(asm, "basic block args: {}", branch.args.len());
+    for (idx, &arg) in branch.args.iter().enumerate() {
+        let param = Opnd::param(idx);
+        asm.load_into(param, jit.get_opnd(arg)?);
+    }
+
+    // Jump to the basic block
+    let target = jit.get_label(asm, branch.target);
+    asm.jmp(target);
+    Some(())
+}
+
+/// Compile a conditional branch to a basic block
+fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) -> Option<()> {
+    // If val is zero, move on to the next instruction.
+    let if_false = asm.new_label("if_false");
+    asm.test(val, val);
+    asm.jz(if_false.clone());
+
+    asm_comment!(asm, "basic block args: {}", branch.args.len());
+    // If val is not zero, set basic block arguments and jump to the branch target.
+    // TODO: Consider generating the loads out-of-line
+    let if_true = jit.get_label(asm, branch.target);
+    for (idx, &arg) in branch.args.iter().enumerate() {
+        let param = Opnd::param(idx);
+        asm.load_into(param, jit.get_opnd(arg)?);
+    }
+    asm.jmp(if_true);
+
+    asm.write_label(if_false);
+
+    Some(())
+}
+
+/// Compile a conditional branch to a basic block
+fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: &BranchEdge) -> Option<()> {
+    // If val is not zero, move on to the next instruction.
+    let if_true = asm.new_label("if_true");
+    asm.test(val, val);
+    asm.jnz(if_true.clone());
+
+    asm_comment!(asm, "basic block args: {}", branch.args.len());
+    // If val is zero, set basic block arguments and jump to the branch target.
+    // TODO: Consider generating the loads out-of-line
+    let if_false = jit.get_label(asm, branch.target);
+    for (idx, &arg) in branch.args.iter().enumerate() {
+        let param = Opnd::param(idx);
+        asm.load_into(param, jit.get_opnd(arg)?);
+    }
+    asm.jmp(if_false);
+
+    asm.write_label(if_true);
+
+    Some(())
 }
 
 /// Compile a dynamic dispatch without block
@@ -208,6 +326,7 @@ fn gen_send_without_block(
     asm: &mut Assembler,
     call_info: &CallInfo,
     cd: *const rb_call_data,
+    block: &Block,
     state: &FrameState,
 ) -> Option<lir::Opnd> {
     // Spill the virtual stack onto the stack. They need to be marked by GC and may be caller-saved registers.
@@ -222,6 +341,12 @@ fn gen_send_without_block(
     gen_save_pc(asm, state);
     gen_save_sp(asm, state);
 
+    // Preserve basic block arguments
+    let params = caller_saved_params(block);
+    for &param in params.iter() {
+        asm.cpush(param);
+    }
+
     asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
     unsafe extern "C" {
         fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
@@ -230,6 +355,11 @@ fn gen_send_without_block(
         rb_vm_opt_send_without_block as *const u8,
         vec![EC, CFP, (cd as usize).into()],
     );
+
+    // Restore basic block arguments
+    for &param in params.iter().rev() {
+        asm.cpop_into(param);
+    }
 
     Some(ret)
 }
@@ -371,6 +501,17 @@ fn gen_save_sp(asm: &mut Assembler, state: &FrameState) {
     let sp_addr = asm.lea(Opnd::mem(64, SP, state.stack_size() as i32 * SIZEOF_VALUE_I32));
     let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
     asm.mov(cfp_sp, sp_addr);
+}
+
+/// Return a list of basic block arguments to be preserved during a C call.
+/// They use registers that can be used for C calls.
+fn caller_saved_params(block: &Block) -> Vec<Opnd> {
+    let mut params: Vec<_> = (0..block.params().len()).map(|idx| Opnd::Param { idx }).collect();
+    // On x86_64, maintain 16-byte stack alignment
+    if cfg!(target_arch = "x86_64") && params.len() % 2 == 1 {
+        params.push(params.last().unwrap().clone());
+    }
+    params
 }
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.

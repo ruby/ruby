@@ -43,6 +43,7 @@ impl From<Opnd> for X86Opnd {
             //InsnOut(usize),     // Output of a preceding instruction in this block
 
             Opnd::InsnOut{..} => panic!("InsnOut operand made it past register allocation"),
+            Opnd::Param{..} => panic!("Param operand made it past register allocation"),
 
             Opnd::UImm(val) => uimm_opnd(val),
             Opnd::Imm(val) => imm_opnd(val),
@@ -142,9 +143,9 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                //if let Opnd::Stack { .. } = opnd {
-                //    *opnd = asm.lower_stack_opnd(opnd);
-                //}
+                if let Opnd::Param { idx } = opnd {
+                    *opnd = Assembler::alloc_param_reg(*idx);
+                }
                 unmapped_opnds.push(*opnd);
 
                 *opnd = match opnd {
@@ -492,9 +493,8 @@ impl Assembler
                 },
 
                 // Write the label at the current position
-                Insn::Label(_target) => {
-                    unimplemented!("labels are not supported yet");
-                    //cb.write_label(target.unwrap_label_idx());
+                Insn::Label(target) => {
+                    cb.write_label(target.unwrap_label());
                 },
 
                 // Report back the current position in the generated code
@@ -608,9 +608,9 @@ impl Assembler
 
                 // Load address of jump target
                 Insn::LeaJumpTarget { target, out } => {
-                    if let Target::Label(label_idx) = target {
+                    if let Target::Label(label) = target {
                         // Set output to the raw address of the label
-                        cb.label_ref(*label_idx, 7, |cb, src_addr, dst_addr| {
+                        cb.label_ref(*label, 7, |cb, src_addr, dst_addr| {
                             let disp = dst_addr - src_addr;
                             lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
                         });
@@ -705,7 +705,7 @@ impl Assembler
                 Insn::Jmp(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jmp_label(cb, label_idx),
+                        Target::Label(label) => jmp_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -713,7 +713,7 @@ impl Assembler
                 Insn::Je(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => je_label(cb, label_idx),
+                        Target::Label(label) => je_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -721,7 +721,7 @@ impl Assembler
                 Insn::Jne(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jne_label(cb, label_idx),
+                        Target::Label(label) => jne_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -729,7 +729,7 @@ impl Assembler
                 Insn::Jl(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jl_label(cb, label_idx),
+                        Target::Label(label) => jl_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
@@ -737,7 +737,7 @@ impl Assembler
                 Insn::Jg(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jg_label(cb, label_idx),
+                        Target::Label(label) => jg_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
@@ -745,7 +745,7 @@ impl Assembler
                 Insn::Jge(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jge_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jge_label(cb, label_idx),
+                        Target::Label(label) => jge_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
@@ -753,7 +753,7 @@ impl Assembler
                 Insn::Jbe(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jbe_label(cb, label_idx),
+                        Target::Label(label) => jbe_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
@@ -761,7 +761,7 @@ impl Assembler
                 Insn::Jb(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jb_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jb_label(cb, label_idx),
+                        Target::Label(label) => jb_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 },
@@ -769,7 +769,7 @@ impl Assembler
                 Insn::Jz(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jz_label(cb, label_idx),
+                        Target::Label(label) => jz_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -777,7 +777,7 @@ impl Assembler
                 Insn::Jnz(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jnz_label(cb, label_idx),
+                        Target::Label(label) => jnz_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -786,7 +786,7 @@ impl Assembler
                 Insn::JoMul(target) => {
                     match *target {
                         Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
-                        Target::Label(label_idx) => jo_label(cb, label_idx),
+                        Target::Label(label) => jo_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
                 }
@@ -872,22 +872,20 @@ impl Assembler
         let mut asm = asm.alloc_regs(regs);
 
         // Create label instances in the code block
-        /*
         for (idx, name) in asm.label_names.iter().enumerate() {
-            let label_idx = cb.new_label(name.to_string());
-            assert!(label_idx == idx);
+            let label = cb.new_label(name.to_string());
+            assert_eq!(label, Label(idx));
         }
-        */
 
         let start_ptr = cb.get_write_ptr();
         let gc_offsets = asm.x86_emit(cb);
 
         if let (Some(gc_offsets), false) = (gc_offsets, cb.has_dropped_bytes()) {
-            //cb.link_labels();
+            cb.link_labels();
 
             Some((start_ptr, gc_offsets))
         } else {
-            //cb.clear_labels();
+            cb.clear_labels();
 
             None
         }

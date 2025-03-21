@@ -1,7 +1,7 @@
 
 
 /// This operand represents a register.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct A64Reg
 {
     // Size in bits
