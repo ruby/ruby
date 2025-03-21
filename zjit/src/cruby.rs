@@ -487,7 +487,7 @@ impl VALUE {
 
     pub fn as_fixnum(self) -> i64 {
         assert!(self.fixnum_p());
-        (self.0 >> 1) as i64
+        (self.0 as i64) >> 1
     }
 
     pub fn as_isize(self) -> isize {
@@ -571,6 +571,13 @@ impl VALUE {
         assert!(item <= (RUBY_FIXNUM_MAX as usize)); // An unsigned will always be greater than RUBY_FIXNUM_MIN
         let k: usize = item.wrapping_add(item.wrapping_add(1));
         VALUE(k)
+    }
+
+    pub const fn fixnum_from_isize(item: isize) -> Self {
+        assert!(item >= RUBY_FIXNUM_MIN);
+        assert!(item <= RUBY_FIXNUM_MAX);
+        let k: isize = item.wrapping_add(item.wrapping_add(1));
+        VALUE(k as usize)
     }
 }
 
@@ -1074,6 +1081,51 @@ pub mod test_utils {
         eval("raise");
     }
 
+    #[test]
+    fn value_from_fixnum_in_range() {
+        assert_eq!(VALUE::fixnum_from_usize(2), VALUE(5));
+        assert_eq!(VALUE::fixnum_from_usize(0), VALUE(1));
+        assert_eq!(VALUE::fixnum_from_isize(-1), VALUE(0xffffffffffffffff));
+        assert_eq!(VALUE::fixnum_from_isize(-2), VALUE(0xfffffffffffffffd));
+        assert_eq!(VALUE::fixnum_from_usize(RUBY_FIXNUM_MAX as usize), VALUE(0x7fffffffffffffff));
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MAX), VALUE(0x7fffffffffffffff));
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN), VALUE(0x8000000000000001));
+    }
+
+    #[test]
+    fn value_as_fixnum() {
+        assert_eq!(VALUE::fixnum_from_usize(2).as_fixnum(), 2);
+        assert_eq!(VALUE::fixnum_from_usize(0).as_fixnum(), 0);
+        assert_eq!(VALUE::fixnum_from_isize(-1).as_fixnum(), -1);
+        assert_eq!(VALUE::fixnum_from_isize(-2).as_fixnum(), -2);
+        assert_eq!(VALUE::fixnum_from_usize(RUBY_FIXNUM_MAX as usize).as_fixnum(), RUBY_FIXNUM_MAX.try_into().unwrap());
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MAX).as_fixnum(), RUBY_FIXNUM_MAX.try_into().unwrap());
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN).as_fixnum(), RUBY_FIXNUM_MIN.try_into().unwrap());
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_from_fixnum_too_big_usize() {
+        assert_eq!(VALUE::fixnum_from_usize((RUBY_FIXNUM_MAX+1) as usize), VALUE(1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_from_fixnum_too_big_isize() {
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MAX+1), VALUE(1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_from_fixnum_too_small_usize() {
+        assert_eq!(VALUE::fixnum_from_usize((RUBY_FIXNUM_MIN-1) as usize), VALUE(1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_from_fixnum_too_small_isize() {
+        assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN-1), VALUE(1));
+    }
 }
 #[cfg(test)]
 pub use test_utils::*;
