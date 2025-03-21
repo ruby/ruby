@@ -1138,19 +1138,20 @@ pub(crate) mod ids {
     /// so reads can happen without `unsafe`. Synchronization done through
     /// the VM lock.
     macro_rules! def_ids {
-        ($(name: $ident:ident content: $str:literal)*) => {
+        ($(name: $name:ident $(content: $content:literal)?)*) => {
             $(
-                #[doc = concat!("[type@crate::cruby::ID] for `", stringify!($str), "`")]
-                pub static $ident: AtomicU64 = AtomicU64::new(0);
+                pub static $name: AtomicU64 = AtomicU64::new(0);
             )*
 
             pub(crate) fn init() {
                 $(
-                    let content = &$str;
+                    let content = stringify!($name);
+                    _ = content;
+                    $(let content = &$content;)?
                     let ptr: *const u8 = content.as_ptr();
 
                     // Lookup and cache each ID
-                    $ident.store(
+                    $name.store(
                         unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) },
                         std::sync::atomic::Ordering::Relaxed
                     );
@@ -1163,12 +1164,12 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
-        name: to_ary             content: b"to_ary"
-        name: to_s               content: b"to_s"
         name: eq                 content: b"=="
         name: include_p          content: b"include?"
-        name: compile            content: b"compile"
-        name: eval               content: b"eval"
+        name: to_ary
+        name: to_s
+        name: compile
+        name: eval
     }
 }
 
