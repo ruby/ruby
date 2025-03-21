@@ -18,22 +18,18 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_key(dh)
   end if ENV["OSSL_TEST_ALL"]
 
-  def test_new_break_on_non_fips
-    omit_on_fips
-
-    assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-    assert_raise(RuntimeError) do
-      OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
+  def test_new_break
+    unless openssl? && OpenSSL.fips_mode
+      assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
+      assert_raise(RuntimeError) do
+        OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
+      end
+    else
+      # The block argument is not executed in FIPS case.
+      # See https://github.com/ruby/openssl/issues/692 for details.
+      assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
+      assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise })
     end
-  end
-
-  def test_new_break_on_fips
-    omit_on_non_fips
-
-    # The block argument is not executed in FIPS case.
-    # See https://github.com/ruby/openssl/issues/692 for details.
-    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
-    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise })
   end
 
   def test_derive_key
@@ -123,11 +119,22 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     ]))
     assert_equal(true, dh1.params_ok?)
 
-    dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh0.p + 1),
-      OpenSSL::ASN1::Integer(dh0.g)
-    ]))
-    assert_equal(false, dh2.params_ok?)
+    # AWS-LC automatically does parameter checks on the parsed params.
+    if aws_lc?
+      assert_raise(OpenSSL::PKey::DHError) {
+        OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+          OpenSSL::ASN1::Integer(dh0.p + 1),
+          OpenSSL::ASN1::Integer(dh0.g)
+        ]))
+      }
+    else
+      dh2 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
+        OpenSSL::ASN1::Integer(dh0.p + 1),
+        OpenSSL::ASN1::Integer(dh0.g)
+      ]))
+      assert_equal(false, dh2.params_ok?)
+    end
+
   end
 
   def test_params

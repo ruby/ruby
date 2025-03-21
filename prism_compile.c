@@ -4213,7 +4213,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             // If we have empty parentheses, then we want to return "nil".
             dtype = DEFINED_NIL;
         }
-        else if (PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && ((const pm_statements_node_t *) cast->body)->body.size == 1) {
+        else if (PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && !PM_NODE_FLAG_P(cast, PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS)) {
             // If we have a parentheses node that is wrapping a single statement
             // then we want to recurse down to that statement and compile it.
             pm_compile_defined_expr0(iseq, ((const pm_statements_node_t *) cast->body)->body.nodes[0], node_location, ret, popped, scope_node, in_condition, lfinish, false);

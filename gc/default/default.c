@@ -3199,6 +3199,10 @@ protect_page_body(struct heap_page_body *body, DWORD protect)
     DWORD old_protect;
     return VirtualProtect(body, HEAP_PAGE_SIZE, protect, &old_protect) != 0;
 }
+#elif defined(__wasi__)
+// wasi-libc's mprotect emulation does not support PROT_NONE
+enum {HEAP_PAGE_LOCK, HEAP_PAGE_UNLOCK};
+#define protect_page_body(body, protect) 1
 #else
 enum {HEAP_PAGE_LOCK = PROT_NONE, HEAP_PAGE_UNLOCK = PROT_READ | PROT_WRITE};
 #define protect_page_body(body, protect) !mprotect((body), HEAP_PAGE_SIZE, (protect))
@@ -6185,33 +6189,50 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     }
 }
 
-// TODO: rearchitect this function to work for a generic GC
-size_t
-rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 7
+static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
+
+struct rb_gc_object_metadata_entry *
+rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
     size_t n = 0;
-    static ID ID_marked;
-    static ID ID_wb_protected, ID_old, ID_marking, ID_uncollectible, ID_pinned;
+    static ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned, ID_object_id;
 
     if (!ID_marked) {
 #define I(s) ID_##s = rb_intern(#s);
-        I(marked);
         I(wb_protected);
+        I(age);
         I(old);
-        I(marking);
         I(uncollectible);
+        I(marking);
+        I(marked);
         I(pinned);
+        I(object_id);
 #undef I
     }
 
-    if (RVALUE_WB_UNPROTECTED(objspace, obj) == 0 && n < max)                   flags[n++] = ID_wb_protected;
-    if (RVALUE_OLD_P(objspace, obj) && n < max)                                 flags[n++] = ID_old;
-    if (RVALUE_UNCOLLECTIBLE(objspace, obj) && n < max)                         flags[n++] = ID_uncollectible;
-    if (RVALUE_MARKING(objspace, obj) && n < max) flags[n++] = ID_marking;
-    if (RVALUE_MARKED(objspace, obj) && n < max)    flags[n++] = ID_marked;
-    if (RVALUE_PINNED(objspace, obj) && n < max)  flags[n++] = ID_pinned;
-    return n;
+#define SET_ENTRY(na, v) do { \
+    GC_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    object_metadata_entries[n].name = ID_##na; \
+    object_metadata_entries[n].val = v; \
+    n++; \
+} while (0)
+
+    if (!RVALUE_WB_UNPROTECTED(objspace, obj)) SET_ENTRY(wb_protected, Qtrue);
+    SET_ENTRY(age, INT2FIX(RVALUE_AGE_GET(obj)));
+    if (RVALUE_OLD_P(objspace, obj)) SET_ENTRY(old, Qtrue);
+    if (RVALUE_UNCOLLECTIBLE(objspace, obj)) SET_ENTRY(uncollectible, Qtrue);
+    if (RVALUE_MARKING(objspace, obj)) SET_ENTRY(marking, Qtrue);
+    if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
+    if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+
+    object_metadata_entries[n].name = 0;
+    object_metadata_entries[n].val = 0;
+#undef SET_ENTRY
+
+    return object_metadata_entries;
 }
 
 void *

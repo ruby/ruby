@@ -62,8 +62,7 @@ module Spec
         source = Path.tmp_root("1")
         destination = Path.tmp_root(n.to_s)
 
-        FileUtils.rm_rf destination
-        FileUtils.cp_r source, destination
+        FileUtils.cp_r source, destination, remove_destination: true
       end
     end
 

@@ -152,10 +152,13 @@ module JSON
     end
 
     def detailed_message(...)
+      # Exception#detailed_message doesn't exist until Ruby 3.2
+      super_message = defined?(super) ? super : message
+
       if @invalid_object.nil?
-        super
+        super_message
       else
-        "#{super}\nInvalid object: #{@invalid_object.inspect}"
+        "#{super_message}\nInvalid object: #{@invalid_object.inspect}"
       end
     end
   end
@@ -840,7 +843,7 @@ module JSON
 
     opts = JSON.dump_default_options
     opts = opts.merge(:max_nesting => limit) if limit
-    opts = merge_dump_options(opts, **kwargs) if kwargs
+    opts = opts.merge(kwargs) if kwargs
 
     begin
       State.generate(obj, opts, anIO)
@@ -852,15 +855,6 @@ module JSON
   # Encodes string using String.encode.
   def self.iconv(to, from, string)
     string.encode(to, from)
-  end
-
-  def merge_dump_options(opts, strict: NOT_SET)
-    opts = opts.merge(strict: strict) if NOT_SET != strict
-    opts
-  end
-
-  class << self
-    private :merge_dump_options
   end
 
   # JSON::Coder holds a parser and generator configuration.

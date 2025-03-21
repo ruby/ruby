@@ -92,19 +92,19 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     sig = key.syssign(digest)
     assert_equal true, key.sysverify(digest, sig)
     assert_equal false, key.sysverify(digest, invalid_sig)
-    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_sign_verify_false_or_error{ key.sysverify(digest, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, digest)
     assert_equal false, key.verify_raw(nil, invalid_sig, digest)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, digest) }
 
     # Sign by #sign_raw
     sig = key.sign_raw(nil, digest)
     assert_equal true, key.sysverify(digest, sig)
     assert_equal false, key.sysverify(digest, invalid_sig)
-    assert_raise(OpenSSL::PKey::DSAError) { key.sysverify(digest, malformed_sig) }
+    assert_sign_verify_false_or_error { key.sysverify(digest, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, digest)
     assert_equal false, key.verify_raw(nil, invalid_sig, digest)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, digest) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, digest) }
   end
 
   def test_DSAPrivateKey

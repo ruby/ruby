@@ -117,9 +117,15 @@ jobs:
         continue-on-error: true
 
       - name: make ${{ matrix.test_task }}
-        run: >-
-          $SETARCH make -s ${{ matrix.test_task }}
-          ${TESTS:+TESTS="$TESTS"}
+        run: |
+          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
+            exec
+            > >(tee launchable_stdout.log) \
+            2> >(tee launchable_stderr.log)
+          fi
+
+          $SETARCH make -s ${{ matrix.test_task }} \
+          ${TESTS:+TESTS="$TESTS"} \
           ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: ${{ matrix.timeout || 40 }}
         env:

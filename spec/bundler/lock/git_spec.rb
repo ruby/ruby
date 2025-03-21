@@ -19,7 +19,7 @@ RSpec.describe "bundle lock with git gems" do
   it "doesn't print errors even if running lock after removing the cache" do
     install_gemfile_with_foo_as_a_git_dependency
 
-    FileUtils.rm_rf(Dir[default_cache_path("git/foo-1.0-*")].first)
+    FileUtils.rm_r(Dir[default_cache_path("git/foo-1.0-*")].first)
 
     bundle "lock --verbose"
 

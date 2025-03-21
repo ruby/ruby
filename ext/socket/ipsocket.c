@@ -593,7 +593,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
 
         arg->getaddrinfo_shared->node = arg->hostp ? ruby_strdup(arg->hostp) : NULL;
-        arg->getaddrinfo_shared->service = ruby_strdup(arg->portp);
+        arg->getaddrinfo_shared->service = arg->portp ? ruby_strdup(arg->portp) : NULL;
         arg->getaddrinfo_shared->refcount = arg->family_size + 1;
 
         for (int i = 0; i < arg->family_size; i++) {
@@ -1217,8 +1217,8 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
         char *hostp, *portp;
         char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
         int additional_flags = 0;
-        hostp = host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
-        portp = port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
+        hostp = raddrinfo_host_str(remote_host, hbuf, sizeof(hbuf), &additional_flags);
+        portp = raddrinfo_port_str(remote_serv, pbuf, sizeof(pbuf), &additional_flags);
 
         if (!is_specified_ip_address(hostp)) {
             int target_families[2] = { 0, 0 };

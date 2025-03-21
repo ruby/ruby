@@ -111,7 +111,11 @@ module Bundler
     end
 
     def gemspec_dev_dep?
-      type == :development
+      @gemspec_dev_dep ||= @options.fetch("gemspec_dev_dep", false)
+    end
+
+    def gemfile_dep?
+      !gemspec_dev_dep?
     end
 
     def current_env?

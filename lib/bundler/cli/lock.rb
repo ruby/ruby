@@ -44,7 +44,8 @@ module Bundler
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
-        options["remove-platform"].each do |platform|
+        options["remove-platform"].each do |platform_string|
+          platform = Gem::Platform.new(platform_string)
           definition.remove_platform(platform)
         end
 

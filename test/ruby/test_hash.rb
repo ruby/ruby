@@ -1986,9 +1986,12 @@ class TestHashOnly < Test::Unit::TestCase
     ObjectSpace.count_objects
 
     h = {"abc" => 1}
-    before = ObjectSpace.count_objects[:T_STRING]
-    5.times{ h["abc"] }
-    assert_equal before, ObjectSpace.count_objects[:T_STRING]
+
+    EnvUtil.without_gc do
+      before = ObjectSpace.count_objects[:T_STRING]
+      5.times{ h["abc"] }
+      assert_equal before, ObjectSpace.count_objects[:T_STRING]
+    end
   end
 
   def test_AREF_fstring_key_default_proc
@@ -2388,5 +2391,19 @@ class TestHashOnly < Test::Unit::TestCase
         (0..10).each {|i| $h[Foo.new] ||= {} }
       end
     end;
+  end
+
+  def test_ar_to_st_reserved_value
+    klass = Class.new do
+      attr_reader :hash
+      def initialize(val) = @hash = val
+    end
+
+    values = 0.downto(-16).to_a
+    hash = {}
+    values.each do |val|
+      hash[klass.new(val)] = val
+    end
+    assert_equal values, hash.values, "[ruby-core:121239] [Bug #21170]"
   end
 end

@@ -14,6 +14,24 @@ class TestStringIO < Test::Unit::TestCase
 
   include TestEOF::Seek
 
+  def test_do_not_mutate_shared_buffers
+    # Ensure we have two strings that are not embedded but have the same shared
+    # string reference.
+    #
+    # In this case, we must use eval because we need two strings literals that
+    # are long enough they cannot be embedded, but also contain the same bytes.
+
+    a = eval("+"+("x" * 1024).dump)
+    b = eval("+"+("x" * 1024).dump)
+
+    s = StringIO.new(b)
+    s.getc
+    s.ungetc '#'
+
+    # We mutated b, so a should not be mutated
+    assert_equal("x", a[0])
+  end
+
   def test_version
     assert_kind_of(String, StringIO::VERSION)
   end
@@ -46,6 +64,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.gets
     io.puts "abc"
     assert_nil io.string
+
+    # Null device StringIO just drop ungot string
+    io.ungetc '#'
+    assert_nil io.getc
   end
 
   def test_truncate
@@ -463,6 +485,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(IOError) { f.seek(0) }
   ensure
     f.close unless f.closed?
+  end
+
+  def test_seek_frozen_string
+    f = StringIO.new(-"1234")
+    assert_equal(0, f.seek(1))
   end
 
   def test_each_byte

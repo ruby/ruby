@@ -999,6 +999,18 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_regsub_no_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+      code = proc do
+        "aaaaaaaaaaa".gsub(/a/, "")
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)
@@ -1497,6 +1509,19 @@ class TestRegexp < Test::Unit::TestCase
                        "CJK UNIFIED IDEOGRAPH-2B739")
     assert_unicode_age("\u{31350}".."\u{323AF}",
                        "CJK UNIFIED IDEOGRAPH-31350..CJK UNIFIED IDEOGRAPH-323AF")
+  end
+
+  def test_unicode_age_15_1
+    @matches   = %w"15.1"
+    @unmatches = %w"15.0"
+
+    # https://www.unicode.org/Public/15.1.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{2FFC}".."\u{2FFF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SURROUND FROM RIGHT..IDEOGRAPHIC DESCRIPTION CHARACTER ROTATION")
+    assert_unicode_age("\u{31EF}",
+                       "IDEOGRAPHIC DESCRIPTION CHARACTER SUBTRACTION")
+    assert_unicode_age("\u{2EBF0}".."\u{2EE5D}",
+                       "CJK UNIFIED IDEOGRAPH-2EBF0..CJK UNIFIED IDEOGRAPH-2EE5D")
   end
 
   UnicodeAgeRegexps = Hash.new do |h, age|
@@ -2112,6 +2137,19 @@ class TestRegexp < Test::Unit::TestCase
     pre = ->(n) {[Regexp.new("a?" * n + "a" * n), "a" * n]}
     assert_linear_performance([10, 29], pre: pre) do |re, s|
       re =~ s
+    end
+  end
+
+  def test_bug_16145_and_bug_21176_caseinsensitive_small # [Bug#16145] [Bug#21176]
+    encodings = [Encoding::UTF_8, Encoding::ISO_8859_1]
+    encodings.each do |enc|
+      o_acute_lower = "\u00F3".encode(enc)
+      o_acute_upper = "\u00D3".encode(enc)
+      assert_match(/[x#{o_acute_lower}]/i, "abc#{o_acute_upper}", "should match o acute case insensitive")
+
+      e_acute_lower = "\u00E9".encode(enc)
+      e_acute_upper = "\u00C9".encode(enc)
+      assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
     end
   end
 end

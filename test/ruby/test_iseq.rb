@@ -919,4 +919,10 @@ class TestISeq < Test::Unit::TestCase
       assert_predicate(status, :success?)
     end
   end
+
+  def test_compile_empty_under_gc_stress
+    EnvUtil.under_gc_stress do
+      RubyVM::InstructionSequence.compile_file(File::NULL)
+    end
+  end
 end

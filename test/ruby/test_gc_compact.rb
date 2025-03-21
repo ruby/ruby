@@ -452,4 +452,21 @@ class TestGCCompact < Test::Unit::TestCase
       assert_raise(FrozenError) { a.set_a }
     end;
   end
+
+  def test_moving_too_complex_generic_ivar
+    omit "not compiled with SHAPE_DEBUG" unless defined?(RubyVM::Shape)
+
+    assert_separately([], <<~RUBY)
+      RubyVM::Shape.exhaust_shapes
+
+      obj = []
+      obj.instance_variable_set(:@fixnum, 123)
+      obj.instance_variable_set(:@str, "hello")
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+      assert_equal(123, obj.instance_variable_get(:@fixnum))
+      assert_equal("hello", obj.instance_variable_get(:@str))
+    RUBY
+  end
 end

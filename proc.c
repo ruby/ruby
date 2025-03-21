@@ -503,6 +503,12 @@ bind_local_variables(VALUE bindval)
     return rb_vm_env_local_variables(env);
 }
 
+int
+rb_numparam_id_p(ID id)
+{
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT);
+}
+
 /*
  *  call-seq:
  *     binding.local_variable_get(symbol) -> obj
@@ -529,6 +535,10 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
     const rb_env_t *env;
 
     if (!lid) goto undefined;
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
 
@@ -578,6 +588,10 @@ bind_local_variable_set(VALUE bindval, VALUE sym, VALUE val)
     const rb_env_t *env;
 
     if (!lid) lid = rb_intern_str(sym);
+    if (rb_numparam_id_p(lid)) {
+        rb_name_err_raise("numbered parameter '%1$s' is not a local variable",
+                          bindval, ID2SYM(lid));
+    }
 
     GetBindingPtr(bindval, bind);
     env = VM_ENV_ENVVAL_PTR(vm_block_ep(&bind->block));
@@ -1165,10 +1179,10 @@ rb_block_pair_yield_optimizable(void)
     min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return 0;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         {
             VALUE procval = block_handler;
             rb_proc_t *proc;
@@ -1178,7 +1192,7 @@ rb_block_pair_yield_optimizable(void)
             return min > 1;
         }
 
-      case block_handler_type_ifunc:
+      case block_type_ifunc:
         {
             const struct vm_ifunc *ifunc = block.as.captured.code.ifunc;
             if (ifunc->flags & IFUNC_YIELD_OPTIMIZABLE) return 1;
@@ -1205,10 +1219,10 @@ rb_block_arity(void)
     block_setup(&block, block_handler);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return -1;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         return rb_proc_arity(block_handler);
 
       default:

@@ -479,7 +479,7 @@ class VCS
         last = cmd_read_at(srcdir, [[*gitcmd, 'rev-parse', ref, err: w]]).rstrip
         w.close
         unless r.eof?
-          raise "#{COMMAND} rev-parse failed\n#{r.read.gsub(/^(?=\s*\S)/, '  ')}"
+          raise VCS::NotFoundError, "#{COMMAND} rev-parse failed\n#{r.read.gsub(/^(?=\s*\S)/, '  ')}"
         end
       end
       log = cmd_read_at(srcdir, [[*gitcmd, 'log', '-n1', '--date=iso', '--pretty=fuller', *path]])

@@ -444,7 +444,9 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
 
     def test_ttyname
       return unless IO.method_defined?(:ttyname)
-      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname"))
+      # [Bug #20682]
+      # `sleep 0.1` is added to stabilize flaky failures on macOS.
+      assert_equal(["true"], run_pty("p STDIN.ttyname == STDOUT.ttyname; sleep 0.1"))
     end
   end
 

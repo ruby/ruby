@@ -562,16 +562,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
 {
-    bool enabled = mmtk_gc_enabled_p();
-    if (!enabled) {
-        mmtk_set_gc_enabled(true);
-    }
-
-    mmtk_handle_user_collection_request(rb_gc_get_ractor_newobj_cache());
-
-    if (!enabled) {
-        mmtk_set_gc_enabled(false);
-    }
+    mmtk_handle_user_collection_request(rb_gc_get_ractor_newobj_cache(), true, full_mark);
 }
 
 bool
@@ -667,7 +658,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     if (objspace->gc_stress) {
-        mmtk_handle_user_collection_request(ractor_cache);
+        mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
     VALUE *alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size + 8, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
@@ -1326,10 +1317,36 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 }
 
 // Miscellaneous
-size_t
-rb_gc_impl_obj_flags(void *objspace_ptr, VALUE obj, ID* flags, size_t max)
+
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 1
+static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
+
+struct rb_gc_object_metadata_entry *
+rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    return 0;
+    static ID ID_object_id;
+
+    if (!ID_object_id) {
+#define I(s) ID_##s = rb_intern(#s);
+        I(object_id);
+#undef I
+    }
+
+    size_t n = 0;
+
+#define SET_ENTRY(na, v) do { \
+    RUBY_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    object_metadata_entries[n].name = ID_##na; \
+    object_metadata_entries[n].val = v; \
+    n++; \
+} while (0)
+
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+
+    object_metadata_entries[n].name = 0;
+    object_metadata_entries[n].val = 0;
+
+    return object_metadata_entries;
 }
 
 bool

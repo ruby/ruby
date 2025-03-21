@@ -366,13 +366,17 @@ static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 static st_index_t
 fstring_hash(VALUE str)
 {
+    st_index_t h;
     if (FL_TEST_RAW(str, STR_FAKESTR)) {
         // register_fstring precomputes the hash and stores it in capa for fake strings
-        return (st_index_t)RSTRING(str)->as.heap.aux.capa;
+        h = (st_index_t)RSTRING(str)->as.heap.aux.capa;
     }
     else {
-        return rb_str_hash(str);
+        h = rb_str_hash(str);
     }
+    // rb_str_hash doesn't include the encoding for ascii only strings, so
+    // we add it to avoid common collisions between `:sym.name` (ASCII) and `"sym"` (UTF-8)
+    return rb_hash_end(rb_hash_uint32(h, (uint32_t)ENCODING_GET_INLINED(str)));
 }
 #else
 #define fstring_hash rb_str_hash
@@ -433,6 +437,10 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
 
         if (rb_objspace_garbage_object_p(str)) {
             arg->fstr = Qundef;
+            // When RSTRING_FSTR strings are swept, they call `st_delete`.
+            // To avoid a race condition if an equivalent string was inserted
+            // we must remove the flag immediately.
+            FL_UNSET_RAW(str, RSTRING_FSTR);
             return ST_DELETE;
         }
 
@@ -456,7 +464,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
                     STR_SET_LEN(new_str, RSTRING_LEN(str));
                     TERM_FILL(RSTRING_END(new_str), TERM_LEN(str));
                     rb_enc_copy(new_str, str);
-                    str_store_precomputed_hash(new_str, fstring_hash(str));
+                    str_store_precomputed_hash(new_str, str_do_hash(str));
                 }
                 else {
                     new_str = str_new(rb_cString, RSTRING(str)->as.heap.ptr, RSTRING(str)->len);
@@ -6122,14 +6130,17 @@ get_pat_quoted(VALUE pat, int check)
 }
 
 static long
-rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
+rb_pat_search0(VALUE pat, VALUE str, long pos, int set_backref_str, VALUE *match)
 {
     if (BUILTIN_TYPE(pat) == T_STRING) {
         pos = rb_str_byteindex(str, pat, pos);
         if (set_backref_str) {
             if (pos >= 0) {
                 str = rb_str_new_frozen_String(str);
-                rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+                VALUE match_data = rb_backref_set_string(str, pos, RSTRING_LEN(pat));
+                if (match) {
+                    *match = match_data;
+                }
             }
             else {
                 rb_backref_set(Qnil);
@@ -6138,8 +6149,14 @@ rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
         return pos;
     }
     else {
-        return rb_reg_search0(pat, str, pos, 0, set_backref_str);
+        return rb_reg_search0(pat, str, pos, 0, set_backref_str, match);
     }
+}
+
+static long
+rb_pat_search(VALUE pat, VALUE str, long pos, int set_backref_str)
+{
+    return rb_pat_search0(pat, str, pos, set_backref_str, NULL);
 }
 
 
@@ -6293,12 +6310,12 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val = Qnil, repl, match0 = Qnil, dest, hash = Qnil;
+    VALUE pat, val = Qnil, repl, match0 = Qnil, dest, hash = Qnil, match = Qnil;
     long beg, beg0, end0;
     long offset, blen, slen, len, last;
     enum {STR, ITER, FAST_MAP, MAP} mode = STR;
     char *sp, *cp;
-    int need_backref = -1;
+    int need_backref_str = -1;
     rb_encoding *str_enc;
 
     switch (argc) {
@@ -6324,7 +6341,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     }
 
     pat = get_pat_quoted(argv[0], 1);
-    beg = rb_pat_search(pat, str, 0, need_backref);
+    beg = rb_pat_search0(pat, str, 0, need_backref_str, &match);
+
     if (beg < 0) {
         if (bang) return Qnil;	/* no match, no substitution */
         return str_duplicate(rb_cString, str);
@@ -6341,7 +6359,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
-        VALUE match = rb_backref_get();
         struct re_registers *regs = RMATCH_REGS(match);
         if (RB_TYPE_P(pat, T_STRING)) {
             beg0 = beg;
@@ -6354,7 +6371,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
             if (mode == ITER) match0 = rb_reg_nth_match(0, match);
         }
 
-        if (mode) {
+        if (mode != STR) {
             if (mode == ITER) {
                 val = rb_obj_as_string(rb_yield(match0));
             }
@@ -6378,10 +6395,10 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
                 rb_raise(rb_eRuntimeError, "block should not cheat");
             }
         }
-        else if (need_backref) {
+        else if (need_backref_str) {
             val = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
-            if (need_backref < 0) {
-                need_backref = val != repl;
+            if (need_backref_str < 0) {
+                need_backref_str = val != repl;
             }
         }
         else {
@@ -6409,14 +6426,20 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         }
         cp = RSTRING_PTR(str) + offset;
         if (offset > RSTRING_LEN(str)) break;
-        beg = rb_pat_search(pat, str, offset, need_backref);
+
+        // In FAST_MAP and STR mode the backref can't escape so we can re-use the MatchData safely.
+        if (mode != FAST_MAP && mode != STR) {
+            match = Qnil;
+        }
+        beg = rb_pat_search0(pat, str, offset, need_backref_str, &match);
 
         RB_GC_GUARD(match);
     } while (beg >= 0);
+
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
     }
-    rb_pat_search(pat, str, last, 1);
+    rb_pat_search0(pat, str, last, 1, &match);
     if (bang) {
         str_shared_replace(str, dest);
     }

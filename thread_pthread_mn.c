@@ -429,7 +429,12 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
     }
 }
 
-static COROUTINE
+#ifdef __APPLE__
+# define co_start ruby_coroutine_start
+#else
+static
+#endif
+COROUTINE
 co_start(struct coroutine_context *from, struct coroutine_context *self)
 {
 #ifdef RUBY_ASAN_ENABLED

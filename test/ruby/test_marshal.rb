@@ -653,10 +653,10 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
-    end
+    end if c
   end
 
   def test_unloadable_userdef
@@ -670,9 +670,18 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
+    end if c
+  end
+
+  def test_recursive_userdef
+    t = Time.utc(0)
+    str = "b".b
+    t.instance_eval {@v = t}
+    assert_raise_with_message(RuntimeError, /recursive\b.*\b_dump/) do
+      Marshal.dump(t)
     end
   end
 

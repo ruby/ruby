@@ -279,7 +279,8 @@ module EnvUtil
   end
   module_function :without_gc
 
-  def with_default_external(enc)
+  def with_default_external(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_external = enc }
     yield
   ensure
@@ -287,7 +288,8 @@ module EnvUtil
   end
   module_function :with_default_external
 
-  def with_default_internal(enc)
+  def with_default_internal(enc = nil, of: nil)
+    enc = of.encoding if defined?(of.encoding)
     suppress_warning { Encoding.default_internal = enc }
     yield
   ensure

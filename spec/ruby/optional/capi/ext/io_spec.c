@@ -241,7 +241,7 @@ VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE se
 #ifdef RUBY_VERSION_IS_3_0
   VALUE timeout = Qnil;
   if (!NIL_P(secs)) {
-      timeout = rb_float_new((double)FIX2INT(secs) + (0.000001f * FIX2INT(usecs)));
+      timeout = rb_float_new((double)FIX2INT(secs) + (0.000001 * FIX2INT(usecs)));
   }
   VALUE result = rb_io_wait(io, events, timeout);
   if (result == Qfalse) return INT2FIX(0);

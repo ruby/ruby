@@ -6,6 +6,7 @@ begin
   verbose, $VERBOSE = $VERBOSE, nil
   require "parser/ruby33"
   require "prism/translation/parser33"
+  require "prism/translation/parser34"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
@@ -16,6 +17,7 @@ end
 
 # First, opt in to every AST feature.
 Parser::Builders::Default.modernize
+Prism::Translation::Parser::Builder.modernize
 
 # The parser gem rejects some strings that would most likely lead to errors
 # in consumers due to encoding problems. RuboCop however monkey-patches this
@@ -80,16 +82,16 @@ module Prism
       "seattlerb/heredoc_with_extra_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns_windows.txt",
       "seattlerb/heredoc_with_only_carriage_returns.txt",
+
+      # https://github.com/whitequark/parser/issues/1026
+      # Regex with \c escape
+      "unescaping.txt",
+      "seattlerb/regexp_esc_C_slash.txt",
     ]
 
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = skip_incorrect | [
-      "unescaping.txt",
-      "seattlerb/pctW_lineno.txt",
-      "seattlerb/regexp_esc_C_slash.txt",
-      "unparser/corpus/literal/literal.txt",
-      "whitequark/parser_slash_slash_n_escaping_in_literals.txt",
     ]
 
     # Not sure why these files are failing on JRuby, but skipping them for now.
@@ -102,9 +104,7 @@ module Prism
     skip_tokens = [
       "dash_heredocs.txt",
       "embdoc_no_newline_at_end.txt",
-      "heredocs_with_ignored_newlines.txt",
       "methods.txt",
-      "strings.txt",
       "seattlerb/bug169.txt",
       "seattlerb/case_in.txt",
       "seattlerb/difficult4__leading_dots2.txt",
@@ -114,9 +114,9 @@ module Prism
       "seattlerb/parse_line_heredoc.txt",
       "seattlerb/pct_w_heredoc_interp_nested.txt",
       "seattlerb/required_kwarg_no_value.txt",
-      "seattlerb/slashy_newlines_within_string.txt",
       "seattlerb/TestRubyParserShared.txt",
       "unparser/corpus/literal/assignment.txt",
+      "unparser/corpus/literal/literal.txt",
       "whitequark/args.txt",
       "whitequark/beginless_erange_after_newline.txt",
       "whitequark/beginless_irange_after_newline.txt",
@@ -125,13 +125,11 @@ module Prism
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
-      "whitequark/parser_bug_640.txt",
       "whitequark/pattern_matching_expr_in_paren.txt",
       "whitequark/pattern_matching_hash.txt",
       "whitequark/pin_expr.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
-      "whitequark/slash_newline_in_heredocs.txt",
       "whitequark/space_args_arg_block.txt",
       "whitequark/space_args_block.txt"
     ]
@@ -145,6 +143,41 @@ module Prism
           compare_comments: fixture.path != "embdoc_no_newline_at_end.txt"
         )
       end
+    end
+
+    def test_non_prism_builder_class_deprecated
+      warnings = capture_warnings { Prism::Translation::Parser33.new(Parser::Builders::Default.new) }
+
+      assert_include(warnings, "#{__FILE__}:#{__LINE__ - 2}")
+      assert_include(warnings, "is not a `Prism::Translation::Parser::Builder` subclass")
+
+      warnings = capture_warnings { Prism::Translation::Parser33.new }
+      assert_empty(warnings)
+    end
+
+    if RUBY_VERSION >= "3.3"
+      def test_current_parser_for_current_ruby
+        major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
+        # Let's just hope there never is a Ruby 3.10 or similar
+        expected = major * 10 + minor
+        assert_equal(expected, Translation::ParserCurrent.new.version)
+      end
+    end
+
+    def test_it_block_parameter_syntax
+      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
+
+      buffer = Parser::Source::Buffer.new(it_fixture_path)
+      buffer.source = it_fixture_path.read
+      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
+
+      it_block_parameter_sexp = parse_sexp {
+        s(:itblock,
+          s(:send, nil, :x), :it,
+          s(:lvar, :it))
+      }
+
+      assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
     end
 
     private
@@ -168,7 +201,7 @@ module Prism
         ignore_warnings { Prism::Translation::Parser33.new.tokenize(buffer) }
 
       if expected_ast == actual_ast
-        if !compare_asts
+        if !compare_asts && !Fixture.custom_base_path?
           puts "#{fixture.path} is now passing"
         end
 
@@ -179,7 +212,7 @@ module Prism
         rescue Test::Unit::AssertionFailedError
           raise if compare_tokens
         else
-          puts "#{fixture.path} is now passing" if !compare_tokens
+          puts "#{fixture.path} is now passing" if !compare_tokens && !Fixture.custom_base_path?
         end
 
         assert_equal_comments(expected_comments, actual_comments) if compare_comments
@@ -244,6 +277,10 @@ module Prism
         "expected: #{expected_comments.inspect}\n" \
         "actual: #{actual_comments.inspect}"
       }
+    end
+
+    def parse_sexp(&block)
+      Class.new { extend AST::Sexp }.instance_eval(&block).to_sexp
     end
   end
 end

@@ -163,7 +163,7 @@ impl ObjectClosure {
         F2: 'env + FnOnce() -> T,
     {
         debug_assert!(
-            self.c_function == THE_UNREGISTERED_CLOSURE_FUNC,
+            std::ptr::fn_addr_eq(self.c_function, THE_UNREGISTERED_CLOSURE_FUNC),
             "set_temporarily_and_run_code is recursively called."
         );
         self.c_function = Self::c_function_registered::<F1>;

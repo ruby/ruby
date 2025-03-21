@@ -239,6 +239,8 @@ END
   end
 
   def test_smime
+    pend "AWS-LC has no current support for SMIME with PKCS7" if aws_lc?
+
     store = OpenSSL::X509::Store.new
     store.add_cert(@ca_cert)
     ca_certs = [@ca_cert]
@@ -261,6 +263,8 @@ END
   end
 
   def test_to_text
+    omit "AWS-LC does not support PKCS7.to_text" if aws_lc?
+
     p7 = OpenSSL::PKCS7.new
     p7.type = "signed"
     assert_match(/signed/, p7.to_text)
@@ -374,7 +378,12 @@ END
     store = OpenSSL::X509::Store.new
     pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY)
     p7enc = OpenSSL::PKCS7.new(pki_msg.data)
-    assert_equal(pki_message_content_pem, p7enc.to_pem)
+    # AWS-LC uses explicit OCTET STRING headers when encoding PKCS7 EncryptedContent,
+    # while OpenSSL traditionally uses indefinite-length encoding (ASN1_TFLG_NDEF)
+    # in its PKCS7 implementation.
+    unless aws_lc?
+      assert_equal(pki_message_content_pem, p7enc.to_pem)
+    end
   end
 end
 

@@ -48,35 +48,38 @@ module Bundler
         @version.segments
       end
 
-      def sort_obj
-        [@version, @priority]
-      end
-
       def <=>(other)
         return unless other.is_a?(self.class)
 
-        sort_obj <=> other.sort_obj
+        version_comparison = version <=> other.version
+        return version_comparison unless version_comparison.zero?
+
+        priority <=> other.priority
       end
 
       def ==(other)
         return unless other.is_a?(self.class)
 
-        sort_obj == other.sort_obj
+        version == other.version && priority == other.priority
       end
 
       def eql?(other)
         return unless other.is_a?(self.class)
 
-        sort_obj.eql?(other.sort_obj)
+        version.eql?(other.version) && priority.eql?(other.priority)
       end
 
       def hash
-        sort_obj.hash
+        [@version, @priority].hash
       end
 
       def to_s
         @version.to_s
       end
+
+      protected
+
+      attr_reader :priority
     end
   end
 end

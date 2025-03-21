@@ -147,6 +147,12 @@ module Bundler
           end
         end
 
+        def installed_to?(destination)
+          # if copy_to is interrupted, it may leave a partially installed directory that
+          # contains .git but no other files -- consider this not to be installed
+          Dir.exist?(destination) && (Dir.children(destination) - [".git"]).any?
+        end
+
         private
 
         def git_remote_fetch(args)

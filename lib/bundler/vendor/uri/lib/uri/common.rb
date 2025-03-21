@@ -13,15 +13,19 @@ require_relative "rfc2396_parser"
 require_relative "rfc3986_parser"
 
 module Bundler::URI
+  # The default parser instance for RFC 2396.
   RFC2396_PARSER = RFC2396_Parser.new
   Ractor.make_shareable(RFC2396_PARSER) if defined?(Ractor)
 
+  # The default parser instance for RFC 3986.
   RFC3986_PARSER = RFC3986_Parser.new
   Ractor.make_shareable(RFC3986_PARSER) if defined?(Ractor)
 
+  # The default parser instance.
   DEFAULT_PARSER = RFC3986_PARSER
   Ractor.make_shareable(DEFAULT_PARSER) if defined?(Ractor)
 
+  # Set the default parser instance.
   def self.parser=(parser = RFC3986_PARSER)
     remove_const(:Parser) if defined?(::Bundler::URI::Parser)
     const_set("Parser", parser.class)
@@ -40,7 +44,7 @@ module Bundler::URI
   end
   self.parser = RFC3986_PARSER
 
-  def self.const_missing(const)
+  def self.const_missing(const) # :nodoc:
     if const == :REGEXP
       warn "Bundler::URI::REGEXP is obsolete. Use Bundler::URI::RFC2396_REGEXP explicitly.", uplevel: 1 if $VERBOSE
       Bundler::URI::RFC2396_REGEXP
@@ -87,7 +91,7 @@ module Bundler::URI
     module_function :make_components_hash
   end
 
-  module Schemes
+  module Schemes # :nodoc:
   end
   private_constant :Schemes
 
@@ -305,7 +309,7 @@ module Bundler::URI
   256.times do |i|
     TBLENCWWWCOMP_[-i.chr] = -('%%%02X' % i)
   end
-  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze
+  TBLENCURICOMP_ = TBLENCWWWCOMP_.dup.freeze # :nodoc:
   TBLENCWWWCOMP_[' '] = '+'
   TBLENCWWWCOMP_.freeze
   TBLDECWWWCOMP_ = {} # :nodoc:

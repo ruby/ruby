@@ -100,24 +100,30 @@ RSpec.describe "bundle install with gem sources" do
         gem 'myrack'
       G
 
-      gem_dir = default_bundle_path("gems/myrack-1.0.0")
-
-      FileUtils.rm_rf(gem_dir)
+      FileUtils.rm_r(default_bundle_path("gems/myrack-1.0.0"))
 
       bundle "install --verbose"
 
       expect(out).to include("Installing myrack 1.0.0")
-      expect(gem_dir).to exist
+      expect(default_bundle_path("gems/myrack-1.0.0")).to exist
       expect(the_bundle).to include_gems("myrack 1.0.0")
+    end
 
-      FileUtils.rm_rf(gem_dir)
-      Dir.mkdir(gem_dir)
+    it "does not state that it's constantly reinstalling empty gems" do
+      build_repo4 do
+        build_gem "empty", "1.0.0", no_default: true, allowed_warning: "no files specified"
+      end
+
+      install_gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "empty"
+      G
+      gem_dir = default_bundle_path("gems/empty-1.0.0")
+      expect(gem_dir).to be_empty
 
       bundle "install --verbose"
-
-      expect(out).to include("Installing myrack 1.0.0")
-      expect(gem_dir).to exist
-      expect(the_bundle).to include_gems("myrack 1.0.0")
+      expect(out).not_to include("Installing empty")
     end
 
     it "fetches gems when multiple versions are specified" do
@@ -331,13 +337,13 @@ RSpec.describe "bundle install with gem sources" do
       it "allows running bundle install --system without deleting foo", bundler: "< 3" do
         bundle "install --path vendor"
         bundle "install --system"
-        FileUtils.rm_rf(bundled_app("vendor"))
+        FileUtils.rm_r(bundled_app("vendor"))
         expect(the_bundle).to include_gems "myrack 1.0"
       end
 
       it "allows running bundle install --system after deleting foo", bundler: "< 3" do
         bundle "install --path vendor"
-        FileUtils.rm_rf(bundled_app("vendor"))
+        FileUtils.rm_r(bundled_app("vendor"))
         bundle "install --system"
         expect(the_bundle).to include_gems "myrack 1.0"
       end
@@ -581,7 +587,7 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle :install, raise_on_error: false
 
-      expect(err).to include("Two gemspecs have conflicting requirements on the same gem: rubocop (~> 1.36.0, development) and rubocop (~> 2.0, development). Bundler cannot continue.")
+      expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
     end
 
     it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do
@@ -1363,6 +1369,7 @@ RSpec.describe "bundle install with gem sources" do
       bundle "install --verbose"
 
       expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+      expect(out).not_to include("you are adding a new platform to your lockfile")
 
       expect(lockfile).to eq <<~L
         GEM
@@ -1543,88 +1550,94 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   context "with --prefer-local flag" do
-    before do
-      build_repo4 do
-        build_gem "foo", "1.0.1"
-        build_gem "foo", "1.0.0"
-        build_gem "bar", "1.0.0"
+    context "and gems available locally" do
+      before do
+        build_repo4 do
+          build_gem "foo", "1.0.1"
+          build_gem "foo", "1.0.0"
+          build_gem "bar", "1.0.0"
 
-        build_gem "a", "1.0.0" do |s|
-          s.add_dependency "foo", "~> 1.0.0"
+          build_gem "a", "1.0.0" do |s|
+            s.add_dependency "foo", "~> 1.0.0"
+          end
+
+          build_gem "b", "1.0.0" do |s|
+            s.add_dependency "foo", "~> 1.0.1"
+          end
         end
 
-        build_gem "b", "1.0.0" do |s|
-          s.add_dependency "foo", "~> 1.0.1"
+        system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
+      end
+
+      it "fetches remote sources when not available locally" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "foo"
+          gem "bar"
+        G
+
+        expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "fetches remote sources when local version does not match requirements" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "foo", "1.0.1"
+          gem "bar"
+        G
+
+        expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "uses the locally available version for sub-dependencies when possible" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "a"
+        G
+
+        expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
+        expect(last_command).to be_success
+      end
+
+      it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
+        install_gemfile <<-G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
+
+          gem "b"
+        G
+
+        expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
+        expect(last_command).to be_success
+      end
+    end
+
+    context "and no gems available locally" do
+      before do
+        build_repo4 do
+          build_gem "myreline", "0.3.8"
+          build_gem "debug", "0.2.1"
+
+          build_gem "debug", "1.10.0" do |s|
+            s.add_dependency "myreline"
+          end
         end
       end
 
-      system_gems "foo-1.0.0", path: default_bundle_path, gem_repo: gem_repo4
-    end
+      it "resolves to the latest version if no gems are available locally" do
+        install_gemfile <<~G, "prefer-local": true, verbose: true
+          source "https://gem.repo4"
 
-    it "fetches remote sources when not available locally" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
+          gem "debug"
+        G
 
-        gem "foo"
-        gem "bar"
-      G
-
-      expect(out).to include("Using foo 1.0.0").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "fetches remote sources when local version does not match requirements" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "foo", "1.0.1"
-        gem "bar"
-      G
-
-      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching bar 1.0.0").and include("Installing bar 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "uses the locally available version for sub-dependencies when possible" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "a"
-      G
-
-      expect(out).to include("Using foo 1.0.0").and include("Fetching a 1.0.0").and include("Installing a 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "fetches remote sources for sub-dependencies when the locally available version does not satisfy the requirement" do
-      install_gemfile <<-G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "b"
-      G
-
-      expect(out).to include("Fetching foo 1.0.1").and include("Installing foo 1.0.1").and include("Fetching b 1.0.0").and include("Installing b 1.0.0")
-      expect(last_command).to be_success
-    end
-
-    it "resolves to the latest version if no gems are available locally" do
-      build_repo4 do
-        build_gem "myreline", "0.3.8"
-        build_gem "debug", "0.2.1"
-
-        build_gem "debug", "1.10.0" do |s|
-          s.add_dependency "myreline"
-        end
+        expect(out).to include("Fetching debug 1.10.0").and include("Installing debug 1.10.0").and include("Fetching myreline 0.3.8").and include("Installing myreline 0.3.8")
+        expect(last_command).to be_success
       end
-
-      install_gemfile <<~G, "prefer-local": true, verbose: true
-        source "https://gem.repo4"
-
-        gem "debug"
-      G
-
-      expect(out).to include("Fetching debug 1.10.0").and include("Installing debug 1.10.0").and include("Fetching myreline 0.3.8").and include("Installing myreline 0.3.8")
-      expect(last_command).to be_success
     end
   end
 

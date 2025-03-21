@@ -3874,7 +3874,7 @@ pm_def_node_create(
         end = end_keyword->end;
     }
 
-    if ((receiver != NULL) && PM_NODE_TYPE_P(receiver, PM_PARENTHESES_NODE)) {
+    if (receiver != NULL) {
         pm_def_node_receiver_check(parser, receiver);
     }
 
@@ -5328,6 +5328,12 @@ pm_interpolated_string_node_append(pm_interpolated_string_node_t *node, pm_node_
             // should clear the mutability flags.
             CLEAR_FLAGS(node);
             break;
+        case PM_X_STRING_NODE:
+        case PM_INTERPOLATED_X_STRING_NODE:
+            // If this is an x string, then this is a syntax error. But we want
+            // to handle it here so that we don't fail the assertion.
+            CLEAR_FLAGS(node);
+            break;
         default:
             assert(false && "unexpected node type");
             break;
@@ -6406,12 +6412,13 @@ pm_program_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, pm_st
  * Allocate and initialize new ParenthesesNode node.
  */
 static pm_parentheses_node_t *
-pm_parentheses_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_t *body, const pm_token_t *closing) {
+pm_parentheses_node_create(pm_parser_t *parser, const pm_token_t *opening, pm_node_t *body, const pm_token_t *closing, pm_node_flags_t flags) {
     pm_parentheses_node_t *node = PM_NODE_ALLOC(parser, pm_parentheses_node_t);
 
     *node = (pm_parentheses_node_t) {
         {
             .type = PM_PARENTHESES_NODE,
+            .flags = flags,
             .node_id = PM_NODE_IDENTIFY(parser),
             .location = {
                 .start = opening->start,
@@ -6678,6 +6685,7 @@ pm_rescue_node_create(pm_parser_t *parser, const pm_token_t *keyword) {
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .operator_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .reference = NULL,
         .statements = NULL,
         .subsequent = NULL,
@@ -9776,7 +9784,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
 
                 size_t whitespace;
                 while (true) {
-                    if ((whitespace = pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end)) > 0) {
+                    if ((whitespace = pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end)) > 0) {
                         parser->current.end += whitespace;
                     } else if (peek(parser) == '\\' && peek_offset(parser, 1) == 'n') {
                         // This is super hacky, but it gets us nicer error
@@ -9824,7 +9832,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                     uint32_t value = escape_unicode(parser, unicode_start, hexadecimal_length);
                     escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
-                    parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
+                    parser->current.end += pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
                 }
 
                 // ?\u{nnnn} character literal should contain only one codepoint
@@ -15072,8 +15080,8 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
             case PM_TOKEN_NEWLINE:
             case PM_TOKEN_SEMICOLON:
             case PM_TOKEN_KEYWORD_THEN:
-                // Here we have a terminator for the rescue keyword, in which case we're
-                // going to just continue on.
+                // Here we have a terminator for the rescue keyword, in which
+                // case we're going to just continue on.
                 break;
             default: {
                 if (token_begins_expression_p(parser->current.type) || match1(parser, PM_TOKEN_USTAR)) {
@@ -15105,9 +15113,12 @@ parse_rescues(pm_parser_t *parser, size_t opening_newline_index, const pm_token_
         }
 
         if (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
-            accept1(parser, PM_TOKEN_KEYWORD_THEN);
+            if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
+                rescue->then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(&parser->previous);
+            }
         } else {
             expect1(parser, PM_TOKEN_KEYWORD_THEN, PM_ERR_RESCUE_TERM);
+            rescue->then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(&parser->previous);
         }
 
         if (!match3(parser, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_END)) {
@@ -16823,6 +16834,10 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
             // If we haven't already created our container for concatenation,
             // we'll do that now.
             if (!concating) {
+                if (!PM_NODE_TYPE_P(current, PM_STRING_NODE) && !PM_NODE_TYPE_P(current, PM_INTERPOLATED_STRING_NODE)) {
+                    pm_parser_err_node(parser, current, PM_ERR_STRING_CONCATENATION);
+                }
+
                 concating = true;
                 pm_token_t bounds = not_provided(parser);
 
@@ -17547,7 +17562,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
                 pm_node_t *body = parse_pattern(parser, captures, PM_PARSE_PATTERN_SINGLE, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN, (uint16_t) (depth + 1));
                 accept1(parser, PM_TOKEN_NEWLINE);
                 expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
-                pm_node_t *right = (pm_node_t *) pm_parentheses_node_create(parser, &opening, body, &parser->previous);
+                pm_node_t *right = (pm_node_t *) pm_parentheses_node_create(parser, &opening, body, &parser->previous, 0);
 
                 if (node == NULL) {
                     node = right;
@@ -18170,12 +18185,19 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
         case PM_TOKEN_PARENTHESIS_LEFT:
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES: {
             pm_token_t opening = parser->current;
+            pm_node_flags_t flags = 0;
 
             pm_node_list_t current_block_exits = { 0 };
             pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
 
             parser_lex(parser);
-            while (accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE));
+            while (true) {
+                if (accept1(parser, PM_TOKEN_SEMICOLON)) {
+                    flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
+                } else if (!accept1(parser, PM_TOKEN_NEWLINE)) {
+                    break;
+                }
+            }
 
             // If this is the end of the file or we match a right parenthesis, then
             // we have an empty parentheses node, and we can immediately return.
@@ -18185,7 +18207,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pop_block_exits(parser, previous_block_exits);
                 pm_node_list_free(&current_block_exits);
 
-                return (pm_node_t *) pm_parentheses_node_create(parser, &opening, NULL, &parser->previous);
+                return (pm_node_t *) pm_parentheses_node_create(parser, &opening, NULL, &parser->previous, flags);
             }
 
             // Otherwise, we're going to parse the first statement in the list
@@ -18198,9 +18220,23 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // Determine if this statement is followed by a terminator. In the
             // case of a single statement, this is fine. But in the case of
             // multiple statements it's required.
-            bool terminator_found = accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+            bool terminator_found = false;
+
+            if (accept1(parser, PM_TOKEN_SEMICOLON)) {
+                terminator_found = true;
+                flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
+            } else if (accept1(parser, PM_TOKEN_NEWLINE)) {
+                terminator_found = true;
+            }
+
             if (terminator_found) {
-                while (accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON));
+                while (true) {
+                    if (accept1(parser, PM_TOKEN_SEMICOLON)) {
+                        flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
+                    } else if (!accept1(parser, PM_TOKEN_NEWLINE)) {
+                        break;
+                    }
+                }
             }
 
             // If we hit a right parenthesis, then we're done parsing the
@@ -18272,13 +18308,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_statements_node_t *statements = pm_statements_node_create(parser);
                 pm_statements_node_body_append(parser, statements, statement, true);
 
-                return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous);
+                return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous, flags);
             }
 
             // If we have more than one statement in the set of parentheses,
             // then we are going to parse all of them as a list of statements.
             // We'll do that here.
             context_push(parser, PM_CONTEXT_PARENS);
+            flags |= PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS;
+
             pm_statements_node_t *statements = pm_statements_node_create(parser);
             pm_statements_node_body_append(parser, statements, statement, true);
 
@@ -18355,7 +18393,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_node_list_free(&current_block_exits);
 
             pm_void_statements_check(parser, statements, true);
-            return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous);
+            return (pm_node_t *) pm_parentheses_node_create(parser, &opening, (pm_node_t *) statements, &parser->previous, flags);
         }
         case PM_TOKEN_BRACE_LEFT: {
             // If we were passed a current_hash_keys via the parser, then that
@@ -19401,7 +19439,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     expect2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON, PM_ERR_DEF_RECEIVER_TERM);
 
                     operator = parser->previous;
-                    receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, expression, &rparen);
+                    receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, expression, &rparen, 0);
 
                     // To push `PM_CONTEXT_DEF_PARAMS` again is for the same
                     // reason as described the above.
@@ -19734,7 +19772,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t lparen = parser->previous;
 
                 if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous);
+                    receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0);
                 } else {
                     arguments.opening_loc = PM_LOCATION_TOKEN_VALUE(&lparen);
                     receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, false, PM_ERR_NOT_EXPRESSION, (uint16_t) (depth + 1));
@@ -22769,11 +22807,11 @@ pm_parse(pm_parser_t *parser) {
  * otherwise return true.
  */
 static bool
-pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets) {
+pm_parse_stream_read(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets) {
 #define LINE_SIZE 4096
     char line[LINE_SIZE];
 
-    while (memset(line, '\n', LINE_SIZE), fgets(line, LINE_SIZE, stream) != NULL) {
+    while (memset(line, '\n', LINE_SIZE), stream_fgets(line, LINE_SIZE, stream) != NULL) {
         size_t length = LINE_SIZE;
         while (length > 0 && line[length - 1] == '\n') length--;
 
@@ -22840,16 +22878,16 @@ pm_parse_stream_unterminated_heredoc_p(pm_parser_t *parser) {
  * can stream stdin in to Ruby so we need to support a streaming API.
  */
 PRISM_EXPORTED_FUNCTION pm_node_t *
-pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const pm_options_t *options) {
+pm_parse_stream(pm_parser_t *parser, pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const pm_options_t *options) {
     pm_buffer_init(buffer);
 
-    bool eof = pm_parse_stream_read(buffer, stream, fgets);
+    bool eof = pm_parse_stream_read(buffer, stream, stream_fgets);
     pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
     pm_node_t *node = pm_parse(parser);
 
     while (!eof && parser->error_list.size > 0 && (parser->lex_modes.index > 0 || pm_parse_stream_unterminated_heredoc_p(parser))) {
         pm_node_destroy(parser, node);
-        eof = pm_parse_stream_read(buffer, stream, fgets);
+        eof = pm_parse_stream_read(buffer, stream, stream_fgets);
 
         pm_parser_free(parser);
         pm_parser_init(parser, (const uint8_t *) pm_buffer_value(buffer), pm_buffer_length(buffer), options);
@@ -22941,13 +22979,13 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
  * given stream into to the given buffer.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *fgets, const char *data) {
+pm_serialize_parse_stream(pm_buffer_t *buffer, void *stream, pm_parse_stream_fgets_t *stream_fgets, const char *data) {
     pm_parser_t parser;
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
 
     pm_buffer_t parser_buffer;
-    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, fgets, &options);
+    pm_node_t *node = pm_parse_stream(&parser, &parser_buffer, stream, stream_fgets, &options);
     pm_serialize_header(buffer);
     pm_serialize_content(&parser, node, buffer);
     pm_buffer_append_byte(buffer, '\0');

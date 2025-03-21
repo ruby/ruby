@@ -321,14 +321,14 @@ module Bundler::URI
       str.gsub(escaped) { [$&[1, 2]].pack('H2').force_encoding(enc) }
     end
 
-    @@to_s = Kernel.instance_method(:to_s)
-    if @@to_s.respond_to?(:bind_call)
-      def inspect
-        @@to_s.bind_call(self)
+    TO_S = Kernel.instance_method(:to_s) # :nodoc:
+    if TO_S.respond_to?(:bind_call)
+      def inspect # :nodoc:
+        TO_S.bind_call(self)
       end
     else
-      def inspect
-        @@to_s.bind(self).call
+      def inspect # :nodoc:
+        TO_S.bind(self).call
       end
     end
 

@@ -100,6 +100,7 @@ static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
+#define s_encoding_long rb_id_encoding()
 
 #define name_s_dump	"_dump"
 #define name_s_load	"_load"
@@ -114,6 +115,7 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_write	"write"
 #define name_s_binmode	"binmode"
 #define name_s_encoding_short "E"
+#define name_s_encoding_long "encoding"
 #define name_s_ruby2_keywords_flag "K"
 
 typedef struct {
@@ -156,6 +158,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
+    st_table *userdefs;
     st_index_t num_entries;
 };
 
@@ -204,6 +207,7 @@ mark_dump_arg(void *ptr)
     rb_mark_set(p->symbols);
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
+    rb_mark_set(p->userdefs);
     rb_gc_mark(p->str);
 }
 
@@ -221,6 +225,7 @@ memsize_dump_arg(const void *ptr)
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
     if (p->encodings) memsize += rb_st_memsize(p->encodings);
     return memsize;
 }
@@ -578,13 +583,21 @@ rb_hash_ruby2_keywords(VALUE obj)
     RHASH(obj)->basic.flags |= RHASH_PASS_AS_KEYWORDS;
 }
 
-static inline bool
-to_be_skipped_id(const ID id)
+/*
+ * if instance variable name `id` is a special name to be skipped,
+ * returns the name of it.  otherwise it cannot be dumped (unnamed),
+ * returns `name` as-is.  returns NULL for ID that can be dumped.
+ */
+static inline const char *
+skipping_ivar_name(const ID id, const char *name)
 {
-    if (id == s_encoding_short) return true;
-    if (id == s_ruby2_keywords_flag) return true;
-    if (id == rb_id_encoding()) return true;
-    return !rb_id2str(id);
+#define IS_SKIPPED_IVAR(idname) \
+    ((id == idname) && (name = name_##idname, true))
+    if (IS_SKIPPED_IVAR(s_encoding_short)) return name;
+    if (IS_SKIPPED_IVAR(s_ruby2_keywords_flag)) return name;
+    if (IS_SKIPPED_IVAR(s_encoding_long)) return name;
+    if (!rb_id2str(id)) return name;
+    return NULL;
 }
 
 struct w_ivar_arg {
@@ -597,15 +610,12 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 {
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
+    const char unnamed[] = "", *ivname = skipping_ivar_name(id, unnamed);
 
-    if (to_be_skipped_id(id)) {
-        if (id == s_encoding_short) {
-            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
-        }
-        if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
-                    CLASS_OF(arg->obj));
+    if (ivname) {
+        if (ivname != unnamed) {
+            rb_warn("instance variable '%s' on class %"PRIsVALUE" is not dumped",
+                    ivname, CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
     }
@@ -618,7 +628,7 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 static int
 obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
+    if (!skipping_ivar_name(id, "") && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
     return ST_CONTINUE;
@@ -887,6 +897,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_index_t hasiv2;
             VALUE encname2;
 
+            if (arg->userdefs && st_is_member(arg->userdefs, (st_data_t)obj)) {
+                rb_raise(rb_eRuntimeError, "can't dump recursive object using _dump()");
+            }
             v = INT2NUM(limit);
             v = dump_funcall(arg, obj, s_dump, 1, &v);
             if (!RB_TYPE_P(v, T_STRING)) {
@@ -903,7 +916,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_class(TYPE_USERDEF, obj, arg, FALSE);
             w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
             if (hasiv) {
+                st_data_t userdefs = (st_data_t)obj;
+                if (!arg->userdefs) {
+                    arg->userdefs = rb_init_identtable();
+                }
+                st_add_direct(arg->userdefs, userdefs, 0);
                 w_ivar(hasiv, ivobj, encname, &c_arg);
+                st_delete(arg->userdefs, &userdefs, NULL);
             }
             w_remember(obj, arg);
             return;
@@ -1110,6 +1129,10 @@ clear_dump_arg(struct dump_arg *arg)
         st_free_table(arg->encodings);
         arg->encodings = 0;
     }
+    if (arg->userdefs) {
+        st_free_table(arg->userdefs);
+        arg->userdefs = 0;
+    }
 }
 
 NORETURN(static inline void io_needed(void));
@@ -1187,6 +1210,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->num_entries = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
+    arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
         if (!rb_respond_to(port, s_write)) {

@@ -87,7 +87,7 @@ RSpec.describe "bundle update" do
         gem "foo", "1.0", :git => "#{lib_path("foo_one")}"
       G
 
-      FileUtils.rm_rf lib_path("foo_one")
+      FileUtils.rm_r lib_path("foo_one")
 
       install_gemfile <<-G
         source "https://gem.repo1"

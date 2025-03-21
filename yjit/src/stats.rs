@@ -293,6 +293,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::invalidate_constant_ic_fill,
     Counter::invalidate_no_singleton_class,
     Counter::invalidate_ep_escape,
+    Counter::invalidate_everything,
 ];
 
 /// Macro to increase a counter by name and count
@@ -589,6 +590,7 @@ make_counters! {
     invalidate_constant_ic_fill,
     invalidate_no_singleton_class,
     invalidate_ep_escape,
+    invalidate_everything,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.

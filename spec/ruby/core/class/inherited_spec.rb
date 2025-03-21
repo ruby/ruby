@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'fixtures/callback_order'
 
 describe "Class.inherited" do
 
@@ -98,4 +99,16 @@ describe "Class.inherited" do
     -> { Class.new(top) }.should_not raise_error
   end
 
+  it "is invoked after the class is named when using class definition syntax" do
+    CoreClassSpecs::Callbacks::Child::INHERITED_NAME.should == "CoreClassSpecs::Callbacks::Child"
+  end
+
+  ruby_version_is "3.5" do # https://bugs.ruby-lang.org/issues/21143
+    it "is invoked before `const_added`" do
+      CoreClassSpecs::Callbacks::ORDER.should == [
+        [:inherited, CoreClassSpecs::Callbacks::Child, "constant", :location],
+        [:const_added, :Child, "constant", :location],
+      ]
+    end
+  end
 end

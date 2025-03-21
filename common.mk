@@ -20,7 +20,7 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 15.0.0
+UNICODE_VERSION = 15.1.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -1181,8 +1181,7 @@ $(srcs_vpath)insns.inc: $(tooldir)/ruby_vm/views/insns.inc.erb $(inc_common_head
 $(srcs_vpath)insns_info.inc: $(tooldir)/ruby_vm/views/insns_info.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_type_chars.erb $(tooldir)/ruby_vm/views/_insn_name_info.erb \
   $(tooldir)/ruby_vm/views/_insn_len_info.erb $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
-  $(tooldir)/ruby_vm/views/_attributes.erb $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb \
-  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb
+  $(tooldir)/ruby_vm/views/_attributes.erb $(tooldir)/ruby_vm/views/_comptime_insn_stack_increase.erb
 $(srcs_vpath)vmtc.inc: $(tooldir)/ruby_vm/views/vmtc.inc.erb $(inc_common_headers)
 $(srcs_vpath)vm.inc: $(tooldir)/ruby_vm/views/vm.inc.erb $(inc_common_headers) \
   $(tooldir)/ruby_vm/views/_insn_entry.erb $(tooldir)/ruby_vm/views/_trace_instruction.erb
@@ -17146,6 +17145,7 @@ st.$(OBJEXT): {$(VPATH)}internal/variable.h
 st.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 st.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 st.$(OBJEXT): {$(VPATH)}missing.h
+st.$(OBJEXT): {$(VPATH)}ruby_assert.h
 st.$(OBJEXT): {$(VPATH)}st.c
 st.$(OBJEXT): {$(VPATH)}st.h
 st.$(OBJEXT): {$(VPATH)}subst.h

@@ -1107,6 +1107,21 @@ rb_vm_env_local_variables(const rb_env_t *env)
 }
 
 VALUE
+rb_vm_env_numbered_parameters(const rb_env_t *env)
+{
+    struct local_var_list vars;
+    local_var_list_init(&vars);
+    // if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) break; // TODO: is this needed?
+    const rb_iseq_t *iseq = env->iseq;
+    unsigned int i;
+    if (!iseq) return 0;
+    for (i = 0; i < ISEQ_BODY(iseq)->local_table_size; i++) {
+        numparam_list_add(&vars, ISEQ_BODY(iseq)->local_table[i]);
+    }
+    return local_var_list_finish(&vars);
+}
+
+VALUE
 rb_iseq_local_variables(const rb_iseq_t *iseq)
 {
     struct local_var_list vars;
@@ -3347,22 +3362,20 @@ rb_execution_context_update(rb_execution_context_t *ec)
         }
 
         while (cfp != limit_cfp) {
-            if (VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-                const VALUE *ep = cfp->ep;
-                cfp->self = rb_gc_location(cfp->self);
-                cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
-                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+            const VALUE *ep = cfp->ep;
+            cfp->self = rb_gc_location(cfp->self);
+            cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+            cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-                if (!VM_ENV_LOCAL_P(ep)) {
-                    const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-                    if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                        VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
-                    }
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                }
 
-                    if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                        VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
-                        VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
-                    }
+                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
             }
 
@@ -3398,21 +3411,19 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
-            if (VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-                rb_gc_mark_movable(cfp->self);
-                rb_gc_mark_movable((VALUE)cfp->iseq);
-                rb_gc_mark_movable((VALUE)cfp->block_code);
+            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)cfp->block_code);
 
-                if (!VM_ENV_LOCAL_P(ep)) {
-                    const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-                    if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                        rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
-                    }
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                }
 
-                    if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                        rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
-                        rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
-                    }
+                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 

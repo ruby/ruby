@@ -20,7 +20,7 @@ module Spec
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
         next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
-        FileUtils.rm_rf(dir)
+        FileUtils.rm_r(dir)
       end
       FileUtils.mkdir_p(home)
       FileUtils.mkdir_p(tmpdir)
@@ -194,9 +194,12 @@ module Spec
       # command is expired too. So give `gem install` commands a bit more time.
       options[:timeout] = 120
 
+      allowed_warning = options.delete(:allowed_warning)
+
       output = sys_exec("#{Path.gem_bin} #{command}", options)
       stderr = last_command.stderr
-      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr)
+
+      raise stderr if stderr.include?("WARNING") && !allowed_rubygems_warning?(stderr, allowed_warning)
       output
     end
 
@@ -393,7 +396,7 @@ module Spec
     end
 
     def pristine_system_gems(*gems)
-      FileUtils.rm_rf(system_gem_path)
+      FileUtils.rm_r(system_gem_path)
 
       system_gems(*gems)
     end
@@ -411,7 +414,6 @@ module Spec
     def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
-      FileUtils.rm_rf("#{bundled_app}/vendor/cache")
       FileUtils.mkdir_p("#{bundled_app}/vendor/cache")
 
       gems.each do |g|
@@ -422,7 +424,7 @@ module Spec
     end
 
     def simulate_new_machine
-      FileUtils.rm_rf bundled_app(".bundle")
+      FileUtils.rm_r bundled_app(".bundle")
       pristine_system_gems :bundler
     end
 
@@ -546,10 +548,20 @@ module Spec
       128 + signal_number
     end
 
+    def empty_repo4
+      FileUtils.rm_r gem_repo4
+
+      build_repo4 {}
+    end
+
     private
 
-    def allowed_rubygems_warning?(text)
-      text.include?("open-ended") || text.include?("is a symlink") || text.include?("rake based") || text.include?("expected RubyGems version")
+    def allowed_rubygems_warning?(text, extra_allowed_warning)
+      allowed_warnings = ["open-ended", "is a symlink", "rake based", "expected RubyGems version"]
+      allowed_warnings << extra_allowed_warning if extra_allowed_warning
+      allowed_warnings.any? do |warning|
+        text.include?(warning)
+      end
     end
 
     def match_source(contents)

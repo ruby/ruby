@@ -36,7 +36,7 @@ RSpec.describe "bundle show", bundler: "< 3" do
     end
 
     it "warns if specification is installed, but path does not exist on disk" do
-      FileUtils.rm_rf(default_bundle_path("gems", "rails-2.3.2"))
+      FileUtils.rm_r(default_bundle_path("gems", "rails-2.3.2"))
 
       bundle "show rails"
 

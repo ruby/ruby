@@ -201,11 +201,7 @@ class OpenSSL::SSLTestCase < OpenSSL::TestCase
                    accept_proc: proc{},
                    ignore_listener_error: false, &block)
     IO.pipe {|stop_pipe_r, stop_pipe_w|
-      store = OpenSSL::X509::Store.new
-      store.add_cert(@ca_cert)
-      store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
       ctx = OpenSSL::SSL::SSLContext.new
-      ctx.cert_store = store
       ctx.cert = @svr_cert
       ctx.key = @svr_key
       ctx.verify_mode = verify_mode
@@ -289,6 +285,14 @@ class OpenSSL::PKeyTestCase < OpenSSL::TestCase
     keys.each { |comp|
       assert_equal base.send(comp), test.send(comp)
     }
+  end
+
+  def assert_sign_verify_false_or_error
+    ret = yield
+  rescue => e
+    assert_kind_of(OpenSSL::PKey::PKeyError, e)
+  else
+    assert_equal(false, ret)
   end
 end
 

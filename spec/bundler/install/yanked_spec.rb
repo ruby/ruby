@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.context "when installing a bundle that includes yanked gems" do
-  before(:each) do
+  it "throws an error when the original gem version is yanked" do
     build_repo4 do
       build_gem "foo", "9.0.0"
     end
-  end
 
-  it "throws an error when the original gem version is yanked" do
     lockfile <<-L
        GEM
          remote: https://gem.repo4
@@ -116,6 +114,10 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   end
 
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
+    build_repo4 do
+      build_gem "foo", "9.0.0"
+    end
+
     bundle "config set force_ruby_platform true"
 
     install_gemfile <<-G, raise_on_error: false

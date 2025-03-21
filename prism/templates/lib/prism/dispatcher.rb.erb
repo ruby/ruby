@@ -44,6 +44,19 @@ module Prism
     #
     # def register: (Listener, *Symbol) -> void
     def register(listener, *events)
+      register_events(listener, events)
+    end
+
+    # Register all public methods of a listener that match the pattern
+    # `on_<node_name>_(enter|leave)`.
+    #
+    # def register_public_methods: (Listener) -> void
+    def register_public_methods(listener)
+      register_events(listener, listener.public_methods(false).grep(/\Aon_.+_(?:enter|leave)\z/))
+    end
+
+    # Register a listener for the given events.
+    private def register_events(listener, events)
       events.each { |event| (listeners[event] ||= []) << listener }
     end
 

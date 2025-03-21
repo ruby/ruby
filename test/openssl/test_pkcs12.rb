@@ -178,6 +178,8 @@ module OpenSSL
     end
 
     def test_create_with_keytype
+      omit "AWS-LC does not support KEY_SIG and KEY_EX" if aws_lc?
+
       OpenSSL::PKCS12.create(
         "omg",
         "hello",

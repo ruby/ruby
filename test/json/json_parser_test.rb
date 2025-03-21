@@ -311,6 +311,11 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\uaa"') }
     assert_raise(JSON::ParserError) { parse('"\uaaa"') }
     assert_equal "\uaaaa", parse('"\uaaaa"')
+
+    assert_raise(JSON::ParserError) { parse('"\u______"') }
+    assert_raise(JSON::ParserError) { parse('"\u1_____"') }
+    assert_raise(JSON::ParserError) { parse('"\u11____"') }
+    assert_raise(JSON::ParserError) { parse('"\u111___"') }
   end
 
   def test_parse_big_integers
@@ -643,6 +648,22 @@ class JSONParserTest < Test::Unit::TestCase
     if RUBY_ENGINE == "ruby"
       assert_equal %(expected ',' or '}' after object value, got: ''), error.message
     end
+  end
+
+  def test_parse_error_snippet
+    omit "C ext only test" unless RUBY_ENGINE == "ruby"
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'ああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("aあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'aああああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abあああああああああ'", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
+    assert_equal "unexpected character: 'abcあああああああああ'", error.message
   end
 
   def test_parse_leading_slash

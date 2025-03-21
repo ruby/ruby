@@ -469,15 +469,8 @@ rb_vm_pop_frame(rb_execution_context_t *ec)
 VALUE
 rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    void *ptr = ruby_xcalloc(sizeof(struct rb_iseq_constant_body) + sizeof(struct rb_iseq_struct), 1);
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, ptr);
-
-    struct rb_iseq_struct *dmy_iseq = (struct rb_iseq_struct *)ptr;
-    struct rb_iseq_constant_body *dmy_body = (struct rb_iseq_constant_body *)&dmy_iseq[1];
-    dmy_iseq->body = dmy_body;
-    dmy_body->type = ISEQ_TYPE_TOP;
-    dmy_body->location.pathobj = fname;
+    rb_iseq_t *rb_iseq_alloc_with_dummy_path(VALUE fname);
+    rb_iseq_t *dmy_iseq = rb_iseq_alloc_with_dummy_path(fname);
 
     vm_push_frame(ec,
                   dmy_iseq, //const rb_iseq_t *iseq,
@@ -490,7 +483,7 @@ rb_vm_push_frame_fname(rb_execution_context_t *ec, VALUE fname)
                   0, // int local_size,
                   0); // int stack_max
 
-    return tmpbuf;
+    return (VALUE)dmy_iseq;
 }
 
 /* method dispatch */
@@ -5752,29 +5745,26 @@ vm_check_if_module(ID id, VALUE mod)
 }
 
 static VALUE
-declare_under(ID id, VALUE cbase, VALUE c)
-{
-    rb_set_class_path_string(c, cbase, rb_id2str(id));
-    rb_const_set(cbase, id, c);
-    return c;
-}
-
-static VALUE
 vm_declare_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 {
     /* new class declaration */
     VALUE s = VM_DEFINECLASS_HAS_SUPERCLASS_P(flags) ? super : rb_cObject;
-    VALUE c = declare_under(id, cbase, rb_define_class_id(id, s));
+    VALUE c = rb_define_class_id(id, s);
     rb_define_alloc_func(c, rb_get_alloc_func(c));
+    rb_set_class_path_string(c, cbase, rb_id2str(id));
+    rb_const_set_raw(cbase, id, c);
     rb_class_inherited(s, c);
+    rb_const_added(cbase, id);
     return c;
 }
 
 static VALUE
 vm_declare_module(ID id, VALUE cbase)
 {
-    /* new module declaration */
-    return declare_under(id, cbase, rb_module_new());
+    VALUE m = rb_module_new();
+    rb_set_class_path_string(m, cbase, rb_id2str(id));
+    rb_const_set(cbase, id, m);
+    return m;
 }
 
 NORETURN(static void unmatched_redefinition(const char *type, VALUE cbase, ID id, VALUE old));

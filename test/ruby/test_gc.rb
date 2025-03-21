@@ -356,13 +356,14 @@ class TestGc < Test::Unit::TestCase
     3.times { GC.start }
     assert_nil GC.latest_gc_info(:need_major_by)
 
-    # allocate objects until need_major_by is set or major GC happens
-    objects = []
-    while GC.latest_gc_info(:need_major_by).nil?
-      objects.append(100.times.map { '*' })
-    end
-
     EnvUtil.without_gc do
+      # allocate objects until need_major_by is set or major GC happens
+      objects = []
+      while GC.latest_gc_info(:need_major_by).nil?
+        objects.append(100.times.map { '*' })
+        GC.start(full_mark: false)
+      end
+
       # We need to ensure that no GC gets ran before the call to GC.start since
       # it would trigger a major GC. Assertions could allocate objects and
       # trigger a GC so we don't run assertions until we perform the major GC.
@@ -417,8 +418,8 @@ class TestGc < Test::Unit::TestCase
       # Run full GC again to collect stats about weak references
       GC.start
 
-      # Sometimes the WeakMap has one element, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 1)
+      # Sometimes the WeakMap has a few elements, which might be held on by registers.
+      assert_operator(wmap.size, :<=, 2)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)

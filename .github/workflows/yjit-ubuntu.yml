@@ -182,10 +182,16 @@ jobs:
         continue-on-error: true
 
       - name: make ${{ matrix.test_task }}
-        run: >-
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS"
-          YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
+        run: |
+          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
+            exec
+            > >(tee launchable_stdout.log) \
+            2> >(tee launchable_stderr.log)
+          fi
+
+          make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
+            RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS" \
+            YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
