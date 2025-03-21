@@ -1395,3 +1395,27 @@ assert_equal 'ok', %q{
   no_args
   splat_args
 }
+
+assert_equal 'ok', %q{
+  class A
+    private
+    def foo = "ng"
+  end
+
+  class B
+    def initialize(o)
+      @o = o
+    end
+
+    def foo(...) = @o.foo(...)
+    def internal_foo = foo
+  end
+
+  b = B.new(A.new)
+
+  begin
+    b.internal_foo
+  rescue NoMethodError
+    "ok"
+  end
+}
