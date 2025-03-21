@@ -2661,14 +2661,14 @@ range_overlap(VALUE range, VALUE other)
  *   end
  *   a # => [2, 4, 6, 8, 10]
  *
- * A range can be both beginless and endless.  For literal beginless, endless
+ * A range can be both beginless and endless. For literal beginless, endless
  * ranges, at least the beginning or end of the range must be given as an
  * explicit nil value. It is recommended to use an explicit nil beginning and
- * implicit nil end, since that is what Ruby uses for Range#inspect:
+ * end, since that is what Ruby uses for Range#inspect:
  *
- *   (nil..)    # => (nil..)
- *   (..nil)    # => (nil..)
- *   (nil..nil) # => (nil..)
+ *   (nil..)    # => (nil..nil)
+ *   (..nil)    # => (nil..nil)
+ *   (nil..nil) # => (nil..nil)
  *
  * == Ranges and Other Classes
  *
