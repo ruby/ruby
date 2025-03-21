@@ -1175,8 +1175,10 @@ pub(crate) mod ids {
 
 /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
 macro_rules! ID {
-    ($id_name:ident) => {
-        $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed)
-    }
+    ($id_name:ident) => {{
+        let id = $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed);
+        debug_assert_ne!(0, id, "ids module should be initialized");
+        id
+    }}
 }
 pub(crate) use ID;
