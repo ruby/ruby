@@ -163,7 +163,7 @@ XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
 !if $(MSC_VER) < 1400
 OPTFLAGS = -O2b2xg-
 !else
-OPTFLAGS = -O2sy-
+OPTFLAGS = -O2y-
 !endif
 !endif
 !if $(MSC_VER) >= 1900
