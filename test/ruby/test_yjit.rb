@@ -1557,7 +1557,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_odd_calls_to_attr_reader
     # Use of delegate from ActiveSupport use these kind of calls to getter methods.
-    assert_compiles(<<~RUBY, result: [1, 1, 1], no_send_fallbacks: true)
+    assert_compiles(<<~RUBY, result: [1, 1, 1])
       class One
         attr_reader :one
         def initialize
