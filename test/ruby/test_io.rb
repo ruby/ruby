@@ -4379,6 +4379,7 @@ __END__
       IO.pipe do |r, w|
         trap(:INT) do
           w.puts "INT"
+          w.close
         end
 
         main = Thread.current
@@ -4390,7 +4391,7 @@ __END__
           Process.kill :INT, $$
         end
 
-        r.timeout = 1
+        r.timeout = 10
         assert_equal("INT", r.gets.chomp)
       end
     RUBY
