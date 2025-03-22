@@ -216,6 +216,17 @@ RB_ENCODING_GET(VALUE obj)
  */
 void rb_enc_set_index(VALUE obj, int encindex);
 
+/**
+ * Destructively assigns an encoding (via its index) to an object.
+ * This function omits the check process from enc_set_index to speed up.
+ * It assumes that the object is not frozen and encindex is correct.
+ *
+ * @param[out]  obj                Object in question.
+ * @param[in]   encindex           An encoding index.
+ * @exception   rb_eArgError       `obj` is incapable of having an encoding.
+ */
+void rb_enc_set_index_fastpath(VALUE obj, int encindex);
+
 /** @alias{rb_enc_set_index} */
 static inline void
 RB_ENCODING_SET(VALUE obj, int encindex)
