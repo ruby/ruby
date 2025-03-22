@@ -4373,4 +4373,27 @@ __END__
       end
     end
   end
+
+  def test_blocking_timeout
+    assert_separately([], <<~'RUBY')
+      IO.pipe do |r, w|
+        trap(:INT) do
+          w.puts "INT"
+          w.close
+        end
+
+        main = Thread.current
+        Thread.new do
+          # Wait until the main thread has entered `$stdin.gets`:
+          Thread.pass until main.status == 'sleep'
+
+          # Cause an interrupt while handling `$stdin.gets`:
+          Process.kill :INT, $$
+        end
+
+        r.timeout = 10
+        assert_equal("INT", r.gets.chomp)
+      end
+    RUBY
+  end
 end
