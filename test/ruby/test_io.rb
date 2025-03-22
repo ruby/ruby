@@ -4377,8 +4377,8 @@ __END__
   def test_blocking_timeout
     assert_separately([], <<~'RUBY')
       IO.pipe do |r, w|
-        trap(:HUP) do
-          w.puts "HUP"
+        trap(:INT) do
+          w.puts "INT"
         end
 
         main = Thread.current
@@ -4387,11 +4387,11 @@ __END__
           Thread.pass until main.status == 'sleep'
 
           # Cause an interrupt while handling `$stdin.gets`:
-          Process.kill :HUP, $$
+          Process.kill :INT, $$
         end
 
         r.timeout = 1
-        assert_equal("HUP", r.gets.chomp)
+        assert_equal("INT", r.gets.chomp)
       end
     RUBY
   end
