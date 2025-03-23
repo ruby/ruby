@@ -3440,8 +3440,9 @@ rb_hash_transform_values(VALUE hash)
  *    transform_values! {|old_value| ... } -> self
  *    transform_values! -> new_enumerator
  *
- *  With a block given, returns +self+,
- *  with keys unchanged and with values as determined by the given block.
+ *
+ *  With a block given, changes the values of +self+ as determined by the block;
+ *  returns +self+.
  *
  *  For each entry +key+/+old_value+ in +self+,
  *  calls the block with +old_value+,
