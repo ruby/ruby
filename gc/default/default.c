@@ -983,7 +983,7 @@ struct RZombie {
 
 #define RZOMBIE(o) ((struct RZombie *)(o))
 
-int ruby_enable_autocompact = 0;
+static bool ruby_enable_autocompact = false;
 #if RGENGC_CHECK_MODE
 gc_compact_compare_func ruby_autocompact_compare_func;
 #endif
