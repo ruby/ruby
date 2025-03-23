@@ -985,7 +985,7 @@ struct RZombie {
 
 static bool ruby_enable_autocompact = false;
 #if RGENGC_CHECK_MODE
-gc_compact_compare_func ruby_autocompact_compare_func;
+static gc_compact_compare_func ruby_autocompact_compare_func;
 #endif
 
 static void init_mark_stack(mark_stack_t *stack);
