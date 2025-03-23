@@ -136,6 +136,7 @@ Gem::Specification.new do |spec|
     "sig/prism/node.rbs",
     "sig/prism/pack.rbs",
     "sig/prism/parse_result.rbs",
+    "sig/prism/parse_result/comments.rbs",
     "sig/prism/pattern.rbs",
     "sig/prism/reflection.rbs",
     "sig/prism/relocation.rbs",
