@@ -3435,18 +3435,24 @@ rb_hash_transform_values(VALUE hash)
 
 /*
  *  call-seq:
- *    transform_values! {|value| ... } -> self
+ *    transform_values! {|old_value| ... } -> self
  *    transform_values! -> new_enumerator
  *
- *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
+ *
+ *  With a block given, changes the values of +self+ as determined by the block;
+ *  returns +self+.
+ *
+ *  For each entry +key+/+old_value+ in +self+,
+ *  calls the block with +old_value+,
+ *  captures its return value as +new_value+,
+ *  and sets <tt>self[key] = new_value</tt>:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.transform_values! {|value| value * 100} # => {foo: 0, bar: 100, baz: 200}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_values! # => #<Enumerator: {foo: 0, bar: 100, baz: 200}:transform_values!>
- *    h1 = e.each {|value| value * 100}
- *    h1 # => {foo: 0, bar: 100, baz: 200}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_values_bang(VALUE hash)
