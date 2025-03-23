@@ -3370,8 +3370,7 @@ static int flatten_i(VALUE key, VALUE val, VALUE ary);
  *      h.transform_keys!(baz: :FOO, bar: :FOO, foo: :FOO)
  *      # => {FOO: 2}
  *
- *  - If +old_key+ is not found, does nothing;
- *    a duplicate key overwrites:
+ *  - If +old_key+ is not found, does nothing:
  *
  *      h = {foo: 0, bar: 1, baz: 2}
  *      h.transform_keys!({})
