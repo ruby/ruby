@@ -95,6 +95,7 @@ module Bundler
       @locked_ruby_version = nil
       @new_platforms = []
       @removed_platforms = []
+      @originally_invalid_platforms = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -760,7 +761,11 @@ module Bundler
         end
       end
 
-      result.add_extra_platforms!(platforms) if should_add_extra_platforms?
+      if should_add_extra_platforms?
+        result.add_extra_platforms!(platforms)
+      elsif @originally_invalid_platforms.any?
+        result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
+      end
 
       SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
@@ -1137,17 +1142,15 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      invalid_platforms = platforms.select do |platform|
+      @originally_invalid_platforms = platforms.select do |platform|
         next if local_platform == platform ||
                 @new_platforms.include?(platform) ||
-                @path_changes ||
-                @dependency_changes ||
-                @locked_spec_with_invalid_deps
+                @dependency_changes
 
         spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
       end
 
-      @platforms -= invalid_platforms
+      @platforms -= @originally_invalid_platforms
     end
 
     def spec_set_incomplete_for_platform?(spec_set, platform)

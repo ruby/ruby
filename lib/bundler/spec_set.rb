@@ -47,6 +47,12 @@ module Bundler
       end.uniq
     end
 
+    def add_originally_invalid_platforms!(platforms, originally_invalid_platforms)
+      originally_invalid_platforms.each do |originally_invalid_platform|
+        platforms << originally_invalid_platform if complete_platform(originally_invalid_platform)
+      end
+    end
+
     def add_extra_platforms!(platforms)
       if @specs.empty?
         platforms.concat([Gem::Platform::RUBY]).uniq

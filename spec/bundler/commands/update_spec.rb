@@ -640,7 +640,7 @@ RSpec.describe "bundle update" do
                 myrack
 
           PLATFORMS
-            #{local_platform}
+            x86-darwin-100
 
           DEPENDENCIES
             activesupport
