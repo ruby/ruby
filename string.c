@@ -424,7 +424,9 @@ struct fstr_update_arg {
     bool force_precompute_hash;
 };
 
-static VALUE build_fstring(VALUE str, struct fstr_update_arg *arg) {
+static VALUE
+build_fstring(VALUE str, struct fstr_update_arg *arg)
+{
     // Unless the string is empty or binary, its coderange has been precomputed.
     int coderange = ENC_CODERANGE(str);
 
