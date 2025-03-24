@@ -1204,7 +1204,7 @@ RSpec.describe "bundle install with git sources" do
         gem "foo", :git => "#{lib_path("foo-1.0")}", :branch => "deadbeef"
       G
 
-      expect(err).to match(/deadbeef (not found in upstream origin|does not exist in the repository)/)
+      expect(err).to include("Revision deadbeef does not exist in the repository")
     end
   end
 
