@@ -657,22 +657,7 @@ impl Function {
             // We know that function parameters are BasicObject or some subclass
             self.insn_types[param.0] = types::BasicObject;
         }
-        // Compute predecessor instructions for each block
-        let mut preds: Vec<Vec<InsnId>> = vec![Vec::new(); self.blocks.len()];
         let rpo = self.rpo();
-        // Walk the graph, computing predecessor blocks
-        for block in &rpo {
-            for insn_id in &self.blocks[block.0].insns {
-                let insn = self.find(*insn_id);
-                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = insn {
-                    preds[target.target.0].push(*insn_id);
-                }
-            }
-        }
-        for idx in 0..preds.len() {
-            preds[idx].sort();
-            preds[idx].dedup();
-        }
         // Walk the graph, computing types until fixpoint
         let mut reachable = vec![false; self.blocks.len()];
         reachable[self.entry_block.0] = true;
