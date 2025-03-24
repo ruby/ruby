@@ -140,13 +140,15 @@ jobs:
 
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
-          cat launchable_stdout.log
-          cat launchable_stderr.log
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
+
+      - run: |
+          cat launchable_stdout.log
+          cat launchable_stderr.log
 
       - name: make skipped tests
         run: |
