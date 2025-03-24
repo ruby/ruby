@@ -341,6 +341,7 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
+bool rb_vm_iseq_reads_self(const rb_iseq_t *iseq);
 
 attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 

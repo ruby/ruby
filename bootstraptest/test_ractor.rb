@@ -1361,6 +1361,144 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# Ractor.make_shareable(a_proc) that doesn't access self
+assert_equal 'true', %q{
+  class Foo
+    def make_block; lambda { 123 }; end
+  end
+
+  pr = Foo.new.make_block
+  Ractor.make_shareable(pr)
+  Ractor.shareable?(pr)
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self
+assert_equal 'true', %q{
+  class Foo
+    def make_block; lambda { self }; end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self via method
+assert_equal 'true', %q{
+  class Foo
+    def hi; end
+    def make_block; lambda { hi }; end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self via eval (also a method call)
+assert_equal 'true', %q{
+  class Foo
+    def make_block; lambda { eval("123") }; end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self via local
+assert_equal 'true', %q{
+  class Foo
+    def make_block
+      x = self
+      lambda { x }
+    end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self via ivar get
+assert_equal 'true', %q{
+  class Foo
+    def initialize; @x = 1; end
+    def make_block
+      lambda { @x }
+    end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail when accessing self via ivar set
+assert_equal 'true', %q{
+  class Foo
+    def initialize; @x = 1; end
+    def make_block
+      lambda { @x = 456 }
+    end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail with a circular lambda
+assert_equal 'true', %q{
+  class Foo
+    def make_block
+      x = lambda { x }
+      x
+    end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
+# Ractor.make_shareable(a_proc) should fail with `defined?(@iv)`
+assert_equal 'true', %q{
+  class Foo
+    def make_block
+      lambda { defined?(@foo) }
+    end
+  end
+
+  pr = Foo.new.make_block
+  begin
+    Ractor.make_shareable(pr)
+  rescue Ractor::IsolationError
+    true
+  end
+}
+
 # Ractor.shareable?(recursive_objects)
 assert_equal '[false, false]', %q{
   y = []

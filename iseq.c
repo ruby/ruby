@@ -3839,6 +3839,25 @@ rb_vm_insn_decode(const VALUE encoded)
     return insn;
 }
 
+// Returns a boolean indicating whether or not the iseq accesses self.
+bool
+rb_vm_iseq_reads_self(const rb_iseq_t *iseq)
+{
+    unsigned int pos = 0;
+    while (pos < ISEQ_BODY(iseq)->iseq_size) {
+        int opcode = rb_vm_insn_decode(ISEQ_BODY(iseq)->iseq_encoded[pos]);
+        unsigned int next_pos = pos + insn_len(opcode);
+        if (opcode == BIN(putself) ||
+                opcode == BIN(getinstancevariable) ||
+                opcode == BIN(setinstancevariable) ||
+                opcode == BIN(definedivar)) {
+            return true;
+        }
+        pos = next_pos;
+    }
+    return false;
+}
+
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
