@@ -148,12 +148,23 @@ class TestGemPlatform < Gem::TestCase
       "wasm32-wasi" => ["wasm32", "wasi", nil],
       "wasm32-wasip1" => ["wasm32", "wasi", nil],
       "wasm32-wasip2" => ["wasm32", "wasi", nil],
+
+      "darwin-java-java" => ["darwin", "java", nil],
+      "linux-linux-linux" => ["linux", "linux", "linux"],
+      "linux-linux-linux1.0" => ["linux", "linux", "linux1"],
+      "x86x86-1x86x86x86x861linuxx86x86" => ["x86x86", "linux", "x86x86"],
+      "freebsd0" => [nil, "freebsd", "0"],
+      "darwin0" => [nil, "darwin", "0"],
+      "darwin0---" => [nil, "darwin", "0"],
+      "x86-linux-x8611.0l" => ["x86", "linux", "x8611"],
+      "0-x86linuxx86---" => ["0", "linux", "x86"],
     }
 
     test_cases.each do |arch, expected|
       platform = Gem::Platform.new arch
       assert_equal expected, platform.to_a, arch.inspect
-      assert_equal expected, Gem::Platform.new(platform.to_s).to_a, arch.inspect
+      platform2 = Gem::Platform.new platform.to_s
+      assert_equal expected, platform2.to_a, "#{arch.inspect} => #{platform2.inspect}"
     end
   end
 

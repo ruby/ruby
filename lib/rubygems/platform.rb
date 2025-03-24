@@ -88,25 +88,32 @@ class Gem::Platform
     when Array then
       @cpu, @os, @version = arch
     when String then
+      arch_str = arch
       arch = arch.split "-"
 
-      if arch.length > 2 && !arch.last.match?(/\d+(\.\d+)?$/) # reassemble x86-linux-{libc}
+      if arch.length > 2 && !arch.last.match?(/^\d+(\.\d+)?$/) # reassemble x86-linux-{libc}
         extra = arch.pop
         arch.last << "-#{extra}"
       end
 
       cpu = arch.shift
-
-      @cpu = case cpu
-             when /i\d86/ then "x86"
-             else cpu
+      if cpu.nil? || "" == cpu
+        raise ArgumentError, "empty cpu in platform #{arch_str.inspect}"
       end
+
+
+      @cpu = if cpu.match?(/i\d86/)
+                "x86"
+              else
+                cpu
+              end
 
       if arch.length == 2 && arch.last.match?(/^\d+(\.\d+)?$/) # for command-line
         @os, @version = arch
         return
       end
 
+      # discard the version element, it didn't match the version pattern (\d+(\.\d+)?)
       os, = arch
       if os.nil?
         @cpu = nil
@@ -120,17 +127,17 @@ class Gem::Platform
                       when /^macruby$/ then             ["macruby",   nil]
                       when /freebsd(\d+)?/ then         ["freebsd",   $1]
                       when /^java$/, /^jruby$/ then     ["java",      nil]
-                      when /^java([\d.]*)/ then         ["java",      $1]
+                      when /^java(\d+(?:\.\d+)*)?/ then   ["java",      $1]
                       when /^dalvik(\d+)?$/ then        ["dalvik",    $1]
                       when /^dotnet$/ then              ["dotnet",    nil]
-                      when /^dotnet([\d.]*)/ then       ["dotnet",    $1]
+                      when /^dotnet(\d+(?:\.\d+)*)?/ then ["dotnet",    $1]
                       when /linux-?(\w+)?/ then         ["linux",     $1]
                       when /mingw32/ then               ["mingw32",   nil]
                       when /mingw-?(\w+)?/ then         ["mingw",     $1]
-                      when /(mswin\d+)(\_(\d+))?/ then
+                      when /(mswin\d+)(?:\_(\d+))?/ then
                         os = $1
-                        version = $3
-                        @cpu = "x86" if @cpu.nil? && os =~ /32$/
+                        version = $2
+                        @cpu = "x86" if @cpu.nil? && os.end_with?("32")
                         [os, version]
                       when /netbsdelf/ then             ["netbsdelf", nil]
                       when /openbsd(\d+\.\d+)?/ then    ["openbsd",   $1]
@@ -154,6 +161,9 @@ class Gem::Platform
   end
 
   def to_s
+    if @cpu.nil? && @os && @version
+      return "#{@os}#{@version}"
+    end
     to_a.compact.join "-"
   end
 
