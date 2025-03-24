@@ -1137,16 +1137,17 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      platforms.reverse_each do |platform|
+      invalid_platforms = platforms.select do |platform|
         next if local_platform == platform ||
                 @new_platforms.include?(platform) ||
                 @path_changes ||
                 @dependency_changes ||
-                @locked_spec_with_invalid_deps ||
-                !spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
+                @locked_spec_with_invalid_deps
 
-        remove_platform(platform)
+        spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
       end
+
+      @platforms -= invalid_platforms
     end
 
     def spec_set_incomplete_for_platform?(spec_set, platform)
