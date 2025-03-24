@@ -1325,11 +1325,11 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
     if (v > 0377)
         rb_rs = Qnil;
     else if (v == 0 && numlen >= 2) {
-        rb_rs = rb_str_new2("");
+        rb_rs = rb_fstring_lit("");
     }
     else {
         c = v & 0xff;
-        rb_rs = rb_str_new(&c, 1);
+        rb_rs = rb_str_freeze(rb_str_new(&c, 1));
     }
     return s;
 }
