@@ -140,6 +140,8 @@ jobs:
 
           ulimit -c unlimited
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
+          cat launchable_stdout.log
+          cat launchable_stderr.log
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
