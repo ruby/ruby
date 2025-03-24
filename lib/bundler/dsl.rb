@@ -77,7 +77,7 @@ module Bundler
 
         @gemspecs << spec
 
-        path path, "glob" => glob, "name" => spec.name do
+        path path, "glob" => glob, "name" => spec.name, "gemspec" => spec do
           add_dependency spec.name
         end
 
@@ -141,8 +141,7 @@ module Bundler
     def path(path, options = {}, &blk)
       source_options = normalize_hash(options).merge(
         "path" => Pathname.new(path),
-        "root_path" => gemfile_root,
-        "gemspec" => gemspecs.find {|g| g.name == options["name"] }
+        "root_path" => gemfile_root
       )
 
       source_options["global"] = true unless block_given?
@@ -241,28 +240,27 @@ module Bundler
       dep = Dependency.new(name, version, options)
 
       # if there's already a dependency with this name we try to prefer one
-      if current = @dependencies.find {|d| d.name == dep.name }
+      if current = @dependencies.find {|d| d.name == name }
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            gemfile_dep = [dep, current].find(&:gemfile_dep?)
+            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
+            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
+            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
 
-            if gemfile_dep && !current_requirement_open
-              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
-                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
-            elsif gemfile_dep.nil?
-              require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-              require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-              require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
 
-              current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-              next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+            if current_gemspec_range.intersects?(next_gemspec_range)
+              dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+            else
+              gemfile_dep = [dep, current].find(&:gemfile_dep?)
 
-              if current_gemspec_range.intersects?(next_gemspec_range)
-                dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
+              if gemfile_dep
+                raise GemfileError, "The #{name} dependency has conflicting requirements in Gemfile (#{gemfile_dep.requirement}) and gemspec (#{gemspec_dep.requirement})"
               else
                 raise GemfileError, "Two gemspec development dependencies have conflicting requirements on the same gem: #{dep} and #{current}"
               end
@@ -274,14 +272,14 @@ module Bundler
               if dep.requirements_list.include?(">= 0") && !current_requirement_open
                 update_prompt = ". Gem already added"
               else
-                update_prompt = ". If you want to update the gem version, run `bundle update #{current.name}`"
+                update_prompt = ". If you want to update the gem version, run `bundle update #{name}`"
 
                 update_prompt += ". You may also need to change the version requirement specified in the Gemfile if it's too restrictive." unless current_requirement_open
               end
             end
 
             raise GemfileError, "You cannot specify the same gem twice with different version requirements.\n" \
-                           "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
+                           "You specified: #{name} (#{current.requirement}) and #{name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
         end
@@ -294,10 +292,10 @@ module Bundler
             return
           elsif current.source != dep.source
             raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
-                            "You specified that #{dep.name} (#{dep.requirement}) should come from " \
+                            "You specified that #{name} (#{dep.requirement}) should come from " \
                             "#{current.source || "an unspecified source"} and #{dep.source}\n"
           else
-            Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
+            Bundler.ui.warn "Your Gemfile lists the gem #{name} (#{current.requirement}) more than once.\n" \
                             "You should probably keep only one of them.\n" \
                             "Remove any duplicate entries and specify the gem only once.\n" \
                             "While it's not a problem now, it could cause errors if you change the version of one of them later."

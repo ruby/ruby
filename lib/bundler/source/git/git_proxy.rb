@@ -185,7 +185,8 @@ module Bundler
             _, err, status = capture(command, nil)
             return extra_ref if status.success?
 
-            if err.include?("Could not find remote branch")
+            if err.include?("Could not find remote branch") || # git up to 2.49
+               err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
               idx = command.index("--depth")
@@ -262,7 +263,7 @@ module Bundler
         end
 
         def not_pinned?
-          branch || tag || ref.nil?
+          branch_option || ref.nil?
         end
 
         def pinned_to_full_sha?
@@ -426,7 +427,7 @@ module Bundler
           # anyways.
           return args if @revision
 
-          args += ["--branch", branch || tag] if branch || tag
+          args += ["--branch", branch_option] if branch_option
           args
         end
 
@@ -440,6 +441,10 @@ module Bundler
           extra_args = [path.to_s, *depth_args]
           extra_args.push(ref)
           extra_args
+        end
+
+        def branch_option
+          branch || tag
         end
 
         def full_clone?

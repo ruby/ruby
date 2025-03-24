@@ -138,7 +138,7 @@ RSpec.describe Bundler::LockfileParser do
         expect(subject.ruby_version).to eq ruby_version
         rake_spec = specs.last
         checksums = subject.sources.last.checksum_store.to_lock(specs.last)
-        expect(checksums).to eq("#{rake_spec.name_tuple.lock_name} #{rake_checksums.map(&:to_lock).sort.join(",")}")
+        expect(checksums).to eq("#{rake_spec.lock_name} #{rake_checksums.map(&:to_lock).sort.join(",")}")
       end
     end
 
