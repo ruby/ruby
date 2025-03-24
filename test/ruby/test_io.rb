@@ -2612,7 +2612,8 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_read_command
-    assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+    warning = /IO process creation with a leading '\|'/ # https://bugs.ruby-lang.org/issues/19630
+    assert_deprecated_warning(warning) do
       assert_equal("foo\n", IO.read("|echo foo"))
     end
     assert_raise(Errno::ENOENT, Errno::EINVAL) do
@@ -2628,9 +2629,12 @@ class TestIO < Test::Unit::TestCase
       Class.new(IO).binread("|#{EnvUtil.rubybin} -e puts")
     end
     assert_raise(Errno::ESPIPE) do
-      assert_deprecated_warning(/IO process creation with a leading '\|'/) do # https://bugs.ruby-lang.org/issues/19630
+      assert_deprecated_warning(warning) do
         IO.read("|#{EnvUtil.rubybin} -e 'puts :foo'", 1, 1)
       end
+    end
+    assert_deprecated_warning(warning) do
+      assert_equal("foo\n", IO.read("|#{EnvUtil.rubybin} -e 'STDERR.puts :foo'", err: %i[child out]))
     end
   end
 
