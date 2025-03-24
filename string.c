@@ -1480,6 +1480,14 @@ rb_str_new_frozen_String(VALUE orig)
     return str_new_frozen(rb_cString, orig);
 }
 
+
+VALUE
+rb_str_frozen_bare_string(VALUE orig)
+{
+    if (RB_LIKELY(BARE_STRING_P(orig) && OBJ_FROZEN_RAW(orig))) return orig;
+    return str_new_frozen(rb_cString, orig);
+}
+
 VALUE
 rb_str_tmp_frozen_acquire(VALUE orig)
 {
