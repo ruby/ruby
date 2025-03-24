@@ -300,6 +300,7 @@ runs:
               raw ${test_spec_report_path}/* || true; \
           fi
 
+          cat "${stdout_report_path}"
           rm -f "${test_all_session_file}"
           rm -f "${btest_session_file}"
           rm -f "${test_spec_session_file}"
