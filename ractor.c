@@ -12,6 +12,7 @@
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/proc.h"
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
@@ -3071,6 +3072,13 @@ make_shareable_check_shareable(VALUE obj)
     else if (!allow_frozen_shareable_p(obj)) {
         if (rb_obj_is_proc(obj)) {
             rb_proc_ractor_make_shareable(obj);
+            return traverse_cont;
+        } else if (rb_obj_is_method(obj)) {
+            if (!rb_ractor_shareable_p(rb_callable_receiver(obj))) {
+                rb_raise(rb_eRactorIsolationError,
+                        "Method's receiver is not shareable: %" PRIsVALUE,
+                        obj);
+            }
             return traverse_cont;
         }
         else {
