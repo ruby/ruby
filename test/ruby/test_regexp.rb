@@ -1346,6 +1346,8 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_uninitialized
+    assert_not_respond_to(Regexp, :allocate)
+=begin
     assert_raise(TypeError) { Regexp.allocate.hash }
     assert_raise(TypeError) { Regexp.allocate.eql? Regexp.allocate }
     assert_raise(TypeError) { Regexp.allocate == Regexp.allocate }
@@ -1362,6 +1364,7 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(false, Regexp.allocate.fixed_encoding?)
     assert_raise(TypeError) { Regexp.allocate.names }
     assert_raise(TypeError) { Regexp.allocate.named_captures }
+=end
 
     assert_not_respond_to(MatchData, :allocate)
 =begin
@@ -2130,7 +2133,6 @@ class TestRegexp < Test::Unit::TestCase
     assert_not_send [Regexp, :linear_time?, /(?!(a))/]
 
     assert_raise(TypeError) {Regexp.linear_time?(nil)}
-    assert_raise(TypeError) {Regexp.linear_time?(Regexp.allocate)}
   end
 
   def test_linear_performance
