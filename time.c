@@ -4020,15 +4020,15 @@ time_eql(VALUE time1, VALUE time2)
  *    # => 2000-01-01 20:15:01 UTC
  *    utc.utc? # => true
  *
- * +Time+ objects created with these methods are considered to be in
- * UTC:
+ *  +Time+ objects created with these methods are considered to be in
+ *  UTC:
  *
  *  * Time.utc
  *  * Time#utc
  *  * Time#getutc
  *
- * Objects created in other ways will not be treated as UTC even if
- * the environment variable "TZ" is "UTC".
+ *  Objects created in other ways will not be treated as UTC even if
+ *  the environment variable "TZ" is "UTC".
  *
  *  Related: Time.utc.
  */
