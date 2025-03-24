@@ -47,7 +47,12 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
-    if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(beg) && !NIL_P(end)) {
+    int ok = NIL_P(beg) || NIL_P(end)
+        || ((RB_INTEGER_TYPE_P(beg) || RB_FLOAT_TYPE_P(beg)) && (RB_INTEGER_TYPE_P(end) || RB_FLOAT_TYPE_P(end)))
+        || (STRING_P(beg) && STRING_P(end))
+        || (SYMBOL_P(beg) && SYMBOL_P(end));
+
+    if (!ok) {
         VALUE v;
 
         v = rb_funcall(beg, id_cmp, 1, end);
