@@ -348,6 +348,31 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_recursive_fact
+    assert_compiles '[1, 6, 720]', %q{
+      def fact(n)
+        if n == 0
+          return 1
+        end
+        return n * fact(n-1)
+      end
+      [fact(0), fact(3), fact(6)]
+    }
+  end
+
+  # FIXME: currently produces the wrong value
+  #def test_recursive_fib
+  #  assert_compiles '[0, 2, 3]', %q{
+  #    def fib(n)
+  #      if n < 2
+  #        return n
+  #      end
+  #      return fib(n-1) + fib(n-2)
+  #    end
+  #    [fib(0), fib(3), fib(4)]
+  #  }
+  #end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
