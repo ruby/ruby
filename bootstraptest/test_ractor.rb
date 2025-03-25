@@ -2210,3 +2210,10 @@ assert_equal 'ok', %q{
   end
   'ok'
 }
+
+# fork after creating Ractor
+assert_equal 'ok', %q{
+  Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork { }
+  status.success? ? "ok" : status
+}
