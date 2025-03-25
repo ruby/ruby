@@ -3325,13 +3325,97 @@ static int flatten_i(VALUE key, VALUE val, VALUE ary);
 
 /*
  *  call-seq:
- *    transform_keys! {|key| ... } -> self
- *    transform_keys!(hash2) -> self
- *    transform_keys!(hash2) {|other_key| ...} -> self
+ *    transform_keys! {|old_key| ... } -> self
+ *    transform_keys!(other_hash) -> self
+ *    transform_keys!(other_hash) {|old_key| ...} -> self
  *    transform_keys! -> new_enumerator
  *
- *  Same as Hash#transform_keys but modifies the receiver in place
- *  instead of returning a new hash.
+ *  With an argument, a block, or both given,
+ *  derives keys from the argument, the block, and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  With a block given and no argument,
+ *  derives keys only from the block;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each key/value pair <tt>old_key/value</tt> in +self+, calls the block with +old_key+;
+ *  the block's return value becomes +new_key+;
+ *  removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *  sets <tt>self[new_key] = value</tt>;
+ *  a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys! {|old_key| old_key.to_s }
+ *      # => {"foo" => 0, "bar" => 1, "baz" => 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys! {|old_key| 'xxx' }
+ *      # => {"xxx" => 2}
+ *
+ *  With argument +other_hash+ given and no block,
+ *  derives keys for +self+ from +other_hash+ and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each key/value pair <tt>old_key/old_value</tt> in +self+,
+ *  looks for key +old_key+ in +other_hash+:
+ *
+ *  - If +old_key+ is found, takes value <tt>other_hash[old_key]</tt> as +new_key+;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ, bar: :BAR, foo: :FOO)
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :FOO, bar: :FOO, foo: :FOO)
+ *      # => {FOO: 2}
+ *
+ *  - If +old_key+ is not found, does nothing:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!({})
+ *      # => {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :foo)
+ *      # => {foo: 2, bar: 1}
+ *
+ *  Unused keys in +other_hash+ are ignored:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.transform_keys!(bat: 3)
+ *    # => {foo: 0, bar: 1, baz: 2}
+ *
+ *  With both argument +other_hash+ and a block given,
+ *  derives keys from +other_hash+, the block, and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each pair +old_key+ and +value+ in +self+:
+ *
+ *  - If +other_hash+ has key +old_key+ (with value +new_key+),
+ *    does not call the block for that key;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ, bar: :BAR, foo: :FOO) {|key| fail 'Not called' }
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *
+ *  - If +other_hash+ does not have key +old_key+,
+ *    calls the block with +old_key+ and takes its return value as +new_key+;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ) {|key| key.to_s.reverse }
+ *      # => {"oof" => 0, "rab" => 1, BAZ: 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ) {|key| 'ook' }
+ *      # => {"ook" => 1, BAZ: 2}
+ *
+ *  With no argument and no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
