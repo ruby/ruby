@@ -1172,7 +1172,6 @@ Init_etc(void)
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
     RB_EXT_RACTOR_SAFE(true);
 #endif
-    rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
     rb_define_module_function(mEtc, "systmpdir", etc_systmpdir, 0);
     rb_define_module_function(mEtc, "uname", etc_uname, 0);
     rb_define_module_function(mEtc, "sysconf", etc_sysconf, 1);
@@ -1199,6 +1198,9 @@ Init_etc(void)
     rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);
     rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
     rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
+
+    /* Uses RbConfig::CONFIG so does not work in a Ractor */
+    rb_define_module_function(mEtc, "sysconfdir", etc_sysconfdir, 0);
 
     sPasswd =  rb_struct_define_under(mEtc, "Passwd",
 				      "name",

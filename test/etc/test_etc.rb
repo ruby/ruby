@@ -179,7 +179,6 @@ class TestEtc < Test::Unit::TestCase
       20.times.map do
         Ractor.new do
           1000.times do
-            raise unless String === Etc.sysconfdir
             raise unless String === Etc.systmpdir
             raise unless Hash === Etc.uname
             if defined?(Etc::SC_CLK_TCK)
