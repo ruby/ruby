@@ -80,13 +80,14 @@ fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
         // Compile ISEQ into High-level IR
-        let ssa = match hir::iseq_to_hir(iseq) {
+        let mut ssa = match hir::iseq_to_hir(iseq) {
             Ok(ssa) => ssa,
             Err(err) => {
                 debug!("ZJIT: iseq_to_hir: {:?}", err);
                 return std::ptr::null();
             }
         };
+        ssa.optimize();
 
         // Compile High-level IR into machine code
         let cb = ZJITState::get_code_block();

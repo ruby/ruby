@@ -234,11 +234,29 @@ impl Type {
         Type { bits: bits::CBool, spec: Specialization::Int(val as u64) }
     }
 
+    /// Return true if the value with this type is definitely truthy.
+    pub fn is_known_truthy(&self) -> bool {
+        !self.could_be(types::NilClassExact) && !self.could_be(types::FalseClassExact)
+    }
+
+    /// Return true if the value with this type is definitely falsy.
+    pub fn is_known_falsy(&self) -> bool {
+        self.is_subtype(types::NilClassExact) || self.is_subtype(types::FalseClassExact)
+    }
+
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
         match self.spec {
             Specialization::Object(val) => Some(val),
             _ => None,
+        }
+    }
+
+    pub fn fixnum_value(&self) -> Option<i64> {
+        if self.is_subtype(types::Fixnum) {
+            self.ruby_object().map(|val| val.as_fixnum())
+        } else {
+            None
         }
     }
 

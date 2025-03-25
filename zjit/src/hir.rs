@@ -320,6 +320,14 @@ impl Insn {
             _ => true,
         }
     }
+
+    /// Return true if the instruction ends a basic block and false otherwise.
+    pub fn is_terminator(&self) -> bool {
+        match self {
+            Insn::Jump(_) | Insn::Return { .. } => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Default, Debug)]
@@ -478,16 +486,23 @@ impl Function {
         }
     }
 
+    // Add an instruction to the function without adding it to any block
+    fn new_insn(&mut self, insn: Insn) -> InsnId {
+        let id = InsnId(self.insns.len());
+        self.insns.push(insn);
+        self.insn_types.push(types::Empty);
+        id
+    }
+
     // Add an instruction to an SSA block
     fn push_insn(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let id = InsnId(self.insns.len());
-        if let Insn::Param { .. } = &insn {
+        let is_param = matches!(insn, Insn::Param { .. });
+        let id = self.new_insn(insn);
+        if is_param {
             self.blocks[block.0].params.push(id);
         } else {
             self.blocks[block.0].insns.push(id);
         }
-        self.insns.push(insn);
-        self.insn_types.push(types::Empty);
         id
     }
 
@@ -533,7 +548,8 @@ impl Function {
     /// ```rust
     /// match func.find(insn_id) {
     ///   IfTrue { val, target } if func.is_truthy(val) => {
-    ///     func.make_equal_to(insn_id, block, Insn::Jump(target));
+    ///     let jump = self.new_insn(Insn::Jump(target));
+    ///     func.make_equal_to(insn_id, jump);
     ///   }
     ///   _ => {}
     /// }
@@ -592,14 +608,19 @@ impl Function {
     }
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
-    fn make_equal_to(&mut self, insn: InsnId, block: BlockId, replacement: Insn) {
-        let new_insn = self.push_insn(block, replacement);
-        self.union_find.make_equal_to(insn, new_insn);
+    fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
+        // Don't push it to the block
+        self.union_find.make_equal_to(insn, replacement);
     }
 
     fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
         self.insn_types[insn.0]
+    }
+
+    /// Check if the type of `insn` is a subtype of `ty`.
+    fn is_a(&self, insn: InsnId, ty: Type) -> bool {
+        self.type_of(insn).is_subtype(ty)
     }
 
     fn infer_type(&self, insn: InsnId) -> Type {
@@ -622,8 +643,8 @@ impl Function {
             Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
             Insn::Const { val: Const::CPtr(val) } => Type::from_cint(types::CPtr, *val as i64),
             Insn::Const { val: Const::CDouble(val) } => Type::from_double(*val),
-            Insn::Test { val } if self.type_of(*val).is_subtype(types::NilClassExact) || self.type_of(*val).is_subtype(types::FalseClassExact) => Type::from_cbool(false),
-            Insn::Test { val } if !self.type_of(*val).could_be(types::NilClassExact) && !self.type_of(*val).could_be(types::FalseClassExact) => Type::from_cbool(true),
+            Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
+            Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::StringExact,
@@ -713,6 +734,101 @@ impl Function {
         }
     }
 
+    /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
+    ///
+    /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
+    fn fold_constants(&mut self) {
+        // TODO(max): Determine if it's worth it for us to reflow types after each branch
+        // simplification. This means that we can have nice cascading optimizations if what used to
+        // be a union of two different basic block arguments now has a single value.
+        //
+        // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
+        // function-level infer_types after each pruned branch.
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let mut new_insns = vec![];
+            for insn_id in old_insns {
+                let replacement_id = match self.find(insn_id) {
+                    Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
+                        self.make_equal_to(insn_id, val);
+                        // Don't bother re-inferring the type of val; we already know it.
+                        continue;
+                    }
+                    Insn::FixnumAdd { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(l), Some(r)) => {
+                                let result = l + r;
+                                if result >= (RUBY_FIXNUM_MIN as i64) && result <= (RUBY_FIXNUM_MAX as i64) {
+                                    self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(result as usize)) })
+                                } else {
+                                    // Instead of allocating a Bignum at compile-time, defer the add and allocation to run-time.
+                                    insn_id
+                                }
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::FixnumLt { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(l), Some(r)) => {
+                                if l < r {
+                                    self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                                } else {
+                                    self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                                }
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::FixnumEq { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(l), Some(r)) => {
+                                if l == r {
+                                    self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                                } else {
+                                    self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                                }
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    Insn::Test { val } if self.type_of(val).is_known_falsy() => {
+                        self.new_insn(Insn::Const { val: Const::CBool(false) })
+                    }
+                    Insn::Test { val } if self.type_of(val).is_known_truthy() => {
+                        self.new_insn(Insn::Const { val: Const::CBool(true) })
+                    }
+                    Insn::IfTrue { val, target } if self.is_a(val, Type::from_cbool(true)) => {
+                        self.new_insn(Insn::Jump(target))
+                    }
+                    Insn::IfFalse { val, target } if self.is_a(val, Type::from_cbool(false)) => {
+                        self.new_insn(Insn::Jump(target))
+                    }
+                    // If we know that the branch condition is never going to cause a branch,
+                    // completely drop the branch from the block.
+                    Insn::IfTrue { val, .. } if self.is_a(val, Type::from_cbool(false)) => continue,
+                    Insn::IfFalse { val, .. } if self.is_a(val, Type::from_cbool(true)) => continue,
+                    _ => insn_id,
+                };
+                // If we're adding a new instruction, mark the two equivalent in the union-find and
+                // do an incremental flow typing of the new instruction.
+                if insn_id != replacement_id {
+                    self.make_equal_to(insn_id, replacement_id);
+                    if self.insns[replacement_id.0].has_output() {
+                        self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
+                    }
+                }
+                new_insns.push(replacement_id);
+                // If we've just folded an IfTrue into a Jump, for example, don't bother copying
+                // over unreachable instructions afterward.
+                if self.insns[replacement_id.0].is_terminator() {
+                    break;
+                }
+            }
+            self.blocks[block.0].insns = new_insns;
+        }
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entry_block);
@@ -745,17 +861,22 @@ impl Function {
         }
         result
     }
+
+    /// Run all the optimization passes we have.
+    pub fn optimize(&mut self) {
+        // Function is assumed to have types inferred already
+        self.fold_constants();
+    }
 }
 
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
-        for (block_id, block) in fun.blocks.iter().enumerate() {
-            let block_id = BlockId(block_id);
+        for block_id in fun.rpo() {
             write!(f, "{block_id}(")?;
-            if !block.params.is_empty() {
+            if !fun.blocks[block_id.0].params.is_empty() {
                 let mut sep = "";
-                for param in &block.params {
+                for param in &fun.blocks[block_id.0].params {
                     write!(f, "{sep}{param}")?;
                     let insn_type = fun.type_of(*param);
                     if !insn_type.is_subtype(types::Empty) {
@@ -765,7 +886,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 }
             }
             writeln!(f, "):")?;
-            for insn_id in &block.insns {
+            for insn_id in &fun.blocks[block_id.0].insns {
                 let insn = fun.find(*insn_id);
                 if !self.display_snapshot && matches!(insn, Insn::Snapshot {..}) {
                     continue;
@@ -1584,7 +1705,7 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_function_hir(function: Function, hir: &str) {
+    pub fn assert_function_hir(function: Function, hir: &str) {
         let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
         let expected_hir = unindent(hir, true);
         assert_eq!(actual_hir, expected_hir, "{}", diff_text(&expected_hir, &actual_hir));
@@ -1933,6 +2054,16 @@ mod tests {
               v3:Fixnum[0] = Const Value(0)
               v6:Fixnum[10] = Const Value(10)
               Jump bb2(v3, v6)
+            bb2(v10:Fixnum, v11:Fixnum):
+              v14:Fixnum[0] = Const Value(0)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+              v17:Fixnum = GuardType v11, Fixnum
+              v18:Fixnum[0] = GuardType v14, Fixnum
+              v19:BoolExact = FixnumGt v17, v18
+              v21:CBool = Test v19
+              IfTrue v21, bb1(v10, v11)
+              v24:NilClassExact = Const Value(nil)
+              Return v10
             bb1(v29:Fixnum, v30:Fixnum):
               v33:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
@@ -1945,16 +2076,6 @@ mod tests {
               v46:Fixnum[1] = GuardType v42, Fixnum
               v47:Fixnum = FixnumSub v45, v46
               Jump bb2(v38, v47)
-            bb2(v10:Fixnum, v11:Fixnum):
-              v14:Fixnum[0] = Const Value(0)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v17:Fixnum = GuardType v11, Fixnum
-              v18:Fixnum[0] = GuardType v14, Fixnum
-              v19:BoolExact = FixnumGt v17, v18
-              v21:CBool = Test v19
-              IfTrue v21, bb1(v10, v11)
-              v24:NilClassExact = Const Value(nil)
-              Return v10
         ");
     }
 
@@ -2057,5 +2178,178 @@ mod tests {
               v15:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v10, v13
               Return v15
         ");
+    }
+}
+
+#[cfg(test)]
+mod opt_tests {
+    use super::*;
+    use super::tests::assert_function_hir;
+
+    #[track_caller]
+    fn assert_optimized_method_hir(method: &str, hir: &str) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        assert_function_hir(function, hir);
+    }
+
+    #[test]
+    fn test_fold_iftrue_away() {
+        eval("
+            def test
+                cond = true
+                if cond
+                    3
+                else
+                    4
+                end
+            end
+        ");
+        assert_optimized_method_hir("test", "
+            bb0():
+              v0:NilClassExact = Const Value(nil)
+              v2:TrueClassExact = Const Value(true)
+              v17:CBool[true] = Const CBool(true)
+              v9:Fixnum[3] = Const Value(3)
+              Return v9
+            ");
+    }
+
+    #[test]
+    fn test_fold_iftrue_into_jump() {
+        eval("
+            def test
+                cond = false
+                if cond
+                    3
+                else
+                    4
+                end
+            end
+        ");
+        assert_optimized_method_hir("test", "
+            bb0():
+              v0:NilClassExact = Const Value(nil)
+              v2:FalseClassExact = Const Value(false)
+              v17:CBool[false] = Const CBool(false)
+              Jump bb1(v2)
+            bb1(v12:FalseClassExact):
+              v14:Fixnum[4] = Const Value(4)
+              Return v14
+            ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_add() {
+        eval("
+            def test
+                1 + 2 + 3
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", "
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v18:Fixnum[3] = Const Value(3)
+              v10:Fixnum[3] = Const Value(3)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v19:Fixnum[6] = Const Value(6)
+              Return v19
+            ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_less() {
+        eval("
+            def test
+              if 1 < 2
+                3
+              else
+                4
+              end
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", "
+bb0():
+  v1:Fixnum[1] = Const Value(1)
+  v3:Fixnum[2] = Const Value(2)
+  PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+  v20:TrueClassExact = Const Value(true)
+  v21:CBool[true] = Const CBool(true)
+  v13:Fixnum[3] = Const Value(3)
+  Return v13
+            ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_eq_true() {
+        eval("
+            def test
+              if 1 == 2
+                3
+              else
+                4
+              end
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", "
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v20:FalseClassExact = Const Value(false)
+              v21:CBool[false] = Const CBool(false)
+              Jump bb1()
+            bb1():
+              v17:Fixnum[4] = Const Value(4)
+              Return v17
+            ");
+    }
+
+    #[test]
+    fn test_fold_fixnum_eq_false() {
+        eval("
+            def test
+              if 2 == 2
+                3
+              else
+                4
+              end
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", "
+            bb0():
+              v1:Fixnum[2] = Const Value(2)
+              v3:Fixnum[2] = Const Value(2)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v20:TrueClassExact = Const Value(true)
+              v21:CBool[true] = Const CBool(true)
+              v13:Fixnum[3] = Const Value(3)
+              Return v13
+            ");
+    }
+
+    #[test]
+    fn test_replace_guard_if_known_fixnum() {
+        eval("
+            def test(a)
+              a + 1
+            end
+            test(2); test(3)
+        ");
+        assert_optimized_method_hir("test", "
+            bb0(v0:BasicObject):
+              v3:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v6:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = FixnumAdd v6, v3
+              Return v8
+            ");
     }
 }
