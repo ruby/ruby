@@ -97,16 +97,15 @@ class Gem::Platform
       end
 
       cpu = arch.shift
-      if cpu.nil? || "" == cpu
+      if cpu.nil? || cpu == ""
         raise ArgumentError, "empty cpu in platform #{arch_str.inspect}"
       end
 
-
       @cpu = if cpu.match?(/i\d86/)
-                "x86"
-              else
-                cpu
-              end
+        "x86"
+      else
+        cpu
+      end
 
       if arch.length == 2 && arch.last.match?(/^\d+(\.\d+)?$/) # for command-line
         @os, @version = arch
@@ -127,10 +126,10 @@ class Gem::Platform
                       when /^macruby$/ then             ["macruby",   nil]
                       when /freebsd(\d+)?/ then         ["freebsd",   $1]
                       when /^java$/, /^jruby$/ then     ["java",      nil]
-                      when /^java(\d+(?:\.\d+)*)?/ then   ["java",      $1]
+                      when /^java(\d+(?:\.\d+)*)?/ then ["java", $1]
                       when /^dalvik(\d+)?$/ then        ["dalvik",    $1]
                       when /^dotnet$/ then              ["dotnet",    nil]
-                      when /^dotnet(\d+(?:\.\d+)*)?/ then ["dotnet",    $1]
+                      when /^dotnet(\d+(?:\.\d+)*)?/ then ["dotnet", $1]
                       when /linux-?(\w+)?/ then         ["linux",     $1]
                       when /mingw32/ then               ["mingw32",   nil]
                       when /mingw-?(\w+)?/ then         ["mingw",     $1]
