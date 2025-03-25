@@ -609,14 +609,14 @@ typedef struct gc_function_map {
     // Bootup
     void *(*objspace_alloc)(void);
     void (*objspace_init)(void *objspace_ptr);
-    void (*objspace_free)(void *objspace_ptr);
     void *(*ractor_cache_alloc)(void *objspace_ptr, void *ractor);
-    void (*ractor_cache_free)(void *objspace_ptr, void *cache);
     void (*set_params)(void *objspace_ptr);
     void (*init)(void);
     size_t *(*heap_sizes)(void *objspace_ptr);
     // Shutdown
     void (*shutdown_free_objects)(void *objspace_ptr);
+    void (*objspace_free)(void *objspace_ptr);
+    void (*ractor_cache_free)(void *objspace_ptr, void *cache);
     // GC
     void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
     bool (*during_gc_p)(void *objspace_ptr);
@@ -786,14 +786,14 @@ ruby_modular_gc_init(void)
     // Bootup
     load_modular_gc_func(objspace_alloc);
     load_modular_gc_func(objspace_init);
-    load_modular_gc_func(objspace_free);
     load_modular_gc_func(ractor_cache_alloc);
-    load_modular_gc_func(ractor_cache_free);
     load_modular_gc_func(set_params);
     load_modular_gc_func(init);
     load_modular_gc_func(heap_sizes);
     // Shutdown
     load_modular_gc_func(shutdown_free_objects);
+    load_modular_gc_func(objspace_free);
+    load_modular_gc_func(ractor_cache_free);
     // GC
     load_modular_gc_func(start);
     load_modular_gc_func(during_gc_p);
@@ -869,14 +869,14 @@ ruby_modular_gc_init(void)
 // Bootup
 # define rb_gc_impl_objspace_alloc rb_gc_functions.objspace_alloc
 # define rb_gc_impl_objspace_init rb_gc_functions.objspace_init
-# define rb_gc_impl_objspace_free rb_gc_functions.objspace_free
 # define rb_gc_impl_ractor_cache_alloc rb_gc_functions.ractor_cache_alloc
-# define rb_gc_impl_ractor_cache_free rb_gc_functions.ractor_cache_free
 # define rb_gc_impl_set_params rb_gc_functions.set_params
 # define rb_gc_impl_init rb_gc_functions.init
 # define rb_gc_impl_heap_sizes rb_gc_functions.heap_sizes
 // Shutdown
 # define rb_gc_impl_shutdown_free_objects rb_gc_functions.shutdown_free_objects
+# define rb_gc_impl_objspace_free rb_gc_functions.objspace_free
+# define rb_gc_impl_ractor_cache_free rb_gc_functions.ractor_cache_free
 // GC
 # define rb_gc_impl_start rb_gc_functions.start
 # define rb_gc_impl_during_gc_p rb_gc_functions.during_gc_p
