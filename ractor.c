@@ -2096,6 +2096,9 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     rb_gc_ractor_cache_free(r->newobj_cache);
     r->newobj_cache = NULL;
     r->status_ = ractor_terminated;
+    r->sync.outgoing_port_closed = true;
+    r->sync.incoming_port_closed = true;
+    r->sync.will_basket.type.e = basket_type_none;
 }
 #endif
 

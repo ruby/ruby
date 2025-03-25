@@ -2213,7 +2213,49 @@ assert_equal 'ok', %q{
 
 # fork after creating Ractor
 assert_equal 'ok', %q{
+begin
   Ractor.new { Ractor.receive }
   _, status = Process.waitpid2 fork { }
   status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.take
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.send(123)
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
 }
