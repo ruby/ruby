@@ -1595,7 +1595,7 @@ impl Assembler
                 if let Target::SideExit(state) = target {
                     let side_exit_ptr = cb.get_write_ptr();
                     let mut asm = Assembler::new();
-                    asm_comment!(asm, "side exit: {:?}", state);
+                    asm_comment!(asm, "side exit: {state}");
                     asm.ccall(Self::rb_zjit_side_exit as *const u8, vec![]);
                     asm.compile(cb)?;
                     *target = Target::CodePtr(side_exit_ptr);

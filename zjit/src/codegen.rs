@@ -157,7 +157,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, block:
     }
 
     if !matches!(*insn, Insn::Snapshot { .. }) {
-        asm_comment!(asm, "Insn: {insn_id} {insn:?}");
+        asm_comment!(asm, "Insn: {insn_id} {insn}");
     }
 
     let out_opnd = match insn {

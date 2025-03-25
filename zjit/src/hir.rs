@@ -328,6 +328,71 @@ impl Insn {
             _ => false,
         }
     }
+
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap) -> InsnPrinter<'a> {
+        InsnPrinter { inner: self.clone(), ptr_map }
+    }
+}
+
+/// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
+pub struct InsnPrinter<'a> {
+    inner: Insn,
+    ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> std::fmt::Display for InsnPrinter<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match &self.inner {
+            Insn::Const { val } => { write!(f, "Const {}", val.print(&self.ptr_map)) }
+            Insn::Param { idx } => { write!(f, "Param {idx}") }
+            Insn::NewArray { count } => { write!(f, "NewArray {count}") }
+            Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
+            Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}") }
+            Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
+            Insn::Test { val } => { write!(f, "Test {val}") }
+            Insn::Jump(target) => { write!(f, "Jump {target}") }
+            Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
+            Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
+            Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
+                write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::Send { self_val, call_info, args, blockiseq, .. } => {
+                // For tests, we want to check HIR snippets textually. Addresses change
+                // between runs, making tests fail. Instead, pick an arbitrary hex value to
+                // use as a "pointer" so we can check the rest of the HIR.
+                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::Return { val } => { write!(f, "Return {val}") }
+            Insn::FixnumAdd  { left, right, .. } => { write!(f, "FixnumAdd {left}, {right}") },
+            Insn::FixnumSub  { left, right, .. } => { write!(f, "FixnumSub {left}, {right}") },
+            Insn::FixnumMult { left, right, .. } => { write!(f, "FixnumMult {left}, {right}") },
+            Insn::FixnumDiv  { left, right, .. } => { write!(f, "FixnumDiv {left}, {right}") },
+            Insn::FixnumMod  { left, right, .. } => { write!(f, "FixnumMod {left}, {right}") },
+            Insn::FixnumEq   { left, right, .. } => { write!(f, "FixnumEq {left}, {right}") },
+            Insn::FixnumNeq  { left, right, .. } => { write!(f, "FixnumNeq {left}, {right}") },
+            Insn::FixnumLt   { left, right, .. } => { write!(f, "FixnumLt {left}, {right}") },
+            Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}") },
+            Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
+            Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
+            Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {guard_type}") },
+            Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {invariant:}") },
+            insn => { write!(f, "{insn:?}") }
+        }
+    }
+}
+
+impl std::fmt::Display for Insn {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        self.print(&PtrPrintMap::identity()).fmt(f)
+    }
 }
 
 #[derive(Default, Debug)]
@@ -900,49 +965,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                match insn {
-                    Insn::Const { val } => { write!(f, "Const {}", val.print(&self.ptr_map))?; }
-                    Insn::Param { idx } => { write!(f, "Param {idx}")?; }
-                    Insn::NewArray { count } => { write!(f, "NewArray {count}")?; }
-                    Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}")?; }
-                    Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}")?; }
-                    Insn::Test { val } => { write!(f, "Test {val}")?; }
-                    Insn::Snapshot { state } => { write!(f, "Snapshot {}", fun.frame_state(state))?; }
-                    Insn::Jump(target) => { write!(f, "Jump {target}")?; }
-                    Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}")?; }
-                    Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}")?; }
-                    Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
-                        write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
-                        for arg in args {
-                            write!(f, ", {arg}")?;
-                        }
-                    }
-                    Insn::Send { self_val, call_info, args, blockiseq, .. } => {
-                        // For tests, we want to check HIR snippets textually. Addresses change
-                        // between runs, making tests fail. Instead, pick an arbitrary hex value to
-                        // use as a "pointer" so we can check the rest of the HIR.
-                        write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
-                        for arg in args {
-                            write!(f, ", {arg}")?;
-                        }
-                    }
-                    Insn::Return { val } => { write!(f, "Return {val}")?; }
-                    Insn::FixnumAdd  { left, right, .. } => { write!(f, "FixnumAdd {left}, {right}")?; },
-                    Insn::FixnumSub  { left, right, .. } => { write!(f, "FixnumSub {left}, {right}")?; },
-                    Insn::FixnumMult { left, right, .. } => { write!(f, "FixnumMult {left}, {right}")?; },
-                    Insn::FixnumDiv  { left, right, .. } => { write!(f, "FixnumDiv {left}, {right}")?; },
-                    Insn::FixnumMod  { left, right, .. } => { write!(f, "FixnumMod {left}, {right}")?; },
-                    Insn::FixnumEq   { left, right, .. } => { write!(f, "FixnumEq {left}, {right}")?; },
-                    Insn::FixnumNeq  { left, right, .. } => { write!(f, "FixnumNeq {left}, {right}")?; },
-                    Insn::FixnumLt   { left, right, .. } => { write!(f, "FixnumLt {left}, {right}")?; },
-                    Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}")?; },
-                    Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}")?; },
-                    Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}")?; },
-                    Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {guard_type}")?; },
-                    Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {invariant:}")?; },
-                    insn => { write!(f, "{insn:?}")?; }
-                }
-                writeln!(f, "")?;
+                writeln!(f, "{}", insn.print(&self.ptr_map))?;
             }
         }
         Ok(())
@@ -1750,7 +1773,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             bb0():
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v2:StringExact = StringCopy { val: InsnId(1) }
+              v2:StringExact = StringCopy v1
               Return v2
         "#]]);
     }
@@ -2172,9 +2195,9 @@ mod tests {
               v6:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v7:ArrayExact = ArrayDup v6
               v9:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v10:StringExact = StringCopy { val: InsnId(9) }
+              v10:StringExact = StringCopy v9
               v12:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v13:StringExact = StringCopy { val: InsnId(12) }
+              v13:StringExact = StringCopy v12
               v15:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v10, v13
               Return v15
         "#]]);
