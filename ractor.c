@@ -2072,6 +2072,8 @@ rb_ractor_main_alloc(void)
 }
 
 #if defined(HAVE_WORKING_FORK)
+// Set up the main Ractor for the VM after fork.
+// Puts us in "single Ractor mode"
 void
 rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 {
@@ -2086,6 +2088,14 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 
     VM_ASSERT(vm->ractor.blocking_cnt == 0);
     VM_ASSERT(vm->ractor.cnt == 1);
+}
+
+void
+rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
+{
+    rb_gc_ractor_cache_free(r->newobj_cache);
+    r->newobj_cache = NULL;
+    r->status_ = ractor_terminated;
 }
 #endif
 
