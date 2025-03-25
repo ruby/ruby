@@ -175,13 +175,23 @@ static inline void fbuffer_append_char(FBuffer *fb, char newchr)
     fb->len++;
 }
 
+static inline char *fbuffer_cursor(FBuffer *fb)
+{
+    return fb->ptr + fb->len;
+}
+
+static inline void fbuffer_advance_to(FBuffer *fb, char *end)
+{
+    fb->len = end - fb->ptr;
+}
+
 /*
  * Appends the decimal string representation of \a number into the buffer.
  */
 static void fbuffer_append_long(FBuffer *fb, long number)
 {
     /*
-     * The to_text_from_ulong() function produces digits left-to-right,
+     * The jeaiii_ultoa() function produces digits left-to-right,
      * allowing us to write directly into the buffer, but we don't know
      * the number of resulting characters.
      *
@@ -205,9 +215,8 @@ static void fbuffer_append_long(FBuffer *fb, long number)
         number = -number;
     }
 
-    char* d = fb->ptr + fb->len;
-    char* end = to_text_from_ulong(d, number);
-    fb->len += end - d;
+    char *end = jeaiii_ultoa(fbuffer_cursor(fb), number);
+    fbuffer_advance_to(fb, end);
 }
 
 static VALUE fbuffer_finalize(FBuffer *fb)

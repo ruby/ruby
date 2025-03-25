@@ -44,102 +44,109 @@ typedef uint_fast64_t u64_t;
 #define u32(x) ((u32_t)(x))
 #define u64(x) ((u64_t)(x))
 
-struct pair
+struct digit_pair
 {
     char dd[2];
 };
 
-#define cast_to_pair_ptr(b) ((struct pair*)(void*)(b))
+static const struct digit_pair *digits_dd = (struct digit_pair *)(
+    "00" "01" "02" "03" "04" "05" "06" "07" "08" "09"
+    "10" "11" "12" "13" "14" "15" "16" "17" "18" "19"
+    "20" "21" "22" "23" "24" "25" "26" "27" "28" "29"
+    "30" "31" "32" "33" "34" "35" "36" "37" "38" "39"
+    "40" "41" "42" "43" "44" "45" "46" "47" "48" "49"
+    "50" "51" "52" "53" "54" "55" "56" "57" "58" "59"
+    "60" "61" "62" "63" "64" "65" "66" "67" "68" "69"
+    "70" "71" "72" "73" "74" "75" "76" "77" "78" "79"
+    "80" "81" "82" "83" "84" "85" "86" "87" "88" "89"
+    "90" "91" "92" "93" "94" "95" "96" "97" "98" "99"
+);
 
-static struct pair digits_dd[100] =
+static const struct digit_pair *digits_fd = (struct digit_pair *)(
+    "0_" "1_" "2_" "3_" "4_" "5_" "6_" "7_" "8_" "9_"
+    "10" "11" "12" "13" "14" "15" "16" "17" "18" "19"
+    "20" "21" "22" "23" "24" "25" "26" "27" "28" "29"
+    "30" "31" "32" "33" "34" "35" "36" "37" "38" "39"
+    "40" "41" "42" "43" "44" "45" "46" "47" "48" "49"
+    "50" "51" "52" "53" "54" "55" "56" "57" "58" "59"
+    "60" "61" "62" "63" "64" "65" "66" "67" "68" "69"
+    "70" "71" "72" "73" "74" "75" "76" "77" "78" "79"
+    "80" "81" "82" "83" "84" "85" "86" "87" "88" "89"
+    "90" "91" "92" "93" "94" "95" "96" "97" "98" "99"
+);
+
+static const u64_t mask24 = (u64(1) << 24) - 1;
+static const u64_t mask32 = (u64(1) << 32) - 1;
+static const u64_t mask57 = (u64(1) << 57) - 1;
+
+#define COPY(buffer, digits) memcpy(buffer, &(digits), sizeof(struct digit_pair))
+
+static char *
+jeaiii_ultoa(char *b, u64_t n)
 {
-    { '0', '0' }, { '0', '1' }, { '0', '2' }, { '0', '3' }, { '0', '4' }, { '0', '5' }, { '0', '6' }, { '0', '7' }, { '0', '8' }, { '0', '9' },
-    { '1', '0' }, { '1', '1' }, { '1', '2' }, { '1', '3' }, { '1', '4' }, { '1', '5' }, { '1', '6' }, { '1', '7' }, { '1', '8' }, { '1', '9' },
-    { '2', '0' }, { '2', '1' }, { '2', '2' }, { '2', '3' }, { '2', '4' }, { '2', '5' }, { '2', '6' }, { '2', '7' }, { '2', '8' }, { '2', '9' },
-    { '3', '0' }, { '3', '1' }, { '3', '2' }, { '3', '3' }, { '3', '4' }, { '3', '5' }, { '3', '6' }, { '3', '7' }, { '3', '8' }, { '3', '9' },
-    { '4', '0' }, { '4', '1' }, { '4', '2' }, { '4', '3' }, { '4', '4' }, { '4', '5' }, { '4', '6' }, { '4', '7' }, { '4', '8' }, { '4', '9' },
-    { '5', '0' }, { '5', '1' }, { '5', '2' }, { '5', '3' }, { '5', '4' }, { '5', '5' }, { '5', '6' }, { '5', '7' }, { '5', '8' }, { '5', '9' },
-    { '6', '0' }, { '6', '1' }, { '6', '2' }, { '6', '3' }, { '6', '4' }, { '6', '5' }, { '6', '6' }, { '6', '7' }, { '6', '8' }, { '6', '9' },
-    { '7', '0' }, { '7', '1' }, { '7', '2' }, { '7', '3' }, { '7', '4' }, { '7', '5' }, { '7', '6' }, { '7', '7' }, { '7', '8' }, { '7', '9' },
-    { '8', '0' }, { '8', '1' }, { '8', '2' }, { '8', '3' }, { '8', '4' }, { '8', '5' }, { '8', '6' }, { '8', '7' }, { '8', '8' }, { '8', '9' },
-    { '9', '0' }, { '9', '1' }, { '9', '2' }, { '9', '3' }, { '9', '4' }, { '9', '5' }, { '9', '6' }, { '9', '7' }, { '9', '8' }, { '9', '9' },
-};
-
-#define NUL 'x'
-
-static struct pair digits_fd[100] =
-{
-    { '0', NUL }, { '1', NUL }, { '2', NUL }, { '3', NUL }, { '4', NUL }, { '5', NUL }, { '6', NUL }, { '7', NUL }, { '8', NUL }, { '9', NUL },
-    { '1', '0' }, { '1', '1' }, { '1', '2' }, { '1', '3' }, { '1', '4' }, { '1', '5' }, { '1', '6' }, { '1', '7' }, { '1', '8' }, { '1', '9' },
-    { '2', '0' }, { '2', '1' }, { '2', '2' }, { '2', '3' }, { '2', '4' }, { '2', '5' }, { '2', '6' }, { '2', '7' }, { '2', '8' }, { '2', '9' },
-    { '3', '0' }, { '3', '1' }, { '3', '2' }, { '3', '3' }, { '3', '4' }, { '3', '5' }, { '3', '6' }, { '3', '7' }, { '3', '8' }, { '3', '9' },
-    { '4', '0' }, { '4', '1' }, { '4', '2' }, { '4', '3' }, { '4', '4' }, { '4', '5' }, { '4', '6' }, { '4', '7' }, { '4', '8' }, { '4', '9' },
-    { '5', '0' }, { '5', '1' }, { '5', '2' }, { '5', '3' }, { '5', '4' }, { '5', '5' }, { '5', '6' }, { '5', '7' }, { '5', '8' }, { '5', '9' },
-    { '6', '0' }, { '6', '1' }, { '6', '2' }, { '6', '3' }, { '6', '4' }, { '6', '5' }, { '6', '6' }, { '6', '7' }, { '6', '8' }, { '6', '9' },
-    { '7', '0' }, { '7', '1' }, { '7', '2' }, { '7', '3' }, { '7', '4' }, { '7', '5' }, { '7', '6' }, { '7', '7' }, { '7', '8' }, { '7', '9' },
-    { '8', '0' }, { '8', '1' }, { '8', '2' }, { '8', '3' }, { '8', '4' }, { '8', '5' }, { '8', '6' }, { '8', '7' }, { '8', '8' }, { '8', '9' },
-    { '9', '0' }, { '9', '1' }, { '9', '2' }, { '9', '3' }, { '9', '4' }, { '9', '5' }, { '9', '6' }, { '9', '7' }, { '9', '8' }, { '9', '9' },
-};
-
-#undef NUL
-
-static u64_t mask24 = (u64(1) << 24) - 1;
-static u64_t mask32 = (u64(1) << 32) - 1;
-static u64_t mask57 = (u64(1) << 57) - 1;
-
-static
-char* to_text_from_ulong(char* b, u64_t n) {
-    if (n < u32(1e2))
-    {
-        *cast_to_pair_ptr(b) = digits_fd[n];
+    if (n < u32(1e2)) {
+        COPY(b, digits_fd[n]);
         return n < 10 ? b + 1 : b + 2;
     }
-    if (n < u32(1e6))
-    {
-        if (n < u32(1e4))
-        {
+
+    if (n < u32(1e6)) {
+        if (n < u32(1e4)) {
             u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * n;
-            *cast_to_pair_ptr(b) = digits_fd[f0 >> 24];
+            COPY(b, digits_fd[f0 >> 24]);
+
             b -= n < u32(1e3);
             u32_t f2 = (f0 & mask24) * 100;
-            *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 24];
+            COPY(b + 2, digits_dd[f2 >> 24]);
+
             return b + 4;
         }
+
         u64_t f0 = u64(10 * (1ull << 32ull)/ 1e5 + 1) * n;
-        *cast_to_pair_ptr(b) = digits_fd[f0 >> 32];
+        COPY(b, digits_fd[f0 >> 32]);
+
         b -= n < u32(1e5);
         u64_t f2 = (f0 & mask32) * 100;
-        *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+        COPY(b + 2, digits_dd[f2 >> 32]);
+
         u64_t f4 = (f2 & mask32) * 100;
-        *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+        COPY(b + 4, digits_dd[f4 >> 32]);
         return b + 6;
     }
-    if (n < u64(1ull << 32ull))
-    {
-        if (n < u32(1e8))
-        {
+
+    if (n < u64(1ull << 32ull)) {
+        if (n < u32(1e8)) {
             u64_t f0 = u64(10 * (1ull << 48ull) / 1e7 + 1) * n >> 16;
-            *cast_to_pair_ptr(b) = digits_fd[f0 >> 32];
+            COPY(b, digits_fd[f0 >> 32]);
+
             b -= n < u32(1e7);
             u64_t f2 = (f0 & mask32) * 100;
-            *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+            COPY(b + 2, digits_dd[f2 >> 32]);
+
             u64_t f4 = (f2 & mask32) * 100;
-            *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+            COPY(b + 4, digits_dd[f4 >> 32]);
+
             u64_t f6 = (f4 & mask32) * 100;
-            *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 32];
+            COPY(b + 6, digits_dd[f6 >> 32]);
+
             return b + 8;
         }
+
         u64_t f0 = u64(10 * (1ull << 57ull) / 1e9 + 1) * n;
-        *cast_to_pair_ptr(b) = digits_fd[f0 >> 57];
+        COPY(b, digits_fd[f0 >> 57]);
+
         b -= n < u32(1e9);
         u64_t f2 = (f0 & mask57) * 100;
-        *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 57];
+        COPY(b + 2, digits_dd[f2 >> 57]);
+
         u64_t f4 = (f2 & mask57) * 100;
-        *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 57];
+        COPY(b + 4, digits_dd[f4 >> 57]);
+
         u64_t f6 = (f4 & mask57) * 100;
-        *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 57];
+        COPY(b + 6, digits_dd[f6 >> 57]);
+
         u64_t f8 = (f6 & mask57) * 100;
-        *cast_to_pair_ptr(b + 8) = digits_dd[f8 >> 57];
+        COPY(b + 8, digits_dd[f8 >> 57]);
+
         return b + 10;
     }
 
@@ -147,110 +154,124 @@ char* to_text_from_ulong(char* b, u64_t n) {
     u32_t z = n % u32(1e8);
     u64_t u = n / u32(1e8);
 
-    if (u < u32(1e2))
-    {
+    if (u < u32(1e2)) {
         // u can't be 1 digit (if u < 10 it would have been handled above as a 9 digit 32bit number)
-        *cast_to_pair_ptr(b) = digits_dd[u];
+        COPY(b, digits_dd[u]);
         b += 2;
     }
-    else if (u < u32(1e6))
-    {
-        if (u < u32(1e4))
-        {
+    else if (u < u32(1e6)) {
+        if (u < u32(1e4)) {
             u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * u;
-            *cast_to_pair_ptr(b) = digits_fd[f0 >> 24];
+            COPY(b, digits_fd[f0 >> 24]);
+
             b -= u < u32(1e3);
             u32_t f2 = (f0 & mask24) * 100;
-            *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 24];
+            COPY(b + 2, digits_dd[f2 >> 24]);
             b += 4;
         }
-        else
-        {
+        else {
             u64_t f0 = u64(10 * (1ull << 32ull) / 1e5 + 1) * u;
-            *cast_to_pair_ptr(b) = digits_fd[f0 >> 32];
+            COPY(b, digits_fd[f0 >> 32]);
+
             b -= u < u32(1e5);
             u64_t f2 = (f0 & mask32) * 100;
-            *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+            COPY(b + 2, digits_dd[f2 >> 32]);
+
             u64_t f4 = (f2 & mask32) * 100;
-            *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+            COPY(b + 4, digits_dd[f4 >> 32]);
             b += 6;
         }
     }
-    else if (u < u32(1e8))
-    {
+    else if (u < u32(1e8)) {
         u64_t f0 = u64(10 * (1ull << 48ull) / 1e7 + 1) * u >> 16;
-        *cast_to_pair_ptr(b) = digits_fd[f0 >> 32];
+        COPY(b, digits_fd[f0 >> 32]);
+
         b -= u < u32(1e7);
         u64_t f2 = (f0 & mask32) * 100;
-        *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+        COPY(b + 2, digits_dd[f2 >> 32]);
+
         u64_t f4 = (f2 & mask32) * 100;
-        *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+        COPY(b + 4, digits_dd[f4 >> 32]);
+
         u64_t f6 = (f4 & mask32) * 100;
-        *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 32];
+        COPY(b + 6, digits_dd[f6 >> 32]);
+
         b += 8;
     }
-    else if (u < u64(1ull << 32ull))
-    {
+    else if (u < u64(1ull << 32ull)) {
         u64_t f0 = u64(10 * (1ull << 57ull) / 1e9 + 1) * u;
-        *cast_to_pair_ptr(b) = digits_fd[f0 >> 57];
+        COPY(b, digits_fd[f0 >> 57]);
+
         b -= u < u32(1e9);
         u64_t f2 = (f0 & mask57) * 100;
-        *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 57];
+        COPY(b + 2, digits_dd[f2 >> 57]);
+
         u64_t f4 = (f2 & mask57) * 100;
-        *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 57];
+        COPY(b + 4, digits_dd[f4 >> 57]);
+
         u64_t f6 = (f4 & mask57) * 100;
-        *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 57];
+        COPY(b + 6, digits_dd[f6 >> 57]);
+
         u64_t f8 = (f6 & mask57) * 100;
-        *cast_to_pair_ptr(b + 8) = digits_dd[f8 >> 57];
+        COPY(b + 8, digits_dd[f8 >> 57]);
         b += 10;
     }
-    else
-    {
+    else {
         u32_t y = u % u32(1e8);
         u /= u32(1e8);
 
         // u is 2, 3, or 4 digits (if u < 10 it would have been handled above)
-        if (u < u32(1e2))
-        {
-            *cast_to_pair_ptr(b) = digits_dd[u];
+        if (u < u32(1e2)) {
+            COPY(b, digits_dd[u]);
             b += 2;
         }
-        else
-        {
+        else {
             u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * u;
-            *cast_to_pair_ptr(b) = digits_fd[f0 >> 24];
+            COPY(b, digits_fd[f0 >> 24]);
+
             b -= u < u32(1e3);
             u32_t f2 = (f0 & mask24) * 100;
-            *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 24];
+            COPY(b + 2, digits_dd[f2 >> 24]);
+
             b += 4;
         }
         // do 8 digits
         u64_t f0 = (u64((1ull << 48ull) / 1e6 + 1) * y >> 16) + 1;
-        *cast_to_pair_ptr(b) = digits_dd[f0 >> 32];
+        COPY(b, digits_dd[f0 >> 32]);
+
         u64_t f2 = (f0 & mask32) * 100;
-        *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+        COPY(b + 2, digits_dd[f2 >> 32]);
+
         u64_t f4 = (f2 & mask32) * 100;
-        *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+        COPY(b + 4, digits_dd[f4 >> 32]);
+
         u64_t f6 = (f4 & mask32) * 100;
-        *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 32];
+        COPY(b + 6, digits_dd[f6 >> 32]);
         b += 8;
     }
+
     // do 8 digits
     u64_t f0 = (u64((1ull << 48ull) / 1e6 + 1) * z >> 16) + 1;
-    *cast_to_pair_ptr(b) = digits_dd[f0 >> 32];
+    COPY(b, digits_dd[f0 >> 32]);
+
     u64_t f2 = (f0 & mask32) * 100;
-    *cast_to_pair_ptr(b + 2) = digits_dd[f2 >> 32];
+    COPY(b + 2, digits_dd[f2 >> 32]);
+
     u64_t f4 = (f2 & mask32) * 100;
-    *cast_to_pair_ptr(b + 4) = digits_dd[f4 >> 32];
+    COPY(b + 4, digits_dd[f4 >> 32]);
+
     u64_t f6 = (f4 & mask32) * 100;
-    *cast_to_pair_ptr(b + 6) = digits_dd[f6 >> 32];
+    COPY(b + 6, digits_dd[f6 >> 32]);
+
     return b + 8;
 }
 
 #undef u32
 #undef u64
+#undef COPY
 
 #pragma clang diagnostic pop
 #pragma GCC diagnostic pop
 
 #endif // JEAIII_TO_TEXT_H_
+
