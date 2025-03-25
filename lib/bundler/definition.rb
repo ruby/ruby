@@ -1144,8 +1144,14 @@ module Bundler
 
       @originally_invalid_platforms = platforms.select do |platform|
         next if local_platform == platform ||
-                @new_platforms.include?(platform) ||
-                @dependency_changes
+                @new_platforms.include?(platform)
+
+        # We should probably avoid removing non-ruby platforms, since that means
+        # lockfile will no longer install on those platforms, so a error to give
+        # heads up to the user may be better. However, we have tests expecting
+        # non ruby platform autoremoval to work, so leaving that in place for
+        # now.
+        next if @dependency_changes && platform != Gem::Platform::RUBY
 
         spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
       end
