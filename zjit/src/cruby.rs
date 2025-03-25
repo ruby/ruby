@@ -1001,34 +1001,6 @@ pub mod test_utils {
         unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
     }
 
-    /// Return a diff-like format describing the differences between the two strings. Not very
-    /// advanced (does not try to do any anchoring); best for subtle line-local differences.
-    pub fn diff_text(expected: &str, actual: &str) -> String {
-        let expected_lines: Vec<&str> = expected.lines().collect();
-        let actual_lines: Vec<&str> = actual.lines().collect();
-        let mut result: String = "Differences found (-expected, +actual):\n---\n".into();
-        let max_lines = expected_lines.len().max(actual_lines.len());
-        for i in 0..max_lines {
-            match (expected_lines.get(i), actual_lines.get(i)) {
-                (Some(exp), Some(act)) if exp == act => {
-                    result.push_str(format!(" {exp}\n").as_ref());
-                }
-                (Some(exp), Some(act)) => {
-                    result.push_str(format!("-{exp}\n+{act}\n").as_ref());
-                }
-                (Some(exp), None) => {
-                    result.push_str(format!("-{exp}\n").as_ref());
-                }
-                (None, Some(act)) => {
-                    result.push_str(format!("+{act}\n").as_ref());
-                }
-                (None, None) => unreachable!(),
-            }
-        }
-        result.push_str("---\n");
-        result
-    }
-
     /// Remove the minimum indent from every line, skipping the first and last lines if `trim_lines`.
     pub fn unindent(string: &str, trim_lines: bool) -> String {
         // Break up a string into multiple lines

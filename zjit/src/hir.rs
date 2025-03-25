@@ -1662,6 +1662,7 @@ mod infer_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use expect_test::{expect, Expect};
 
     #[macro_export]
     macro_rules! assert_matches {
@@ -1698,48 +1699,47 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_method_hir(method: &str, hir: &str) {
+    fn assert_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, hir);
     }
 
     #[track_caller]
-    pub fn assert_function_hir(function: Function, hir: &str) {
+    pub fn assert_function_hir(function: Function, expected_hir: Expect) {
         let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
-        let expected_hir = unindent(hir, true);
-        assert_eq!(actual_hir, expected_hir, "{}", diff_text(&expected_hir, &actual_hir));
+        expected_hir.assert_eq(&actual_hir);
     }
 
     #[test]
     fn test_putobject() {
         eval("def test = 123");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:Fixnum[123] = Const Value(123)
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_new_array() {
         eval("def test = []");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:ArrayExact = NewArray 0
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:ArrayExact = ArrayDup v1
               Return v2
-        ");
+        "#]]);
     }
 
     // TODO(max): Test newhash when we have it
@@ -1747,64 +1747,64 @@ mod tests {
     #[test]
     fn test_string_copy() {
         eval("def test = \"hello\"");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy { val: InsnId(1) }
               Return v2
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_flonum() {
         eval("def test = 1.5");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_static_sym() {
         eval("def test = :foo");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
-        ");
+        "#]]);
     }
 
     #[test]
     fn test_opt_plus() {
         eval("def test = 1+2");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               v5:BasicObject = SendWithoutBlock v1, :+, v3
               Return v5
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1815,12 +1815,12 @@ mod tests {
               a
             end
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:Fixnum[1] = Const Value(1)
               Return v2
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1834,7 +1834,7 @@ mod tests {
               end
             end
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject):
               v3:CBool = Test v0
               IfFalse v3, bb1(v0)
@@ -1843,7 +1843,7 @@ mod tests {
             bb1(v9:BasicObject):
               v11:Fixnum[4] = Const Value(4)
               Return v11
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1858,7 +1858,7 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v4:CBool = Test v0
@@ -1870,7 +1870,7 @@ mod tests {
               Jump bb2(v11, v14)
             bb2(v17:BasicObject, v18:Fixnum):
               Return v18
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1879,14 +1879,14 @@ mod tests {
             def test(a, b) = a + b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumAdd v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1895,14 +1895,14 @@ mod tests {
             def test(a, b) = a - b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumSub v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1911,14 +1911,14 @@ mod tests {
             def test(a, b) = a * b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumMult v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1927,14 +1927,14 @@ mod tests {
             def test(a, b) = a / b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumDiv v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1943,14 +1943,14 @@ mod tests {
             def test(a, b) = a % b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:Fixnum = FixnumMod v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1959,14 +1959,14 @@ mod tests {
             def test(a, b) = a == b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumEq v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1975,14 +1975,14 @@ mod tests {
             def test(a, b) = a != b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumNeq v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -1991,14 +1991,14 @@ mod tests {
             def test(a, b) = a < b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumLt v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2007,14 +2007,14 @@ mod tests {
             def test(a, b) = a <= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumLe v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2023,14 +2023,14 @@ mod tests {
             def test(a, b) = a > b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumGt v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2047,7 +2047,7 @@ mod tests {
             end
             test
         ");
-        assert_method_hir("test",  "
+        assert_method_hir("test",  expect![[r#"
             bb0():
               v0:NilClassExact = Const Value(nil)
               v1:NilClassExact = Const Value(nil)
@@ -2076,7 +2076,7 @@ mod tests {
               v46:Fixnum[1] = GuardType v42, Fixnum
               v47:Fixnum = FixnumSub v45, v46
               Jump bb2(v38, v47)
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2085,14 +2085,14 @@ mod tests {
             def test(a, b) = a >= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
               v6:Fixnum = GuardType v0, Fixnum
               v7:Fixnum = GuardType v1, Fixnum
               v8:BoolExact = FixnumGe v6, v7
               Return v8
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2107,7 +2107,7 @@ mod tests {
                 end
             end
         ");
-        assert_method_hir("test", "
+        assert_method_hir("test", expect![[r#"
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
@@ -2118,7 +2118,7 @@ mod tests {
             bb1(v12):
               v14 = Const Value(4)
               Return v14
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2132,14 +2132,14 @@ mod tests {
             end
             test
         ");
-        assert_method_hir("test",  "
+        assert_method_hir("test",  expect![[r#"
             bb0():
               v1:BasicObject = PutSelf
               v3:Fixnum[2] = Const Value(2)
               v5:Fixnum[3] = Const Value(3)
               v7:BasicObject = SendWithoutBlock v1, :bar, v3, v5
               Return v7
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2152,11 +2152,11 @@ mod tests {
             end
             test([1,2,3])
         ");
-        assert_method_hir("test",  "
+        assert_method_hir("test",  expect![[r#"
             bb0(v0:BasicObject):
               v3:BasicObject = Send v0, 0x1000, :each
               Return v3
-        ");
+        "#]]);
     }
 
     #[test]
@@ -2164,7 +2164,7 @@ mod tests {
         eval("def test = unknown_method([0], [1], '2', '2')");
 
         // The 2 string literals have the same address because they're deduped.
-        assert_method_hir("test",  "
+        assert_method_hir("test",  expect![[r#"
             bb0():
               v1:BasicObject = PutSelf
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2177,7 +2177,7 @@ mod tests {
               v13:StringExact = StringCopy { val: InsnId(12) }
               v15:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v10, v13
               Return v15
-        ");
+        "#]]);
     }
 }
 
@@ -2185,9 +2185,10 @@ mod tests {
 mod opt_tests {
     use super::*;
     use super::tests::assert_function_hir;
+    use expect_test::{expect, Expect};
 
     #[track_caller]
-    fn assert_optimized_method_hir(method: &str, hir: &str) {
+    fn assert_optimized_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
@@ -2206,14 +2207,14 @@ mod opt_tests {
                 end
             end
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
               v17:CBool[true] = Const CBool(true)
               v9:Fixnum[3] = Const Value(3)
               Return v9
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2228,7 +2229,7 @@ mod opt_tests {
                 end
             end
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:FalseClassExact = Const Value(false)
@@ -2237,7 +2238,7 @@ mod opt_tests {
             bb1(v12:FalseClassExact):
               v14:Fixnum[4] = Const Value(4)
               Return v14
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2248,7 +2249,7 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -2258,7 +2259,7 @@ mod opt_tests {
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v19:Fixnum[6] = Const Value(6)
               Return v19
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2273,16 +2274,16 @@ mod opt_tests {
             end
             test; test
         ");
-        assert_optimized_method_hir("test", "
-bb0():
-  v1:Fixnum[1] = Const Value(1)
-  v3:Fixnum[2] = Const Value(2)
-  PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-  v20:TrueClassExact = Const Value(true)
-  v21:CBool[true] = Const CBool(true)
-  v13:Fixnum[3] = Const Value(3)
-  Return v13
-            ");
+        assert_optimized_method_hir("test", expect![[r#"
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v20:TrueClassExact = Const Value(true)
+              v21:CBool[true] = Const CBool(true)
+              v13:Fixnum[3] = Const Value(3)
+              Return v13
+            "#]]);
     }
 
     #[test]
@@ -2297,7 +2298,7 @@ bb0():
             end
             test; test
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -2308,7 +2309,7 @@ bb0():
             bb1():
               v17:Fixnum[4] = Const Value(4)
               Return v17
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2323,7 +2324,7 @@ bb0():
             end
             test; test
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0():
               v1:Fixnum[2] = Const Value(2)
               v3:Fixnum[2] = Const Value(2)
@@ -2332,7 +2333,7 @@ bb0():
               v21:CBool[true] = Const CBool(true)
               v13:Fixnum[3] = Const Value(3)
               Return v13
-            ");
+            "#]]);
     }
 
     #[test]
@@ -2343,13 +2344,13 @@ bb0():
             end
             test(2); test(3)
         ");
-        assert_optimized_method_hir("test", "
+        assert_optimized_method_hir("test", expect![[r#"
             bb0(v0:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v6:Fixnum = GuardType v0, Fixnum
               v8:Fixnum = FixnumAdd v6, v3
               Return v8
-            ");
+            "#]]);
     }
 }

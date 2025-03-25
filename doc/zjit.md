@@ -50,6 +50,16 @@ You can also run a single test case by specifying the function name:
 make zjit-test ZJIT_TESTS=test_putobject
 ```
 
+If you expect that your changes cause tests to fail and they do, you can have
+`expect-test` fix the expected value for you by putting `UPDATE_EXPECT=1`
+before your test command, like so:
+
+```
+UPDATE_EXPECT=1 make zjit-test ZJIT_TESTS=test_putobject
+```
+
+Test changes will be reviewed alongside code changes.
+
 <details>
 
 <summary>Setting up zjit-test</summary>
