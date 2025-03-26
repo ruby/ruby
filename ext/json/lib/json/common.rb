@@ -70,7 +70,6 @@ module JSON
       end
       self.state = generator::State
       const_set :State, self.state
-      const_set :SAFE_STATE_PROTOTYPE, State.new # for JRuby
     ensure
       $VERBOSE = old
     end
