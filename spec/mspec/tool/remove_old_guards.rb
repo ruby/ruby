@@ -1,6 +1,23 @@
+#!/usr/bin/env ruby
+
 # Removes old version guards in ruby/spec.
 # Run it from the ruby/spec repository root.
 # The argument is the new minimum supported version.
+#
+#   cd spec
+#   ../mspec/tool/remove_old_guards.rb <ruby-version>
+#
+# where <ruby-version> is a version guard with which should be removed
+#
+# Example:
+#   tool/remove_old_guards.rb 3.1
+#
+# As a result guards like
+#   ruby_version_is "3.1" do
+#     # ...
+#   end
+#
+# will be removed.
 
 def dedent(line)
   if line.start_with?("  ")
@@ -104,6 +121,8 @@ def search(regexp)
     end
   end
 end
+
+abort "usage: #{$0} <ruby-version>" if ARGV.empty?
 
 version = Regexp.escape(ARGV.fetch(0))
 version += "(?:\\.0)?" if version.count(".") < 2
