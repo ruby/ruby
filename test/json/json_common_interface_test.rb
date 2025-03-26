@@ -110,7 +110,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load_with_proc
     visited = []
-    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o) })
+    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o); o })
 
     expected = [
       '"foo"',
