@@ -1682,7 +1682,7 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
-		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ruby + ARGV.shift" \
+		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \
 		$(srcdir)/spec/bin/parallel_rspec $(RSPECOPTS) \
