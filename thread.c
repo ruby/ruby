@@ -4756,6 +4756,7 @@ static void
 terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
 {
     if (th != current_th) {
+        rb_native_mutex_initialize(&th->interrupt_lock);
         rb_mutex_abandon_keeping_mutexes(th);
         rb_mutex_abandon_locking_mutex(th);
         thread_cleanup_func(th, TRUE);

@@ -394,7 +394,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         end
       end
 
-      context "with a Gemfile and lock file that don't resolve under the current platform" do
+      context "with a Gemfile and lockfile that don't resolve under the current platform" do
         before do
           build_repo4 do
             build_gem "sorbet", "0.5.10554" do |s|

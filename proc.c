@@ -1179,10 +1179,10 @@ rb_block_pair_yield_optimizable(void)
     min = rb_vm_block_min_max_arity(&block, &max);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return 0;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         {
             VALUE procval = block_handler;
             rb_proc_t *proc;
@@ -1192,7 +1192,7 @@ rb_block_pair_yield_optimizable(void)
             return min > 1;
         }
 
-      case block_handler_type_ifunc:
+      case block_type_ifunc:
         {
             const struct vm_ifunc *ifunc = block.as.captured.code.ifunc;
             if (ifunc->flags & IFUNC_YIELD_OPTIMIZABLE) return 1;
@@ -1219,10 +1219,10 @@ rb_block_arity(void)
     block_setup(&block, block_handler);
 
     switch (vm_block_type(&block)) {
-      case block_handler_type_symbol:
+      case block_type_symbol:
         return -1;
 
-      case block_handler_type_proc:
+      case block_type_proc:
         return rb_proc_arity(block_handler);
 
       default:

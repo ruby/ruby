@@ -698,4 +698,13 @@ class JSONGeneratorTest < Test::Unit::TestCase
     object = Object.new
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
   end
+
+  def test_json_generate_float
+      values = [-1.0, 1.0, 0.0, 12.2, 7.5 / 3.2, 12.0, 100.0, 1000.0]
+      expecteds = ["-1.0", "1.0", "0.0", "12.2", "2.34375", "12.0", "100.0", "1000.0"]
+
+      values.zip(expecteds).each do |value, expected|
+        assert_equal expected, value.to_json
+      end
+  end
 end

@@ -1,9 +1,14 @@
 # frozen_string_literal: true
 
 begin
+  required_version = ">= 3.3.7.2"
+  gem "parser", required_version
   require "parser"
 rescue LoadError
-  warn(%q{Error: Unable to load parser. Add `gem "parser"` to your Gemfile.})
+  warn(<<~MSG)
+    Error: Unable to load parser #{required_version}. \
+    Add `gem "parser"` to your Gemfile or run `bundle update parser`.
+  MSG
   exit(1)
 end
 
@@ -59,6 +64,12 @@ module Prism
       # should be implemented as needed.
       #
       def initialize(builder = Prism::Translation::Parser::Builder.new, parser: Prism)
+        if !builder.is_a?(Prism::Translation::Parser::Builder)
+          warn(<<~MSG, uplevel: 1, category: :deprecated)
+            [deprecation]: The builder passed to `Prism::Translation::Parser.new` is not a \
+            `Prism::Translation::Parser::Builder` subclass. This will raise in the next major version.
+          MSG
+        end
         @parser = parser
 
         super(builder)

@@ -1549,6 +1549,11 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
+#if VM_CHECK_MODE > 0
+    vm->ractor.sched.lock_owner = NULL;
+    vm->ractor.sched.locked = false;
+#endif
+
     // rb_native_cond_destroy(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.cond);
     rb_native_cond_initialize(&vm->ractor.sched.barrier_complete_cond);

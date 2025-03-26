@@ -17,7 +17,7 @@ Two GC implementations are included in Ruby:
 
 1. Configure Ruby with the `--with-modular-gc=<dir>` option, where `dir` is the directory you want to place the built GC libraries into.
 2. Build Ruby as usual.
-3. Build your desired GC implementation with `make modular-gc MODULAR_GC=<impl>`. This will build the GC implementation and place the built library into the `dir` specified in step 1. `impl` can be one of:
+3. Build your desired GC implementation with `make install-modular-gc MODULAR_GC=<impl>`. This will build the GC implementation and place the built library into the `dir` specified in step 1. `impl` can be one of:
     - `default`: The default GC that Ruby ships with.
     - `mmtk`: The GC that uses [MMTk](https://www.mmtk.io/) as the back-end. See Ruby-specific details in the [ruby/mmtk](https://github.com/ruby/mmtk) repository.
 4. Run your desired GC implementation by setting the `RUBY_GC_LIBRARY=<lib>` environment variable, where `lib` could be `default`, `mmtk`, or your own implementation (as long as you place it in the `dir` specified in step 1).

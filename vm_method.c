@@ -511,14 +511,13 @@ static void
 rb_method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
-        const int reference_count = def->reference_count;
-        def->reference_count--;
+        const unsigned int reference_count_was = RUBY_ATOMIC_FETCH_SUB(def->reference_count, 1);
 
-        VM_ASSERT(reference_count >= 0);
+        RUBY_ASSERT_ALWAYS(reference_count_was != 0);
 
-        if (def->reference_count == 0) {
-            if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d (remove)\n", (void *)def,
-                                      rb_id2name(def->original_id), def->reference_count);
+        if (reference_count_was == 1) {
+            if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:1->0 (remove)\n", (void *)def,
+                                      rb_id2name(def->original_id));
             if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
                 xfree(def->body.bmethod.hooks);
             }
@@ -526,7 +525,7 @@ rb_method_definition_release(rb_method_definition_t *def)
         }
         else {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d (dec)\n", (void *)def, rb_id2name(def->original_id),
-                                      reference_count, def->reference_count);
+                                      reference_count_was, reference_count_was - 1);
         }
     }
 }
@@ -614,9 +613,13 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int 
 static rb_method_definition_t *
 method_definition_addref(rb_method_definition_t *def, bool complemented)
 {
-    if (!complemented &&  def->reference_count > 0) def->aliased = true;
-    def->reference_count++;
-    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d\n", (void *)def, rb_id2name(def->original_id), def->reference_count);
+    unsigned int reference_count_was = RUBY_ATOMIC_FETCH_ADD(def->reference_count, 1);
+    if (!complemented && reference_count_was > 0) {
+        /* TODO: A Ractor can reach this via UnboundMethod#bind */
+        def->aliased = true;
+    }
+    if (METHOD_DEBUG) fprintf(stderr, "+%p-%s:%d->%d\n", (void *)def, rb_id2name(def->original_id), reference_count_was, reference_count_was+1);
+
     return def;
 }
 

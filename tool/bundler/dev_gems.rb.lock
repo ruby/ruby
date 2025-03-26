@@ -54,7 +54,7 @@ GEM
     rspec-support (3.13.1)
     test-unit (3.6.2)
       power_assert
-    turbo_tests (2.2.3)
+    turbo_tests (2.2.5)
       parallel_tests (>= 3.3.0, < 5)
       rspec (>= 3.10)
 
@@ -112,7 +112,7 @@ CHECKSUMS
   rspec-mocks (3.13.0) sha256=735a891215758d77cdb5f4721fffc21078793959d1f0ee4a961874311d9b7f66
   rspec-support (3.13.1) sha256=48877d4f15b772b7538f3693c22225f2eda490ba65a0515c4e7cf6f2f17de70f
   test-unit (3.6.2) sha256=3ce480c23990ca504a3f0d6619be2a560e21326cefd1b86d0f9433c387f26039
-  turbo_tests (2.2.3) sha256=c1a8763361a019c3ff68e8a47c5e1acb32c1e7668f9d4a4e08416ca4786ea8a0
+  turbo_tests (2.2.5) sha256=3fa31497d12976d11ccc298add29107b92bda94a90d8a0a5783f06f05102509f
 
 BUNDLED WITH
    2.7.0.dev

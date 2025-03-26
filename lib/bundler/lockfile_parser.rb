@@ -239,7 +239,6 @@ module Bundler
       spaces = $1
       return unless spaces.size == 2
       checksums = $6
-      return unless checksums
       name = $2
       version = $3
       platform = $4
@@ -249,10 +248,14 @@ module Bundler
       full_name = Gem::NameTuple.new(name, version, platform).full_name
       return unless spec = @specs[full_name]
 
-      checksums.split(",") do |lock_checksum|
-        column = line.index(lock_checksum) + 1
-        checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
-        spec.source.checksum_store.register(spec, checksum)
+      if checksums
+        checksums.split(",") do |lock_checksum|
+          column = line.index(lock_checksum) + 1
+          checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
+          spec.source.checksum_store.register(spec, checksum)
+        end
+      else
+        spec.source.checksum_store.register(spec, nil)
       end
     end
 

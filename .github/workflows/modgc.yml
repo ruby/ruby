@@ -143,7 +143,7 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec
+            exec \
             > >(tee launchable_stdout.log) \
             2> >(tee launchable_stderr.log)
           fi

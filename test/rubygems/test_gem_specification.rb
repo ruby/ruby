@@ -16,7 +16,7 @@ rubygems_version: "1.0"
 name: keyedlist
 version: !ruby/object:Gem::Version
   version: 0.4.0
-date: 2004-03-28 15:37:49.828000 +02:00
+date: 1980-01-02 00:00:00 UTC
 platform:
 summary: A Hash which automatically computes keys.
 require_paths:
@@ -75,7 +75,7 @@ end
   def assert_date(date)
     assert_kind_of Time, date
     assert_equal [0, 0, 0], [date.hour, date.min, date.sec]
-    assert_operator (Gem::Specification::TODAY..Time.now), :cover?, date
+    assert_equal Time.at(Gem::DEFAULT_SOURCE_DATE_EPOCH).utc, date
   end
 
   def setup

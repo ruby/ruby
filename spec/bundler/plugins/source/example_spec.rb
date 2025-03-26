@@ -67,7 +67,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("a-path-gem 1.0")
     end
 
-    it "writes to lock file" do
+    it "writes to lockfile" do
       bundle "install"
 
       checksums = checksums_section_when_enabled do |c|
@@ -336,7 +336,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("ma-gitp-gem 1.0")
     end
 
-    it "writes to lock file" do
+    it "writes to lockfile" do
       revision = revision_for(lib_path("ma-gitp-gem-1.0"))
       bundle "install"
 

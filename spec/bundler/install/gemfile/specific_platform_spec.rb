@@ -91,7 +91,7 @@ RSpec.describe "bundle install with specific platforms" do
            #{Bundler::VERSION}
       L
 
-      # force strict usage of the lock file by setting frozen mode
+      # force strict usage of the lockfile by setting frozen mode
       bundle "config set --local frozen true"
 
       # make sure the platform that got actually installed with the old bundler is used

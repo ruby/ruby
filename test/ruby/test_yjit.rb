@@ -1341,7 +1341,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_tracing_str_uplus
-    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1, definemethod: 1 })
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1 })
       def str_uplus
         _ = 1
         _ = 2

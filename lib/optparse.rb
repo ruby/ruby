@@ -425,7 +425,7 @@
 #
 class OptionParser
   # The version string
-  OptionParser::Version = "0.7.0.dev.1"
+  OptionParser::Version = "0.7.0.dev.2"
 
   # :stopdoc:
   NoArgument = [NO_ARGUMENT = :NONE, nil].freeze
@@ -1502,7 +1502,7 @@ XXX
         block = notwice(o, block, 'block')
       when Array, Hash
         if Array === o
-          o, v = o.partition {|v| Completion.completable?(v)}
+          o, v = o.partition {|v,| Completion.completable?(v)}
           values = notwice(v, values, 'values') unless v.empty?
           next if o.empty?
         end

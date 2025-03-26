@@ -653,10 +653,10 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
-    end
+    end if c
   end
 
   def test_unloadable_userdef
@@ -670,10 +670,10 @@ class TestMarshal < Test::Unit::TestCase
       Marshal.load(d)
     }
 
-    # cleanup
+  ensure
     self.class.class_eval do
       remove_const name
-    end
+    end if c
   end
 
   def test_recursive_userdef

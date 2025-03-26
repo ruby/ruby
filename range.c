@@ -2561,7 +2561,7 @@ range_overlap(VALUE range, VALUE other)
         /* if both begin values are equal, no more comparisons needed */
         if (rb_cmpint(cmp, self_beg, other_beg) == 0) return Qtrue;
     }
-    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg)) {
+    else if (NIL_P(self_beg) && !NIL_P(self_end) && NIL_P(other_beg) && !NIL_P(other_end)) {
         VALUE cmp = rb_funcall(self_end, id_cmp, 1, other_end);
         return RBOOL(!NIL_P(cmp));
     }
@@ -2661,14 +2661,14 @@ range_overlap(VALUE range, VALUE other)
  *   end
  *   a # => [2, 4, 6, 8, 10]
  *
- * A range can be both beginless and endless.  For literal beginless, endless
+ * A range can be both beginless and endless. For literal beginless, endless
  * ranges, at least the beginning or end of the range must be given as an
  * explicit nil value. It is recommended to use an explicit nil beginning and
- * implicit nil end, since that is what Ruby uses for Range#inspect:
+ * end, since that is what Ruby uses for Range#inspect:
  *
- *   (nil..)    # => (nil..)
- *   (..nil)    # => (nil..)
- *   (nil..nil) # => (nil..)
+ *   (nil..)    # => (nil..nil)
+ *   (..nil)    # => (nil..nil)
+ *   (nil..nil) # => (nil..nil)
  *
  * == Ranges and Other Classes
  *

@@ -108,13 +108,18 @@ ruby_version_is "3.3" do
       m.name.should == "fake_name_2"
     end
 
-    it "does not affect a name of a module nested into an anonymous module with a temporary name" do
-      m = Module.new
-      m::N = Module.new
-      m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+    ruby_bug "#21094", ""..."3.5" do
+      it "also updates a name of a nested module" do
+        m = Module.new
+        m::N = Module.new
+        m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
 
-      m.set_temporary_name("foo")
-      m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+        m.set_temporary_name "m"
+        m::N.name.should == "m::N"
+
+        m.set_temporary_name nil
+        m::N.name.should == nil
+      end
     end
 
     it "keeps temporary name when assigned in an anonymous module" do

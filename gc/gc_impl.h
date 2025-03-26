@@ -35,14 +35,14 @@ struct rb_gc_object_metadata_entry {
 // Bootup
 GC_IMPL_FN void *rb_gc_impl_objspace_alloc(void);
 GC_IMPL_FN void rb_gc_impl_objspace_init(void *objspace_ptr);
-GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
 GC_IMPL_FN void *rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor);
-GC_IMPL_FN void rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache);
 GC_IMPL_FN void rb_gc_impl_set_params(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_init(void);
 GC_IMPL_FN size_t *rb_gc_impl_heap_sizes(void *objspace_ptr);
 // Shutdown
 GC_IMPL_FN void rb_gc_impl_shutdown_free_objects(void *objspace_ptr);
+GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
+GC_IMPL_FN void rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache);
 // GC
 GC_IMPL_FN void rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
 GC_IMPL_FN bool rb_gc_impl_during_gc_p(void *objspace_ptr);

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "1.3.0"
+  spec.version = "1.4.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -86,14 +86,17 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/errors.rb",
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/pattern.rb",
+    "lib/prism/polyfill/append_as_bytes.rb",
     "lib/prism/polyfill/byteindex.rb",
     "lib/prism/polyfill/unpack1.rb",
+    "lib/prism/polyfill/warn.rb",
     "lib/prism/reflection.rb",
     "lib/prism/relocation.rb",
     "lib/prism/serialize.rb",
     "lib/prism/string_query.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
+    "lib/prism/translation/parser_current.rb",
     "lib/prism/translation/parser33.rb",
     "lib/prism/translation/parser34.rb",
     "lib/prism/translation/parser35.rb",
@@ -133,6 +136,7 @@ Gem::Specification.new do |spec|
     "sig/prism/node.rbs",
     "sig/prism/pack.rbs",
     "sig/prism/parse_result.rbs",
+    "sig/prism/parse_result/comments.rbs",
     "sig/prism/pattern.rbs",
     "sig/prism/reflection.rbs",
     "sig/prism/relocation.rbs",

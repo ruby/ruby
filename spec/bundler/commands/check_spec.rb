@@ -258,7 +258,7 @@ RSpec.describe "bundle check" do
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
 
-  it "fails when there's no lock file and frozen is set" do
+  it "fails when there's no lockfile and frozen is set" do
     install_gemfile <<-G
       source "https://gem.repo1"
       gem "foo"

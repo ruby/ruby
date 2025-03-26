@@ -2805,11 +2805,11 @@ rb_w32_strerror(int e)
     DWORD source = 0;
     char *p;
 
-    if (e < 0 || e > sys_nerr) {
-        if (e < 0)
-            e = GetLastError();
+    if (e < 0)
+        strlcpy(buffer, "Unknown Error", sizeof(buffer));
+    else if (e > sys_nerr) {
 #if WSAEWOULDBLOCK != EWOULDBLOCK
-        else if (e >= EADDRINUSE && e <= EWOULDBLOCK) {
+        if (e >= EADDRINUSE && e <= EWOULDBLOCK) {
             static int s = -1;
             int i;
             if (s < 0)

@@ -49,7 +49,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app(".bundle")).not_to exist
     end
 
-    it "creates lock files based on the Gemfile name" do
+    it "creates lockfiles based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
         gem "myrack", "1.0"
@@ -474,7 +474,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("my-private-gem 1.0")
     end
 
-    it "throws a warning if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with different requirements" do
+    it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with compatible requirements" do
       build_lib "my-gem", path: bundled_app do |s|
         s.add_development_dependency "rubocop", "~> 1.36.0"
       end
@@ -494,14 +494,32 @@ RSpec.describe "bundle install with gem sources" do
 
       bundle :install
 
-      expect(err).to include("A gemspec development dependency (rubocop, ~> 1.36.0) is being overridden by a Gemfile dependency (rubocop, >= 0).")
-      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
+      expect(err).to be_empty
 
-      # This is not the best behavior I believe, it would be better if both
-      # requirements are considered if they are compatible, and a version
-      # satisfying both is chosen. But not sure about changing it right now, so
-      # I went with a warning for the time being.
-      expect(the_bundle).to include_gems("rubocop 1.37.1")
+      expect(the_bundle).to include_gems("rubocop 1.36.0")
+    end
+
+    it "raises an error if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with incompatible requirements" do
+      build_lib "my-gem", path: bundled_app do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+        build_gem "rubocop", "1.37.1"
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gemspec
+
+        gem "rubocop", "~> 1.37.0", group: :development
+      G
+
+      bundle :install, raise_on_error: false
+
+      expect(err).to include("The rubocop dependency has conflicting requirements in Gemfile (~> 1.37.0) and gemspec (~> 1.36.0)")
     end
 
     it "includes the gem without warning if two gemspecs add it with the same requirement" do
@@ -588,35 +606,6 @@ RSpec.describe "bundle install with gem sources" do
       bundle :install, raise_on_error: false
 
       expect(err).to include("Two gemspec development dependencies have conflicting requirements on the same gem: rubocop (~> 1.36.0) and rubocop (~> 2.0). Bundler cannot continue.")
-    end
-
-    it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do
-      build_lib "my-gem", path: bundled_app do |s|
-        s.add_development_dependency "rails", ">= 5"
-      end
-
-      build_repo4 do
-        build_gem "rails", "7.0.8"
-      end
-
-      gemfile <<~G
-        source "https://gem.repo4"
-
-        gem "rails", "~> 7.0.8"
-
-        gemspec
-      G
-
-      bundle :install
-
-      expect(err).to include("A gemspec development dependency (rails, >= 5) is being overridden by a Gemfile dependency (rails, ~> 7.0.8).")
-      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
-
-      # This is not the best behavior I believe, it would be better if both
-      # requirements are considered if they are compatible, and a version
-      # satisfying both is chosen. But not sure about changing it right now, so
-      # I went with a warning for the time being.
-      expect(the_bundle).to include_gems("rails 7.0.8")
     end
 
     it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do
@@ -1368,7 +1357,7 @@ RSpec.describe "bundle install with gem sources" do
     it "adds the current platform to the lockfile" do
       bundle "install --verbose"
 
-      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+      expect(out).to include("re-resolving dependencies because your lockfile is missing the current platform")
       expect(out).not_to include("you are adding a new platform to your lockfile")
 
       expect(lockfile).to eq <<~L

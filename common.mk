@@ -20,7 +20,7 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 enable_shared = $(ENABLE_SHARED:no=)
 
-UNICODE_VERSION = 15.0.0
+UNICODE_VERSION = 15.1.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
 UNICODE_EMOJI_VERSION_1 = $(UNICODE_EMOJI_VERSION_0:.0///=)
 UNICODE_EMOJI_VERSION = $(UNICODE_EMOJI_VERSION_1:///=)
@@ -1682,7 +1682,7 @@ yes-test-bundler-parallel: $(PREPARE_BUNDLER)
 		-I$(srcdir)/spec/bundler \
 		-e "ruby = ENV['RUBY']" \
 		-e "ARGV[-1] = File.expand_path(ARGV[-1])" \
-		-e "ENV['PARALLEL_TESTS_EXECUTABLE'] = ruby + ARGV.shift" \
+		-e "ENV['RSPEC_EXECUTABLE'] = ruby + ARGV.shift" \
 		-e "load ARGV.shift" \
 		" -C $(srcdir) -Ispec/bundler -Ispec/lib .bundle/bin/rspec -r spec_helper" \
 		$(srcdir)/spec/bin/parallel_rspec $(RSPECOPTS) \

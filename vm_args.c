@@ -1177,7 +1177,8 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
 
     *adjusted_ci = VM_CI_ON_STACK(
             site_mid,
-            ((caller_flag & ~VM_CALL_ARGS_SIMPLE) | (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
+            ((caller_flag & ~(VM_CALL_ARGS_SIMPLE | VM_CALL_FCALL)) |
+             (site_flag & (VM_CALL_FCALL | VM_CALL_FORWARDING))),
             site_argc + caller_argc,
             kw
             );

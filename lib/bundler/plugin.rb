@@ -195,7 +195,7 @@ module Bundler
       @sources[name]
     end
 
-    # @param [Hash] The options that are present in the lock file
+    # @param [Hash] The options that are present in the lockfile
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
     def from_lock(locked_opts)

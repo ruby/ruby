@@ -13,6 +13,7 @@ module Prism
 
     JAVA_BACKEND = ENV["PRISM_JAVA_BACKEND"] || "truffleruby"
     JAVA_STRING_TYPE = JAVA_BACKEND == "jruby" ? "org.jruby.RubySymbol" : "String"
+    INCLUDE_NODE_ID = !SERIALIZE_ONLY_SEMANTICS_FIELDS || JAVA_BACKEND == "jruby"
 
     COMMON_FLAGS_COUNT = 2
 

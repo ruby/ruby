@@ -2757,7 +2757,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %token <num>  tREGEXP_END
 %token <num>  tDUMNY_END     "dummy end"
 
-%type <node> singleton strings string string1 xstring regexp
+%type <node> singleton singleton_expr strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
@@ -2782,7 +2782,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
 %type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
-%type <node_args> block_param opt_block_param block_param_def
+%type <node_args> block_param opt_block_param_def block_param_def opt_block_param
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
 %type <locations_lambda_body> lambda_body
@@ -2920,6 +2920,28 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     /*% ripper: assign!($:1, $:4) %*/
                     }
                 ;
+
+%rule args_tail_basic(value) <node_args>
+                : f_kwarg(value) ',' f_kwrest opt_f_block_arg
+                    {
+                        $$ = new_args_tail(p, $1, $3, $4, &@3);
+                    /*% ripper: [$:1, $:3, $:4] %*/
+                    }
+                | f_kwarg(value) opt_f_block_arg
+                    {
+                        $$ = new_args_tail(p, $1, 0, $2, &@1);
+                    /*% ripper: [$:1, Qnil, $:2] %*/
+                    }
+                | f_any_kwrest opt_f_block_arg
+                    {
+                        $$ = new_args_tail(p, 0, $1, $2, &@1);
+                    /*% ripper: [Qnil, $:1, $:2] %*/
+                    }
+                | f_block_arg
+                    {
+                        $$ = new_args_tail(p, 0, 0, $1, &@1);
+                    /*% ripper: [Qnil, Qnil, $:1] %*/
+                    }
 
 %rule def_endless_method(bodystmt) <node>
                 : defn_head[head] f_opt_paren_args[args] '=' bodystmt
@@ -3717,7 +3739,7 @@ lhs		: user_or_keyword_variable
                         $$ = aryset(p, $1, $3, &@$);
                     /*% ripper: aref_field!($:1, $:3) %*/
                     }
-                | primary_value call_op tIDENTIFIER
+                | primary_value call_op ident_or_const
                     {
                         $$ = attrset(p, $1, $2, $3, &@$);
                     /*% ripper: field!($:1, $:2, $:3) %*/
@@ -3725,11 +3747,6 @@ lhs		: user_or_keyword_variable
                 | primary_value tCOLON2 tIDENTIFIER
                     {
                         $$ = attrset(p, $1, idCOLON2, $3, &@$);
-                    /*% ripper: field!($:1, $:2, $:3) %*/
-                    }
-                | primary_value call_op tCONSTANT
-                    {
-                        $$ = attrset(p, $1, $2, $3, &@$);
                     /*% ripper: field!($:1, $:2, $:3) %*/
                     }
                 | primary_value tCOLON2 tCONSTANT
@@ -4932,26 +4949,7 @@ f_any_kwrest	: f_kwrest
 
 f_eq		: {p->ctxt.in_argdef = 0;} '=';
 
-block_args_tail	: f_kwarg(primary_value) ',' f_kwrest opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, $1, $3, $4, &@3);
-                    /*% ripper: [$:1, $:3, $:4] %*/
-                    }
-                | f_kwarg(primary_value) opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, $1, 0, $2, &@1);
-                    /*% ripper: [$:1, Qnil, $:2] %*/
-                    }
-                | f_any_kwrest opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, 0, $1, $2, &@1);
-                    /*% ripper: [Qnil, $:1, $:2] %*/
-                    }
-                | f_block_arg
-                    {
-                        $$ = new_args_tail(p, 0, 0, $1, &@1);
-                    /*% ripper: [Qnil, Qnil, $:1] %*/
-                    }
+block_args_tail	: args_tail_basic(primary_value)
                 ;
 
 excessed_comma	: ','
@@ -5040,21 +5038,14 @@ block_param	: f_arg ',' f_optarg(primary_value) ',' f_rest_arg opt_args_tail(blo
                     }
                 ;
 
-opt_block_param	: none
-                | block_param_def
-                    {
-                        p->command_start = TRUE;
-                    }
-                ;
+opt_block_param_def	: none
+                    | block_param_def
+                        {
+                            p->command_start = TRUE;
+                        }
+                    ;
 
-block_param_def	: '|' opt_bv_decl '|'
-                    {
-                        p->max_numparam = ORDINAL_PARAM;
-                        p->ctxt.in_argdef = 0;
-                        $$ = 0;
-                    /*% ripper: block_var!(params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil), $:2) %*/
-                    }
-                | '|' block_param opt_bv_decl '|'
+block_param_def	: '|' opt_block_param opt_bv_decl '|'
                     {
                         p->max_numparam = ORDINAL_PARAM;
                         p->ctxt.in_argdef = 0;
@@ -5063,6 +5054,13 @@ block_param_def	: '|' opt_bv_decl '|'
                     }
                 ;
 
+opt_block_param	: /* none */
+                    {
+                        $$ = 0;
+                    /*% ripper: params!(Qnil,Qnil,Qnil,Qnil,Qnil,Qnil,Qnil) %*/
+                    }
+                | block_param
+                ;
 
 opt_bv_decl	: '\n'?
                     {
@@ -5300,7 +5298,7 @@ brace_block	: '{' brace_body '}'
 
 brace_body	: {$$ = dyna_push(p);}[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] compstmt(stmts)
+                  opt_block_param_def[args] compstmt(stmts)
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
@@ -5320,7 +5318,7 @@ do_body 	:   {
                         CMDARG_PUSH(0);
                     }[dyna]<vars>
                   max_numparam numparam it_id allow_exits
-                  opt_block_param[args] bodystmt
+                  opt_block_param_def[args] bodystmt
                     {
                         int max_numparam = p->max_numparam;
                         ID it_id = p->it_id;
@@ -6295,26 +6293,7 @@ f_arglist	: f_paren_args
                     }
                 ;
 
-args_tail	: f_kwarg(arg_value) ',' f_kwrest opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, $1, $3, $4, &@3);
-                    /*% ripper: [$:1, $:3, $:4] %*/
-                    }
-                | f_kwarg(arg_value) opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, $1, 0, $2, &@1);
-                    /*% ripper: [$:1, Qnil, $:2] %*/
-                    }
-                | f_any_kwrest opt_f_block_arg
-                    {
-                        $$ = new_args_tail(p, 0, $1, $2, &@1);
-                    /*% ripper: [Qnil, $:1, $:2] %*/
-                    }
-                | f_block_arg
-                    {
-                        $$ = new_args_tail(p, 0, 0, $1, &@1);
-                    /*% ripper: [Qnil, Qnil, $:1] %*/
-                    }
+args_tail	: args_tail_basic(arg_value)
                 | args_forward
                     {
                         ID fwd = $args_forward;
@@ -6602,16 +6581,10 @@ opt_f_block_arg	: ',' f_block_arg
                 | none
                 ;
 
-singleton	: value_expr(var_ref)
-                | '('
+
+singleton	: value_expr(singleton_expr)
                     {
-                        SET_LEX_STATE(EXPR_BEG);
-                        p->ctxt.in_argdef = 0;
-                    }
-                  expr rparen
-                    {
-                        p->ctxt.in_argdef = 1;
-                        NODE *expr = last_expr_node($3);
+                        NODE *expr = last_expr_node($1);
                         switch (nd_type(expr)) {
                           case NODE_STR:
                           case NODE_DSTR:
@@ -6633,9 +6606,21 @@ singleton	: value_expr(var_ref)
                             yyerror1(&expr->nd_loc, "can't define singleton method for literals");
                             break;
                           default:
-                            value_expr($3);
                             break;
                         }
+                        $$ = $1;
+                    }
+                ;
+
+singleton_expr	: var_ref
+                | '('
+                    {
+                        SET_LEX_STATE(EXPR_BEG);
+                        p->ctxt.in_argdef = 0;
+                    }
+                  expr rparen
+                    {
+                        p->ctxt.in_argdef = 1;
                         $$ = $3;
                     /*% ripper: paren!($:3) %*/
                     }
@@ -9935,6 +9920,7 @@ parse_qmark(struct parser_params *p, int space_seen)
     rb_encoding *enc;
     register int c;
     rb_parser_string_t *lit;
+    const char *start = p->lex.pcur;
 
     if (IS_END()) {
         SET_LEX_STATE(EXPR_VALUE);
@@ -9959,13 +9945,11 @@ parse_qmark(struct parser_params *p, int space_seen)
     }
     newtok(p);
     enc = p->enc;
-    if (!parser_isascii(p)) {
-        if (tokadd_mbchar(p, c) == -1) return 0;
-    }
-    else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
-             !lex_eol_p(p) && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
+    int w = parser_precise_mbclen(p, start);
+    if (is_identchar(p, start, p->lex.pend, p->enc) &&
+        !(lex_eol_ptr_n_p(p, start, w) || !is_identchar(p, start + w, p->lex.pend, p->enc))) {
         if (space_seen) {
-            const char *start = p->lex.pcur - 1, *ptr = start;
+            const char *ptr = start;
             do {
                 int n = parser_precise_mbclen(p, ptr);
                 if (n < 0) return -1;
@@ -9993,7 +9977,7 @@ parse_qmark(struct parser_params *p, int space_seen)
         }
     }
     else {
-        tokadd(p, c);
+        if (tokadd_mbchar(p, c) == -1) return 0;
     }
     tokfix(p);
     lit = STR_NEW3(tok(p), toklen(p), enc, 0);

@@ -3207,40 +3207,91 @@ transform_keys_i(VALUE key, VALUE value, VALUE result)
 
 /*
  *  call-seq:
- *    transform_keys {|key| ... } -> new_hash
- *    transform_keys(hash2) -> new_hash
- *    transform_keys(hash2) {|other_key| ...} -> new_hash
+ *    transform_keys {|old_key| ... } -> new_hash
+ *    transform_keys(other_hash) -> new_hash
+ *    transform_keys(other_hash) {|old_key| ...} -> new_hash
  *    transform_keys -> new_enumerator
  *
- *  Returns a new +Hash+ object; each entry has:
- *  * A key provided by the block.
- *  * The value from +self+.
+ *  With an argument, a block, or both given,
+ *  derives a new hash +new_hash+ from +self+, the argument, and/or the block;
+ *  all, some, or none of its keys may be different from those in +self+.
  *
- *  An optional hash argument can be provided to map keys to new keys.
- *  Any key not given will be mapped using the provided block,
- *  or remain the same if no block is given.
+ *  With a block given and no argument,
+ *  +new_hash+ has keys determined only by the block.
  *
- *  Transform keys:
+ *  For each key/value pair <tt>old_key/value</tt> in +self+, calls the block with +old_key+;
+ *  the block's return value becomes +new_key+;
+ *  sets <tt>new_hash[new_key] = value</tt>;
+ *  a duplicate key overwrites:
+ *
  *      h = {foo: 0, bar: 1, baz: 2}
- *      h1 = h.transform_keys {|key| key.to_s }
- *      h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *      h.transform_keys {|old_key| old_key.to_s }
+ *      # => {"foo" => 0, "bar" => 1, "baz" => 2}
+ *      h.transform_keys {|old_key| 'xxx' }
+ *      # => {"xxx" => 2}
  *
- *      h.transform_keys(foo: :bar, bar: :foo)
- *      #=> {bar: 0, foo: 1, baz: 2}
+ *  With argument +other_hash+ given and no block,
+ *  +new_hash+ may have new keys provided by +other_hash+
+ *  and unchanged keys provided by +self+.
  *
- *      h.transform_keys(foo: :hello, &:to_s)
- *      #=> {hello: 0, "bar" => 1, "baz" => 2}
+ *  For each key/value pair <tt>old_key/old_value</tt> in +self+,
+ *  looks for key +old_key+ in +other_hash+:
  *
- *  Overwrites values for duplicate keys:
+ *  - If +old_key+ is found, its value <tt>other_hash[old_key]</tt> is taken as +new_key+;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ, bar: :BAR, foo: :FOO)
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *      h.transform_keys(baz: :FOO, bar: :FOO, foo: :FOO)
+ *      # => {FOO: 2}
+ *
+ *  - If +old_key+ is not found,
+ *    sets <tt>new_hash[old_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys({})
+ *      # => {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :foo)
+ *      # => {foo: 2, bar: 1}
+ *
+ *  Unused keys in +other_hash+ are ignored:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.transform_keys {|key| :bat }
- *    h1 # => {bat: 2}
+ *    h.transform_keys(bat: 3)
+ *    # => {foo: 0, bar: 1, baz: 2}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_keys # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:transform_keys>
- *    h1 = e.each { |key| key.to_s }
- *    h1 # => {"foo"=>0, "bar"=>1, "baz"=>2}
+ *  With both argument +other_hash+ and a block given,
+ *  +new_hash+ has new keys specified by +other_hash+ or by the block,
+ *  and unchanged keys provided by +self+.
+ *
+ *  For each pair +old_key+ and +value+ in +self+:
+ *
+ *  - If +other_hash+ has key +old_key+ (with value +new_key+),
+ *    does not call the block for that key;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ, bar: :BAR, foo: :FOO) {|key| fail 'Not called' }
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *
+ *  - If +other_hash+ does not have key +old_key+,
+ *    calls the block with +old_key+ and takes its return value as +new_key+;
+ *    sets <tt>new_hash[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys(baz: :BAZ) {|key| key.to_s.reverse }
+ *      # => {"oof" => 0, "rab" => 1, BAZ: 2}
+ *      h.transform_keys(baz: :BAZ) {|key| 'ook' }
+ *      # => {"ook" => 1, BAZ: 2}
+ *
+ *  With no argument and no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_keys(int argc, VALUE *argv, VALUE hash)
@@ -3274,13 +3325,97 @@ static int flatten_i(VALUE key, VALUE val, VALUE ary);
 
 /*
  *  call-seq:
- *    transform_keys! {|key| ... } -> self
- *    transform_keys!(hash2) -> self
- *    transform_keys!(hash2) {|other_key| ...} -> self
+ *    transform_keys! {|old_key| ... } -> self
+ *    transform_keys!(other_hash) -> self
+ *    transform_keys!(other_hash) {|old_key| ...} -> self
  *    transform_keys! -> new_enumerator
  *
- *  Same as Hash#transform_keys but modifies the receiver in place
- *  instead of returning a new hash.
+ *  With an argument, a block, or both given,
+ *  derives keys from the argument, the block, and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  With a block given and no argument,
+ *  derives keys only from the block;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each key/value pair <tt>old_key/value</tt> in +self+, calls the block with +old_key+;
+ *  the block's return value becomes +new_key+;
+ *  removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *  sets <tt>self[new_key] = value</tt>;
+ *  a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys! {|old_key| old_key.to_s }
+ *      # => {"foo" => 0, "bar" => 1, "baz" => 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys! {|old_key| 'xxx' }
+ *      # => {"xxx" => 2}
+ *
+ *  With argument +other_hash+ given and no block,
+ *  derives keys for +self+ from +other_hash+ and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each key/value pair <tt>old_key/old_value</tt> in +self+,
+ *  looks for key +old_key+ in +other_hash+:
+ *
+ *  - If +old_key+ is found, takes value <tt>other_hash[old_key]</tt> as +new_key+;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ, bar: :BAR, foo: :FOO)
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :FOO, bar: :FOO, foo: :FOO)
+ *      # => {FOO: 2}
+ *
+ *  - If +old_key+ is not found, does nothing:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!({})
+ *      # => {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :foo)
+ *      # => {foo: 2, bar: 1}
+ *
+ *  Unused keys in +other_hash+ are ignored:
+ *
+ *    h = {foo: 0, bar: 1, baz: 2}
+ *    h.transform_keys!(bat: 3)
+ *    # => {foo: 0, bar: 1, baz: 2}
+ *
+ *  With both argument +other_hash+ and a block given,
+ *  derives keys from +other_hash+, the block, and +self+;
+ *  all, some, or none of the keys in +self+ may be changed.
+ *
+ *  For each pair +old_key+ and +value+ in +self+:
+ *
+ *  - If +other_hash+ has key +old_key+ (with value +new_key+),
+ *    does not call the block for that key;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ, bar: :BAR, foo: :FOO) {|key| fail 'Not called' }
+ *      # => {FOO: 0, BAR: 1, BAZ: 2}
+ *
+ *  - If +other_hash+ does not have key +old_key+,
+ *    calls the block with +old_key+ and takes its return value as +new_key+;
+ *    removes the entry for +old_key+: <tt>self.delete(old_key)</tt>;
+ *    sets <tt>self[new_key] = value</tt>;
+ *    a duplicate key overwrites:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ) {|key| key.to_s.reverse }
+ *      # => {"oof" => 0, "rab" => 1, BAZ: 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.transform_keys!(baz: :BAZ) {|key| 'ook' }
+ *      # => {"ook" => 1, BAZ: 2}
+ *
+ *  With no argument and no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
@@ -3352,20 +3487,18 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
  *    transform_values {|value| ... } -> new_hash
  *    transform_values -> new_enumerator
  *
- *  Returns a new +Hash+ object; each entry has:
- *  * A key from +self+.
- *  * A value provided by the block.
+ *  With a block given, returns a new hash +new_hash+;
+ *  for each pair +key+/+value+ in +self+,
+ *  calls the block with +value+ and captures its return as +new_value+;
+ *  adds to +new_hash+ the entry +key+/+new_value+:
  *
- *  Transform values:
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h1 = h.transform_values {|value| value * 100}
  *    h1 # => {foo: 0, bar: 100, baz: 200}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_values # => #<Enumerator: {foo: 0, bar: 1, baz: 2}:transform_values>
- *    h1 = e.each { |value| value * 100}
- *    h1 # => {foo: 0, bar: 100, baz: 200}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_values(VALUE hash)
@@ -3386,18 +3519,24 @@ rb_hash_transform_values(VALUE hash)
 
 /*
  *  call-seq:
- *    transform_values! {|value| ... } -> self
+ *    transform_values! {|old_value| ... } -> self
  *    transform_values! -> new_enumerator
  *
- *  Returns +self+, whose keys are unchanged, and whose values are determined by the given block.
+ *
+ *  With a block given, changes the values of +self+ as determined by the block;
+ *  returns +self+.
+ *
+ *  For each entry +key+/+old_value+ in +self+,
+ *  calls the block with +old_value+,
+ *  captures its return value as +new_value+,
+ *  and sets <tt>self[key] = new_value</tt>:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.transform_values! {|value| value * 100} # => {foo: 0, bar: 100, baz: 200}
  *
- *  Returns a new Enumerator if no block given:
- *    h = {foo: 0, bar: 1, baz: 2}
- *    e = h.transform_values! # => #<Enumerator: {foo: 0, bar: 100, baz: 200}:transform_values!>
- *    h1 = e.each {|value| value * 100}
- *    h1 # => {foo: 0, bar: 100, baz: 200}
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Transforming Keys and Values}[rdoc-ref:Hash@Methods+for+Transforming+Keys+and+Values].
  */
 static VALUE
 rb_hash_transform_values_bang(VALUE hash)
@@ -3546,6 +3685,8 @@ rb_hash_inspect(VALUE hash)
  *    to_hash -> self
  *
  *  Returns +self+.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 static VALUE
 rb_hash_to_hash(VALUE hash)
@@ -3588,21 +3729,22 @@ rb_hash_to_h_block(VALUE hash)
 
 /*
  *  call-seq:
- *    to_h -> self or new_hash
  *    to_h {|key, value| ... } -> new_hash
+ *    to_h -> self or new_hash
  *
- *  For an instance of +Hash+, returns +self+.
+ *  With a block given, returns a new hash whose content is based on the block;
+ *  the block is called with each entry's key and value;
+ *  the block should return a 2-element array
+ *  containing the key and value to be included in the returned array:
  *
- *  For a subclass of +Hash+, returns a new +Hash+
- *  containing the content of +self+.
- *
- *  When a block is given, returns a new +Hash+ object
- *  whose content is based on the block;
- *  the block should return a 2-element Array object
- *  specifying the key-value pair to be included in the returned Array:
  *    h = {foo: 0, bar: 1, baz: 2}
- *    h1 = h.to_h {|key, value| [value, key] }
- *    h1 # => {0=>:foo, 1=>:bar, 2=>:baz}
+ *    h.to_h {|key, value| [value, key] }
+ *    # => {0 => :foo, 1 => :bar, 2 => :baz}
+ *
+ *  With no block given, returns +self+ if +self+ is an instance of +Hash+;
+ *  if +self+ is a subclass of +Hash+, returns a new hash containing the content of +self+.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 
 static VALUE
@@ -4370,7 +4512,7 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
  *    h = {foo: 0, bar: nil, baz: 2, bat: nil}
  *    h.compact # => {foo: 0, baz: 2}
  *
- * Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
+ *  Related: see {Methods for Deleting}[rdoc-ref:Hash@Methods+for+Deleting].
  */
 
 static VALUE
@@ -4817,12 +4959,15 @@ hash_proc_call(RB_BLOCK_CALL_FUNC_ARGLIST(key, hash))
  *    to_proc -> proc
  *
  *  Returns a Proc object that maps a key to its value:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    proc = h.to_proc
  *    proc.class # => Proc
  *    proc.call(:foo) # => 0
  *    proc.call(:bar) # => 1
  *    proc.call(:nosuch) # => nil
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Hash@Methods+for+Converting].
  */
 static VALUE
 rb_hash_to_proc(VALUE hash)

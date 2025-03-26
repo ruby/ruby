@@ -60,8 +60,8 @@ module Bundler
       end
 
       def eql?(other)
-        return unless other.class == self.class
-        expanded_original_path == other.expanded_original_path &&
+        [Gemspec, Path].include?(other.class) &&
+          expanded_original_path == other.expanded_original_path &&
           version == other.version
       end
 

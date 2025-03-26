@@ -59,7 +59,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       before { allow(subject).to receive(:default_gemfile).and_return(gemfile_path) }
 
-      it "returns the lock file path" do
+      it "returns the lockfile path" do
         expect(subject.default_lockfile).to eq(expected_lockfile_path)
       end
     end
