@@ -37,7 +37,7 @@ static ID i_json_creatable_p, i_json_create, i_create_id,
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_symbolize_names, sym_freeze,
              sym_create_additions, sym_create_id, sym_object_class, sym_array_class,
-             sym_decimal_class, sym_match_string;
+             sym_decimal_class, sym_match_string, sym_on_load;
 
 static int binary_encindex;
 static int utf8_encindex;
@@ -444,6 +444,7 @@ static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 }
 
 typedef struct JSON_ParserStruct {
+    VALUE on_load_proc;
     VALUE create_id;
     VALUE object_class;
     VALUE array_class;
@@ -879,7 +880,14 @@ static inline VALUE json_decode_string(JSON_ParserState *state, JSON_ParserConfi
     return string;
 }
 
-#define PUSH(result) rvalue_stack_push(state->stack, result, &state->stack_handle, &state->stack)
+static inline VALUE json_push_value(JSON_ParserState *state, JSON_ParserConfig *config, VALUE value)
+{
+    if (RB_UNLIKELY(config->on_load_proc)) {
+        value = rb_proc_call_with_block(config->on_load_proc, 1, &value, Qnil);
+    }
+    rvalue_stack_push(state->stack, value, &state->stack_handle, &state->stack);
+    return value;
+}
 
 static const bool string_scan[256] = {
     // ASCII Control Characters
@@ -906,7 +914,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
                 case '"': {
                     VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
                     state->cursor++;
-                    return PUSH(string);
+                    return json_push_value(state, config, string);
                 }
                 case '\\': {
                     state->cursor++;
@@ -940,7 +948,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
         case 'n':
             if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "null", 4) == 0)) {
                 state->cursor += 4;
-                return PUSH(Qnil);
+                return json_push_value(state, config, Qnil);
             }
 
             raise_parse_error("unexpected token at '%s'", state->cursor);
@@ -948,7 +956,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
         case 't':
             if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
                 state->cursor += 4;
-                return PUSH(Qtrue);
+                return json_push_value(state, config, Qtrue);
             }
 
             raise_parse_error("unexpected token at '%s'", state->cursor);
@@ -957,7 +965,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             // Note: memcmp with a small power of two compile to an integer comparison
             if ((state->end - state->cursor >= 5) && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
                 state->cursor += 5;
-                return PUSH(Qfalse);
+                return json_push_value(state, config, Qfalse);
             }
 
             raise_parse_error("unexpected token at '%s'", state->cursor);
@@ -966,7 +974,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             // Note: memcmp with a small power of two compile to an integer comparison
             if (config->allow_nan && (state->end - state->cursor >= 3) && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
                 state->cursor += 3;
-                return PUSH(CNaN);
+                return json_push_value(state, config, CNaN);
             }
 
             raise_parse_error("unexpected token at '%s'", state->cursor);
@@ -974,7 +982,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
         case 'I':
             if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
                 state->cursor += 8;
-                return PUSH(CInfinity);
+                return json_push_value(state, config, CInfinity);
             }
 
             raise_parse_error("unexpected token at '%s'", state->cursor);
@@ -984,7 +992,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             if ((state->end - state->cursor >= 9) && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
                 if (config->allow_nan) {
                     state->cursor += 9;
-                    return PUSH(CMinusInfinity);
+                    return json_push_value(state, config, CMinusInfinity);
                 } else {
                     raise_parse_error("unexpected token at '%s'", state->cursor);
                 }
@@ -1041,9 +1049,9 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             }
 
             if (integer) {
-                return PUSH(json_decode_integer(start, state->cursor));
+                return json_push_value(state, config, json_decode_integer(start, state->cursor));
             }
-            return PUSH(json_decode_float(config, start, state->cursor));
+            return json_push_value(state, config, json_decode_float(config, start, state->cursor));
         }
         case '"': {
             // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
@@ -1057,7 +1065,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
             if ((state->cursor < state->end) && (*state->cursor == ']')) {
                 state->cursor++;
-                return PUSH(json_decode_array(state, config, 0));
+                return json_push_value(state, config, json_decode_array(state, config, 0));
             } else {
                 state->current_nesting++;
                 if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
@@ -1076,7 +1084,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                         long count = state->stack->head - stack_head;
                         state->current_nesting--;
                         state->in_array--;
-                        return PUSH(json_decode_array(state, config, count));
+                        return json_push_value(state, config, json_decode_array(state, config, count));
                     }
 
                     if (*state->cursor == ',') {
@@ -1103,7 +1111,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
             if ((state->cursor < state->end) && (*state->cursor == '}')) {
                 state->cursor++;
-                return PUSH(json_decode_object(state, config, 0));
+                return json_push_value(state, config, json_decode_object(state, config, 0));
             } else {
                 state->current_nesting++;
                 if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
@@ -1132,7 +1140,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                         state->cursor++;
                         state->current_nesting--;
                         long count = state->stack->head - stack_head;
-                        return PUSH(json_decode_object(state, config, count));
+                        return json_push_value(state, config, json_decode_object(state, config, count));
                     }
 
                     if (*state->cursor == ',') {
@@ -1220,6 +1228,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_trailing_comma) { config->allow_trailing_comma = RTEST(val); }
     else if (key == sym_symbolize_names)      { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)               { config->freeze = RTEST(val); }
+    else if (key == sym_on_load)              { config->on_load_proc = RTEST(val) ? val : Qfalse; }
     else if (key == sym_create_id)            { config->create_id = RTEST(val) ? val : Qfalse; }
     else if (key == sym_object_class)         { config->object_class = RTEST(val) ? val : Qfalse; }
     else if (key == sym_array_class)          { config->array_class = RTEST(val) ? val : Qfalse; }
@@ -1396,6 +1405,7 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 static void JSON_ParserConfig_mark(void *ptr)
 {
     JSON_ParserConfig *config = ptr;
+    rb_gc_mark(config->on_load_proc);
     rb_gc_mark(config->create_id);
     rb_gc_mark(config->object_class);
     rb_gc_mark(config->array_class);
@@ -1468,6 +1478,7 @@ void Init_parser(void)
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
     sym_freeze = ID2SYM(rb_intern("freeze"));
+    sym_on_load = ID2SYM(rb_intern("on_load"));
     sym_create_additions = ID2SYM(rb_intern("create_additions"));
     sym_create_id = ID2SYM(rb_intern("create_id"));
     sym_object_class = ID2SYM(rb_intern("object_class"));

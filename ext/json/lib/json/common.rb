@@ -739,23 +739,13 @@ module JSON
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
-    result = parse(source, opts)
-    recurse_proc(result, &proc) if proc
-    result
-  end
 
-  # Recursively calls passed _Proc_ if the parsed data structure is an _Array_ or _Hash_
-  def recurse_proc(result, &proc) # :nodoc:
-    case result
-    when Array
-      result.each { |x| recurse_proc x, &proc }
-      proc.call result
-    when Hash
-      result.each { |x, y| recurse_proc x, &proc; recurse_proc y, &proc }
-      proc.call result
-    else
-      proc.call result
+    if proc
+      opts = opts.dup
+      opts[:on_load] = proc.to_proc
     end
+
+    parse(source, opts)
   end
 
   # Sets or returns the default options for the JSON.dump method.
