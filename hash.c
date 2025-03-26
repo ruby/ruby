@@ -4160,6 +4160,8 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    update(*other_hashes) -> self
  *    update(*other_hashes) { |key, old_value, new_value| ... } -> self
  *
+ *  Updates values and/or adds entries to +self+; returns +self+.
+ *
  *  Each argument +other_hash+ in +other_hashes+ must be a hash.
  *
  *  With no block given, for each successive entry +key+/+new_value+ in each successive +other_hash+:
