@@ -33,8 +33,19 @@ ruby_version_is '3.3' do
     end
 
     it "returns nil if the key is not found when no block is given" do
-      m = ObjectSpace::WeakMap.new
+      m = ObjectSpace::WeakKeyMap.new
       m.delete(Object.new).should == nil
+    end
+
+    it "returns nil when a key cannot be garbage collected" do
+      map = ObjectSpace::WeakKeyMap.new
+
+      map.delete(1).should == nil
+      map.delete(1.0).should == nil
+      map.delete(:a).should == nil
+      map.delete(true).should == nil
+      map.delete(false).should == nil
+      map.delete(nil).should == nil
     end
   end
 end

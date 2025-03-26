@@ -40,6 +40,14 @@ describe "Struct#deconstruct_keys" do
     s.deconstruct_keys([0, 1, 2]).should == {0 => 10, 1 => 20, 2 => 30}
     s.deconstruct_keys([0, 1]   ).should == {0 => 10, 1 => 20}
     s.deconstruct_keys([0]      ).should == {0 => 10}
+    s.deconstruct_keys([-1]     ).should == {-1 => 30}
+  end
+
+  it "support mixing attribute names and argument position numbers" do
+    struct = Struct.new(:x, :y)
+    s = struct.new(1, 2)
+
+    s.deconstruct_keys([0, :x]).should == {0 => 1, :x => 1}
   end
 
   it "returns an empty hash when there are more keys than attributes" do
@@ -57,11 +65,28 @@ describe "Struct#deconstruct_keys" do
     s.deconstruct_keys([:x, :a]).should == {x: 1}
   end
 
+  it "returns at first not existing argument position number" do
+    struct = Struct.new(:x, :y)
+    s = struct.new(1, 2)
+
+    s.deconstruct_keys([3, 0]).should == {}
+    s.deconstruct_keys([0, 3]).should == {0 => 1}
+  end
+
   it "accepts nil argument and return all the attributes" do
     struct = Struct.new(:x, :y)
     obj = struct.new(1, 2)
 
     obj.deconstruct_keys(nil).should == {x: 1, y: 2}
+  end
+
+  it "raises TypeError if index is not a String, a Symbol and not convertible to Integer " do
+    struct = Struct.new(:x, :y)
+    s = struct.new(1, 2)
+
+    -> {
+      s.deconstruct_keys([0, []])
+    }.should raise_error(TypeError, "no implicit conversion of Array into Integer")
   end
 
   it "raise TypeError if passed anything except nil or array" do

@@ -24,15 +24,15 @@ describe :complex_rect, shared: true do
   end
 
   it "returns the real part of self as the first element" do
-   @numbers.each do |number|
-     number.send(@method).first.should == number.real
-   end
+    @numbers.each do |number|
+      number.send(@method).first.should == number.real
+    end
   end
 
   it "returns the imaginary part of self as the last element" do
-     @numbers.each do |number|
-       number.send(@method).last.should == number.imaginary
-     end
+    @numbers.each do |number|
+      number.send(@method).last.should == number.imaginary
+    end
   end
 
   it "raises an ArgumentError if given any arguments" do

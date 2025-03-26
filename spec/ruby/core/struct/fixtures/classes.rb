@@ -29,4 +29,6 @@ module StructClasses
       super
     end
   end
+
+  class StructSubclass < Struct; end
 end

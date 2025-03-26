@@ -137,27 +137,25 @@ ruby_version_is "3.2" do
   end
 end
 
-ruby_version_is "3.1" do
-  describe "delegation with def(&)" do
-    it "delegates an anonymous block parameter" do
-      a = Class.new(DelegationSpecs::Target)
-      a.class_eval(<<-RUBY)
-      def delegate(&)
-        target(&)
-      end
-      RUBY
-
-      block = proc {}
-      a.new.delegate(&block).should == [[], {}, block]
+describe "delegation with def(&)" do
+  it "delegates an anonymous block parameter" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+    def delegate(&)
+      target(&)
     end
+    RUBY
 
-    ruby_version_is "3.3" do
-      context "within a block that accepts anonymous block within a method that accepts anonymous block" do
-        it "does not allow delegating a block" do
-          -> {
-            eval "def m(&); proc { |&| n(&) } end"
-          }.should raise_error(SyntaxError, /anonymous block parameter is also used within block/)
-        end
+    block = proc {}
+    a.new.delegate(&block).should == [[], {}, block]
+  end
+
+  ruby_version_is "3.3" do
+    context "within a block that accepts anonymous block within a method that accepts anonymous block" do
+      it "does not allow delegating a block" do
+        -> {
+          eval "def m(&); proc { |&| n(&) } end"
+        }.should raise_error(SyntaxError, /anonymous block parameter is also used within block/)
       end
     end
   end

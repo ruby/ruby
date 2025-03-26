@@ -72,39 +72,60 @@ describe "Literal (A::X) constant resolution" do
 
       ConstantSpecs::ModuleA::CS_CONST101 = :const101_5
       ConstantSpecs::ModuleA::CS_CONST101.should == :const101_5
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST101)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST101)
+      ConstantSpecs::ContainerB.send(:remove_const, :CS_CONST101)
+      ConstantSpecs::ContainerB::ChildB.send(:remove_const, :CS_CONST101)
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST101)
     end
 
     it "searches a module included in the immediate class before the superclass" do
       ConstantSpecs::ParentB::CS_CONST102 = :const102_1
       ConstantSpecs::ModuleF::CS_CONST102 = :const102_2
       ConstantSpecs::ContainerB::ChildB::CS_CONST102.should == :const102_2
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST102)
+      ConstantSpecs::ModuleF.send(:remove_const, :CS_CONST102)
     end
 
     it "searches the superclass before a module included in the superclass" do
       ConstantSpecs::ModuleE::CS_CONST103 = :const103_1
       ConstantSpecs::ParentB::CS_CONST103 = :const103_2
       ConstantSpecs::ContainerB::ChildB::CS_CONST103.should == :const103_2
+    ensure
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST103)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST103)
     end
 
     it "searches a module included in the superclass" do
       ConstantSpecs::ModuleA::CS_CONST104 = :const104_1
       ConstantSpecs::ModuleE::CS_CONST104 = :const104_2
       ConstantSpecs::ContainerB::ChildB::CS_CONST104.should == :const104_2
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST104)
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST104)
     end
 
     it "searches the superclass chain" do
       ConstantSpecs::ModuleA::CS_CONST105 = :const105
       ConstantSpecs::ContainerB::ChildB::CS_CONST105.should == :const105
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST105)
     end
 
     it "searches Object if no class or module qualifier is given" do
       CS_CONST106 = :const106
       CS_CONST106.should == :const106
+    ensure
+      Object.send(:remove_const, :CS_CONST106)
     end
 
     it "searches Object if a toplevel qualifier (::X) is given" do
       ::CS_CONST107 = :const107
       ::CS_CONST107.should == :const107
+    ensure
+      Object.send(:remove_const, :CS_CONST107)
     end
 
     it "does not search the singleton class of the class or module" do
@@ -123,6 +144,9 @@ describe "Literal (A::X) constant resolution" do
       end
 
       -> { ConstantSpecs::CS_CONST108 }.should raise_error(NameError)
+    ensure
+      ConstantSpecs::ContainerB::ChildB.singleton_class.send(:remove_const, :CS_CONST108)
+      ConstantSpecs.singleton_class.send(:remove_const, :CS_CONST108)
     end
 
     it "returns the updated value when a constant is reassigned" do
@@ -133,6 +157,8 @@ describe "Literal (A::X) constant resolution" do
         ConstantSpecs::ClassB::CS_CONST109 = :const109_2
       }.should complain(/already initialized constant/)
       ConstantSpecs::ClassB::CS_CONST109.should == :const109_2
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST109)
     end
 
     ruby_version_is "3.2" do
@@ -292,6 +318,12 @@ describe "Constant resolution within methods" do
       ConstantSpecs::ClassB.new.const201.should == :const201_2
       ConstantSpecs::ParentB.new.const201.should == :const201_3
       ConstantSpecs::ContainerB::ChildB.new.const201.should == :const201_5
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST201)
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST201)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST201)
+      ConstantSpecs::ContainerB.send(:remove_const, :CS_CONST201)
+      ConstantSpecs::ContainerB::ChildB.send(:remove_const, :CS_CONST201)
     end
 
     it "searches a module included in the immediate class before the superclass" do
@@ -300,6 +332,9 @@ describe "Constant resolution within methods" do
 
       ConstantSpecs::ContainerB::ChildB.const202.should == :const202_1
       ConstantSpecs::ContainerB::ChildB.new.const202.should == :const202_1
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST202)
+      ConstantSpecs::ContainerB::ChildB.send(:remove_const, :CS_CONST202)
     end
 
     it "searches the superclass before a module included in the superclass" do
@@ -308,6 +343,9 @@ describe "Constant resolution within methods" do
 
       ConstantSpecs::ContainerB::ChildB.const203.should == :const203_1
       ConstantSpecs::ContainerB::ChildB.new.const203.should == :const203_1
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST203)
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST203)
     end
 
     it "searches a module included in the superclass" do
@@ -316,6 +354,9 @@ describe "Constant resolution within methods" do
 
       ConstantSpecs::ContainerB::ChildB.const204.should == :const204_1
       ConstantSpecs::ContainerB::ChildB.new.const204.should == :const204_1
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST204)
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST204)
     end
 
     it "searches the superclass chain" do
@@ -323,6 +364,8 @@ describe "Constant resolution within methods" do
 
       ConstantSpecs::ContainerB::ChildB.const205.should == :const205
       ConstantSpecs::ContainerB::ChildB.new.const205.should == :const205
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST205)
     end
 
     it "searches the lexical scope of the method not the receiver's immediate class" do
@@ -334,6 +377,9 @@ describe "Constant resolution within methods" do
       end
 
       ConstantSpecs::ContainerB::ChildB.const206.should == :const206_1
+    ensure
+      ConstantSpecs::ContainerB::ChildB.send(:remove_const, :CS_CONST206)
+      ConstantSpecs::ContainerB::ChildB.singleton_class.send(:remove_const, :CS_CONST206)
     end
 
     it "searches the lexical scope of a singleton method" do
@@ -341,12 +387,17 @@ describe "Constant resolution within methods" do
       ConstantSpecs::ClassB::CS_CONST207 = :const207_2
 
       ConstantSpecs::CS_CONST208.const207.should == :const207_1
+    ensure
+      ConstantSpecs.send(:remove_const, :CS_CONST207)
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST207)
     end
 
     it "does not search the lexical scope of the caller" do
       ConstantSpecs::ClassB::CS_CONST209 = :const209
 
       -> { ConstantSpecs::ClassB.const209 }.should raise_error(NameError)
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST209)
     end
 
     it "searches the lexical scope of a block" do
@@ -354,6 +405,9 @@ describe "Constant resolution within methods" do
       ConstantSpecs::ParentB::CS_CONST210 = :const210_2
 
       ConstantSpecs::ClassB.const210.should == :const210_1
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST210)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST210)
     end
 
     it "searches Object as a lexical scope only if Object is explicitly opened" do
@@ -364,6 +418,11 @@ describe "Constant resolution within methods" do
       Object::CS_CONST212 = :const212_2
       ConstantSpecs::ParentB::CS_CONST212 = :const212_1
       ConstantSpecs::ContainerB::ChildB.const212.should == :const212_1
+    ensure
+      Object.send(:remove_const, :CS_CONST211)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST211)
+      Object.send(:remove_const, :CS_CONST212)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST212)
     end
 
     it "returns the updated value when a constant is reassigned" do
@@ -376,6 +435,8 @@ describe "Constant resolution within methods" do
       }.should complain(/already initialized constant/)
       ConstantSpecs::ContainerB::ChildB.const213.should == :const213_2
       ConstantSpecs::ContainerB::ChildB.new.const213.should == :const213_2
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST213)
     end
 
     it "does not search the lexical scope of qualifying modules" do
@@ -384,6 +445,8 @@ describe "Constant resolution within methods" do
       -> do
         ConstantSpecs::ContainerB::ChildB.const214
       end.should raise_error(NameError)
+    ensure
+      ConstantSpecs::ContainerB.send(:remove_const, :CS_CONST214)
     end
   end
 
@@ -484,6 +547,10 @@ describe "Module#private_constant marked constants" do
 
         PrivateModule::X.should == 1
       end
+    ensure
+      module ::ConstantVisibility::ModuleContainer
+        PrivateModule.send(:remove_const, :X)
+      end
     end
 
     it "can be reopened as a class where constant is not private" do
@@ -493,6 +560,10 @@ describe "Module#private_constant marked constants" do
         end
 
         PrivateClass::X.should == 1
+      end
+    ensure
+      module ::ConstantVisibility::ModuleContainer
+        PrivateClass.send(:remove_const, :X)
       end
     end
 
@@ -565,6 +636,10 @@ describe "Module#private_constant marked constants" do
 
         PrivateModule::X.should == 1
       end
+    ensure
+      class ::ConstantVisibility::ClassContainer
+        PrivateModule.send(:remove_const, :X)
+      end
     end
 
     it "can be reopened as a class where constant is not private" do
@@ -574,6 +649,10 @@ describe "Module#private_constant marked constants" do
         end
 
         PrivateClass::X.should == 1
+      end
+    ensure
+      class ::ConstantVisibility::ClassContainer
+        PrivateClass.send(:remove_const, :X)
       end
     end
 

@@ -1,5 +1,4 @@
 require_relative 'spec_helper'
-require 'fiber'
 
 load_extension('fiber')
 
@@ -49,41 +48,39 @@ describe "C-API Fiber function" do
     end
   end
 
-  ruby_version_is '3.1' do
-    describe "rb_fiber_raise" do
-      it "raises an exception on the resumed fiber" do
-        fiber = Fiber.new do
-          begin
-            Fiber.yield
-          rescue => error
-            error
-          end
+  describe "rb_fiber_raise" do
+    it "raises an exception on the resumed fiber" do
+      fiber = Fiber.new do
+        begin
+          Fiber.yield
+        rescue => error
+          error
         end
-
-        fiber.resume
-
-        result = @s.rb_fiber_raise(fiber, "Boom!")
-        result.should be_an_instance_of(RuntimeError)
-        result.message.should == "Boom!"
       end
 
-      it "raises an exception on the transferred fiber" do
-        main = Fiber.current
+      fiber.resume
 
-        fiber = Fiber.new do
-          begin
-            main.transfer
-          rescue => error
-            error
-          end
+      result = @s.rb_fiber_raise(fiber, "Boom!")
+      result.should be_an_instance_of(RuntimeError)
+      result.message.should == "Boom!"
+    end
+
+    it "raises an exception on the transferred fiber" do
+      main = Fiber.current
+
+      fiber = Fiber.new do
+        begin
+          main.transfer
+        rescue => error
+          error
         end
-
-        fiber.transfer
-
-        result = @s.rb_fiber_raise(fiber, "Boom!")
-        result.should be_an_instance_of(RuntimeError)
-        result.message.should == "Boom!"
       end
+
+      fiber.transfer
+
+      result = @s.rb_fiber_raise(fiber, "Boom!")
+      result.should be_an_instance_of(RuntimeError)
+      result.message.should == "Boom!"
     end
   end
 end

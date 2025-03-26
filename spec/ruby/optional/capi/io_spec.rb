@@ -262,40 +262,38 @@ describe "C-API IO function" do
     end
   end
 
-  ruby_version_is "3.1" do
-    describe "rb_io_maybe_wait_writable" do
-      it "returns mask for events if operation was interrupted" do
-        @o.rb_io_maybe_wait_writable(Errno::EINTR::Errno, @w_io, nil).should == IO::WRITABLE
+  describe "rb_io_maybe_wait_writable" do
+    it "returns mask for events if operation was interrupted" do
+      @o.rb_io_maybe_wait_writable(Errno::EINTR::Errno, @w_io, nil).should == IO::WRITABLE
+    end
+
+    it "returns 0 if there is no error condition" do
+      @o.rb_io_maybe_wait_writable(0, @w_io, nil).should == 0
+    end
+
+    it "raises an IOError if the IO is closed" do
+      @w_io.close
+      -> { @o.rb_io_maybe_wait_writable(0, @w_io, nil) }.should raise_error(IOError, "closed stream")
+    end
+
+    it "raises an IOError if the IO is not initialized" do
+      -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should raise_error(IOError, "uninitialized stream")
+    end
+
+    it "can be interrupted" do
+      IOSpec.exhaust_write_buffer(@w_io)
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      t = Thread.new do
+        @o.rb_io_maybe_wait_writable(0, @w_io, 10)
       end
 
-      it "returns 0 if there is no error condition" do
-        @o.rb_io_maybe_wait_writable(0, @w_io, nil).should == 0
-      end
+      Thread.pass until t.stop?
+      t.kill
+      t.join
 
-      it "raises an IOError if the IO is closed" do
-        @w_io.close
-        -> { @o.rb_io_maybe_wait_writable(0, @w_io, nil) }.should raise_error(IOError, "closed stream")
-      end
-
-      it "raises an IOError if the IO is not initialized" do
-        -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should raise_error(IOError, "uninitialized stream")
-      end
-
-      it "can be interrupted" do
-        IOSpec.exhaust_write_buffer(@w_io)
-        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        t = Thread.new do
-          @o.rb_io_maybe_wait_writable(0, @w_io, 10)
-        end
-
-        Thread.pass until t.stop?
-        t.kill
-        t.join
-
-        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        (finish - start).should < 9
-      end
+      finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (finish - start).should < 9
     end
   end
 
@@ -349,52 +347,50 @@ describe "C-API IO function" do
       end
     end
 
-    ruby_version_is "3.1" do
-      describe "rb_io_maybe_wait_readable" do
-        it "returns mask for events if operation was interrupted" do
-          @o.rb_io_maybe_wait_readable(Errno::EINTR::Errno, @r_io, nil, false).should == IO::READABLE
+    describe "rb_io_maybe_wait_readable" do
+      it "returns mask for events if operation was interrupted" do
+        @o.rb_io_maybe_wait_readable(Errno::EINTR::Errno, @r_io, nil, false).should == IO::READABLE
+      end
+
+      it "returns 0 if there is no error condition" do
+        @o.rb_io_maybe_wait_readable(0, @r_io, nil, false).should == 0
+      end
+
+      it "blocks until the io is readable and returns events that actually occurred" do
+        @o.instance_variable_set :@write_data, false
+        thr = Thread.new do
+          Thread.pass until @o.instance_variable_get(:@write_data)
+          @w_io.write "rb_io_wait_readable"
         end
 
-        it "returns 0 if there is no error condition" do
-          @o.rb_io_maybe_wait_readable(0, @r_io, nil, false).should == 0
+        @o.rb_io_maybe_wait_readable(Errno::EAGAIN::Errno, @r_io, IO::READABLE, true).should == IO::READABLE
+        @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
+
+        thr.join
+      end
+
+      it "can be interrupted" do
+        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+        t = Thread.new do
+          @o.rb_io_maybe_wait_readable(0, @r_io, 10, false)
         end
 
-        it "blocks until the io is readable and returns events that actually occurred" do
-          @o.instance_variable_set :@write_data, false
-          thr = Thread.new do
-            Thread.pass until @o.instance_variable_get(:@write_data)
-            @w_io.write "rb_io_wait_readable"
-          end
+        Thread.pass until t.stop?
+        t.kill
+        t.join
 
-          @o.rb_io_maybe_wait_readable(Errno::EAGAIN::Errno, @r_io, IO::READABLE, true).should == IO::READABLE
-          @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
+        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        (finish - start).should < 9
+      end
 
-          thr.join
-        end
+      it "raises an IOError if the IO is closed" do
+        @r_io.close
+        -> { @o.rb_io_maybe_wait_readable(0, @r_io, nil, false) }.should raise_error(IOError, "closed stream")
+      end
 
-        it "can be interrupted" do
-          start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-          t = Thread.new do
-            @o.rb_io_maybe_wait_readable(0, @r_io, 10, false)
-          end
-
-          Thread.pass until t.stop?
-          t.kill
-          t.join
-
-          finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-          (finish - start).should < 9
-        end
-
-        it "raises an IOError if the IO is closed" do
-          @r_io.close
-          -> { @o.rb_io_maybe_wait_readable(0, @r_io, nil, false) }.should raise_error(IOError, "closed stream")
-        end
-
-        it "raises an IOError if the IO is not initialized" do
-          -> { @o.rb_io_maybe_wait_readable(0, IO.allocate, nil, false) }.should raise_error(IOError, "uninitialized stream")
-        end
+      it "raises an IOError if the IO is not initialized" do
+        -> { @o.rb_io_maybe_wait_readable(0, IO.allocate, nil, false) }.should raise_error(IOError, "uninitialized stream")
       end
     end
   end
@@ -437,66 +433,64 @@ describe "C-API IO function" do
     end
   end
 
-  ruby_version_is "3.1" do
-    describe "rb_io_maybe_wait" do
-      it "waits til an fd is ready for reading" do
-        start = false
-        thr = Thread.new do
-          start = true
-          sleep 0.05
-          @w_io.write "rb_io_maybe_wait"
-        end
-
-        Thread.pass until start
-
-        @o.rb_io_maybe_wait(Errno::EAGAIN::Errno, @r_io, IO::READABLE, nil).should == IO::READABLE
-
-        thr.join
+  describe "rb_io_maybe_wait" do
+    it "waits til an fd is ready for reading" do
+      start = false
+      thr = Thread.new do
+        start = true
+        sleep 0.05
+        @w_io.write "rb_io_maybe_wait"
       end
 
-      it "returns mask for events if operation was interrupted" do
-        @o.rb_io_maybe_wait(Errno::EINTR::Errno, @w_io, IO::WRITABLE, nil).should == IO::WRITABLE
+      Thread.pass until start
+
+      @o.rb_io_maybe_wait(Errno::EAGAIN::Errno, @r_io, IO::READABLE, nil).should == IO::READABLE
+
+      thr.join
+    end
+
+    it "returns mask for events if operation was interrupted" do
+      @o.rb_io_maybe_wait(Errno::EINTR::Errno, @w_io, IO::WRITABLE, nil).should == IO::WRITABLE
+    end
+
+    it "raises an IOError if the IO is closed" do
+      @w_io.close
+      -> { @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil) }.should raise_error(IOError, "closed stream")
+    end
+
+    it "raises an IOError if the IO is not initialized" do
+      -> { @o.rb_io_maybe_wait(0, IO.allocate, IO::WRITABLE, nil) }.should raise_error(IOError, "uninitialized stream")
+    end
+
+    it "can be interrupted when waiting for READABLE event" do
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      t = Thread.new do
+        @o.rb_io_maybe_wait(0, @r_io, IO::READABLE, 10)
       end
 
-      it "raises an IOError if the IO is closed" do
-        @w_io.close
-        -> { @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil) }.should raise_error(IOError, "closed stream")
+      Thread.pass until t.stop?
+      t.kill
+      t.join
+
+      finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (finish - start).should < 9
+    end
+
+    it "can be interrupted when waiting for WRITABLE event" do
+      IOSpec.exhaust_write_buffer(@w_io)
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      t = Thread.new do
+        @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, 10)
       end
 
-      it "raises an IOError if the IO is not initialized" do
-        -> { @o.rb_io_maybe_wait(0, IO.allocate, IO::WRITABLE, nil) }.should raise_error(IOError, "uninitialized stream")
-      end
+      Thread.pass until t.stop?
+      t.kill
+      t.join
 
-      it "can be interrupted when waiting for READABLE event" do
-        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        t = Thread.new do
-          @o.rb_io_maybe_wait(0, @r_io, IO::READABLE, 10)
-        end
-
-        Thread.pass until t.stop?
-        t.kill
-        t.join
-
-        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        (finish - start).should < 9
-      end
-
-      it "can be interrupted when waiting for WRITABLE event" do
-        IOSpec.exhaust_write_buffer(@w_io)
-        start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-        t = Thread.new do
-          @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, 10)
-        end
-
-        Thread.pass until t.stop?
-        t.kill
-        t.join
-
-        finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        (finish - start).should < 9
-      end
+      finish = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      (finish - start).should < 9
     end
   end
 

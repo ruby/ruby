@@ -226,7 +226,7 @@ describe "Regexp with character classes" do
   end
 
   it "matches Unicode letter characters with [[:graph:]]" do
-      "à".match(/[[:graph:]]/).to_a.should == ["à"]
+    "à".match(/[[:graph:]]/).to_a.should == ["à"]
   end
 
   it "matches Unicode digits with [[:graph:]]" do

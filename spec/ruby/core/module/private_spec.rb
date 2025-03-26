@@ -38,25 +38,13 @@ describe "Module#private" do
                   :module_specs_public_method_on_object_for_kernel_private)
   end
 
-  ruby_version_is ""..."3.1" do
-    it "returns self" do
-      (class << Object.new; self; end).class_eval do
-        def foo; end
-        private(:foo).should equal(self)
-        private.should equal(self)
-      end
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "returns argument or arguments if given" do
-      (class << Object.new; self; end).class_eval do
-        def foo; end
-        private(:foo).should equal(:foo)
-        private([:foo, :foo]).should == [:foo, :foo]
-        private(:foo, :foo).should == [:foo, :foo]
-        private.should equal(nil)
-      end
+  it "returns argument or arguments if given" do
+    (class << Object.new; self; end).class_eval do
+      def foo; end
+      private(:foo).should equal(:foo)
+      private([:foo, :foo]).should == [:foo, :foo]
+      private(:foo, :foo).should == [:foo, :foo]
+      private.should equal(nil)
     end
   end
 

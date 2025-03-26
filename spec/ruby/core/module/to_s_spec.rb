@@ -51,6 +51,8 @@ describe "Module#to_s" do
 
     ModuleSpecs::RefinementInspect::R.name.should == 'ModuleSpecs::RefinementInspect::R'
     ModuleSpecs::RefinementInspect::R.to_s.should == '#<refinement:String@ModuleSpecs::RefinementInspect>'
+  ensure
+    ModuleSpecs.send(:remove_const, :RefinementInspect)
   end
 
   it 'does not call #inspect or #to_s for singleton classes' do

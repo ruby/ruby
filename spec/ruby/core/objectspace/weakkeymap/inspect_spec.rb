@@ -12,6 +12,10 @@ ruby_version_is "3.3" do
       map.inspect.should =~ /\A\#<ObjectSpace::WeakKeyMap:0x\h+ size=2>\z/
       map[key3] = 3
       map.inspect.should =~ /\A\#<ObjectSpace::WeakKeyMap:0x\h+ size=2>\z/
+
+      key1.should == "foo" # keep the key alive until here to keep the map entry
+      key2.should == "bar" # keep the key alive until here to keep the map entry
+      key3.should == "bar" # keep the key alive until here to keep the map entry
     end
   end
 end

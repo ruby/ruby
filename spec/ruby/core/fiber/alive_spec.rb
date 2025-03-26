@@ -1,7 +1,5 @@
 require_relative '../../spec_helper'
 
-require 'fiber'
-
 describe "Fiber#alive?" do
   it "returns true for a Fiber that hasn't had #resume called" do
     fiber = Fiber.new { true }

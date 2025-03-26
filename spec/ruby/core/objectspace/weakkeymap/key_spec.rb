@@ -29,5 +29,16 @@ ruby_version_is "3.3" do
       map[key] = nil
       map.key?(key).should == true
     end
+
+    it "returns false when a key cannot be garbage collected" do
+      map = ObjectSpace::WeakKeyMap.new
+
+      map.key?(1).should == false
+      map.key?(1.0).should == false
+      map.key?(:a).should == false
+      map.key?(true).should == false
+      map.key?(false).should == false
+      map.key?(nil).should == false
+    end
   end
 end

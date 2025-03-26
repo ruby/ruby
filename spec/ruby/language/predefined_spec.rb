@@ -71,7 +71,7 @@ describe "Predefined global $~" do
     match2.should_not == nil
     $~.should == match2
 
-    eval 'match3 = /baz/.match("baz")'
+    match3 = /baz/.match("baz")
 
     match3.should_not == nil
     $~.should == match3
@@ -768,7 +768,7 @@ describe "Predefined global $_" do
     match.should == "bar\n"
     $_.should == match
 
-    eval 'match = stdin.gets'
+    match = stdin.gets
 
     match.should == "baz\n"
     $_.should == match
@@ -1341,16 +1341,8 @@ describe "$LOAD_PATH.resolve_feature_path" do
     path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
   end
 
-  ruby_version_is ""..."3.1" do
-    it "raises LoadError if feature cannot be found" do
-      -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "return nil if feature cannot be found" do
-      $LOAD_PATH.resolve_feature_path('noop').should be_nil
-    end
+  it "return nil if feature cannot be found" do
+    $LOAD_PATH.resolve_feature_path('noop').should be_nil
   end
 end
 

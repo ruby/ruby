@@ -30,16 +30,8 @@ describe "main#private" do
     end
   end
 
-  ruby_version_is ''...'3.1' do
-    it "returns Object" do
-      eval("private :main_public_method", TOPLEVEL_BINDING).should equal(Object)
-    end
-  end
-
-  ruby_version_is '3.1' do
-    it "returns argument" do
-      eval("private :main_public_method", TOPLEVEL_BINDING).should equal(:main_public_method)
-    end
+  it "returns argument" do
+    eval("private :main_public_method", TOPLEVEL_BINDING).should equal(:main_public_method)
   end
 
   it "raises a NameError when at least one of given method names is undefined" do

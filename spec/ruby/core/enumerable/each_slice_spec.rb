@@ -57,10 +57,8 @@ describe "Enumerable#each_slice" do
     e.to_a.should == @sliced
   end
 
-  ruby_version_is "3.1" do
-    it "returns self when a block is given" do
-      @enum.each_slice(3){}.should == @enum
-    end
+  it "returns self when a block is given" do
+    @enum.each_slice(3){}.should == @enum
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

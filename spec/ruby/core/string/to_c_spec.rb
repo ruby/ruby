@@ -18,13 +18,17 @@ describe "String#to_c" do
     end
   end
 
-  it "understands Float::INFINITY" do
-    'Infinity'.to_c.should == Complex(0, 1)
-    '-Infinity'.to_c.should == Complex(0, -1)
-  end
+  context "it treats special float value strings as characters" do
+    it "parses any string that starts with 'I' as 1i" do
+      'Infinity'.to_c.should == Complex(0, 1)
+      '-Infinity'.to_c.should == Complex(0, -1)
+      'Insecure'.to_c.should == Complex(0, 1)
+      '-Insecure'.to_c.should == Complex(0, -1)
+    end
 
-  it "understands Float::NAN" do
-    'NaN'.to_c.should == Complex(0, 0)
+    it "does not parse any numeric information in 'NaN'" do
+      'NaN'.to_c.should == Complex(0, 0)
+    end
   end
 
   it "allows null-byte" do

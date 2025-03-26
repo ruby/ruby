@@ -171,7 +171,7 @@ describe "C-API Encoding function" do
 
   describe "rb_enc_mbc_to_codepoint" do
     it "returns the correct codepoint for the given character and size" do
-       @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
+      @s.rb_enc_mbc_to_codepoint("é").should == 0xE9
     end
 
     it "returns 0 if p == e" do

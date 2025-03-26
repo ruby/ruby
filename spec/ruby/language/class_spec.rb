@@ -271,6 +271,8 @@ describe "A class definition" do
 
       AnonWithConstant.name.should == 'AnonWithConstant'
       klass.get_class_name.should == 'AnonWithConstant'
+    ensure
+      Object.send(:remove_const, :AnonWithConstant)
     end
   end
 end
