@@ -2711,13 +2711,17 @@ rb_hash_except(int argc, VALUE *argv, VALUE hash)
  *  call-seq:
  *    values_at(*keys) -> new_array
  *
- *  Returns a new Array containing values for the given +keys+:
+ *  Returns a new array containing values for the given +keys+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values_at(:baz, :foo) # => [2, 0]
  *
  *  The {hash default}[rdoc-ref:Hash@Hash+Default] is returned
  *  for each key that is not found:
+ *
  *    h.values_at(:hello, :foo) # => [nil, 0]
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 static VALUE
