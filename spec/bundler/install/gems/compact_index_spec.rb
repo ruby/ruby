@@ -1089,4 +1089,11 @@ Running `bundle update rails` should fix the problem.
     count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
     expect(lockfile.scan(/activemerchant \(/).size).to eq(count)
   end
+
+  it "handles an API that does not provide checksums info (undocumented, support may get removed)" do
+    install_gemfile <<-G, artifice: "compact_index_no_checksums"
+      source "https://gem.repo1"
+      gem "rake"
+    G
+  end
 end

@@ -447,6 +447,17 @@ module Gem
     end
   end
 
+  unless Gem.rubygems_version >= Gem::Version.new("3.6.7")
+    module UnfreezeCompactIndexParsedResponse
+      def parse(line)
+        version, platform, dependencies, requirements = super
+        [version, platform, dependencies.frozen? ? dependencies.dup : dependencies, requirements.frozen? ? requirements.dup : requirements]
+      end
+    end
+
+    Resolver::APISet::GemParser.prepend(UnfreezeCompactIndexParsedResponse)
+  end
+
   if Gem.rubygems_version < Gem::Version.new("3.6.0")
     class Package; end
     require "rubygems/package/tar_reader"
