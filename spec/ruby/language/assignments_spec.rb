@@ -276,117 +276,73 @@ end
 
 describe 'Multiple assignments' do
   describe 'evaluation order' do
-    ruby_version_is ''...'3.1' do
-      it 'evaluates expressions right to left when assignment with an accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with an accessor' do
+      object = Object.new
+      def object.a=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:c, :d, :a, :b]
-      end
-
-      it 'evaluates expressions right to left when assignment with a nested accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:b, :a]
-      end
+      (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
+      ScratchPad.recorded.should == [:a, :b, :c, :d]
     end
 
-    ruby_version_is '3.1' do
-      it 'evaluates expressions left to right when assignment with an accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a nested accessor' do
+      object = Object.new
+      def object.a=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object).a, (ScratchPad << :b; object).a = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:a, :b, :c, :d]
-      end
-
-      it 'evaluates expressions left to right when assignment with a nested accessor' do
-        object = Object.new
-        def object.a=(value) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:a, :b]
-      end
-
-      it 'evaluates expressions left to right when assignment with a deeply nested accessor' do
-        o = Object.new
-        def o.a=(value) end
-        def o.b=(value) end
-        def o.c=(value) end
-        def o.d=(value) end
-        def o.e=(value) end
-        def o.f=(value) end
-        ScratchPad.record []
-
-        (ScratchPad << :a; o).a,
-          ((ScratchPad << :b; o).b,
-          ((ScratchPad << :c; o).c, (ScratchPad << :d; o).d),
-          (ScratchPad << :e; o).e),
-        (ScratchPad << :f; o).f = (ScratchPad << :value; :value)
-
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
-      end
+      ((ScratchPad << :a; object).a, foo), bar = [(ScratchPad << :b; :b)]
+      ScratchPad.recorded.should == [:a, :b]
     end
 
-    ruby_version_is ''...'3.1' do
-      it 'evaluates expressions right to left when assignment with a #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a deeply nested accessor' do
+      o = Object.new
+      def o.a=(value) end
+      def o.b=(value) end
+      def o.c=(value) end
+      def o.d=(value) end
+      def o.e=(value) end
+      def o.f=(value) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
-        ScratchPad.recorded.should == [:e, :f, :a, :b, :c, :d]
-      end
+      (ScratchPad << :a; o).a,
+        ((ScratchPad << :b; o).b,
+        ((ScratchPad << :c; o).c, (ScratchPad << :d; o).d),
+        (ScratchPad << :e; o).e),
+      (ScratchPad << :f; o).f = (ScratchPad << :value; :value)
 
-      it 'evaluates expressions right to left when assignment with a nested #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
-
-        ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
-        ScratchPad.recorded.should == [:c, :a, :b]
-      end
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
     end
 
-    ruby_version_is '3.1' do
-      it 'evaluates expressions left to right when assignment with a #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a #[]=' do
+      object = Object.new
+      def object.[]=(_, _) end
+      ScratchPad.record []
 
-        (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f]
-      end
+      (ScratchPad << :a; object)[(ScratchPad << :b; :b)], (ScratchPad << :c; object)[(ScratchPad << :d; :d)] = (ScratchPad << :e; :e), (ScratchPad << :f; :f)
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f]
+    end
 
-      it 'evaluates expressions left to right when assignment with a nested #[]=' do
-        object = Object.new
-        def object.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a nested #[]=' do
+      object = Object.new
+      def object.[]=(_, _) end
+      ScratchPad.record []
 
-        ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
-        ScratchPad.recorded.should == [:a, :b, :c]
-      end
+      ((ScratchPad << :a; object)[(ScratchPad << :b; :b)], foo), bar = [(ScratchPad << :c; :c)]
+      ScratchPad.recorded.should == [:a, :b, :c]
+    end
 
-      it 'evaluates expressions left to right when assignment with a deeply nested #[]=' do
-        o = Object.new
-        def o.[]=(_, _) end
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a deeply nested #[]=' do
+      o = Object.new
+      def o.[]=(_, _) end
+      ScratchPad.record []
 
-        (ScratchPad << :ra; o)[(ScratchPad << :aa; :aa)],
-          ((ScratchPad << :rb; o)[(ScratchPad << :ab; :ab)],
-          ((ScratchPad << :rc; o)[(ScratchPad << :ac; :ac)], (ScratchPad << :rd; o)[(ScratchPad << :ad; :ad)]),
-          (ScratchPad << :re; o)[(ScratchPad << :ae; :ae)]),
-        (ScratchPad << :rf; o)[(ScratchPad << :af; :af)] = (ScratchPad << :value; :value)
+      (ScratchPad << :ra; o)[(ScratchPad << :aa; :aa)],
+        ((ScratchPad << :rb; o)[(ScratchPad << :ab; :ab)],
+        ((ScratchPad << :rc; o)[(ScratchPad << :ac; :ac)], (ScratchPad << :rd; o)[(ScratchPad << :ad; :ad)]),
+        (ScratchPad << :re; o)[(ScratchPad << :ae; :ae)]),
+      (ScratchPad << :rf; o)[(ScratchPad << :af; :af)] = (ScratchPad << :value; :value)
 
-        ScratchPad.recorded.should == [:ra, :aa, :rb, :ab, :rc, :ac, :rd, :ad, :re, :ae, :rf, :af, :value]
-      end
+      ScratchPad.recorded.should == [:ra, :aa, :rb, :ab, :rc, :ac, :rd, :ad, :re, :ae, :rf, :af, :value]
     end
 
     ruby_version_is ''...'3.2' do

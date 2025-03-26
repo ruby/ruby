@@ -104,7 +104,7 @@ describe "A Proc" do
     end
 
     it "assigns all passed values after the first to the rest argument" do
-        @l.call(1, 2, 3).should == [1, [2, 3]]
+      @l.call(1, 2, 3).should == [1, [2, 3]]
     end
 
     it "does not call #to_ary to convert a single passed object to an Array" do

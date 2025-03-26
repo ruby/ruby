@@ -17,6 +17,15 @@ describe "StringScanner#match?" do
     @s.match?(/\s+/).should == nil
   end
 
+  it "sets the last match result" do
+    @s.pos = 8
+    @s.match?(/a/)
+
+    @s.pre_match.should == "This is "
+    @s.matched.should == "a"
+    @s.post_match.should == " test"
+  end
+
   it "effects pre_match" do
     @s.scan(/\w+/)
     @s.scan(/\s/)
@@ -24,5 +33,19 @@ describe "StringScanner#match?" do
     @s.pre_match.should == "This"
     @s.match?(/\w+/)
     @s.pre_match.should == "This "
+  end
+
+  describe "#[] successive call with a capture group name" do
+    it "returns matched substring when matching succeeded" do
+      @s.match?(/(?<a>This)/)
+      @s.should.matched?
+      @s[:a].should == "This"
+    end
+
+    it "returns nil when matching failed" do
+      @s.match?(/(?<a>2008)/)
+      @s.should_not.matched?
+      @s[:a].should be_nil
+    end
   end
 end

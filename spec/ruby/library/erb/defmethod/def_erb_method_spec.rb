@@ -58,6 +58,8 @@ END
       end
     end
     MyClass4ForErb.new([10,20,30]).render().should == expected
+  ensure
+    Object.send(:remove_const, :MY_INPUT4_FOR_ERB)
   end
 
 

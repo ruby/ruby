@@ -15,4 +15,18 @@ describe "StringScanner#skip" do
     @s.skip(/\s+/).should == nil
     @s.skip(/\d+/).should == nil
   end
+
+  describe "#[] successive call with a capture group name" do
+    it "returns matched substring when matching succeeded" do
+      @s.skip(/(?<a>This)/)
+      @s.should.matched?
+      @s[:a].should == "This"
+    end
+
+    it "returns nil when matching failed" do
+      @s.skip(/(?<a>2008)/)
+      @s.should_not.matched?
+      @s[:a].should be_nil
+    end
+  end
 end

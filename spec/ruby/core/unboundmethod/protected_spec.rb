@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "UnboundMethod#protected?" do
-  ruby_version_is "3.1"..."3.2" do
+  ruby_version_is ""..."3.2" do
     it "returns false when the method is public" do
       obj = UnboundMethodSpecs::Methods.new
       obj.method(:my_public_method).unbind.protected?.should == false

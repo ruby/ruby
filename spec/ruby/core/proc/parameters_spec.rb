@@ -64,7 +64,7 @@ describe "Proc#parameters" do
   end
 
   it "regards keyword parameters in lambdas as required" do
-    eval("lambda {|x:| }").parameters.first.first.should == :keyreq
+    -> x: { }.parameters.first.first.should == :keyreq
   end
 
   it "sets the first element of each sub-Array to :rest for parameters prefixed with asterisks" do
@@ -130,10 +130,8 @@ describe "Proc#parameters" do
     end
   end
 
-  ruby_version_is '3.1' do
-    it "adds block arg with name & for anonymous block argument" do
-      eval('-> & {}.parameters').should == [[:block, :&]]
-    end
+  it "adds block arg with name & for anonymous block argument" do
+    -> & {}.parameters.should == [[:block, :&]]
   end
 
   it "does not add locals as block options with a block and splat" do

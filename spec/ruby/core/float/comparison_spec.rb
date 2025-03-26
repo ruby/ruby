@@ -91,7 +91,7 @@ describe "Float#<=>" do
   it "returns 1 when self is Infinity and other is infinite?=nil (which means finite)" do
     obj = Object.new
     def obj.infinite?
-        nil
+      nil
     end
     (infinity_value <=> obj).should == 1
   end

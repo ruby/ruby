@@ -1,8 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'shared/blocking'
 
-require "fiber"
-
 describe "Fiber.blocking?" do
   it_behaves_like :non_blocking_fiber, -> { Fiber.blocking? }
 

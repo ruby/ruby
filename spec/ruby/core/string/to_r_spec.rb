@@ -33,6 +33,10 @@ describe "String#to_r" do
     "-20".to_r.should == Rational(-20, 1)
   end
 
+  it "accepts leading plus signs" do
+    "+20".to_r.should == Rational(20, 1)
+  end
+
   it "does not treat a leading period without a numeric prefix as a decimal point" do
     ".9".to_r.should_not == Rational(8106479329266893, 9007199254740992)
   end

@@ -30,6 +30,8 @@ describe "Module#name" do
     m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
     ModuleSpecs::Anonymous::WasAnnon = m::N
     m::N.name.should == "ModuleSpecs::Anonymous::WasAnnon"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :WasAnnon)
   end
 
   it "may be the repeated in different module objects" do
@@ -76,12 +78,16 @@ describe "Module#name" do
     m = Module.new
     ModuleSpecs::Anonymous::A = m
     m.name.should == "ModuleSpecs::Anonymous::A"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :A)
   end
 
   it "is set when assigning to a constant (constant path does not match outer module name)" do
     m = Module.new
     ModuleSpecs::Anonymous::SameChild::A = m
     m.name.should == "ModuleSpecs::Anonymous::Child::A"
+  ensure
+    ModuleSpecs::Anonymous::SameChild.send(:remove_const, :A)
   end
 
   it "is not modified when assigning to a new constant after it has been accessed" do
@@ -90,6 +96,9 @@ describe "Module#name" do
     m.name.should == "ModuleSpecs::Anonymous::B"
     ModuleSpecs::Anonymous::C = m
     m.name.should == "ModuleSpecs::Anonymous::B"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :B)
+    ModuleSpecs::Anonymous.send(:remove_const, :C)
   end
 
   it "is not modified when assigned to a different anonymous module" do
@@ -125,6 +134,8 @@ describe "Module#name" do
     m::N = Module.new
     ModuleSpecs::Anonymous::E = m
     m::N.name.should == "ModuleSpecs::Anonymous::E::N"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :E)
   end
 
   # https://bugs.ruby-lang.org/issues/19681
@@ -138,6 +149,8 @@ describe "Module#name" do
       "ModuleSpecs::Anonymous::StoredInMultiplePlaces::O"
     ]
     valid_names.should include(m::N.name) # You get one of the two, but you don't know which one.
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :StoredInMultiplePlaces)
   end
 
   ruby_version_is "3.2" do

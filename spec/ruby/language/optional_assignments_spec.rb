@@ -698,6 +698,8 @@ describe 'Optional constant assignment' do
       x.should == 1
       y.should == 0
       ConstantSpecs::ClassA::NIL_OR_ASSIGNED_CONSTANT3.should == nil
+    ensure
+      ConstantSpecs::ClassA.send(:remove_const, :NIL_OR_ASSIGNED_CONSTANT3)
     end
   end
 

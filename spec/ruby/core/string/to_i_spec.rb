@@ -10,7 +10,7 @@ describe "String#to_i" do
     "1_2_3asdf".to_i.should == 123
   end
 
-  it "ignores multiple non-consecutive underscoes when the first digit is 0" do
+  it "ignores multiple non-consecutive underscores when the first digit is 0" do
     (2..16).each do |base|
       "0_0_010".to_i(base).should == base;
     end

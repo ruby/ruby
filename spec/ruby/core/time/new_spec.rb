@@ -58,30 +58,28 @@ describe "Time.new with a utc_offset argument" do
     Time.new(2000, 1, 1, 0, 0, 0, "-04:10:43").utc_offset.should == -15043
   end
 
-  ruby_bug '#13669', ''...'3.1' do
-    it "returns a Time with a UTC offset specified as +HH" do
-      Time.new(2000, 1, 1, 0, 0, 0, "+05").utc_offset.should == 3600 * 5
-    end
+  it "returns a Time with a UTC offset specified as +HH" do
+    Time.new(2000, 1, 1, 0, 0, 0, "+05").utc_offset.should == 3600 * 5
+  end
 
-    it "returns a Time with a UTC offset specified as -HH" do
-      Time.new(2000, 1, 1, 0, 0, 0, "-05").utc_offset.should == -3600 * 5
-    end
+  it "returns a Time with a UTC offset specified as -HH" do
+    Time.new(2000, 1, 1, 0, 0, 0, "-05").utc_offset.should == -3600 * 5
+  end
 
-    it "returns a Time with a UTC offset specified as +HHMM" do
-      Time.new(2000, 1, 1, 0, 0, 0, "+0530").utc_offset.should == 19800
-    end
+  it "returns a Time with a UTC offset specified as +HHMM" do
+    Time.new(2000, 1, 1, 0, 0, 0, "+0530").utc_offset.should == 19800
+  end
 
-    it "returns a Time with a UTC offset specified as -HHMM" do
-      Time.new(2000, 1, 1, 0, 0, 0, "-0530").utc_offset.should == -19800
-    end
+  it "returns a Time with a UTC offset specified as -HHMM" do
+    Time.new(2000, 1, 1, 0, 0, 0, "-0530").utc_offset.should == -19800
+  end
 
-    it "returns a Time with a UTC offset specified as +HHMMSS" do
-      Time.new(2000, 1, 1, 0, 0, 0, "+053037").utc_offset.should == 19837
-    end
+  it "returns a Time with a UTC offset specified as +HHMMSS" do
+    Time.new(2000, 1, 1, 0, 0, 0, "+053037").utc_offset.should == 19837
+  end
 
-    it "returns a Time with a UTC offset specified as -HHMMSS" do
-      Time.new(2000, 1, 1, 0, 0, 0, "-053037").utc_offset.should == -19837
-    end
+  it "returns a Time with a UTC offset specified as -HHMMSS" do
+    Time.new(2000, 1, 1, 0, 0, 0, "-053037").utc_offset.should == -19837
   end
 
   describe "with an argument that responds to #to_str" do
@@ -129,18 +127,9 @@ describe "Time.new with a utc_offset argument" do
     end
   end
 
-  ruby_version_is ""..."3.1" do
-    it "raises ArgumentError if the string argument is J" do
-      message = '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset'
-      -> { Time.new(2000, 1, 1, 0, 0, 0, "J") }.should raise_error(ArgumentError, message)
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "raises ArgumentError if the string argument is J" do
-      message = '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: J'
-      -> { Time.new(2000, 1, 1, 0, 0, 0, "J") }.should raise_error(ArgumentError, message)
-    end
+  it "raises ArgumentError if the string argument is J" do
+    message = '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: J'
+    -> { Time.new(2000, 1, 1, 0, 0, 0, "J") }.should raise_error(ArgumentError, message)
   end
 
   it "returns a local Time if the argument is nil" do
@@ -193,6 +182,7 @@ describe "Time.new with a utc_offset argument" do
   end
 end
 
+# The method #local_to_utc is tested only here because Time.new is the only method that calls #local_to_utc.
 describe "Time.new with a timezone argument" do
   it "returns a Time in the timezone" do
     zone = TimeSpecs::Timezone.new(offset: (5*3600+30*60))
@@ -213,9 +203,7 @@ describe "Time.new with a timezone argument" do
       time
     end
 
-    -> {
-      Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
-    }.should_not raise_error
+    Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
   end
 
   it "raises TypeError if timezone does not implement #local_to_utc method" do
@@ -226,7 +214,7 @@ describe "Time.new with a timezone argument" do
 
     -> {
       Time.new(2000, 1, 1, 12, 0, 0, zone)
-    }.should raise_error(TypeError, /can't convert \w+ into an exact number/)
+    }.should raise_error(TypeError, /can't convert Object into an exact number/)
   end
 
   it "does not raise exception if timezone does not implement #utc_to_local method" do
@@ -235,51 +223,48 @@ describe "Time.new with a timezone argument" do
       time
     end
 
-    -> {
-      Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
-    }.should_not raise_error
+    Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
   end
 
   # The result also should be a Time or Time-like object (not necessary to be the same class)
-  # The zone of the result is just ignored
+  # or respond to #to_int method. The zone of the result is just ignored.
   describe "returned value by #utc_to_local and #local_to_utc methods" do
     it "could be Time instance" do
       zone = Object.new
       def zone.local_to_utc(t)
-        Time.utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
+        time = Time.utc(t.year, t.mon, t.day, t.hour, t.min, t.sec)
+        time - 60 * 60 # - 1 hour
       end
 
-      -> {
-        Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
-        Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
-      }.should_not raise_error
+      Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+      Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
     end
 
     it "could be Time subclass instance" do
       zone = Object.new
       def zone.local_to_utc(t)
-        Class.new(Time).utc(t.year, t.mon, t.day, t.hour - 1, t.min, t.sec)
+        time = Time.utc(t.year, t.mon, t.day, t.hour, t.min, t.sec)
+        time -= 60 * 60 # - 1 hour
+        Class.new(Time).utc(time.year, time.mon, time.day, time.hour, t.min, t.sec)
       end
 
-      -> {
-        Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
-        Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
-      }.should_not raise_error
+      Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+      Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
     end
 
     it "could be any object with #to_i method" do
       zone = Object.new
       def zone.local_to_utc(time)
-        Struct.new(:to_i).new(time.to_i - 60*60)
+        obj = Object.new
+        obj.singleton_class.define_method(:to_i) { time.to_i - 60*60 }
+        obj
       end
 
-      -> {
-        Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
-        Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
-      }.should_not raise_error
+      Time.new(2000, 1, 1, 12, 0, 0, zone).should be_kind_of(Time)
+      Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 60*60
     end
 
-    it "could have any #zone and #utc_offset because they are ignored" do
+    it "could have any #zone and #utc_offset because they are ignored if it isn't an instance of Time" do
       zone = Object.new
       def zone.local_to_utc(time)
         Struct.new(:to_i, :zone, :utc_offset).new(time.to_i, 'America/New_York', -5*60*60)
@@ -293,7 +278,15 @@ describe "Time.new with a timezone argument" do
       Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 0
     end
 
-    it "leads to raising Argument error if difference between argument and result is too large" do
+    it "cannot have arbitrary #utc_offset if it is an instance of Time" do
+      zone = Object.new
+      def zone.local_to_utc(t)
+        Time.new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, 9*60*60)
+      end
+      Time.new(2000, 1, 1, 12, 0, 0, zone).utc_offset.should == 9*60*60
+    end
+
+    it "raises ArgumentError if difference between argument and result is too large" do
       zone = Object.new
       def zone.local_to_utc(t)
         Time.utc(t.year, t.mon, t.day + 1, t.hour, t.min, t.sec)
@@ -318,12 +311,9 @@ describe "Time.new with a timezone argument" do
     end
 
     it "implements subset of Time methods" do
+      # List only methods that are explicitly documented.
       [
-        :year, :mon, :month, :mday, :hour, :min, :sec,
-        :tv_sec, :tv_usec, :usec, :tv_nsec, :nsec, :subsec,
-        :to_i, :to_f, :to_r, :+, :-,
-        :isdst, :dst?, :zone, :gmtoff, :gmt_offset, :utc_offset, :utc?, :gmt?,
-        :to_s, :inspect, :to_a, :to_time,
+        :year, :mon, :mday, :hour, :min, :sec, :to_i, :isdst
       ].each do |name|
         @obj.respond_to?(name).should == true
       end
@@ -403,79 +393,77 @@ describe "Time.new with a timezone argument" do
     end
   end
 
-  ruby_version_is '3.1' do # https://bugs.ruby-lang.org/issues/17485
-    describe ":in keyword argument" do
-      it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: "+05:00")
+  describe ":in keyword argument" do
+    it "could be UTC offset as a String in '+HH:MM or '-HH:MM' format" do
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: "+05:00")
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
 
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00")
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00")
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
 
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00:01")
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: "-09:00:01")
 
-        time.utc_offset.should == -(9*60*60 + 1)
-        time.zone.should == nil
-      end
+      time.utc_offset.should == -(9*60*60 + 1)
+      time.zone.should == nil
+    end
 
-      it "could be UTC offset as a number of seconds" do
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: 5*60*60)
+    it "could be UTC offset as a number of seconds" do
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: 5*60*60)
 
-        time.utc_offset.should == 5*60*60
-        time.zone.should == nil
+      time.utc_offset.should == 5*60*60
+      time.zone.should == nil
 
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: -9*60*60)
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: -9*60*60)
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == nil
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == nil
+    end
 
-      it "returns a Time with UTC offset specified as a single letter military timezone" do
-        Time.new(2000, 1, 1, 0, 0, 0, in: "W").utc_offset.should == 3600 * -10
-      end
+    it "returns a Time with UTC offset specified as a single letter military timezone" do
+      Time.new(2000, 1, 1, 0, 0, 0, in: "W").utc_offset.should == 3600 * -10
+    end
 
-      it "could be a timezone object" do
-        zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
+    it "could be a timezone object" do
+      zone = TimeSpecs::TimezoneWithName.new(name: "Asia/Colombo")
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
 
-        time.utc_offset.should == 5*3600+30*60
-        time.zone.should == zone
+      time.utc_offset.should == 5*3600+30*60
+      time.zone.should == zone
 
-        zone = TimeSpecs::TimezoneWithName.new(name: "PST")
-        time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
+      zone = TimeSpecs::TimezoneWithName.new(name: "PST")
+      time = Time.new(2000, 1, 1, 12, 0, 0, in: zone)
 
-        time.utc_offset.should == -9*60*60
-        time.zone.should == zone
-      end
+      time.utc_offset.should == -9*60*60
+      time.zone.should == zone
+    end
 
-      it "allows omitting minor arguments" do
-        Time.new(2000, 1, 1, 12, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 1, "+05:00")
-        Time.new(2000, 1, 1, 12, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 0, "+05:00")
-        Time.new(2000, 1, 1, 12, in: "+05:00").should == Time.new(2000, 1, 1, 12, 0, 0, "+05:00")
-        Time.new(2000, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
-        Time.new(2000, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
-        Time.new(2000, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
-        Time.new(in: "+05:00").should be_close(Time.now.getlocal("+05:00"), TIME_TOLERANCE)
-      end
+    it "allows omitting minor arguments" do
+      Time.new(2000, 1, 1, 12, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 1, "+05:00")
+      Time.new(2000, 1, 1, 12, 1, in: "+05:00").should == Time.new(2000, 1, 1, 12, 1, 0, "+05:00")
+      Time.new(2000, 1, 1, 12, in: "+05:00").should == Time.new(2000, 1, 1, 12, 0, 0, "+05:00")
+      Time.new(2000, 1, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+      Time.new(2000, 1, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+      Time.new(2000, in: "+05:00").should == Time.new(2000, 1, 1, 0, 0, 0, "+05:00")
+      Time.new(in: "+05:00").should be_close(Time.now.getlocal("+05:00"), TIME_TOLERANCE)
+    end
 
-      it "converts to a provided timezone if all the positional arguments are omitted" do
-        Time.new(in: "+05:00").utc_offset.should == 5*3600
-      end
+    it "converts to a provided timezone if all the positional arguments are omitted" do
+      Time.new(in: "+05:00").utc_offset.should == 5*3600
+    end
 
-      it "raises ArgumentError if format is invalid" do
-        -> { Time.new(2000, 1, 1, 12, 0, 0, in: "+09:99") }.should raise_error(ArgumentError)
-        -> { Time.new(2000, 1, 1, 12, 0, 0, in: "ABC") }.should raise_error(ArgumentError)
-      end
+    it "raises ArgumentError if format is invalid" do
+      -> { Time.new(2000, 1, 1, 12, 0, 0, in: "+09:99") }.should raise_error(ArgumentError)
+      -> { Time.new(2000, 1, 1, 12, 0, 0, in: "ABC") }.should raise_error(ArgumentError)
+    end
 
-      it "raises ArgumentError if two offset arguments are given" do
-        -> {
-          Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00")
-        }.should raise_error(ArgumentError, "timezone argument given as positional and keyword arguments")
-      end
+    it "raises ArgumentError if two offset arguments are given" do
+      -> {
+        Time.new(2000, 1, 1, 12, 0, 0, "+05:00", in: "+05:00")
+      }.should raise_error(ArgumentError, "timezone argument given as positional and keyword arguments")
     end
   end
 

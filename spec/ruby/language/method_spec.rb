@@ -1416,53 +1416,49 @@ describe "Keyword arguments are now separated from positional arguments" do
   end
 end
 
-ruby_version_is "3.1" do
-  describe "kwarg with omitted value in a method call" do
-    context "accepts short notation 'kwarg' in method call" do
-      evaluate <<-ruby do
-          def call(*args, **kwargs) = [args, kwargs]
-        ruby
+describe "kwarg with omitted value in a method call" do
+  context "accepts short notation 'kwarg' in method call" do
+    evaluate <<-ruby do
+        def call(*args, **kwargs) = [args, kwargs]
+      ruby
 
-        a, b, c = 1, 2, 3
-        arr, h = eval('call a:')
-        h.should == {a: 1}
-        arr.should == []
+      a, b, c = 1, 2, 3
+      arr, h = call(a:)
+      h.should == {a: 1}
+      arr.should == []
 
-        arr, h = eval('call(a:, b:, c:)')
-        h.should == {a: 1, b: 2, c: 3}
-        arr.should == []
+      arr, h = call(a:, b:, c:)
+      h.should == {a: 1, b: 2, c: 3}
+      arr.should == []
 
-        arr, h = eval('call(a:, b: 10, c:)')
-        h.should == {a: 1, b: 10, c: 3}
-        arr.should == []
-      end
-    end
-
-    context "with methods and local variables" do
-      evaluate <<-ruby do
-          def call(*args, **kwargs) = [args, kwargs]
-
-          def bar
-            "baz"
-          end
-
-          def foo(val)
-            call bar:, val:
-          end
-        ruby
-
-        foo(1).should == [[], {bar: "baz", val: 1}]
-      end
+      arr, h = call(a:, b: 10, c:)
+      h.should == {a: 1, b: 10, c: 3}
+      arr.should == []
     end
   end
 
-  describe "Inside 'endless' method definitions" do
-    it "allows method calls without parenthesis" do
-      eval <<-ruby
-        def greet(person) = "Hi, ".dup.concat person
+  context "with methods and local variables" do
+    evaluate <<-ruby do
+        def call(*args, **kwargs) = [args, kwargs]
+
+        def bar
+          "baz"
+        end
+
+        def foo(val)
+          call bar:, val:
+        end
       ruby
 
-      greet("Homer").should == "Hi, Homer"
+      foo(1).should == [[], {bar: "baz", val: 1}]
     end
+  end
+end
+
+describe "Inside 'endless' method definitions" do
+  it "allows method calls without parenthesis" do
+    def greet(person) = "Hi, ".dup.concat person
+
+    greet("Homer").should == "Hi, Homer"
   end
 end

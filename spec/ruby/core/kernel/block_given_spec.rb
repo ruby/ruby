@@ -5,15 +5,20 @@ describe :kernel_block_given, shared: true do
   it "returns true if and only if a block is supplied" do
     @object.accept_block {}.should == true
     @object.accept_block_as_argument {}.should == true
+    @object.accept_block_inside_block {}.should == true
+    @object.accept_block_as_argument_inside_block {}.should == true
 
     @object.accept_block.should == false
     @object.accept_block_as_argument.should == false
+    @object.accept_block_inside_block.should == false
+    @object.accept_block_as_argument_inside_block.should == false
   end
 
   # Clarify: Based on http://www.ruby-forum.com/topic/137822 it appears
   # that Matz wanted this to be true in 1.9.
   it "returns false when a method defined by define_method is called with a block" do
     @object.defined_block {}.should == false
+    @object.defined_block_inside_block {}.should == false
   end
 end
 

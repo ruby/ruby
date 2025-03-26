@@ -77,7 +77,7 @@ describe "C-API Regexp function" do
     end
 
     it "returns MatchData when used with rb_reg_match" do
-       @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
+      @p.rb_reg_match_backref_get(/a/, 'ab')[0].should == 'a'
     end
   end
 

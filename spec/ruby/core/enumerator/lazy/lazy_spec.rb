@@ -9,16 +9,11 @@ describe "Enumerator::Lazy" do
 
   it "defines lazy versions of a whitelist of Enumerator methods" do
     lazy_methods = [
-      :chunk, :collect, :collect_concat, :drop, :drop_while, :enum_for,
+      :chunk, :chunk_while, :collect, :collect_concat, :compact, :drop, :drop_while, :enum_for,
       :find_all, :flat_map, :force, :grep, :grep_v, :lazy, :map, :reject,
       :select, :slice_after, :slice_before, :slice_when, :take, :take_while,
-      :to_enum, :zip
+      :to_enum, :uniq, :zip
     ]
-    lazy_methods += [:chunk_while, :uniq]
-
-    ruby_version_is '3.1' do
-      lazy_methods += [:compact]
-    end
 
     Enumerator::Lazy.instance_methods(false).should include(*lazy_methods)
   end

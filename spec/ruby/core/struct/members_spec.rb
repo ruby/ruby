@@ -11,3 +11,15 @@ describe "Struct#members" do
 
   it_behaves_like :struct_accessor, :members
 end
+
+describe "StructClass#members" do
+  it "returns an array of attribute names" do
+    StructClasses::Car.members.should == [:make, :model, :year]
+  end
+
+  context "class inheriting Struct" do
+    it "isn't available in a subclass" do
+      StructClasses::StructSubclass.should_not.respond_to?(:members)
+    end
+  end
+end

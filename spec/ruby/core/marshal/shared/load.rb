@@ -23,224 +23,220 @@ describe :marshal_load, shared: true do
     -> { Marshal.send(@method, kaboom) }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is "3.1" do
-    describe "when called with freeze: true" do
-      it "returns frozen strings" do
-        string = Marshal.send(@method, Marshal.dump("foo"), freeze: true)
-        string.should == "foo"
-        string.should.frozen?
+  describe "when called with freeze: true" do
+    it "returns frozen strings" do
+      string = Marshal.send(@method, Marshal.dump("foo"), freeze: true)
+      string.should == "foo"
+      string.should.frozen?
 
-        utf8_string = "foo".encode(Encoding::UTF_8)
-        string = Marshal.send(@method, Marshal.dump(utf8_string), freeze: true)
-        string.should == utf8_string
-        string.should.frozen?
+      utf8_string = "foo".encode(Encoding::UTF_8)
+      string = Marshal.send(@method, Marshal.dump(utf8_string), freeze: true)
+      string.should == utf8_string
+      string.should.frozen?
+    end
+
+    it "returns frozen arrays" do
+      array = Marshal.send(@method, Marshal.dump([1, 2, 3]), freeze: true)
+      array.should == [1, 2, 3]
+      array.should.frozen?
+    end
+
+    it "returns frozen hashes" do
+      hash = Marshal.send(@method, Marshal.dump({foo: 42}), freeze: true)
+      hash.should == {foo: 42}
+      hash.should.frozen?
+    end
+
+    it "returns frozen regexps" do
+      regexp = Marshal.send(@method, Marshal.dump(/foo/), freeze: true)
+      regexp.should == /foo/
+      regexp.should.frozen?
+    end
+
+    it "returns frozen structs" do
+      struct = Marshal.send(@method, Marshal.dump(MarshalSpec::StructToDump.new(1, 2)), freeze: true)
+      struct.should == MarshalSpec::StructToDump.new(1, 2)
+      struct.should.frozen?
+    end
+
+    it "returns frozen objects" do
+      source_object = Object.new
+
+      object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+      object.should.frozen?
+    end
+
+    describe "deep freezing" do
+      it "returns hashes with frozen keys and values" do
+        key = Object.new
+        value = Object.new
+        source_object = {key => value}
+
+        hash = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        hash.size.should == 1
+        hash.keys[0].should.frozen?
+        hash.values[0].should.frozen?
       end
 
-      it "returns frozen arrays" do
-        array = Marshal.send(@method, Marshal.dump([1, 2, 3]), freeze: true)
-        array.should == [1, 2, 3]
-        array.should.frozen?
+      it "returns arrays with frozen elements" do
+        object = Object.new
+        source_object = [object]
+
+        array = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        array.size.should == 1
+        array[0].should.frozen?
       end
 
-      it "returns frozen hashes" do
-        hash = Marshal.send(@method, Marshal.dump({foo: 42}), freeze: true)
-        hash.should == {foo: 42}
-        hash.should.frozen?
+      it "returns structs with frozen members" do
+        object1 = Object.new
+        object2 = Object.new
+        source_object = MarshalSpec::StructToDump.new(object1, object2)
+
+        struct = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        struct.a.should.frozen?
+        struct.b.should.frozen?
       end
 
-      it "returns frozen regexps" do
-        regexp = Marshal.send(@method, Marshal.dump(/foo/), freeze: true)
-        regexp.should == /foo/
-        regexp.should.frozen?
-      end
-
-      it "returns frozen structs" do
-        struct = Marshal.send(@method, Marshal.dump(MarshalSpec::StructToDump.new(1, 2)), freeze: true)
-        struct.should == MarshalSpec::StructToDump.new(1, 2)
-        struct.should.frozen?
-      end
-
-      it "returns frozen objects" do
+      it "returns objects with frozen instance variables" do
         source_object = Object.new
+        instance_variable = Object.new
+        source_object.instance_variable_set(:@a, instance_variable)
 
         object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+        object.instance_variable_get(:@a).should != nil
+        object.instance_variable_get(:@a).should.frozen?
+      end
+
+      it "deduplicates frozen strings" do
+        source_object = ["foo" + "bar", "foobar"]
+        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+
+        object[0].should equal(object[1])
+      end
+    end
+
+    it "does not freeze modules" do
+      object = Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
+      object.should_not.frozen?
+      Kernel.should_not.frozen?
+    end
+
+    it "does not freeze classes" do
+      object = Marshal.send(@method, Marshal.dump(Object), freeze: true)
+      object.should_not.frozen?
+      Object.should_not.frozen?
+    end
+
+    ruby_bug "#19427", ""..."3.3" do
+      it "does freeze extended objects" do
+        object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", freeze: true)
         object.should.frozen?
       end
 
-      describe "deep freezing" do
-        it "returns hashes with frozen keys and values" do
-          key = Object.new
-          value = Object.new
-          source_object = {key => value}
+      it "does freeze extended objects with instance variables" do
+        object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x06:\n@ivarT", freeze: true)
+        object.should.frozen?
+      end
+    end
 
-          hash = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-          hash.size.should == 1
-          hash.keys[0].should.frozen?
-          hash.values[0].should.frozen?
-        end
-
-        it "returns arrays with frozen elements" do
-          object = Object.new
-          source_object = [object]
-
-          array = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-          array.size.should == 1
-          array[0].should.frozen?
-        end
-
-        it "returns structs with frozen members" do
-          object1 = Object.new
-          object2 = Object.new
-          source_object = MarshalSpec::StructToDump.new(object1, object2)
-
-          struct = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-          struct.a.should.frozen?
-          struct.b.should.frozen?
-        end
-
-        it "returns objects with frozen instance variables" do
-          source_object = Object.new
-          instance_variable = Object.new
-          source_object.instance_variable_set(:@a, instance_variable)
-
-          object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-          object.instance_variable_get(:@a).should != nil
-          object.instance_variable_get(:@a).should.frozen?
-        end
-
-        it "deduplicates frozen strings" do
-          source_object = ["foo" + "bar", "foobar"]
-          object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-
-          object[0].should equal(object[1])
-        end
+    ruby_bug "#19427", "3.1"..."3.3" do
+      it "returns frozen object having #_dump method" do
+        object = Marshal.send(@method, Marshal.dump(UserDefined.new), freeze: true)
+        object.should.frozen?
       end
 
-      it "does not freeze modules" do
-        object = Marshal.send(@method, Marshal.dump(Kernel), freeze: true)
-        object.should_not.frozen?
-        Kernel.should_not.frozen?
+      it "returns frozen object responding to #marshal_dump and #marshal_load" do
+        object = Marshal.send(@method, Marshal.dump(UserMarshal.new), freeze: true)
+        object.should.frozen?
       end
 
-      it "does not freeze classes" do
-        object = Marshal.send(@method, Marshal.dump(Object), freeze: true)
-        object.should_not.frozen?
-        Object.should_not.frozen?
-      end
+      it "returns frozen object extended by a module" do
+        object = Object.new
+        object.extend(MarshalSpec::ModuleToExtendBy)
 
-      ruby_bug "#19427", ""..."3.3" do
-        it "does freeze extended objects" do
-          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x00", freeze: true)
-          object.should.frozen?
-        end
-
-        it "does freeze extended objects with instance variables" do
-          object = Marshal.load("\x04\be:\x0FEnumerableo:\vObject\x06:\n@ivarT", freeze: true)
-          object.should.frozen?
-        end
-      end
-
-      ruby_bug "#19427", "3.1"..."3.3" do
-        it "returns frozen object having #_dump method" do
-          object = Marshal.send(@method, Marshal.dump(UserDefined.new), freeze: true)
-          object.should.frozen?
-        end
-
-        it "returns frozen object responding to #marshal_dump and #marshal_load" do
-          object = Marshal.send(@method, Marshal.dump(UserMarshal.new), freeze: true)
-          object.should.frozen?
-        end
-
-        it "returns frozen object extended by a module" do
-          object = Object.new
-          object.extend(MarshalSpec::ModuleToExtendBy)
-
-          object = Marshal.send(@method, Marshal.dump(object), freeze: true)
-          object.should.frozen?
-        end
-      end
-
-      it "does not call freeze method" do
-        object = MarshalSpec::ObjectWithFreezeRaisingException.new
         object = Marshal.send(@method, Marshal.dump(object), freeze: true)
         object.should.frozen?
       end
+    end
 
-      it "returns frozen object even if object does not respond to freeze method" do
-        object = MarshalSpec::ObjectWithoutFreeze.new
-        object = Marshal.send(@method, Marshal.dump(object), freeze: true)
-        object.should.frozen?
-      end
+    it "does not call freeze method" do
+      object = MarshalSpec::ObjectWithFreezeRaisingException.new
+      object = Marshal.send(@method, Marshal.dump(object), freeze: true)
+      object.should.frozen?
+    end
 
-      it "returns a frozen object when is an instance of String/Array/Regexp/Hash subclass and has instance variables" do
-        source_object = UserString.new
-        source_object.instance_variable_set(:@foo, "bar")
+    it "returns frozen object even if object does not respond to freeze method" do
+      object = MarshalSpec::ObjectWithoutFreeze.new
+      object = Marshal.send(@method, Marshal.dump(object), freeze: true)
+      object.should.frozen?
+    end
 
-        object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
-        object.should.frozen?
-      end
+    it "returns a frozen object when is an instance of String/Array/Regexp/Hash subclass and has instance variables" do
+      source_object = UserString.new
+      source_object.instance_variable_set(:@foo, "bar")
 
-      describe "when called with a proc" do
-        it "call the proc with frozen objects" do
-          arr = []
-          s = +'hi'
-          s.instance_variable_set(:@foo, 5)
-          st = Struct.new("Brittle", :a).new
-          st.instance_variable_set(:@clue, 'none')
-          st.a = 0.0
-          h = Hash.new('def')
-          h['nine'] = 9
-          a = [:a, :b, :c]
-          a.instance_variable_set(:@two, 2)
-          obj = [s, 10, s, s, st, a]
-          obj.instance_variable_set(:@zoo, 'ant')
-          proc = Proc.new { |o| arr << o; o}
+      object = Marshal.send(@method, Marshal.dump(source_object), freeze: true)
+      object.should.frozen?
+    end
 
-          Marshal.send(
-            @method,
-            "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F",
-            proc,
-            freeze: true,
-          )
+    describe "when called with a proc" do
+      it "call the proc with frozen objects" do
+        arr = []
+        s = +'hi'
+        s.instance_variable_set(:@foo, 5)
+        st = Struct.new("Brittle", :a).new
+        st.instance_variable_set(:@clue, 'none')
+        st.a = 0.0
+        h = Hash.new('def')
+        h['nine'] = 9
+        a = [:a, :b, :c]
+        a.instance_variable_set(:@two, 2)
+        obj = [s, 10, s, s, st, a]
+        obj.instance_variable_set(:@zoo, 'ant')
+        proc = Proc.new { |o| arr << o; o}
 
-          arr.should == [
-            false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
-            :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
-          ]
+        Marshal.send(
+          @method,
+          "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F",
+          proc,
+          freeze: true,
+        )
 
-          arr.each do |v|
-            v.should.frozen?
-          end
+        arr.should == [
+          false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+          :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+        ]
 
-          Struct.send(:remove_const, :Brittle)
+        arr.each do |v|
+          v.should.frozen?
         end
 
-        it "does not freeze the object returned by the proc" do
-          string = Marshal.send(@method, Marshal.dump("foo"), proc { |o| o.upcase }, freeze: true)
-          string.should == "FOO"
-          string.should_not.frozen?
-        end
+        Struct.send(:remove_const, :Brittle)
+      end
+
+      it "does not freeze the object returned by the proc" do
+        string = Marshal.send(@method, Marshal.dump("foo"), proc { |o| o.upcase }, freeze: true)
+        string.should == "FOO"
+        string.should_not.frozen?
       end
     end
   end
 
   describe "when called with a proc" do
-    ruby_bug "#18141", ""..."3.1" do
-      it "call the proc with fully initialized strings" do
-        utf8_string = "foo".encode(Encoding::UTF_8)
-        Marshal.send(@method, Marshal.dump(utf8_string), proc { |arg|
-          if arg.is_a?(String)
-            arg.should == utf8_string
-            arg.encoding.should == Encoding::UTF_8
-          end
-          arg
-        })
-      end
+    it "call the proc with fully initialized strings" do
+      utf8_string = "foo".encode(Encoding::UTF_8)
+      Marshal.send(@method, Marshal.dump(utf8_string), proc { |arg|
+        if arg.is_a?(String)
+          arg.should == utf8_string
+          arg.encoding.should == Encoding::UTF_8
+        end
+        arg
+      })
+    end
 
-      it "no longer mutate the object after it was passed to the proc" do
-        string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
-        string.should.frozen?
-      end
+    it "no longer mutate the object after it was passed to the proc" do
+      string = Marshal.load(Marshal.dump("foo"), :freeze.to_proc)
+      string.should.frozen?
     end
 
     ruby_bug "#19427", ""..."3.3" do
@@ -255,40 +251,38 @@ describe :marshal_load, shared: true do
       Marshal.send(@method, Marshal.dump([1,2]), proc { [3,4] }).should ==  [3,4]
     end
 
-    ruby_bug "#18141", ""..."3.1" do
-      it "calls the proc for recursively visited data" do
-        a = [1]
-        a << a
-        ret = []
-        Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg.inspect; arg })
-        ret[0].should == 1.inspect
-        ret[1].should == a.inspect
-        ret.size.should == 2
-      end
+    it "calls the proc for recursively visited data" do
+      a = [1]
+      a << a
+      ret = []
+      Marshal.send(@method, Marshal.dump(a), proc { |arg| ret << arg.inspect; arg })
+      ret[0].should == 1.inspect
+      ret[1].should == a.inspect
+      ret.size.should == 2
+    end
 
-      it "loads an Array with proc" do
-        arr = []
-        s = +'hi'
-        s.instance_variable_set(:@foo, 5)
-        st = Struct.new("Brittle", :a).new
-        st.instance_variable_set(:@clue, 'none')
-        st.a = 0.0
-        h = Hash.new('def')
-        h['nine'] = 9
-        a = [:a, :b, :c]
-        a.instance_variable_set(:@two, 2)
-        obj = [s, 10, s, s, st, a]
-        obj.instance_variable_set(:@zoo, 'ant')
-        proc = Proc.new { |o| arr << o.dup; o}
+    it "loads an Array with proc" do
+      arr = []
+      s = +'hi'
+      s.instance_variable_set(:@foo, 5)
+      st = Struct.new("Brittle", :a).new
+      st.instance_variable_set(:@clue, 'none')
+      st.a = 0.0
+      h = Hash.new('def')
+      h['nine'] = 9
+      a = [:a, :b, :c]
+      a.instance_variable_set(:@two, 2)
+      obj = [s, 10, s, s, st, a]
+      obj.instance_variable_set(:@zoo, 'ant')
+      proc = Proc.new { |o| arr << o.dup; o}
 
-        Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
+      Marshal.send(@method, "\x04\bI[\vI\"\ahi\a:\x06EF:\t@fooi\ni\x0F@\x06@\x06IS:\x14Struct::Brittle\x06:\x06af\x060\x06:\n@clueI\"\tnone\x06;\x00FI[\b;\b:\x06b:\x06c\x06:\t@twoi\a\x06:\t@zooI\"\bant\x06;\x00F", proc)
 
-        arr.should == [
-          false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
-          :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
-        ]
-        Struct.send(:remove_const, :Brittle)
-      end
+      arr.should == [
+        false, 5, "hi", 10, "hi", "hi", 0.0, false, "none", st,
+        :b, :c, 2, a, false, "ant", ["hi", 10, "hi", "hi", st, [:a, :b, :c]],
+      ]
+      Struct.send(:remove_const, :Brittle)
     end
   end
 
@@ -364,39 +358,37 @@ describe :marshal_load, shared: true do
     end
   end
 
-  ruby_bug "#18141", ""..."3.1" do
-    it "loads an array containing objects having _dump method, and with proc" do
-      arr = []
-      myproc = Proc.new { |o| arr << o.dup; o }
-      o1 = UserDefined.new;
-      o2 = UserDefinedWithIvar.new
-      obj = [o1, o2, o1, o2]
+  it "loads an array containing objects having _dump method, and with proc" do
+    arr = []
+    myproc = Proc.new { |o| arr << o.dup; o }
+    o1 = UserDefined.new;
+    o2 = UserDefinedWithIvar.new
+    obj = [o1, o2, o1, o2]
 
-      Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
+    Marshal.send(@method, "\x04\b[\tu:\x10UserDefined\x18\x04\b[\aI\"\nstuff\x06:\x06EF@\x06u:\x18UserDefinedWithIvar>\x04\b[\bI\"\nstuff\a:\x06EF:\t@foo:\x18UserDefinedWithIvarI\"\tmore\x06;\x00F@\a@\x06@\a", myproc)
 
-      arr[0].should == o1
-      arr[1].should == o2
-      arr[2].should == obj
-      arr.size.should == 3
-    end
+    arr[0].should == o1
+    arr[1].should == o2
+    arr[2].should == obj
+    arr.size.should == 3
+  end
 
-    it "loads an array containing objects having marshal_dump method, and with proc" do
-      arr = []
-      proc = Proc.new { |o| arr << o.dup; o }
-      o1 = UserMarshal.new
-      o2 = UserMarshalWithIvar.new
+  it "loads an array containing objects having marshal_dump method, and with proc" do
+    arr = []
+    proc = Proc.new { |o| arr << o.dup; o }
+    o1 = UserMarshal.new
+    o2 = UserMarshalWithIvar.new
 
-      Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
+    Marshal.send(@method, "\004\b[\tU:\020UserMarshal\"\nstuffU:\030UserMarshalWithIvar[\006\"\fmy data@\006@\b", proc)
 
-      arr[0].should == 'stuff'
-      arr[1].should == o1
-      arr[2].should == 'my data'
-      arr[3].should == ['my data']
-      arr[4].should == o2
-      arr[5].should == [o1, o2, o1, o2]
+    arr[0].should == 'stuff'
+    arr[1].should == o1
+    arr[2].should == 'my data'
+    arr[3].should == ['my data']
+    arr[4].should == o2
+    arr[5].should == [o1, o2, o1, o2]
 
-      arr.size.should == 6
-    end
+    arr.size.should == 6
   end
 
   it "assigns classes to nested subclasses of Array correctly" do
@@ -526,28 +518,26 @@ describe :marshal_load, shared: true do
       unmarshalled[:key].instance_variable_get(:@string_ivar).should == 'string ivar'
     end
 
-    ruby_version_is "3.1" do
-      it "preserves compare_by_identity behaviour" do
-        h = { a: 1 }
-        h.compare_by_identity
-        unmarshalled = Marshal.send(@method, Marshal.dump(h))
-        unmarshalled.should.compare_by_identity?
+    it "preserves compare_by_identity behaviour" do
+      h = { a: 1 }
+      h.compare_by_identity
+      unmarshalled = Marshal.send(@method, Marshal.dump(h))
+      unmarshalled.should.compare_by_identity?
 
-        h = { a: 1 }
-        unmarshalled = Marshal.send(@method, Marshal.dump(h))
-        unmarshalled.should_not.compare_by_identity?
-      end
+      h = { a: 1 }
+      unmarshalled = Marshal.send(@method, Marshal.dump(h))
+      unmarshalled.should_not.compare_by_identity?
+    end
 
-      it "preserves compare_by_identity behaviour for a Hash subclass" do
-        h = UserHash.new({ a: 1 })
-        h.compare_by_identity
-        unmarshalled = Marshal.send(@method, Marshal.dump(h))
-        unmarshalled.should.compare_by_identity?
+    it "preserves compare_by_identity behaviour for a Hash subclass" do
+      h = UserHash.new({ a: 1 })
+      h.compare_by_identity
+      unmarshalled = Marshal.send(@method, Marshal.dump(h))
+      unmarshalled.should.compare_by_identity?
 
-        h = UserHash.new({ a: 1 })
-        unmarshalled = Marshal.send(@method, Marshal.dump(h))
-        unmarshalled.should_not.compare_by_identity?
-      end
+      h = UserHash.new({ a: 1 })
+      unmarshalled = Marshal.send(@method, Marshal.dump(h))
+      unmarshalled.should_not.compare_by_identity?
     end
 
     it "allocates an instance of the proper class when Hash subclass with compare_by_identity behaviour" do
