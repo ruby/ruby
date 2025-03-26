@@ -357,13 +357,6 @@ module JSON
     end
   end
 
-  # :stopdoc:
-  # I want to deprecate these later, so I'll first be silent about them, and
-  # later delete them.
-  alias unparse generate
-  module_function :unparse
-  # :startdoc:
-
   # :call-seq:
   #   JSON.fast_generate(obj, opts) -> new_string
   #
@@ -385,12 +378,6 @@ module JSON
     end
     state.generate(obj)
   end
-
-  # :stopdoc:
-  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
-  alias fast_unparse fast_generate
-  module_function :fast_unparse
-  # :startdoc:
 
   # :call-seq:
   #   JSON.pretty_generate(obj, opts = nil) -> new_string
@@ -440,12 +427,6 @@ module JSON
     end
     state.generate(obj)
   end
-
-  # :stopdoc:
-  # I want to deprecate these later, so I'll first be silent about them, and later delete them.
-  alias pretty_unparse pretty_generate
-  module_function :pretty_unparse
-  # :startdoc:
 
   # Sets or returns default options for the JSON.unsafe_load method.
   # Initially:
@@ -798,9 +779,6 @@ module JSON
       proc.call result
     end
   end
-
-  alias restore load
-  module_function :restore
 
   # Sets or returns the default options for the JSON.dump method.
   # Initially:
