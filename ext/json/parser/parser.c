@@ -790,6 +790,15 @@ static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig
     return array;
 }
 
+static bool json_obj_creatable_p(VALUE klass)
+{
+    if (rb_respond_to(klass, i_json_creatable_p)) {
+        return RTEST(rb_funcall(klass, i_json_creatable_p, 0));
+    } else {
+        return rb_respond_to(klass, i_json_create);
+    }
+}
+
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, long count)
 {
     VALUE object;
@@ -818,7 +827,7 @@ static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfi
         }
         if (!NIL_P(klassname)) {
             VALUE klass = rb_funcall(mJSON, i_deep_const_get, 1, klassname);
-            if (RTEST(rb_funcall(klass, i_json_creatable_p, 0))) {
+            if (json_obj_creatable_p(klass)) {
                 if (config->deprecated_create_additions) {
                     json_deprecated(deprecated_create_additions_warning);
                 }
@@ -837,7 +846,7 @@ static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfi
 static int match_i(VALUE regexp, VALUE klass, VALUE memo)
 {
     if (regexp == Qundef) return ST_STOP;
-    if (RTEST(rb_funcall(klass, i_json_creatable_p, 0)) &&
+    if (json_obj_creatable_p(klass) &&
       RTEST(rb_funcall(regexp, i_match, 1, rb_ary_entry(memo, 0)))) {
         rb_ary_push(memo, klass);
         return ST_STOP;
