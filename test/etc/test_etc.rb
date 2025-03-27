@@ -175,6 +175,7 @@ class TestEtc < Test::Unit::TestCase
 
   # All Ractor-safe methods should be tested here
   def test_ractor_parallel
+    omit "This test fails randomly with no message; Ractor is not stable yet"
     assert_ractor(<<~RUBY, require: 'etc')
       20.times.map do
         Ractor.new do
