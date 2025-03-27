@@ -837,11 +837,6 @@ module JSON
     end
   end
 
-  # Encodes string using String.encode.
-  def self.iconv(to, from, string)
-    string.encode(to, from)
-  end
-
   # JSON::Coder holds a parser and generator configuration.
   #
   #   module MyApp
