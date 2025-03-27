@@ -48,3 +48,16 @@ test_new(RegexpSingletonTest)
 
 # https://github.com/ruby/openssl/pull/774
 test_params(OpenSSLDHTest)
+
+# https://github.com/ruby/json/pull/773
+test_load(JSONInstanceTest)
+
+# https://github.com/ruby/json/pull/775
+test_fast_unparse(JSONInstanceTest)
+test_pretty_unparse(JSONInstanceTest)
+test_restore(JSONInstanceTest)
+test_unparse(JSONInstanceTest)
+test_fast_unparse(JSONSingletonTest)
+test_pretty_unparse(JSONSingletonTest)
+test_restore(JSONSingletonTest)
+test_unparse(JSONSingletonTest)
