@@ -74,15 +74,6 @@ module JSON
       $VERBOSE = old
     end
 
-    def create_pretty_state
-      State.new(
-        :indent         => '  ',
-        :space          => ' ',
-        :object_nl      => "\n",
-        :array_nl       => "\n"
-      )
-    end
-
     # Returns the JSON generator module that is used by JSON.
     attr_reader :generator
 
@@ -366,6 +357,14 @@ module JSON
     generate(obj, opts)
   end
 
+  PRETTY_GENERATE_OPTIONS = {
+    indent: '  ',
+    space: ' ',
+    object_nl: "\n",
+    array_nl: "\n",
+  }.freeze
+  private_constant :PRETTY_GENERATE_OPTIONS
+
   # :call-seq:
   #   JSON.pretty_generate(obj, opts = nil) -> new_string
   #
@@ -397,22 +396,24 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    if State === opts
-      state, opts = opts, nil
-    else
-      state = JSON.create_pretty_state
-    end
+    return state.generate(obj) if State === opts
+
+    options = PRETTY_GENERATE_OPTIONS
+
     if opts
-      if opts.respond_to? :to_hash
-        opts = opts.to_hash
-      elsif opts.respond_to? :to_h
-        opts = opts.to_h
-      else
-        raise TypeError, "can't convert #{opts.class} into Hash"
+      unless opts.is_a?(Hash)
+        if opts.respond_to? :to_hash
+          opts = opts.to_hash
+        elsif opts.respond_to? :to_h
+          opts = opts.to_h
+        else
+          raise TypeError, "can't convert #{opts.class} into Hash"
+        end
       end
-      state.configure(opts)
+      options = options.merge(opts)
     end
-    state.generate(obj)
+
+    State.generate(obj, options, nil)
   end
 
   # Sets or returns default options for the JSON.unsafe_load method.

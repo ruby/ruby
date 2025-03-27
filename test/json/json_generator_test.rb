@@ -199,26 +199,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     )
   end
 
-  def test_pretty_state
-    state = JSON.create_pretty_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "\n",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "  ",
-      :max_nesting           => 100,
-      :object_nl             => "\n",
-      :space                 => " ",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
-  def test_safe_state
+  def test_state_defaults
     state = JSON::State.new
     assert_equal({
       :allow_nan             => false,
