@@ -103,6 +103,7 @@ GC_IMPL_FN void rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr);
 // Object ID
 GC_IMPL_FN VALUE rb_gc_impl_object_id(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN VALUE rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id);
+GC_IMPL_FN void rb_gc_impl_object_id_move(void *objspace_ptr, VALUE dest, VALUE src);
 // Forking
 GC_IMPL_FN void rb_gc_impl_before_fork(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid);

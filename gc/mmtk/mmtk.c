@@ -1108,16 +1108,21 @@ objspace_obj_id_init(struct objspace *objspace)
 VALUE
 rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
 {
+    VALUE id;
     struct objspace *objspace = objspace_ptr;
 
     unsigned int lev = rb_gc_vm_lock();
-
-    VALUE id;
-    if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &id)) {
-        RUBY_ASSERT(FL_TEST(obj, FL_SEEN_OBJ_ID));
+    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
+        st_data_t val;
+        if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &val)) {
+            id = (VALUE)val;
+        }
+        else {
+            rb_bug("rb_gc_impl_object_id: FL_SEEN_OBJ_ID flag set but not found in table");
+        }
     }
     else {
-        RUBY_ASSERT(!FL_TEST(obj, FL_SEEN_OBJ_ID));
+        RUBY_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, NULL));
 
         id = ULL2NUM(objspace->next_object_id);
         objspace->next_object_id += OBJ_ID_INCREMENT;
@@ -1126,7 +1131,6 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
         st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         FL_SET(obj, FL_SEEN_OBJ_ID);
     }
-
     rb_gc_vm_unlock(lev);
 
     return id;
@@ -1149,6 +1153,27 @@ rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
     else {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
+}
+
+void
+rb_gc_impl_object_id_move(void *objspace_ptr, VALUE dest, VALUE src)
+{
+   /* If the source object's object_id has been seen, we need to update
+    * the object to object id mapping. */
+   st_data_t id = 0;
+   struct objspace *objspace = objspace_ptr;
+
+   unsigned int lev = rb_gc_vm_lock();
+   st_data_t key = (st_data_t)src;
+   if (!st_delete(objspace->obj_to_id_tbl, &key, &id)) {
+       rb_bug("gc_move: object ID seen, but not in mapping table: %s", rb_obj_info(src));
+   }
+   FL_UNSET_RAW(src, FL_SEEN_OBJ_ID);
+
+   st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+   st_insert(objspace->id_to_obj_tbl, id, (st_data_t)dest);
+   FL_SET_RAW(dest, FL_SEEN_OBJ_ID);
+   rb_gc_vm_unlock(lev);
 }
 
 // Forking
