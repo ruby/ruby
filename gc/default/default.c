@@ -1565,25 +1565,6 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 }
 
 VALUE
-rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    VALUE obj;
-    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
-            !rb_gc_impl_garbage_object_p(objspace, obj)) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-}
-
-VALUE
 rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
 {
     VALUE id;
@@ -1612,6 +1593,46 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
     rb_gc_vm_unlock(lev);
 
     return id;
+}
+
+VALUE
+rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    VALUE obj;
+    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
+            !rb_gc_impl_garbage_object_p(objspace, obj)) {
+        return obj;
+    }
+
+    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+    }
+    else {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+    }
+}
+
+void
+rb_gc_impl_object_id_move(void *objspace_ptr, VALUE dest, VALUE src)
+{
+   /* If the source object's object_id has been seen, we need to update
+    * the object to object id mapping. */
+   st_data_t id = 0;
+   rb_objspace_t *objspace = objspace_ptr;
+
+   unsigned int lev = rb_gc_vm_lock();
+   st_data_t key = (st_data_t)src;
+   if (!st_delete(objspace->obj_to_id_tbl, &key, &id)) {
+       rb_bug("gc_move: object ID seen, but not in mapping table: %s", rb_obj_info(src));
+   }
+   FL_UNSET_RAW(src, FL_SEEN_OBJ_ID);
+
+   st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+   st_insert(objspace->id_to_obj_tbl, id, (st_data_t)dest);
+   FL_SET_RAW(dest, FL_SEEN_OBJ_ID);
+   rb_gc_vm_unlock(lev);
 }
 
 static void free_stack_chunks(mark_stack_t *);
