@@ -161,13 +161,6 @@ module JSON
     end
   end
 
-  # For backwards compatibility
-  UnparserError = GeneratorError # :nodoc:
-
-  # This exception is raised if the required unicode support is missing on the
-  # system. Usually this means that the iconv library is not installed.
-  class MissingUnicodeSupport < JSONError; end
-
   # Fragment of JSON document that is to be included as is:
   #   fragment = JSON::Fragment.new("[1, 2, 3]")
   #   JSON.generate({ count: 3, items: fragments })
