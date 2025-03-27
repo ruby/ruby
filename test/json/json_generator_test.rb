@@ -707,7 +707,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
         assert_equal expected, value.to_json
       end
   end
-  
+
   def test_numbers_of_various_sizes
     numbers = [
       0, 1, -1, 9, -9, 13, -13, 91, -91, 513, -513, 7513, -7513,
