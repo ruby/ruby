@@ -1987,3 +1987,87 @@ assert_equal 'ok', %q{
   GC.start
   :ok.itself
 }
+
+# moved objects being corrupted if embeded (String)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = "foobarbazfoobarbazfoobarbazfoobarbaz"
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}
+
+# moved objects being corrupted if embeded (Array)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = Array.new(10, 42)
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}
+
+# moved objects being corrupted if embeded (Hash)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = { foo: 1, bar: 2 }
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}
+
+# moved objects being corrupted if embeded (MatchData)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = "foo".match(/o/)
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}
+
+# moved objects being corrupted if embeded (Struct)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = Struct.new(:a, :b, :c, :d, :e, :f).new(1, 2, 3, 4, 5, 6)
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}
+
+# moved objects being corrupted if embeded (Object)
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  class SomeObject
+    attr_reader :a, :b, :c, :d, :e, :f
+    def initialize
+      @a = @b = @c = @d = @e = @f = 1
+    end
+
+    def ==(o)
+      @a == o.a &&
+      @b == o.b &&
+      @c == o.c &&
+      @d == o.d &&
+      @e == o.e &&
+      @f == o.f
+    end
+  end
+
+  SomeObject.new # initial non-embeded
+
+  obj = SomeObject.new
+  ractor.send(obj.dup, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj == obj ? :ok : rountriped_obj
+}

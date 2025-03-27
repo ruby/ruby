@@ -3585,8 +3585,27 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        VALUE moved = rb_obj_alloc(RBASIC_CLASS(obj));
-        rb_shape_set_shape(moved, rb_shape_get_shape(obj));
+        VALUE moved;
+        switch (RB_BUILTIN_TYPE(obj)) {
+          case T_STRING:
+            moved = rb_str_dup(obj);
+            break;
+          case T_ARRAY:
+            moved = rb_ary_dup(obj);
+            break;
+          case T_HASH:
+            moved = rb_hash_dup(obj);
+            break;
+          case T_MATCH:
+          case T_STRUCT:
+          case T_OBJECT:
+            // TODO: A more generic copy object with size that doesn't invoke init_copy?
+            moved = rb_obj_dup(obj);
+            break;
+          default:
+            rb_bug("move_enter unexpected type");
+            break;
+        }
         data->replacement = moved;
         return traverse_cont;
     }
