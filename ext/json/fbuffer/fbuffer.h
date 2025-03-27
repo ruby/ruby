@@ -186,7 +186,7 @@ static void fbuffer_append_long(FBuffer *fb, long number)
      * the number of resulting characters.
      *
      * We do know, however, that the `number` argument is always in the
-     * range 0xc000000000000000 to 0x3fffffffffffffff, or, in decimal, 
+     * range 0xc000000000000000 to 0x3fffffffffffffff, or, in decimal,
      * -4611686018427387904 to 4611686018427387903. The max number of chars
      * generated is therefore 20 (including a potential sign character).
      */
@@ -198,7 +198,7 @@ static void fbuffer_append_long(FBuffer *fb, long number)
     if (number < 0) {
         fbuffer_append_reserved_char(fb, '-');
 
-        /* 
+        /*
          * Since number is always > LONG_MIN, `-number` will not overflow
          * and is always the positive abs() value.
          */

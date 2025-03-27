@@ -87,7 +87,7 @@ static u64_t mask24 = (u64(1) << 24) - 1;
 static u64_t mask32 = (u64(1) << 32) - 1;
 static u64_t mask57 = (u64(1) << 57) - 1;
 
-static 
+static
 char* to_text_from_ulong(char* b, u64_t n) {
     if (n < u32(1e2))
     {
@@ -254,4 +254,3 @@ char* to_text_from_ulong(char* b, u64_t n) {
 #pragma GCC diagnostic pop
 
 #endif // JEAIII_TO_TEXT_H_
-
