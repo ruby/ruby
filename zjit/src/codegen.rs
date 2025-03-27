@@ -92,7 +92,7 @@ fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
         match get_option!(dump_hir_opt) {
             Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&ssa)),
             Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&ssa)),
-            Some(DumpHIR::Raw) => println!("HIR:\n{:#?}", &ssa),
+            Some(DumpHIR::Debug) => println!("HIR:\n{:#?}", &ssa),
             None => {},
         }
 

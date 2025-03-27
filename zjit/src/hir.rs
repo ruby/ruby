@@ -1448,7 +1448,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     match get_option!(dump_hir) {
         Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&fun)),
         Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&fun)),
-        Some(DumpHIR::Raw) => println!("HIR:\n{:#?}", &fun),
+        Some(DumpHIR::Debug) => println!("HIR:\n{:#?}", &fun),
         None => {},
     }
 
