@@ -64,7 +64,7 @@ pub struct Type {
 include!("hir_type.inc.rs");
 
 /// Get class name from a class pointer.
-fn get_class_name(class: Option<VALUE>) -> String {
+pub fn get_class_name(class: Option<VALUE>) -> String {
     use crate::cruby::{RB_TYPE_P, RUBY_T_MODULE, RUBY_T_CLASS};
     use crate::cruby::{cstr_to_rust_string, rb_class2name};
     class.filter(|&class| {
@@ -242,6 +242,12 @@ impl Type {
     /// Return true if the value with this type is definitely falsy.
     pub fn is_known_falsy(&self) -> bool {
         self.is_subtype(types::NilClassExact) || self.is_subtype(types::FalseClassExact)
+    }
+
+    /// Top self is the Ruby global object, where top-level method definitions go. Return true if
+    /// this Type has a Ruby object specialization that is the top-level self.
+    pub fn is_top_self(&self) -> bool {
+        self.ruby_object() == Some(unsafe { crate::cruby::rb_vm_top_self() })
     }
 
     /// Return the object specialization, if any.
