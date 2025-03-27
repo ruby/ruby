@@ -277,8 +277,8 @@ module Bundler
         ruby_group = Resolver::SpecGroup.new(ruby_specs)
 
         unless ruby_group.empty?
-          platform_specs.each do |specs|
-            ruby_group.merge(Resolver::SpecGroup.new(specs))
+          platform_specs.each do |s|
+            ruby_group.merge(Resolver::SpecGroup.new(s))
           end
 
           groups << Resolver::Candidate.new(version, group: ruby_group, priority: -1)
