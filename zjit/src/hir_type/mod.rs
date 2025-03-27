@@ -197,7 +197,7 @@ impl Type {
         }
         else {
             // TODO(max): Add more cases for inferring type bits from built-in types
-            Type { bits: bits::Object, spec: Specialization::Object(val) }
+            Type { bits: bits::BasicObject, spec: Specialization::Object(val) }
         }
     }
 
