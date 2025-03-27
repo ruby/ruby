@@ -661,19 +661,23 @@ pub fn cstr_to_rust_string(c_char_ptr: *const c_char) -> Option<String> {
     }
 }
 
+pub fn iseq_name(iseq: IseqPtr) -> String {
+    let iseq_label = unsafe { rb_iseq_label(iseq) };
+    if iseq_label == Qnil {
+        "None".to_string()
+    } else {
+        ruby_str_to_rust(iseq_label)
+    }
+}
+
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
 pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
-    let iseq_label = unsafe { rb_iseq_label(iseq) };
     let iseq_path = unsafe { rb_iseq_path(iseq) };
     let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
-    let mut s = if iseq_label == Qnil {
-        "None".to_string()
-    } else {
-        ruby_str_to_rust(iseq_label)
-    };
+    let mut s = iseq_name(iseq);
     s.push_str("@");
     if iseq_path == Qnil {
         s.push_str("None");

@@ -939,6 +939,8 @@ impl Function {
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let fun = &self.fun;
+        let iseq_name = iseq_name(fun.iseq);
+        writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
             write!(f, "{block_id}(")?;
             if !fun.blocks[block_id.0].params.is_empty() {
@@ -1740,6 +1742,7 @@ mod tests {
     fn test_putobject() {
         eval("def test = 123");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[123] = Const Value(123)
               Return v1
@@ -1750,6 +1753,7 @@ mod tests {
     fn test_new_array() {
         eval("def test = []");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:ArrayExact = NewArray 0
               Return v1
@@ -1760,6 +1764,7 @@ mod tests {
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:ArrayExact = ArrayDup v1
@@ -1773,6 +1778,7 @@ mod tests {
     fn test_string_copy() {
         eval("def test = \"hello\"");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
@@ -1784,6 +1790,7 @@ mod tests {
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
@@ -1794,6 +1801,7 @@ mod tests {
     fn test_flonum() {
         eval("def test = 1.5");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
@@ -1804,6 +1812,7 @@ mod tests {
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
@@ -1814,6 +1823,7 @@ mod tests {
     fn test_static_sym() {
         eval("def test = :foo");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               Return v1
@@ -1824,6 +1834,7 @@ mod tests {
     fn test_opt_plus() {
         eval("def test = 1+2");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -1841,6 +1852,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:Fixnum[1] = Const Value(1)
@@ -1860,6 +1872,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject):
               v3:CBool = Test v0
               IfFalse v3, bb1(v0)
@@ -1884,6 +1897,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v4:CBool = Test v0
@@ -1905,6 +1919,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v6:Fixnum = GuardType v0, Fixnum
@@ -1921,6 +1936,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
               v6:Fixnum = GuardType v0, Fixnum
@@ -1937,6 +1953,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
               v6:Fixnum = GuardType v0, Fixnum
@@ -1953,6 +1970,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
               v6:Fixnum = GuardType v0, Fixnum
@@ -1969,6 +1987,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
               v6:Fixnum = GuardType v0, Fixnum
@@ -1985,6 +2004,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2001,6 +2021,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2017,6 +2038,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2033,6 +2055,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2049,6 +2072,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2073,6 +2097,7 @@ mod tests {
             test
         ");
         assert_method_hir("test",  expect![[r#"
+            fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
               v1:NilClassExact = Const Value(nil)
@@ -2111,6 +2136,7 @@ mod tests {
             test(1, 2); test(1, 2)
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
               v6:Fixnum = GuardType v0, Fixnum
@@ -2133,6 +2159,7 @@ mod tests {
             end
         ");
         assert_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
@@ -2143,7 +2170,7 @@ mod tests {
             bb1(v12):
               v14 = Const Value(4)
               Return v14
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2158,6 +2185,7 @@ mod tests {
             test
         ");
         assert_method_hir("test",  expect![[r#"
+            fn test:
             bb0():
               v1:BasicObject = PutSelf
               v3:Fixnum[2] = Const Value(2)
@@ -2178,6 +2206,7 @@ mod tests {
             test([1,2,3])
         ");
         assert_method_hir("test",  expect![[r#"
+            fn test:
             bb0(v0:BasicObject):
               v3:BasicObject = Send v0, 0x1000, :each
               Return v3
@@ -2190,6 +2219,7 @@ mod tests {
 
         // The 2 string literals have the same address because they're deduped.
         assert_method_hir("test",  expect![[r#"
+            fn test:
             bb0():
               v1:BasicObject = PutSelf
               v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2233,13 +2263,14 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
               v17:CBool[true] = Const CBool(true)
               v9:Fixnum[3] = Const Value(3)
               Return v9
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2255,6 +2286,7 @@ mod opt_tests {
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:FalseClassExact = Const Value(false)
@@ -2263,7 +2295,7 @@ mod opt_tests {
             bb1(v12:FalseClassExact):
               v14:Fixnum[4] = Const Value(4)
               Return v14
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2275,6 +2307,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -2284,7 +2317,7 @@ mod opt_tests {
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v19:Fixnum[6] = Const Value(6)
               Return v19
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2300,6 +2333,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -2308,7 +2342,7 @@ mod opt_tests {
               v21:CBool[true] = Const CBool(true)
               v13:Fixnum[3] = Const Value(3)
               Return v13
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2324,6 +2358,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
@@ -2334,7 +2369,7 @@ mod opt_tests {
             bb1():
               v17:Fixnum[4] = Const Value(4)
               Return v17
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2350,6 +2385,7 @@ mod opt_tests {
             test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0():
               v1:Fixnum[2] = Const Value(2)
               v3:Fixnum[2] = Const Value(2)
@@ -2358,7 +2394,7 @@ mod opt_tests {
               v21:CBool[true] = Const CBool(true)
               v13:Fixnum[3] = Const Value(3)
               Return v13
-            "#]]);
+        "#]]);
     }
 
     #[test]
@@ -2370,12 +2406,13 @@ mod opt_tests {
             test(2); test(3)
         ");
         assert_optimized_method_hir("test", expect![[r#"
+            fn test:
             bb0(v0:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v6:Fixnum = GuardType v0, Fixnum
               v8:Fixnum = FixnumAdd v6, v3
               Return v8
-            "#]]);
+        "#]]);
     }
 }
