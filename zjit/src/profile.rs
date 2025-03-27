@@ -24,6 +24,11 @@ impl Profiler {
         }
     }
 
+    // Get an instruction operand that sits next to the opcode at PC.
+    fn insn_opnd(&self, idx: usize) -> VALUE {
+        unsafe { get_cfp_pc(self.cfp).add(1 + idx).read() }
+    }
+
     // Peek at the nth topmost value on the Ruby stack.
     // Returns the topmost value when n == 0.
     fn peek_at_stack(&self, n: isize) -> VALUE {
@@ -57,6 +62,12 @@ fn profile_insn(profiler: &mut Profiler, opcode: ruby_vminsn_type) {
         YARVINSN_opt_le    => profile_operands(profiler, 2),
         YARVINSN_opt_gt    => profile_operands(profiler, 2),
         YARVINSN_opt_ge    => profile_operands(profiler, 2),
+        YARVINSN_opt_send_without_block => {
+            let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
+            let argc = unsafe { vm_ci_argc((*cd).ci) };
+            // Profile all the arguments and self (+1).
+            profile_operands(profiler, (argc + 1) as usize);
+        }
         _ => {}
     }
 }

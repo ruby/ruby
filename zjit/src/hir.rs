@@ -1389,7 +1389,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
-                YARVINSN_opt_send_without_block => {
+                YARVINSN_opt_send_without_block | YARVINSN_zjit_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let argc = unsafe { vm_ci_argc((*cd).ci) };

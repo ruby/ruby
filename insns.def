@@ -890,6 +890,7 @@ opt_send_without_block
 (CALL_DATA cd)
 (...)
 (VALUE val)
+// attr bool zjit_profile = true;
 // attr bool handles_sp = true;
 // attr rb_snum_t sp_inc = sp_inc_of_sendish(cd->ci);
 // attr rb_snum_t comptime_sp_inc = sp_inc_of_sendish(ci);
