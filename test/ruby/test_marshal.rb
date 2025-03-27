@@ -478,6 +478,9 @@ class TestMarshal < Test::Unit::TestCase
     e = []
     ary = [ [2.0, e], [e] ]
     assert_equal(ary, Marshal.load(Marshal.dump(ary)), bug7348)
+
+    ary = [ -0.0, -0.0 ]
+    assert_equal(ary, Marshal.load(Marshal.dump(ary)))
   end
 
   class TestClass
