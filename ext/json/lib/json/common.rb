@@ -5,9 +5,6 @@ require 'json/version'
 module JSON
   autoload :GenericObject, 'json/generic_object'
 
-  NOT_SET = Object.new.freeze
-  private_constant :NOT_SET
-
   class << self
     # :call-seq:
     #   JSON[object] -> new_array or new_string
