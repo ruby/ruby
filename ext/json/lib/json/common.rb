@@ -74,16 +74,6 @@ module JSON
       $VERBOSE = old
     end
 
-    def create_fast_state
-      State.new(
-        :indent         => '',
-        :space          => '',
-        :object_nl      => "",
-        :array_nl       => "",
-        :max_nesting    => false
-      )
-    end
-
     def create_pretty_state
       State.new(
         :indent         => '  ',
@@ -368,12 +358,12 @@ module JSON
   #   # Raises SystemStackError (stack level too deep):
   #   JSON.fast_generate(a)
   def fast_generate(obj, opts = nil)
-    if State === opts
-      state = opts
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
     else
-      state = JSON.create_fast_state.configure(opts)
+      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
     end
-    state.generate(obj)
+    generate(obj, opts)
   end
 
   # :call-seq:

@@ -237,25 +237,6 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
-  def test_fast_state
-    state = JSON.create_fast_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "",
-      :max_nesting           => 0,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
   def test_allow_nan
     error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_same JSON::NaN, error.invalid_object
