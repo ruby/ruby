@@ -48,7 +48,10 @@ module Bundler
     end
 
     def add_extra_platforms!(platforms)
-      return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
+      if @specs.empty?
+        platforms.concat([Gem::Platform::RUBY]).uniq
+        return
+      end
 
       new_platforms = all_platforms.select do |platform|
         next if platforms.include?(platform)
@@ -56,14 +59,12 @@ module Bundler
 
         complete_platform(platform)
       end
-      return platforms if new_platforms.empty?
+      return if new_platforms.empty?
 
       platforms.concat(new_platforms)
 
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
-
-      platforms
     end
 
     def validate_deps(s)

@@ -760,7 +760,7 @@ module Bundler
         end
       end
 
-      @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
+      result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
       SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
