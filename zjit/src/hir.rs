@@ -422,7 +422,9 @@ struct FunctionPrinter<'a> {
 impl<'a> FunctionPrinter<'a> {
     fn without_snapshot(fun: &'a Function) -> Self {
         let mut ptr_map = PtrPrintMap::identity();
-        ptr_map.map_ptrs = true;
+        if cfg!(test) {
+            ptr_map.map_ptrs = true;
+        }
         Self { fun, display_snapshot: false, ptr_map }
     }
 
