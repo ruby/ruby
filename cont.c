@@ -1369,7 +1369,6 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     cont_save_thread(cont, th);
     cont->saved_ec.thread_ptr = th;
-    cont->saved_ec.tag = NULL;
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
