@@ -5,6 +5,112 @@ require 'json/version'
 module JSON
   autoload :GenericObject, 'json/generic_object'
 
+  module ParserOptions # :nodoc:
+    class << self
+      def prepare(opts)
+        if opts[:object_class] || opts[:array_class]
+          opts = opts.dup
+          on_load = opts[:on_load]
+
+          on_load = object_class_proc(opts[:object_class], on_load) if opts[:object_class]
+          on_load = array_class_proc(opts[:array_class], on_load) if opts[:array_class]
+          opts[:on_load] = on_load
+        end
+
+        if opts.fetch(:create_additions, false) != false
+          opts = create_additions_proc(opts)
+        end
+
+        opts
+      end
+
+      private
+
+      def object_class_proc(object_class, on_load)
+        ->(obj) do
+          if Hash === obj
+            object = object_class.new
+            obj.each { |k, v| object[k] = v }
+            obj = object
+          end
+          on_load.nil? ? obj : on_load.call(obj)
+        end
+      end
+
+      def array_class_proc(array_class, on_load)
+        ->(obj) do
+          if Array === obj
+            array = array_class.new
+            obj.each { |v| array << v }
+            obj = array
+          end
+          on_load.nil? ? obj : on_load.call(obj)
+        end
+      end
+
+      # TODO: exact :create_additions support to another gem for version 3.0
+      def create_additions_proc(opts)
+        if opts[:symbolize_names]
+          raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
+        end
+
+        opts = opts.dup
+        create_additions = opts.fetch(:create_additions, false)
+        on_load = opts[:on_load]
+        object_class = opts[:object_class] || Hash
+
+        opts[:on_load] = ->(object) do
+          case object
+          when String
+            opts[:match_string]&.each do |pattern, klass|
+              if match = pattern.match(object)
+                create_additions_warning if create_additions.nil?
+                object = klass.json_create(object)
+                break
+              end
+            end
+          when object_class
+            if opts[:create_additions] != false
+              if class_name = object[JSON.create_id]
+                klass = JSON.deep_const_get(class_name)
+                if (klass.respond_to?(:json_creatable?) && klass.json_creatable?) || klass.respond_to?(:json_create)
+                  create_additions_warning if create_additions.nil?
+                  object = klass.json_create(object)
+                end
+              end
+            end
+          end
+
+          on_load.nil? ? object : on_load.call(object)
+        end
+
+        opts
+      end
+
+      GEM_ROOT = File.expand_path("../../../", __FILE__) + "/"
+      def create_additions_warning
+        message = "JSON.load implicit support for `create_additions: true` is deprecated " \
+          "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
+          "pass `create_additions: true`"
+
+        uplevel = 4
+        caller_locations(uplevel, 10).each do |frame|
+          if frame.path.nil? || frame.path.start_with?(GEM_ROOT) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
+            uplevel += 1
+          else
+            break
+          end
+        end
+
+        if RUBY_VERSION >= "3.0"
+          warn(message, uplevel: uplevel - 1, category: :deprecated)
+        else
+          warn(message, uplevel: uplevel - 1)
+        end
+      end
+    end
+  end
+
   class << self
     # :call-seq:
     #   JSON[object] -> new_array or new_string
@@ -236,8 +342,15 @@ module JSON
   #   JSON.parse('')
   #
   def parse(source, opts = nil)
+    opts = ParserOptions.prepare(opts) unless opts.nil?
     Parser.parse(source, opts)
   end
+
+  PARSE_L_OPTIONS = {
+    max_nesting: false,
+    allow_nan: true,
+  }.freeze
+  private_constant :PARSE_L_OPTIONS
 
   # :call-seq:
   #   JSON.parse!(source, opts) -> object
@@ -251,12 +364,11 @@ module JSON
   #   which disables checking for nesting depth.
   # - Option +allow_nan+, if not provided, defaults to +true+.
   def parse!(source, opts = nil)
-    options = {
-      :max_nesting  => false,
-      :allow_nan    => true
-    }
-    options.merge!(opts) if opts
-    Parser.new(source, options).parse
+    if opts.nil?
+      parse(source, PARSE_L_OPTIONS)
+    else
+      parse(source, PARSE_L_OPTIONS.merge(opts))
+    end
   end
 
   # :call-seq:
@@ -859,10 +971,9 @@ module JSON
         options[:strict] = true
       end
       options[:as_json] = as_json if as_json
-      options[:create_additions] = false unless options.key?(:create_additions)
 
       @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(options)
+      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options))
     end
 
     # call-seq:
