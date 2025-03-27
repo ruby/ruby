@@ -951,14 +951,3 @@ module ::Kernel
     JSON.generate(object, args.first)
   end
 end
-
-# Extends any Class to include _json_creatable?_ method.
-class ::Class
-  # Returns true if this class can be used to create an instance
-  # from a serialised JSON string. The class has to implement a class
-  # method _json_create_ that expects a hash as first parameter. The hash
-  # should include the required data.
-  def json_creatable?
-    respond_to?(:json_create)
-  end
-end

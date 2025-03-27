@@ -44,10 +44,6 @@ class JSONAdditionTest < Test::Unit::TestCase
   end
 
   class B
-    def self.json_creatable?
-      false
-    end
-
     def to_json(*args)
       {
         'json_class'  => self.class.name,
@@ -56,10 +52,6 @@ class JSONAdditionTest < Test::Unit::TestCase
   end
 
   class C
-    def self.json_creatable?
-      false
-    end
-
     def to_json(*args)
       {
         'json_class'  => 'JSONAdditionTest::Nix',
@@ -69,7 +61,6 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_extended_json
     a = A.new(666)
-    assert A.json_creatable?
     json = generate(a)
     a_again = parse(json, :create_additions => true)
     assert_kind_of a.class, a_again
@@ -78,7 +69,7 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_extended_json_default
     a = A.new(666)
-    assert A.json_creatable?
+    assert A.respond_to?(:json_create)
     json = generate(a)
     a_hash = parse(json)
     assert_kind_of Hash, a_hash
@@ -86,7 +77,6 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_extended_json_disabled
     a = A.new(666)
-    assert A.json_creatable?
     json = generate(a)
     a_again = parse(json, :create_additions => true)
     assert_kind_of a.class, a_again
@@ -101,14 +91,12 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_extended_json_fail1
     b = B.new
-    assert !B.json_creatable?
     json = generate(b)
     assert_equal({ "json_class"=>"JSONAdditionTest::B" }, parse(json))
   end
 
   def test_extended_json_fail2
     c = C.new
-    assert !C.json_creatable?
     json = generate(c)
     assert_raise(ArgumentError, NameError) { parse(json, :create_additions => true) }
   end
