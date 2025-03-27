@@ -102,11 +102,11 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   _tag.tag = Qundef; \
   _tag.prev = _ec->tag; \
   _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
-  rb_vm_tag_jmpbuf_init(&_tag.buf); \
+  rb_vm_tag_jmpbuf_init(&_tag);
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
-  rb_vm_tag_jmpbuf_deinit(&_tag.buf); \
+  rb_vm_tag_jmpbuf_deinit(&_tag); \
 } while (0)
 
 #define EC_TMPPOP_TAG() \
