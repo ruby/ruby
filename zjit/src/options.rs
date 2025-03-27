@@ -15,6 +15,9 @@ pub struct Options {
     /// Dump High-level IR generated from ISEQ.
     pub dump_hir: Option<DumpHIR>,
 
+    /// Dump High-level IR after optimization, right before codegen.
+    pub dump_hir_opt: Option<DumpHIR>,
+
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
 }
@@ -56,6 +59,7 @@ pub fn init_options() -> Options {
     Options {
         debug: false,
         dump_hir: None,
+        dump_hir_opt: None,
         dump_disasm: false,
     }
 }
@@ -96,6 +100,10 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("dump-hir", "") => options.dump_hir = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir", "all") => options.dump_hir = Some(DumpHIR::All),
         ("dump-hir", "raw") => options.dump_hir = Some(DumpHIR::Raw),
+
+        ("dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
+        ("dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
+        ("dump-hir-opt", "raw") => options.dump_hir_opt = Some(DumpHIR::Raw),
 
         ("dump-disasm", "") => options.dump_disasm = true,
 

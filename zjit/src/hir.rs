@@ -413,14 +413,14 @@ impl Block {
     }
 }
 
-struct FunctionPrinter<'a> {
+pub struct FunctionPrinter<'a> {
     fun: &'a Function,
     display_snapshot: bool,
     ptr_map: PtrPrintMap,
 }
 
 impl<'a> FunctionPrinter<'a> {
-    fn without_snapshot(fun: &'a Function) -> Self {
+    pub fn without_snapshot(fun: &'a Function) -> Self {
         let mut ptr_map = PtrPrintMap::identity();
         if cfg!(test) {
             ptr_map.map_ptrs = true;
@@ -428,7 +428,7 @@ impl<'a> FunctionPrinter<'a> {
         Self { fun, display_snapshot: false, ptr_map }
     }
 
-    fn with_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
+    pub fn with_snapshot(fun: &'a Function) -> FunctionPrinter<'a> {
         let mut printer = Self::without_snapshot(fun);
         printer.display_snapshot = true;
         printer

@@ -3,8 +3,9 @@ use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
 use crate::hir::{self, Block, BlockId, BranchEdge, CallInfo};
-use crate::hir::{Const, FrameState, Function, Insn, InsnId};
+use crate::hir::{Const, FrameState, Function, Insn, InsnId, FunctionPrinter};
 use crate::hir_type::{types::Fixnum, Type};
+use crate::options::{get_option, DumpHIR};
 
 /// Ephemeral code generation state
 struct JITState {
@@ -88,6 +89,12 @@ fn iseq_gen_entry_point(iseq: IseqPtr) -> *const u8 {
             }
         };
         ssa.optimize();
+        match get_option!(dump_hir_opt) {
+            Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&ssa)),
+            Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&ssa)),
+            Some(DumpHIR::Raw) => println!("HIR:\n{:#?}", &ssa),
+            None => {},
+        }
 
         // Compile High-level IR into machine code
         let cb = ZJITState::get_code_block();
