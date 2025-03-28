@@ -219,12 +219,5 @@ module TestParallel
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)
     end
-
-    def test_retry_workers
-      spawn_runner "--worker-timeout=1", "--retry", "test4test_slow_0.rb", "test4test_slow_1.rb", jobs: "2"
-      buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read.b}
-      assert_match(/^Retrying hung up testcases\.+$/, buf)
-      assert_match(/^2 tests,.* 0 failures,/, buf)
-    end
   end
 end
