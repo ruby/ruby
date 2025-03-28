@@ -61,3 +61,10 @@ test_fast_unparse(JSONSingletonTest)
 test_pretty_unparse(JSONSingletonTest)
 test_restore(JSONSingletonTest)
 test_unparse(JSONSingletonTest)
+
+# https://github.com/ruby/json/pull/779
+test_iconv(JSONSingletonTest)
+
+# https://github.com/ruby/json/pull/774
+test_recurse_proc(JSONInstanceTest)
+test_recurse_proc(JSONSingletonTest)
