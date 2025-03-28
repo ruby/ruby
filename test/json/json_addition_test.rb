@@ -152,7 +152,7 @@ class JSONAdditionTest < Test::Unit::TestCase
 
   def test_deprecated_load_create_additions
     pattern = /json_addition_test\.rb.*use JSON\.unsafe_load/
-    if RUBY_ENGINE == 'truffleruby'
+    if RUBY_ENGINE == 'truffleruby' || File.basename($0) != 'json_addition_test.rb'
       pattern = /use JSON\.unsafe_load/
     end
 
