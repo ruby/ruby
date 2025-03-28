@@ -4,6 +4,7 @@
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
 
 this is my contribution 
+in python and c
 # What is Ruby?
 
 Ruby is an interpreted object-oriented programming language often
