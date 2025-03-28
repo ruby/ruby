@@ -3561,18 +3561,15 @@ static const VALUE fl_users = FL_USER1  | FL_USER2  | FL_USER3  |
                               FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19;
 
 static void
-ractor_moved_bang(VALUE obj)
+ractor_moved_bang(VALUE obj, size_t size)
 {
     // invalidate src object
     struct RVALUE *rv = (void *)obj;
+    memset(rv, 0, size);
 
     rv->klass = rb_cRactorMovedObject;
-    rv->v1 = 0;
-    rv->v2 = 0;
-    rv->v3 = 0;
-    rv->flags = rv->flags & ~fl_users;
-
-    if (BUILTIN_TYPE(obj) == T_OBJECT) ROBJECT_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
+    rv->flags = T_OBJECT;
+    rb_shape_set_shape_id(obj, ROOT_SHAPE_ID);
 
     // TODO: record moved location
 }
@@ -3595,8 +3592,6 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         else {
             moved = rb_wb_unprotected_newobj_of(RBASIC_CLASS(obj), flags, slot_size);
         }
-
-        rb_shape_set_shape(moved, rb_shape_get_shape(obj));
         data->replacement = moved;
         return traverse_cont;
     }
@@ -3607,9 +3602,10 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 {
     VALUE dest = data->replacement;
 
-    rb_gc_move_object(dest, obj, rb_gc_obj_slot_size(obj));
+    size_t size = rb_gc_obj_slot_size(obj);
+    rb_gc_move_object(dest, obj, size);
 
-    ractor_moved_bang(obj);
+    ractor_moved_bang(obj, size);
     return traverse_cont;
 }
 

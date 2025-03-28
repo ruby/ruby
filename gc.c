@@ -2934,12 +2934,25 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
 void
 rb_gc_move_object(VALUE dest, VALUE src, size_t size)
 {
+    // TODO: What if the object is pointed to? e.g. shared array or string?
+    // TODO: Trigger write barriers?
+    // TODO: Reset or copy marking?
+
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
 
     GC_ASSERT(rb_gc_obj_slot_size(dest) == size);
     GC_ASSERT(rb_gc_obj_slot_size(dest) >= rb_gc_obj_slot_size(src));
 
+    rb_shape_set_shape_id(dest, rb_shape_get_shape_id(src));
+
     memcpy((void *)dest, (void *)src, size);
+
+    if (RVALUE_OVERHEAD > 0) {
+        void *dest_overhead = (void *)(((uintptr_t)dest) + size - RVALUE_OVERHEAD);
+        void *src_overhead = (void *)(((uintptr_t)src) + size - RVALUE_OVERHEAD);
+
+        memcpy(dest_overhead, src_overhead, RVALUE_OVERHEAD);
+    }
 
     if (UNLIKELY(FL_TEST_RAW(src, FL_SEEN_OBJ_ID))) {
         fprintf(stderr, "move id \n");
@@ -2959,6 +2972,9 @@ rb_gc_move_object(VALUE dest, VALUE src, size_t size)
     if (UNLIKELY(FL_TEST_RAW(src, FL_EXIVAR))) {
         rb_replace_generic_ivar(dest, src);
     }
+
+    memset((void *)src, 0, size);
+    RVALUE_AGE_RESET(src);
 }
 
 int
