@@ -33,7 +33,9 @@ gems:
 
 % exts.each do |t, (o, dirs)|
 %   dirs.each do |d|
-%     next if Dir.glob("#{srcdir}/#{d}/**/extconf.rb").empty?
+%     extconf = Dir.glob("#{srcdir}/#{d}/**/extconf.rb")
+%     next if extconf.empty?
+%     next if extconf.any?{|f| f.include?(".bundle/gems") && f.include?("test") }
 <%=t%>: <%=d%>/exts.mk
 <%=d%>/exts.mk: FORCE
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \
