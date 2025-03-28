@@ -190,6 +190,7 @@ VALUE rb_objspace_gc_enable(void *objspace);
 VALUE rb_objspace_gc_disable(void *objspace);
 void ruby_gc_set_params(void);
 void rb_gc_copy_attributes(VALUE dest, VALUE obj);
+void rb_gc_move_object(VALUE dest, VALUE src, size_t size);
 size_t rb_size_mul_or_raise(size_t, size_t, VALUE); /* used in compile.c */
 size_t rb_size_mul_add_or_raise(size_t, size_t, size_t, VALUE); /* used in iseq.h */
 size_t rb_malloc_grow_capa(size_t current_capacity, size_t type_size);

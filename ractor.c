@@ -3586,55 +3586,28 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     }
     else {
         VALUE moved;
-        switch (RB_BUILTIN_TYPE(obj)) {
-          case T_STRING:
-            moved = rb_str_dup(obj);
-            break;
-          case T_ARRAY:
-            moved = rb_ary_dup(obj);
-            break;
-          case T_HASH:
-            moved = rb_hash_dup(obj);
-            break;
-          case T_MATCH:
-          case T_STRUCT:
-          case T_OBJECT:
-            // TODO: A more generic copy object with size that doesn't invoke init_copy?
-            moved = rb_obj_dup(obj);
-            break;
-          default:
-            rb_bug("move_enter unexpected type");
-            break;
+        size_t slot_size = rb_gc_obj_slot_size(obj);
+        VALUE flags = RBASIC(obj)->flags & fl_users;
+
+        if (FL_TEST_RAW(obj, FL_WB_PROTECTED)) {
+            moved = rb_wb_protected_newobj_of(GET_EC(), RBASIC_CLASS(obj), flags, slot_size);
         }
+        else {
+            moved = rb_wb_unprotected_newobj_of(RBASIC_CLASS(obj), flags, slot_size);
+        }
+
+        rb_shape_set_shape(moved, rb_shape_get_shape(obj));
         data->replacement = moved;
         return traverse_cont;
     }
 }
 
-void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
-
 static enum obj_traverse_iterator_result
 move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 {
-    VALUE v = data->replacement;
-    struct RVALUE *dst = (struct RVALUE *)v;
-    struct RVALUE *src = (struct RVALUE *)obj;
+    VALUE dest = data->replacement;
 
-    dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
-
-    dst->v1 = src->v1;
-    dst->v2 = src->v2;
-    dst->v3 = src->v3;
-
-    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
-        rb_replace_generic_ivar(v, obj);
-    }
-
-    if (OBJ_FROZEN(obj)) {
-        OBJ_FREEZE(v);
-    }
-
-    // TODO: generic_ivar
+    rb_gc_move_object(dest, obj, rb_gc_obj_slot_size(obj));
 
     ractor_moved_bang(obj);
     return traverse_cont;

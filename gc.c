@@ -2931,6 +2931,36 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
     rb_gc_impl_copy_attributes(rb_gc_get_objspace(), dest, obj);
 }
 
+void
+rb_gc_move_object(VALUE dest, VALUE src, size_t size)
+{
+    void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
+
+    GC_ASSERT(rb_gc_obj_slot_size(dest) == size);
+    GC_ASSERT(rb_gc_obj_slot_size(dest) >= rb_gc_obj_slot_size(src));
+
+    memcpy((void *)dest, (void *)src, size);
+
+    if (UNLIKELY(FL_TEST_RAW(src, FL_SEEN_OBJ_ID))) {
+        fprintf(stderr, "move id \n");
+        /* If the source object's object_id has been seen, we need to update
+         * the object to object id mapping. */
+        st_data_t srcid = (st_data_t)src, id;
+        rb_objspace_t *objspace = rb_gc_get_objspace();
+        if (!st_delete(objspace->obj_to_id_tbl, &srcid, &id)) {
+            rb_bug("gc_move: object ID seen, but not in mapping table: %s", rb_obj_info((VALUE)src));
+        }
+        FL_UNSET_RAW(src, FL_SEEN_OBJ_ID);
+
+        st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
+        FL_SET_RAW(dest, FL_SEEN_OBJ_ID);
+    }
+
+    if (UNLIKELY(FL_TEST_RAW(src, FL_EXIVAR))) {
+        rb_replace_generic_ivar(dest, src);
+    }
+}
+
 int
 rb_gc_modular_gc_loaded_p(void)
 {

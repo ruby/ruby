@@ -2071,3 +2071,15 @@ assert_equal 'ok', %q{
   rountriped_obj = ractor.take
   rountriped_obj == obj ? :ok : rountriped_obj
 }
+
+# moved objects keep their object_id
+assert_equal 'ok', %q{
+  ractor = Ractor.new do
+    Ractor.receive
+  end
+  obj = Object.new
+  id = obj.object_id
+  ractor.send(obj, move: true)
+  rountriped_obj = ractor.take
+  rountriped_obj.object_id == id ? :ok : :fail
+}
