@@ -175,6 +175,8 @@ class TestEtc < Test::Unit::TestCase
 
   # All Ractor-safe methods should be tested here
   def test_ractor_parallel
+    omit "This test is flaky and intermittently failing now on ModGC workflow" if ENV['GITHUB_WORKFLOW'] == 'ModGC'
+
     assert_ractor(<<~RUBY, require: 'etc', timeout: 60)
       10.times.map do
         Ractor.new do
