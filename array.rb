@@ -1,5 +1,20 @@
 class Array
   # call-seq:
+  #   add(item) -> item
+  #
+  # Adds an item to +self+ and returns the item itself.
+  # Returns the added item:
+  #
+  #   a =          [1, 2, 3]
+  #   a.add(4) #=> 4
+  #   a        #=> [1, 2, 3, 4]
+  #
+  # Related: see {Methods for Assigning}[rdoc-ref:Array@Methods+for+Assigning].
+  def add item
+    item.tap { push(it) }
+  end
+
+  # call-seq:
   #   shuffle!(random: Random) -> self
   #
   # Shuffles all elements in +self+ into a random order,
