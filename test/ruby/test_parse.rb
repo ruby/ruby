@@ -631,6 +631,8 @@ class TestParse < Test::Unit::TestCase
     assert_equal("\u{1234}", eval('?\u{1234}'))
     assert_equal("\u{1234}", eval('?\u1234'))
     assert_syntax_error('?\u{41 42}', 'Multiple codepoints at single character literal')
+    assert_syntax_error("?and", /unexpected '\?'/)
+    assert_syntax_error("?\u1234and", /unexpected '\?'/)
     e = assert_syntax_error('"#{?\u123}"', 'invalid Unicode escape')
     assert_not_match(/end-of-input/, e.message)
 

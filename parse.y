@@ -9884,6 +9884,7 @@ parse_qmark(struct parser_params *p, int space_seen)
     rb_encoding *enc;
     register int c;
     VALUE lit;
+    const char *start = p->lex.pcur;
 
     if (IS_END()) {
         SET_LEX_STATE(EXPR_VALUE);
@@ -9908,13 +9909,11 @@ parse_qmark(struct parser_params *p, int space_seen)
     }
     newtok(p);
     enc = p->enc;
-    if (!parser_isascii(p)) {
-        if (tokadd_mbchar(p, c) == -1) return 0;
-    }
-    else if ((rb_enc_isalnum(c, p->enc) || c == '_') &&
-             !lex_eol_p(p) && is_identchar(p, p->lex.pcur, p->lex.pend, p->enc)) {
+    int w = parser_precise_mbclen(p, start);
+    if (is_identchar(p, start, p->lex.pend, p->enc) &&
+        !(lex_eol_ptr_n_p(p, start, w) || !is_identchar(p, start + w, p->lex.pend, p->enc))) {
         if (space_seen) {
-            const char *start = p->lex.pcur - 1, *ptr = start;
+            const char *ptr = start;
             do {
                 int n = parser_precise_mbclen(p, ptr);
                 if (n < 0) return -1;
@@ -9942,7 +9941,7 @@ parse_qmark(struct parser_params *p, int space_seen)
         }
     }
     else {
-        tokadd(p, c);
+        if (tokadd_mbchar(p, c) == -1) return 0;
     }
     tokfix(p);
     lit = STR_NEW3(tok(p), toklen(p), enc, 0);
