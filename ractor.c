@@ -3234,6 +3234,7 @@ struct obj_traverse_replace_data {
 struct obj_traverse_replace_callback_data {
     bool stop;
     VALUE src;
+    VALUE replacement;
     struct obj_traverse_replace_data *data;
 };
 
@@ -3249,13 +3250,32 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
     struct obj_traverse_replace_callback_data *d = (struct obj_traverse_replace_callback_data *)ptr;
     struct obj_traverse_replace_data *data = d->data;
 
+    VALUE new_key = Qnil;
+    VALUE replacement_obj = d->replacement;
+    bool embedded_moved_hash = (data->move && RHASH_AR_TABLE_P(d->src) && RHASH_AR_TABLE_P(replacement_obj));
     if (obj_traverse_replace_i(*key, data)) {
         d->stop = true;
         return ST_STOP;
     }
     else if (*key != data->replacement) {
-        VALUE v = *key = data->replacement;
-        RB_OBJ_WRITTEN(d->src, Qundef, v);
+        if (embedded_moved_hash) {
+            new_key = data->replacement;
+        }
+        else {
+            VALUE v = *key = data->replacement;
+            if (data->move) {
+                RB_OBJ_WRITTEN(replacement_obj, Qundef, v);
+            }
+            else {
+                RB_OBJ_WRITTEN(d->src, Qundef, v);
+            }
+        }
+    }
+    else if (embedded_moved_hash) { // key is an immediate or frozen shareable
+        new_key = data->replacement;
+    }
+    else if (data->move) { // key is an immediate or frozen shareable
+        RB_OBJ_WRITTEN(replacement_obj, Qundef, *key);
     }
 
     if (obj_traverse_replace_i(*val, data)) {
@@ -3263,8 +3283,24 @@ obj_hash_traverse_replace_i(st_data_t *key, st_data_t *val, st_data_t ptr, int e
         return ST_STOP;
     }
     else if (*val != data->replacement) {
-        VALUE v = *val = data->replacement;
-        RB_OBJ_WRITTEN(d->src, Qundef, v);
+        if (embedded_moved_hash) {
+            rb_hash_aset(replacement_obj, new_key, data->replacement);
+        }
+        else {
+            VALUE v = *val = data->replacement;
+            if (data->move) {
+                RB_OBJ_WRITTEN(replacement_obj, Qundef, v);
+            }
+            else {
+                RB_OBJ_WRITTEN(d->src, Qundef, v);
+            }
+        }
+    }
+    else if (embedded_moved_hash) { // val is an immediate or frozen shareable
+        rb_hash_aset(replacement_obj, new_key, data->replacement);
+    }
+    else if (data->move) { // val is an immediate or frozen shareable
+        RB_OBJ_WRITTEN(replacement_obj, Qundef, *val);
     }
 
     return ST_CONTINUE;
@@ -3371,6 +3407,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 .stop = false,
                 .data = data,
                 .src = obj,
+                .replacement = replacement,
             };
             rb_st_foreach_with_replace(
                 ivtbl->as.complex.table,
@@ -3409,6 +3446,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                     .stop = false,
                     .data = data,
                     .src = obj,
+                    .replacement = replacement,
                 };
                 rb_st_foreach_with_replace(
                     ROBJECT_IV_HASH(obj),
@@ -3452,6 +3490,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 .stop = false,
                 .data = data,
                 .src = obj,
+                .replacement = replacement,
             };
             rb_hash_stlike_foreach_with_replace(obj,
                                                 obj_hash_traverse_replace_foreach_i,
@@ -3461,11 +3500,26 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             // TODO: rehash here?
 
             VALUE ifnone = RHASH_IFNONE(obj);
+            bool moved_and_embedded = data->move && RHASH_AR_TABLE_P(replacement);
             if (obj_traverse_replace_i(ifnone, data)) {
                 return 1;
             }
             else if (ifnone != data->replacement) {
-                RHASH_SET_IFNONE(obj, data->replacement);
+                if (moved_and_embedded) {
+                    RHASH_SET_IFNONE(replacement, data->replacement);
+                }
+                else {
+                    RHASH_SET_IFNONE(obj, data->replacement);
+                    if (data->move) {
+                        RB_OBJ_WRITTEN(replacement, Qundef, data->replacement);
+                    }
+                }
+            }
+            else if (moved_and_embedded) { // ifnone is an immediate or frozen shareable
+                RHASH_SET_IFNONE(replacement, data->replacement);
+            }
+            else if (data->move) { // ifnone is an immediate or frozen shareable
+                RB_OBJ_WRITTEN(replacement, Qundef, data->replacement);
             }
         }
         break;
@@ -3585,7 +3639,13 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        VALUE moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        VALUE moved;
+        if (RB_TYPE_P(obj, T_HASH)) {
+            moved = rb_hash_new_with_size_and_klass(RBASIC_CLASS(obj), RHASH_SIZE(obj));
+        }
+        else {
+            moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        }
         rb_shape_set_shape(moved, rb_shape_get_shape(obj));
         data->replacement = moved;
         return traverse_cont;
@@ -3603,9 +3663,13 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
 
-    dst->v1 = src->v1;
-    dst->v2 = src->v2;
-    dst->v3 = src->v3;
+    if (RB_TYPE_P(v, T_HASH) && RHASH_AR_TABLE_P(v)) {
+    }
+    else {
+        dst->v1 = src->v1;
+        dst->v2 = src->v2;
+        dst->v3 = src->v3;
+    }
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
