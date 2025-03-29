@@ -65,6 +65,7 @@ struct rb_wasm_try_catch {
     rb_wasm_try_catch_func_t try_f;
     rb_wasm_try_catch_func_t catch_f;
     void *context;
+    void *stack_pointer;
     int state;
 };
 
