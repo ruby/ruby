@@ -316,6 +316,19 @@ typedef unsigned int rb_atomic_t;
     RBIMPL_CAST(rbimpl_atomic_ptr_cas((void **)&(var), (void *)(oldval), (void *)(newval)))
 
 /**
+ * Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
+ * ::VALUE.   There are  cases where  ::rb_atomic_t is  32bit while  ::VALUE is
+ * 64bit.  This should  be used for pointer related operations  to support such
+ * platforms.
+ *
+ * @param   var  A variable of ::VALUE.
+ * @param   val   Value to set.
+ * @post    `var` holds `val`.
+ */
+#define RUBY_ATOMIC_VALUE_SET(var, val) \
+    rbimpl_atomic_value_set(&(var), (val))
+
+/**
  * Identical  to #RUBY_ATOMIC_EXCHANGE,  except  it expects  its arguments  are
  * ::VALUE.   There are  cases where  ::rb_atomic_t is  32bit while  ::VALUE is
  * 64bit.  This should  be used for pointer related operations  to support such
@@ -733,6 +746,23 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val)
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
+static inline void
+rbimpl_atomic_size_set(volatile size_t *ptr, size_t val)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    __atomic_store_n(ptr, val, __ATOMIC_SEQ_CST);
+
+#else
+    rbimpl_atomic_size_exchange(ptr, val);
+
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
 static inline void *
 rbimpl_atomic_ptr_exchange(void *volatile *ptr, const void *val)
 {
@@ -770,6 +800,19 @@ rbimpl_atomic_value_exchange(volatile VALUE *ptr, VALUE val)
     volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
     const size_t sret = rbimpl_atomic_size_exchange(sptr, sval);
     return RBIMPL_CAST((VALUE)sret);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline void
+rbimpl_atomic_value_set(volatile VALUE *ptr, VALUE val)
+{
+    RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
+
+    const size_t sval = RBIMPL_CAST((size_t)val);
+    volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
+    rbimpl_atomic_size_set(sptr, sval);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
