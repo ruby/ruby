@@ -3890,9 +3890,10 @@ rb_hash_search_value(VALUE key, VALUE value, VALUE arg)
 /*
  *  call-seq:
  *    has_value?(value) -> true or false
- *    value?(value) -> true or false
  *
- *  Returns +true+ if +value+ is a value in +self+, otherwise +false+.
+ *  Returns whether +value+ is a value in +self+.
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Hash@Methods+for+Querying].
  */
 
 static VALUE
