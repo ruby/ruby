@@ -3367,13 +3367,22 @@ class TestModule < Test::Unit::TestCase
     m::N.set_temporary_name(nil)
     assert_nil(m::N.name)
 
+    m::N.const_set(:O, Module.new)
+    m.const_set(:Recursive, m)
+    m::N.const_set(:Recursive, m)
+    m.const_set(:A, 42)
+
     m.set_temporary_name(name = "fake_name")
     name.upcase!
     assert_equal("fake_name", m.name)
     assert_raise(FrozenError) {m.name.upcase!}
+    assert_equal("fake_name::N", m::N.name)
+    assert_equal("fake_name::N::O", m::N::O.name)
 
     m.set_temporary_name(nil)
     assert_nil m.name
+    assert_nil m::N.name
+    assert_nil m::N::O.name
 
     assert_raise_with_message(ArgumentError, "empty class/module name") do
       m.set_temporary_name("")

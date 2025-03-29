@@ -64,5 +64,50 @@ ruby_version_is "3.3" do
       m::M = m::N
       m::M.name.should =~ /\A#<Module:0x\h+>::M\z/m
     end
+
+    it "can reassign a temporary name repeatedly" do
+      m = Module.new
+
+      m.set_temporary_name("fake_name")
+      m.name.should == "fake_name"
+
+      m.set_temporary_name("fake_name_2")
+      m.name.should == "fake_name_2"
+    end
+
+    ruby_bug "#21094", ""..."3.5" do
+      it "also updates a name of a nested module" do
+        m = Module.new
+        m::N = Module.new
+        m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
+
+        m.set_temporary_name "m"
+        m::N.name.should == "m::N"
+
+        m.set_temporary_name nil
+        m::N.name.should == nil
+      end
+    end
+
+    it "keeps temporary name when assigned in an anonymous module" do
+      outer = Module.new
+      m = Module.new
+      m.set_temporary_name "m"
+      m.name.should == "m"
+      outer::M = m
+      m.name.should == "m"
+      m.inspect.should == "m"
+    end
+
+    it "keeps temporary name when assigned in an anonymous module and nested before" do
+      outer = Module.new
+      m = Module.new
+      outer::A = m
+      m.set_temporary_name "m"
+      m.name.should == "m"
+      outer::M = m
+      m.name.should == "m"
+      m.inspect.should == "m"
+    end
   end
 end
