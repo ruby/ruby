@@ -3818,9 +3818,12 @@ values_i(VALUE key, VALUE value, VALUE ary)
  *  call-seq:
  *    values -> new_array
  *
- *  Returns a new Array containing all values in +self+:
+ *  Returns a new array containing all values in +self+:
+ *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.values # => [0, 1, 2]
+ *
+ *  Related: see {Methods for Fetching}[rdoc-ref:Hash@Methods+for+Fetching].
  */
 
 VALUE
