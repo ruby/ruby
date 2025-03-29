@@ -173,6 +173,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
+    st_table *userdefs;
     st_index_t num_entries;
 };
 
@@ -221,6 +222,7 @@ mark_dump_arg(void *ptr)
     rb_mark_set(p->symbols);
     rb_mark_set(p->data);
     rb_mark_hash(p->compat_tbl);
+    rb_mark_set(p->userdefs);
     rb_gc_mark(p->str);
 }
 
@@ -238,6 +240,7 @@ memsize_dump_arg(const void *ptr)
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
     if (p->encodings) memsize += rb_st_memsize(p->encodings);
     return memsize;
 }
@@ -904,6 +907,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_index_t hasiv2;
             VALUE encname2;
 
+            if (arg->userdefs && st_is_member(arg->userdefs, (st_data_t)obj)) {
+                rb_raise(rb_eRuntimeError, "can't dump recursive object using _dump()");
+            }
             v = INT2NUM(limit);
             v = dump_funcall(arg, obj, s_dump, 1, &v);
             if (!RB_TYPE_P(v, T_STRING)) {
@@ -920,7 +926,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_class(TYPE_USERDEF, obj, arg, FALSE);
             w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
             if (hasiv) {
+                st_data_t userdefs = (st_data_t)obj;
+                if (!arg->userdefs) {
+                    arg->userdefs = rb_init_identtable();
+                }
+                st_add_direct(arg->userdefs, userdefs, 0);
                 w_ivar(hasiv, ivobj, encname, &c_arg);
+                st_delete(arg->userdefs, &userdefs, NULL);
             }
             w_remember(obj, arg);
             return;
@@ -1127,6 +1139,10 @@ clear_dump_arg(struct dump_arg *arg)
         st_free_table(arg->encodings);
         arg->encodings = 0;
     }
+    if (arg->userdefs) {
+        st_free_table(arg->userdefs);
+        arg->userdefs = 0;
+    }
 }
 
 NORETURN(static inline void io_needed(void));
@@ -1204,6 +1220,7 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->num_entries = 0;
     arg->compat_tbl = 0;
     arg->encodings = 0;
+    arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
         if (!rb_respond_to(port, s_write)) {
