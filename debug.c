@@ -305,6 +305,8 @@ static struct {
     struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
     bool show_pid;
+    bool no_file_locations;
+    bool pretty_columns;
     rb_nativethread_lock_t lock;
     char output_file[DEBUG_LOG_MAX_PATH+1];
     FILE *output;
@@ -462,6 +464,14 @@ setup_debug_log(void)
         if (getenv("RUBY_DEBUG_LOG_PID")) {
             debug_log.show_pid = true;
         }
+
+        if (getenv("RUBY_DEBUG_LOG_NO_FILE_LOCATIONS")) {
+            debug_log.no_file_locations = true;
+        }
+
+        if (getenv("RUBY_DEBUG_LOG_PRETTY_COLUMNS")) {
+            debug_log.pretty_columns = true;
+        }
     }
 }
 
@@ -504,7 +514,9 @@ check_filter(const char *str, const struct debug_log_filter *filter, bool *state
 //   (func_name or file_name) contains foo or bar
 // or
 //   (func_name or file_name) doesn't contain baz and
-//   (func_name or file_name) doesn't contain boo and
+//   (func_name or file_name) doesn't contain boo
+//
+// Note: Ordering matters of the negative signs in the list.
 //
 // You can specify "file:" (ex file:foo) or "func:" (ex  func:foo)
 // prefixes to specify the filter for.
@@ -549,11 +561,26 @@ pretty_filename(const char *path)
     return path;
 }
 
+static rb_atomic_t longest_func_name;
+static rb_atomic_t longest_message;
+
 #undef ruby_debug_log
 void
 ruby_debug_log(const char *file, int line, const char *func_name, const char *fmt, ...)
 {
+    rb_atomic_t func_name_sz = (rb_atomic_t)strlen(func_name);
+    if (debug_log.pretty_columns) {
+        rb_atomic_t old_longest_func_name;
+        do {
+            old_longest_func_name = longest_func_name;
+            if (func_name_sz <= old_longest_func_name) {
+                break;
+            }
+        } while (RUBY_ATOMIC_CAS(longest_func_name, old_longest_func_name, func_name_sz) != old_longest_func_name);
+    }
+
     char buff[MAX_DEBUG_LOG_MESSAGE_LEN] = {0};
+    char scratch_buff[MAX_DEBUG_LOG_MESSAGE_LEN] = {0};
     int len = 0;
     int r = 0;
 
@@ -563,9 +590,15 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
         len += r;
     }
 
-    // message title
+    // C function name
     if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%s\t", func_name);
+        size_t spaces;
+        if (debug_log.pretty_columns) {
+            spaces = RUBY_ATOMIC_LOAD(longest_func_name) - func_name_sz;
+        } else {
+            spaces = 0;
+        }
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%s%*s\t", func_name, (int)spaces, " ");
         if (r < 0) rb_bug("ruby_debug_log returns %d", r);
         len += r;
     }
@@ -574,36 +607,64 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     if (fmt && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
         va_list args;
         va_start(args, fmt);
-        r = vsnprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, fmt, args);
+        r = vsnprintf(scratch_buff, MAX_DEBUG_LOG_MESSAGE_LEN, fmt, args);
         va_end(args);
         if (r < 0) rb_bug("ruby_debug_log vsnprintf() returns %d", r);
-        len += r;
+        size_t message_sz = strlen(scratch_buff);
+        if (debug_log.pretty_columns) {
+            rb_atomic_t old_longest_message;
+            do {
+                old_longest_message = longest_message;
+                if ((rb_atomic_t)message_sz <= old_longest_message) {
+                    break;
+                }
+            } while (RUBY_ATOMIC_CAS(longest_message, old_longest_message, (rb_atomic_t)message_sz) != old_longest_message);
+        }
+
+        memcpy(buff + len, scratch_buff, message_sz);
+        len += message_sz;
+        if (debug_log.pretty_columns) {
+            size_t spaces;
+            rb_atomic_t longest_msg = RUBY_ATOMIC_LOAD(longest_message);
+            // 48 seems to a be a good number for the total max size of a message, but we sometimes get messages that are bigger
+            if (message_sz < 48 && longest_msg > 48) {
+                spaces = 48 - message_sz;
+            } else {
+                spaces = longest_msg - message_sz;
+            }
+            snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%*s", (int)spaces, " ");
+            len += spaces;
+        }
     }
 
     // optional information
 
-    // C location
-    if (file && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "\t%s:%d", pretty_filename(file), line);
-        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
-        len += r;
+    if (!debug_log.no_file_locations) {
+        // C location
+        if (file && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "\t%s:%d", pretty_filename(file), line);
+            if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+            len += r;
+        }
     }
 
     rb_execution_context_t *ec = rb_current_execution_context(false);
 
-    // Ruby location
-    int ruby_line;
-    const char *ruby_file = ec ? rb_source_location_cstr(&ruby_line) : NULL;
+    if (!debug_log.no_file_locations) {
+        // Ruby location
+        int ruby_line;
+        const char *ruby_file = ec ? rb_source_location_cstr(&ruby_line) : NULL;
 
-    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-        if (ruby_file) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            if (ruby_file) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+            }
+            if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+            len += r;
         }
-        else {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-        }
-        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
-        len += r;
     }
 
 #ifdef RUBY_NT_SERIAL
@@ -617,6 +678,16 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
 
     if (ec) {
         rb_thread_t *th = ec ? rb_ec_thread_ptr(ec) : NULL;
+#ifndef RUBY_NT_SERIAL
+    if (th && th->nt) {
+        // native thread information
+        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tnt:%d", th->nt->serial);
+            if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+            len += r;
+        }
+    }
+#endif
 
         // ractor information
         if (ruby_single_main_ractor == NULL) {
