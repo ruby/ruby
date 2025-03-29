@@ -6368,31 +6368,40 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
     RB_VM_LOCK_LEAVE();
 }
 
-// For JIT inlining
-static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
-{
-    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
-        VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
-
-        return (ic_cref == NULL || // no need to check CREF
-                ic_cref == vm_get_cref(reg_ep));
-    }
-    return false;
-}
-
 static bool
-vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
+vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
 {
-    VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
+    VALUE value = ic->value;
+
+    if (RB_UNLIKELY(UNDEF_P(value))) {
+        return false;
+    }
+
+    VALUE flags = vm_icc_flags(ic);
+
+    if (!(flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+        // There is a small window of time during which IC->value is set, but the
+        // CONST_CACHE_SHAREABLE flag hasn't yet been set.
+        // So before failing we MUST check `rb_ractor_shareable_p` again.
+        // See `vm_ic_update`.
+        if (!rb_ractor_shareable_p(value)) {
+            return false;
+        }
+    }
+    else {
+        VM_ASSERT(ractor_incidental_shareable_p(flags & CONST_CACHE_SHAREABLE, value));
+    }
+
+    const rb_cref_t *ic_cref = vm_icc_cref(ic);
+    return (ic_cref == NULL || // no need to check CREF
+            ic_cref == vm_get_cref(reg_ep));
 }
 
 // YJIT needs this function to never allocate and never raise
 bool
 rb_vm_ic_hit_p(IC ic, const VALUE *reg_ep)
 {
-    return ic->entry && vm_ic_hit_p(ic->entry, reg_ep);
+    return vm_ic_hit_p(ic, reg_ep);
 }
 
 static void
@@ -6400,15 +6409,32 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
 {
     if (ruby_vm_const_missing_count > 0) {
         ruby_vm_const_missing_count = 0;
-        ic->entry = NULL;
         return;
     }
 
-    struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
-    RB_OBJ_WRITE(ice, &ice->value, val);
-    ice->ic_cref = vm_get_const_key_cref(reg_ep);
-    if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
-    RB_OBJ_WRITE(iseq, &ic->entry, ice);
+    VALUE cache_val = val;
+
+    const rb_cref_t *cref = vm_get_const_key_cref(reg_ep);
+    if (RB_UNLIKELY(cref)) {
+        struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
+        RB_OBJ_WRITE(ice, &ice->value, val);
+        ice->ic_cref = cref;
+        cache_val = (VALUE)ice;
+    }
+
+    if (!UNDEF_P(RUBY_ATOMIC_VALUE_CAS(ic->value, Qundef, cache_val))) {
+        // Another thread filled the cache before us.
+        return;
+    }
+
+    RB_OBJ_WRITTEN(iseq, Qundef, cache_val);
+
+    // There is a window during which `CONST_CACHE_SHAREABLE` isn't yet set.
+    // But this is acceptable, it just means if the flag isn't there, we must
+    // call `rb_ractor_shareable_p` to confirm the value isn't shareable.
+    // See `vm_inlined_ic_hit_p`.
+    if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, CONST_CACHE_SHAREABLE);
+    /* vm_icc_update(ic, val, ) */
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);
@@ -6419,10 +6445,9 @@ VALUE
 rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const reg_cfp, IC ic)
 {
     VALUE val;
-    const ID *segments = ic->segments;
-    struct iseq_inline_constant_cache_entry *ice = ic->entry;
-    if (ice && vm_ic_hit_p(ice, GET_EP())) {
-        val = ice->value;
+    const ID *segments = vm_icc_segments(ic);
+    if (vm_ic_hit_p(ic, GET_EP())) {
+        val = vm_icc_value(ic);
 
         VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
     }
