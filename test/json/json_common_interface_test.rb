@@ -110,7 +110,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load_with_proc
     visited = []
-    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o) })
+    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o); o })
 
     expected = [
       '"foo"',
@@ -212,7 +212,9 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_deprecated_dump_default_options
-    assert JSON.dump_default_options
+    assert_deprecated_warning(/dump_default_options/) do
+      JSON.dump_default_options
+    end
   end
 
   private

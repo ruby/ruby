@@ -5,8 +5,111 @@ require 'json/version'
 module JSON
   autoload :GenericObject, 'json/generic_object'
 
-  NOT_SET = Object.new.freeze
-  private_constant :NOT_SET
+  module ParserOptions # :nodoc:
+    class << self
+      def prepare(opts)
+        if opts[:object_class] || opts[:array_class]
+          opts = opts.dup
+          on_load = opts[:on_load]
+
+          on_load = object_class_proc(opts[:object_class], on_load) if opts[:object_class]
+          on_load = array_class_proc(opts[:array_class], on_load) if opts[:array_class]
+          opts[:on_load] = on_load
+        end
+
+        if opts.fetch(:create_additions, false) != false
+          opts = create_additions_proc(opts)
+        end
+
+        opts
+      end
+
+      private
+
+      def object_class_proc(object_class, on_load)
+        ->(obj) do
+          if Hash === obj
+            object = object_class.new
+            obj.each { |k, v| object[k] = v }
+            obj = object
+          end
+          on_load.nil? ? obj : on_load.call(obj)
+        end
+      end
+
+      def array_class_proc(array_class, on_load)
+        ->(obj) do
+          if Array === obj
+            array = array_class.new
+            obj.each { |v| array << v }
+            obj = array
+          end
+          on_load.nil? ? obj : on_load.call(obj)
+        end
+      end
+
+      # TODO: exact :create_additions support to another gem for version 3.0
+      def create_additions_proc(opts)
+        if opts[:symbolize_names]
+          raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
+        end
+
+        opts = opts.dup
+        create_additions = opts.fetch(:create_additions, false)
+        on_load = opts[:on_load]
+        object_class = opts[:object_class] || Hash
+
+        opts[:on_load] = ->(object) do
+          case object
+          when String
+            opts[:match_string]&.each do |pattern, klass|
+              if match = pattern.match(object)
+                create_additions_warning if create_additions.nil?
+                object = klass.json_create(object)
+                break
+              end
+            end
+          when object_class
+            if opts[:create_additions] != false
+              if class_name = object[JSON.create_id]
+                klass = JSON.deep_const_get(class_name)
+                if (klass.respond_to?(:json_creatable?) && klass.json_creatable?) || klass.respond_to?(:json_create)
+                  create_additions_warning if create_additions.nil?
+                  object = klass.json_create(object)
+                end
+              end
+            end
+          end
+
+          on_load.nil? ? object : on_load.call(object)
+        end
+
+        opts
+      end
+
+      GEM_ROOT = File.expand_path("../../../", __FILE__) + "/"
+      def create_additions_warning
+        message = "JSON.load implicit support for `create_additions: true` is deprecated " \
+          "and will be removed in 3.0, use JSON.unsafe_load or explicitly " \
+          "pass `create_additions: true`"
+
+        uplevel = 4
+        caller_locations(uplevel, 10).each do |frame|
+          if frame.path.nil? || frame.path.start_with?(GEM_ROOT) || frame.path.end_with?("/truffle/cext_ruby.rb", ".c")
+            uplevel += 1
+          else
+            break
+          end
+        end
+
+        if RUBY_VERSION >= "3.0"
+          warn(message, uplevel: uplevel - 1, category: :deprecated)
+        else
+          warn(message, uplevel: uplevel - 1)
+        end
+      end
+    end
+  end
 
   class << self
     # :call-seq:
@@ -72,25 +175,6 @@ module JSON
       const_set :State, self.state
     ensure
       $VERBOSE = old
-    end
-
-    def create_fast_state
-      State.new(
-        :indent         => '',
-        :space          => '',
-        :object_nl      => "",
-        :array_nl       => "",
-        :max_nesting    => false
-      )
-    end
-
-    def create_pretty_state
-      State.new(
-        :indent         => '  ',
-        :space          => ' ',
-        :object_nl      => "\n",
-        :array_nl       => "\n"
-      )
     end
 
     # Returns the JSON generator module that is used by JSON.
@@ -183,13 +267,6 @@ module JSON
     end
   end
 
-  # For backwards compatibility
-  UnparserError = GeneratorError # :nodoc:
-
-  # This exception is raised if the required unicode support is missing on the
-  # system. Usually this means that the iconv library is not installed.
-  class MissingUnicodeSupport < JSONError; end
-
   # Fragment of JSON document that is to be included as is:
   #   fragment = JSON::Fragment.new("[1, 2, 3]")
   #   JSON.generate({ count: 3, items: fragments })
@@ -265,8 +342,15 @@ module JSON
   #   JSON.parse('')
   #
   def parse(source, opts = nil)
+    opts = ParserOptions.prepare(opts) unless opts.nil?
     Parser.parse(source, opts)
   end
+
+  PARSE_L_OPTIONS = {
+    max_nesting: false,
+    allow_nan: true,
+  }.freeze
+  private_constant :PARSE_L_OPTIONS
 
   # :call-seq:
   #   JSON.parse!(source, opts) -> object
@@ -280,12 +364,11 @@ module JSON
   #   which disables checking for nesting depth.
   # - Option +allow_nan+, if not provided, defaults to +true+.
   def parse!(source, opts = nil)
-    options = {
-      :max_nesting  => false,
-      :allow_nan    => true
-    }
-    options.merge!(opts) if opts
-    Parser.new(source, options).parse
+    if opts.nil?
+      parse(source, PARSE_L_OPTIONS)
+    else
+      parse(source, PARSE_L_OPTIONS.merge(opts))
+    end
   end
 
   # :call-seq:
@@ -368,13 +451,21 @@ module JSON
   #   # Raises SystemStackError (stack level too deep):
   #   JSON.fast_generate(a)
   def fast_generate(obj, opts = nil)
-    if State === opts
-      state = opts
+    if RUBY_VERSION >= "3.0"
+      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1, category: :deprecated
     else
-      state = JSON.create_fast_state.configure(opts)
+      warn "JSON.fast_generate is deprecated and will be removed in json 3.0.0, just use JSON.generate", uplevel: 1
     end
-    state.generate(obj)
+    generate(obj, opts)
   end
+
+  PRETTY_GENERATE_OPTIONS = {
+    indent: '  ',
+    space: ' ',
+    object_nl: "\n",
+    array_nl: "\n",
+  }.freeze
+  private_constant :PRETTY_GENERATE_OPTIONS
 
   # :call-seq:
   #   JSON.pretty_generate(obj, opts = nil) -> new_string
@@ -407,22 +498,24 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    if State === opts
-      state, opts = opts, nil
-    else
-      state = JSON.create_pretty_state
-    end
+    return state.generate(obj) if State === opts
+
+    options = PRETTY_GENERATE_OPTIONS
+
     if opts
-      if opts.respond_to? :to_hash
-        opts = opts.to_hash
-      elsif opts.respond_to? :to_h
-        opts = opts.to_h
-      else
-        raise TypeError, "can't convert #{opts.class} into Hash"
+      unless opts.is_a?(Hash)
+        if opts.respond_to? :to_hash
+          opts = opts.to_hash
+        elsif opts.respond_to? :to_h
+          opts = opts.to_h
+        else
+          raise TypeError, "can't convert #{opts.class} into Hash"
+        end
       end
-      state.configure(opts)
+      options = options.merge(opts)
     end
-    state.generate(obj)
+
+    State.generate(obj, options, nil)
   end
 
   # Sets or returns default options for the JSON.unsafe_load method.
@@ -758,23 +851,13 @@ module JSON
     if opts[:allow_blank] && (source.nil? || source.empty?)
       source = 'null'
     end
-    result = parse(source, opts)
-    recurse_proc(result, &proc) if proc
-    result
-  end
 
-  # Recursively calls passed _Proc_ if the parsed data structure is an _Array_ or _Hash_
-  def recurse_proc(result, &proc) # :nodoc:
-    case result
-    when Array
-      result.each { |x| recurse_proc x, &proc }
-      proc.call result
-    when Hash
-      result.each { |x, y| recurse_proc x, &proc; recurse_proc y, &proc }
-      proc.call result
-    else
-      proc.call result
+    if proc
+      opts = opts.dup
+      opts[:on_load] = proc.to_proc
     end
+
+    parse(source, opts)
   end
 
   # Sets or returns the default options for the JSON.dump method.
@@ -846,11 +929,6 @@ module JSON
     end
   end
 
-  # Encodes string using String.encode.
-  def self.iconv(to, from, string)
-    string.encode(to, from)
-  end
-
   # JSON::Coder holds a parser and generator configuration.
   #
   #   module MyApp
@@ -893,10 +971,9 @@ module JSON
         options[:strict] = true
       end
       options[:as_json] = as_json if as_json
-      options[:create_additions] = false unless options.key?(:create_additions)
 
       @state = State.new(options).freeze
-      @parser_config = Ext::Parser::Config.new(options)
+      @parser_config = Ext::Parser::Config.new(ParserOptions.prepare(options))
     end
 
     # call-seq:
@@ -966,16 +1043,5 @@ module ::Kernel
     end
 
     JSON.generate(object, args.first)
-  end
-end
-
-# Extends any Class to include _json_creatable?_ method.
-class ::Class
-  # Returns true if this class can be used to create an instance
-  # from a serialised JSON string. The class has to implement a class
-  # method _json_create_ that expects a hash as first parameter. The hash
-  # should include the required data.
-  def json_creatable?
-    respond_to?(:json_create)
   end
 end

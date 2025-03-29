@@ -175,11 +175,12 @@ class TestEtc < Test::Unit::TestCase
 
   # All Ractor-safe methods should be tested here
   def test_ractor_parallel
-    omit "This test fails randomly with no message; Ractor is not stable yet"
-    assert_ractor(<<~RUBY, require: 'etc')
-      20.times.map do
+    omit "This test is flaky and intermittently failing now on ModGC workflow" if ENV['GITHUB_WORKFLOW'] == 'ModGC'
+
+    assert_ractor(<<~RUBY, require: 'etc', timeout: 60)
+      10.times.map do
         Ractor.new do
-          1000.times do
+          100.times do
             raise unless String === Etc.systmpdir
             raise unless Hash === Etc.uname
             if defined?(Etc::SC_CLK_TCK)

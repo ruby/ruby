@@ -94,13 +94,14 @@ class TestAllocation < Test::Unit::TestCase
     def block
       ''
     end
+    alias only_block block
 
     def test_no_parameters
-      only_block = block.empty? ? block : block[2..]
       check_allocations(<<~RUBY)
         def self.none(#{only_block}); end
 
         check_allocations(0, 0, "none(#{only_block})")
+        check_allocations(0, 0, "none(*nil#{block})")
         check_allocations(0, 0, "none(*empty_array#{block})")
         check_allocations(0, 0, "none(**empty_hash#{block})")
         check_allocations(0, 0, "none(*empty_array, **empty_hash#{block})")
@@ -156,6 +157,9 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 0, "optional(*r2k_empty_array1#{block})")
         check_allocations(0, 1, "optional(*r2k_array#{block})")
 
+        check_allocations(0, 0, "optional(*empty_array#{block})")
+        check_allocations(0, 0, "optional(*nil#{block})")
+        check_allocations(0, 0, "optional(#{only_block})")
         check_allocations(0, 1, "optional(*empty_array, **hash1, **empty_hash#{block})")
       RUBY
     end
@@ -179,6 +183,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "splat(1, *array1, **empty_hash#{block})")
         check_allocations(1, 0, "splat(1, *array1, *empty_array, **empty_hash#{block})")
 
+        check_allocations(1, 0, "splat(*nil#{block})")
+        check_allocations(1, 0, "splat(#{only_block})")
         check_allocations(1, 1, "splat(**hash1#{block})")
 
         check_allocations(1, 1, "splat(**hash1, **empty_hash#{block})")
@@ -196,6 +202,7 @@ class TestAllocation < Test::Unit::TestCase
         def self.req_splat(x, *y#{block}); end
 
         check_allocations(1, 0, "req_splat(1#{block})")
+        check_allocations(1, 0, "req_splat(1, *nil#{block})")
         check_allocations(1, 0, "req_splat(1, *empty_array#{block})")
         check_allocations(1, 0, "req_splat(1, **empty_hash#{block})")
         check_allocations(1, 0, "req_splat(1, *empty_array, **empty_hash#{block})")
@@ -226,6 +233,7 @@ class TestAllocation < Test::Unit::TestCase
         def self.splat_post(*x, y#{block}); end
 
         check_allocations(1, 0, "splat_post(1#{block})")
+        check_allocations(1, 0, "splat_post(1, *nil#{block})")
         check_allocations(1, 0, "splat_post(1, *empty_array#{block})")
         check_allocations(1, 0, "splat_post(1, **empty_hash#{block})")
         check_allocations(1, 0, "splat_post(1, *empty_array, **empty_hash#{block})")
@@ -267,6 +275,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword(**hash1, **empty_hash#{block})")
         check_allocations(0, 1, "keyword(**empty_hash, **hash1#{block})")
 
+        check_allocations(0, 0, "keyword(*nil#{block})")
         check_allocations(0, 0, "keyword(*empty_array#{block})")
         check_allocations(1, 0, "keyword(*empty_array, *empty_array, **empty_hash#{block})")
 
@@ -294,6 +303,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword_splat(**hash1, **empty_hash#{block})")
         check_allocations(0, 1, "keyword_splat(**empty_hash, **hash1#{block})")
 
+        check_allocations(0, 1, "keyword_splat(*nil#{block})")
         check_allocations(0, 1, "keyword_splat(*empty_array#{block})")
         check_allocations(1, 1, "keyword_splat(*empty_array, *empty_array, **empty_hash#{block})")
 
@@ -321,6 +331,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword_and_keyword_splat(**hash1, **empty_hash#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(**empty_hash, **hash1#{block})")
 
+        check_allocations(0, 1, "keyword_and_keyword_splat(*nil#{block})")
         check_allocations(0, 1, "keyword_and_keyword_splat(*empty_array#{block})")
         check_allocations(1, 1, "keyword_and_keyword_splat(*empty_array, *empty_array, **empty_hash#{block})")
 
@@ -348,6 +359,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "required_and_keyword(1, **hash1, **empty_hash#{block})")
         check_allocations(0, 1, "required_and_keyword(1, **empty_hash, **hash1#{block})")
 
+        check_allocations(0, 0, "required_and_keyword(1, *nil#{block})")
         check_allocations(0, 0, "required_and_keyword(1, *empty_array#{block})")
         check_allocations(1, 0, "required_and_keyword(1, *empty_array, *empty_array, **empty_hash#{block})")
 
@@ -391,6 +403,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "splat_and_keyword(1, **hash1, **empty_hash#{block})")
         check_allocations(1, 1, "splat_and_keyword(1, **empty_hash, **hash1#{block})")
 
+        check_allocations(1, 0, "splat_and_keyword(1, *nil#{block})")
         check_allocations(1, 0, "splat_and_keyword(1, *empty_array#{block})")
         check_allocations(1, 0, "splat_and_keyword(1, *empty_array, *empty_array, **empty_hash#{block})")
 
@@ -436,6 +449,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "required_and_keyword_splat(1, **hash1, **empty_hash#{block})")
         check_allocations(0, 1, "required_and_keyword_splat(1, **empty_hash, **hash1#{block})")
 
+        check_allocations(0, 1, "required_and_keyword_splat(1, *nil#{block})")
         check_allocations(0, 1, "required_and_keyword_splat(1, *empty_array#{block})")
         check_allocations(1, 1, "required_and_keyword_splat(1, *empty_array, *empty_array, **empty_hash#{block})")
 
@@ -479,6 +493,7 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 1, "splat_and_keyword_splat(1, **hash1, **empty_hash#{block})")
         check_allocations(1, 1, "splat_and_keyword_splat(1, **empty_hash, **hash1#{block})")
 
+        check_allocations(1, 1, "splat_and_keyword_splat(1, *nil#{block})")
         check_allocations(1, 1, "splat_and_keyword_splat(1, *empty_array#{block})")
         check_allocations(1, 1, "splat_and_keyword_splat(1, *empty_array, *empty_array, **empty_hash#{block})")
 
@@ -509,6 +524,7 @@ class TestAllocation < Test::Unit::TestCase
     end
 
     def test_anonymous_splat_and_anonymous_keyword_splat_parameters
+      only_block = block.empty? ? block : block[2..]
       check_allocations(<<~RUBY)
         def self.anon_splat_and_anon_keyword_splat(*, **#{block}); end
 
@@ -529,6 +545,7 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, a: 2#{block})")
 
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*nil, **nill#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **nill#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **hash1#{block})")
@@ -539,6 +556,10 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, **hash1, **empty_hash#{block})")
+
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(#{only_block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(a: 2#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(**empty_hash#{block})")
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
@@ -554,6 +575,7 @@ class TestAllocation < Test::Unit::TestCase
     end
 
     def test_nested_anonymous_splat_and_anonymous_keyword_splat_parameters
+      only_block = block.empty? ? block : block[2..]
       check_allocations(<<~RUBY)
         def self.t(*, **#{block}); end
         def self.anon_splat_and_anon_keyword_splat(*, **#{block}); t(*, **) end
@@ -575,6 +597,7 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, a: 2#{block})")
 
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*nil, **nill#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **nill#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **empty_hash#{block})")
         check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(*array1, **hash1#{block})")
@@ -585,6 +608,10 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(*array1, *empty_array, **hash1, **empty_hash#{block})")
+
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(#{only_block})")
+        check_allocations(0, 1, "anon_splat_and_anon_keyword_splat(a: 2#{block})")
+        check_allocations(0, 0, "anon_splat_and_anon_keyword_splat(**empty_hash#{block})")
 
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, a: 2, **empty_hash#{block})")
         check_allocations(1, 1, "anon_splat_and_anon_keyword_splat(1, *empty_array, **hash1, **empty_hash#{block})")
@@ -620,6 +647,8 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(0, 0, "argument_forwarding(*array1, a: 2#{block})")
 
+        check_allocations(0, 0, "argument_forwarding(**nill#{block})")
+        check_allocations(0, 0, "argument_forwarding(*nil, **nill#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **nill#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **empty_hash#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **hash1#{block})")
@@ -666,6 +695,8 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(0, 0, "argument_forwarding(*array1, a: 2#{block})")
 
+        check_allocations(0, 0, "argument_forwarding(**nill#{block})")
+        check_allocations(0, 0, "argument_forwarding(*nil, **nill#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **nill#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **empty_hash#{block})")
         check_allocations(0, 0, "argument_forwarding(*array1, **hash1#{block})")
@@ -712,6 +743,8 @@ class TestAllocation < Test::Unit::TestCase
 
         check_allocations(1, 1, "r2k(*array1, a: 2#{block})")
 
+        check_allocations(1, 0, "r2k(**nill#{block})")
+        check_allocations(1, 0, "r2k(*nil, **nill#{block})")
         check_allocations(1, 0, "r2k(*array1, **nill#{block})")
         check_allocations(1, 0, "r2k(*array1, **empty_hash#{block})")
         check_allocations(1, 1, "r2k(*array1, **hash1#{block})")
@@ -730,9 +763,9 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(1, 0, "r2k(*array1, **nil#{block})")
 
         check_allocations(1, 0, "r2k(*r2k_empty_array#{block})")
-        check_allocations(1, 1, "r2k(*r2k_array#{block})")
         unless defined?(RubyVM::YJIT.enabled?) && RubyVM::YJIT.enabled?
           # YJIT may or may not allocate depending on arch?
+          check_allocations(1, 1, "r2k(*r2k_array#{block})")
           check_allocations(1, 0, "r2k(*r2k_empty_array1#{block})")
           check_allocations(1, 1, "r2k(*r2k_array1#{block})")
         end
@@ -743,6 +776,7 @@ class TestAllocation < Test::Unit::TestCase
       check_allocations(<<~RUBY)
         def self.keyword(a: nil, b: nil#{block}); end
 
+        check_allocations(0, 1, "keyword(*nil, a: empty_array#{block})") # LVAR
         check_allocations(0, 1, "keyword(*empty_array, a: empty_array#{block})") # LVAR
         check_allocations(0, 1, "->{keyword(*empty_array, a: empty_array#{block})}.call") # DVAR
         check_allocations(0, 1, "$x = empty_array;  keyword(*empty_array, a: $x#{block})") # GVAR
@@ -771,6 +805,9 @@ class TestAllocation < Test::Unit::TestCase
     class WithBlock < self
       def block
         ', &block'
+      end
+      def only_block
+        '&block'
       end
     end
   end
@@ -836,6 +873,9 @@ class TestAllocation < Test::Unit::TestCase
     class WithBlock < self
       def block
         ', &block'
+      end
+      def only_block
+        '&block'
       end
     end
   end

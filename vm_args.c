@@ -894,16 +894,21 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     }
 
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
-        args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
-        VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
-        VALUE index = RARRAY_LEN(ary) - 1;
-        if (splat_flagged_keyword_hash &&
-            !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
-            !ISEQ_BODY(iseq)->param.flags.has_kw &&
-            !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
-            RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
-            ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
-            RARRAY_ASET(ary, index, rest_last);
+        if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest && args->argc == 0 && !args->rest && !ISEQ_BODY(iseq)->param.flags.has_post)) {
+           *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
+        }
+        else {
+            args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);
+            VALUE ary = *(locals + ISEQ_BODY(iseq)->param.rest_start);
+            VALUE index = RARRAY_LEN(ary) - 1;
+            if (splat_flagged_keyword_hash &&
+                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
+                !ISEQ_BODY(iseq)->param.flags.has_kw &&
+                !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                RARRAY_AREF(ary, index) == splat_flagged_keyword_hash) {
+                ((struct RHash *)rest_last)->basic.flags &= ~RHASH_PASS_AS_KEYWORDS;
+                RARRAY_ASET(ary, index, rest_last);
+            }
         }
     }
 

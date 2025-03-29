@@ -16,7 +16,7 @@ class PrintFlagsCommand(RbBaseCommand):
         obj_flags = rcass_ptr.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
 
         flags = [
-            "RUBY_FL_WB_PROTECTED", "RUBY_FL_PROMOTED0", "RUBY_FL_PROMOTED1", "RUBY_FL_FINALIZE",
+            "RUBY_FL_WB_PROTECTED", "RUBY_FL_PROMOTED", "RUBY_FL_FINALIZE",
             "RUBY_FL_SHAREABLE", "RUBY_FL_EXIVAR", "RUBY_FL_FREEZE",
             "RUBY_FL_USER0", "RUBY_FL_USER1", "RUBY_FL_USER2", "RUBY_FL_USER3", "RUBY_FL_USER4",
             "RUBY_FL_USER5", "RUBY_FL_USER6", "RUBY_FL_USER7", "RUBY_FL_USER8", "RUBY_FL_USER9",

@@ -55,7 +55,7 @@ module Prism
       end
 
       def snapshot_path
-        File.join(__dir__, "snapshots", path)
+        File.join(File.expand_path("../..", __dir__), "snapshots", path)
       end
 
       def test_name
