@@ -1481,7 +1481,8 @@ module Prism
         # foo => ^(bar)
         #        ^^^^^^
         def visit_pinned_expression_node(node)
-          expression = builder.begin(token(node.lparen_loc), visit(node.expression), token(node.rparen_loc))
+          parts = node.expression.accept(copy_compiler(in_pattern: false)) # Don't treat * and similar as match_rest
+          expression = builder.begin(token(node.lparen_loc), parts, token(node.rparen_loc))
           builder.pin(token(node.operator_loc), expression)
         end
 
