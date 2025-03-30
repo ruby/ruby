@@ -212,6 +212,7 @@ foo => Object[{x:}]
 
 case (); in [_a, _a]; end
 case (); in [{a:1}, {a:2}]; end
+a => ^({'a' => 'b'})
 
 a in b, and c
 a in b, or c
