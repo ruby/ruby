@@ -884,4 +884,31 @@ class TestGc < Test::Unit::TestCase
       assert_include ObjectSpace.dump(young_obj), '"old":true'
     end
   end
+
+  def test_memoryerror_while_vm_locking
+    omit unless Process.respond_to?(:setrlimit)
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      es = Array.new(10000) { Object.new }
+      es = Array.new(10000) { 0 }
+
+      Process.warmup
+
+      begin
+        Process.setrlimit(:DATA, 0)
+      rescue Errno::EINVAL
+        pend "could not set RLIMIT_DATA to 0"
+      else
+        i = 0
+        loop do
+          Array.new(-1)
+        rescue ArgumentError => e
+          es[i += 1] = e
+        rescue NoMemoryError
+          break
+        end
+        assert_operator(i, :>, 0)
+      end
+    end;
+  end
 end
