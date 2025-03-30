@@ -51,7 +51,7 @@ Use the following links to access the comprehensive set of libraries included wi
 
 Get involved with the Ruby community:
 
-- [Contribution Guide](rdoc-ref:contributing.md)
+- [Contribution Guide](rdoc-ref:contributing/contributing.md)
 - [Documentation Guide](rdoc-ref:contributing/documentation_guide.md)
 - [Reporting Issues](rdoc-ref:contributing/reporting_issues.md)
 - [Building Ruby](rdoc-ref:contributing/building_ruby.md)
