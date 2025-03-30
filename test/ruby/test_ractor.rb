@@ -60,6 +60,17 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
   end
 
+  def test_default_thread_group
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+
+      main_ractor_id = Thread.current.group.object_id
+      ractor_id = Ractor.new { Thread.current.group.object_id }.take
+      refute_equal main_ractor_id, ractor_id
+    end;
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

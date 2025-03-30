@@ -106,6 +106,7 @@
 #endif
 
 static VALUE rb_cThreadShield;
+static VALUE cThGroup;
 
 static VALUE sym_immediate;
 static VALUE sym_on_blocking;
@@ -795,6 +796,7 @@ struct thread_create_params {
     // for normal proc thread
     VALUE args;
     VALUE proc;
+    VALUE group;
 
     // for ractor
     rb_ractor_t *g;
@@ -853,7 +855,13 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     }
 
     th->priority = current_th->priority;
-    th->thgroup = current_th->thgroup;
+
+    if (params->group) {
+        th->thgroup = params->group;
+    }
+    else {
+        th->thgroup = current_th->thgroup;
+    }
 
     th->pending_interrupt_queue = rb_ary_hidden_new(0);
     th->pending_interrupt_queue_checked = 0;
@@ -993,13 +1001,20 @@ rb_thread_create(VALUE (*fn)(void *), void *arg)
 VALUE
 rb_thread_create_ractor(rb_ractor_t *r, VALUE args, VALUE proc)
 {
+    VALUE thgroup = r->thgroup_default = rb_obj_alloc(cThGroup);
+#if RACTOR_CHECK_MODE > 0
+    rb_ractor_setup_belonging_to(thgroup, r->pub.id);
+#endif
+
     struct thread_create_params params = {
         .type = thread_invoke_type_ractor_proc,
         .g = r,
+        .group = thgroup,
         .args = args,
         .proc = proc,
     };
-    return thread_create_core(rb_thread_alloc(rb_cThread), &params);
+    RB_GC_GUARD(thgroup);
+    return thread_create_core(rb_thread_alloc(rb_cThread), &params);;
 }
 
 
@@ -5427,7 +5442,6 @@ Init_Thread_Mutex(void)
 void
 Init_Thread(void)
 {
-    VALUE cThGroup;
     rb_thread_t *th = GET_THREAD();
 
     sym_never = ID2SYM(rb_intern_const("never"));
