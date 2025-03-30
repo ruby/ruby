@@ -1,5 +1,11 @@
 # Contributing to Ruby
 
+## Ruby Issues
+
+To report an issue in the Ruby core:
+
+* [Report issues](reporting_issues.md).
+
 ## Ruby Core
 
 To contribute to the Ruby core functionality,
