@@ -4168,11 +4168,16 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *
  *  - If +key+ is in +self+, sets <tt>self[key] = new_value</tt>, whose position is unchanged:
  *
- *      h.update({bat: 3, foo: -1}, {bat: 4, bar: -1}) # => {foo: -1, bar: -1, baz: 2, bat: 4}
+ *      h0 = {foo: 0, bar: 1, baz: 2}
+ *      h1 = {bat: 3, foo: -1}
+ *      h2 = {bat: 4, bar: -1}
+ *      h0.update(h1, h2) # => {foo: -1, bar: -1, baz: 2, bat: 4}
+ *      h0.update(h2, h1) # => {foo: -1, bar: -1, baz: 2, bat: 3}
  *
  *  - If +key+ is not in +self+, adds the entry at the end of +self+:
  *
- *      h = {foo: 0, bar: 1, baz: 2} # => {foo: 0, bar: 1, baz: 2}
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.update({bam: 3, bah: 4}) # => {foo: 0, bar: 1, baz: 2, bam: 3, bah: 4}
  *
  *  With a block given, for each successive entry +key+/+new_value+ in each successive +other_hash+:
  *
