@@ -49,6 +49,9 @@ test_new(RegexpSingletonTest)
 # https://github.com/ruby/openssl/pull/774
 test_params(OpenSSLDHTest)
 
+# RBS isn't compatible with RDoc 6.13
+RDocPluginParserTest
+
 # https://github.com/ruby/json/pull/773
 test_load(JSONInstanceTest)
 
