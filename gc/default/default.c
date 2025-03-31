@@ -1614,27 +1614,6 @@ rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
     }
 }
 
-void
-rb_gc_impl_object_id_move(void *objspace_ptr, VALUE dest, VALUE src)
-{
-   /* If the source object's object_id has been seen, we need to update
-    * the object to object id mapping. */
-   st_data_t id = 0;
-   rb_objspace_t *objspace = objspace_ptr;
-
-   unsigned int lev = rb_gc_vm_lock();
-   st_data_t key = (st_data_t)src;
-   if (!st_delete(objspace->obj_to_id_tbl, &key, &id)) {
-       rb_bug("gc_move: object ID seen, but not in mapping table: %s", rb_obj_info(src));
-   }
-   FL_UNSET_RAW(src, FL_SEEN_OBJ_ID);
-
-   st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
-   st_insert(objspace->id_to_obj_tbl, id, (st_data_t)dest);
-   FL_SET_RAW(dest, FL_SEEN_OBJ_ID);
-   rb_gc_vm_unlock(lev);
-}
-
 static void free_stack_chunks(mark_stack_t *);
 static void mark_stack_free_cache(mark_stack_t *);
 static void heap_page_free(rb_objspace_t *objspace, struct heap_page *page);

@@ -665,7 +665,6 @@ typedef struct gc_function_map {
     // Object ID
     VALUE (*object_id)(void *objspace_ptr, VALUE obj);
     VALUE (*object_id_to_ref)(void *objspace_ptr, VALUE object_id);
-    void (*object_id_move)(void *objspace_ptr, VALUE dest, VALUE src);
     // Forking
     void (*before_fork)(void *objspace_ptr);
     void (*after_fork)(void *objspace_ptr, rb_pid_t pid);
@@ -843,7 +842,6 @@ ruby_modular_gc_init(void)
     // Object ID
     load_modular_gc_func(object_id);
     load_modular_gc_func(object_id_to_ref);
-    load_modular_gc_func(object_id_move);
     // Forking
     load_modular_gc_func(before_fork);
     load_modular_gc_func(after_fork);
@@ -927,7 +925,6 @@ ruby_modular_gc_init(void)
 // Object ID
 # define rb_gc_impl_object_id rb_gc_functions.object_id
 # define rb_gc_impl_object_id_to_ref rb_gc_functions.object_id_to_ref
-# define rb_gc_impl_object_id_move rb_gc_functions.object_id_move
 // Forking
 # define rb_gc_impl_before_fork rb_gc_functions.before_fork
 # define rb_gc_impl_after_fork rb_gc_functions.after_fork
@@ -2664,12 +2661,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 void
 rb_gc_ractor_moved(VALUE dest, VALUE src)
 {
-    void *objspace = rb_gc_get_objspace();
-    if (UNLIKELY(FL_TEST_RAW(src, FL_SEEN_OBJ_ID))) {
-        rb_gc_impl_object_id_move(objspace, dest, src);
-    }
-
-    rb_gc_obj_free(objspace, src);
+    rb_gc_obj_free(rb_gc_get_objspace(), src);
     MEMZERO((void *)src, char, rb_gc_obj_slot_size(src));
     RBASIC(src)->flags = T_OBJECT | FL_FREEZE; // Avoid mutations using bind_call, etc.
 }
