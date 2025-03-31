@@ -4253,7 +4253,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     const uint8_t *point = memchr(start, '.', length);
     assert(point && "should have a decimal point");
 
-    uint8_t *digits = malloc(length);
+    uint8_t *digits = xmalloc(length);
     if (digits == NULL) {
         fputs("[pm_float_node_rational_create] Failed to allocate memory", stderr);
         abort();
@@ -4266,7 +4266,7 @@ pm_float_node_rational_create(pm_parser_t *parser, const pm_token_t *token) {
     digits[0] = '1';
     if (end - point > 1) memset(digits + 1, '0', (size_t) (end - point - 1));
     pm_integer_parse(&node->denominator, PM_INTEGER_BASE_DEFAULT, digits, digits + (end - point));
-    free(digits);
+    xfree(digits);
 
     pm_integers_reduce(&node->numerator, &node->denominator);
     return node;
