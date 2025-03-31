@@ -4168,13 +4168,40 @@ rb_hash_update_block_i(VALUE key, VALUE value, VALUE hash)
  *    update(*other_hashes) -> self
  *    update(*other_hashes) { |key, old_value, new_value| ... } -> self
  *
- *  Like Hash#merge, but modifies and returns +self+ instead of a new hash:
+ *  Updates values and/or adds entries to +self+; returns +self+.
  *
- *    season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
- *    today = {AB: 3, H: 1, W: 1}
- *    yesterday = {AB: 4, H: 2, HR: 1}
- *    season.update(yesterday, today) {|key, old_value, new_value| old_value + new_value }
- *    # => {AB: 82, H: 23, HR: 4, SO: 17, W: 12, HBP: 3}
+ *  Each argument +other_hash+ in +other_hashes+ must be a hash.
+ *
+ *  With no block given, for each successive entry +key+/+new_value+ in each successive +other_hash+:
+ *
+ *  - If +key+ is in +self+, sets <tt>self[key] = new_value</tt>, whose position is unchanged:
+ *
+ *      h0 = {foo: 0, bar: 1, baz: 2}
+ *      h1 = {bar: 3, foo: -1}
+ *      h0.update(h1) # => {foo: -1, bar: 3, baz: 2}
+ *
+ *  - If +key+ is not in +self+, adds the entry at the end of +self+:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.update({bam: 3, bah: 4}) # => {foo: 0, bar: 1, baz: 2, bam: 3, bah: 4}
+ *
+ *  With a block given, for each successive entry +key+/+new_value+ in each successive +other_hash+:
+ *
+ *  - If +key+ is in +self+, fetches +old_value+ from <tt>self[key]</tt>,
+ *    calls the block with +key+, +old_value+, and +new_value+,
+ *    and sets <tt>self[key] = new_value</tt>, whose position is unchanged  :
+ *
+ *      season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
+ *      today = {AB: 3, H: 1, W: 1}
+ *      yesterday = {AB: 4, H: 2, HR: 1}
+ *      season.update(yesterday, today) {|key, old_value, new_value| old_value + new_value }
+ *      # => {AB: 82, H: 23, HR: 4, SO: 17, W: 12, HBP: 3}
+ *
+ *  - If +key+ is not in +self+, adds the entry at the end of +self+:
+ *
+ *      h = {foo: 0, bar: 1, baz: 2}
+ *      h.update({bat: 3}) { fail 'Cannot happen' }
+ *      # => {foo: 0, bar: 1, baz: 2, bat: 3}
  *
  *  Related: see {Methods for Assigning}[rdoc-ref:Hash@Methods+for+Assigning].
  */
