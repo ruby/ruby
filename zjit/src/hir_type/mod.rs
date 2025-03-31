@@ -2,6 +2,7 @@
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass};
 use crate::cruby::ClassRelationship;
+use crate::cruby::get_class_name;
 use crate::hir::PtrPrintMap;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -62,20 +63,6 @@ pub struct Type {
 }
 
 include!("hir_type.inc.rs");
-
-/// Get class name from a class pointer.
-pub fn get_class_name(class: VALUE) -> String {
-    use crate::cruby::{RB_TYPE_P, RUBY_T_MODULE, RUBY_T_CLASS};
-    use crate::cruby::{cstr_to_rust_string, rb_class2name};
-    // type checks for rb_class2name()
-    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
-        Some(class)
-    } else {
-        None
-    }.and_then(|class| unsafe {
-        cstr_to_rust_string(rb_class2name(class))
-    }).unwrap_or_else(|| "Unknown".to_string())
-}
 
 fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::Result {
     let ty = printer.inner;

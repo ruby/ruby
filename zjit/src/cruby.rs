@@ -1106,6 +1106,18 @@ pub mod test_utils {
 #[cfg(test)]
 pub use test_utils::*;
 
+/// Get class name from a class pointer.
+pub fn get_class_name(class: VALUE) -> String {
+    // type checks for rb_class2name()
+    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
+        Some(class)
+    } else {
+        None
+    }.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string())
+}
+
 /// Interned ID values for Ruby symbols and method names.
 /// See [type@crate::cruby::ID] and usages outside of YJIT.
 pub(crate) mod ids {

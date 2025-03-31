@@ -5,7 +5,7 @@ use crate::{
     cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
 use std::{cell::RefCell, collections::{HashMap, HashSet}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
-use crate::hir_type::{Type, types, get_class_name};
+use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub struct InsnId(pub usize);
