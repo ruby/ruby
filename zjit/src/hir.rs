@@ -151,7 +151,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                 write!(f, ")")
             }
             Invariant::MethodRedefined { klass, method } => {
-                let class_name = get_class_name(Some(klass));
+                let class_name = get_class_name(klass);
                 let method_name = unsafe {
                     cstr_to_rust_string(rb_id2name(method)).unwrap_or_else(|| "<unknown>".to_owned())
                 };

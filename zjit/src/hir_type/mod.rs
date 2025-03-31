@@ -64,13 +64,15 @@ pub struct Type {
 include!("hir_type.inc.rs");
 
 /// Get class name from a class pointer.
-pub fn get_class_name(class: Option<VALUE>) -> String {
+pub fn get_class_name(class: VALUE) -> String {
     use crate::cruby::{RB_TYPE_P, RUBY_T_MODULE, RUBY_T_CLASS};
     use crate::cruby::{cstr_to_rust_string, rb_class2name};
-    class.filter(|&class| {
-        // type checks for rb_class2name()
-        unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) }
-    }).and_then(|class| unsafe {
+    // type checks for rb_class2name()
+    if unsafe { RB_TYPE_P(class, RUBY_T_MODULE) || RB_TYPE_P(class, RUBY_T_CLASS) } {
+        Some(class)
+    } else {
+        None
+    }.and_then(|class| unsafe {
         cstr_to_rust_string(rb_class2name(class))
     }).unwrap_or_else(|| "Unknown".to_string())
 }
@@ -80,8 +82,8 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
     match ty.spec {
         Specialization::Any | Specialization::Empty => { Ok(()) },
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
-        Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(Some(val))),
-        Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(Some(val))),
+        Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(val)),
+        Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(val)),
         Specialization::Int(val) if ty.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
         Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val as i64) >> 56),
         Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val as i64) >> 48),
