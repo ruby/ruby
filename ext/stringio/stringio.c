@@ -13,7 +13,7 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.1.6.dev";
+STRINGIO_VERSION = "3.1.6";
 
 #include <stdbool.h>
 
