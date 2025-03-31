@@ -54,6 +54,7 @@ RDocPluginParserTest
 
 # https://github.com/ruby/json/pull/773
 test_load(JSONInstanceTest)
+test_load(JSONSingletonTest)
 
 # https://github.com/ruby/json/pull/775
 test_fast_unparse(JSONInstanceTest)
