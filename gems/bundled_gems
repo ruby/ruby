@@ -33,12 +33,12 @@ rinda               0.2.0   https://github.com/ruby/rinda
 drb                 2.2.1   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.3.0   https://github.com/ruby/syslog
-csv                 3.3.2   https://github.com/ruby/csv
+csv                 3.3.3   https://github.com/ruby/csv
 repl_type_completor 0.1.10  https://github.com/ruby/repl_type_completor
 ostruct             0.6.1   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.4.0   https://github.com/ruby/benchmark
-logger              1.6.6   https://github.com/ruby/logger
+logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.13.1  https://github.com/ruby/rdoc
 win32ole            1.9.1   https://github.com/ruby/win32ole
 irb                 1.15.1  https://github.com/ruby/irb 6bb53630c3398b2042fb99d5232c68399491d338
