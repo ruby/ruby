@@ -61,5 +61,5 @@ describe "UnboundMethod#source_location" do
     ruby_version_is("3.5") do
       location.should == ["foo", 100, 0, 100, 10]
     end
- end
+  end
 end

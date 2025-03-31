@@ -110,7 +110,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load_with_proc
     visited = []
-    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o) })
+    JSON.load('{"foo": [1, 2, 3], "bar": {"baz": "plop"}}', proc { |o| visited << JSON.dump(o); o })
 
     expected = [
       '"foo"',
@@ -174,9 +174,9 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
   end
 
   def test_dump_should_modify_defaults
-    max_nesting = JSON.dump_default_options[:max_nesting]
+    max_nesting = JSON._dump_default_options[:max_nesting]
     dump([], StringIO.new, 10)
-    assert_equal max_nesting, JSON.dump_default_options[:max_nesting]
+    assert_equal max_nesting, JSON._dump_default_options[:max_nesting]
   end
 
   def test_JSON
@@ -208,6 +208,12 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
         JSON.load_file(path)
       end
       assert_equal data, loaded_data
+    end
+  end
+
+  def test_deprecated_dump_default_options
+    assert_deprecated_warning(/dump_default_options/) do
+      JSON.dump_default_options
     end
   end
 

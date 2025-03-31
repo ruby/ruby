@@ -216,7 +216,7 @@ to the same gem path as user-installed gems.
 
       if spec.executables.size > 1
         alert_error "Ambiguous which executable from gem `#{executable}` should be run: " \
-              "the options are #{spec.executables}, specify one via COMMAND, and use `-g` and `-v` to specify gem and version"
+              "the options are #{spec.executables.sort}, specify one via COMMAND, and use `-g` and `-v` to specify gem and version"
         terminate_interaction 1
       end
 

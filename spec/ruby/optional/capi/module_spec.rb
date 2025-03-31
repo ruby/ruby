@@ -22,6 +22,8 @@ describe "CApiModule" do
     it "sets a new constant on a module" do
       @m.rb_const_set(CApiModuleSpecs::C, :W, 7)
       CApiModuleSpecs::C::W.should == 7
+    ensure
+      CApiModuleSpecs::C.send(:remove_const, :W)
     end
 
     it "sets an existing constant's value" do
@@ -93,6 +95,8 @@ describe "CApiModule" do
     it "defines a new constant on a module" do
       @m.rb_define_const(CApiModuleSpecs::C, "V", 7)
       CApiModuleSpecs::C::V.should == 7
+    ensure
+      CApiModuleSpecs::C.send(:remove_const, :V)
     end
 
     it "sets an existing constant's value" do

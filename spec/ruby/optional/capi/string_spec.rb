@@ -1012,7 +1012,7 @@ describe "C-API String function" do
       result = @s.rb_str_export_to_enc(source, Encoding::UTF_8)
       source.bytes.should == [0, 255]
     end
-end
+  end
 
   describe "rb_sprintf" do
     it "replaces the parts like sprintf" do

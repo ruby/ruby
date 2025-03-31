@@ -352,8 +352,8 @@ describe "String#byterindex with Regexp" do
     end
 
     it "returns the character index before the finish" do
-       "ありがりがとう".byterindex("が", 9).should == 6
-       "ありがりがとう".byterindex(/が/, 9).should == 6
+      "ありがりがとう".byterindex("が", 9).should == 6
+      "ありがりがとう".byterindex(/が/, 9).should == 6
     end
   end
 end

@@ -156,7 +156,7 @@ describe "IO#wait" do
     end
 
     it "accepts a list of modes" do
-       @io.wait(0, :r, :w, :rw).should == @io
+      @io.wait(0, :r, :w, :rw).should == @io
     end
 
     # It works at least since 2.7 but by some reason may fail on 3.1

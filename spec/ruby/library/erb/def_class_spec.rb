@@ -24,6 +24,8 @@ END
     MyClass1ForErb = erb.def_class(MyClass1ForErb_, 'render()')
     MyClass1ForErb.method_defined?(:render).should == true
     MyClass1ForErb.new('foo', 123).render().should == expected
+  ensure
+    Object.send(:remove_const, :MyClass1ForErb)
   end
 
 end

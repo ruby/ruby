@@ -2997,19 +2997,20 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
                     }
                 ;
 
-%rule f_kw(value) <node_kw_arg>: f_label value
-                                    {
-                                        p->ctxt.in_argdef = 1;
-                                        $$ = new_kw_arg(p, assignable(p, $f_label, $value, &@$), &@$);
-                                    /*% ripper: [$:$, $:value] %*/
-                                    }
-                                | f_label
-                                    {
-                                        p->ctxt.in_argdef = 1;
-                                        $$ = new_kw_arg(p, assignable(p, $f_label, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
-                                    /*% ripper: [$:$, 0] %*/
-                                    }
-                                ;
+%rule f_kw(value) <node_kw_arg>
+                : f_label value
+                    {
+                        p->ctxt.in_argdef = 1;
+                        $$ = new_kw_arg(p, assignable(p, $f_label, $value, &@$), &@$);
+                    /*% ripper: [$:$, $:value] %*/
+                    }
+                | f_label
+                    {
+                        p->ctxt.in_argdef = 1;
+                        $$ = new_kw_arg(p, assignable(p, $f_label, NODE_SPECIAL_REQUIRED_KEYWORD, &@$), &@$);
+                    /*% ripper: [$:$, 0] %*/
+                    }
+                ;
 
 %rule f_kwarg(value) <node_kw_arg>
                 : f_kw(value)
@@ -9035,7 +9036,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
         if (!has_delayed_token(p)) {
             dispatch_scan_event(p, tSTRING_CONTENT);
         }
-        else {
+        else if (p->delayed.end_line + 1 == p->ruby_sourceline) {
             if ((len = p->lex.pcur - p->lex.ptok) > 0) {
                 if (!(func & STR_FUNC_REGEXP)) {
                     int cr = ENC_CODERANGE_UNKNOWN;
@@ -9049,6 +9050,10 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
                 rb_parser_enc_str_buf_cat(p, p->delayed.token, p->lex.ptok, len, enc);
             }
             dispatch_delayed_token(p, tSTRING_CONTENT);
+        }
+        else {
+            dispatch_delayed_token(p, tSTRING_CONTENT);
+            dispatch_scan_event(p, tSTRING_CONTENT);
         }
         lex_goto_eol(p);
 #endif

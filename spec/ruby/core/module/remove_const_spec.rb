@@ -101,5 +101,7 @@ describe "Module#remove_const" do
       A.send(:remove_const,:FOO)
       A.foo.should == 'm'
     end
+  ensure
+    ConstantSpecs.send(:remove_const, :RemovedConstantUpdate)
   end
 end

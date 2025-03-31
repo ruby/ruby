@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Refinement#prepend" do
-  ruby_version_is "3.1"..."3.2" do
+  ruby_version_is ""..."3.2" do
     it "warns about deprecation" do
       Module.new do
         refine String do

@@ -28,9 +28,9 @@ describe "Logger#new" do
   end
 
   it "receives a frequency rotation as second argument" do
-     -> { Logger.new(@log_file, "daily") }.should_not raise_error
-     -> { Logger.new(@log_file, "weekly") }.should_not raise_error
-     -> { Logger.new(@log_file, "monthly") }.should_not raise_error
+    -> { Logger.new(@log_file, "daily") }.should_not raise_error
+    -> { Logger.new(@log_file, "weekly") }.should_not raise_error
+    -> { Logger.new(@log_file, "monthly") }.should_not raise_error
   end
 
   it "also receives a number of log files to keep as second argument" do

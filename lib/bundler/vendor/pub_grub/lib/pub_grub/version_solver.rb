@@ -2,17 +2,20 @@ require_relative 'partial_solution'
 require_relative 'term'
 require_relative 'incompatibility'
 require_relative 'solve_failure'
+require_relative 'strategy'
 
 module Bundler::PubGrub
   class VersionSolver
     attr_reader :logger
     attr_reader :source
     attr_reader :solution
+    attr_reader :strategy
 
-    def initialize(source:, root: Package.root, logger: Bundler::PubGrub.logger)
+    def initialize(source:, root: Package.root, strategy: Strategy.new(source), logger: Bundler::PubGrub.logger)
       @logger = logger
 
       @source = source
+      @strategy = strategy
 
       # { package => [incompatibility, ...]}
       @incompatibilities = Hash.new do |h, k|
@@ -104,25 +107,15 @@ module Bundler::PubGrub
       unsatisfied.package
     end
 
-    def next_term_to_try_from(unsatisfied_terms)
-      unsatisfied_terms.min_by do |term|
-        package = term.package
-        range = term.constraint.range
-        matching_versions = source.versions_for(package, range)
-        higher_versions = source.versions_for(package, range.upper_invert)
-
-        [matching_versions.count <= 1 ? 0 : 1, higher_versions.count]
-      end
-    end
-
     def choose_package_version_from(unsatisfied_terms)
-      unsatisfied_term = next_term_to_try_from(unsatisfied_terms)
-      package = unsatisfied_term.package
+      remaining = unsatisfied_terms.map { |t| [t.package, t.constraint.range] }.to_h
 
-      version = source.versions_for(package, unsatisfied_term.constraint.range).first
+      package, version = strategy.next_package_and_version(remaining)
+
       logger.debug { "attempting #{package} #{version}" }
 
       if version.nil?
+        unsatisfied_term = unsatisfied_terms.find { |t| t.package == package }
         add_incompatibility source.no_versions_incompatibility_for(package, unsatisfied_term)
         return package
       end

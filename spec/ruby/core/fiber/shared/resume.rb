@@ -1,7 +1,7 @@
 describe :fiber_resume, shared: true do
   it "can be invoked from the root Fiber" do
-   fiber = Fiber.new { :fiber }
-   fiber.send(@method).should == :fiber
+    fiber = Fiber.new { :fiber }
+    fiber.send(@method).should == :fiber
   end
 
   it "raises a FiberError if invoked from a different Thread" do

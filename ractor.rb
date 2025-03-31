@@ -860,7 +860,7 @@ class Ractor
   # call-seq:
   #   Ractor.store_if_absent(key){ init_block }
   #
-  # If the correponding value is not set, yield a value with
+  # If the corresponding value is not set, yield a value with
   # init_block and store the value in thread-safe manner.
   # This method returns corresponding stored value.
   #

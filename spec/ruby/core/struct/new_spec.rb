@@ -6,6 +6,8 @@ describe "Struct.new" do
     struct = Struct.new('Animal', :name, :legs, :eyeballs)
     struct.should == Struct::Animal
     struct.name.should == "Struct::Animal"
+  ensure
+    Struct.send(:remove_const, :Animal)
   end
 
   it "overwrites previously defined constants with string as first argument" do
@@ -19,6 +21,8 @@ describe "Struct.new" do
     second.should == Struct::Person
 
     first.members.should_not == second.members
+  ensure
+    Struct.send(:remove_const, :Person)
   end
 
   it "calls to_str on its first argument (constant name)" do
@@ -27,6 +31,8 @@ describe "Struct.new" do
     struct = Struct.new(obj)
     struct.should == Struct::Foo
     struct.name.should == "Struct::Foo"
+  ensure
+    Struct.send(:remove_const, :Foo)
   end
 
   it "creates a new anonymous class with nil first argument" do
@@ -138,6 +144,8 @@ describe "Struct.new" do
     it "creates a constant in subclass' namespace" do
       struct = StructClasses::Apple.new('Computer', :size)
       struct.should == StructClasses::Apple::Computer
+    ensure
+      StructClasses::Apple.send(:remove_const, :Computer)
     end
 
     it "creates an instance" do
@@ -156,19 +164,6 @@ describe "Struct.new" do
 
     it "fails with too many arguments" do
       -> { StructClasses::Ruby.new('2.0', 'i686', true) }.should raise_error(ArgumentError)
-    end
-
-    ruby_version_is ''...'3.1' do
-      it "passes a hash as a normal argument" do
-        type = Struct.new(:args)
-
-        obj = suppress_warning {type.new(keyword: :arg)}
-        obj2 = type.new(*[{keyword: :arg}])
-
-        obj.should == obj2
-        obj.args.should == {keyword: :arg}
-        obj2.args.should == {keyword: :arg}
-      end
     end
 
     ruby_version_is '3.2' do

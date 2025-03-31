@@ -323,18 +323,16 @@ describe "Keyword arguments" do
       m({a: 1}).should == [[{a: 1}], {}]
     end
 
-    ruby_version_is "3.1" do
-      describe "omitted values" do
-        it "accepts short notation 'key' for 'key: value' syntax" do
-          def m(a:, b:)
-            [a, b]
-          end
-
-          a = 1
-          b = 2
-
-          eval('m(a:, b:).should == [1, 2]')
+    describe "omitted values" do
+      it "accepts short notation 'key' for 'key: value' syntax" do
+        def m(a:, b:)
+          [a, b]
         end
+
+        a = 1
+        b = 2
+
+        m(a:, b:).should == [1, 2]
       end
     end
 

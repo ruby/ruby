@@ -374,7 +374,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
         @cmd.invoke "a:2"
       end
       assert_equal 1, e.exit_code
-      assert_equal "ERROR:  Ambiguous which executable from gem `a` should be run: the options are [\"foo\", \"bar\"], specify one via COMMAND, and use `-g` and `-v` to specify gem and version\n", @ui.error
+      assert_equal "ERROR:  Ambiguous which executable from gem `a` should be run: the options are [\"bar\", \"foo\"], specify one via COMMAND, and use `-g` and `-v` to specify gem and version\n", @ui.error
     end
   end
 

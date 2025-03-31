@@ -189,7 +189,8 @@ module Psych
       end
 
       def visit_Date o
-        register o, visit_Integer(o.gregorian)
+        formatted = format_date o
+        register o, @emitter.scalar(formatted, nil, nil, true, false, Nodes::Scalar::ANY)
       end
 
       def visit_DateTime o
@@ -484,6 +485,10 @@ module Psych
         else
           time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")
         end
+      end
+
+      def format_date date
+        date.strftime("%Y-%m-%d")
       end
 
       def register target, yaml_obj

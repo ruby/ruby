@@ -29,6 +29,8 @@ describe "Errno::EMFILE" do
     ExceptionSpecs::EMFILESub = Class.new(Errno::EMFILE)
     exc = ExceptionSpecs::EMFILESub.new
     exc.should be_an_instance_of(ExceptionSpecs::EMFILESub)
+  ensure
+    ExceptionSpecs.send(:remove_const, :EMFILESub)
   end
 end
 

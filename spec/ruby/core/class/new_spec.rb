@@ -83,6 +83,8 @@ describe "Class.new" do
     a = Class.new
     MyClass::NestedClass = a
     MyClass::NestedClass.name.should == "MyClass::NestedClass"
+  ensure
+    Object.send(:remove_const, :MyClass)
   end
 
   it "sets the new class' superclass to the given class" do

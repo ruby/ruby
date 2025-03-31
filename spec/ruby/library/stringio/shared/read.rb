@@ -15,7 +15,7 @@ describe :stringio_read, shared: true do
     buffer.should == "example"
   end
 
-  ruby_version_is ""..."3.4" do
+  guard -> { StringIO::VERSION < "3.1.2" } do
     it "does not preserve the encoding of the given buffer" do
       buffer = ''.encode(Encoding::ISO_8859_1)
       @io.send(@method, 7, buffer)
@@ -24,7 +24,7 @@ describe :stringio_read, shared: true do
     end
   end
 
-  ruby_version_is "3.4" do
+  guard -> { StringIO::VERSION >= "3.1.2" } do
     it "preserves the encoding of the given buffer" do
       buffer = ''.encode(Encoding::ISO_8859_1)
       @io.send(@method, 7, buffer)

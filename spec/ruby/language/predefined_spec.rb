@@ -71,7 +71,7 @@ describe "Predefined global $~" do
     match2.should_not == nil
     $~.should == match2
 
-    eval 'match3 = /baz/.match("baz")'
+    match3 = /baz/.match("baz")
 
     match3.should_not == nil
     $~.should == match3
@@ -559,12 +559,39 @@ describe "Predefined global $/" do
     $VERBOSE = @verbose
   end
 
-  it "can be assigned a String" do
-    str = "abc"
-    $/ = str
-    $/.should equal(str)
+  ruby_version_is ""..."3.5" do
+    it "can be assigned a String" do
+      str = +"abc"
+      $/ = str
+      $/.should equal(str)
+    end
   end
 
+  ruby_version_is "3.5" do
+    it "makes a new frozen String from the assigned String" do
+      string_subclass = Class.new(String)
+      str = string_subclass.new("abc")
+      str.instance_variable_set(:@ivar, 1)
+      $/ = str
+      $/.should.frozen?
+      $/.should be_an_instance_of(String)
+      $/.should_not.instance_variable_defined?(:@ivar)
+      $/.should == str
+    end
+
+    it "makes a new frozen String if it's not frozen" do
+      str = +"abc"
+      $/ = str
+      $/.should.frozen?
+      $/.should == str
+    end
+
+    it "assigns the given String if it's frozen and has no instance variables" do
+      str = "abc".freeze
+      $/ = str
+      $/.should equal(str)
+    end
+  end
   it "can be assigned nil" do
     $/ = nil
     $/.should be_nil
@@ -608,10 +635,38 @@ describe "Predefined global $-0" do
     $VERBOSE = @verbose
   end
 
-  it "can be assigned a String" do
-    str = "abc"
-    $-0 = str
-    $-0.should equal(str)
+  ruby_version_is ""..."3.5" do
+    it "can be assigned a String" do
+      str = +"abc"
+      $-0 = str
+      $-0.should equal(str)
+    end
+  end
+
+  ruby_version_is "3.5" do
+    it "makes a new frozen String from the assigned String" do
+      string_subclass = Class.new(String)
+      str = string_subclass.new("abc")
+      str.instance_variable_set(:@ivar, 1)
+      $-0 = str
+      $-0.should.frozen?
+      $-0.should be_an_instance_of(String)
+      $-0.should_not.instance_variable_defined?(:@ivar)
+      $-0.should == str
+    end
+
+    it "makes a new frozen String if it's not frozen" do
+      str = +"abc"
+      $-0 = str
+      $-0.should.frozen?
+      $-0.should == str
+    end
+
+    it "assigns the given String if it's frozen and has no instance variables" do
+      str = "abc".freeze
+      $-0 = str
+      $-0.should equal(str)
+    end
   end
 
   it "can be assigned nil" do
@@ -768,7 +823,7 @@ describe "Predefined global $_" do
     match.should == "bar\n"
     $_.should == match
 
-    eval 'match = stdin.gets'
+    match = stdin.gets
 
     match.should == "baz\n"
     $_.should == match
@@ -1341,16 +1396,8 @@ describe "$LOAD_PATH.resolve_feature_path" do
     path.should.end_with?("/etc.#{RbConfig::CONFIG['DLEXT']}")
   end
 
-  ruby_version_is ""..."3.1" do
-    it "raises LoadError if feature cannot be found" do
-      -> { $LOAD_PATH.resolve_feature_path('noop') }.should raise_error(LoadError)
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "return nil if feature cannot be found" do
-      $LOAD_PATH.resolve_feature_path('noop').should be_nil
-    end
+  it "return nil if feature cannot be found" do
+    $LOAD_PATH.resolve_feature_path('noop').should be_nil
   end
 end
 

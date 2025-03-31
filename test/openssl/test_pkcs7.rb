@@ -308,6 +308,8 @@ END
   end
 
   def test_split_content
+     pend "AWS-LC ASN.1 parsers has no current support for parsing indefinite BER constructed strings" if aws_lc?
+
      pki_message_pem = <<END
 -----BEGIN PKCS7-----
 MIIHSwYJKoZIhvcNAQcCoIIHPDCCBzgCAQExCzAJBgUrDgMCGgUAMIIDiAYJKoZI
@@ -376,14 +378,9 @@ tcH961onq8Tme2ICaCzk
 END
     pki_msg = OpenSSL::PKCS7.new(pki_message_pem)
     store = OpenSSL::X509::Store.new
-    pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY)
+    assert_equal(true, pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY))
     p7enc = OpenSSL::PKCS7.new(pki_msg.data)
-    # AWS-LC uses explicit OCTET STRING headers when encoding PKCS7 EncryptedContent,
-    # while OpenSSL traditionally uses indefinite-length encoding (ASN1_TFLG_NDEF)
-    # in its PKCS7 implementation.
-    unless aws_lc?
-      assert_equal(pki_message_content_pem, p7enc.to_pem)
-    end
+    assert_equal(pki_message_content_pem, p7enc.to_pem)
   end
 end
 

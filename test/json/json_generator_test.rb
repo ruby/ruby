@@ -136,15 +136,17 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_fast_generate
-    json = fast_generate(@hash)
-    assert_equal(parse(@json2), parse(json))
-    parsed_json = parse(json)
-    assert_equal(@hash, parsed_json)
-    json = fast_generate({1=>2})
-    assert_equal('{"1":2}', json)
-    parsed_json = parse(json)
-    assert_equal({"1"=>2}, parsed_json)
-    assert_equal '666', fast_generate(666)
+    assert_deprecated_warning(/fast_generate/) do
+      json = fast_generate(@hash)
+      assert_equal(parse(@json2), parse(json))
+      parsed_json = parse(json)
+      assert_equal(@hash, parsed_json)
+      json = fast_generate({1=>2})
+      assert_equal('{"1":2}', json)
+      parsed_json = parse(json)
+      assert_equal({"1"=>2}, parsed_json)
+      assert_equal '666', fast_generate(666)
+    end
   end
 
   def test_own_state
@@ -199,26 +201,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     )
   end
 
-  def test_pretty_state
-    state = JSON.create_pretty_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "\n",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "  ",
-      :max_nesting           => 100,
-      :object_nl             => "\n",
-      :space                 => " ",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
-  def test_safe_state
+  def test_state_defaults
     state = JSON::State.new
     assert_equal({
       :allow_nan             => false,
@@ -237,44 +220,27 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
-  def test_fast_state
-    state = JSON.create_fast_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "",
-      :max_nesting           => 0,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
   def test_allow_nan
-    error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
-    assert_same JSON::NaN, error.invalid_object
-    assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
-    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
-    assert_same JSON::Infinity, error.invalid_object
-    assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
-    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
-    assert_same JSON::MinusInfinity, error.invalid_object
-    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
-    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_deprecated_warning(/fast_generate/) do
+      error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
+      assert_same JSON::NaN, error.invalid_object
+      assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
+      assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
+      error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+      assert_same JSON::Infinity, error.invalid_object
+      assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
+      assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
+      error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+      assert_same JSON::MinusInfinity, error.invalid_object
+      assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+      assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    end
   end
 
   def test_depth
@@ -706,5 +672,17 @@ class JSONGeneratorTest < Test::Unit::TestCase
       values.zip(expecteds).each do |value, expected|
         assert_equal expected, value.to_json
       end
+  end
+
+  def test_numbers_of_various_sizes
+    numbers = [
+      0, 1, -1, 9, -9, 13, -13, 91, -91, 513, -513, 7513, -7513,
+      17591, -17591, -4611686018427387904, 4611686018427387903,
+      2**62, 2**63, 2**64, -(2**62), -(2**63), -(2**64)
+    ]
+
+    numbers.each do |number|
+      assert_equal "[#{number}]", JSON.generate([number])
+    end
   end
 end

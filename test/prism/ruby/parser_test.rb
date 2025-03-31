@@ -127,7 +127,6 @@ module Prism
       "whitequark/newline_in_hash_argument.txt",
       "whitequark/pattern_matching_expr_in_paren.txt",
       "whitequark/pattern_matching_hash.txt",
-      "whitequark/pin_expr.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
       "whitequark/space_args_arg_block.txt",

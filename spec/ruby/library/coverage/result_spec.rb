@@ -108,16 +108,6 @@ describe 'Coverage.result' do
     result.should == {}
   end
 
-  ruby_version_is ''...'3.1' do
-    it 'second Coverage.start does nothing' do
-      Coverage.start
-      require @config_file.chomp('.rb')
-      result = Coverage.result
-
-      result.should == { @config_file => [1, 1, 1] }
-    end
-  end
-
   it 'does not include the file starting coverage since it is not tracked' do
     require @config_file.chomp('.rb')
     Coverage.result.should_not include(@config_file)

@@ -95,6 +95,7 @@ module Bundler
       @locked_ruby_version = nil
       @new_platforms = []
       @removed_platforms = []
+      @originally_invalid_platforms = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -760,7 +761,11 @@ module Bundler
         end
       end
 
-      @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
+      if should_add_extra_platforms?
+        result.add_extra_platforms!(platforms)
+      elsif @originally_invalid_platforms.any?
+        result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
+      end
 
       SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
@@ -953,11 +958,17 @@ module Bundler
         unless name == "bundler"
           locked_specs = @originally_locked_specs[name]
 
-          if locked_specs.any? && !dep.matches_spec?(locked_specs.first)
-            @gems_to_unlock << name
-            dep_changed = true
-          elsif locked_specs.empty? && dep_changed == false
-            @missing_lockfile_dep = name
+          if locked_specs.empty?
+            @missing_lockfile_dep = name if dep_changed == false
+          else
+            if locked_specs.map(&:source).uniq.size > 1
+              @locked_specs.delete(locked_specs.select {|s| s.source != dep.source })
+            end
+
+            unless dep.matches_spec?(locked_specs.first)
+              @gems_to_unlock << name
+              dep_changed = true
+            end
           end
         end
 
@@ -1131,16 +1142,21 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      platforms.reverse_each do |platform|
+      @originally_invalid_platforms = platforms.select do |platform|
         next if local_platform == platform ||
-                @new_platforms.include?(platform) ||
-                @path_changes ||
-                @dependency_changes ||
-                @locked_spec_with_invalid_deps ||
-                !spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
+                @new_platforms.include?(platform)
 
-        remove_platform(platform)
+        # We should probably avoid removing non-ruby platforms, since that means
+        # lockfile will no longer install on those platforms, so a error to give
+        # heads up to the user may be better. However, we have tests expecting
+        # non ruby platform autoremoval to work, so leaving that in place for
+        # now.
+        next if @dependency_changes && platform != Gem::Platform::RUBY
+
+        spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
       end
+
+      @platforms -= @originally_invalid_platforms
     end
 
     def spec_set_incomplete_for_platform?(spec_set, platform)

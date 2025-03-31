@@ -8673,6 +8673,25 @@ deprecated_str_setter(VALUE val, ID id, VALUE *var)
     *var = val;
 }
 
+static void
+deprecated_rs_setter(VALUE val, ID id, VALUE *var)
+{
+    if (!NIL_P(val)) {
+        if (!RB_TYPE_P(val, T_STRING)) {
+            rb_raise(rb_eTypeError, "value of %"PRIsVALUE" must be String", rb_id2str(id));
+        }
+        if (rb_str_equal(val, rb_default_rs)) {
+            val = rb_default_rs;
+        }
+        else {
+            val = rb_str_frozen_bare_string(val);
+        }
+        rb_enc_str_coderange(val);
+        rb_warn_deprecated("'%s'", NULL, rb_id2name(id));
+    }
+    *var = val;
+}
+
 /*
  *  call-seq:
  *    print(*objects) -> nil
@@ -15713,8 +15732,10 @@ Init_IO(void)
     rb_vm_register_global_object(rb_default_rs);
     rb_rs = rb_default_rs;
     rb_output_rs = Qnil;
-    rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_str_setter);
-    rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_str_setter);
+    rb_define_hooked_variable("$/", &rb_rs, 0, deprecated_rs_setter);
+    rb_gvar_ractor_local("$/"); // not local but ractor safe
+    rb_define_hooked_variable("$-0", &rb_rs, 0, deprecated_rs_setter);
+    rb_gvar_ractor_local("$-0"); // not local but ractor safe
     rb_define_hooked_variable("$\\", &rb_output_rs, 0, deprecated_str_setter);
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);

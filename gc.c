@@ -1193,7 +1193,7 @@ rb_data_free(void *objspace, VALUE obj)
                 RB_DEBUG_COUNTER_INC(obj_data_imm_free);
             }
             else {
-                rb_gc_impl_make_zombie(rb_gc_get_objspace(), obj, dfree, data);
+                rb_gc_impl_make_zombie(objspace, obj, dfree, data);
                 RB_DEBUG_COUNTER_INC(obj_data_zombie);
                 return FALSE;
             }
@@ -1456,7 +1456,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
     }
 
     if (FL_TEST(obj, FL_FINALIZE)) {
-        rb_gc_impl_make_zombie(rb_gc_get_objspace(), obj, 0, 0);
+        rb_gc_impl_make_zombie(objspace, obj, 0, 0);
         return FALSE;
     }
     else {
@@ -2874,7 +2874,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("rb_gc_mark(): %p is T_ZOMBIE", (void *)obj);
         rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
                BUILTIN_TYPE(obj), (void *)obj,
-               rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj) ? "corrupted object" : "non object");
+               rb_gc_impl_pointer_to_heap_p(objspace, (void *)obj) ? "corrupted object" : "non object");
     }
 }
 

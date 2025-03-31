@@ -1,7 +1,5 @@
 require_relative '../../spec_helper'
-require_relative '../../shared/fiber/resume'
-
-require 'fiber'
+require_relative 'shared/resume'
 
 describe "Fiber#transfer" do
   it_behaves_like :fiber_resume, :transfer

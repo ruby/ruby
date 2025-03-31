@@ -7,6 +7,9 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `*nil` no longer calls `nil.to_a`, similar to how `**nil` does
+  not call `nil.to_hash`.  [[Feature #21047]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -84,4 +87,5 @@ The following bundled gems are updated.
 ## JIT
 
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
+[Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
