@@ -126,7 +126,7 @@ static VALUE
 proc_clone(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
-    return rb_obj_clone_setup(self, procval, Qnil);
+    return rb_obj_clone_setup(self, procval, Qnil, true);
 }
 
 /* :nodoc: */
@@ -317,7 +317,7 @@ static VALUE
 binding_clone(VALUE self)
 {
     VALUE bindval = binding_dup(self);
-    return rb_obj_clone_setup(self, bindval, Qnil);
+    return rb_obj_clone_setup(self, bindval, Qnil, true);
 }
 
 VALUE
@@ -2452,7 +2452,7 @@ method_clone(VALUE self)
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
-    rb_obj_clone_setup(self, clone, Qnil);
+    rb_obj_clone_setup(self, clone, Qnil, true);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);

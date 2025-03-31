@@ -404,7 +404,7 @@ init_copy(VALUE dest, VALUE obj)
 }
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
-static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze);
+static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze, int init_callbacks);
 PUREFUNC(static inline int special_object_p(VALUE obj)); /*!< \private */
 static inline int
 special_object_p(VALUE obj)
@@ -443,7 +443,7 @@ rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
     VALUE kwfreeze = obj_freeze_opt(freeze);
     if (!special_object_p(obj))
-        return mutable_obj_clone(obj, kwfreeze);
+        return mutable_obj_clone(obj, kwfreeze, true);
     return immutable_obj_clone(obj, kwfreeze);
 }
 
@@ -484,7 +484,7 @@ immutable_obj_clone(VALUE obj, VALUE kwfreeze)
 }
 
 VALUE
-rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
+rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze, int init_callbacks)
 {
     VALUE argv[2];
 
@@ -498,7 +498,9 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
     switch (kwfreeze) {
       case Qnil:
-        rb_funcall(clone, id_init_clone, 1, obj);
+        if (init_callbacks) {
+            rb_funcall(clone, id_init_clone, 1, obj);
+        }
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
 
         if (RB_TYPE_P(obj, T_STRING)) {
@@ -526,7 +528,9 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         argv[0] = obj;
         argv[1] = freeze_true_hash;
-        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        if (init_callbacks) {
+            rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        }
         RBASIC(clone)->flags |= FL_FREEZE;
         rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
         // If we're out of shapes, but we want to freeze, then we need to
@@ -550,7 +554,9 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         argv[0] = obj;
         argv[1] = freeze_false_hash;
-        rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        if (init_callbacks) {
+            rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
+        }
         break;
       }
       default:
@@ -561,17 +567,24 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 }
 
 static VALUE
-mutable_obj_clone(VALUE obj, VALUE kwfreeze)
+mutable_obj_clone(VALUE obj, VALUE kwfreeze, int init_callbacks)
 {
     VALUE clone = rb_obj_alloc(rb_obj_class(obj));
-    return rb_obj_clone_setup(obj, clone, kwfreeze);
+    return rb_obj_clone_setup(obj, clone, kwfreeze, init_callbacks);
 }
 
 VALUE
 rb_obj_clone(VALUE obj)
 {
     if (special_object_p(obj)) return obj;
-    return mutable_obj_clone(obj, Qnil);
+    return mutable_obj_clone(obj, Qnil, true);
+}
+
+VALUE
+rb_obj_raw_clone(VALUE obj)
+{
+    if (special_object_p(obj)) return obj;
+    return mutable_obj_clone(obj, Qnil, false);
 }
 
 VALUE

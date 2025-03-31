@@ -71,6 +71,53 @@ class TestRactor < Test::Unit::TestCase
     end;
   end
 
+  def test_initialize_clone_on_move
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+
+      class A
+        def initialize_clone(other)
+          raise NotImplementedError
+        end
+      end
+
+      class B
+        def initialize_copy(other)
+          raise NotImplementedError
+        end
+      end
+
+      ractor = Ractor.new { 2.times { Ractor.receive} }
+      ractor.send(A.new, move: true)
+      ractor.send(B.new, move: true)
+      ractor.take
+    end;
+  end
+
+  def test_initialize_clone_on_copy
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+
+      class A
+        def initialize_clone(other)
+          raise NotImplementedError
+        end
+      end
+
+      class B
+        def initialize_copy(other)
+          raise NotImplementedError
+        end
+      end
+
+      ractor = Ractor.new { 2.times { Ractor.receive} }
+      ractor.send(A.new)
+      ractor.send(B.new)
+      ractor.take
+    end;
+  end
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
