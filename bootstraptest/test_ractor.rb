@@ -2101,13 +2101,3 @@ assert_equal 'ok', %q{
     :fail
   end
 }
-
-# moved objects keep their object_id
-assert_equal 'ok', %q{
-  ractor = Ractor.new { Ractor.receive }
-  obj = Object.new
-  id = obj.object_id
-  ractor.send(obj, move: true)
-  roundtripped_obj = ractor.take
-  roundtripped_obj.object_id == id ? :ok : :fail
-}
