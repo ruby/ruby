@@ -6899,27 +6899,28 @@ static const rb_data_type_t env_data_type = {
 };
 
 /*
- *  A +Hash+ maps each of its unique keys to a specific value.
+ *  A \Hash object maps each of its unique keys to a specific value.
  *
- *  A +Hash+ has certain similarities to an Array, but:
- *  - An Array index is always an Integer.
- *  - A +Hash+ key can be (almost) any object.
+ *  A hash has certain similarities to an Array, but:
+
+ *  - An array index is always an integer.
+ *  - A hash key can be (almost) any object.
  *
- *  === +Hash+ \Data Syntax
+ *  === \Hash \Data Syntax
  *
- *  The older syntax for +Hash+ data uses the "hash rocket," <tt>=></tt>:
+ *  The original syntax for a hash entry uses the "hash rocket," <tt>=></tt>:
  *
  *    h = {:foo => 0, :bar => 1, :baz => 2}
  *    h # => {foo: 0, bar: 1, baz: 2}
  *
- *  Alternatively, but only for a +Hash+ key that's a Symbol,
+ *  Alternatively, but only for a key that's a symbol,
  *  you can use a newer JSON-style syntax,
- *  where each bareword becomes a Symbol:
+ *  where each bareword becomes a symbol:
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h # => {foo: 0, bar: 1, baz: 2}
  *
- *  You can also use a String in place of a bareword:
+ *  You can also use a string in place of a bareword:
  *
  *    h = {'foo': 0, 'bar': 1, 'baz': 2}
  *    h # => {foo: 0, bar: 1, baz: 2}
@@ -6930,12 +6931,12 @@ static const rb_data_type_t env_data_type = {
  *    h # => {foo: 0, bar: 1, baz: 2}
  *
  *  But it's an error to try the JSON-style syntax
- *  for a key that's not a bareword or a String:
+ *  for a key that's not a bareword or a string:
  *
  *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>):
  *    h = {0: 'zero'}
  *
- *  +Hash+ value can be omitted, meaning that value will be fetched from the context
+ *  The value can be omitted, meaning that value will be fetched from the context
  *  by the name of the key:
  *
  *    x = 0
