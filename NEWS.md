@@ -32,8 +32,8 @@ The following bundled gems are promoted from default gems.
 * ostruct 0.6.1
 * pstore 0.2.0
 * benchmark 0.4.0
-* logger 1.6.6
-* rdoc 6.12.0
+* logger 1.7.0
+* rdoc 6.13.1
 * win32ole 1.9.1
 * irb 1.15.1
 * reline 0.6.0
@@ -69,9 +69,10 @@ The following bundled gems are updated.
 * rexml 3.4.1
 * net-imap 0.5.6
 * net-smtp 0.5.1
-* rbs 3.8.1
+* rbs 3.9.2
 * bigdecimal 3.1.9
 * syslog 0.3.0
+* csv 3.3.3
 * repl_type_completor 0.1.10
 
 ## Supported platforms
