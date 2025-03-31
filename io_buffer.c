@@ -272,7 +272,7 @@ io_buffer_free(struct rb_io_buffer *buffer)
 #endif
 }
 
-void
+static void
 rb_io_buffer_type_free(void *_buffer)
 {
     struct rb_io_buffer *buffer = _buffer;
@@ -280,7 +280,7 @@ rb_io_buffer_type_free(void *_buffer)
     io_buffer_free(buffer);
 }
 
-size_t
+static size_t
 rb_io_buffer_type_size(const void *_buffer)
 {
     const struct rb_io_buffer *buffer = _buffer;
