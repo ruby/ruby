@@ -2,12 +2,6 @@
 
 module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
-    "matrix" => "3.1.0",
-    "net-ftp" => "3.1.0",
-    "net-imap" => "3.1.0",
-    "net-pop" => "3.1.0",
-    "net-smtp" => "3.1.0",
-    "prime" => "3.1.0",
     "racc" => "3.3.0",
     "abbrev" => "3.4.0",
     "base64" => "3.4.0",
