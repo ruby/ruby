@@ -191,9 +191,7 @@ static void
 rb_mmtk_get_mutators(void (*visit_mutator)(MMTk_Mutator *mutator, void *data), void *data)
 {
     struct objspace *objspace = rb_gc_get_objspace();
-
     struct MMTk_ractor_cache *ractor_cache;
-    RUBY_ASSERT(ractor_cache != NULL);
 
     ccan_list_for_each(&objspace->ractor_caches, ractor_cache, list_node) {
         visit_mutator(ractor_cache->mutator, data);
