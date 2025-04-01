@@ -1,1 +1,2 @@
-See ["Contributing to Ruby"](https://docs.ruby-lang.org/en/master/contributing_md.html), which includes setup and build instructions.
+See ["Contributing to Ruby"](contributing/contributing.md),
+which includes setup and build instructions.
