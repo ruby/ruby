@@ -1430,27 +1430,81 @@ struct rb_condvar {
  *
  *  ConditionVariable objects augment class Mutex. Using condition variables,
  *  it is possible to suspend while in the middle of a critical section until a
- *  resource becomes available.
+ *  condition is met, such as a resource becomes available.
+ *
+ *  Due to non-deterministic scheduling and spurious wake-ups, users of
+ *  condition variables should always use a separate boolean predicate (such as
+ *  reading from a boolean variable) to check if the condition is actually met
+ *  before starting to wait, and should wait in a loop, re-checking the
+ *  condition every time the ConditionVariable is waken up.  The idiomatic way
+ *  of using condition variables is calling the +wait+ method in an +until+
+ *  loop with the predicate as the loop condition.
+ *
+ *    condvar.wait(mutex) until condition_is_met
+ *
+ *  In the example below, we use the boolean variable +resource_available+
+ *  (which is protected by +mutex+) to indicate the availability of the
+ *  resource, and use +condvar+ to wait for that variable to become true.  Note
+ *  that:
+ *
+ *  1.  Thread +b+ may be scheduled before thread +a1+ and +a2+, and may run so
+ *      fast that it have already made the resource available before either
+ *      +a1+ or +a2+ starts. Therefore, +a1+ and +a2+ should check if
+ *      +resource_available+ is already true before starting to wait.
+ *  2.  The +wait+ method may spuriously wake up without signalling. Therefore,
+ *      thread +a1+ and +a2+ should recheck +resource_available+ after the
+ *      +wait+ method returns, and go back to wait if the condition is not
+ *      actually met.
+ *  3.  It is possible that thread +a2+ starts right after thread +a1+ is waken
+ *      up by +b+.  Thread +a2+ may have acquired the +mutex+ and consumed the
+ *      resource before thread +a1+ acquires the +mutex+.  This necessitates
+ *      rechecking after +wait+, too.
  *
  *  Example:
  *
  *    mutex = Thread::Mutex.new
- *    resource = Thread::ConditionVariable.new
  *
- *    a = Thread.new {
- *	 mutex.synchronize {
- *	   # Thread 'a' now needs the resource
- *	   resource.wait(mutex)
- *	   # 'a' can now have the resource
- *	 }
+ *    resource_available = false
+ *    condvar = Thread::ConditionVariable.new
+ *
+ *    a1 = Thread.new {
+ *      # Thread 'a1' waits for the resource to become available and consumes
+ *      # the resource.
+ *      mutex.synchronize {
+ *        condvar.wait(mutex) until resource_available
+ *        # After the loop, 'resource_available' is guaranteed to be true.
+ *
+ *        resource_available = false
+ *        puts "a1 consumed the resource"
+ *      }
+ *    }
+ *
+ *    a2 = Thread.new {
+ *      # Thread 'a2' behaves like 'a1'.
+ *      mutex.synchronize {
+ *        condvar.wait(mutex) until resource_available
+ *        resource_available = false
+ *        puts "a2 consumed the resource"
+ *      }
  *    }
  *
  *    b = Thread.new {
- *	 mutex.synchronize {
- *	   # Thread 'b' has finished using the resource
- *	   resource.signal
- *	 }
+ *      # Thread 'b' periodically makes the resource available.
+ *      loop {
+ *        mutex.synchronize {
+ *          resource_available = true
+ *
+ *          # Notify one waiting thread if any.  It is possible that neither
+ *          # 'a1' nor 'a2 is waiting on 'condvar' at this moment.  That's OK.
+ *          condvar.signal
+ *        }
+ *        sleep 1
+ *      }
  *    }
+ *
+ *    # Eventually both 'a1' and 'a2' will have their resources, albeit in an
+ *    # unspecified order.
+ *    [a1, a2].each {|th| th.join}
  */
 
 static size_t
@@ -1530,6 +1584,8 @@ do_sleep(VALUE args)
  *
  * If +timeout+ is given, this method returns after +timeout+ seconds passed,
  * even if no other thread doesn't signal.
+ *
+ * This method may wake up spuriously due to underlying implementation details.
  *
  * Returns the slept result on +mutex+.
  */
