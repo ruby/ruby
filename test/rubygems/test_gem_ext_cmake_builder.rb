@@ -29,7 +29,7 @@ class TestGemExtCmakeBuilder < Gem::TestCase
   def test_self_build
     File.open File.join(@ext, "CMakeLists.txt"), "w" do |cmakelists|
       cmakelists.write <<-EO_CMAKE
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.5)
 project(self_build NONE)
 install (FILES test.txt DESTINATION bin)
       EO_CMAKE
