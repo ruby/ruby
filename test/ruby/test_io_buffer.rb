@@ -693,4 +693,17 @@ class TestIOBuffer < Test::Unit::TestCase
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
   end
+
+  # https://bugs.ruby-lang.org/issues/21210
+  def test_bug_21210
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    str = +"hello"
+    buf = IO::Buffer.for(str)
+    assert_predicate buf, :valid?
+
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+    assert_predicate buf, :valid?
+  end
 end
