@@ -6946,24 +6946,24 @@ static const rb_data_type_t env_data_type = {
  *
  *  === Common Uses
  *
- *  You can use a +Hash+ to give names to objects:
+ *  You can use a hash to give names to objects:
  *
  *    person = {name: 'Matz', language: 'Ruby'}
  *    person # => {name: "Matz", language: "Ruby"}
  *
- *  You can use a +Hash+ to give names to method arguments:
+ *  You can use a hash to give names to method arguments:
  *
  *    def some_method(hash)
  *      p hash
  *    end
  *    some_method({foo: 0, bar: 1, baz: 2}) # => {foo: 0, bar: 1, baz: 2}
  *
- *  Note: when the last argument in a method call is a +Hash+,
+ *  Note: when the last argument in a method call is a hash,
  *  the curly braces may be omitted:
  *
  *    some_method(foo: 0, bar: 1, baz: 2) # => {foo: 0, bar: 1, baz: 2}
  *
- *  You can use a +Hash+ to initialize an object:
+ *  You can use a hash to initialize an object:
  *
  *    class Dev
  *      attr_accessor :name, :language
@@ -6975,57 +6975,49 @@ static const rb_data_type_t env_data_type = {
  *    matz = Dev.new(name: 'Matz', language: 'Ruby')
  *    matz # => #<Dev: @name="Matz", @language="Ruby">
  *
- *  === Creating a +Hash+
+ *  === Creating a \Hash
  *
- *  You can create a +Hash+ object explicitly with:
+ *  You can create a \Hash object explicitly with:
  *
  *  - A {hash literal}[rdoc-ref:syntax/literals.rdoc@Hash+Literals].
  *
- *  You can convert certain objects to Hashes with:
+ *  You can convert certain objects to hashes with:
  *
- *  - Method #Hash.
+ *  - Method Kernel#Hash.
  *
- *  You can create a +Hash+ by calling method Hash.new.
+ *  You can create a hash by calling method Hash.new:
  *
- *  Create an empty +Hash+:
- *
+ *    # Create an empty hash.
  *    h = Hash.new
  *    h # => {}
  *    h.class # => Hash
  *
- *  You can create a +Hash+ by calling method Hash.[].
+ *  You can create a hash by calling method Hash.[]:
  *
- *  Create an empty +Hash+:
- *
+ *    # Create an empty hash.
  *    h = Hash[]
  *    h # => {}
- *
- *  Create a +Hash+ with initial entries:
- *
+ *    # Create a hash with initial entries.
  *    h = Hash[foo: 0, bar: 1, baz: 2]
  *    h # => {foo: 0, bar: 1, baz: 2}
  *
- *  You can create a +Hash+ by using its literal form (curly braces).
+ *  You can create a hash by using its literal form (curly braces):
  *
- *  Create an empty +Hash+:
- *
+ *    # Create an empty hash.
  *    h = {}
  *    h # => {}
- *
- *  Create a +Hash+ with initial entries:
- *
+ *    # Create a +Hash+ with initial entries.
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h # => {foo: 0, bar: 1, baz: 2}
  *
+ *  === \Hash Value Basics
  *
- *  === +Hash+ Value Basics
- *
- *  The simplest way to retrieve a +Hash+ value (instance method #[]):
+ *  The simplest way to retrieve a hash value (instance method #[]):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:foo] # => 0
  *
- *  The simplest way to create or update a +Hash+ value (instance method #[]=):
+ *  The simplest way to create or update a hash value (instance method #[]=):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h[:bat] = 3 # => 3
@@ -7033,7 +7025,7 @@ static const rb_data_type_t env_data_type = {
  *    h[:foo] = 4 # => 4
  *    h # => {foo: 4, bar: 1, baz: 2, bat: 3}
  *
- *  The simplest way to delete a +Hash+ entry (instance method #delete):
+ *  The simplest way to delete a hash entry (instance method #delete):
  *
  *    h = {foo: 0, bar: 1, baz: 2}
  *    h.delete(:bar) # => 1
@@ -7041,13 +7033,13 @@ static const rb_data_type_t env_data_type = {
  *
  *  === Entry Order
  *
- *  A +Hash+ object presents its entries in the order of their creation. This is seen in:
+ *  A \Hash object presents its entries in the order of their creation. This is seen in:
  *
  *  - Iterative methods such as <tt>each</tt>, <tt>each_key</tt>, <tt>each_pair</tt>, <tt>each_value</tt>.
  *  - Other order-sensitive methods such as <tt>shift</tt>, <tt>keys</tt>, <tt>values</tt>.
- *  - The String returned by method <tt>inspect</tt>.
+ *  - The string returned by method <tt>inspect</tt>.
  *
- *  A new +Hash+ has its initial ordering per the given entries:
+ *  A new hash has its initial ordering per the given entries:
  *
  *    h = Hash[foo: 0, bar: 1]
  *    h # => {foo: 0, bar: 1}
