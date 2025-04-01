@@ -80,7 +80,7 @@ module Bundler
         First, try this link to see if there are any existing issue reports for this error:
         #{issues_url(e)}
 
-        If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}, and copy and paste the report template above in there.
+        If there aren't any reports for this error yet, please fill in the new issue form located at #{new_issue_url}. Make sure to copy and paste the full output of this command under the "What happened instead?" section.
       EOS
     end
 
