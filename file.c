@@ -4594,7 +4594,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
     free(resolved_ptr);
 # endif
 
-# if !defined(__LINUX__) && !defined(__APPLE__)
+# if !defined(__linux__) && !defined(__APPLE__)
     /* As `resolved` is a String in the filesystem encoding, no
      * conversion is needed */
     struct stat st;
@@ -4604,7 +4604,7 @@ rb_check_realpath_internal(VALUE basedir, VALUE path, rb_encoding *origenc, enum
         }
         rb_sys_fail_path(unresolved_path);
     }
-# endif /* !defined(__LINUX__) && !defined(__APPLE__) */
+# endif /* !defined(__linux__) && !defined(__APPLE__) */
 
     if (origenc && origenc != rb_enc_get(resolved)) {
         if (!rb_enc_str_asciionly_p(resolved)) {
