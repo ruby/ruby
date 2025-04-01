@@ -67,11 +67,11 @@ impl From<Opnd> for A64Opnd {
             Opnd::Mem(Mem { base: MemBase::Reg(reg_no), num_bits, disp }) => {
                 A64Opnd::new_mem(num_bits, A64Opnd::Reg(A64Reg { num_bits, reg_no }), disp)
             },
-            Opnd::Mem(Mem { base: MemBase::InsnOut(_), .. }) => {
-                panic!("attempted to lower an Opnd::Mem with a MemBase::InsnOut base")
+            Opnd::Mem(Mem { base: MemBase::VReg(_), .. }) => {
+                panic!("attempted to lower an Opnd::Mem with a MemBase::VReg base")
             },
             Opnd::CArg(_) => panic!("attempted to lower an Opnd::CArg"),
-            Opnd::InsnOut { .. } => panic!("attempted to lower an Opnd::InsnOut"),
+            Opnd::VReg { .. } => panic!("attempted to lower an Opnd::VReg"),
             Opnd::Param { .. } => panic!("attempted to lower an Opnd::Param"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
             Opnd::None => panic!(
@@ -226,7 +226,7 @@ impl Assembler
                         let disp = asm.load(Opnd::Imm(disp.into()));
                         let reg = match base {
                             MemBase::Reg(reg_no) => Opnd::Reg(Reg { reg_no, num_bits }),
-                            MemBase::InsnOut(idx) => Opnd::InsnOut { idx, num_bits }
+                            MemBase::VReg(idx) => Opnd::VReg { idx, num_bits }
                         };
 
                         asm.add(reg, disp)
@@ -258,7 +258,7 @@ impl Assembler
         /// to be split in case their displacement doesn't fit into 9 bits.
         fn split_load_operand(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd,
+                Opnd::Reg(_) | Opnd::VReg { .. } => opnd,
                 Opnd::Mem(_) => {
                     let split_opnd = split_memory_address(asm, opnd);
                     let out_opnd = asm.load(split_opnd);
@@ -279,7 +279,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Param { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::VReg { .. } | Opnd::Param { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -312,7 +312,7 @@ impl Assembler
         /// a certain size. If they don't then we need to load them first.
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::InsnOut { .. } | Opnd::Param { .. } => opnd,
+                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::VReg { .. } | Opnd::Param { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => if ShiftedImmediate::try_from(imm as u64).is_ok() {
                     opnd
@@ -353,12 +353,12 @@ impl Assembler
         /// Returns the operands that should be used for a csel instruction.
         fn split_csel_operands(asm: &mut Assembler, opnd0: Opnd, opnd1: Opnd) -> (Opnd, Opnd) {
             let opnd0 = match opnd0 {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd0,
+                Opnd::Reg(_) | Opnd::VReg { .. } => opnd0,
                 _ => split_load_operand(asm, opnd0)
             };
 
             let opnd1 = match opnd1 {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => opnd1,
+                Opnd::Reg(_) | Opnd::VReg { .. } => opnd1,
                 _ => split_load_operand(asm, opnd1)
             };
 
@@ -367,7 +367,7 @@ impl Assembler
 
         fn split_less_than_32_cmp(asm: &mut Assembler, opnd0: Opnd) -> Opnd {
             match opnd0 {
-                Opnd::Reg(_) | Opnd::InsnOut { .. } => {
+                Opnd::Reg(_) | Opnd::VReg { .. } => {
                     match opnd0.rm_num_bits() {
                         8 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xff)),
                         16 => asm.and(opnd0.with_num_bits(64).unwrap(), Opnd::UImm(0xffff)),
@@ -379,12 +379,12 @@ impl Assembler
             }
         }
 
-        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names));
+        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm_local = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
         let asm = &mut asm_local;
-        let mut iterator = self.into_draining_iter();
 
-        while let Some((index, mut insn)) = iterator.next_mapped() {
+        while let Some((index, mut insn)) = iterator.next() {
             // Here we're going to map the operands of the instruction to load
             // any Opnd::Value operands into registers if they are heap objects
             // such that only the Op::Load instruction needs to handle that
@@ -415,18 +415,19 @@ impl Assembler
             match &mut insn {
                 Insn::Add { left, right, .. } => {
                     match (*left, *right) {
-                        (Opnd::Reg(_) | Opnd::InsnOut { .. }, Opnd::Reg(_) | Opnd::InsnOut { .. }) => {
-                            asm.add(*left, *right);
+                        (Opnd::Reg(_) | Opnd::VReg { .. }, Opnd::Reg(_) | Opnd::VReg { .. }) => {
+                            asm.push_insn(insn);
                         },
-                        (reg_opnd @ (Opnd::Reg(_) | Opnd::InsnOut { .. }), other_opnd) |
-                        (other_opnd, reg_opnd @ (Opnd::Reg(_) | Opnd::InsnOut { .. })) => {
-                            let opnd1 = split_shifted_immediate(asm, other_opnd);
-                            asm.add(reg_opnd, opnd1);
+                        (reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. }), other_opnd) |
+                        (other_opnd, reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. })) => {
+                            *left = reg_opnd;
+                            *right = split_shifted_immediate(asm, other_opnd);
+                            asm.push_insn(insn);
                         },
                         _ => {
-                            let opnd0 = split_load_operand(asm, *left);
-                            let opnd1 = split_shifted_immediate(asm, *right);
-                            asm.add(opnd0, opnd1);
+                            *left = split_load_operand(asm, *left);
+                            *right = split_shifted_immediate(asm, *right);
+                            asm.push_insn(insn);
                         }
                     }
                 },
@@ -441,19 +442,11 @@ impl Assembler
                     // registers and an output register, look to merge with an `Insn::Mov` that
                     // follows which puts the output in another register. For example:
                     // `Add a, b => out` followed by `Mov c, out` becomes `Add a, b => c`.
-                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek()) {
-                        if live_ranges[index] == index + 1 {
-                            // Check after potentially lowering a stack operand to a register operand
-                            //let lowered_dest = if let Opnd::Stack { .. } = dest {
-                            //    asm.lower_stack_opnd(dest)
-                            //} else {
-                            //    *dest
-                            //};
-                            let lowered_dest = *dest;
-                            if out == src && matches!(lowered_dest, Opnd::Reg(_)) {
-                                *out = lowered_dest;
-                                iterator.map_insn_index(asm);
-                                iterator.next_unmapped(); // Pop merged Insn::Mov
+                    if let (Opnd::Reg(_), Opnd::Reg(_), Some(Insn::Mov { dest, src })) = (left, right, iterator.peek().map(|(_, insn)| insn)) {
+                        if live_ranges[out.vreg_idx()].end() == index + 1 {
+                            if out == src && matches!(*dest, Opnd::Reg(_)) {
+                                *out = *dest;
+                                iterator.next(); // Pop merged Insn::Mov
                             }
                         }
                     }
@@ -489,7 +482,7 @@ impl Assembler
                     iterator.next_unmapped(); // Pop merged jump instruction
                 }
                 */
-                Insn::CCall { opnds, fptr, .. } => {
+                Insn::CCall { opnds, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // Load each operand into the corresponding argument
@@ -511,14 +504,15 @@ impl Assembler
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
-                    asm.ccall(*fptr, vec![]);
+                    *opnds = vec![];
+                    asm.push_insn(insn);
                 },
                 Insn::Cmp { left, right } => {
                     let opnd0 = split_load_operand(asm, *left);
                     let opnd0 = split_less_than_32_cmp(asm, opnd0);
                     let split_right = split_shifted_immediate(asm, *right);
                     let opnd1 = match split_right {
-                        Opnd::InsnOut { .. } if opnd0.num_bits() != split_right.num_bits() => {
+                        Opnd::VReg { .. } if opnd0.num_bits() != split_right.num_bits() => {
                             split_right.with_num_bits(opnd0.num_bits().unwrap()).unwrap()
                         },
                         _ => split_right
@@ -560,13 +554,12 @@ impl Assembler
                     *truthy = opnd0;
                     *falsy = opnd1;
                     // Merge `csel` and `mov` into a single `csel` when possible
-                    match iterator.peek() {
+                    match iterator.peek().map(|(_, insn)| insn) {
                         Some(Insn::Mov { dest: Opnd::Reg(reg), src })
-                        if matches!(out, Opnd::InsnOut { .. }) && *out == *src && live_ranges[index] == index + 1 => {
+                        if matches!(out, Opnd::VReg { .. }) && *out == *src && live_ranges[out.vreg_idx()].end() == index + 1 => {
                             *out = Opnd::Reg(*reg);
                             asm.push_insn(insn);
-                            iterator.map_insn_index(asm);
-                            iterator.next_unmapped(); // Pop merged Insn::Mov
+                            iterator.next(); // Pop merged Insn::Mov
                         }
                         _ => {
                             asm.push_insn(insn);
@@ -597,19 +590,19 @@ impl Assembler
                     };
                     asm.push_insn(insn);
                 },
-                Insn::LoadSExt { opnd, .. } => {
+                Insn::LoadSExt { opnd, out } => {
                     match opnd {
                         // We only want to sign extend if the operand is a
                         // register, instruction output, or memory address that
                         // is 32 bits. Otherwise we'll just load the value
                         // directly since there's no need to sign extend.
                         Opnd::Reg(Reg { num_bits: 32, .. }) |
-                        Opnd::InsnOut { num_bits: 32, .. } |
+                        Opnd::VReg { num_bits: 32, .. } |
                         Opnd::Mem(Mem { num_bits: 32, .. }) => {
-                            asm.load_sext(*opnd);
+                            asm.push_insn(insn);
                         },
                         _ => {
-                            asm.load(*opnd);
+                            asm.push_insn(Insn::Load { opnd: *opnd, out: *out });
                         }
                     };
                 },
@@ -657,12 +650,11 @@ impl Assembler
                 Insn::Not { opnd, .. } => {
                     // The value that is being negated must be in a register, so
                     // if we get anything else we need to load it first.
-                    let opnd0 = match opnd {
+                    *opnd = match opnd {
                         Opnd::Mem(_) => split_load_operand(asm, *opnd),
                         _ => *opnd
                     };
-
-                    asm.not(opnd0);
+                    asm.push_insn(insn);
                 },
                 Insn::LShift { opnd, .. } |
                 Insn::RShift { opnd, .. } |
@@ -703,14 +695,14 @@ impl Assembler
                     }
                 },
                 Insn::Sub { left, right, .. } => {
-                    let opnd0 = split_load_operand(asm, *left);
-                    let opnd1 = split_shifted_immediate(asm, *right);
-                    asm.sub(opnd0, opnd1);
+                    *left = split_load_operand(asm, *left);
+                    *right = split_shifted_immediate(asm, *right);
+                    asm.push_insn(insn);
                 },
                 Insn::Mul { left, right, .. } => {
-                    let opnd0 = split_load_operand(asm, *left);
-                    let opnd1 = split_load_operand(asm, *right);
-                    asm.mul(opnd0, opnd1);
+                    *left = split_load_operand(asm, *left);
+                    *right = split_load_operand(asm, *right);
+                    asm.push_insn(insn);
                 },
                 Insn::Test { left, right } => {
                     // The value being tested must be in a register, so if it's
@@ -725,19 +717,9 @@ impl Assembler
                     asm.test(opnd0, opnd1);
                 },
                 _ => {
-                    // If we have an output operand, then we need to replace it
-                    // with a new output operand from the new assembler.
-                    if insn.out_opnd().is_some() {
-                        let out_num_bits = Opnd::match_num_bits_iter(insn.opnd_iter());
-                        let out = insn.out_opnd_mut().unwrap();
-                        *out = asm.next_opnd_out(out_num_bits);
-                    }
-
                     asm.push_insn(insn);
                 }
-            };
-
-            iterator.map_insn_index(asm);
+            }
         }
 
         asm_local
@@ -1015,7 +997,7 @@ impl Assembler
                 Insn::Load { opnd, out } |
                 Insn::LoadInto { opnd, dest: out } => {
                     match *opnd {
-                        Opnd::Reg(_) | Opnd::InsnOut { .. } => {
+                        Opnd::Reg(_) | Opnd::VReg { .. } => {
                             mov(cb, out.into(), opnd.into());
                         },
                         Opnd::UImm(uimm) => {
@@ -1063,7 +1045,7 @@ impl Assembler
                 Insn::LoadSExt { opnd, out } => {
                     match *opnd {
                         Opnd::Reg(Reg { num_bits: 32, .. }) |
-                        Opnd::InsnOut { num_bits: 32, .. } => {
+                        Opnd::VReg { num_bits: 32, .. } => {
                             sxtw(cb, out.into(), opnd.into());
                         },
                         Opnd::Mem(Mem { num_bits: 32, .. }) => {

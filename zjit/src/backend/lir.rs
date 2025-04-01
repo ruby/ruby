@@ -21,7 +21,7 @@ pub use crate::backend::current::{Reg, C_RET_REG};
 pub enum MemBase
 {
     Reg(u8),
-    InsnOut(usize),
+    VReg(usize),
 }
 
 // Memory location
@@ -62,8 +62,8 @@ pub enum Opnd
     /// C argument register. The alloc_regs resolves its register dependencies.
     CArg(Reg),
 
-    // Output of a preceding instruction in this block
-    InsnOut{ idx: usize, num_bits: u8 },
+    /// Virtual register. Lowered to Reg in Assembler::alloc_regs().
+    VReg{ idx: usize, num_bits: u8 },
 
     /// Basic block argument
     Param{ idx: usize },
@@ -82,7 +82,7 @@ impl fmt::Debug for Opnd {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
             CArg(reg) => write!(fmt, "CArg({reg:?})"),
-            InsnOut { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            VReg { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
             Param { idx } => write!(fmt, "Param({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
@@ -107,10 +107,10 @@ impl Opnd
                 })
             },
 
-            Opnd::InsnOut{idx, num_bits: out_num_bits } => {
+            Opnd::VReg{idx, num_bits: out_num_bits } => {
                 assert!(num_bits <= out_num_bits);
                 Opnd::Mem(Mem {
-                    base: MemBase::InsnOut(idx),
+                    base: MemBase::VReg(idx),
                     disp: disp,
                     num_bits: num_bits,
                 })
@@ -146,12 +146,20 @@ impl Opnd
         }
     }
 
+    /// Unwrap the index of a VReg
+    pub fn vreg_idx(&self) -> usize {
+        match self {
+            Opnd::VReg { idx, .. } => *idx,
+            _ => unreachable!("trying to unwrap {self:?} into VReg"),
+        }
+    }
+
     /// Get the size in bits for this operand if there is one.
     pub fn num_bits(&self) -> Option<u8> {
         match *self {
             Opnd::Reg(Reg { num_bits, .. }) => Some(num_bits),
             Opnd::Mem(Mem { num_bits, .. }) => Some(num_bits),
-            Opnd::InsnOut { num_bits, .. } => Some(num_bits),
+            Opnd::VReg { num_bits, .. } => Some(num_bits),
             _ => None
         }
     }
@@ -161,7 +169,7 @@ impl Opnd
         match *self {
             Opnd::Reg(reg) => Some(Opnd::Reg(reg.with_num_bits(num_bits))),
             Opnd::Mem(Mem { base, disp, .. }) => Some(Opnd::Mem(Mem { base, disp, num_bits })),
-            Opnd::InsnOut { idx, .. } => Some(Opnd::InsnOut { idx, num_bits }),
+            Opnd::VReg { idx, .. } => Some(Opnd::VReg { idx, num_bits }),
             //Opnd::Stack { idx, stack_size, num_locals, sp_offset, reg_mapping, .. } => Some(Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping }),
             _ => None,
         }
@@ -176,11 +184,11 @@ impl Opnd
     /// instructions.
     pub fn map_index(self, indices: &Vec<usize>) -> Opnd {
         match self {
-            Opnd::InsnOut { idx, num_bits } => {
-                Opnd::InsnOut { idx: indices[idx], num_bits }
+            Opnd::VReg { idx, num_bits } => {
+                Opnd::VReg { idx: indices[idx], num_bits }
             }
-            Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::InsnOut(indices[idx]), disp, num_bits })
+            Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
+                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx]), disp, num_bits })
             },
             _ => self
         }
@@ -951,6 +959,28 @@ impl fmt::Debug for Insn {
     }
 }
 
+/// Live range of a VReg
+/// TODO: Consider supporting lifetime holes
+#[derive(Clone, Debug, PartialEq)]
+pub struct LiveRange {
+    /// Index of the first instruction that used the VReg (inclusive)
+    pub start: Option<usize>,
+    /// Index of the last instruction that used the VReg (inclusive)
+    pub end: Option<usize>,
+}
+
+impl LiveRange {
+    /// Shorthand for self.start.unwrap()
+    pub fn start(&self) -> usize {
+        self.start.unwrap()
+    }
+
+    /// Shorthand for self.end.unwrap()
+    pub fn end(&self) -> usize {
+        self.end.unwrap()
+    }
+}
+
 /// Initial capacity for asm.insns vector
 const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 
@@ -959,9 +989,8 @@ const ASSEMBLER_INSNS_CAPACITY: usize = 256;
 pub struct Assembler {
     pub(super) insns: Vec<Insn>,
 
-    /// Parallel vec with insns
-    /// Index of the last insn using the output of this insn
-    pub(super) live_ranges: Vec<usize>,
+    /// Live range for each VReg indexed by its `idx``
+    pub(super) live_ranges: Vec<LiveRange>,
 
     /// Names of labels
     pub(super) label_names: Vec<String>,
@@ -995,7 +1024,7 @@ impl Assembler
 {
     /// Create an Assembler
     pub fn new() -> Self {
-        Self::new_with_label_names(Vec::default())
+        Self::new_with_label_names(Vec::default(), 0)
     }
 
     /*
@@ -1014,10 +1043,13 @@ impl Assembler
 
     /// Create an Assembler with parameters that are populated by another Assembler instance.
     /// This API is used for copying an Assembler for the next compiler pass.
-    pub fn new_with_label_names(label_names: Vec<String>) -> Self {
+    pub fn new_with_label_names(label_names: Vec<String>, num_vregs: usize) -> Self {
+        let mut live_ranges = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
+        live_ranges.resize(num_vregs, LiveRange { start: None, end: None });
+
         Self {
             insns: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-            live_ranges: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
+            live_ranges,
             label_names,
         }
     }
@@ -1041,10 +1073,11 @@ impl Assembler
     }
     */
 
-    /// Build an Opnd::InsnOut from the current index of the assembler and the
-    /// given number of bits.
-    pub(super) fn next_opnd_out(&self, num_bits: u8) -> Opnd {
-        Opnd::InsnOut { idx: self.insns.len(), num_bits }
+    /// Build an Opnd::VReg and initialize its LiveRange
+    pub(super) fn new_vreg(&mut self, num_bits: u8) -> Opnd {
+        let vreg = Opnd::VReg { idx: self.live_ranges.len(), num_bits };
+        self.live_ranges.push(LiveRange { start: None, end: None });
+        vreg
     }
 
     /// Append an instruction onto the current list of instructions and update
@@ -1054,44 +1087,28 @@ impl Assembler
         // Index of this instruction
         let insn_idx = self.insns.len();
 
+        // Initialize the live range of the output VReg to insn_idx..=insn_idx
+        if let Some(Opnd::VReg { idx, .. }) = insn.out_opnd() {
+            assert!(*idx < self.live_ranges.len());
+            assert_eq!(self.live_ranges[*idx], LiveRange { start: None, end: None });
+            self.live_ranges[*idx] = LiveRange { start: Some(insn_idx), end: Some(insn_idx) };
+        }
+
+        // If we find any VReg from previous instructions, extend the live range to insn_idx
         let mut opnd_iter = insn.opnd_iter_mut();
         while let Some(opnd) = opnd_iter.next() {
             match *opnd {
-                // If we find any InsnOut from previous instructions, we're going to update
-                // the live range of the previous instruction to point to this one.
-                Opnd::InsnOut { idx, .. } => {
-                    assert!(idx < self.insns.len());
-                    self.live_ranges[idx] = insn_idx;
+                Opnd::VReg { idx, .. } |
+                Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
+                    assert!(idx < self.live_ranges.len());
+                    assert_ne!(self.live_ranges[idx].end, None);
+                    self.live_ranges[idx].end = Some(self.live_ranges[idx].end().max(insn_idx));
                 }
-                Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
-                    assert!(idx < self.insns.len());
-                    self.live_ranges[idx] = insn_idx;
-                }
-                // Set current ctx.reg_mapping to Opnd::Stack.
-                /*
-                Opnd::Stack { idx, num_bits, stack_size, num_locals, sp_offset, reg_mapping: None } => {
-                    assert_eq!(
-                        self.ctx.get_stack_size() as i16 - self.ctx.get_sp_offset() as i16,
-                        stack_size as i16 - sp_offset as i16,
-                        "Opnd::Stack (stack_size: {}, sp_offset: {}) expects a different SP position from asm.ctx (stack_size: {}, sp_offset: {})",
-                        stack_size, sp_offset, self.ctx.get_stack_size(), self.ctx.get_sp_offset(),
-                    );
-                    *opnd = Opnd::Stack {
-                        idx,
-                        num_bits,
-                        stack_size,
-                        num_locals,
-                        sp_offset,
-                        reg_mapping: Some(self.ctx.get_reg_mapping()),
-                    };
-                }
-                */
                 _ => {}
             }
         }
 
         self.insns.push(insn);
-        self.live_ranges.push(insn_idx);
     }
 
     /*
@@ -1328,7 +1345,7 @@ impl Assembler
     pub(super) fn alloc_regs(mut self, regs: Vec<Reg>) -> Assembler
     {
         // This register allocator currently uses disjoint sets of registers
-        // for Opnd::InsnOut and Opnd::Param, which allows it to forget about
+        // for Opnd::VReg and Opnd::Param, which allows it to forget about
         // resolving parallel moves when both of these operands are used.
         // TODO: Refactor the backend to use virtual registers for both and
         // assign a physical register from a shared register pool to them.
@@ -1372,30 +1389,13 @@ impl Assembler
             }
         }
 
-        // Adjust the number of entries in live_ranges so that it can be indexed by mapped indexes.
-        fn shift_live_ranges(live_ranges: &mut Vec<usize>, start_index: usize, shift_offset: isize) {
-            if shift_offset >= 0 {
-                for index in 0..(shift_offset as usize) {
-                    live_ranges.insert(start_index + index, start_index + index);
-                }
-            } else {
-                for _ in 0..-shift_offset {
-                    live_ranges.remove(start_index);
-                }
-            }
-        }
-
         // Dump live registers for register spill debugging.
-        fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<usize>, num_regs: usize, spill_index: usize) {
+        fn dump_live_regs(insns: Vec<Insn>, live_ranges: Vec<LiveRange>, num_regs: usize, spill_index: usize) {
             // Convert live_ranges to live_regs: the number of live registers at each index
             let mut live_regs: Vec<usize> = vec![];
-            let mut end_idxs: Vec<usize> = vec![];
-            for (cur_idx, &end_idx) in live_ranges.iter().enumerate() {
-                end_idxs.push(end_idx);
-                while let Some(end_idx) = end_idxs.iter().position(|&end_idx| cur_idx == end_idx) {
-                    end_idxs.remove(end_idx);
-                }
-                live_regs.push(end_idxs.len());
+            for insn_idx in 0..insns.len() {
+                let live_count = live_ranges.iter().filter(|range| range.start() <= insn_idx && insn_idx <= range.end()).count();
+                live_regs.push(live_count);
             }
 
             // Dump insns along with live registers
@@ -1412,31 +1412,29 @@ impl Assembler
         // This buffers the operands of such instructions to process them in batches.
         let mut c_args: Vec<(Reg, Opnd)> = vec![];
 
-        // live_ranges is indexed by original `index` given by the iterator.
-        let live_ranges: Vec<usize> = take(&mut self.live_ranges);
-        // shifted_live_ranges is indexed by mapped indexes in insn operands.
-        let mut shifted_live_ranges: Vec<usize> = live_ranges.clone();
-        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names));
-        let mut iterator = self.into_draining_iter();
+        // Mapping between VReg and allocated VReg for each VReg index.
+        // None if no register has been allocated for the VReg.
+        let mut reg_mapping: Vec<Option<Reg>> = vec![None; self.live_ranges.len()];
 
-        while let Some((index, mut insn)) = iterator.next_mapped() {
+        // live_ranges is indexed by original `index` given by the iterator.
+        let live_ranges: Vec<LiveRange> = take(&mut self.live_ranges);
+        let mut iterator = self.insns.into_iter().enumerate().peekable();
+        let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
+
+        while let Some((index, mut insn)) = iterator.next() {
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
             for opnd in insn.opnd_iter() {
-                match opnd {
-                    Opnd::InsnOut { idx, .. } |
-                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), .. }) => {
-                        // Since we have an InsnOut, we know it spans more that one
-                        // instruction.
-                        let start_index = *idx;
-
+                match *opnd {
+                    Opnd::VReg { idx, .. } |
+                    Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
                         // We're going to check if this is the last instruction that
                         // uses this operand. If it is, we can return the allocated
                         // register to the pool.
-                        if shifted_live_ranges[start_index] == index {
-                            if let Some(Opnd::Reg(reg)) = asm.insns[start_index].out_opnd() {
-                                dealloc_reg(&mut pool, &regs, reg);
+                        if live_ranges[idx].end() == index {
+                            if let Some(reg) = reg_mapping[idx] {
+                                dealloc_reg(&mut pool, &regs, &reg);
                             } else {
                                 unreachable!("no register allocated for insn {:?}", insn);
                             }
@@ -1451,26 +1449,25 @@ impl Assembler
                 assert_eq!(pool, 0, "register lives past C function call");
             }
 
-            // If this instruction is used by another instruction,
+            // If the output VReg of this instruction is used by another instruction,
             // we need to allocate a register to it
-            if live_ranges[index] != index {
-                // If we get to this point where the end of the live range is
-                // not equal to the index of the instruction, then it must be
-                // true that we set an output operand for this instruction. If
-                // it's not true, something has gone wrong.
-                assert!(
-                    !matches!(insn.out_opnd(), None),
-                    "Instruction output reused but no output operand set"
-                );
-
-                // This is going to be the output operand that we will set on
-                // the instruction.
-                let mut out_reg: Option<Reg> = None;
-
-                // C return values need to be mapped to the C return register
-                if matches!(insn, Insn::CCall { .. }) {
-                    out_reg = Some(take_reg(&mut pool, &regs, &C_RET_REG));
-                }
+            let vreg_idx = match insn.out_opnd() {
+                Some(Opnd::VReg { idx, .. }) => Some(*idx),
+                _ => None,
+            };
+            if vreg_idx.is_some() && live_ranges[vreg_idx.unwrap()].end() != index {
+                // This is going to be the output operand that we will set on the
+                // instruction. CCall and LiveReg need to use a specific register.
+                let mut out_reg = match insn {
+                    Insn::CCall { .. } => {
+                        Some(take_reg(&mut pool, &regs, &C_RET_REG))
+                    }
+                    Insn::LiveReg { opnd, .. } => {
+                        let reg = opnd.unwrap_reg();
+                        Some(take_reg(&mut pool, &regs, &reg))
+                    }
+                    _ => None
+                };
 
                 // If this instruction's first operand maps to a register and
                 // this is the last use of the register, reuse the register
@@ -1480,10 +1477,10 @@ impl Assembler
                 if out_reg.is_none() {
                     let mut opnd_iter = insn.opnd_iter();
 
-                    if let Some(Opnd::InsnOut{ idx, .. }) = opnd_iter.next() {
-                        if shifted_live_ranges[*idx] == index {
-                            if let Some(Opnd::Reg(reg)) = asm.insns[*idx].out_opnd() {
-                                out_reg = Some(take_reg(&mut pool, &regs, reg));
+                    if let Some(Opnd::VReg{ idx, .. }) = opnd_iter.next() {
+                        if live_ranges[*idx].end() == index {
+                            if let Some(reg) = reg_mapping[*idx] {
+                                out_reg = Some(take_reg(&mut pool, &regs, &reg));
                             }
                         }
                     }
@@ -1493,17 +1490,12 @@ impl Assembler
                 // already allocated.
                 if out_reg.is_none() {
                     out_reg = match &insn {
-                        Insn::LiveReg { opnd, .. } => {
-                            // Allocate a specific register
-                            let reg = opnd.unwrap_reg();
-                            Some(take_reg(&mut pool, &regs, &reg))
-                        },
                         _ => match alloc_reg(&mut pool, &regs) {
                             Some(reg) => Some(reg),
                             None => {
                                 let mut insns = asm.insns;
                                 insns.push(insn);
-                                for insn in iterator.insns {
+                                while let Some((_, insn)) = iterator.next() {
                                     insns.push(insn);
                                 }
                                 dump_live_regs(insns, live_ranges, regs.len(), index);
@@ -1520,18 +1512,20 @@ impl Assembler
                 // output operand on this instruction because the live range
                 // extends beyond the index of the instruction.
                 let out = insn.out_opnd_mut().unwrap();
-                *out = Opnd::Reg(out_reg.unwrap().with_num_bits(out_num_bits));
+                let reg = out_reg.unwrap().with_num_bits(out_num_bits);
+                reg_mapping[out.vreg_idx()] = Some(reg);
+                *out = Opnd::Reg(reg);
             }
 
-            // Replace InsnOut and Param operands by their corresponding register
+            // Replace VReg and Param operands by their corresponding register
             let mut opnd_iter = insn.opnd_iter_mut();
             while let Some(opnd) = opnd_iter.next() {
                 match *opnd {
-                    Opnd::InsnOut { idx, num_bits } => {
-                        *opnd = (*asm.insns[idx].out_opnd().unwrap()).with_num_bits(num_bits).unwrap();
+                    Opnd::VReg { idx, num_bits } => {
+                        *opnd = Opnd::Reg(reg_mapping[idx].unwrap()).with_num_bits(num_bits).unwrap();
                     },
-                    Opnd::Mem(Mem { base: MemBase::InsnOut(idx), disp, num_bits }) => {
-                        let base = MemBase::Reg(asm.insns[idx].out_opnd().unwrap().unwrap_reg().reg_no);
+                    Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
+                        let base = MemBase::Reg(reg_mapping[idx].unwrap().reg_no);
                         *opnd = Opnd::Mem(Mem { base, disp, num_bits });
                     }
                     _ => {},
@@ -1545,12 +1539,8 @@ impl Assembler
             } else {
                 // C arguments are buffered until CCall
                 if c_args.len() > 0 {
-                    // Resolve C argument dependencies
-                    let c_args_len = c_args.len() as isize;
+                    // Parallel-copy C arguments
                     let moves = Self::reorder_reg_moves(&c_args.drain(..).into_iter().collect());
-                    shift_live_ranges(&mut shifted_live_ranges, asm.insns.len(), moves.len() as isize - c_args_len);
-
-                    // Push batched C arguments
                     for (reg, opnd) in moves {
                         asm.load_into(Opnd::Reg(reg), opnd);
                     }
@@ -1559,7 +1549,6 @@ impl Assembler
                 // Other instructions are pushed as is
                 asm.push_insn(insn);
             }
-            iterator.map_insn_index(&mut asm);
         }
 
         assert_eq!(pool, 0, "Expected all registers to be returned to the pool");
@@ -1619,14 +1608,7 @@ impl Assembler
         let alloc_regs = alloc_regs.drain(0..num_regs).collect();
         self.compile_with_regs(cb, None, alloc_regs).unwrap()
     }
-    */
 
-    /// Consume the assembler by creating a new draining iterator.
-    pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
-        AssemblerDrainingIterator::new(self)
-    }
-
-    /*
     /// Return true if the next ccall() is expected to be leaf.
     pub fn get_leaf_ccall(&mut self) -> bool {
         self.leaf_ccall
@@ -1637,67 +1619,6 @@ impl Assembler
         self.leaf_ccall = true;
     }
     */
-}
-
-/// A struct that allows iterating through an assembler's instructions and
-/// consuming them as it iterates.
-pub struct AssemblerDrainingIterator {
-    insns: std::iter::Peekable<std::vec::IntoIter<Insn>>,
-    index: usize,
-    indices: Vec<usize>
-}
-
-impl AssemblerDrainingIterator {
-    fn new(asm: Assembler) -> Self {
-        Self {
-            insns: asm.insns.into_iter().peekable(),
-            index: 0,
-            indices: Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY),
-        }
-    }
-
-    /// When you're working with two lists of instructions, you need to make
-    /// sure you do some bookkeeping to align the indices contained within the
-    /// operands of the two lists.
-    ///
-    /// This function accepts the assembler that is being built and tracks the
-    /// end of the current list of instructions in order to maintain that
-    /// alignment.
-    pub fn map_insn_index(&mut self, asm: &mut Assembler) {
-        self.indices.push(asm.insns.len().saturating_sub(1));
-    }
-
-    /// Map an operand by using this iterator's list of mapped indices.
-    #[cfg(target_arch = "x86_64")]
-    pub fn map_opnd(&self, opnd: Opnd) -> Opnd {
-        opnd.map_index(&self.indices)
-    }
-
-    /// Returns the next instruction in the list with the indices corresponding
-    /// to the next list of instructions.
-    pub fn next_mapped(&mut self) -> Option<(usize, Insn)> {
-        self.next_unmapped().map(|(index, mut insn)| {
-            let mut opnd_iter = insn.opnd_iter_mut();
-            while let Some(opnd) = opnd_iter.next() {
-                *opnd = opnd.map_index(&self.indices);
-            }
-
-            (index, insn)
-        })
-    }
-
-    /// Returns the next instruction in the list with the indices corresponding
-    /// to the previous list of instructions.
-    pub fn next_unmapped(&mut self) -> Option<(usize, Insn)> {
-        let index = self.index;
-        self.index += 1;
-        self.insns.next().map(|insn| (index, insn))
-    }
-
-    /// Returns the next instruction without incrementing the iterator's index.
-    pub fn peek(&mut self) -> Option<&Insn> {
-        self.insns.peek()
-    }
 }
 
 impl fmt::Debug for Assembler {
@@ -1715,14 +1636,14 @@ impl fmt::Debug for Assembler {
 impl Assembler {
     #[must_use]
     pub fn add(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Add { left, right, out });
         out
     }
 
     #[must_use]
     pub fn and(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::And { left, right, out });
         out
     }
@@ -1754,7 +1675,7 @@ impl Assembler {
         */
 
         // Call a C function
-        let out = self.next_opnd_out(Opnd::match_num_bits(&opnds));
+        let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         self.push_insn(Insn::CCall { fptr, opnds, out });
 
         /*
@@ -1802,7 +1723,7 @@ impl Assembler {
 
     #[must_use]
     pub fn cpop(&mut self) -> Opnd {
-        let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
+        let out = self.new_vreg(Opnd::DEFAULT_NUM_BITS);
         self.push_insn(Insn::CPop { out });
         out
     }
@@ -1839,56 +1760,56 @@ impl Assembler {
 
     #[must_use]
     pub fn csel_e(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_g(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelG { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_ge(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelGE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_l(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelL { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_le(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelLE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_ne(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelNE { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_nz(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelNZ { truthy, falsy, out });
         out
     }
 
     #[must_use]
     pub fn csel_z(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[truthy, falsy]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
         self.push_insn(Insn::CSelZ { truthy, falsy, out });
         out
     }
@@ -1961,28 +1882,28 @@ impl Assembler {
 
     #[must_use]
     pub fn lea(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Lea { opnd, out });
         out
     }
 
     #[must_use]
     pub fn lea_jump_target(&mut self, target: Target) -> Opnd {
-        let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
+        let out = self.new_vreg(Opnd::DEFAULT_NUM_BITS);
         self.push_insn(Insn::LeaJumpTarget { target, out });
         out
     }
 
     #[must_use]
     pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::LiveReg { opnd, out });
         out
     }
 
     #[must_use]
     pub fn load(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Load { opnd, out });
         out
     }
@@ -1996,14 +1917,14 @@ impl Assembler {
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::LoadSExt { opnd, out });
         out
     }
 
     #[must_use]
     pub fn lshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::LShift { opnd, shift, out });
         out
     }
@@ -2014,14 +1935,14 @@ impl Assembler {
 
     #[must_use]
     pub fn not(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Not { opnd, out });
         out
     }
 
     #[must_use]
     pub fn or(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Or { left, right, out });
         out
     }
@@ -2037,7 +1958,7 @@ impl Assembler {
 
     #[must_use]
     pub fn rshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::RShift { opnd, shift, out });
         out
     }
@@ -2048,14 +1969,14 @@ impl Assembler {
 
     #[must_use]
     pub fn sub(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Sub { left, right, out });
         out
     }
 
     #[must_use]
     pub fn mul(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Mul { left, right, out });
         out
     }
@@ -2067,7 +1988,7 @@ impl Assembler {
     #[must_use]
     #[allow(dead_code)]
     pub fn urshift(&mut self, opnd: Opnd, shift: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[opnd, shift]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[opnd, shift]));
         self.push_insn(Insn::URShift { opnd, shift, out });
         out
     }
@@ -2092,7 +2013,7 @@ impl Assembler {
 
     #[must_use]
     pub fn xor(&mut self, left: Opnd, right: Opnd) -> Opnd {
-        let out = self.next_opnd_out(Opnd::match_num_bits(&[left, right]));
+        let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Xor { left, right, out });
         out
     }
