@@ -533,6 +533,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter_init_slots
+    omit "[Bug #21203] This test is flaky and intermittently failing now"
+
     assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       # Constant from gc.c.
       GC_HEAP_INIT_SLOTS = 10_000
