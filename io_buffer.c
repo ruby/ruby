@@ -273,6 +273,13 @@ io_buffer_free(struct rb_io_buffer *buffer)
 }
 
 static void
+rb_io_buffer_type_mark(void *_buffer)
+{
+    struct rb_io_buffer *buffer = _buffer;
+    rb_gc_mark(buffer->source);
+}
+
+static void
 rb_io_buffer_type_free(void *_buffer)
 {
     struct rb_io_buffer *buffer = _buffer;
@@ -293,20 +300,15 @@ rb_io_buffer_type_size(const void *_buffer)
     return total;
 }
 
-RUBY_REFERENCES(io_buffer_refs) = {
-    RUBY_REF_EDGE(struct rb_io_buffer, source),
-    RUBY_REF_END
-};
-
 static const rb_data_type_t rb_io_buffer_type = {
     .wrap_struct_name = "IO::Buffer",
     .function = {
-        .dmark = RUBY_REFS_LIST_PTR(io_buffer_refs),
+        .dmark = rb_io_buffer_type_mark,
         .dfree = rb_io_buffer_type_free,
         .dsize = rb_io_buffer_type_size,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_DECL_MARKING,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static inline enum rb_io_buffer_flags
