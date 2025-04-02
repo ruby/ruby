@@ -933,6 +933,14 @@ impl Function {
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
         self.fold_constants();
+
+        // Dump HIR after optimization
+        match get_option!(dump_hir_opt) {
+            Some(DumpHIR::WithoutSnapshot) => println!("HIR:\n{}", FunctionPrinter::without_snapshot(&self)),
+            Some(DumpHIR::All) => println!("HIR:\n{}", FunctionPrinter::with_snapshot(&self)),
+            Some(DumpHIR::Debug) => println!("HIR:\n{:#?}", &self),
+            None => {},
+        }
     }
 }
 

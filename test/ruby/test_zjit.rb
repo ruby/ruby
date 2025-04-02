@@ -348,6 +348,14 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_live_reg_past_ccall
+    assert_compiles '2', %q{
+      def callee = 1
+      def test = callee + callee
+      test
+    }
+  end
+
   def test_recursive_fact
     assert_compiles '[1, 6, 720]', %q{
       def fact(n)
@@ -360,18 +368,17 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-  # FIXME: currently produces the wrong value
-  #def test_recursive_fib
-  #  assert_compiles '[0, 2, 3]', %q{
-  #    def fib(n)
-  #      if n < 2
-  #        return n
-  #      end
-  #      return fib(n-1) + fib(n-2)
-  #    end
-  #    [fib(0), fib(3), fib(4)]
-  #  }
-  #end
+  def test_recursive_fib
+    assert_compiles '[0, 2, 3]', %q{
+      def fib(n)
+        if n < 2
+          return n
+        end
+        return fib(n-1) + fib(n-2)
+      end
+      [fib(0), fib(3), fib(4)]
+    }
+  end
 
   private
 

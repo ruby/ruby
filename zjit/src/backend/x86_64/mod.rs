@@ -43,7 +43,6 @@ impl From<Opnd> for X86Opnd {
             //VReg(usize),     // Output of a preceding instruction in this block
 
             Opnd::VReg{..} => panic!("VReg operand made it past register allocation"),
-            Opnd::Param{..} => panic!("Param operand made it past register allocation"),
 
             Opnd::UImm(val) => uimm_opnd(val),
             Opnd::Imm(val) => imm_opnd(val),
@@ -79,8 +78,19 @@ impl From<&Opnd> for X86Opnd {
     }
 }
 
-/// List of registers that can be used for stack temps and locals.
-pub static TEMP_REGS: [Reg; 5] = [RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG];
+/// List of registers that can be used for register allocation.
+/// This has the same number of registers for x86_64 and arm64.
+/// SCRATCH_REG is excluded.
+pub const ALLOC_REGS: &'static [Reg] = &[
+    RSI_REG,
+    RDI_REG,
+    RDX_REG,
+    RCX_REG,
+    R8_REG,
+    R9_REG,
+    R10_REG,
+    RAX_REG,
+];
 
 impl Assembler
 {
@@ -89,15 +99,9 @@ impl Assembler
     pub const SCRATCH_REG: Reg = R11_REG;
     const SCRATCH0: X86Opnd = X86Opnd::Reg(Assembler::SCRATCH_REG);
 
-
     /// Get the list of registers from which we can allocate on this platform
-    pub fn get_alloc_regs() -> Vec<Reg>
-    {
-        vec![
-            RAX_REG,
-            RCX_REG,
-            RDX_REG,
-        ]
+    pub fn get_alloc_regs() -> Vec<Reg> {
+        ALLOC_REGS.to_vec()
     }
 
     /// Get a list of all of the caller-save registers
@@ -120,10 +124,6 @@ impl Assembler
             let mut opnd_iter = insn.opnd_iter_mut();
 
             while let Some(opnd) = opnd_iter.next() {
-                if let Opnd::Param { idx } = opnd {
-                    *opnd = Assembler::alloc_param_reg(*idx);
-                }
-
                 // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
                 match opnd {
                     Opnd::Value(value) if !is_load => {
@@ -329,11 +329,12 @@ impl Assembler
                 Insn::CCall { opnds, .. } => {
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
-                    // Load each operand into the corresponding argument
-                    // register.
+                    // Load each operand into the corresponding argument register.
+                    let mut args: Vec<(Reg, Opnd)> = vec![];
                     for (idx, opnd) in opnds.into_iter().enumerate() {
-                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), *opnd);
+                        args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
                     }
+                    asm.parallel_mov(args);
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
@@ -544,6 +545,8 @@ impl Assembler
                 Insn::LoadSExt { opnd, out } => {
                     movsx(cb, out.into(), opnd.into());
                 },
+
+                Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
 
                 Insn::Mov { dest, src } => {
                     mov(cb, dest.into(), src.into());

@@ -70,9 +70,7 @@ impl From<Opnd> for A64Opnd {
             Opnd::Mem(Mem { base: MemBase::VReg(_), .. }) => {
                 panic!("attempted to lower an Opnd::Mem with a MemBase::VReg base")
             },
-            Opnd::CArg(_) => panic!("attempted to lower an Opnd::CArg"),
             Opnd::VReg { .. } => panic!("attempted to lower an Opnd::VReg"),
-            Opnd::Param { .. } => panic!("attempted to lower an Opnd::Param"),
             Opnd::Value(_) => panic!("attempted to lower an Opnd::Value"),
             Opnd::None => panic!(
                 "Attempted to lower an Opnd::None. This often happens when an out operand was not allocated for an instruction because the output of the instruction was not used. Please ensure you are using the output."
@@ -175,9 +173,19 @@ fn emit_load_value(cb: &mut CodeBlock, rd: A64Opnd, value: u64) -> usize {
     }
 }
 
-/// List of registers that can be used for stack temps.
-/// These are caller-saved registers.
-pub static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
+/// List of registers that can be used for register allocation.
+/// This has the same number of registers for x86_64 and arm64.
+/// SCRATCH0 and SCRATCH1 are excluded.
+pub const ALLOC_REGS: &'static [Reg] = &[
+    X0_REG,
+    X1_REG,
+    X2_REG,
+    X3_REG,
+    X4_REG,
+    X5_REG,
+    X11_REG,
+    X12_REG,
+];
 
 #[derive(Debug, PartialEq)]
 enum EmitError {
@@ -198,7 +206,7 @@ impl Assembler
     /// Note: we intentionally exclude C_RET_REG (X0) from this list
     /// because of the way it's used in gen_leave() and gen_leave_exit()
     pub fn get_alloc_regs() -> Vec<Reg> {
-        vec![X11_REG, X12_REG, X13_REG]
+        ALLOC_REGS.to_vec()
     }
 
     /// Get a list of all of the caller-saved registers
@@ -279,7 +287,7 @@ impl Assembler
         /// do follow that encoding, and if they don't then we load them first.
         fn split_bitmask_immediate(asm: &mut Assembler, opnd: Opnd, dest_num_bits: u8) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::VReg { .. } | Opnd::Param { .. } => opnd,
+                Opnd::Reg(_) | Opnd::VReg { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => {
                     if imm == 0 {
@@ -312,7 +320,7 @@ impl Assembler
         /// a certain size. If they don't then we need to load them first.
         fn split_shifted_immediate(asm: &mut Assembler, opnd: Opnd) -> Opnd {
             match opnd {
-                Opnd::Reg(_) | Opnd::CArg(_) | Opnd::VReg { .. } | Opnd::Param { .. } => opnd,
+                Opnd::Reg(_) | Opnd::VReg { .. } => opnd,
                 Opnd::Mem(_) => split_load_operand(asm, opnd),
                 Opnd::Imm(imm) => if ShiftedImmediate::try_from(imm as u64).is_ok() {
                     opnd
@@ -402,9 +410,6 @@ impl Assembler
                             *opnd = asm.load(*opnd);
                         }
                     },
-                    Opnd::Param { idx } => {
-                        *opnd = Assembler::alloc_param_reg(*idx);
-                    }
                     _ => {}
                 };
             }
@@ -489,6 +494,7 @@ impl Assembler
                     // register.
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
+                    let mut args: Vec<(Reg, Opnd)> = vec![];
                     for (idx, opnd) in opnds.into_iter().enumerate().rev() {
                         // If the value that we're sending is 0, then we can use
                         // the zero register, so in this case we'll just send
@@ -498,9 +504,9 @@ impl Assembler
                             Opnd::Mem(_) => split_memory_address(asm, *opnd),
                             _ => *opnd
                         };
-
-                        asm.load_into(Opnd::c_arg(C_ARG_OPNDS[idx]), value);
+                        args.push((C_ARG_OPNDS[idx].unwrap_reg(), value));
                     }
+                    asm.parallel_mov(args);
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.
@@ -1031,12 +1037,6 @@ impl Assembler
                             let ptr_offset: u32 = (cb.get_write_pos() as u32) - (SIZEOF_VALUE as u32);
                             insn_gc_offsets.push(ptr_offset);
                         },
-                        Opnd::CArg { .. } => {
-                            unreachable!("C argument operand was not lowered before arm64_emit");
-                        }
-                        Opnd::Param { .. } => {
-                            unreachable!("Param operand was not lowered before arm64_emit");
-                        }
                         Opnd::None => {
                             unreachable!("Attempted to load from None operand");
                         }
@@ -1054,6 +1054,7 @@ impl Assembler
                         _ => unreachable!()
                     };
                 },
+                Insn::ParallelMov { .. } => unreachable!("{insn:?} should have been lowered at alloc_regs()"),
                 Insn::Mov { dest, src } => {
                     // This supports the following two kinds of immediates:
                     //   * The value fits into a single movz instruction
