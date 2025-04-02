@@ -735,11 +735,6 @@ sym_proc_new(VALUE klass, VALUE sym)
 struct vm_ifunc *
 rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc)
 {
-    union {
-        struct vm_ifunc_argc argc;
-        VALUE packed;
-    } arity;
-
     if (min_argc < UNLIMITED_ARGUMENTS ||
 #if SIZEOF_INT * 2 > SIZEOF_VALUE
         min_argc >= (int)(1U << (SIZEOF_VALUE * CHAR_BIT) / 2) ||
@@ -756,14 +751,13 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
         rb_raise(rb_eRangeError, "maximum argument number out of range: %d",
                  max_argc);
     }
-    arity.argc.min = min_argc;
-    arity.argc.max = max_argc;
     rb_execution_context_t *ec = GET_EC();
 
     struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
     ifunc->func = func;
     ifunc->data = data;
-    ifunc->argc = arity.argc;
+    ifunc->argc.min = min_argc;
+    ifunc->argc.max = max_argc;
 
     return ifunc;
 }
