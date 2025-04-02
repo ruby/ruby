@@ -2,7 +2,9 @@
 require 'test/unit'
 
 class TestEnv < Test::Unit::TestCase
-  IGNORE_CASE = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  windows = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  IGNORE_CASE = windows
+  ENCODING = windows ? Encoding::UTF_8 : Encoding.find("locale")
   PATH_ENV = "PATH"
   INVALID_ENVVARS = [
     "foo\0bar",
@@ -357,7 +359,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
     ENV[key] = "foo"
-    assert_equal(%{{"VAR\u{e5 e1 e2 e4 e3 101 3042}"=>"foo"}}, ENV.inspect)
+    assert_equal(%{{#{(key.encode(ENCODING) rescue key.b).inspect}=>"foo"}}, ENV.inspect)
   end
 
   def test_to_a
@@ -410,8 +412,7 @@ class TestEnv < Test::Unit::TestCase
       assert_equal("foo", v)
     end
     assert_invalid_env {|var| ENV.assoc(var)}
-    encoding = /mswin|mingw/ =~ RUBY_PLATFORM ? Encoding::UTF_8 : Encoding.find("locale")
-    assert_equal(encoding, v.encoding)
+    assert_equal(ENCODING, v.encoding)
   end
 
   def test_has_value2
@@ -524,7 +525,7 @@ class TestEnv < Test::Unit::TestCase
     assert_equal(huge_value, ENV["foo"])
   end
 
-  if /mswin|mingw/ =~ RUBY_PLATFORM
+  if windows
     def windows_version
       @windows_version ||= %x[ver][/Version (\d+)/, 1].to_i
     end
