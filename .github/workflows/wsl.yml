@@ -72,4 +72,5 @@ jobs:
          working-dir: /tmp/github/
          exec: |
             ./ruby -v
-            # make check TESTS="-j4" MSPECOPT="-j"
+            # make test-all TESTS="-j4"
+            make test-spec MSPECOPT="-j"
