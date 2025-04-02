@@ -2122,3 +2122,76 @@ assert_equal 'ok', %q{
   roundtripped_obj = ractor.take
   roundtripped_obj.instance_variable_get(:@array) == [1] ? :ok : roundtripped_obj
 }
+
+# moved composite types move their non-shareable parts properly
+assert_equal 'ok', %q{
+  k, v = String.new("key"), String.new("value")
+  h = { k => v }
+  h.instance_variable_set("@b", String.new("b"))
+  a = [k,v]
+  o_singleton = Object.new
+  def o_singleton.a
+    @a
+  end
+  o_singleton.instance_variable_set("@a", String.new("a"))
+  class MyObject
+    attr_reader :a
+    def initialize(a)
+      @a = a
+    end
+  end
+  struct_class = Struct.new(:a)
+  struct = struct_class.new(String.new('a'))
+  o = MyObject.new(String.new('a'))
+  r = Ractor.new do
+    loop do
+      obj = Ractor.receive
+      val = case obj
+      when Hash
+        obj['key'] == 'value' && obj.instance_variable_get("@b") == 'b'
+      when Array
+        obj[0] == 'key'
+      when Struct
+        obj.a == 'a'
+      when Object
+        obj.a == 'a'
+      end
+      Ractor.yield val
+    end
+  end
+
+  objs = [h, a, o_singleton, o, struct]
+  objs.each_with_index do |obj, i|
+    klass = obj.class
+    parts_moved = {}
+    case obj
+    when Hash
+      parts_moved[klass] = [obj['key'], obj.instance_variable_get("@b")]
+    when Array
+      parts_moved[klass] = obj.dup # the contents
+    when Struct, Object
+      parts_moved[klass] = [obj.a]
+    end
+    r.send(obj, move: true)
+    val = r.take
+    if val != true
+      raise "bad val in ractor for obj at i:#{i}"
+    end
+    begin
+      p obj
+    rescue
+    else
+      raise "should be moved"
+    end
+    parts_moved.each do |klass, parts|
+      parts.each_with_index do |part, j|
+        case part
+        when Ractor::MovedObject
+        else
+          raise "part for class #{klass} at i:#{j} should be moved"
+        end
+      end
+    end
+  end
+  'ok'
+}
