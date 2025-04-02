@@ -26,10 +26,6 @@ describe "File.setuid?" do
 
   platform_is_not :windows do
     it "returns true when the gid bit is set" do
-      platform_is :solaris do
-        # Solaris requires execute bit before setting suid
-        system "chmod u+x #{@name}"
-      end
       system "chmod u+s #{@name}"
 
       File.setuid?(@name).should == true

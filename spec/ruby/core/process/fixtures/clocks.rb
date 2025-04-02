@@ -2,7 +2,7 @@ module ProcessSpecs
   def self.clock_constants
     clocks = []
 
-    platform_is_not :windows, :solaris do
+    platform_is_not :windows do
       clocks += Process.constants.select { |c| c.to_s.start_with?('CLOCK_') }
 
       # These require CAP_WAKE_ALARM and are not documented in
