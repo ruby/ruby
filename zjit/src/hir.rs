@@ -4,7 +4,7 @@
 use crate::{
     cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
 };
-use std::{cell::RefCell, collections::{HashMap, HashSet}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
+use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -368,6 +368,34 @@ impl Insn {
     pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map }
     }
+
+    /// Return true if the instruction needs to be kept around. For example, if the instruction
+    /// might have a side effect, or if the instruction may raise an exception.
+    fn has_effects(&self) -> bool {
+        match self {
+            Insn::PutSelf => false,
+            Insn::Const { .. } => false,
+            Insn::Param { .. } => false,
+            Insn::StringCopy { .. } => false,
+            Insn::NewArray { .. } => false,
+            Insn::ArrayDup { .. } => false,
+            Insn::Test { .. } => false,
+            Insn::Snapshot { .. } => false,
+            Insn::FixnumAdd  { .. } => false,
+            Insn::FixnumSub  { .. } => false,
+            Insn::FixnumMult { .. } => false,
+            // TODO(max): Consider adding a Guard that the rhs is non-zero before Div and Mod
+            // Div *is* critical unless we can prove the right hand side != 0
+            // Mod *is* critical unless we can prove the right hand side != 0
+            Insn::FixnumEq   { .. } => false,
+            Insn::FixnumNeq  { .. } => false,
+            Insn::FixnumLt   { .. } => false,
+            Insn::FixnumLe   { .. } => false,
+            Insn::FixnumGt   { .. } => false,
+            Insn::FixnumGe   { .. } => false,
+            _ => true,
+        }
+    }
 }
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
@@ -428,6 +456,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {guard_type}") },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(&self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(&self.ptr_map)) },
+            Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -994,6 +1023,89 @@ impl Function {
         }
     }
 
+    /// Remove instructions that do not have side effects and are not referenced by any other
+    /// instruction.
+    fn eliminate_dead_code(&mut self) {
+        let rpo = self.rpo();
+        let mut worklist = VecDeque::new();
+        // Find all of the instructions that have side effects, are control instructions, or are
+        // otherwise necessary to keep around
+        for block_id in &rpo {
+            for insn_id in &self.blocks[block_id.0].insns {
+                let insn = &self.insns[insn_id.0];
+                if insn.has_effects() {
+                    worklist.push_back(*insn_id);
+                }
+            }
+        }
+        let mut necessary = vec![false; self.insns.len()];
+        // Now recursively traverse their data dependencies and mark those as necessary
+        while let Some(insn_id) = worklist.pop_front() {
+            if necessary[insn_id.0] { continue; }
+            necessary[insn_id.0] = true;
+            match self.find(insn_id) {
+                Insn::PutSelf | Insn::Const { .. } | Insn::Param { .. }
+                | Insn::NewArray { .. } | Insn::PatchPoint(..)
+                | Insn::GetConstantPath { .. } =>
+                    {}
+                Insn::StringCopy { val }
+                | Insn::ArrayDup { val }
+                | Insn::StringIntern { val }
+                | Insn::GuardType { val, .. }
+                | Insn::GuardBitEquals { val, .. }
+                | Insn::Return { val }
+                | Insn::Defined { v: val, .. }
+                | Insn::Test { val } =>
+                    worklist.push_back(val),
+                Insn::ArraySet { array, val, .. } => {
+                    worklist.push_back(array);
+                    worklist.push_back(val);
+                }
+                Insn::Snapshot { state } => {
+                    worklist.extend(&state.stack);
+                    worklist.extend(&state.locals);
+                }
+                Insn::FixnumAdd { left, right, state }
+                | Insn::FixnumSub { left, right, state }
+                | Insn::FixnumMult { left, right, state }
+                | Insn::FixnumDiv { left, right, state }
+                | Insn::FixnumMod { left, right, state }
+                => {
+                    worklist.push_back(left);
+                    worklist.push_back(right);
+                    worklist.push_back(state);
+                }
+                Insn::FixnumLt { left, right }
+                | Insn::FixnumLe { left, right }
+                | Insn::FixnumGt { left, right }
+                | Insn::FixnumGe { left, right }
+                | Insn::FixnumEq { left, right }
+                | Insn::FixnumNeq { left, right }
+                => {
+                    worklist.push_back(left);
+                    worklist.push_back(right);
+                }
+                Insn::Jump(BranchEdge { args, .. }) => worklist.extend(args),
+                Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
+                    worklist.push_back(val);
+                    worklist.extend(args);
+                }
+                Insn::Send { self_val, args, state, .. }
+                | Insn::SendWithoutBlock { self_val, args, state, .. }
+                | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.extend(args);
+                    worklist.push_back(state);
+                }
+                Insn::CCall { args, .. } => worklist.extend(args),
+            }
+        }
+        // Now remove all unnecessary instructions
+        for block_id in &rpo {
+            self.blocks[block_id.0].insns.retain(|insn_id| necessary[insn_id.0]);
+        }
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entry_block);
@@ -1032,6 +1144,7 @@ impl Function {
         // Function is assumed to have types inferred already
         self.optimize_direct_sends();
         self.fold_constants();
+        self.eliminate_dead_code();
 
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
@@ -1448,6 +1561,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let n = get_arg(pc, 0).as_usize();
                     let top = state.stack_top()?;
                     state.stack_setn(n, top);
+                }
+                YARVINSN_adjuststack => {
+                    let mut n = get_arg(pc, 0).as_usize();
+                    while n > 0 {
+                        state.stack_pop()?;
+                        n -= 1;
+                    }
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
@@ -2380,9 +2500,6 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v0:NilClassExact = Const Value(nil)
-              v2:TrueClassExact = Const Value(true)
-              v11:CBool[true] = Const CBool(true)
               v5:Fixnum[3] = Const Value(3)
               Return v5
         "#]]);
@@ -2403,9 +2520,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v0:NilClassExact = Const Value(nil)
               v2:FalseClassExact = Const Value(false)
-              v11:CBool[false] = Const CBool(false)
               Jump bb1(v2)
             bb1(v7:FalseClassExact):
               v9:Fixnum[4] = Const Value(4)
@@ -2424,11 +2539,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v15:Fixnum[3] = Const Value(3)
-              v8:Fixnum[3] = Const Value(3)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v16:Fixnum[6] = Const Value(6)
               Return v16
@@ -2450,11 +2561,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v15:TrueClassExact = Const Value(true)
-              v16:CBool[true] = Const CBool(true)
               v10:Fixnum[3] = Const Value(3)
               Return v10
         "#]]);
@@ -2475,11 +2582,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v15:FalseClassExact = Const Value(false)
-              v16:CBool[false] = Const CBool(false)
               Jump bb1()
             bb1():
               v13:Fixnum[4] = Const Value(4)
@@ -2502,11 +2605,7 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[2] = Const Value(2)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v15:TrueClassExact = Const Value(true)
-              v16:CBool[true] = Const CBool(true)
               v10:Fixnum[3] = Const Value(3)
               Return v10
         "#]]);
@@ -2662,6 +2761,332 @@ mod opt_tests {
               v12:BasicObject[VALUE(0x1010)] = GuardBitEquals v4, VALUE(0x1010)
               v13:BasicObject = SendWithoutBlockDirect v12, :bar (0x1018)
               Return v13
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_new_array() {
+        eval("
+            def test()
+              c = []
+              5
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v3:Fixnum[5] = Const Value(5)
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_array_dup() {
+        eval("
+            def test
+              c = [1, 2]
+              5
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_array_set() {
+        eval("
+            def test(a)
+              c = [a]
+              5
+            end
+            test(3); test(4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = NewArray 1
+              ArraySet v3, 0, v0
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_putself() {
+        eval("
+            def test()
+              c = self
+              5
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v3:Fixnum[5] = Const Value(5)
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_string_copy() {
+        eval(r#"
+            def test()
+              c = "abc"
+              5
+            end
+            test; test
+        "#);
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_add() {
+        eval("
+            def test(a, b)
+              a + b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_sub() {
+        eval("
+            def test(a, b)
+              a - b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_mul() {
+        eval("
+            def test(a, b)
+              a * b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_fixnum_div() {
+        eval("
+            def test(a, b)
+              a / b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumDiv v5, v6
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_fixnum_mod() {
+        eval("
+            def test(a, b)
+              a % b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumMod v5, v6
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_lt() {
+        eval("
+            def test(a, b)
+              a < b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_le() {
+        eval("
+            def test(a, b)
+              a <= b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_gt() {
+        eval("
+            def test(a, b)
+              a > b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_ge() {
+        eval("
+            def test(a, b)
+              a >= b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_eq() {
+        eval("
+            def test(a, b)
+              a == b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_fixnum_neq() {
+        eval("
+            def test(a, b)
+              a != b
+              5
+            end
+            test(1, 2); test(3, 4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_do_not_eliminate_get_constant_path() {
+        eval("
+            def test()
+              C
+              5
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:BasicObject = GetConstantPath 0x1000
+              v2:Fixnum[5] = Const Value(5)
+              Return v2
         "#]]);
     }
 }
