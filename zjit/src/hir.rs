@@ -1457,10 +1457,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
+                        if $bop == BOP_NEQ {
+                            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
+                            fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
+                        }
                         let (left, right) = guard_two_fixnums(&mut state, exit_id, &mut fun, block)?;
                         state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: exit_id)? }));
                     } else {
-                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let cd: *const rb_call_data = if $bop == BOP_NEQ {
+                            //  opt_neq is a special case where it has two cd and the first one is opt_eq.
+                            get_arg(pc, 1).as_ptr()
+                        } else {
+                            get_arg(pc, 0).as_ptr()
+                        };
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
                         state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_id }));
@@ -2300,10 +2309,11 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumNeq v5, v6
-              Return v7
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
+              v8:BoolExact = FixnumNeq v6, v7
+              Return v8
         "#]]);
     }
 
@@ -3105,10 +3115,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = GuardType v1, Fixnum
+              v9:Fixnum[5] = Const Value(5)
+              Return v9
         "#]]);
     }
 

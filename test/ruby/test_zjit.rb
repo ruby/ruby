@@ -121,7 +121,17 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_opt_neq
+  def test_opt_neq_dynamic
+    # TODO(max): Don't split this test; instead, run all tests with and without
+    # profiling.
+    assert_compiles '[false, true]', %q{
+      def test(a, b) = a != b
+      test(0, 2) # profile opt_neq
+      [test(1, 1), test(0, 1)]
+    }, call_threshold: 1
+  end
+
+  def test_opt_neq_fixnum
     assert_compiles '[false, true]', %q{
       def test(a, b) = a != b
       test(0, 2) # profile opt_neq
