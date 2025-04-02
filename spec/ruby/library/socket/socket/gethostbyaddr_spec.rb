@@ -18,11 +18,8 @@ describe 'Socket.gethostbyaddr' do
           @array = suppress_warning { Socket.gethostbyaddr(@addr) }
         end
 
-        # RubyCI Solaris 11x defines 127.0.0.1 as unstable11x
-        platform_is_not :"solaris2.11" do
-          it 'includes the hostname as the first value' do
-            @array[0].should == SocketSpecs.hostname_reverse_lookup
-          end
+        it 'includes the hostname as the first value' do
+          @array[0].should == SocketSpecs.hostname_reverse_lookup
         end
 
         it 'includes the aliases as the 2nd value' do
