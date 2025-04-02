@@ -1300,12 +1300,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             }
             result
         };
+        // Start the block off with a Snapshot so that if we need to insert a new Guard later on
+        // and we don't have a Snapshot handy, we can just iterate backward (at the earliest, to
+        // the beginning of the block).
+        fun.push_insn(block, Insn::Snapshot { state: state.clone() });
         while insn_idx < iseq_size {
             state.insn_idx = insn_idx as usize;
             // Get the current pc and opcode
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
             state.pc = pc;
-            let exit_state = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+            let exit_state = state.clone();
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
@@ -1318,16 +1322,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             // Push a FixnumXxx instruction if profiled operand types are fixnums
             macro_rules! push_fixnum_insn {
-                ($insn:ident, $method_name:expr, $bop:ident$(, $key:ident: $value:expr)?) => {
+                ($insn:ident, $method_name:expr, $bop:ident $(, $key:ident)?) => {
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     if payload.have_two_fixnums(current_insn_idx as usize) {
                         fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
-                        let (left, right) = guard_two_fixnums(&mut state, exit_state, &mut fun, block)?;
-                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: $value)? }));
+                        let (left, right) = guard_two_fixnums(&mut state, exit_id, &mut fun, block)?;
+                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: exit_id)? }));
                     } else {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_state }));
+                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_id }));
                     }
                 };
             }
@@ -1418,7 +1423,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_nil_p => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let recv = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_state }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_id }));
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -1445,19 +1451,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
 
                 YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
-                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, state: exit_state);
+                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, state);
                 }
                 YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
-                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, state: exit_state);
+                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, state);
                 }
                 YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
-                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, state: exit_state);
+                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, state);
                 }
                 YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
-                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, state: exit_state);
+                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, state);
                 }
                 YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
-                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, state: exit_state);
+                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, state);
                 }
 
                 YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
@@ -1482,14 +1488,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let right = state.stack_pop()?;
                     let left = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_state }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_id }));
                 }
                 YARVINSN_opt_aset => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let set = state.stack_pop()?;
                     let obj = state.stack_pop()?;
                     let recv = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_state });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_id });
                     state.stack_push(set);
                 }
 
@@ -1515,7 +1523,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_state }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id }));
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
@@ -1534,7 +1543,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_state }));
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id }));
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
@@ -1942,9 +1952,9 @@ mod tests {
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
-              v5:BasicObject = SendWithoutBlock v1, :+, v3
-              Return v5
+              v2:Fixnum[2] = Const Value(2)
+              v4:BasicObject = SendWithoutBlock v1, :+, v2
+              Return v4
         "#]]);
     }
 
@@ -1979,13 +1989,13 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:CBool = Test v0
-              IfFalse v3, bb1(v0)
-              v6:Fixnum[3] = Const Value(3)
-              Return v6
-            bb1(v9:BasicObject):
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
+              v2:CBool = Test v0
+              IfFalse v2, bb1(v0)
+              v4:Fixnum[3] = Const Value(3)
+              Return v4
+            bb1(v6:BasicObject):
+              v8:Fixnum[4] = Const Value(4)
+              Return v8
         "#]]);
     }
 
@@ -2005,15 +2015,15 @@ mod tests {
             fn test:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
-              v4:CBool = Test v0
-              IfFalse v4, bb1(v0, v1)
-              v7:Fixnum[3] = Const Value(3)
-              Jump bb2(v0, v7)
-            bb1(v11:BasicObject, v12:NilClassExact):
-              v14:Fixnum[4] = Const Value(4)
-              Jump bb2(v11, v14)
-            bb2(v17:BasicObject, v18:Fixnum):
-              Return v18
+              v3:CBool = Test v0
+              IfFalse v3, bb1(v0, v1)
+              v5:Fixnum[3] = Const Value(3)
+              Jump bb2(v0, v5)
+            bb1(v7:BasicObject, v8:NilClassExact):
+              v10:Fixnum[4] = Const Value(4)
+              Jump bb2(v7, v10)
+            bb2(v12:BasicObject, v13:Fixnum):
+              Return v13
         "#]]);
     }
 
@@ -2027,10 +2037,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum = FixnumAdd v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumAdd v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2044,10 +2054,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum = FixnumSub v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumSub v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2061,10 +2071,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum = FixnumMult v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumMult v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2078,10 +2088,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum = FixnumDiv v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumDiv v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2095,10 +2105,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum = FixnumMod v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = FixnumMod v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2112,10 +2122,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumEq v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumEq v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2129,10 +2139,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumNeq v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumNeq v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2146,10 +2156,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumLt v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumLt v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2163,10 +2173,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumLe v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumLe v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2180,10 +2190,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumGt v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumGt v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2207,30 +2217,30 @@ mod tests {
               v0:NilClassExact = Const Value(nil)
               v1:NilClassExact = Const Value(nil)
               v3:Fixnum[0] = Const Value(0)
-              v6:Fixnum[10] = Const Value(10)
-              Jump bb2(v3, v6)
-            bb2(v10:Fixnum, v11:Fixnum):
-              v14:Fixnum[0] = Const Value(0)
+              v4:Fixnum[10] = Const Value(10)
+              Jump bb2(v3, v4)
+            bb2(v6:Fixnum, v7:Fixnum):
+              v9:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v17:Fixnum = GuardType v11, Fixnum
-              v18:Fixnum[0] = GuardType v14, Fixnum
-              v19:BoolExact = FixnumGt v17, v18
-              v21:CBool = Test v19
-              IfTrue v21, bb1(v10, v11)
-              v24:NilClassExact = Const Value(nil)
-              Return v10
-            bb1(v29:Fixnum, v30:Fixnum):
-              v33:Fixnum[1] = Const Value(1)
+              v12:Fixnum = GuardType v7, Fixnum
+              v13:Fixnum[0] = GuardType v9, Fixnum
+              v14:BoolExact = FixnumGt v12, v13
+              v15:CBool = Test v14
+              IfTrue v15, bb1(v6, v7)
+              v17:NilClassExact = Const Value(nil)
+              Return v6
+            bb1(v19:Fixnum, v20:Fixnum):
+              v22:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v36:Fixnum = GuardType v29, Fixnum
-              v37:Fixnum[1] = GuardType v33, Fixnum
-              v38:Fixnum = FixnumAdd v36, v37
-              v42:Fixnum[1] = Const Value(1)
+              v25:Fixnum = GuardType v19, Fixnum
+              v26:Fixnum[1] = GuardType v22, Fixnum
+              v27:Fixnum = FixnumAdd v25, v26
+              v28:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v45:Fixnum = GuardType v30, Fixnum
-              v46:Fixnum[1] = GuardType v42, Fixnum
-              v47:Fixnum = FixnumSub v45, v46
-              Jump bb2(v38, v47)
+              v31:Fixnum = GuardType v20, Fixnum
+              v32:Fixnum[1] = GuardType v28, Fixnum
+              v33:Fixnum = FixnumSub v31, v32
+              Jump bb2(v27, v33)
         "#]]);
     }
 
@@ -2244,10 +2254,10 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumGe v6, v7
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v6:Fixnum = GuardType v1, Fixnum
+              v7:BoolExact = FixnumGe v5, v6
+              Return v7
         "#]]);
     }
 
@@ -2268,13 +2278,13 @@ mod tests {
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
-              v6:CBool[true] = Test v2
-              IfFalse v6, bb1(v2)
-              v9:Fixnum[3] = Const Value(3)
+              v3:CBool[true] = Test v2
+              IfFalse v3, bb1(v2)
+              v5:Fixnum[3] = Const Value(3)
+              Return v5
+            bb1(v7):
+              v9 = Const Value(4)
               Return v9
-            bb1(v12):
-              v14 = Const Value(4)
-              Return v14
         "#]]);
     }
 
@@ -2293,10 +2303,10 @@ mod tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:Fixnum[2] = Const Value(2)
-              v5:Fixnum[3] = Const Value(3)
-              v7:BasicObject = SendWithoutBlock v1, :bar, v3, v5
-              Return v7
+              v2:Fixnum[2] = Const Value(2)
+              v3:Fixnum[3] = Const Value(3)
+              v5:BasicObject = SendWithoutBlock v1, :bar, v2, v3
+              Return v5
         "#]]);
     }
 
@@ -2327,16 +2337,16 @@ mod tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v4:ArrayExact = ArrayDup v3
-              v6:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v7:ArrayExact = ArrayDup v6
-              v9:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v10:StringExact = StringCopy v9
-              v12:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v13:StringExact = StringCopy v12
-              v15:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v10, v13
-              Return v15
+              v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:ArrayExact = ArrayDup v2
+              v4:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v5:ArrayExact = ArrayDup v4
+              v6:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v7:StringExact = StringCopy v6
+              v8:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v9:StringExact = StringCopy v8
+              v11:BasicObject = SendWithoutBlock v1, :unknown_method, v3, v5, v7, v9
+              Return v11
         "#]]);
     }
 }
@@ -2372,9 +2382,9 @@ mod opt_tests {
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:TrueClassExact = Const Value(true)
-              v17:CBool[true] = Const CBool(true)
-              v9:Fixnum[3] = Const Value(3)
-              Return v9
+              v11:CBool[true] = Const CBool(true)
+              v5:Fixnum[3] = Const Value(3)
+              Return v5
         "#]]);
     }
 
@@ -2395,11 +2405,11 @@ mod opt_tests {
             bb0():
               v0:NilClassExact = Const Value(nil)
               v2:FalseClassExact = Const Value(false)
-              v17:CBool[false] = Const CBool(false)
+              v11:CBool[false] = Const CBool(false)
               Jump bb1(v2)
-            bb1(v12:FalseClassExact):
-              v14:Fixnum[4] = Const Value(4)
-              Return v14
+            bb1(v7:FalseClassExact):
+              v9:Fixnum[4] = Const Value(4)
+              Return v9
         "#]]);
     }
 
@@ -2415,13 +2425,13 @@ mod opt_tests {
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
+              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v18:Fixnum[3] = Const Value(3)
-              v10:Fixnum[3] = Const Value(3)
+              v15:Fixnum[3] = Const Value(3)
+              v8:Fixnum[3] = Const Value(3)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v19:Fixnum[6] = Const Value(6)
-              Return v19
+              v16:Fixnum[6] = Const Value(6)
+              Return v16
         "#]]);
     }
 
@@ -2441,12 +2451,12 @@ mod opt_tests {
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
+              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v20:TrueClassExact = Const Value(true)
-              v21:CBool[true] = Const CBool(true)
-              v13:Fixnum[3] = Const Value(3)
-              Return v13
+              v15:TrueClassExact = Const Value(true)
+              v16:CBool[true] = Const CBool(true)
+              v10:Fixnum[3] = Const Value(3)
+              Return v10
         "#]]);
     }
 
@@ -2466,14 +2476,14 @@ mod opt_tests {
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
-              v3:Fixnum[2] = Const Value(2)
+              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v20:FalseClassExact = Const Value(false)
-              v21:CBool[false] = Const CBool(false)
+              v15:FalseClassExact = Const Value(false)
+              v16:CBool[false] = Const CBool(false)
               Jump bb1()
             bb1():
-              v17:Fixnum[4] = Const Value(4)
-              Return v17
+              v13:Fixnum[4] = Const Value(4)
+              Return v13
         "#]]);
     }
 
@@ -2493,12 +2503,12 @@ mod opt_tests {
             fn test:
             bb0():
               v1:Fixnum[2] = Const Value(2)
-              v3:Fixnum[2] = Const Value(2)
+              v2:Fixnum[2] = Const Value(2)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v20:TrueClassExact = Const Value(true)
-              v21:CBool[true] = Const CBool(true)
-              v13:Fixnum[3] = Const Value(3)
-              Return v13
+              v15:TrueClassExact = Const Value(true)
+              v16:CBool[true] = Const CBool(true)
+              v10:Fixnum[3] = Const Value(3)
+              Return v10
         "#]]);
     }
 
@@ -2513,11 +2523,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:Fixnum[1] = Const Value(1)
+              v2:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v6:Fixnum = GuardType v0, Fixnum
-              v8:Fixnum = FixnumAdd v6, v3
-              Return v8
+              v5:Fixnum = GuardType v0, Fixnum
+              v7:Fixnum = FixnumAdd v5, v2
+              Return v7
         "#]]);
     }
 
@@ -2536,9 +2546,9 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
-              Return v8
+              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
+              Return v7
         "#]]);
     }
 
@@ -2578,9 +2588,9 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
-              Return v8
+              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
+              Return v7
         "#]]);
     }
 
@@ -2596,11 +2606,11 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:Fixnum[3] = Const Value(3)
+              v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008)
-              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v10:BasicObject = SendWithoutBlockDirect v9, :Integer (0x1018), v3
-              Return v10
+              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1018), v2
+              Return v8
         "#]]);
     }
 
@@ -2618,12 +2628,12 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:Fixnum[1] = Const Value(1)
-              v5:Fixnum[2] = Const Value(2)
+              v2:Fixnum[1] = Const Value(1)
+              v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v11:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v12:BasicObject = SendWithoutBlockDirect v11, :foo (0x1018), v3, v5
-              Return v12
+              v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1018), v2, v3
+              Return v9
         "#]]);
     }
 
@@ -2645,13 +2655,13 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v12:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v13:BasicObject = SendWithoutBlockDirect v12, :foo (0x1018)
-              v6:BasicObject = PutSelf
+              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v10:BasicObject = SendWithoutBlockDirect v9, :foo (0x1018)
+              v4:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, bar@0x1020)
-              v15:BasicObject[VALUE(0x1010)] = GuardBitEquals v6, VALUE(0x1010)
-              v16:BasicObject = SendWithoutBlockDirect v15, :bar (0x1018)
-              Return v16
+              v12:BasicObject[VALUE(0x1010)] = GuardBitEquals v4, VALUE(0x1010)
+              v13:BasicObject = SendWithoutBlockDirect v12, :bar (0x1018)
+              Return v13
         "#]]);
     }
 }
