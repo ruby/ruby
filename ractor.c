@@ -1980,14 +1980,6 @@ cancel_single_ractor_mode(void)
     // enable multi-ractor mode
     RUBY_DEBUG_LOG("enable multi-ractor mode");
 
-    VALUE was_disabled = rb_gc_enable();
-
-    rb_gc_start();
-
-    if (was_disabled) {
-        rb_gc_disable();
-    }
-
     ruby_single_main_ractor = NULL;
     rb_funcall(rb_cRactor, rb_intern("_activated"), 0);
 }
