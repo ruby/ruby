@@ -2876,7 +2876,7 @@ rb_check_string_type(VALUE str)
  *
  *  Attempts to convert the given +object+ to a string.
  *
- *  If +object+ is already a string, returns +object+, unmodified:
+ *  If +object+ is already a string, returns +object+, unmodified.
  *
  *  Otherwise if +object+ responds to <tt>:to_str</tt>,
  *  calls <tt>object.to_str</tt> and returns the result.
