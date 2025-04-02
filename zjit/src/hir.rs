@@ -283,7 +283,7 @@ pub enum Insn {
     StringCopy { val: InsnId },
     StringIntern { val: InsnId },
 
-    NewArray { count: usize },
+    NewArray { elements: Vec<InsnId> },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId },
 
@@ -409,7 +409,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(&self.ptr_map)) }
             Insn::Param { idx } => { write!(f, "Param {idx}") }
-            Insn::NewArray { count } => { write!(f, "NewArray {count}") }
+            Insn::NewArray { elements } => {
+                write!(f, "NewArray")?;
+                let mut prefix = " ";
+                for element in elements {
+                    write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
             Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
             Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}") }
             Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
@@ -1468,11 +1476,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
-                    let array = fun.push_insn(block, Insn::NewArray { count });
-                    for idx in (0..count).rev() {
-                        fun.push_insn(block, Insn::ArraySet { array, idx, val: state.stack_pop()? });
+                    let mut elements = vec![];
+                    for _ in 0..count {
+                        elements.push(state.stack_pop()?);
                     }
-                    state.stack_push(array);
+                    elements.reverse();
+                    state.stack_push(fun.push_insn(block, Insn::NewArray { elements }));
                 }
                 YARVINSN_duparray => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -1870,14 +1879,14 @@ mod infer_tests {
     #[test]
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
-        let val = function.push_insn(function.entry_block, Insn::NewArray { count: 0 });
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![] });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
     #[test]
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { count: 0 });
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![] });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
@@ -1990,8 +1999,30 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:ArrayExact = NewArray 0
+              v1:ArrayExact = NewArray
               Return v1
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_array_with_element() {
+        eval("def test(a) = [a]");
+        assert_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:ArrayExact = NewArray v0
+              Return v2
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_array_with_elements() {
+        eval("def test(a, b) = [a, b]");
+        assert_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v3:ArrayExact = NewArray v0, v1
+              Return v3
         "#]]);
     }
 
@@ -2782,6 +2813,23 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_eliminate_new_array_with_elements() {
+        eval("
+            def test(a)
+              c = [a]
+              5
+            end
+            test(1); test(2)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
+        "#]]);
+    }
+
+    #[test]
     fn test_eliminate_array_dup() {
         eval("
             def test
@@ -2795,25 +2843,6 @@ mod opt_tests {
             bb0():
               v4:Fixnum[5] = Const Value(5)
               Return v4
-        "#]]);
-    }
-
-    #[test]
-    fn test_do_not_eliminate_array_set() {
-        eval("
-            def test(a)
-              c = [a]
-              5
-            end
-            test(3); test(4)
-        ");
-        assert_optimized_method_hir("test", expect![[r#"
-            fn test:
-            bb0(v0:BasicObject):
-              v3:ArrayExact = NewArray 1
-              ArraySet v3, 0, v0
-              v5:Fixnum[5] = Const Value(5)
-              Return v5
         "#]]);
     }
 
