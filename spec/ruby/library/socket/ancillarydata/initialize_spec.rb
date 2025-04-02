@@ -106,7 +106,7 @@ with_feature :ancillary_data do
         Socket::AncillaryData.new(:INET, :SOCKET, :RIGHTS, '').type.should == Socket::SCM_RIGHTS
       end
 
-      platform_is_not :"solaris2.10", :aix do
+      platform_is_not :aix do
         it 'sets the type to SCM_TIMESTAMP when using :TIMESTAMP as the type argument' do
           Socket::AncillaryData.new(:INET, :SOCKET, :TIMESTAMP, '').type.should == Socket::SCM_TIMESTAMP
         end
