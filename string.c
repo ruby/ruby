@@ -2874,14 +2874,16 @@ rb_check_string_type(VALUE str)
  *  call-seq:
  *    String.try_convert(object) -> object, new_string, or nil
  *
- *  If +object+ is a +String+ object, returns +object+.
+ *  Attempts to convert the given +object+ to a string.
+ *
+ *  If +object+ is already a string, returns +object+, unmodified.
  *
  *  Otherwise if +object+ responds to <tt>:to_str</tt>,
  *  calls <tt>object.to_str</tt> and returns the result.
  *
  *  Returns +nil+ if +object+ does not respond to <tt>:to_str</tt>.
  *
- *  Raises an exception unless <tt>object.to_str</tt> returns a +String+ object.
+ *  Raises an exception unless <tt>object.to_str</tt> returns a string.
  */
 static VALUE
 rb_str_s_try_convert(VALUE dummy, VALUE str)
