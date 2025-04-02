@@ -62,7 +62,7 @@ pub enum Opnd
     /// C argument register. The alloc_regs resolves its register dependencies.
     CArg(Reg),
 
-    /// Virtual register. Lowered to Reg in Assembler::alloc_regs().
+    /// Virtual register. Lowered to Reg or Mem in Assembler::alloc_regs().
     VReg{ idx: usize, num_bits: u8 },
 
     /// Basic block argument
