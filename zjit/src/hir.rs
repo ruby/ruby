@@ -297,10 +297,10 @@ pub enum Insn {
     //SetIvar {},
     //GetIvar {},
 
-    // Own a FrameStateId so that instructions can look up their dominating FrameStateId when
+    // Own a FrameState so that instructions can look up their dominating FrameState when
     // generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     // any code.
-    Snapshot { state: FrameStateId },
+    Snapshot { state: FrameState },
 
     // Unconditional jump
     Jump(BranchEdge),
@@ -316,19 +316,19 @@ pub enum Insn {
 
     // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
-    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: FrameStateId },
-    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: FrameStateId },
-    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, iseq: IseqPtr, args: Vec<InsnId>, state: FrameStateId },
+    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
+    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
     // Control flow instructions
     Return { val: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=
-    FixnumAdd  { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumSub  { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumMult { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumDiv  { left: InsnId, right: InsnId, state: FrameStateId },
-    FixnumMod  { left: InsnId, right: InsnId, state: FrameStateId },
+    FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
+    FixnumSub  { left: InsnId, right: InsnId, state: InsnId },
+    FixnumMult { left: InsnId, right: InsnId, state: InsnId },
+    FixnumDiv  { left: InsnId, right: InsnId, state: InsnId },
+    FixnumMod  { left: InsnId, right: InsnId, state: InsnId },
     FixnumEq   { left: InsnId, right: InsnId },
     FixnumNeq  { left: InsnId, right: InsnId },
     FixnumLt   { left: InsnId, right: InsnId },
@@ -337,9 +337,9 @@ pub enum Insn {
     FixnumGe   { left: InsnId, right: InsnId },
 
     /// Side-exit if val doesn't have the expected type.
-    GuardType { val: InsnId, guard_type: Type, state: FrameStateId },
+    GuardType { val: InsnId, guard_type: Type, state: InsnId },
     /// Side-exit if val is not the expected VALUE.
-    GuardBitEquals { val: InsnId, expected: VALUE, state: FrameStateId },
+    GuardBitEquals { val: InsnId, expected: VALUE, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -581,7 +581,6 @@ pub struct Function {
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
     entry_block: BlockId,
-    frame_states: Vec<FrameState>,
 }
 
 impl Function {
@@ -593,7 +592,6 @@ impl Function {
             union_find: UnionFind::new(),
             blocks: vec![Block::default()],
             entry_block: BlockId(0),
-            frame_states: vec![],
         }
     }
 
@@ -628,17 +626,12 @@ impl Function {
         self.insns.len()
     }
 
-    /// Store the given FrameState on the Function so that it can be cheaply referenced by
-    /// instructions.
-    fn push_frame_state(&mut self, state: FrameState) -> FrameStateId {
-        let id = FrameStateId(self.frame_states.len());
-        self.frame_states.push(state);
-        id
-    }
-
-    /// Return a reference to the FrameState at the given index.
-    pub fn frame_state(&self, id: FrameStateId) -> &FrameState {
-        &self.frame_states[id.0]
+    /// Return a reference to the FrameState at the given instruction index.
+    pub fn frame_state(&self, insn_id: InsnId) -> &FrameState {
+        match &self.insns[insn_id.0] {
+            Insn::Snapshot { state } => state,
+            insn => panic!("Unexpected non-Snapshot {insn} when looking up FrameState"),
+        }
     }
 
     fn new_block(&mut self) -> BlockId {
@@ -872,7 +865,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::SendWithoutBlock { self_val, call_info, cd, args, state } => {
-                        let frame_state = &self.frame_states[state.0];
+                        let frame_state = self.frame_state(state);
                         let self_type = match payload.get_operand_types(frame_state.insn_idx) {
                             Some([self_type, ..]) if self_type.is_top_self() => self_type,
                             _ => { self.push_insn_id(block, insn_id); continue; }
@@ -1108,9 +1101,6 @@ impl FrameState {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub struct FrameStateId(pub usize);
-
 /// Compute the index of a local variable from its slot index
 fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
     // Layout illustration
@@ -1315,8 +1305,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // Get the current pc and opcode
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
             state.pc = pc;
-            let exit_state = fun.push_frame_state(state.clone());
-            fun.push_insn(block, Insn::Snapshot { state: exit_state });
+            let exit_state = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
 
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
@@ -1572,7 +1561,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Generate guards for two fixnum outputs
-fn guard_two_fixnums(state: &mut FrameState, exit_state: FrameStateId, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
+fn guard_two_fixnums(state: &mut FrameState, exit_state: InsnId, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
     let left = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(1)?, guard_type: Fixnum, state: exit_state });
     let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum, state: exit_state });
 
