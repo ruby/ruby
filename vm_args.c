@@ -896,6 +896,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     if (ISEQ_BODY(iseq)->param.flags.has_rest) {
         if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest && args->argc == 0 && !args->rest && !ISEQ_BODY(iseq)->param.flags.has_post)) {
            *(locals + ISEQ_BODY(iseq)->param.rest_start) = args->rest = rb_cArray_empty_frozen;
+           args->rest_index = 0;
         }
         else {
             args_setup_rest_parameter(args, locals + ISEQ_BODY(iseq)->param.rest_start);

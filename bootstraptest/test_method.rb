@@ -1419,3 +1419,11 @@ assert_equal 'ok', %q{
     "ok"
   end
 }
+
+assert_equal 'ok', <<~RUBY
+  def test(*, kw: false)
+    "ok"
+  end
+
+  test
+RUBY
