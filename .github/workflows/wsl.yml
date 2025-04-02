@@ -44,6 +44,7 @@ jobs:
          working-dir: /tmp/github/
          exec: |
             DEBIAN_FRONTEND=noninteractive sudo apt update
+            DEBIAN_FRONTEND=noninteractive sudo apt upgrade -y
             DEBIAN_FRONTEND=noninteractive sudo apt install -y ruby build-essential autoconf libssl-dev libyaml-dev zlib1g-dev libgmp-dev libffi-dev
 
       - name: Check out the repository
