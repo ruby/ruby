@@ -202,9 +202,6 @@ impl Assembler
     const SCRATCH1: A64Opnd = A64Opnd::Reg(X17_REG);
 
     /// Get the list of registers from which we will allocate on this platform
-    /// These are caller-saved registers
-    /// Note: we intentionally exclude C_RET_REG (X0) from this list
-    /// because of the way it's used in gen_leave() and gen_leave_exit()
     pub fn get_alloc_regs() -> Vec<Reg> {
         ALLOC_REGS.to_vec()
     }
