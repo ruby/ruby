@@ -663,9 +663,9 @@ impl Function {
         self.insns.len()
     }
 
-    /// Return a reference to the FrameState at the given instruction index.
-    pub fn frame_state(&self, insn_id: InsnId) -> &FrameState {
-        match &self.insns[insn_id.0] {
+    /// Return a FrameState at the given instruction index.
+    pub fn frame_state(&self, insn_id: InsnId) -> FrameState {
+        match self.find(insn_id) {
             Insn::Snapshot { state } => state,
             insn => panic!("Unexpected non-Snapshot {insn} when looking up FrameState"),
         }
@@ -712,8 +712,18 @@ impl Function {
         let insn_id = self.union_find.find_const(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
-            result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..} | Snapshot {..}
+            result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..}
                     | Jump(_) | PatchPoint {..}) => result.clone(),
+            Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
+                Snapshot {
+                    state: FrameState {
+                        iseq: *iseq,
+                        insn_idx: *insn_idx,
+                        pc: *pc,
+                        stack: stack.iter().map(|v| find!(*v)).collect(),
+                        locals: locals.iter().map(|v| find!(*v)).collect(),
+                    }
+                },
             Return { val } => Return { val: find!(*val) },
             StringCopy { val } => StringCopy { val: find!(*val) },
             StringIntern { val } => StringIntern { val: find!(*val) },
