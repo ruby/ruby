@@ -1763,7 +1763,7 @@ class TestProcess < Test::Unit::TestCase
       status = nil
       Dir.chdir("vd") {
         dir = "#{d}/vd"
-        # OpenSolaris cannot remove the current directory.
+        # Windows cannot remove the current directory with permission issues.
         system(RUBY, "--disable-gems", "-e", "Dir.chdir '..'; Dir.rmdir #{dir.dump}", err: File::NULL)
         system({"RUBYLIB"=>nil}, RUBY, "--disable-gems", "-e", "exit true")
         status = $?
