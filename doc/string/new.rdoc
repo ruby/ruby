@@ -14,9 +14,6 @@ returns a new string with the same encoding as +string+:
   s0 = 'foo'.encode(Encoding::UTF_16)
   s1 = String.new(s0)
   s1.encoding # => #<Encoding:UTF-16 (dummy)>
-  s0 = ''.encode(Encoding::UTF_16)
-  s1 = String.new(s0)
-  s1.encoding # => #<Encoding:UTF-16 (dummy)>
 
 (Unlike \String.new,
 a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a

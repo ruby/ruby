@@ -1992,7 +1992,7 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
 /*
  *
  *  call-seq:
- *    String.new(string = '', **options) -> new_string
+ *    String.new(string = ''.encode(Encoding::ASCII_8BIT)) , **options) -> new_string
  *
  *  :include: doc/string/new.rdoc
  *
