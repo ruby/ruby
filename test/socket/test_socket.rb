@@ -513,7 +513,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_timestamp
-    return if /linux|freebsd|netbsd|openbsd|solaris|darwin/ !~ RUBY_PLATFORM
+    return if /linux|freebsd|netbsd|openbsd|darwin/ !~ RUBY_PLATFORM
     return if !defined?(Socket::AncillaryData) || !defined?(Socket::SO_TIMESTAMP)
     t1 = Time.now.strftime("%Y-%m-%d")
     stamp = nil
