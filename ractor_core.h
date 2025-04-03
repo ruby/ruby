@@ -315,7 +315,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 
-# ifdef __APPLE__
+# if defined(__arm64__) || defined(__aarch64__)
     rb_current_ec_set(ec);
 # else
     ruby_current_ec = ec;
