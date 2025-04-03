@@ -363,7 +363,7 @@ class TestEnv < Test::Unit::TestCase
     ENV.clear
     key = "VAR\u{e5 e1 e2 e4 e3 101 3042}"
     ENV[key] = "foo"
-    assert_equal(%{{"VAR\u{e5 e1 e2 e4 e3 101 3042}" => "foo"}}, ENV.inspect)
+    assert_equal(%{{#{(key.encode(ENCODING) rescue key.b).inspect} => "foo"}}, ENV.inspect)
   end
 
   def test_to_a
