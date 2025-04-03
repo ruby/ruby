@@ -1249,7 +1249,7 @@ end
 
 class TestNetHTTPLocalBind < Test::Unit::TestCase
   CONFIG = {
-    'host' => 'localhost',
+    'host' => '127.0.0.1',
     'proxy_host' => nil,
     'proxy_port' => nil,
   }
@@ -1286,7 +1286,7 @@ end
 
 class TestNetHTTPForceEncoding < Test::Unit::TestCase
   CONFIG = {
-    'host' => 'localhost',
+    'host' => '127.0.0.1',
     'proxy_host' => nil,
     'proxy_port' => nil,
   }
