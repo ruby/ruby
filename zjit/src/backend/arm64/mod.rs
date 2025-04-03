@@ -1276,7 +1276,7 @@ impl Assembler
 
         // Error if we couldn't write out everything
         if cb.has_dropped_bytes() {
-            return Err(EmitError::OutOfMemory)
+            Err(EmitError::OutOfMemory)
         } else {
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
@@ -1287,7 +1287,7 @@ impl Assembler
                 }
             }
 
-            return Ok(gc_offsets)
+            Ok(gc_offsets)
         }
     }
 

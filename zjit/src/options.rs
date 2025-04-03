@@ -111,7 +111,7 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
     }
 
     // Option successfully parsed
-    return Some(());
+    Some(())
 }
 
 /// Macro to print a message only when --zjit-debug is given

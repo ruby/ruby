@@ -736,14 +736,14 @@ impl Function {
             SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
-                cd: cd.clone(),
+                cd: *cd,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
             SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state } => SendWithoutBlockDirect {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
-                cd: cd.clone(),
+                cd: *cd,
                 iseq: *iseq,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
@@ -751,7 +751,7 @@ impl Function {
             Send { self_val, call_info, cd, blockiseq, args, state } => Send {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
-                cd: cd.clone(),
+                cd: *cd,
                 blockiseq: *blockiseq,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
@@ -1303,7 +1303,7 @@ impl FrameState {
     }
 
     fn as_args(&self) -> Vec<InsnId> {
-        self.locals.iter().chain(self.stack.iter()).map(|op| op.clone()).collect()
+        self.locals.iter().chain(self.stack.iter()).map(|op| *op).collect()
     }
 }
 

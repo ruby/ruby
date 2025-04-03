@@ -394,7 +394,7 @@ impl VALUE {
 
     /// Return true for a dynamic Ruby symbol (RB_DYNAMIC_SYM_P)
     fn dynamic_sym_p(self) -> bool {
-        return if self.special_const_p() {
+        if self.special_const_p() {
             false
         } else {
             self.builtin_type() == RUBY_T_SYMBOL
@@ -426,7 +426,7 @@ impl VALUE {
         let VALUE(cval) = self;
         let rbasic_ptr = cval as *const RBasic;
         let flags_bits: usize = unsafe { (*rbasic_ptr).flags }.as_usize();
-        return flags_bits;
+        flags_bits
     }
 
     pub fn class_of(self) -> VALUE {

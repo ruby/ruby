@@ -5,7 +5,7 @@
 
 use std::ptr::NonNull;
 
-use crate::{stats::zjit_alloc_size};
+use crate::stats::zjit_alloc_size;
 
 #[cfg(not(test))]
 pub type VirtualMem = VirtualMemory<sys::SystemAllocator>;
@@ -78,7 +78,7 @@ impl CodePtr {
     /// been any writes to it through the [VirtualMemory] yet.
     pub fn raw_ptr(self, base: &impl CodePtrBase) -> *const u8 {
         let CodePtr(offset) = self;
-        return base.base_ptr().as_ptr().wrapping_add(offset as usize)
+        base.base_ptr().as_ptr().wrapping_add(offset as usize)
     }
 
     /// Get the address of the code pointer.

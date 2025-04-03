@@ -160,7 +160,7 @@ impl Opnd
 
     /// Maps the indices from a previous list of instructions to a new list of
     /// instructions.
-    pub fn map_index(self, indices: &Vec<usize>) -> Opnd {
+    pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::VReg { idx, num_bits } => {
                 Opnd::VReg { idx: indices[idx], num_bits }
@@ -249,7 +249,7 @@ impl From<i64> for Opnd {
 
 impl From<i32> for Opnd {
     fn from(value: i32) -> Self {
-        Opnd::Imm(value.try_into().unwrap())
+        Opnd::Imm(value.into())
     }
 }
 
@@ -1027,7 +1027,7 @@ impl RegisterPool {
         assert_eq!(self.pool[reg_idx], None, "register already allocated");
         self.pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
-        return *reg;
+        *reg
     }
 
     // Mutate the pool to indicate that the given register is being returned
@@ -1395,7 +1395,7 @@ impl Assembler
             .filter(|&(reg, opnd)| Opnd::Reg(reg) != opnd).collect();
 
         let mut new_moves = vec![];
-        while old_moves.len() > 0 {
+        while !old_moves.is_empty() {
             // Keep taking safe moves
             while let Some(index) = find_safe_move(&old_moves) {
                 new_moves.push(old_moves.remove(index));
@@ -1403,7 +1403,7 @@ impl Assembler
 
             // No safe move. Load the source of one move into SCRATCH_REG, and
             // then load SCRATCH_REG into the destination when it's safe.
-            if old_moves.len() > 0 {
+            if !old_moves.is_empty() {
                 // Make sure it's safe to use SCRATCH_REG
                 assert!(old_moves.iter().all(|&(_, opnd)| opnd != Opnd::Reg(Assembler::SCRATCH_REG)));
 
@@ -1499,7 +1499,7 @@ impl Assembler
                     }
                     // On x86_64, maintain 16-byte stack alignment
                     if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                        asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0.clone()));
+                        asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
                     }
                 }
                 _ => {},
