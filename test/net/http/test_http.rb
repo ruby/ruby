@@ -589,9 +589,9 @@ module TestNetHTTP_version_1_1_methods
       port = server.addr[1]
 
       conn = Net::HTTP.new('localhost', port)
-      conn.write_timeout = 0.01
-      conn.read_timeout = 0.01 if windows?
-      conn.open_timeout = 1
+      conn.write_timeout = EnvUtil.apply_timeout_scale(0.01)
+      conn.read_timeout = EnvUtil.apply_timeout_scale(0.01) if windows?
+      conn.open_timeout = EnvUtil.apply_timeout_scale(1)
 
       req = Net::HTTP::Post.new('/')
       data = "a"*50_000_000
