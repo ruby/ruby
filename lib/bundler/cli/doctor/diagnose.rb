@@ -4,7 +4,7 @@ require "rbconfig"
 require "shellwords"
 
 module Bundler
-  class CLI::Doctor
+  class CLI::Doctor::Diagnose
     DARWIN_REGEX = /\s+(.+) \(compatibility /
     LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/
 
