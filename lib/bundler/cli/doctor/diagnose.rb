@@ -69,10 +69,16 @@ module Bundler
       Bundler::CLI::Check.new({}).run
     end
 
+    def diagnose_ssl
+      require_relative "ssl"
+      Bundler::CLI::Doctor::SSL.new({}).run
+    end
+
     def run
       Bundler.ui.level = "warn" if options[:quiet]
       Bundler.settings.validate!
       check!
+      diagnose_ssl if options[:ssl]
 
       definition = Bundler.definition
       broken_links = {}

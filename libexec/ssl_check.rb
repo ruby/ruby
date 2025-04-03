@@ -1,22 +1,6 @@
 #!/usr/bin/env ruby
 # Encoding: utf-8
 
-if RUBY_VERSION < "2.7"
-  warn "!!! WARNING !!!",
-        "Ruby #{RUBY_VERSION} has reached end-of-life, and is unsupported.",
-        "This script may not work.",
-        ""
-end
-
-if ARGV.include?("-h") || ARGV.include?("--help")
-  puts "USAGE: check.rb [HOSTNAME] [TLS_VERSION] [VERIFY]"
-  puts "  default: check.rb rubygems.org auto VERIFY_PEER"
-  puts "  example: check.rb github.com TLSv1_2 VERIFY_NONE"
-  exit 0
-end
-
-host = ARGV.shift || "rubygems.org"
-
 require 'uri'
 require 'net/http'
 
@@ -40,8 +24,6 @@ rescue LoadError
 end
 
 uri = URI("https://#{host}")
-tls_version = ARGV.shift
-verify_mode = ARGV.any? ? OpenSSL::SSL.const_get(ARGV.shift) : OpenSSL::SSL::VERIFY_PEER
 
 if defined?(RUBY_DESCRIPTION)
   ruby_version = RUBY_DESCRIPTION
