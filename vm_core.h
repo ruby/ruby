@@ -940,37 +940,16 @@ typedef void *rb_jmpbuf_t[5];
   Therefore, we allocates the buffer on the heap on such
   environments.
 */
-typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
+typedef struct _rb_vm_tag_jmpbuf {
+    struct _rb_vm_tag_jmpbuf *next;
+    rb_jmpbuf_t buf;
+} *rb_vm_tag_jmpbuf_t;
 
-#define RB_VM_TAG_JMPBUF_GET(buf) (*buf)
-
-static inline void
-rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
-{
-    *jmpbuf = ruby_xmalloc(sizeof(rb_jmpbuf_t));
-}
-
-static inline void
-rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
-{
-    ruby_xfree(*jmpbuf);
-}
+#define RB_VM_TAG_JMPBUF_GET(jmpbuf) ((jmpbuf)->buf)
 #else
 typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
 
-#define RB_VM_TAG_JMPBUF_GET(buf) (buf)
-
-static inline void
-rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
-{
-    // no-op
-}
-
-static inline void
-rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
-{
-    // no-op
-}
+#define RB_VM_TAG_JMPBUF_GET(jmpbuf) (jmpbuf)
 #endif
 
 /*
@@ -985,6 +964,54 @@ struct rb_vm_tag {
     enum ruby_tag_type state;
     unsigned int lock_rec;
 };
+
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+static inline void
+_rb_vm_tag_jmpbuf_deinit_internal(rb_vm_tag_jmpbuf_t jmpbuf)
+{
+    rb_vm_tag_jmpbuf_t buf = jmpbuf;
+    while (buf != NULL) {
+        rb_vm_tag_jmpbuf_t next = buf->next;
+        ruby_xfree(buf);
+        buf = next;
+    }
+}
+
+static inline void
+rb_vm_tag_jmpbuf_init(struct rb_vm_tag *tag)
+{
+    if (tag->prev != NULL && tag->prev->buf->next != NULL) {
+        _rb_vm_tag_jmpbuf_deinit_internal(tag->prev->buf->next);
+        tag->prev->buf->next = NULL;
+    }
+    tag->buf = ruby_xmalloc(sizeof *tag->buf);
+    tag->buf->next = NULL;
+    if (tag->prev != NULL) {
+        tag->prev->buf->next = tag->buf;
+    }
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(struct rb_vm_tag *tag)
+{
+    if (tag->prev != NULL) {
+        tag->prev->buf->next = NULL;
+    }
+    _rb_vm_tag_jmpbuf_deinit_internal(tag->buf);
+}
+#else
+static inline void
+rb_vm_tag_jmpbuf_init(struct rb_vm_tag *tag)
+{
+    // no-op
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(struct rb_vm_tag *tag)
+{
+    // no-op
+}
+#endif
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
 STATIC_ASSERT(rb_vm_tag_buf_end,
