@@ -1022,7 +1022,8 @@ impl RegisterPool {
 
     /// Allocate a specific register
     fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Reg {
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
+        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
+            .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
         assert_eq!(self.pool[reg_idx], None, "register already allocated");
         self.pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
@@ -1032,7 +1033,8 @@ impl RegisterPool {
     // Mutate the pool to indicate that the given register is being returned
     // as it is no longer used by the instruction that previously held it.
     fn dealloc_reg(&mut self, reg: &Reg) {
-        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no).unwrap();
+        let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
+            .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
         if self.pool[reg_idx].is_some() {
             self.pool[reg_idx] = None;
             self.live_regs -= 1;
