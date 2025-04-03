@@ -65,7 +65,7 @@ module Bundler
     end
 
     def check!
-      require_relative "check"
+      require_relative "../check"
       Bundler::CLI::Check.new({}).run
     end
 
