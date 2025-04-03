@@ -211,7 +211,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]
     assert_equal stat[:heap_live_slots], stat[:total_allocated_objects] - stat[:total_freed_objects] - stat[:heap_final_slots]
-    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages]
+    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages] + stat[:heap_empty_pages]
 
     if use_rgengc?
       assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count]
@@ -679,10 +679,29 @@ class TestGc < Test::Unit::TestCase
 
       # Should not be thrashing in page creation
       assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
-      assert_equal 0, after_stats[:heap_empty_pages], debug_msg
       assert_equal 0, after_stats[:total_freed_pages], debug_msg
       # Only young objects, so should not trigger major GC
       assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
+    RUBY
+  end
+
+  def test_heaps_grow_independently
+    # [Bug #21214]
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 60)
+      COUNT = 1_000_000
+
+      def allocate_small_object = []
+      def allocate_large_object = Array.new(10)
+
+      @arys = Array.new(COUNT) do
+        # Allocate 10 small transient objects
+        10.times { allocate_small_object }
+        # Allocate 1 large object that is persistent
+        allocate_large_object
+      end
+
+      assert_operator(GC.stat(:heap_available_slots), :<, COUNT * 2)
     RUBY
   end
 
