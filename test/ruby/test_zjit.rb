@@ -147,6 +147,14 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_lt_with_literal_lhs
+    assert_compiles '[false, false, true]', %q{
+      def test(n) = 2 < n
+      test(2) # profile opt_lt
+      [test(1), test(2), test(3)]
+    }, call_threshold: 2
+  end
+
   def test_opt_le
     assert_compiles '[true, true, false]', %q{
       def test(a, b) = a <= b

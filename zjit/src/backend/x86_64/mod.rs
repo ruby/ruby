@@ -202,9 +202,17 @@ impl Assembler
                             asm.push_insn(Insn::Test { left: *left, right: *left });
                         }
                         _ => {
-                            if let (Opnd::Mem(_), Opnd::Mem(_)) = (&left, &right) {
-                                let loaded = asm.load(*right);
-                                *right = loaded;
+                            // Split the instruction if `cmp` can't be encoded with given operands
+                            match (&left, &right) {
+                                // One of the operands should not be a memory operand
+                                (Opnd::Mem(_), Opnd::Mem(_)) => {
+                                    *right = asm.load(*right);
+                                }
+                                // The left operand needs to be either a register or a memory operand
+                                (Opnd::UImm(_) | Opnd::Imm(_), _) => {
+                                    *left = asm.load(*left);
+                                }
+                                _ => {},
                             }
                             asm.push_insn(insn);
                         }
