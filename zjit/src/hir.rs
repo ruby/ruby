@@ -2352,13 +2352,13 @@ mod tests {
     fn test_loop() {
         eval("
             def test
-                result = 0
-                times = 10
-                while times > 0
-                    result = result + 1
-                    times = times - 1
-                end
-                result
+              result = 0
+              times = 10
+              while times > 0
+                result = result + 1
+                times = times - 1
+              end
+              result
             end
             test
         ");
@@ -2416,12 +2416,12 @@ mod tests {
     fn test_display_types() {
         eval("
             def test
-                cond = true
-                if cond
-                    3
-                else
-                    4
-                end
+              cond = true
+              if cond
+                3
+              else
+                4
+              end
             end
         ");
         assert_method_hir("test", expect![[r#"
@@ -2520,12 +2520,12 @@ mod opt_tests {
     fn test_fold_iftrue_away() {
         eval("
             def test
-                cond = true
-                if cond
-                    3
-                else
-                    4
-                end
+              cond = true
+              if cond
+                3
+              else
+                4
+              end
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
@@ -2540,12 +2540,12 @@ mod opt_tests {
     fn test_fold_iftrue_into_jump() {
         eval("
             def test
-                cond = false
-                if cond
-                    3
-                else
-                    4
-                end
+              cond = false
+              if cond
+                3
+              else
+                4
+              end
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
@@ -2563,7 +2563,7 @@ mod opt_tests {
     fn test_fold_fixnum_add() {
         eval("
             def test
-                1 + 2 + 3
+              1 + 2 + 3
             end
             test; test
         ");
