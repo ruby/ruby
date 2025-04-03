@@ -204,7 +204,7 @@ END
   end
 
   def test_graceful_parsing_failure #[ruby-core:43250]
-    contents = File.read(__FILE__)
+    contents = "not a valid PKCS #7 PEM block"
     assert_raise(ArgumentError) { OpenSSL::PKCS7.new(contents) }
   end
 
