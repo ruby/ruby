@@ -2596,7 +2596,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     else {
         body->is_entries = NULL;
     }
-    body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
+
+    if (body->ci_size) {
+        body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
+    }
+    else {
+        body->call_data = NULL;
+    }
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
     // Calculate the bitmask buffer size.
@@ -13370,6 +13376,11 @@ ibf_load_ci_entries(const struct ibf_load *load,
                     unsigned int ci_size,
                     struct rb_call_data **cd_ptr)
 {
+    if (!ci_size) {
+        *cd_ptr = NULL;
+        return;
+    }
+
     ibf_offset_t reading_pos = ci_entries_offset;
 
     unsigned int i;
