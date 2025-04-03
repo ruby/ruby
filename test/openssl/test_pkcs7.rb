@@ -46,13 +46,15 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    # AWS-LC does not generate authenticatedAttributes
+    assert_in_delta(Time.now, signers[0].signed_time, 10) unless aws_lc?
 
     # Normally OpenSSL tries to translate the supplied content into canonical
     # MIME format (e.g. a newline character is converted into CR+LF).
     # If the content is a binary, PKCS7::BINARY flag should be used.
 
     data = "aaaaa\nbbbbb\nccccc\n"
-    flag = OpenSSL::PKCS7::BINARY
+    flag = OpenSSL::PKCS7::BINARY | OpenSSL::PKCS7::NOATTR
     tmp = OpenSSL::PKCS7.sign(@ee1_cert, @rsa1024, data, ca_certs, flag)
     p7 = OpenSSL::PKCS7.new(tmp.to_der)
     certs = p7.certificates
@@ -65,6 +67,7 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { signers[0].signed_time }
 
     # A signed-data which have multiple signatures can be created
     # through the following steps.
@@ -131,6 +134,50 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
     assert_equal(1, signers.size)
     assert_equal(@ee1_cert.serial, signers[0].serial)
     assert_equal(@ee1_cert.issuer.to_s, signers[0].issuer.to_s)
+  end
+
+  def test_signed_authenticated_attributes
+    # Using static PEM data because AWS-LC does not support generating one
+    # with authenticatedAttributes.
+    #
+    # p7 was generated with OpenSSL 3.4.1 with this program with commandline
+    # "faketime 2025-04-03Z ruby prog.rb":
+    #
+    #   require_relative "test/openssl/utils"
+    #   include OpenSSL::TestUtils
+    #   key = Fixtures.pkey("p256")
+    #   cert = issue_cert(OpenSSL::X509::Name.new([["CN", "cert"]]), key, 1, [], nil, nil)
+    #   p7 = OpenSSL::PKCS7.sign(cert, key, "content", [])
+    #   puts p7.to_pem
+    p7 = OpenSSL::PKCS7.new(<<~EOF)
+-----BEGIN PKCS7-----
+MIICvgYJKoZIhvcNAQcCoIICrzCCAqsCAQExDzANBglghkgBZQMEAgEFADAWBgkq
+hkiG9w0BBwGgCQQHY29udGVudKCCAQ4wggEKMIGxoAMCAQICAQEwCgYIKoZIzj0E
+AwIwDzENMAsGA1UEAwwEY2VydDAeFw0yNTA0MDIyMzAwMDFaFw0yNTA0MDMwMTAw
+MDFaMA8xDTALBgNVBAMMBGNlcnQwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAAQW
+CWTZz6hVQgpDrh5kb1uEs09YHuVJn8CsrjV4bLnADNT/QbnVe20J4FSX4xqFm2f1
+87Ukp0XiomZLf11eekQ2MAoGCCqGSM49BAMCA0gAMEUCIEg1fDI8b3hZAArgniVk
+HeM6puwgcMh5NXwvJ9x0unVmAiEAppecVTSQ+yEPyBG415Og6sK+RC78pcByEC81
+C/QSwRYxggFpMIIBZQIBATAUMA8xDTALBgNVBAMMBGNlcnQCAQEwDQYJYIZIAWUD
+BAIBBQCggeQwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUx
+DxcNMjUwNDAzMDAwMDAxWjAvBgkqhkiG9w0BCQQxIgQg7XACtDnprIRfIjV9gius
+FERzD722AW0+yUMil7nsn3MweQYJKoZIhvcNAQkPMWwwajALBglghkgBZQMEASow
+CwYJYIZIAWUDBAEWMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzAOBggqhkiG9w0D
+AgICAIAwDQYIKoZIhvcNAwICAUAwBwYFKw4DAgcwDQYIKoZIhvcNAwICASgwCgYI
+KoZIzj0EAwIESDBGAiEAssymc28HySAhg+XeWIpSbtzkwycr2JG6dzHRZ+vn0ocC
+IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
+-----END PKCS7-----
+    EOF
+
+    cert = p7.certificates[0]
+    store = OpenSSL::X509::Store.new.tap { |store|
+      store.time = Time.utc(2025, 4, 3)
+      store.add_cert(cert)
+    }
+    assert_equal(true, p7.verify([], store))
+    assert_equal(1, p7.signers.size)
+    signer = p7.signers[0]
+    assert_in_delta(Time.utc(2025, 4, 3), signer.signed_time, 10)
   end
 
   def test_enveloped
@@ -307,80 +354,34 @@ END
     end
   end
 
-  def test_split_content
-     pend "AWS-LC ASN.1 parsers has no current support for parsing indefinite BER constructed strings" if aws_lc?
+  def test_decode_ber_constructed_string
+    pend "AWS-LC ASN.1 parsers has no current support for parsing indefinite BER constructed strings" if aws_lc?
 
-     pki_message_pem = <<END
------BEGIN PKCS7-----
-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
------END PKCS7-----
-END
-    pki_message_content_pem = <<END
------BEGIN PKCS7-----
-MIIDawYJKoZIhvcNAQcDoIIDXDCCA1gCAQAxggEQMIIBDAIBADB1MHAxEDAOBgNV
-BAoMB2V4YW1wbGUxFzAVBgNVBAMMDlRBUk1BQyBST09UIENBMSIwIAYJKoZIhvcN
-AQkBFhNzb21lb25lQGV4YW1wbGUub3JnMQswCQYDVQQGEwJVUzESMBAGA1UEBwwJ
-VG93biBIYWxsAgFmMA0GCSqGSIb3DQEBAQUABIGAbKV17HvGYRtRRBNz1QLpW763
-UedhVj5KXi70o4BJGM04lItAgt6aFC9SruZjpWr1gCYKCaRSAg273DeGTQwsDoZ8
-6CPXzBpptYLz0MteQXYYWUaPZT+xmvx4NgDyk9P9MoT7JifsPrtXuzqCRFXhGdu8
-d/ru+OWxhHLvKH+bYekwggI9BgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECBNs2U5m
-Msd/gIICGFOnLq/EAc9Nv+HjKR3ZVPSJMq0TImjGf5Mvc3nDgI572Hdo2aku0YXM
-6WjSWkpYtxpg7Cqxfl6hPSefLPUnBqlIoM2qbrE7MSKEVD6+2bW9GqYPFVg4qQLL
-sOxnxJIMfOvLFfd7guL+iLH424XfiUUxaf8EdZE4u2IEl4REvkS1FoEGwyA4BEGM
-SeVPedQCbZ0qY7Pc2tmZE3XfEUhIsyStG0Nb6i6AKcAFYGapbgE6kAB0gwsYcHlW
-MOvsvdAfcTq6jwtHlO1s68qtvkWquTQ9lpX+fzddUUNxEHSqv5eU3oo6fT3Vj5ZF
-IVlaA5ThZMrI5PgRPuwJM4GL8/VLwY5mbDLFqn/irGeEvP99J3S87ornLLunjpxS
-y1/AymcVep2H32Tj82WS/IRQXBOzz4EnQRJGszKxAV6tY+Zje3sWyTTgObhlsiTQ
-TDgnvtSW8RvVHqKrwgkxxEsRHg7u8UdzZ0jg+O5+3F8B6/NWMyts0OaFqT9wvI8y
-O7VIy3dUtGdz7Hde6Ggp/iTn1LbgdJ3N8Hzxf1j6NMWUKHVsadvwpRJbUeqq9c3+
-QuxsJi8wWemxxQCE+tPyc1dP+ej5/M7bERbSOHMGgX03758IvP7A/fy2DjGPv2+l
-AwlEke0Uze1367QKgxM0nc3SZDlptY7zPIJC5saWXb8Rt2bw2JxEBOTavrp+ZwJ8
-tcH961onq8Tme2ICaCzk
------END PKCS7-----
-END
-    pki_msg = OpenSSL::PKCS7.new(pki_message_pem)
-    store = OpenSSL::X509::Store.new
-    assert_equal(true, pki_msg.verify(nil, store, nil, OpenSSL::PKCS7::NOVERIFY))
-    p7enc = OpenSSL::PKCS7.new(pki_msg.data)
-    assert_equal(pki_message_content_pem, p7enc.to_pem)
+    p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], "content", "aes-128-cbc")
+
+    # Make an equivalent BER to p7.to_der. Here we convert the encryptedContent
+    # field of EncryptedContentInfo into a constructed encoding using the
+    # indefinite length form.
+    # See https://www.rfc-editor.org/rfc/rfc2315#section-10.1
+    asn1 = OpenSSL::ASN1.decode(p7.to_der)
+    asn1.indefinite_length = true
+    enveloped_data_explicit_tag = asn1.value[1]
+    enveloped_data_explicit_tag.indefinite_length = true
+    enveloped_data = enveloped_data_explicit_tag.value[0]
+    enveloped_data.indefinite_length = true
+    encrypted_content_info = enveloped_data.value[2]
+    encrypted_content_info.indefinite_length = true
+    orig = encrypted_content_info.value[2]
+    encrypted_content_info.value[2] = OpenSSL::ASN1::ASN1Data.new([
+      OpenSSL::ASN1::OctetString(orig.value[...5]),
+      OpenSSL::ASN1::OctetString(orig.value[5...]),
+    ], 0, :CONTEXT_SPECIFIC).tap { |x| x.indefinite_length = true }
+
+    assert_not_equal(p7.to_der, asn1.to_der)
+    assert_equal(p7.to_der, OpenSSL::PKCS7.new(asn1.to_der).to_der)
+
+    assert_equal("content", OpenSSL::PKCS7.new(p7.to_der).decrypt(@rsa1024))
+    assert_equal("content", OpenSSL::PKCS7.new(asn1.to_der).decrypt(@rsa1024))
   end
 end
 
