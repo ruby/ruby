@@ -941,8 +941,9 @@ typedef void *rb_jmpbuf_t[5];
   environments.
 */
 typedef struct _rb_vm_tag_jmpbuf {
-    struct _rb_vm_tag_jmpbuf *next;
     rb_jmpbuf_t buf;
+    struct _rb_vm_tag_jmpbuf *next;
+    bool has_setjmp;
 } *rb_vm_tag_jmpbuf_t;
 
 #define RB_VM_TAG_JMPBUF_GET(jmpbuf) ((jmpbuf)->buf)
@@ -980,12 +981,13 @@ _rb_vm_tag_jmpbuf_deinit_internal(rb_vm_tag_jmpbuf_t jmpbuf)
 static inline void
 rb_vm_tag_jmpbuf_init(struct rb_vm_tag *tag)
 {
-    if (tag->prev != NULL && tag->prev->buf->next != NULL) {
+    if (tag->prev != NULL && tag->prev->buf->has_setjmp && tag->prev->buf->next != NULL) {
         _rb_vm_tag_jmpbuf_deinit_internal(tag->prev->buf->next);
         tag->prev->buf->next = NULL;
     }
     tag->buf = ruby_xmalloc(sizeof *tag->buf);
     tag->buf->next = NULL;
+    tag->buf->has_setjmp = false;
     if (tag->prev != NULL) {
         tag->prev->buf->next = tag->buf;
     }
@@ -997,7 +999,11 @@ rb_vm_tag_jmpbuf_deinit(struct rb_vm_tag *tag)
     if (tag->prev != NULL) {
         tag->prev->buf->next = NULL;
     }
-    _rb_vm_tag_jmpbuf_deinit_internal(tag->buf);
+    if (tag->buf->has_setjmp) {
+        _rb_vm_tag_jmpbuf_deinit_internal(tag->buf);
+    } else {
+        ruby_xfree(tag->buf);
+    }
 }
 #else
 static inline void

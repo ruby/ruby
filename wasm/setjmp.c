@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdbool.h>
+#include "vm_core.h"
 #include "wasm/asyncify.h"
 #include "wasm/machine.h"
 #include "wasm/setjmp.h"
@@ -49,6 +50,13 @@
 #else
 # define RB_WASM_DEBUG_LOG(msg)
 #endif
+
+#define RB_WASM_EC_REGISTER_SETJMP() do { \
+    extern rb_execution_context_t *ruby_current_ec; \
+    if (ruby_current_ec->tag != NULL) { \
+        ruby_current_ec->tag->buf->has_setjmp = true; \
+    } \
+} while (0)
 
 enum rb_wasm_jmp_buf_state {
     // Initial state
@@ -82,6 +90,7 @@ _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
     switch (env->state) {
     case JMP_BUF_STATE_INITIALIZED: {
         RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_INITIALIZED");
+        RB_WASM_EC_REGISTER_SETJMP();
         env->state = JMP_BUF_STATE_CAPTURING;
         env->payload = 0;
         env->longjmp_buf_ptr = NULL;
@@ -144,6 +153,7 @@ rb_wasm_try_catch_init(struct rb_wasm_try_catch *try_catch,
     try_catch->catch_f = catch_f;
     try_catch->context = context;
     try_catch->stack_pointer = NULL;
+    RB_WASM_EC_REGISTER_SETJMP();
 }
 
 // NOTE: This function is not processed by Asyncify due to a call of asyncify_stop_rewind
