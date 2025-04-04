@@ -2659,14 +2659,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA(d)->type->function.dmark
 
 void
-rb_gc_ractor_moved(VALUE dest, VALUE src)
-{
-    rb_gc_obj_free(rb_gc_get_objspace(), src);
-    MEMZERO((void *)src, char, rb_gc_obj_slot_size(src));
-    RBASIC(src)->flags = T_OBJECT | FL_FREEZE; // Avoid mutations using bind_call, etc.
-}
-
-void
 rb_gc_mark_children(void *objspace, VALUE obj)
 {
     if (FL_TEST(obj, FL_EXIVAR)) {
