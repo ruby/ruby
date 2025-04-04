@@ -12923,7 +12923,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
-    int ic_index = 0;
+    unsigned int ic_index = 0;
 
     iseq_bits_t * mark_offset_bits;
 
@@ -12999,6 +12999,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
+                    RUBY_ASSERT(ic_index <= load_body->ic_size);
                     ic->segments = array_to_idlist(arr);
 
                     code[code_index] = (VALUE)ic;
