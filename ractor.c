@@ -3345,25 +3345,21 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
     }
 
-    if (!data->move) {
-        obj = replacement;
-    }
-
 #define CHECK_AND_REPLACE(v) do { \
     VALUE _val = (v); \
     if (obj_traverse_replace_i(_val, data)) { return 1; } \
-    else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
+    else if (data->replacement != _val)     { RB_OBJ_WRITE(replacement, &v, data->replacement); } \
 } while (0)
 
-    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+    if (UNLIKELY(FL_TEST_RAW(replacement, FL_EXIVAR))) {
         struct gen_ivtbl *ivtbl;
-        rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
+        rb_ivar_generic_ivtbl_lookup(replacement, &ivtbl);
 
-        if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
+        if (UNLIKELY(rb_shape_obj_too_complex(replacement))) {
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
-                .src = obj,
+                .src = replacement,
             };
             rb_st_foreach_with_replace(
                 ivtbl->as.complex.table,
@@ -3392,19 +3388,19 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_MATCH:
         break;
       case T_STRING:
-        rb_str_make_independent(obj);
+        rb_str_make_independent(replacement);
         break;
 
       case T_OBJECT:
         {
-            if (rb_shape_obj_too_complex(obj)) {
+            if (rb_shape_obj_too_complex(replacement)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
-                    .src = obj,
+                    .src = replacement,
                 };
                 rb_st_foreach_with_replace(
-                    ROBJECT_IV_HASH(obj),
+                    ROBJECT_IV_HASH(replacement),
                     obj_iv_hash_traverse_replace_foreach_i,
                     obj_iv_hash_traverse_replace_i,
                     (st_data_t)&d
@@ -3412,8 +3408,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_IV_COUNT(obj);
-                VALUE *ptr = ROBJECT_IVPTR(obj);
+                uint32_t len = ROBJECT_IV_COUNT(replacement);
+                VALUE *ptr = ROBJECT_IVPTR(replacement);
 
                 for (uint32_t i = 0; i < len; i++) {
                     CHECK_AND_REPLACE(ptr[i]);
@@ -3424,19 +3420,19 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_ARRAY:
         {
-            rb_ary_cancel_sharing(obj);
+            rb_ary_cancel_sharing(replacement);
 
-            for (int i = 0; i < RARRAY_LENINT(obj); i++) {
-                VALUE e = rb_ary_entry(obj, i);
+            for (int i = 0; i < RARRAY_LENINT(replacement); i++) {
+                VALUE e = rb_ary_entry(replacement, i);
 
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
                 }
                 else if (e != data->replacement) {
-                    RARRAY_ASET(obj, i, data->replacement);
+                    RARRAY_ASET(replacement, i, data->replacement);
                 }
             }
-            RB_GC_GUARD(obj);
+            RB_GC_GUARD(replacement);
         }
         break;
       case T_HASH:
@@ -3444,9 +3440,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
-                .src = obj,
+                .src = replacement,
             };
-            rb_hash_stlike_foreach_with_replace(obj,
+            rb_hash_stlike_foreach_with_replace(replacement,
                                                 obj_hash_traverse_replace_foreach_i,
                                                 obj_hash_traverse_replace_i,
                                                 (VALUE)&d);
@@ -3458,15 +3454,15 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 return 1;
             }
             else if (ifnone != data->replacement) {
-                RHASH_SET_IFNONE(obj, data->replacement);
+                RHASH_SET_IFNONE(replacement, data->replacement);
             }
         }
         break;
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN(obj);
-            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
+            long len = RSTRUCT_LEN(replacement);
+            const VALUE *ptr = RSTRUCT_CONST_PTR(replacement);
 
             for (long i=0; i<len; i++) {
                 CHECK_AND_REPLACE(ptr[i]);
@@ -3475,16 +3471,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
 
       case T_RATIONAL:
-        CHECK_AND_REPLACE(RRATIONAL(obj)->num);
-        CHECK_AND_REPLACE(RRATIONAL(obj)->den);
+        CHECK_AND_REPLACE(RRATIONAL(replacement)->num);
+        CHECK_AND_REPLACE(RRATIONAL(replacement)->den);
         break;
       case T_COMPLEX:
-        CHECK_AND_REPLACE(RCOMPLEX(obj)->real);
-        CHECK_AND_REPLACE(RCOMPLEX(obj)->imag);
+        CHECK_AND_REPLACE(RCOMPLEX(replacement)->real);
+        CHECK_AND_REPLACE(RCOMPLEX(replacement)->imag);
         break;
 
       case T_DATA:
-        if (!data->move && obj_refer_only_shareables_p(obj)) {
+        if (!data->move && obj_refer_only_shareables_p(replacement)) {
             break;
         }
         else {
