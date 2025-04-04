@@ -378,6 +378,8 @@ fn gen_send_without_block(
         rb_vm_opt_send_without_block as *const u8,
         vec![EC, CFP, (cd as usize).into()],
     );
+    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
 
     Some(ret)
 }

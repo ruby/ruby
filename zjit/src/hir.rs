@@ -109,7 +109,17 @@ pub enum Invariant {
         klass: VALUE,
         /// The method ID of the method we want to assume unchanged
         method: ID,
-    }
+    },
+    /// Any send target can reflectively inspect its call-stack and modify parent call frame
+    /// locals. If that happens, we need to side-exit after the call returns because our
+    /// assumptions and type checks may have been invalidated behind our backs.
+    CalleeModifiedLocals {
+        /// The Send instruction that caused this PatchPoint to be emitted. If by the time we are
+        /// generating LIR the send is no longer a Send(WithoutBlock)(Direct) (meaning it has been
+        /// optimized into a FixnumAdd or similar), we need not emit the PatchPoint; we know the
+        /// function is well-behaved.
+        send: InsnId,
+    },
 }
 
 impl Invariant {
@@ -159,6 +169,9 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()),
                     self.ptr_map.map_id(method)
                 )
+            }
+            Invariant::CalleeModifiedLocals { send } => {
+                write!(f, "CalleeModifiedLocals({send})")
             }
         }
     }
@@ -712,6 +725,7 @@ impl Function {
         let insn_id = self.union_find.find_const(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
+            PatchPoint(Invariant::CalleeModifiedLocals { send }) => PatchPoint(Invariant::CalleeModifiedLocals { send: find!(*send) }),
             result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..}
                     | Jump(_) | PatchPoint {..}) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
@@ -1472,7 +1486,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         };
                         let right = state.stack_pop()?;
                         let left = state.stack_pop()?;
-                        state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_id }));
+                        let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_id });
+                        state.stack_push(send);
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                     }
                 };
             }
@@ -1565,7 +1581,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_id }));
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_id });
+                    state.stack_push(send);
+                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -1637,7 +1655,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let right = state.stack_pop()?;
                     let left = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_id }));
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_id });
+                    state.stack_push(send);
+                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 YARVINSN_opt_aset => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
@@ -1645,7 +1665,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let obj = state.stack_pop()?;
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_id });
+                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                     state.stack_push(set);
                 }
 
@@ -1672,7 +1693,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    state.stack_push(fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id }));
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    state.stack_push(send);
+                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
@@ -1692,7 +1715,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    state.stack_push(fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id }));
+                    let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
+                    state.stack_push(send);
+                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
@@ -2125,6 +2150,7 @@ mod tests {
               v1:Fixnum[1] = Const Value(1)
               v2:Fixnum[2] = Const Value(2)
               v4:BasicObject = SendWithoutBlock v1, :+, v2
+              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2478,6 +2504,7 @@ mod tests {
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[3] = Const Value(3)
               v5:BasicObject = SendWithoutBlock v1, :bar, v2, v3
+              PatchPoint CalleeModifiedLocals(v5)
               Return v5
         "#]]);
     }
@@ -2496,6 +2523,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject):
               v3:BasicObject = Send v0, 0x1000, :each
+              PatchPoint CalleeModifiedLocals(v3)
               Return v3
         "#]]);
     }
@@ -2518,6 +2546,7 @@ mod tests {
               v8:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
               v9:StringExact = StringCopy v8
               v11:BasicObject = SendWithoutBlock v1, :unknown_method, v3, v5, v7, v9
+              PatchPoint CalleeModifiedLocals(v11)
               Return v11
         "#]]);
     }
@@ -2698,9 +2727,10 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
-              Return v7
+              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
+              PatchPoint CalleeModifiedLocals(v8)
+              Return v8
         "#]]);
     }
 
@@ -2720,6 +2750,7 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               v3:BasicObject = SendWithoutBlock v1, :foo
+              PatchPoint CalleeModifiedLocals(v3)
               Return v3
         "#]]);
     }
@@ -2740,9 +2771,10 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
-              Return v7
+              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
+              PatchPoint CalleeModifiedLocals(v8)
+              Return v8
         "#]]);
     }
 
@@ -2760,9 +2792,10 @@ mod opt_tests {
               v1:BasicObject = PutSelf
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008)
-              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1018), v2
-              Return v8
+              v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v9:BasicObject = SendWithoutBlockDirect v8, :Integer (0x1018), v2
+              PatchPoint CalleeModifiedLocals(v9)
+              Return v9
         "#]]);
     }
 
@@ -2783,9 +2816,10 @@ mod opt_tests {
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1018), v2, v3
-              Return v9
+              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v10:BasicObject = SendWithoutBlockDirect v9, :foo (0x1018), v2, v3
+              PatchPoint CalleeModifiedLocals(v10)
+              Return v10
         "#]]);
     }
 
@@ -2807,13 +2841,15 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v10:BasicObject = SendWithoutBlockDirect v9, :foo (0x1018)
-              v4:BasicObject = PutSelf
+              v11:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v12:BasicObject = SendWithoutBlockDirect v11, :foo (0x1018)
+              PatchPoint CalleeModifiedLocals(v12)
+              v5:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, bar@0x1020)
-              v12:BasicObject[VALUE(0x1010)] = GuardBitEquals v4, VALUE(0x1010)
-              v13:BasicObject = SendWithoutBlockDirect v12, :bar (0x1018)
-              Return v13
+              v14:BasicObject[VALUE(0x1010)] = GuardBitEquals v5, VALUE(0x1010)
+              v15:BasicObject = SendWithoutBlockDirect v14, :bar (0x1018)
+              PatchPoint CalleeModifiedLocals(v15)
+              Return v15
         "#]]);
     }
 
