@@ -35,7 +35,7 @@ The following bundled gems are promoted from default gems.
 * logger 1.7.0
 * rdoc 6.13.1
 * win32ole 1.9.1
-* irb 1.15.1
+* irb 1.15.2
 * reline 0.6.0
 * readline 0.0.4
 * fiddle 1.1.6
