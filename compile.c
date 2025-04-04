@@ -12876,9 +12876,9 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                 {
                     IC ic = (IC)op;
                     VALUE arr = idlist_to_array(ic->segments);
-                    wv = ibf_dump_object(dump, arr);
+                    ibf_dump_write_small_value(dump, ibf_dump_object(dump, arr));
                 }
-                break;
+                /* fall through */
               case TS_ISE:
               case TS_IVC:
               case TS_ICVARC:
@@ -12923,7 +12923,6 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
-    unsigned int ic_index = 0;
 
     iseq_bits_t * mark_offset_bits;
 
@@ -12997,10 +12996,13 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
                     VALUE arr = ibf_load_object(load, op);
+                    unsigned int ic_index = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
-                    IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
+                    IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index);
                     RUBY_ASSERT(ic_index <= load_body->ic_size);
-                    ic->segments = array_to_idlist(arr);
+                    if (!ic->segments) {
+                        ic->segments = array_to_idlist(arr);
+                    }
 
                     code[code_index] = (VALUE)ic;
                 }
