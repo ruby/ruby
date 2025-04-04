@@ -280,7 +280,6 @@ fn main() {
         .allowlist_function("rb_vm_frame_method_entry")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
-        .allowlist_type("iseq_inline_constant_cache_entry")
         .blocklist_type("rb_cref_t")         // don't need this directly, opaqued to allow IC import
         .opaque_type("rb_cref_t")
         .allowlist_type("iseq_inline_iv_cache_entry")
@@ -326,7 +325,10 @@ fn main() {
         .allowlist_function("rb_yjit_vm_unlock")
         .allowlist_function("rb_assert_(iseq|cme)_handle")
         .allowlist_function("rb_IMEMO_TYPE_P")
+        .allowlist_function("rb_yjit_constcache_cref")
+        .allowlist_function("rb_yjit_constcache_segments")
         .allowlist_function("rb_yjit_constcache_shareable")
+        .allowlist_function("rb_yjit_constcache_value")
         .allowlist_function("rb_iseq_reset_jit_func")
         .allowlist_function("rb_yjit_dump_iseq_loc")
         .allowlist_function("rb_yjit_for_each_iseq")
