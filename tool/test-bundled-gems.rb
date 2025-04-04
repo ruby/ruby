@@ -83,14 +83,16 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   if /mingw|mswin/ =~ RUBY_PLATFORM
     timeouts.delete(:TERM)      # Inner process signal on Windows
     group = :new_pgroup
+    pg = ""
   else
     group = :pgroup
+    pg = "-"
   end
   pid = Process.spawn(test_command, group => true)
   timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
-      Process.kill("-#{sig}", pid)
+      Process.kill("#{pg}#{sig}", pid)
     end
     begin
       break Timeout.timeout(sec) {Process.wait(pid)}
@@ -98,7 +100,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     end
   rescue Interrupt
     exit_code = Signal.list["INT"]
-    Process.kill("-KILL", pid)
+    Process.kill("#{pg}KILL", pid)
     Process.wait(pid)
     break
   end
