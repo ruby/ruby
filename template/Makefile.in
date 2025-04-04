@@ -479,6 +479,9 @@ _PREFIXED_SYMBOL = TOKEN_PASTE($(SYMBOL_PREFIX),name)
 	@$(ECHO) making dummy $(DEST_FILE)
 	$(Q)echo '#include "$(*F).dmyh"' > $@
 
+rjit_funcs.c: rjit_funcs.c.template yjit/bindgen/src/main.rs
+	$(Q) grep "allowlist_function" $(word 2,$^) | grep -v '|' | sed 's/^[^"]*"\([^"]*\)".*$$/CHECK(\1)/' | sed '/FUNCTION_START\;/r /dev/stdin' $< > $@
+
 probes.stamp: $(DTRACE_REBUILD_OBJS)
 	$(Q) if test -f $@ -o -f probes.$(OBJEXT); then \
 	  $(RM) $(DTRACE_REBUILD_OBJS) $@; \
