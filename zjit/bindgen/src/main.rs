@@ -100,6 +100,7 @@ fn main() {
         .allowlist_function("ruby_executable_node")
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
+        .allowlist_function("rb_zjit_profile_disable")
 
         // For crashing
         .allowlist_function("rb_bug")

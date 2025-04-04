@@ -443,7 +443,7 @@ jit_compile(rb_execution_context_t *ec)
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
         if (body->jit_entry_calls == rb_zjit_profile_threshold) {
-            rb_zjit_profile_iseq(iseq);
+            rb_zjit_profile_enable(iseq);
         }
 
         // At call-threshold, compile the ISEQ with ZJIT.

@@ -168,11 +168,16 @@ rb_RSTRING_PTR(VALUE str)
     return RSTRING_PTR(str);
 }
 
+void rb_zjit_profile_disable(const rb_iseq_t *iseq);
+
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
+
+    // Convert ZJIT instructions back to bare instructions
+    rb_zjit_profile_disable(iseq);
 
     // Compile a block version starting at the current instruction
     uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec); // defined in Rust
@@ -652,7 +657,7 @@ rb_RCLASS_ORIGIN(VALUE c)
 
 // Convert a given ISEQ's instructions to zjit_* instructions
 void
-rb_zjit_profile_iseq(const rb_iseq_t *iseq)
+rb_zjit_profile_enable(const rb_iseq_t *iseq)
 {
     // This table encodes an opcode into the instruction's address
     const void *const *insn_table = rb_vm_get_insns_address_table();
@@ -660,9 +665,27 @@ rb_zjit_profile_iseq(const rb_iseq_t *iseq)
     unsigned int insn_idx = 0;
     while (insn_idx < iseq->body->iseq_size) {
         int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[insn_idx]);
-        int zjit_insn = vm_insn_to_zjit_insn(insn);
+        int zjit_insn = vm_bare_insn_to_zjit_insn(insn);
         if (insn != zjit_insn) {
             iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
+        }
+        insn_idx += insn_len(insn);
+    }
+}
+
+// Convert a given ISEQ's ZJIT instructions to bare instructions
+void
+rb_zjit_profile_disable(const rb_iseq_t *iseq)
+{
+    // This table encodes an opcode into the instruction's address
+    const void *const *insn_table = rb_vm_get_insns_address_table();
+
+    unsigned int insn_idx = 0;
+    while (insn_idx < iseq->body->iseq_size) {
+        int insn = rb_vm_insn_decode(iseq->body->iseq_encoded[insn_idx]);
+        int bare_insn = vm_zjit_insn_to_bare_insn(insn);
+        if (insn != bare_insn) {
+            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
         }
         insn_idx += insn_len(insn);
     }

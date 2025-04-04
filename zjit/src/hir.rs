@@ -1598,38 +1598,38 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
 
-                YARVINSN_opt_plus | YARVINSN_zjit_opt_plus => {
+                YARVINSN_opt_plus => {
                     push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, state);
                 }
-                YARVINSN_opt_minus | YARVINSN_zjit_opt_minus => {
+                YARVINSN_opt_minus => {
                     push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, state);
                 }
-                YARVINSN_opt_mult | YARVINSN_zjit_opt_mult => {
+                YARVINSN_opt_mult => {
                     push_fixnum_insn!(FixnumMult, "*", BOP_MULT, state);
                 }
-                YARVINSN_opt_div | YARVINSN_zjit_opt_div => {
+                YARVINSN_opt_div => {
                     push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, state);
                 }
-                YARVINSN_opt_mod | YARVINSN_zjit_opt_mod => {
+                YARVINSN_opt_mod => {
                     push_fixnum_insn!(FixnumMod, "%", BOP_MOD, state);
                 }
 
-                YARVINSN_opt_eq | YARVINSN_zjit_opt_eq => {
+                YARVINSN_opt_eq => {
                     push_fixnum_insn!(FixnumEq, "==", BOP_EQ);
                 }
-                YARVINSN_opt_neq | YARVINSN_zjit_opt_neq => {
+                YARVINSN_opt_neq => {
                     push_fixnum_insn!(FixnumNeq, "!=", BOP_NEQ);
                 }
-                YARVINSN_opt_lt | YARVINSN_zjit_opt_lt => {
+                YARVINSN_opt_lt => {
                     push_fixnum_insn!(FixnumLt, "<", BOP_LT);
                 }
-                YARVINSN_opt_le | YARVINSN_zjit_opt_le => {
+                YARVINSN_opt_le => {
                     push_fixnum_insn!(FixnumLe, "<=", BOP_LE);
                 }
-                YARVINSN_opt_gt | YARVINSN_zjit_opt_gt => {
+                YARVINSN_opt_gt => {
                     push_fixnum_insn!(FixnumGt, ">", BOP_GT);
                 }
-                YARVINSN_opt_ge | YARVINSN_zjit_opt_ge => {
+                YARVINSN_opt_ge => {
                     push_fixnum_insn!(FixnumGe, ">==", BOP_GE);
                 }
                 YARVINSN_opt_ltlt => {
@@ -1654,7 +1654,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
-                YARVINSN_opt_send_without_block | YARVINSN_zjit_opt_send_without_block => {
+                YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -1991,6 +1991,7 @@ mod tests {
     #[track_caller]
     fn assert_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, hir);
     }
@@ -2531,6 +2532,7 @@ mod opt_tests {
     #[track_caller]
     fn assert_optimized_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
         assert_function_hir(function, hir);
