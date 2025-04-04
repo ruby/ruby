@@ -36,6 +36,8 @@ RBIMPL_ATTR_NONNULL((3))
  * issue a very  limited set of operations listed below.   Don't call arbitrary
  * ruby methods.
  *
+ * This function is async-signal-safe.
+ *
  * @param[in]   start  Start position (0 means the topmost).
  * @param[in]   limit  Number objects of `buff`.
  * @param[out]  buff   Return buffer.
@@ -58,6 +60,8 @@ int rb_profile_frames(int start, int limit, VALUE *buff, int *lines);
  * Arguments and return values are the same with rb_profile_frames() with the
  * exception of the first argument _thread_, which accepts the Thread to be
  * profiled/queried.
+ *
+ * This function is async-signal-safe.
  *
  * @param[in]   thread The Ruby Thread to be profiled.
  * @param[in]   start  Start position (0 means the topmost).
