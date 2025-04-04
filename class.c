@@ -782,7 +782,6 @@ make_metaclass(VALUE klass)
     }
 
     super = RCLASS_SUPER(klass);
-    while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
 
     // Full class ancestry may not have been filled until we reach here.
