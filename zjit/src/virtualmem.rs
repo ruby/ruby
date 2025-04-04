@@ -213,7 +213,7 @@ impl<A: Allocator> VirtualMemory<A> {
                         unreachable!("unknown arch");
                     }
                 }
-                self.mapped_region_bytes = self.mapped_region_bytes + alloc_size;
+                self.mapped_region_bytes += alloc_size;
 
                 self.current_write_page = Some(page_addr);
             } else {

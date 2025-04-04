@@ -136,7 +136,7 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
         unsafe { rb_zjit_enabled_p = true; }
     });
 
-    if let Err(_) = result {
+    if result.is_err() {
         println!("ZJIT: zjit_init() panicked. Aborting.");
         std::process::abort();
     }

@@ -758,7 +758,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&opnd)
+                        Some(opnd)
                     },
                     _ => None
                 }
@@ -789,11 +789,11 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                 match self.idx {
                     0 => {
                         self.idx += 1;
-                        Some(&opnd0)
+                        Some(opnd0)
                     }
                     1 => {
                         self.idx += 1;
-                        Some(&opnd1)
+                        Some(opnd1)
                     }
                     _ => None
                 }

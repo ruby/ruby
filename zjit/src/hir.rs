@@ -407,7 +407,7 @@ pub struct InsnPrinter<'a> {
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.inner {
-            Insn::Const { val } => { write!(f, "Const {}", val.print(&self.ptr_map)) }
+            Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param { idx } => { write!(f, "Param {idx}") }
             Insn::NewArray { elements } => {
                 write!(f, "NewArray")?;
@@ -462,8 +462,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
             Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {guard_type}") },
-            Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(&self.ptr_map)) },
-            Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(&self.ptr_map)) },
+            Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
+            Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             insn => { write!(f, "{insn:?}") }
         }
@@ -802,7 +802,7 @@ impl Function {
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
             Insn::Const { val: Const::CInt16(val) } => Type::from_cint(types::CInt16, *val as i64),
             Insn::Const { val: Const::CInt32(val) } => Type::from_cint(types::CInt32, *val as i64),
-            Insn::Const { val: Const::CInt64(val) } => Type::from_cint(types::CInt64, *val as i64),
+            Insn::Const { val: Const::CInt64(val) } => Type::from_cint(types::CInt64, *val),
             Insn::Const { val: Const::CUInt8(val) } => Type::from_cint(types::CUInt8, *val as i64),
             Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
             Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
@@ -1260,7 +1260,7 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: 0 as *const VALUE, insn_idx: 0, stack: vec![], locals: vec![] }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![] }
     }
 
     /// Get the number of stack operands
@@ -1343,7 +1343,7 @@ fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
     let mut jump_targets = HashSet::new();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
-        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
 
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
         let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
@@ -1409,7 +1409,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
-    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0 as u32));
+    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32));
 
     let mut visited = HashSet::new();
 
@@ -1438,7 +1438,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         while insn_idx < iseq_size {
             state.insn_idx = insn_idx as usize;
             // Get the current pc and opcode
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
             state.pc = pc;
             let exit_state = state.clone();
 

@@ -75,7 +75,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     });
 
     // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
-    if ZJITState::assert_compiles_enabled() && code_ptr == std::ptr::null() {
+    if ZJITState::assert_compiles_enabled() && code_ptr.is_null() {
         let iseq_location = iseq_get_location(iseq, 0);
         panic!("Failed to compile: {iseq_location}");
     }
