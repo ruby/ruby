@@ -12,8 +12,8 @@ pub struct Options {
     /// Enable debug logging
     pub debug: bool,
 
-    /// Dump High-level IR generated from ISEQ.
-    pub dump_hir: Option<DumpHIR>,
+    /// Dump initial High-level IR before optimization
+    pub dump_hir_init: Option<DumpHIR>,
 
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
@@ -58,7 +58,7 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 pub fn init_options() -> Options {
     Options {
         debug: false,
-        dump_hir: None,
+        dump_hir_init: None,
         dump_hir_opt: None,
         dump_disasm: false,
     }
@@ -97,13 +97,14 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 
         ("debug", "") => options.debug = true,
 
-        ("dump-hir", "") => options.dump_hir = Some(DumpHIR::WithoutSnapshot),
-        ("dump-hir", "all") => options.dump_hir = Some(DumpHIR::All),
-        ("dump-hir", "debug") => options.dump_hir = Some(DumpHIR::Debug),
+        // --zjit-dump-hir dumps the actual input to the codegen, which is currently the same as --zjit-dump-hir-opt.
+        ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
+        ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
+        ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
 
-        ("dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
-        ("dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
-        ("dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
+        ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
+        ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
+        ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
 
         ("dump-disasm", "") => options.dump_disasm = true,
 
