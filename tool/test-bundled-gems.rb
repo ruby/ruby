@@ -79,8 +79,15 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
   puts test_command
-  pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
-  {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
+  timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
+  if /mingw|mswin/ =~ RUBY_PLATFORM
+    timeouts.delete(:TERM)      # Inner process signal on Windows
+    group = :new_pgroup
+  else
+    group = :pgroup
+  end
+  pid = Process.spawn(test_command, group => true)
+  timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
       Process.kill("-#{sig}", pid)
