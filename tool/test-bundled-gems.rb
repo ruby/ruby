@@ -82,6 +82,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
   if /mingw|mswin/ =~ RUBY_PLATFORM
     timeouts.delete(:TERM)      # Inner process signal on Windows
+    timeouts.delete(:INT)       # root process will be terminated too
     group = :new_pgroup
     pg = ""
   else
