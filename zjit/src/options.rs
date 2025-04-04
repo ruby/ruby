@@ -1,14 +1,23 @@
 use std::{ffi::CStr, os::raw::c_char};
 
-// This option is exposed to the C side in a global variable for performance, see vm.c
-// Number of method calls after which to start generating code
-// Threshold==1 means compile on first execution
+/// Number of calls to start profiling YARV instructions.
+/// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
+/// which is equal to --zjit-num-profiles.
+#[unsafe(no_mangle)]
+#[allow(non_upper_case_globals)]
+pub static mut rb_zjit_profile_threshold: u64 = 1;
+
+/// Number of calls to compile ISEQ with ZJIT at jit_compile() in vm.c.
+/// --zjit-call-threshold=1 compiles on first execution without profiling information.
 #[unsafe(no_mangle)]
 #[allow(non_upper_case_globals)]
 pub static mut rb_zjit_call_threshold: u64 = 2;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Options {
+    /// Number of times YARV instructions should be profiled.
+    pub num_profiles: u64,
+
     /// Enable debug logging
     pub debug: bool,
 
@@ -57,6 +66,7 @@ pub extern "C" fn rb_zjit_init_options() -> *const u8 {
 /// Return an Options with default values
 pub fn init_options() -> Options {
     Options {
+        num_profiles: 1,
         debug: false,
         dump_hir_init: None,
         dump_hir_opt: None,
@@ -91,7 +101,18 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("", "") => {}, // Simply --zjit
 
         ("call-threshold", _) => match opt_val.parse() {
-            Ok(n) => unsafe { rb_zjit_call_threshold = n },
+            Ok(n) => {
+                unsafe { rb_zjit_call_threshold = n; }
+                update_profile_threshold(options);
+            },
+            Err(_) => return None,
+        },
+
+        ("num-profiles", _) => match opt_val.parse() {
+            Ok(n) => {
+                options.num_profiles = n;
+                update_profile_threshold(options);
+            },
             Err(_) => return None,
         },
 
@@ -113,6 +134,19 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
 
     // Option successfully parsed
     Some(())
+}
+
+/// Update rb_zjit_profile_threshold based on rb_zjit_call_threshold and options.num_profiles
+fn update_profile_threshold(options: &Options) {
+    unsafe {
+        if rb_zjit_call_threshold == 1 {
+            // If --zjit-call-threshold=1, never rewrite ISEQs to profile instructions.
+            rb_zjit_profile_threshold = 0;
+        } else {
+            // Otherwise, profile instructions at least once.
+            rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles).max(1);
+        }
+    }
 }
 
 /// Macro to print a message only when --zjit-debug is given

@@ -437,15 +437,12 @@ jit_compile(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
 #if USE_ZJIT
-// Number of calls used to profile a YARV instruction for ZJIT
-#define ZJIT_PROFILE_COUNT 1
-
     if (body->jit_entry == NULL && rb_zjit_enabled_p) {
         body->jit_entry_calls++;
 
-        // At call-threshold - ZJIT_PROFILE_COUNT, rewrite some of the YARV
-        // instructions to zjit_* instructions to profile these instructions.
-        if (body->jit_entry_calls + ZJIT_PROFILE_COUNT == rb_zjit_call_threshold) {
+        // At profile-threshold, rewrite some of the YARV instructions
+        // to zjit_* instructions to profile these instructions.
+        if (body->jit_entry_calls == rb_zjit_profile_threshold) {
             rb_zjit_profile_iseq(iseq);
         }
 
