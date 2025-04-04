@@ -173,7 +173,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
       bundle "config set --local path #{bundled_app("bundle")}"
 
-      bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, load_path: bundled_app
+      bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
 
       load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
 
@@ -204,7 +204,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
         bundle "lock", dir: cwd
 
-        bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, load_path: bundled_app
+        bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       end
 
       load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
