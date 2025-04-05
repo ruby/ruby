@@ -6,7 +6,9 @@
 %   ary = RubyVM.enum_for(:each_builtin).to_a
 %   ary.each{|feature, iseq|
 
-static const unsigned char <%= feature %>_bin[] = {
+#include "compile.h"
+
+static const unsigned char <%= feature %>_bin[] __attribute__((aligned(alignof(struct ibf_header)))) = {
 %     iseq                   \
 %     . to_binary            \
 %     . each_byte            \

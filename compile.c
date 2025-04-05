@@ -45,6 +45,7 @@
 #include "yjit.h"
 
 #include "builtin.h"
+#include "compile.h"
 #include "insns.inc"
 #include "insns_info.inc"
 
@@ -12384,7 +12385,6 @@ rb_local_defined(ID id, const rb_iseq_t *iseq)
 #define IBF_ISEQ_ENABLE_LOCAL_BUFFER 0
 #endif
 
-typedef uint32_t ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
@@ -12402,21 +12402,6 @@ static const char IBF_ENDIAN_MARK =
     'l'
 #endif
     ;
-
-struct ibf_header {
-    char magic[4]; /* YARB */
-    uint32_t major_version;
-    uint32_t minor_version;
-    uint32_t size;
-    uint32_t extra_size;
-
-    uint32_t iseq_list_size;
-    uint32_t global_object_list_size;
-    ibf_offset_t iseq_list_offset;
-    ibf_offset_t global_object_list_offset;
-    uint8_t endian;
-    uint8_t wordsize;           /* assume no 2048-bit CPU */
-};
 
 struct ibf_dump_buffer {
     VALUE str;
