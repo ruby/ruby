@@ -14,6 +14,7 @@ import sys
 import shlex
 import platform
 import glob
+import math
 
 from lldb_rb.constants import *
 
@@ -270,7 +271,6 @@ def lldb_inspect(debugger, target, result, val):
         print('immediate(%x)' % num, file=result)
     else:
         tRBasic = target.FindFirstType("struct RBasic").GetPointerType()
-        tRValue = target.FindFirstType("struct RVALUE")
 
         val = val.Cast(tRBasic)
         flags = val.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
@@ -524,10 +524,11 @@ def rb_backtrace(debugger, command, result, internal_dict):
     bt.print_bt(val)
 
 def dump_bits(target, result, page, object_address, end = "\n"):
-    tRValue = target.FindFirstType("struct RVALUE")
+    slot_size = page.GetChildMemberWithName("heap").GetChildMemberWithName("slot_size").unsigned
+    byte_size = 40 ** math.floor(math.log(slot_size, 40))
     tUintPtr = target.FindFirstType("uintptr_t") # bits_t
 
-    num_in_page = (object_address & HEAP_PAGE_ALIGN_MASK) // tRValue.GetByteSize();
+    num_in_page = (object_address & HEAP_PAGE_ALIGN_MASK) // byte_size;
     bits_bitlength = tUintPtr.GetByteSize() * 8
     bitmap_index = num_in_page // bits_bitlength
     bitmap_offset = num_in_page & (bits_bitlength - 1)
@@ -550,7 +551,6 @@ class HeapPageIter:
         self.slot_size = page.GetChildMemberWithName('heap').GetChildMemberWithName('slot_size').unsigned
         self.counter = 0
         self.tRBasic = target.FindFirstType("struct RBasic")
-        self.tRValue = target.FindFirstType("struct RVALUE")
 
     def is_valid(self):
         heap_page_header_size = self.target.FindFirstType("struct heap_page_header").GetByteSize()
@@ -582,14 +582,13 @@ def dump_page_internal(page, target, process, thread, frame, result, debugger, h
 
     freelist = []
     fl_start = page.GetChildMemberWithName('freelist').GetValueAsUnsigned()
-    tRVALUE = target.FindFirstType("struct RVALUE")
+    free_slot = target.FindFirstType("struct free_slot")
 
     while fl_start > 0:
         freelist.append(fl_start)
         obj_addr = lldb.SBAddress(fl_start, target)
-        obj = target.CreateValueFromAddress("object", obj_addr, tRVALUE)
-        fl_start = obj.GetChildMemberWithName("as").GetChildMemberWithName("free").GetChildMemberWithName("next").GetValueAsUnsigned()
-
+        obj = target.CreateValueFromAddress("object", obj_addr, free_slot)
+        fl_start = obj.GetChildMemberWithName("next").GetValueAsUnsigned()
 
     page_iter = HeapPageIter(page, target)
     if page_iter.is_valid():
