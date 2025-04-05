@@ -782,7 +782,6 @@ make_metaclass(VALUE klass)
     }
 
     super = RCLASS_SUPER(klass);
-    while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     RCLASS_SET_SUPER(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass);
 
     // Full class ancestry may not have been filled until we reach here.
@@ -808,7 +807,7 @@ make_singleton_class(VALUE obj)
     rb_singleton_class_attached(klass, obj);
     rb_yjit_invalidate_no_singleton_class(orig_class);
 
-    SET_METACLASS_OF(klass, METACLASS_OF(rb_class_real(orig_class)));
+    SET_METACLASS_OF(klass, METACLASS_OF(orig_class));
     return klass;
 }
 
