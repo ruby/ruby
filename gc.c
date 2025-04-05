@@ -2103,6 +2103,15 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
         break;
       case T_IMEMO:
         switch (imemo_type(obj)) {
+          case imemo_callcache: {
+            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
+
+            if (vm_cc_refinement_p(cc)) {
+                rb_vm_delete_cc_refinement(cc);
+            }
+
+            break;
+          }
           case imemo_callinfo:
             rb_vm_ci_free((const struct rb_callinfo *)obj);
             break;
@@ -3938,6 +3947,23 @@ vm_weak_table_foreach_update_weak_key(st_data_t *key, st_data_t *value, st_data_
 }
 
 static int
+vm_weak_table_cc_refinement_foreach(st_data_t key, st_data_t data, int error)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    return iter_data->callback((VALUE)key, iter_data->data);
+}
+
+static int
+vm_weak_table_cc_refinement_foreach_update_update(st_data_t *key, st_data_t data, int existing)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    return iter_data->update_callback((VALUE *)key, iter_data->data);
+}
+
+
+static int
 vm_weak_table_str_sym_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
@@ -4186,8 +4212,21 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         );
         break;
       }
+      case RB_GC_VM_CC_REFINEMENT_TABLE: {
+        if (vm->cc_refinement_table) {
+            set_foreach_with_replace(
+              vm->cc_refinement_table,
+              vm_weak_table_cc_refinement_foreach,
+              vm_weak_table_cc_refinement_foreach_update_update,
+              (st_data_t)&foreach_data
+            );
+        }
+        break;
+      }
       case RB_GC_VM_WEAK_TABLE_COUNT:
         rb_bug("Unreacheable");
+      default:
+        rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
     }
 }
 
