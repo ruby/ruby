@@ -3194,6 +3194,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
         }
+        if (vm->cc_refinement_table) {
+            rb_set_free_table(vm->cc_refinement_table);
+            vm->cc_refinement_table = NULL;
+        }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3294,6 +3298,7 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
+        rb_set_memsize(vm->cc_refinement_table) +
         vm_memsize_constant_cache()
     );
 
@@ -4503,6 +4508,7 @@ Init_vm_objects(void)
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
+    vm->cc_refinement_table = rb_set_init_numtable();
 }
 
 // Stub for builtin function when not building YJIT units
