@@ -1622,7 +1622,7 @@ dummy
 
       node = ast_parse("def foo; yield(1, 2) end")
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
-  end
+    end
 
     private
     def ast_parse(src, **options)

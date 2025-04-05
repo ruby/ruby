@@ -511,6 +511,7 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <sys/mman.h>
 #  undef backtrace
 
+#  if defined(__arm64__)
 static bool
 is_coroutine_start(unw_word_t ip)
 {
@@ -518,6 +519,7 @@ is_coroutine_start(unw_word_t ip)
     extern void ruby_coroutine_start(struct coroutine_context *, struct coroutine_context *);
     return ((void *)(ip) == (void *)ruby_coroutine_start);
 }
+#  endif
 
 int
 backtrace(void **trace, int size)
@@ -614,7 +616,7 @@ darwin_sigtramp:
     }
     return n;
 
-#  else /* defined(__arm64__) */
+#  elif defined(__arm64__)
     /* Since Darwin arm64's _sigtramp is implemented as normal function,
      * unwind can unwind frames without special code.
      * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
@@ -631,6 +633,8 @@ darwin_sigtramp:
         if (is_coroutine_start(ip)) break;
     }
     return n;
+#  else
+#    error unsupported architecture
 #  endif
 }
 # elif defined(BROKEN_BACKTRACE)

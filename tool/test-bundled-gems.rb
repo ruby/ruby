@@ -79,11 +79,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   puts "#{github_actions ? "::group::\e\[93m" : "\n"}Testing the #{gem} gem#{github_actions ? "\e\[m" : ""}"
   print "[command]" if github_actions
   puts test_command
-  pid = Process.spawn(test_command, "#{/mingw|mswin/ =~ RUBY_PLATFORM ? 'new_' : ''}pgroup": true)
-  {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}.each do |sig, sec|
+  timeouts = {nil => first_timeout, INT: 30, TERM: 10, KILL: nil}
+  if /mingw|mswin/ =~ RUBY_PLATFORM
+    timeouts.delete(:TERM)      # Inner process signal on Windows
+    timeouts.delete(:INT)       # root process will be terminated too
+    group = :new_pgroup
+    pg = ""
+  else
+    group = :pgroup
+    pg = "-"
+  end
+  pid = Process.spawn(test_command, group => true)
+  timeouts.each do |sig, sec|
     if sig
       puts "Sending #{sig} signal"
-      Process.kill("-#{sig}", pid)
+      Process.kill("#{pg}#{sig}", pid)
     end
     begin
       break Timeout.timeout(sec) {Process.wait(pid)}
@@ -91,7 +101,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     end
   rescue Interrupt
     exit_code = Signal.list["INT"]
-    Process.kill("-KILL", pid)
+    Process.kill("#{pg}KILL", pid)
     Process.wait(pid)
     break
   end
