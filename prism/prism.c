@@ -15254,11 +15254,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             accept1(parser, PM_TOKEN_NEWLINE);
 
             if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-                arguments.opening_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
+                pm_token_t lparen = parser->previous;
 
                 if (accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                    arguments.closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
+                    receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous);
                 } else {
+                    arguments.closing_loc = PM_LOCATION_TOKEN_VALUE(&parser->previous);
                     receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_NOT_EXPRESSION);
                     pm_conditional_predicate(receiver);
 
