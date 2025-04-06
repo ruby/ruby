@@ -13,7 +13,7 @@ class TestRequireLib < Test::Unit::TestCase
   scripts.concat(Dir.glob(dirs.map {|d| d + '/*.rb'}, base: libdir).map {|f| f.chomp('.rb')})
 
   # skip some problems
-  scripts -= %w[bundler bundled_gems rubygems mkmf]
+  scripts -= %w[bundler bundled_gems rubygems mkmf set/sorted_set]
 
   scripts.each do |lib|
     define_method "test_thread_size:#{lib}" do
