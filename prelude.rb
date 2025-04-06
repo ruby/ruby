@@ -26,7 +26,7 @@ module Kernel
   private :pp
 end
 
-autoload :Set, 'set'
+autoload :SortedSet, 'set/sorted_set'
 
 module Enumerable
   # Makes a set from the enumerable object with given arguments.

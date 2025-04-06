@@ -33,9 +33,11 @@ describe "Set#proper_superset?" do
     -> { Set[].proper_superset?(Object.new) }.should raise_error(ArgumentError)
   end
 
-  context "when comparing to a Set-like object" do
-    it "returns true if passed a Set-like object that self is a proper superset of" do
-      Set[1, 2, 3, 4].proper_superset?(SetSpecs::SetLike.new([1, 2, 3])).should be_true
+  ruby_version_is ""..."3.5" do
+    context "when comparing to a Set-like object" do
+      it "returns true if passed a Set-like object that self is a proper superset of" do
+        Set[1, 2, 3, 4].proper_superset?(SetSpecs::SetLike.new([1, 2, 3])).should be_true
+      end
     end
   end
 end

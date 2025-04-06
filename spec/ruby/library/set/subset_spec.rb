@@ -35,9 +35,11 @@ describe "Set#subset?" do
   end
 
   version_is(set_version, ""..."1.1.0") do #ruby_version_is ""..."3.3" do
-    context "when comparing to a Set-like object" do
-      it "returns true if passed a Set-like object that self is a subset of" do
-        Set[1, 2, 3].subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+    ruby_version_is ""..."3.5" do
+      context "when comparing to a Set-like object" do
+        it "returns true if passed a Set-like object that self is a subset of" do
+          Set[1, 2, 3].subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+        end
       end
     end
   end

@@ -26,10 +26,20 @@ describe "Set#divide when passed a block with an arity of 2" do
     set.map{ |x| x.to_a.sort }.sort.should == [[1], [3, 4], [6], [9, 10, 11]]
   end
 
-  it "yields each two Object to the block" do
-    ret = []
-    Set[1, 2].divide { |x, y| ret << [x, y] }
-    ret.sort.should == [[1, 1], [1, 2], [2, 1], [2, 2]]
+  ruby_version_is "3.5" do
+    it "yields each two Object to the block" do
+      ret = []
+      Set[1, 2].divide { |x, y| ret << [x, y] }
+      ret.sort.should == [[1, 2], [2, 1]]
+    end
+  end
+
+  ruby_version_is ""..."3.5" do
+    it "yields each two Object to the block" do
+      ret = []
+      Set[1, 2].divide { |x, y| ret << [x, y] }
+      ret.sort.should == [[1, 1], [1, 2], [2, 1], [2, 2]]
+    end
   end
 
   it "returns an enumerator when not passed a block" do

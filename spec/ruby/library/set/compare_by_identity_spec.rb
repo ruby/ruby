@@ -91,11 +91,22 @@ describe "Set#compare_by_identity" do
     set.to_a.sort.should == [a1, a2].sort
   end
 
-  it "raises a FrozenError on frozen sets" do
-    set = Set.new.freeze
-    -> {
-      set.compare_by_identity
-    }.should raise_error(FrozenError, /frozen Hash/)
+  ruby_version_is "3.5" do
+    it "raises a FrozenError on frozen sets" do
+      set = Set.new.freeze
+      -> {
+        set.compare_by_identity
+      }.should raise_error(FrozenError, "can't modify frozen Set: #<Set: {}>")
+    end
+  end
+
+  ruby_version_is ""..."3.5" do
+    it "raises a FrozenError on frozen sets" do
+      set = Set.new.freeze
+      -> {
+        set.compare_by_identity
+      }.should raise_error(FrozenError, /frozen Hash/)
+    end
   end
 
   it "persists over #dups" do

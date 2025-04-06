@@ -1,0 +1,265 @@
+prelude: |
+  # First 1000 digits of pi
+  pi = <<~END.gsub(/\D/, '')
+    31415926535897932384626433832795028841971693993751058209749445923078164062862089
+    98628034825342117067982148086513282306647093844609550582231725359408128481117450
+    28410270193852110555964462294895493038196442881097566593344612847564823378678316
+    52712019091456485669234603486104543266482133936072602491412737245870066063155881
+    74881520920962829254091715364367892590360011330530548820466521384146951941511609
+    43305727036575959195309218611738193261179310511854807446237996274956735188575272
+    48912279381830119491298336733624406566430860213949463952247371907021798609437027
+    70539217176293176752384674818467669405132000568127145263560827785771342757789609
+    17363717872146844090122495343014654958537105079227968925892354201995611212902196
+    08640344181598136297747713099605187072113499999983729780499510597317328160963185
+    95024459455346908302642522308253344685035261931188171010003137838752886587533208
+    38142061717766914730359825349042875546873115956286388235378759375195778185778053
+    21712268066130019278766111959092164201989380952572010654505906988788448549
+  END
+  array1 = 10.times.flat_map do |i|
+    pi[i...].chars.each_slice(10).map(&:join)
+  end
+  array2 = array1.map(&:reverse)
+  array1.map!(&:to_i)
+  array2.map!(&:to_i)
+  a1 = array1[...10]
+  a2 = array1[...100]
+  a3 = array1
+  oa1 = array2[...10]
+  oa2 = array2[...100]
+  oa3 = array2
+  s0 = Set.new
+  s0 = Set.new
+  s1 = Set.new(a1)
+  s2 = Set.new(a2)
+  s3 = Set.new(a3)
+  o0 = Set.new
+  o1 = Set.new(array2[...10])
+  o2 = Set.new(array2[...100])
+  o3 = Set.new(array2)
+  d0 = s0.dup
+  d1 = s1.dup
+  d2 = s2.dup
+  d3 = s3.dup
+  ss1 = s1 - a1[-1..-1]
+  ss2 = s2 - a2[-1..-1]
+  ss3 = s3 - a3[-1..-1]
+  os1 = o1 - oa1[-1..-1]
+  os2 = o2 - oa2[-1..-1]
+  os3 = o3 - oa3[-1..-1]
+  member = a1.first
+  cbi = s0.dup.compare_by_identity
+  ns = Set[s3, o3, d3]
+  set_subclass = Class.new(Set)
+
+benchmark:
+  new_0: Set.new
+  new_10: Set.new(a1)
+  new_100: Set.new(a2)
+  new_1000: Set.new(a3)
+  aref_0: Set[]
+  aref_10: Set[*a1]
+  aref_100: Set[*a2]
+  aref_1000: Set[*a3]
+  amp_0: s0 & o0
+  amp_10: s1 & o1
+  amp_100: s2 & o2
+  amp_1000: s3 & o3
+  amp_same_0: s0 & d0
+  amp_same_10: s1 & d1
+  amp_same_100: s2 & d2
+  amp_same_1000: s3 & d3
+  minus_0: s0 - o0
+  minus_10: s1 - o1
+  minus_100: s2 - o2
+  minus_1000: s3 - o3
+  minus_same_0: s0 - d0
+  minus_same_10: s1 - d1
+  minus_same_100: s2 - d2
+  minus_same_1000: s3 - d3
+  spaceship_0: s0 <=> o0
+  spaceship_diff_10: s1 <=> o1
+  spaceship_diff_100: s2 <=> o2
+  spaceship_diff_1000: s2 <=> o3
+  spaceship_sub_10: s1 <=> ss1
+  spaceship_sub_100: s2 <=> ss2
+  spaceship_sub_1000: s2 <=> ss3
+  spaceship_sup_10: ss1 <=> s1
+  spaceship_sup_100: ss2 <=> s2
+  spaceship_sup_1000: ss2 <=> s3
+  eq_0: s0 == o0
+  eq_10: s1 == o1
+  eq_100: s2 == o2
+  eq_1000: s3 == o3
+  eq_same_0: s0 == d0
+  eq_same_10: s1 == d1
+  eq_same_100: s2 == d2
+  eq_same_1000: s3 == d3
+  xor_0: s0 ^ o0
+  xor_10: s1 ^ o1
+  xor_100: s2 ^ o2
+  xor_1000: s3 ^ o3
+  xor_same_0: s0 ^ d0
+  xor_same_10: s1 ^ d1
+  xor_same_100: s2 ^ d2
+  xor_same_1000: s3 ^ d3
+  pipe_0: s0 | o0
+  pipe_10: s1 | o1
+  pipe_100: s2 | o2
+  pipe_1000: s3 | o3
+  pipe_same_0: s0 | d0
+  pipe_same_10: s1 | d1
+  pipe_same_100: s2 | d2
+  pipe_same_1000: s3 | d3
+  add: a3.each { s0.add(it) }
+  add_exist: a3.each { s3.add(it) }
+  addq: a3.each { s0.add?(it) }
+  addq_exist: a3.each { s3.add?(it) }
+  classify_0: s0.classify { it }
+  classify_10: s1.classify { it & 2 }
+  classify_100: s2.classify { it & 8 }
+  classify_1000: s3.classify { it & 32 }
+  clear: s0.clear
+  collect_0: s0.collect! { it }
+  collect_10: s1.collect! { it }
+  collect_100: s2.collect! { it }
+  collect_1000: s3.collect! { it }
+  compare_by_identity_0: s0.dup.compare_by_identity
+  compare_by_identity_10: s1.dup.compare_by_identity
+  compare_by_identity_100: s2.dup.compare_by_identity
+  compare_by_identity_1000: s3.dup.compare_by_identity
+  compare_by_identityq_false: s0.compare_by_identity?
+  compare_by_identityq_true: cbi.compare_by_identity?
+  clone_0: s0.clone
+  clone_10: s1.clone
+  clone_100: s2.clone
+  clone_1000: s3.clone
+  delete: a3.each { s3.delete(it) }
+  delete_not_exist: a3.each { o3.delete(it) }
+  deleteq: a3.each { s3.delete?(it) }
+  deleteq_not_exist: a3.each { o3.delete?(it) }
+  delete_if_0: s0.delete_if { it }
+  delete_if_10: s1.delete_if { it & 2 == 0 }
+  delete_if_100: s2.delete_if { it & 2 == 0 }
+  delete_if_1000: s3.delete_if { it & 2 == 0 }
+  disjoint_0: s0.disjoint? o0
+  disjoint_10: s1.disjoint? o1
+  disjoint_100: s2.disjoint? o2
+  disjoint_1000: s3.disjoint? o3
+  disjoint_same_0: s0.disjoint? d0
+  disjoint_same_10: s1.disjoint? d1
+  disjoint_same_100: s2.disjoint? d2
+  disjoint_same_1000: s3.disjoint? d3
+  divide_1arity_0: s0.divide { true }
+  divide_1arity_10: s1.divide { it & 2 }
+  divide_1arity_100: s2.divide { it & 8 }
+  divide_1arity_1000: s3.divide { it & 32 }
+  divide_2arity_0: s0.divide { true }
+  divide_2arity_10: s1.divide { (_1 & 2) == (_2 & 2) }
+  divide_2arity_100: s2.divide { (_1 & 8) == (_2 & 8) }
+  divide_2arity_1000: s3.divide { (_1 & 32) == (_2 & 32) }
+  dup_0: s0.dup
+  dup_10: s1.dup
+  dup_100: s2.dup
+  dup_1000: s3.dup
+  each_0: s0.each { it }
+  each_10: s1.each { it }
+  each_100: s2.each { it }
+  each_1000: s3.each { it }
+  empty_true: s0.empty?
+  empty_false: s3.empty?
+  flatten: ns.flatten
+  flattenb: ns.flatten!
+  include_true_0: s0.include? member
+  include_true_10: s1.include? member
+  include_true_100: s2.include? member
+  include_true_1000: s3.include? member
+  include_false_0: s0.include?(-1)
+  include_false_10: s1.include?(-1)
+  include_false_100: s2.include?(-1)
+  include_false_1000: s3.include?(-1)
+  intersect_0: s0.intersect? o0
+  intersect_10: s1.intersect? o1
+  intersect_100: s2.intersect? o2
+  intersect_1000: s3.intersect? o3
+  intersect_same_0: s0.intersect? d0
+  intersect_same_10: s1.intersect? d1
+  intersect_same_100: s2.intersect? d2
+  intersect_same_1000: s3.intersect? d3
+  join_0: s0.join
+  join_10: s1.join
+  join_100: s2.join
+  join_1000: s3.join
+  join_arg_0: s0.join ""
+  join_arg_10: s1.join ""
+  join_arg_100: s2.join ""
+  join_arg_1000: s3.join ""
+  keep_if_0: s0.keep_if { it }
+  keep_if_10: s1.keep_if { it & 2 == 0 }
+  keep_if_100: s2.keep_if { it & 2 == 0 }
+  keep_if_1000: s3.keep_if { it & 2 == 0 }
+  merge_set: s0.dup.merge(s3, o3)
+  merge_enum: s0.dup.merge(array1, array2)
+  proper_subset_0: s0.proper_subset? s0
+  proper_subset_10: s1.proper_subset? ss1
+  proper_subset_100: s2.proper_subset? ss2
+  proper_subset_1000: s3.proper_subset? ss3
+  proper_subset_false_10: s1.proper_subset? os1
+  proper_subset_false_100: s2.proper_subset? os2
+  proper_subset_false_1000: s3.proper_subset? os3
+  proper_superset_0: s0.proper_superset? s0
+  proper_superset_10: ss1.proper_superset? s1
+  proper_superset_100: ss2.proper_superset? s2
+  proper_superset_1000: ss3.proper_superset? s3
+  proper_superset_false_10: os1.proper_superset? s1
+  proper_superset_false_100: os2.proper_superset? s2
+  proper_superset_false_1000: os3.proper_superset? s3
+  reject_0: s0.reject! { it }
+  reject_10: s1.reject! { it & 2 == 0 }
+  reject_100: s2.reject! { it & 2 == 0 }
+  reject_1000: s3.reject! { it & 2 == 0 }
+  replace_0: s = Set.new; array1.each { s.replace(s0) }
+  replace_10: s = Set.new; array1.each { s.replace(s1) }
+  replace_100: s = Set.new; array1.each { s.replace(s2) }
+  replace_1000: s = Set.new; array1.each { s.replace(s3) }
+  reset_0: s0.reset
+  reset_10: s1.reset
+  reset_100: s2.reset
+  reset_1000: s3.reset
+  select_0: s0.select! { it }
+  select_10: s1.select! { it & 2 == 0 }
+  select_100: s2.select! { it & 2 == 0 }
+  select_1000: s3.select! { it & 2 == 0 }
+  size_0: s0.size
+  size_10: s1.size
+  size_100: s2.size
+  size_1000: s3.size
+  subtract_set: s3.dup.subtract(os3)
+  subtract_enum: s3.dup.subtract(oa3)
+  subtract_same_set: s3.dup.subtract(s3)
+  subtract_same_enum: s3.dup.subtract(a3)
+  subset_0: s0.subset? s0
+  subset_10: s1.subset? ss1
+  subset_100: s2.subset? ss2
+  subset_1000: s3.subset? ss3
+  subset_false_10: s1.subset? os1
+  subset_false_100: s2.subset? os2
+  subset_false_1000: s3.subset? os3
+  superset_0: s0.superset? s0
+  superset_10: ss1.superset? s1
+  superset_100: ss2.superset? s2
+  superset_1000: ss3.superset? s3
+  superset_false_10: os1.superset? s1
+  superset_false_100: os2.superset? s2
+  superset_false_1000: os3.superset? s3
+  to_a_0: s0.to_a
+  to_a_10: s1.to_a
+  to_a_100: s2.to_a
+  to_a_1000: s3.to_a
+  to_set_0: s0.to_set
+  to_set_10: s1.to_set
+  to_set_100: s2.to_set
+  to_set_1000: s3.to_set
+  to_set_arg_0: s0.to_set set_subclass
+  to_set_arg_10: s1.to_set set_subclass
+  to_set_arg_100: s2.to_set set_subclass
+  to_set_arg_1000: s3.to_set set_subclass
