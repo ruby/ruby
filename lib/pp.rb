@@ -442,6 +442,23 @@ class Hash # :nodoc:
   end
 end
 
+class Set # :nodoc:
+  def pretty_print(pp)  # :nodoc:
+    pp.group(1, '#<Set:', '>') {
+      pp.breakable
+      pp.group(1, '{', '}') {
+        pp.seplist(self) { |o|
+          pp.pp o
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(pp)    # :nodoc:
+    pp.text sprintf('#<Set: {%s}>', empty? ? '' : '...')
+  end
+end
+
 class << ENV # :nodoc:
   def pretty_print(q) # :nodoc:
     h = {}

@@ -76,6 +76,7 @@ rb_call_inits(void)
     CALL(shape);
     CALL(Prism);
     CALL(unicode_version);
+    CALL(Set);
 
     // enable builtin loading
     CALL(builtin);
