@@ -1036,7 +1036,7 @@ impl Function {
                         // Commit to the replacement. Put PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
                         // Guard receiver class
-                        fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: *recv_type, state });
+                        fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: recv_type.unspecialized(), state });
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
@@ -3344,8 +3344,7 @@ mod opt_tests {
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
-              v8:StringExact[VALUE(0x1018)] = GuardType v2, StringExact[VALUE(0x1018)]
-              v9:Fixnum = CCall bytesize@0x1020, v2
+              v9:Fixnum = CCall bytesize@0x1018, v2
               PatchPoint CalleeModifiedLocals(v9)
               Return v9
         "#]]);

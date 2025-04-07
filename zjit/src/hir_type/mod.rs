@@ -247,6 +247,10 @@ impl Type {
         }
     }
 
+    pub fn unspecialized(&self) -> Self {
+        Type { spec: Specialization::Any, ..*self }
+    }
+
     pub fn fixnum_value(&self) -> Option<i64> {
         if self.is_subtype(types::Fixnum) {
             self.ruby_object().map(|val| val.as_fixnum())
