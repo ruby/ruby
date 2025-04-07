@@ -1198,12 +1198,15 @@ impl Function {
                 Insn::StringCopy { val }
                 | Insn::ArrayDup { val }
                 | Insn::StringIntern { val }
-                | Insn::GuardType { val, .. }
-                | Insn::GuardBitEquals { val, .. }
                 | Insn::Return { val }
                 | Insn::Defined { v: val, .. }
                 | Insn::Test { val } =>
                     worklist.push_back(val),
+                Insn::GuardType { val, state, .. }
+                | Insn::GuardBitEquals { val, state, .. } => {
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
                 Insn::ArraySet { array, val, .. } => {
                     worklist.push_back(array);
                     worklist.push_back(val);
