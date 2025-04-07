@@ -1036,7 +1036,7 @@ impl Function {
                         // Commit to the replacement. Put PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
                         // Guard receiver class
-                        fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: recv_type.unspecialized(), state });
+                        let self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: recv_type.unspecialized(), state });
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
@@ -3305,16 +3305,16 @@ mod opt_tests {
     #[test]
     fn kernel_itself_simple() {
         eval("
-            def test = 1.itself
-            test
-            test
+            def test(x) = x.itself
+            test(0) # profile
+            test(1)
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0():
-              v1:Fixnum[1] = Const Value(1)
+            bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
-              v8:BasicObject = CCall itself@0x1010, v1
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:BasicObject = CCall itself@0x1010, v7
               PatchPoint CalleeModifiedLocals(v8)
               Return v8
         "#]]);
