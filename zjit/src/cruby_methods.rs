@@ -11,18 +11,21 @@
 use crate::cruby::*;
 use std::collections::HashMap;
 use std::ffi::c_void;
+use crate::hir_type::{types, Type};
 
 pub struct Annotations {
     cfuncs: HashMap<*mut c_void, FnProperties>,
 }
 
 /// Runtime behaviors of C functions that implement a Ruby method
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 pub struct FnProperties {
     /// Whether it's possible for the function to yield to the GC
     pub no_gc: bool,
     /// Whether it's possible for the function to make a ruby call
     pub leaf: bool,
+    /// What Type the C function returns
+    pub return_type: Type,
 }
 
 impl Annotations {
@@ -60,8 +63,8 @@ pub fn init() -> Annotations {
     let cfuncs = &mut HashMap::new();
 
     macro_rules! annotate {
-        ($module:ident, $method_name:literal, $($properties:ident),+) => {
-            let mut props = FnProperties::default();
+        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+            let mut props = FnProperties { no_gc: false, leaf: false, return_type: $return_type };
             $(
                 props.$properties = true;
             )+
@@ -69,10 +72,10 @@ pub fn init() -> Annotations {
         }
     }
 
-    annotate!(rb_mKernel, "itself", no_gc, leaf);
-    annotate!(rb_cString, "bytesize", no_gc, leaf);
-    annotate!(rb_cModule, "name", no_gc, leaf);
-    annotate!(rb_cModule, "===", no_gc, leaf);
+    annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf);
+    annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
+    annotate!(rb_cModule, "name", types::StringExact.union(types::NilClassExact), no_gc, leaf);
+    annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs)

@@ -326,7 +326,7 @@ pub enum Insn {
 
     // Call a C function
     // `name` is for printing purposes only
-    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID },
+    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type },
 
     // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
@@ -475,11 +475,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumLe   { left, right, .. } => { write!(f, "FixnumLe {left}, {right}") },
             Insn::FixnumGt   { left, right, .. } => { write!(f, "FixnumGt {left}, {right}") },
             Insn::FixnumGe   { left, right, .. } => { write!(f, "FixnumGe {left}, {right}") },
-            Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {guard_type}") },
+            Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::CCall { cfun, args, name } => {
+            Insn::CCall { cfun, args, name, return_type: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
@@ -790,7 +790,7 @@ impl Function {
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val } => ArrayDup { val: find!(*val) },
-            CCall { cfun, args, name } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: *name },
+            CCall { cfun, args, name, return_type } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: *name, return_type: *return_type },
             Defined { .. } => todo!("find(Defined)"),
         }
     }
@@ -838,7 +838,7 @@ impl Function {
             Insn::StringIntern { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
-            Insn::CCall { .. } => types::Any,
+            Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -1024,7 +1024,7 @@ impl Function {
 
                     // Filter for a leaf and GC free function
                     use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true }) =
+                    let Some(FnProperties { leaf: true, no_gc: true, return_type }) =
                         ZJITState::get_method_annotations().get_cfunc_properties(method)
                     else {
                         return Err(());
@@ -1040,7 +1040,7 @@ impl Function {
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type });
                         fun.make_equal_to(send_insn_id, ccall);
                         return Ok(());
                     }
@@ -3306,7 +3306,7 @@ mod opt_tests {
             bb0():
               v1:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
-              v8:Any = CCall itself@0x1010, v1
+              v8:BasicObject = CCall itself@0x1010, v1
               PatchPoint CalleeModifiedLocals(v8)
               Return v8
         "#]]);
@@ -3328,6 +3328,26 @@ mod opt_tests {
               v4:BasicObject = SendWithoutBlock v1, :itself, v2
               PatchPoint CalleeModifiedLocals(v4)
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn string_bytesize_simple() {
+        eval("
+            def test = 'abc'.bytesize
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v2:StringExact = StringCopy v1
+              PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
+              v8:StringExact[VALUE(0x1018)] = GuardType v2, StringExact[VALUE(0x1018)]
+              v9:Fixnum = CCall bytesize@0x1020, v2
+              PatchPoint CalleeModifiedLocals(v9)
+              Return v9
         "#]]);
     }
 }
