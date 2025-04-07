@@ -1999,7 +1999,7 @@ CODE
     TracePoint.new(:c_call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[0]
+    assert_equal [:c_call, :itself, :initialize], events[1]
     events.clear
 
     o = Class.new{
