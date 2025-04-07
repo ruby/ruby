@@ -300,7 +300,7 @@ pub enum Insn {
 
     NewArray { elements: Vec<InsnId> },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
-    ArrayDup { val: InsnId },
+    ArrayDup { val: InsnId, state: InsnId },
 
     // Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     // with IfTrue/IfFalse in the backend to generate jcc.
@@ -433,7 +433,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
-            Insn::ArrayDup { val } => { write!(f, "ArrayDup {val}") }
+            Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
@@ -789,7 +789,7 @@ impl Function {
                 state: *state,
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
-            ArrayDup { val } => ArrayDup { val: find!(*val) },
+            ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
             CCall { cfun, args, name, return_type } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: *name, return_type: *return_type },
             Defined { .. } => todo!("find(Defined)"),
         }
@@ -1196,7 +1196,6 @@ impl Function {
                 | Insn::GetConstantPath { .. } =>
                     {}
                 Insn::StringCopy { val }
-                | Insn::ArrayDup { val }
                 | Insn::StringIntern { val }
                 | Insn::Return { val }
                 | Insn::Defined { v: val, .. }
@@ -1239,6 +1238,10 @@ impl Function {
                 Insn::IfTrue { val, target: BranchEdge { args, .. } } | Insn::IfFalse { val, target: BranchEdge { args, .. } } => {
                     worklist.push_back(val);
                     worklist.extend(args);
+                }
+                Insn::ArrayDup { val , state } => {
+                    worklist.push_back(val);
+                    worklist.push_back(state);
                 }
                 Insn::Send { self_val, args, state, .. }
                 | Insn::SendWithoutBlock { self_val, args, state, .. }
@@ -1639,7 +1642,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_duparray => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::ArrayDup { val });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
@@ -2050,7 +2054,8 @@ mod infer_tests {
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
         let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![] });
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr });
+        // Fake FrameState index of 0usize
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0usize) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
@@ -2197,8 +2202,8 @@ mod tests {
             fn test:
             bb0():
               v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v2:ArrayExact = ArrayDup v1
-              Return v2
+              v3:ArrayExact = ArrayDup v1
+              Return v3
         "#]]);
     }
 
@@ -2657,16 +2662,16 @@ mod tests {
             bb0():
               v1:BasicObject = PutSelf
               v2:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v3:ArrayExact = ArrayDup v2
-              v4:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v5:ArrayExact = ArrayDup v4
-              v6:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-              v7:StringExact = StringCopy v6
+              v4:ArrayExact = ArrayDup v2
+              v5:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:ArrayExact = ArrayDup v5
               v8:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
               v9:StringExact = StringCopy v8
-              v11:BasicObject = SendWithoutBlock v1, :unknown_method, v3, v5, v7, v9
-              PatchPoint CalleeModifiedLocals(v11)
-              Return v11
+              v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v11:StringExact = StringCopy v10
+              v13:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v9, v11
+              PatchPoint CalleeModifiedLocals(v13)
+              Return v13
         "#]]);
     }
 }
@@ -3018,8 +3023,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v4:Fixnum[5] = Const Value(5)
-              Return v4
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 

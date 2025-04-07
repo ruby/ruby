@@ -187,6 +187,13 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_array_dup
+    assert_compiles '[1, 2, 3]', %q{
+      def test = [1,2,3]
+      test
+    }
+  end
+
   def test_if
     assert_compiles '[0, nil]', %q{
       def test(n)

@@ -182,6 +182,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
     let out_opnd = match insn {
         Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
+        Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
@@ -394,6 +395,23 @@ fn gen_send_without_block(
     // the frame's locals
 
     Some(ret)
+}
+
+/// Compile an array duplication instruction
+fn gen_array_dup(
+    asm: &mut Assembler,
+    val: lir::Opnd,
+    state: &FrameState,
+) -> lir::Opnd {
+    asm_comment!(asm, "call rb_ary_resurrect");
+
+    // Save PC
+    gen_save_pc(asm, state);
+
+    asm.ccall(
+        rb_ary_resurrect as *const u8,
+        vec![val],
+    )
 }
 
 /// Compile code that exits from JIT code with a return value
