@@ -203,6 +203,7 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::GuardType { val, guard_type, state } => gen_guard_type(asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
+        Insn::CCall { cfun, args, name: _ } => gen_ccall(jit, asm, *cfun, args)?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -213,6 +214,17 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
     jit.opnds[insn_id.0] = Some(out_opnd);
 
     Some(())
+}
+
+/// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
+/// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
+fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[InsnId]) -> Option<lir::Opnd> {
+    let mut lir_args = Vec::with_capacity(args.len());
+    for &arg in args {
+        lir_args.push(jit.get_opnd(arg)?);
+    }
+
+    Some(asm.ccall(cfun, lir_args))
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ

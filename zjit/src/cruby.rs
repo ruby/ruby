@@ -250,6 +250,12 @@ pub struct rb_iseq_t {
 #[repr(transparent)] // same size and alignment as simply `usize`
 pub struct VALUE(pub usize);
 
+/// An interned string. See [ids] and methods this type.
+/// `0` is a sentinal value for IDs.
+#[repr(transparent)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ID(pub ::std::os::raw::c_ulong);
+
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
@@ -455,6 +461,18 @@ impl VALUE {
         }
     }
 
+    /// Borrow the string contents of `self`. Rust unsafe because of possible mutation and GC
+    /// interactions.
+    pub unsafe fn as_rstring_byte_slice<'a>(self) -> Option<&'a [u8]> {
+        if !unsafe { RB_TYPE_P(self, RUBY_T_STRING) } {
+            None
+        } else {
+            let str_ptr = unsafe { rb_RSTRING_PTR(self) } as *const u8;
+            let str_len: usize = unsafe { rb_RSTRING_LEN(self) }.try_into().ok()?;
+            Some(unsafe { std::slice::from_raw_parts(str_ptr, str_len) })
+        }
+    }
+
     pub fn is_frozen(self) -> bool {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
@@ -634,6 +652,28 @@ impl From<VALUE> for u16 {
     fn from(value: VALUE) -> Self {
         let VALUE(uimm) = value;
         uimm.try_into().unwrap()
+    }
+}
+
+impl ID {
+    // Get a debug representation of the contents of the ID. Since `str` is UTF-8
+    // and IDs have encodings that are not, this is a lossy representation.
+    pub fn contents_lossy(&self) -> std::borrow::Cow<'_, str> {
+        use std::borrow::Cow;
+        if self.0 == 0 {
+            Cow::Borrowed("ID(0)")
+        } else {
+            // Get the contents as a byte slice. IDs can have internal NUL bytes so rb_id2name,
+            // which returns a C string is more lossy than this approach.
+            let contents = unsafe { rb_id2str(*self) };
+            if contents == Qfalse {
+                Cow::Borrowed("ID(0)")
+            } else {
+                let slice = unsafe { contents.as_rstring_byte_slice() }
+                    .expect("rb_id2str() returned truthy non-string");
+                String::from_utf8_lossy(slice)
+            }
+        }
     }
 }
 
@@ -1140,7 +1180,7 @@ pub(crate) mod ids {
 
                     // Lookup and cache each ID
                     $name.store(
-                        unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) },
+                        unsafe { $crate::cruby::rb_intern2(ptr.cast(), content.len() as _) }.0,
                         std::sync::atomic::Ordering::Relaxed
                     );
                 )*
@@ -1159,14 +1199,15 @@ pub(crate) mod ids {
         name: compile
         name: eval
     }
-}
 
-/// Get an CRuby `ID` to an interned string, e.g. a particular method name.
-macro_rules! ID {
-    ($id_name:ident) => {{
-        let id = $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed);
-        debug_assert_ne!(0, id, "ids module should be initialized");
-        id
-    }}
+    /// Get an CRuby `ID` to an interned string, e.g. a particular method name.
+    macro_rules! ID {
+        ($id_name:ident) => {{
+            let id = $crate::cruby::ids::$id_name.load(std::sync::atomic::Ordering::Relaxed);
+            debug_assert_ne!(0, id, "ids module should be initialized");
+            ID(id)
+        }}
+    }
+    pub(crate) use ID;
 }
-pub(crate) use ID;
+pub(crate) use ids::ID;

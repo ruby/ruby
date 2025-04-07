@@ -9,6 +9,14 @@ require_relative '../lib/jit_support'
 return unless JITSupport.zjit_supported?
 
 class TestZJIT < Test::Unit::TestCase
+  def test_call_itself
+    assert_compiles '42', <<~RUBY, call_threshold: 2
+      def test = 42.itself
+      test
+      test
+    RUBY
+  end
+
   def test_nil
     assert_compiles 'nil', %q{
       def test = nil

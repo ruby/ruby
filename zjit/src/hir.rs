@@ -2,7 +2,11 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cruby::*, options::get_option, hir_type::types::Fixnum, options::DumpHIR, profile::get_or_create_iseq_payload
+    cruby::*,
+    options::{get_option, DumpHIR},
+    hir_type::types::Fixnum,
+    profile::{self, get_or_create_iseq_payload},
+    state::ZJITState,
 };
 use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
 use crate::hir_type::{Type, types};
@@ -162,12 +166,10 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
             }
             Invariant::MethodRedefined { klass, method } => {
                 let class_name = get_class_name(klass);
-                let method_name = unsafe {
-                    cstr_to_rust_string(rb_id2name(method)).unwrap_or_else(|| "<unknown>".to_owned())
-                };
-                write!(f, "MethodRedefined({class_name}@{:p}, {method_name}@{:p})",
+                write!(f, "MethodRedefined({class_name}@{:p}, {}@{:p})",
                     self.ptr_map.map_ptr(klass.as_ptr::<VALUE>()),
-                    self.ptr_map.map_id(method)
+                    method.contents_lossy(),
+                    self.ptr_map.map_id(method.0)
                 )
             }
             Invariant::CalleeModifiedLocals { send } => {
@@ -323,9 +325,8 @@ pub enum Insn {
     IfFalse { val: InsnId, target: BranchEdge },
 
     // Call a C function
-    // NOTE: should we store the C function name for pretty-printing?
-    //       or can we backtranslate the function pointer into a name string?
-    CCall { cfun: *const u8, args: Vec<InsnId> },
+    // `name` is for printing purposes only
+    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID },
 
     // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
@@ -478,6 +479,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
+            Insn::CCall { cfun, args, name } => {
+                write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            },
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -782,7 +790,7 @@ impl Function {
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val } => ArrayDup { val: find!(*val) },
-            CCall { cfun, args } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect() },
+            CCall { cfun, args, name } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: *name },
             Defined { .. } => todo!("find(Defined)"),
         }
     }
@@ -955,6 +963,113 @@ impl Function {
                     }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
+            }
+        }
+        self.infer_types();
+    }
+
+    /// Optimize SendWithoutBlock that land in a C method to a direct CCall without
+    /// runtime lookup.
+    fn optimize_c_calls(&mut self) {
+        // Try to reduce one SendWithoutBlock to a CCall
+        fn reduce_to_ccall(
+            fun: &mut Function,
+            block: BlockId,
+            payload: &profile::IseqPayload,
+            send: Insn,
+            send_insn_id: InsnId,
+        ) -> Result<(), ()> {
+            let Insn::SendWithoutBlock { self_val, cd, mut args, state, .. } = send else {
+                return Err(());
+            };
+
+            let call_info = unsafe { (*cd).ci };
+            let argc = unsafe { vm_ci_argc(call_info) };
+            let method_id = unsafe { rb_vm_ci_mid(call_info) };
+            let iseq_insn_idx = fun.frame_state(state).insn_idx;
+
+            // If we have info about the class of the receiver
+            //
+            // TODO(alan): there was a seemingly a miscomp here if you swap with
+            // `inexact_ruby_class`. Theoretically it can call a method too general
+            // for the receiver. Confirm and add a test.
+            let (recv_class, recv_type) = payload.get_operand_types(iseq_insn_idx)
+                .and_then(|types| types.get(argc as usize))
+                .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type))))
+                .ok_or(())?;
+
+            // Do method lookup
+            let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
+            if method.is_null() {
+                return Err(());
+            }
+
+            // Filter for C methods
+            let def_type = unsafe { get_cme_def_type(method) };
+            if def_type != VM_METHOD_TYPE_CFUNC {
+                return Err(());
+            }
+
+            // Find the `argc` (arity) of the C method, which describes the parameters it expects
+            let cfunc = unsafe { get_cme_def_body_cfunc(method) };
+            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+            match cfunc_argc {
+                0.. => {
+                    // (self, arg0, arg1, ..., argc) form
+                    //
+                    // Bail on argc mismatch
+                    if argc != cfunc_argc as u32 {
+                        return Err(());
+                    }
+
+                    // Filter for a leaf and GC free function
+                    use crate::cruby_methods::FnProperties;
+                    let Some(FnProperties { leaf: true, no_gc: true }) =
+                        ZJITState::get_method_annotations().get_cfunc_properties(method)
+                    else {
+                        return Err(());
+                    };
+
+                    let ci_flags = unsafe { vm_ci_flag(call_info) };
+                    // Filter for simple call sites (i.e. no splats etc.)
+                    if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
+                        // Commit to the replacement. Put PatchPoint.
+                        fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
+                        // Guard receiver class
+                        fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: *recv_type, state });
+                        let cfun = unsafe { get_mct_func(cfunc) }.cast();
+                        let mut cfunc_args = vec![self_val];
+                        cfunc_args.append(&mut args);
+                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id });
+                        fun.make_equal_to(send_insn_id, ccall);
+                        return Ok(());
+                    }
+                }
+                -1 => {
+                    // (argc, argv, self) parameter form
+                    // Falling through for now
+                }
+                -2 => {
+                    // (self, args_ruby_array) parameter form
+                    // Falling through for now
+                }
+                _ => unreachable!("unknown cfunc kind: argc={argc}")
+            }
+
+            Err(())
+        }
+
+        let payload = get_or_create_iseq_payload(self.iseq);
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+            for insn_id in old_insns {
+                if let send @ Insn::SendWithoutBlock { .. } = self.find(insn_id) {
+                    if reduce_to_ccall(self, block, payload, send, insn_id).is_ok() {
+                        continue;
+                    }
+                }
+                self.push_insn_id(block, insn_id);
             }
         }
         self.infer_types();
@@ -1175,6 +1290,7 @@ impl Function {
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
         self.optimize_direct_sends();
+        self.optimize_c_calls();
         self.fold_constants();
         self.eliminate_dead_code();
 
@@ -1683,7 +1799,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let method_name = unsafe {
                         let mid = rb_vm_ci_mid(call_info);
-                        cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
+                        mid.contents_lossy().into_owned()
                     };
                     let mut args = vec![];
                     for _ in 0..argc {
@@ -1705,7 +1821,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let method_name = unsafe {
                         let mid = rb_vm_ci_mid(call_info);
-                        cstr_to_rust_string(rb_id2name(mid)).unwrap_or_else(|| "<unknown>".to_owned())
+                        mid.contents_lossy().into_owned()
                     };
                     let mut args = vec![];
                     for _ in 0..argc {
@@ -3175,6 +3291,43 @@ mod opt_tests {
               v1:BasicObject = GetConstantPath 0x1000
               v2:Fixnum[5] = Const Value(5)
               Return v2
+        "#]]);
+    }
+
+    #[test]
+    fn kernel_itself_simple() {
+        eval("
+            def test = 1.itself
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
+              v8:Any = CCall itself@0x1010, v1
+              PatchPoint CalleeModifiedLocals(v8)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn kernel_itself_argc_mismatch() {
+        eval("
+            def test = 1.itself(0)
+            test rescue 0
+            test rescue 0
+        ");
+        // Not specialized
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v2:Fixnum[0] = Const Value(0)
+              v4:BasicObject = SendWithoutBlock v1, :itself, v2
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 }

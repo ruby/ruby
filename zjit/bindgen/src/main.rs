@@ -225,9 +225,9 @@ fn main() {
         .allowlist_function("rb_intern")
         .allowlist_function("rb_intern2")
         .allowlist_function("rb_id2sym")
-        .allowlist_function("rb_id2name")
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
+        .allowlist_function("rb_id2str")
 
         // From internal/numeric.h
         .allowlist_function("rb_fix_aref")
@@ -470,8 +470,9 @@ fn main() {
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")
 
-        // We define VALUE manually, don't import it
+        // We define these manually, don't import them
         .blocklist_type("VALUE")
+        .blocklist_type("ID")
 
         // From iseq.h
         .opaque_type("rb_iseq_t")

@@ -1,4 +1,5 @@
-use crate::cruby::{rb_bug_panic_hook, EcPtr, Qnil, VALUE};
+use crate::cruby::{self, rb_bug_panic_hook, EcPtr, Qnil, VALUE};
+use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
@@ -25,6 +26,9 @@ pub struct ZJITState {
 
     /// Assert successful compilation if set to true
     assert_compiles: bool,
+
+    /// Properties of core library methods
+    method_annotations: cruby_methods::Annotations,
 }
 
 /// Private singleton instance of the codegen globals
@@ -78,6 +82,7 @@ impl ZJITState {
             options,
             invariants: Invariants::default(),
             assert_compiles: false,
+            method_annotations: cruby_methods::init()
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -107,6 +112,10 @@ impl ZJITState {
         &mut ZJITState::get_instance().invariants
     }
 
+    pub fn get_method_annotations() -> &'static cruby_methods::Annotations {
+        &ZJITState::get_instance().method_annotations
+    }
+
     /// Return true if successful compilation should be asserted
     pub fn assert_compiles_enabled() -> bool {
         ZJITState::get_instance().assert_compiles
@@ -125,6 +134,8 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
+        cruby::ids::init();
+
         let options = unsafe { Box::from_raw(options as *mut Options) };
         ZJITState::init(*options);
         std::mem::drop(options);

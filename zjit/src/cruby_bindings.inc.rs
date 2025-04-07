@@ -49,7 +49,6 @@ pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 2;
-pub type ID = ::std::os::raw::c_ulong;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -323,7 +322,6 @@ pub struct iseq_inline_constant_cache {
     pub segments: *const ID,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
     pub value: usize,
     pub iv_set_name: ID,
@@ -404,7 +402,6 @@ pub type shape_id_t = u32;
 pub type redblack_id_t = u32;
 pub type redblack_node_t = redblack_node;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
@@ -417,7 +414,6 @@ pub struct rb_shape {
 }
 pub type rb_shape_t = rb_shape;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct redblack_node {
     pub key: ID,
     pub value: *mut rb_shape_t,
@@ -825,7 +821,7 @@ unsafe extern "C" {
     pub fn rb_id2sym(id: ID) -> VALUE;
     pub fn rb_intern(name: *const ::std::os::raw::c_char) -> ID;
     pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: ::std::os::raw::c_long) -> ID;
-    pub fn rb_id2name(id: ID) -> *const ::std::os::raw::c_char;
+    pub fn rb_id2str(id: ID) -> VALUE;
     pub fn rb_class2name(klass: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_obj_is_kind_of(obj: VALUE, klass: VALUE) -> VALUE;
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
