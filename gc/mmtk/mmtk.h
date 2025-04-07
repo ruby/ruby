@@ -61,8 +61,6 @@ typedef struct MMTk_RubyUpcalls {
     void (*get_mutators)(void (*visit_mutator)(MMTk_Mutator*, void*), void *data);
     void (*scan_gc_roots)(void);
     void (*scan_objspace)(void);
-    void (*scan_roots_in_mutator_thread)(MMTk_VMMutatorThread mutator_tls,
-                                         MMTk_VMWorkerThread worker_tls);
     void (*scan_object_ruby_style)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
     void (*call_obj_free)(MMTk_ObjectReference object);
