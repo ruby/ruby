@@ -465,7 +465,7 @@ module Bundler
     end
 
     def normalize_platforms
-      @platforms = resolve.normalize_platforms!(current_dependencies, platforms)
+      resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
     end

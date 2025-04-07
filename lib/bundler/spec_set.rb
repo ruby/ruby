@@ -29,9 +29,9 @@ module Bundler
     end
 
     def normalize_platforms!(deps, platforms)
-      complete_platforms = add_extra_platforms!(platforms)
+      add_extra_platforms!(platforms)
 
-      complete_platforms.map do |platform|
+      platforms.map! do |platform|
         next platform if platform == Gem::Platform::RUBY
 
         begin
@@ -44,7 +44,7 @@ module Bundler
         next platform if incomplete_for_platform?(deps, less_specific_platform)
 
         less_specific_platform
-      end.uniq
+      end.uniq!
     end
 
     def add_originally_invalid_platforms!(platforms, originally_invalid_platforms)
@@ -68,6 +68,7 @@ module Bundler
       return if new_platforms.empty?
 
       platforms.concat(new_platforms)
+      return if new_platforms.include?(Bundler.local_platform)
 
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
