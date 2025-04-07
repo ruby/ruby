@@ -35,14 +35,6 @@ SOFTWARE.
 typedef uint_fast32_t u32_t;
 typedef uint_fast64_t u64_t;
 
-#if defined __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshorten-64-to-32"
-#elif defined __GNUC__
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-braces"
-#endif
-
 #define u32(x) ((u32_t)(x))
 #define u64(x) ((u64_t)(x))
 
@@ -93,7 +85,7 @@ jeaiii_ultoa(char *b, u64_t n)
 
     if (n < u32(1e6)) {
         if (n < u32(1e4)) {
-            u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * n;
+            u32_t f0 = u32((10 * (1 << 24) / 1e3 + 1) * n);
             COPY(b, digits_fd[f0 >> 24]);
 
             b -= n < u32(1e3);
@@ -163,7 +155,7 @@ jeaiii_ultoa(char *b, u64_t n)
     }
     else if (u < u32(1e6)) {
         if (u < u32(1e4)) {
-            u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * u;
+            u32_t f0 = u32((10 * (1 << 24) / 1e3 + 1) * u);
             COPY(b, digits_fd[f0 >> 24]);
 
             b -= u < u32(1e3);
@@ -228,7 +220,7 @@ jeaiii_ultoa(char *b, u64_t n)
             b += 2;
         }
         else {
-            u32_t f0 = u32(10 * (1 << 24) / 1e3 + 1) * u;
+            u32_t f0 = u32((10 * (1 << 24) / 1e3 + 1) * u);
             COPY(b, digits_fd[f0 >> 24]);
 
             b -= u < u32(1e3);
@@ -271,11 +263,5 @@ jeaiii_ultoa(char *b, u64_t n)
 #undef u32
 #undef u64
 #undef COPY
-
-#if defined __clang__
-#pragma clang diagnostic pop
-#elif defined __GNUC__
-#pragma GCC diagnostic pop
-#endif
 
 #endif // JEAIII_TO_TEXT_H_
