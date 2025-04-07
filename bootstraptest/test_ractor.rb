@@ -1636,7 +1636,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} if !yjit_enabled? || ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
+} if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
