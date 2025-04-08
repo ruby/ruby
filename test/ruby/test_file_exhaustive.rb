@@ -1278,7 +1278,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(regular_file, File.dirname(regular_file, 0))
     assert_equal(@dir, File.dirname(regular_file, 1))
     assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
-    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # rootdir and tmpdir are in different drives
+    return if /mswin/ =~ RUBY_PLATFORM # mswin allows rootdir and tmpdir are in different drives
     assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
     assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
   end
