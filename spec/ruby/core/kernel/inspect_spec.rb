@@ -28,4 +28,34 @@ describe "Kernel#inspect" do
     end
     obj.inspect.should be_kind_of(String)
   end
+
+  ruby_version_is "3.5" do
+    it "calls #instance_variables_to_inspect private method to know which variables to display" do
+      obj = Object.new
+      obj.instance_eval do
+        @host = "localhost"
+        @user = "root"
+        @password = "hunter2"
+      end
+      obj.singleton_class.class_eval do
+        private def instance_variables_to_inspect = %i[@host @user @does_not_exist]
+      end
+
+      inspected = obj.inspect.sub(/^#<Object:0x[0-9a-f]+/, '#<Object:0x00')
+      inspected.should == '#<Object:0x00 @host="localhost", @user="root">'
+
+      obj = Object.new
+      obj.instance_eval do
+        @host = "localhost"
+        @user = "root"
+        @password = "hunter2"
+      end
+      obj.singleton_class.class_eval do
+        private def instance_variables_to_inspect = []
+      end
+
+      inspected = obj.inspect.sub(/^#<Object:0x[0-9a-f]+/, '#<Object:0x00')
+      inspected.should == "#<Object:0x00>"
+    end
+  end
 end

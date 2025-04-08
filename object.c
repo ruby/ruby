@@ -83,6 +83,7 @@ static VALUE rb_cFalseClass_to_s;
 #define id_init_dup         idInitialize_dup
 #define id_const_missing    idConst_missing
 #define id_to_f             idTo_f
+static ID id_instance_variables_to_inspect;
 
 #define CLASS_OR_MODULE_P(obj) \
     (!SPECIAL_CONST_P(obj) && \
@@ -735,11 +736,17 @@ rb_inspect(VALUE obj)
 static int
 inspect_i(ID id, VALUE value, st_data_t a)
 {
-    VALUE str = (VALUE)a;
+    VALUE *args = (VALUE *)a, str = args[0], ivars = args[1];
 
     /* need not to show internal data */
     if (CLASS_OF(value) == 0) return ST_CONTINUE;
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
+    if (!NIL_P(ivars)) {
+        VALUE name = ID2SYM(id);
+        for (long i = 0; RARRAY_AREF(ivars, i) != name; ) {
+            if (++i >= RARRAY_LEN(ivars)) return ST_CONTINUE;
+        }
+    }
     if (RSTRING_PTR(str)[0] == '-') { /* first element */
         RSTRING_PTR(str)[0] = '#';
         rb_str_cat2(str, " ");
@@ -754,13 +761,15 @@ inspect_i(ID id, VALUE value, st_data_t a)
 }
 
 static VALUE
-inspect_obj(VALUE obj, VALUE str, int recur)
+inspect_obj(VALUE obj, VALUE a, int recur)
 {
+    VALUE *args = (VALUE *)a, str = args[0];
+
     if (recur) {
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, str);
+        rb_ivar_foreach(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -793,17 +802,47 @@ inspect_obj(VALUE obj, VALUE str, int recur)
  *       end
  *     end
  *     Bar.new.inspect                  #=> "#<Bar:0x0300c868 @bar=1>"
+ *
+ * If _obj_ responds to +instance_variables_to_inspect+, then only
+ * the instance variables listed in the returned array will be included
+ * in the inspect string.
+ *
+ *
+ *     class DatabaseConfig
+ *       def initialize(host, user, password)
+ *         @host = host
+ *         @user = user
+ *         @password = password
+ *       end
+ *
+ *     private
+ *       def instance_variables_to_inspect = [:@host, :@user]
+ *     end
+ *
+ *     conf = DatabaseConfig.new("localhost", "root", "hunter2")
+ *     conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
  */
 
 static VALUE
 rb_obj_inspect(VALUE obj)
 {
-    if (rb_ivar_count(obj) > 0) {
-        VALUE str;
+    VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
+    st_index_t n = 0;
+    if (UNDEF_P(ivars)) {
+        n = rb_ivar_count(obj);
+        ivars = Qnil;
+    }
+    else if (!NIL_P(ivars)) {
+        Check_Type(ivars, T_ARRAY);
+        n = RARRAY_LEN(ivars);
+    }
+    if (n > 0) {
         VALUE c = rb_class_name(CLASS_OF(obj));
-
-        str = rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj);
-        return rb_exec_recursive(inspect_obj, obj, str);
+        VALUE args[2] = {
+            rb_sprintf("-<%"PRIsVALUE":%p", c, (void*)obj),
+            ivars
+        };
+        return rb_exec_recursive(inspect_obj, obj, (VALUE)args);
     }
     else {
         return rb_any_to_s(obj);
@@ -4602,6 +4641,7 @@ void
 Init_Object(void)
 {
     id_dig = rb_intern_const("dig");
+    id_instance_variables_to_inspect = rb_intern_const("instance_variables_to_inspect");
     InitVM(Object);
 }
 
