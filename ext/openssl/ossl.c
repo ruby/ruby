@@ -388,10 +388,14 @@ osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
  * call-seq:
  *   OpenSSL.errors -> [String...]
  *
- * See any remaining errors held in queue.
+ * Returns any remaining errors held in the \OpenSSL thread-local error queue
+ * and clears the queue. This should normally return an empty array.
  *
- * Any errors you see here are probably due to a bug in Ruby's OpenSSL
- * implementation.
+ * This is intended for debugging Ruby/OpenSSL. If you see any errors here,
+ * it likely indicates a bug in the extension. Please file an issue at
+ * https://github.com/ruby/openssl.
+ *
+ * For debugging your program, OpenSSL.debug= may be useful.
  */
 static VALUE
 ossl_get_errors(VALUE _)
@@ -415,6 +419,8 @@ VALUE dOSSL;
 /*
  * call-seq:
  *   OpenSSL.debug -> true | false
+ *
+ * Returns whether Ruby/OpenSSL's debug mode is currently enabled.
  */
 static VALUE
 ossl_debug_get(VALUE self)
@@ -424,9 +430,9 @@ ossl_debug_get(VALUE self)
 
 /*
  * call-seq:
- *   OpenSSL.debug = boolean -> boolean
+ *   OpenSSL.debug = boolean
  *
- * Turns on or off debug mode. With debug mode, all errors added to the OpenSSL
+ * Turns on or off debug mode. With debug mode, all errors added to the \OpenSSL
  * error queue will be printed to stderr.
  */
 static VALUE
@@ -440,6 +446,8 @@ ossl_debug_set(VALUE self, VALUE val)
 /*
  * call-seq:
  *   OpenSSL.fips_mode -> true | false
+ *
+ * Returns whether the FIPS mode is currently enabled.
  */
 static VALUE
 ossl_fips_mode_get(VALUE self)
@@ -460,10 +468,10 @@ ossl_fips_mode_get(VALUE self)
 
 /*
  * call-seq:
- *   OpenSSL.fips_mode = boolean -> boolean
+ *   OpenSSL.fips_mode = boolean
  *
  * Turns FIPS mode on or off. Turning on FIPS mode will obviously only have an
- * effect for FIPS-capable installations of the OpenSSL library. Trying to do
+ * effect for FIPS-capable installations of the \OpenSSL library. Trying to do
  * so otherwise will result in an error.
  *
  * === Examples
@@ -503,13 +511,13 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
 
 /*
  * call-seq:
- *   OpenSSL.fixed_length_secure_compare(string, string) -> boolean
+ *   OpenSSL.fixed_length_secure_compare(string, string) -> true or false
  *
  * Constant time memory comparison for fixed length strings, such as results
- * of HMAC calculations.
+ * of \HMAC calculations.
  *
  * Returns +true+ if the strings are identical, +false+ if they are of the same
- * length but not identical. If the length is different, +ArgumentError+ is
+ * length but not identical. If the length is different, ArgumentError is
  * raised.
  */
 static VALUE
@@ -531,7 +539,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 }
 
 /*
- * OpenSSL provides SSL, TLS and general purpose cryptography.  It wraps the
+ * OpenSSL provides \SSL, TLS and general purpose cryptography.  It wraps the
  * OpenSSL[https://www.openssl.org/] library.
  *
  * = Examples
@@ -586,7 +594,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * === Loading an Encrypted Key
  *
- * OpenSSL will prompt you for your password when loading an encrypted key.
+ * \OpenSSL will prompt you for your password when loading an encrypted key.
  * If you will not be able to type in the password you may provide it when
  * loading the key:
  *
@@ -649,7 +657,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * == PBKDF2 Password-based Encryption
  *
- * If supported by the underlying OpenSSL version used, Password-based
+ * If supported by the underlying \OpenSSL version used, Password-based
  * Encryption should use the features of PKCS5. If not supported or if
  * required by legacy applications, the older, less secure methods specified
  * in RFC 2898 are also supported (see below).
@@ -708,7 +716,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   decrypted = cipher.update encrypted
  *   decrypted << cipher.final
  *
- * == X509 Certificates
+ * == \X509 Certificates
  *
  * === Creating a Certificate
  *
@@ -745,7 +753,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     extension_factory.create_extension('subjectKeyIdentifier', 'hash')
  *
  * The list of supported extensions (and in some cases their possible values)
- * can be derived from the "objects.h" file in the OpenSSL source code.
+ * can be derived from the "objects.h" file in the \OpenSSL source code.
  *
  * === Signing a Certificate
  *
@@ -899,23 +907,23 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     io.write csr_cert.to_pem
  *   end
  *
- * == SSL and TLS Connections
+ * == \SSL and TLS Connections
  *
- * Using our created key and certificate we can create an SSL or TLS connection.
- * An SSLContext is used to set up an SSL session.
+ * Using our created key and certificate we can create an \SSL or TLS
+ * connection. An OpenSSL::SSL::SSLContext is used to set up an \SSL session.
  *
  *   context = OpenSSL::SSL::SSLContext.new
  *
- * === SSL Server
+ * === \SSL Server
  *
- * An SSL server requires the certificate and private key to communicate
+ * An \SSL server requires the certificate and private key to communicate
  * securely with its clients:
  *
  *   context.cert = cert
  *   context.key = key
  *
- * Then create an SSLServer with a TCP server socket and the context.  Use the
- * SSLServer like an ordinary TCP server.
+ * Then create an OpenSSL::SSL::SSLServer with a TCP server socket and the
+ * context.  Use the SSLServer like an ordinary TCP server.
  *
  *   require 'socket'
  *
@@ -934,14 +942,15 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *     ssl_connection.close
  *   end
  *
- * === SSL client
+ * === \SSL client
  *
- * An SSL client is created with a TCP socket and the context.
- * SSLSocket#connect must be called to initiate the SSL handshake and start
- * encryption.  A key and certificate are not required for the client socket.
+ * An \SSL client is created with a TCP socket and the context.
+ * OpenSSL::SSL::SSLSocket#connect must be called to initiate the \SSL handshake
+ * and start encryption.  A key and certificate are not required for the client
+ * socket.
  *
- * Note that SSLSocket#close doesn't close the underlying socket by default. Set
- * SSLSocket#sync_close to true if you want.
+ * Note that OpenSSL::SSL::SSLSocket#close doesn't close the underlying socket
+ * by default. Set OpenSSL::SSL::SSLSocket#sync_close to true if you want.
  *
  *   require 'socket'
  *
@@ -957,7 +966,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *
  * === Peer Verification
  *
- * An unverified SSL connection does not provide much security.  For enhanced
+ * An unverified \SSL connection does not provide much security.  For enhanced
  * security the client or server can verify the certificate of its peer.
  *
  * The client can be modified to verify the server's certificate against the
@@ -1008,13 +1017,14 @@ Init_openssl(void)
     rb_define_singleton_method(mOSSL, "fixed_length_secure_compare", ossl_crypto_fixed_length_secure_compare, 2);
 
     /*
-     * Version of OpenSSL the ruby OpenSSL extension was built with
+     * \OpenSSL library version string used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
      */
     rb_define_const(mOSSL, "OPENSSL_VERSION",
                     rb_obj_freeze(rb_str_new_cstr(OPENSSL_VERSION_TEXT)));
 
     /*
-     * Version of OpenSSL the ruby OpenSSL extension is running with
+     * \OpenSSL library version string currently used at runtime.
      */
     rb_define_const(
         mOSSL,
@@ -1023,12 +1033,18 @@ Init_openssl(void)
     );
 
     /*
-     * Version number of OpenSSL the ruby OpenSSL extension was built with
-     * (base 16). The formats are below.
+     * \OpenSSL library version number used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
      *
-     * [OpenSSL 3] <tt>0xMNN00PP0 (major minor 00 patch 0)</tt>
-     * [OpenSSL before 3] <tt>0xMNNFFPPS (major minor fix patch status)</tt>
-     * [LibreSSL] <tt>0x20000000 (fixed value)</tt>
+     * The version number is encoded into a single integer value. The number
+     * follows the format:
+     *
+     * [\OpenSSL 3.0.0 or later]
+     *   <tt>0xMNN00PP0</tt> (major minor 00 patch 0)
+     * [\OpenSSL 1.1.1 or earlier]
+     *   <tt>0xMNNFFPPS</tt> (major minor fix patch status)
+     * [LibreSSL]
+     *   <tt>0x20000000</tt> (a fixed value)
      *
      * See also the man page OPENSSL_VERSION_NUMBER(3).
      */
@@ -1036,9 +1052,12 @@ Init_openssl(void)
 
 #if defined(LIBRESSL_VERSION_NUMBER)
     /*
-     * Version number of LibreSSL the ruby OpenSSL extension was built with
-     * (base 16). The format is <tt>0xMNNFF00f (major minor fix 00
-     * status)</tt>. This constant is only defined in LibreSSL cases.
+     * LibreSSL library version number used to compile the Ruby/OpenSSL
+     * extension. This may differ from the version used at runtime.
+     *
+     * This constant is only defined if the extension was compiled against
+     * LibreSSL. The number follows the format:
+     * <tt>0xMNNFF00f</tt> (major minor fix 00 status).
      *
      * See also the man page LIBRESSL_VERSION_NUMBER(3).
      */
@@ -1046,7 +1065,11 @@ Init_openssl(void)
 #endif
 
     /*
-     * Boolean indicating whether OpenSSL is FIPS-capable or not
+     * Boolean indicating whether the \OpenSSL library is FIPS-capable or not.
+     * Always <tt>true</tt> for \OpenSSL 3.0 and later.
+     *
+     * This is obsolete and will be removed in the future.
+     * See also OpenSSL.fips_mode.
      */
     rb_define_const(mOSSL, "OPENSSL_FIPS",
 /* OpenSSL 3 is FIPS-capable even when it is installed without fips option */
