@@ -37,13 +37,10 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, /Proc's self is not shareable/)
 
     x = str.instance_exec { method(:to_s) }
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+    assert_unshareable(x, "Method's receiver is not shareable: #<Method: String#to_s()>")
 
     x = str.instance_exec { method(:to_s).to_proc }
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
-
-    x = str.instance_exec { method(:itself).to_proc }
-    assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
+    assert_unshareable(x, "Method's receiver is not shareable: #<Method: String#to_s()>")
 
     str.freeze
 
@@ -51,13 +48,41 @@ class TestRactor < Test::Unit::TestCase
     assert_make_shareable(x)
 
     x = str.instance_exec { method(:to_s) }
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+    assert_make_shareable(x)
 
     x = str.instance_exec { method(:to_s).to_proc }
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+    assert_make_shareable(x)
 
     x = str.instance_exec { method(:itself).to_proc }
-    assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
+    assert_make_shareable(x)
+  end
+
+  def test_shareability_of_define_method_method
+    outside_variable = []
+    klass = Class.new do
+      define_method(:shareable_proc, Ractor.make_shareable(nil.instance_exec { ->() { 123 } }))
+      define_method(:references_outside) { outside_variable }
+      def regular_method
+        456
+      end
+    end
+
+    obj = klass.new
+
+    m = obj.method(:shareable_proc)
+    assert_unshareable m, "Method's receiver is not shareable: #{m.inspect}"
+    m = obj.method(:regular_method)
+    assert_unshareable m, "Method's receiver is not shareable: #{m.inspect}"
+    m = obj.method(:references_outside)
+    assert_unshareable m, "Method's receiver is not shareable: #{m.inspect}"
+
+    obj.freeze
+
+    assert_make_shareable obj.method(:shareable_proc)
+    assert_make_shareable obj.method(:regular_method)
+
+    # Method object is shareable, but actually calling it would raise
+    assert_make_shareable obj.method(:references_outside)
   end
 
   def test_shareability_error_uses_inspect
@@ -65,7 +90,7 @@ class TestRactor < Test::Unit::TestCase
     def x.to_s
       raise "this should not be called"
     end
-    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+    assert_unshareable(x, "Method's receiver is not shareable: #<Method: String#to_s()>")
   end
 
   def test_default_thread_group
@@ -96,6 +121,20 @@ class TestRactor < Test::Unit::TestCase
       end.take
       assert_equal "uh oh", err_msg
     RUBY
+  end
+
+  def test_singleton_method
+    obj = Object.new
+
+    obj.define_singleton_method(:foo) { self }
+
+    assert_unshareable obj.method(:foo), /receiver is not shareable/
+    assert_make_shareable obj.method(:foo).unbind
+
+    obj.freeze
+
+    assert_make_shareable obj.method(:foo)
+    assert_make_shareable obj.method(:foo).unbind
   end
 
   def assert_make_shareable(obj)
