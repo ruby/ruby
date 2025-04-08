@@ -877,6 +877,12 @@ x = __ENCODING__
     assert_equal(9, x)
   end
 
+  def test_tetrate
+    x = nil
+    assert_nothing_raised { eval("x = 2 *** 4") }
+    assert_equal(65536, x)
+  end
+
   def test_embedded_rd
     assert_valid_syntax("=begin\n""=end")
     assert_valid_syntax("=begin\n""=end\0")

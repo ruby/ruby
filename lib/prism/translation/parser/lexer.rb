@@ -163,6 +163,7 @@ module Prism
           STAR: :tSTAR2,
           STAR_EQUAL: :tOP_ASGN,
           STAR_STAR: :tPOW,
+          TETRATE: :tTETRATE,
           STAR_STAR_EQUAL: :tOP_ASGN,
           STRING_BEGIN: :tSTRING_BEG,
           STRING_CONTENT: :tSTRING_CONTENT,

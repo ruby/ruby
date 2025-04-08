@@ -11023,6 +11023,10 @@ parser_lex(pm_parser_t *parser) {
                 // * ** **= *=
                 case '*': {
                     if (match(parser, '*')) {
+                        if (match(parser, '*')) {
+                            lex_state_set(parser, PM_LEX_STATE_BEG);
+                            LEX(PM_TOKEN_STAR_STAR_STAR);
+                        }
                         if (match(parser, '=')) {
                             lex_state_set(parser, PM_LEX_STATE_BEG);
                             LEX(PM_TOKEN_STAR_STAR_EQUAL);
@@ -12953,7 +12957,8 @@ typedef enum {
     PM_BINDING_POWER_UNARY =            46, // ! ~ +@
     PM_BINDING_POWER_INDEX =            48, // [] []=
     PM_BINDING_POWER_CALL =             50, // :: .
-    PM_BINDING_POWER_MAX =              52
+    PM_BINDING_POWER_MAX =              52,
+    PM_BINDING_POWER_TETRATE  =         54 // ***
 } pm_binding_power_t;
 
 /**
@@ -13074,6 +13079,9 @@ pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
     // **
     [PM_TOKEN_STAR_STAR] = RIGHT_ASSOCIATIVE(PM_BINDING_POWER_EXPONENT),
     [PM_TOKEN_USTAR_STAR] = RIGHT_ASSOCIATIVE_UNARY(PM_BINDING_POWER_UNARY),
+
+    // ***
+    [PM_TOKEN_STAR_STAR_STAR] = RIGHT_ASSOCIATIVE(PM_BINDING_POWER_TETRATE),
 
     // ! ~ +@
     [PM_TOKEN_BANG] = RIGHT_ASSOCIATIVE_UNARY(PM_BINDING_POWER_UNARY),
@@ -22076,6 +22084,11 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             pm_constant_id_list_free(&captures);
 
             return (pm_node_t *) pm_match_required_node_create(parser, node, pattern, &operator);
+        }
+        case PM_TOKEN_STAR_STAR_STAR: {
+           parser_lex(parser);
+           pm_node_t *argument = parse_expression(parser, binding_power, false, false, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t)(depth + 1));
+           return (pm_node_t *) pm_call_node_binary_create(parser, node, &token, argument, 0);
         }
         default:
             assert(false && "unreachable");
