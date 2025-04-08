@@ -68,6 +68,23 @@ class TestRactor < Test::Unit::TestCase
     end;
   end
 
+  def test_singleton_method
+    obj = Object.new
+
+    obj.define_singleton_method(:foo) { self }
+
+    assert_unshareable obj.method(:foo), /receiver is not shareable/
+    #Object.make_shareable(obj)
+    Ractor.make_shareable(obj.method(:foo))
+    p obj.frozen?
+    assert_unshareable obj.method(:foo).unbind
+
+    obj.freeze
+
+    assert_unshareable obj.method(:foo)
+    assert_unshareable obj.method(:foo).unbind
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
