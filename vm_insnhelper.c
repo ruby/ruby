@@ -6396,7 +6396,7 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
         flags = entry->flags;
 
         if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
-            VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
+            VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, entry->value));
         }
         else {
             return false;
