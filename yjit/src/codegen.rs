@@ -10284,44 +10284,15 @@ fn gen_opt_getconstant_path(
         // Call function to verify the cache. It doesn't allocate or call methods.
         // This includes a check for Ractor safety
         let ret_val = asm.ccall(
-            rb_vm_ic_hit_p as *const u8,
+            rb_vm_ic_fetch as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
         );
 
-        // Check the result. SysV only specifies one byte for _Bool return values,
-        // so it's important we only check one bit to ignore the higher bits in the register.
-        asm.test(ret_val, 1.into());
-        asm.jz(Target::side_exit(Counter::opt_getconstant_path_ic_miss));
+        asm.cmp(ret_val, Qundef.into());
+        asm.je(Target::side_exit(Counter::opt_getconstant_path_ic_miss));
 
-        let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
-
-        if cref_sensitive {
-            // Push ic->c.entry->value
-            let ic_entry = asm.load(Opnd::mem(
-                64,
-                inline_cache,
-                RUBY_OFFSET_IC_ENTRY
-            ));
-
-            let ic_entry_val = asm.load(Opnd::mem(
-                64,
-                ic_entry,
-                RUBY_OFFSET_ICE_VALUE
-            ));
-
-            let stack_top = asm.stack_push(Type::Unknown);
-            asm.store(stack_top, ic_entry_val);
-        } else {
-            // Push ic->value
-            let ic_val = asm.load(Opnd::mem(
-                64,
-                inline_cache,
-                RUBY_OFFSET_IC_ENTRY
-            ));
-
-            let stack_top = asm.stack_push(Type::Unknown);
-            asm.store(stack_top, ic_val);
-        }
+        let stack_top = asm.stack_push(Type::Unknown);
+        asm.store(stack_top, ret_val);
     } else {
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
