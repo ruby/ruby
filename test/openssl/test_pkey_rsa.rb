@@ -108,13 +108,13 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     pssopts = {
       "rsa_padding_mode" => "pss",
       "rsa_pss_saltlen" => 20,
-      "rsa_mgf1_md" => "SHA1"
+      "rsa_mgf1_md" => "SHA256"
     }
     sig_pss = key.sign("SHA256", data, pssopts)
     assert_equal 256, sig_pss.bytesize
     assert_equal true, key.verify("SHA256", sig_pss, data, pssopts)
     assert_equal true, key.verify_pss("SHA256", sig_pss, data,
-                                      salt_length: 20, mgf1_hash: "SHA1")
+                                      salt_length: 20, mgf1_hash: "SHA256")
     # Defaults to PKCS #1 v1.5 padding => verification failure
     assert_equal false, key.verify("SHA256", sig_pss, data)
 
@@ -188,22 +188,22 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     data = "Sign me!"
     invalid_data = "Sign me?"
 
-    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA1")
+    signature = key.sign_pss("SHA256", data, salt_length: 20, mgf1_hash: "SHA256")
     assert_equal 256, signature.bytesize
     assert_equal true,
-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
     assert_equal true,
-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
     assert_equal false,
-      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, invalid_data, salt_length: 20, mgf1_hash: "SHA256")
 
-    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA1")
+    signature = key.sign_pss("SHA256", data, salt_length: :digest, mgf1_hash: "SHA256")
     assert_equal true,
-      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, data, salt_length: 32, mgf1_hash: "SHA256")
     assert_equal true,
-      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
     assert_equal false,
-      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA1")
+      key.verify_pss("SHA256", signature, data, salt_length: 20, mgf1_hash: "SHA256")
 
     # The sign_pss with `salt_length: :max` raises the "invalid salt length"
     # error in FIPS. We need to skip the tests in FIPS.
@@ -213,18 +213,18 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     # FIPS 186-5 section 5.4 PKCS #1
     # https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.186-5.pdf
     unless OpenSSL.fips_mode
-      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA1")
+      signature = key.sign_pss("SHA256", data, salt_length: :max, mgf1_hash: "SHA256")
       # Should verify on the following salt_length (sLen).
       # sLen <= emLen (octat) - 2 - hLen (octet) = 2048 / 8 - 2 - 256 / 8 = 222
       # https://datatracker.ietf.org/doc/html/rfc8017#section-9.1.1
       assert_equal true,
-        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA1")
+        key.verify_pss("SHA256", signature, data, salt_length: 222, mgf1_hash: "SHA256")
       assert_equal true,
-        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA1")
+        key.verify_pss("SHA256", signature, data, salt_length: :auto, mgf1_hash: "SHA256")
     end
 
     assert_raise(OpenSSL::PKey::RSAError) {
-      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA1")
+      key.sign_pss("SHA256", data, salt_length: 223, mgf1_hash: "SHA256")
     }
   end
 
