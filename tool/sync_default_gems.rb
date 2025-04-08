@@ -135,6 +135,12 @@ module SyncDefaultGems
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
+      rm_rf("spec/bundler/bin")
+
+      parallel_tests_content = File.read("#{upstream}/bundler/bin/parallel_rspec").gsub("../spec", "../bundler")
+      File.write("spec/bin/parallel_rspec", parallel_tests_content)
+      chmod("+x", "spec/bin/parallel_rspec")
+
       %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
         ["rb.lock", "rb"].each do |ext|
           cp_r("#{upstream}/tool/bundler/#{gemfile}.#{ext}", "tool/bundler")
