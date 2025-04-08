@@ -16,8 +16,6 @@
 #include "shape.h"              /* for rb_shape_t */
 
 /* variable.c */
-void rb_const_added(VALUE klass, ID const_name);
-void rb_const_set_raw(VALUE klass, ID id, VALUE val);
 void rb_gc_mark_global_tbl(void);
 void rb_gc_update_global_tbl(void);
 size_t rb_generic_ivar_memsize(VALUE);
