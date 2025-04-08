@@ -39,6 +39,10 @@ static VALUE bignum_spec_rb_big_cmp(VALUE self, VALUE x, VALUE y) {
   return rb_big_cmp(x, y);
 }
 
+static VALUE bignum_spec_rb_big_modulo(VALUE self, VALUE x, VALUE y) {
+  return rb_big_modulo(x, y);
+}
+
 static VALUE bignum_spec_rb_big_pack(VALUE self, VALUE val) {
   unsigned long buff;
 
@@ -96,6 +100,7 @@ void Init_bignum_spec(void) {
   rb_define_method(cls, "rb_big2ulong", bignum_spec_rb_big2ulong, 1);
   rb_define_method(cls, "RBIGNUM_SIGN", bignum_spec_RBIGNUM_SIGN, 1);
   rb_define_method(cls, "rb_big_cmp", bignum_spec_rb_big_cmp, 2);
+  rb_define_method(cls, "rb_big_modulo", bignum_spec_rb_big_modulo, 2);
   rb_define_method(cls, "rb_big_pack", bignum_spec_rb_big_pack, 1);
   rb_define_method(cls, "rb_big_pack_array", bignum_spec_rb_big_pack_array, 2);
   rb_define_method(cls, "rb_big_pack_length", bignum_spec_rb_big_pack_length, 1);

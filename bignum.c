@@ -6136,6 +6136,9 @@ rb_big_modulo(VALUE x, VALUE y)
 {
     VALUE z;
 
+    if (!RB_BIGNUM_TYPE_P(x)) {
+        rb_raise(rb_eTypeError, "expected a bignum");
+    }
     if (FIXNUM_P(y)) {
         y = rb_int2big(FIX2LONG(y));
     }

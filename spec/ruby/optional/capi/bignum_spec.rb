@@ -119,6 +119,18 @@ describe "CApiBignumSpecs" do
     end
   end
 
+  describe "rb_big_modulo" do
+    it "raises TypeError if the first argument is not a Bignum" do
+      -> { @s.rb_big_modulo(42, 5) }.should raise_error(TypeError)
+      -> { @s.rb_big_modulo(42, bignum_value) }.should raise_error(TypeError)
+    end
+
+    it "converts the second argument to a Bignum before calculating" do
+      val = 18_446_744_073_709_551_658
+      @s.rb_big_modulo(val, 5).should == 3
+    end
+  end
+
   describe "rb_big_pack" do
     it "packs a Bignum into an unsigned long" do
       val = @s.rb_big_pack(@max_ulong)
