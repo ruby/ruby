@@ -6383,20 +6383,24 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
     if (vm_icc_embed_p(value)) {
         flags = vm_icc_embed_flags(ic);
 
-        if (!(flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+        if ((flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+            VM_ASSERT(ractor_incidental_shareable_p(flags & CONST_CACHE_SHAREABLE, value));
+        }
+        else {
             return false;
         }
-        VM_ASSERT(ractor_incidental_shareable_p(flags & CONST_CACHE_SHAREABLE, value));
     }
     else {
         struct iseq_inline_constant_cache_entry *entry = (struct iseq_inline_constant_cache_entry *)ic->value;
         ic_cref = entry->ic_cref;
         flags = entry->flags;
 
-        if (!(flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+        if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+            VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
+        }
+        else {
             return false;
         }
-        VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
     }
 
     return (ic_cref == NULL || // no need to check CREF
@@ -6418,8 +6422,12 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
         return;
     }
 
+    // fprintf(stderr, "\n\nic_update: ");
+    // rb_p(val);
+
     const rb_cref_t *cref = vm_get_const_key_cref(reg_ep);
     if (RB_UNLIKELY(cref || rb_multi_ractor_p())) {
+        // fprintf(stderr, "vm_ic_update cref\n");
         struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
         RB_OBJ_WRITE(ice, &ice->value, val);
         if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
@@ -6431,6 +6439,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
             vm_icc_embed_set_flag(ic, CONST_CACHE_SHAREABLE);
         }
         RB_OBJ_WRITE(iseq, &ic->value, val);
+        // fprintf(stderr, "vm_ic_update raw\n");
     }
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);

@@ -10295,7 +10295,7 @@ fn gen_opt_getconstant_path(
 
         let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
 
-        // if unsafe { rb_yjit_constcache_has_ext(ic) } {
+        if cref_sensitive {
             // Push ic->c.entry->value
             let ic_entry = asm.load(Opnd::mem(
                 64,
@@ -10311,17 +10311,17 @@ fn gen_opt_getconstant_path(
 
             let stack_top = asm.stack_push(Type::Unknown);
             asm.store(stack_top, ic_entry_val);
-        // } else {
-        //     // Push ic->value
-        //     let ic_val = asm.load(Opnd::mem(
-        //         64,
-        //         inline_cache,
-        //         RUBY_OFFSET_IC_ENTRY
-        //     ));
-        //
-        //     let stack_top = asm.stack_push(Type::Unknown);
-        //     asm.store(stack_top, ic_val);
-        // }
+        } else {
+            // Push ic->value
+            let ic_val = asm.load(Opnd::mem(
+                64,
+                inline_cache,
+                RUBY_OFFSET_IC_ENTRY
+            ));
+
+            let stack_top = asm.stack_push(Type::Unknown);
+            asm.store(stack_top, ic_val);
+        }
     } else {
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
