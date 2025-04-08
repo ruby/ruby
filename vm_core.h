@@ -258,6 +258,8 @@ enum iseq_inline_constant_cache_flags {
     CONST_CACHE_FLAGS_MASK = 0x3,
 };
 
+#define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
+
 // imemo_constcache
 struct iseq_inline_constant_cache_entry {
     VALUE flags;
@@ -276,8 +278,14 @@ struct iseq_inline_constant_cache {
     VALUE tagged_segments;
 };
 
+static inline bool
+vm_icc_embed_p(VALUE val)
+{
+    return SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO);
+}
+
 static inline VALUE
-vm_icc_flags(const struct iseq_inline_constant_cache *cc)
+vm_icc_embed_flags(const struct iseq_inline_constant_cache *cc)
 {
     return cc->tagged_segments;
 }
@@ -316,7 +324,7 @@ vm_icc_segments(const struct iseq_inline_constant_cache *cc)
 }
 
 static inline void
-vm_icc_set_flag(struct iseq_inline_constant_cache *cc, VALUE flags)
+vm_icc_embed_set_flag(struct iseq_inline_constant_cache *cc, VALUE flags)
 {
     cc->tagged_segments |= flags;
 }
@@ -325,7 +333,7 @@ static inline VALUE
 vm_icc_value(const struct iseq_inline_constant_cache *cc)
 {
     VALUE val = cc->value;
-    if (SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO)) {
+    if (vm_icc_embed_p(val)) {
         return val;
     }
     else {
@@ -337,7 +345,7 @@ static inline const rb_cref_t *
 vm_icc_cref(const struct iseq_inline_constant_cache *cc)
 {
     VALUE val = cc->value;
-    if (SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO)) {
+    if (vm_icc_embed_p(val)) {
         return NULL;
     }
     else {

@@ -6377,22 +6377,28 @@ vm_ic_hit_p(const struct iseq_inline_constant_cache *ic, const VALUE *reg_ep)
         return false;
     }
 
-    VALUE flags = vm_icc_flags(ic);
+    VALUE flags;
+    const rb_cref_t *ic_cref = NULL;
 
-    if (!(flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
-        // There is a small window of time during which IC->value is set, but the
-        // CONST_CACHE_SHAREABLE flag hasn't yet been set.
-        // So before failing we MUST check `rb_ractor_shareable_p` again.
-        // See `vm_ic_update`.
-        if (!rb_ractor_shareable_p(value)) {
+    if (vm_icc_embed_p(value)) {
+        flags = vm_icc_embed_flags(ic);
+
+        if (!(flags & CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
             return false;
         }
-    }
-    else {
         VM_ASSERT(ractor_incidental_shareable_p(flags & CONST_CACHE_SHAREABLE, value));
     }
+    else {
+        struct iseq_inline_constant_cache_entry *entry = (struct iseq_inline_constant_cache_entry *)ic->value;
+        ic_cref = entry->ic_cref;
+        flags = entry->flags;
 
-    const rb_cref_t *ic_cref = vm_icc_cref(ic);
+        if (!(flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+            return false;
+        }
+        VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
+    }
+
     return (ic_cref == NULL || // no need to check CREF
             ic_cref == vm_get_cref(reg_ep));
 }
@@ -6412,29 +6418,20 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
         return;
     }
 
-    VALUE cache_val = val;
-
     const rb_cref_t *cref = vm_get_const_key_cref(reg_ep);
-    if (RB_UNLIKELY(cref)) {
+    if (RB_UNLIKELY(cref || rb_multi_ractor_p())) {
         struct iseq_inline_constant_cache_entry *ice = IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
         RB_OBJ_WRITE(ice, &ice->value, val);
+        if (rb_ractor_shareable_p(val)) ice->flags |= IMEMO_CONST_CACHE_SHAREABLE;
         ice->ic_cref = cref;
-        cache_val = (VALUE)ice;
+        RB_OBJ_WRITE(iseq, &ic->value, ice);
     }
-
-    if (!UNDEF_P(RUBY_ATOMIC_VALUE_CAS(ic->value, Qundef, cache_val))) {
-        // Another thread filled the cache before us.
-        return;
+    else {
+        if (rb_ractor_shareable_p(val)) {
+            vm_icc_embed_set_flag(ic, CONST_CACHE_SHAREABLE);
+        }
+        RB_OBJ_WRITE(iseq, &ic->value, val);
     }
-
-    RB_OBJ_WRITTEN(iseq, Qundef, cache_val);
-
-    // There is a window during which `CONST_CACHE_SHAREABLE` isn't yet set.
-    // But this is acceptable, it just means if the flag isn't there, we must
-    // call `rb_ractor_shareable_p` to confirm the value isn't shareable.
-    // See `vm_inlined_ic_hit_p`.
-    if (rb_ractor_shareable_p(val)) vm_icc_set_flag(ic, CONST_CACHE_SHAREABLE);
-    /* vm_icc_update(ic, val, ) */
 
     RUBY_ASSERT(pc >= ISEQ_BODY(iseq)->iseq_encoded);
     unsigned pos = (unsigned)(pc - ISEQ_BODY(iseq)->iseq_encoded);

@@ -1090,7 +1090,12 @@ rb_yjit_constcache_cref(const struct iseq_inline_constant_cache *ic)
 bool
 rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache *ic)
 {
-    return (vm_icc_flags(ic) & CONST_CACHE_SHAREABLE) != 0;
+    if (vm_icc_embed_p(ic->value)) {
+        return (vm_icc_embed_flags(ic) & CONST_CACHE_SHAREABLE) != 0;
+    }
+
+    struct iseq_inline_constant_cache_entry *entry = (struct iseq_inline_constant_cache_entry *)ic->value;
+    return (entry->flags & CONST_CACHE_SHAREABLE) != 0;
 }
 
 void
