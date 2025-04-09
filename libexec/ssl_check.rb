@@ -5,14 +5,6 @@ require 'uri'
 require 'net/http'
 
 begin
-  require 'openssl'
-rescue LoadError
-  puts "Oh no! Your Ruby doesn't have OpenSSL, so it can't connect to #{host}.",
-       "You'll need to recompile or reinstall Ruby with OpenSSL support and try again."
-  exit 1
-end
-
-begin
   # Some versions of Ruby need this require to do HTTPS
   require 'net/https'
   # Try for RubyGems version
@@ -39,10 +31,6 @@ puts
 puts "Ruby:          %s" % ruby_version
 puts "RubyGems:      %s" % Gem::VERSION if defined?(Gem::VERSION)
 puts "Bundler:       %s" % Bundler::VERSION if defined?(Bundler::VERSION)
-puts "OpenSSL:       %s" % OpenSSL::VERSION if defined?(OpenSSL::VERSION)
-puts "Compiled with: %s" % OpenSSL::OPENSSL_VERSION
-puts "Loaded with:   %s" % OpenSSL::OPENSSL_LIBRARY_VERSION if defined?(OpenSSL::OPENSSL_LIBRARY_VERSION)
-puts
 
 def show_ssl_certs
   puts "", "Below affect only Ruby net/http connections:"
