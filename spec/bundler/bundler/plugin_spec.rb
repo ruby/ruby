@@ -140,7 +140,7 @@ RSpec.describe Bundler::Plugin do
 
       before do
         allow(index).to receive(:installed?) { nil }
-        allow(definition).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0", "type" => :plugin), Bundler::Dependency.new("another-plugin", ">=0", "type" => :plugin)] }
+        allow(definition).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0", "plugin" => true), Bundler::Dependency.new("another-plugin", ">=0", "plugin" => true)] }
         allow(installer).to receive(:install_definition) { plugin_specs }
       end
 

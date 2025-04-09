@@ -95,7 +95,7 @@ module Bundler
       end
 
       def install_all_sources(names, version, source_list, source = nil)
-        deps = names.map {|name| Dependency.new(name, version, { "source" => source, "type" => :plugin }) }
+        deps = names.map {|name| Dependency.new(name, version, { "source" => source, "plugin" => true }) }
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 

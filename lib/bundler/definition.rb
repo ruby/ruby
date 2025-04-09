@@ -286,7 +286,7 @@ module Bundler
     end
 
     def plugin_dependencies
-      requested_dependencies.select {|dep| dep.type == :plugin }
+      requested_dependencies.select(&:plugin?)
     end
 
     def current_dependencies
@@ -1350,9 +1350,9 @@ module Bundler
       return if Bundler.settings[:plugins_in_lockfile]
       # we already have plugin dependencies in the lockfile; continue to do so regardless
       # of the current setting
-      return if @dependencies.any? {|d| d.type == :plugin && @locked_deps.key?(d.name) }
+      return if @dependencies.any? {|d| d.plugin? && @locked_deps.key?(d.name) }
 
-      @dependencies.reject! {|d| d.type == :plugin }
+      @dependencies.reject!(&:plugin?)
     end
   end
 end

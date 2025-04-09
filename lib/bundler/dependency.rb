@@ -7,15 +7,7 @@ module Bundler
   class Dependency < Gem::Dependency
     def initialize(name, version, options = {}, &blk)
       type = options["type"] || :runtime
-      if type == :plugin
-        # RubyGems doesn't support plugin type, which only
-        # makes sense in the context of Bundler, so bypass
-        # the RubyGems validation
-        super(name, version, :runtime)
-        @type = type
-      else
-        super(name, version, type)
-      end
+      super(name, version, type)
 
       @options = options
     end
@@ -124,6 +116,10 @@ module Bundler
 
     def gemfile_dep?
       !gemspec_dev_dep?
+    end
+
+    def plugin?
+      @plugin ||= @options.fetch("plugin", false)
     end
 
     def current_env?
