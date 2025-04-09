@@ -85,7 +85,7 @@ Bugs should be reported at https://bugs.ruby-lang.org. Read ["Reporting Issues"]
 
 ## Contributing
 
-See ["Contributing to Ruby"](https://docs.ruby-lang.org/en/master/contributing_md.html), which includes setup and build instructions.
+See ["Contributing to Ruby"](https://docs.ruby-lang.org/en/master/contributing/contributing_md.html), which includes setup and build instructions.
 
 ## The Author
 
