@@ -40,7 +40,7 @@ pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.4.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.13.1  https://github.com/ruby/rdoc
-win32ole            1.9.1   https://github.com/ruby/win32ole
+win32ole            1.9.1   https://github.com/ruby/win32ole 654b712442b76d2c7729623982168b2f250e3a77
 irb                 1.15.2  https://github.com/ruby/irb
 reline              0.6.1   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
