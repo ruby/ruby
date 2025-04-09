@@ -157,6 +157,115 @@ RSpec.describe "bundle doctor ssl" do
       expect { subject.run }.to output(expected_out).to_stdout.and output(expected_err).to_stderr
     end
 
+    it "fails due to a bundler and rubygems connection error" do
+      endpoint = Class.new(Endpoint) do
+        get "/" do
+          raise OpenSSL::SSL::SSLError, "read server hello A"
+        end
+      end
+
+      Artifice.activate_with(endpoint)
+      Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+
+      expected_out = <<~MSG
+        Here's your OpenSSL environment:
+
+        OpenSSL:       #{OpenSSL::VERSION}
+        Compiled with: #{OpenSSL::OPENSSL_VERSION}
+        Loaded with:   #{OpenSSL::OPENSSL_LIBRARY_VERSION}
+
+        Trying connections to https://rubygems.org:
+        Ruby net/http: success
+
+        For some reason, your Ruby installation can connect to rubygems.org, but neither RubyGems nor Bundler can.
+        The most likely fix is to manually upgrade RubyGems by following the instructions at http://ruby.to/ssl-check-failed.
+        After you've done that, run `gem install bundler` to upgrade Bundler, and then run this script again to make sure everything worked. ❣
+
+      MSG
+
+      expected_err = <<~MSG
+        Bundler:       failed     (SSL/TLS protocol version mismatch)
+        RubyGems:      failed     (SSL/TLS protocol version mismatch)
+      MSG
+
+      subject = Bundler::CLI::Doctor::SSL.new({})
+      expect { subject.run }.to output(expected_out).to_stdout.and output(expected_err).to_stderr
+    end
+
+    it "fails due to a bundler connection error" do
+      endpoint = Class.new(Endpoint) do
+        get "/" do
+          if request.user_agent.include?("bundler")
+            raise OpenSSL::SSL::SSLError, "read server hello A"
+          end
+        end
+      end
+
+      Artifice.activate_with(endpoint)
+      Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+
+      expected_out = <<~MSG
+        Here's your OpenSSL environment:
+
+        OpenSSL:       #{OpenSSL::VERSION}
+        Compiled with: #{OpenSSL::OPENSSL_VERSION}
+        Loaded with:   #{OpenSSL::OPENSSL_LIBRARY_VERSION}
+
+        Trying connections to https://rubygems.org:
+        RubyGems:      success
+        Ruby net/http: success
+
+        Although your Ruby installation and RubyGems can both connect to rubygems.org, Bundler is having trouble.
+        The most likely way to fix this is to upgrade Bundler by running `gem install bundler`.
+        Run this script again after doing that to make sure everything is all set.
+        If you're still having trouble, check out the troubleshooting guide at http://ruby.to/ssl-check-failed.
+
+      MSG
+
+      expected_err = <<~MSG
+        Bundler:       failed     (SSL/TLS protocol version mismatch)
+      MSG
+
+      subject = Bundler::CLI::Doctor::SSL.new({})
+      expect { subject.run }.to output(expected_out).to_stdout.and output(expected_err).to_stderr
+    end
+
+    it "fails due to a RubyGems connection error" do
+      endpoint = Class.new(Endpoint) do
+        get "/" do
+          if request.user_agent.include?("Ruby, RubyGems")
+            raise OpenSSL::SSL::SSLError, "read server hello A"
+          end
+        end
+      end
+
+      Artifice.activate_with(endpoint)
+      Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+
+      expected_out = <<~MSG
+        Here's your OpenSSL environment:
+
+        OpenSSL:       #{OpenSSL::VERSION}
+        Compiled with: #{OpenSSL::OPENSSL_VERSION}
+        Loaded with:   #{OpenSSL::OPENSSL_LIBRARY_VERSION}
+
+        Trying connections to https://rubygems.org:
+        Bundler:       success
+        Ruby net/http: success
+
+        It looks like Ruby and Bundler can connect to rubygems.org, but RubyGems itself cannot.
+        You can likely solve this by manually downloading and installing a RubyGems update.
+        Visit http://ruby.to/ssl-check-failed for instructions on how to manually upgrade RubyGems.
+
+      MSG
+
+      expected_err = <<~MSG
+        RubyGems:      failed     (SSL/TLS protocol version mismatch)
+      MSG
+
+      subject = Bundler::CLI::Doctor::SSL.new({})
+      expect { subject.run }.to output(expected_out).to_stdout.and output(expected_err).to_stderr
+    end
   end
 
   context "when no diagnostic fails" do
@@ -172,6 +281,9 @@ RSpec.describe "bundle doctor ssl" do
         Bundler:       success
         RubyGems:      success
         Ruby net/http: success
+
+        Hooray! This Ruby can connect to rubygems.org.
+        You are all set to use Bundler and RubyGems.
 
       MSG
 
@@ -210,6 +322,9 @@ RSpec.describe "bundle doctor ssl" do
         Bundler:       success
         RubyGems:      success
         Ruby net/http: success
+
+        Hooray! This Ruby can connect to example.org.
+        You are all set to use Bundler and RubyGems.
 
       MSG
 

@@ -30,29 +30,6 @@ puts "Ruby:          %s" % ruby_version
 puts "RubyGems:      %s" % Gem::VERSION if defined?(Gem::VERSION)
 puts "Bundler:       %s" % Bundler::VERSION if defined?(Bundler::VERSION)
 
-
-guide_url = "http://ruby.to/ssl-check-failed"
-if bundler_status =~ /success/ && rubygems_status =~ /success/
-  # Whoa, it seems like it's working!
-  puts "Hooray! This Ruby can connect to #{host}.",
-       "You are all set to use Bundler and RubyGems.  👌", ""
-elsif rubygems_status !~ /success/
-  puts "It looks like Ruby and Bundler can connect to #{host}, but RubyGems itself",
-       "cannot. You can likely solve this by manually downloading and installing a",
-       "RubyGems update. Visit #{guide_url} for instructions on how to manually upgrade RubyGems. 💎"
-elsif bundler_status !~ /success/
-  puts "Although your Ruby installation and RubyGems can both connect to #{host},",
-       "Bundler is having trouble. The most likely way to fix this is to upgrade",
-       "Bundler by running `gem install bundler`. Run this script again after doing",
-       "that to make sure everything is all set. If you're still having trouble,",
-       "check out the troubleshooting guide at #{guide_url} 📦"
-else
-  puts "For some reason, your Ruby installation can connect to #{host}, but neither",
-       "RubyGems nor Bundler can. The most likely fix is to manually upgrade RubyGems by",
-       "following the instructions at #{guide_url}. After you've done that, run `gem install",
-       "bundler` to upgrade Bundler, and then run this script again to make sure everything worked. ❣️"
-end
-
 def tls12_supported?
   ctx = OpenSSL::SSL::SSLContext.new
   if ctx.methods.include?(:min_version=)

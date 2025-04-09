@@ -19,6 +19,8 @@ module Bundler
       rubygem_success = rubygem_connection_successful?
 
       return unless net_http_connection_successful?
+
+      Explanation.summarize(bundler_success, rubygem_success, host)
     end
 
     private
@@ -169,6 +171,42 @@ module Bundler
             https://mislav.net/2013/07/ruby-openssl/
           MSG
         end
+      end
+
+      def summarize(bundler_success, rubygems_success, host)
+        guide_url = "http://ruby.to/ssl-check-failed"
+
+        message = if bundler_success && rubygems_success
+          <<~MSG
+            Hooray! This Ruby can connect to #{host}.
+            You are all set to use Bundler and RubyGems.
+
+          MSG
+        elsif !bundler_success && !rubygems_success
+          <<~MSG
+            For some reason, your Ruby installation can connect to #{host}, but neither RubyGems nor Bundler can.
+            The most likely fix is to manually upgrade RubyGems by following the instructions at #{guide_url}.
+            After you've done that, run `gem install bundler` to upgrade Bundler, and then run this script again to make sure everything worked. ❣
+
+          MSG
+        elsif !bundler_success
+          <<~MSG
+            Although your Ruby installation and RubyGems can both connect to #{host}, Bundler is having trouble.
+            The most likely way to fix this is to upgrade Bundler by running `gem install bundler`.
+            Run this script again after doing that to make sure everything is all set.
+            If you're still having trouble, check out the troubleshooting guide at #{guide_url}.
+
+          MSG
+        else
+          <<~MSG
+            It looks like Ruby and Bundler can connect to #{host}, but RubyGems itself cannot.
+            You can likely solve this by manually downloading and installing a RubyGems update.
+            Visit #{guide_url} for instructions on how to manually upgrade RubyGems.
+
+          MSG
+        end
+
+        Bundler.ui.info("\n#{message}")
       end
 
       private
