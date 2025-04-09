@@ -1278,9 +1278,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(regular_file, File.dirname(regular_file, 0))
     assert_equal(@dir, File.dirname(regular_file, 1))
     assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
-    return if /mswin/ =~ RUBY_PLATFORM # mswin allows rootdir and tmpdir are in different drives
-    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/')))
     assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
+    # mswin allows rootdir and tmpdir are in different drives
+    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/'))) unless /mswin/ =~ RUBY_PLATFORM
   end
 
   def test_dirname_encoding
