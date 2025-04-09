@@ -6,7 +6,8 @@ require "socket"
 require '-test-/file'
 
 class TestFileExhaustive < Test::Unit::TestCase
-  DRIVE = Dir.pwd[%r'\A(?:[a-z]:|//[^/]+/[^/]+)'i]
+  ROOT_REGEXP = %r'\A(?:[a-z]:(?=(/))|//[^/]+/[^/]+)'i
+  DRIVE = Dir.pwd[ROOT_REGEXP]
   POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
   NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
 
@@ -1279,8 +1280,9 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal(@dir, File.dirname(regular_file, 1))
     assert_equal(File.dirname(@dir), File.dirname(regular_file, 2))
     assert_raise(ArgumentError) {File.dirname(regular_file, -1)}
-    # mswin allows rootdir and tmpdir are in different drives
-    assert_equal(rootdir, File.dirname(regular_file, regular_file.count('/'))) unless /mswin/ =~ RUBY_PLATFORM
+    root = "#{@dir[ROOT_REGEXP]||?/}#{$1}"
+    assert_equal(root, File.dirname(regular_file, regular_file.count('/')))
+    assert_equal(root, File.dirname(regular_file, regular_file.count('/') + 100))
   end
 
   def test_dirname_encoding
