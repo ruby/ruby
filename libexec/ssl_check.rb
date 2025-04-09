@@ -44,15 +44,6 @@ def show_ssl_certs
 end
 
 begin
-  require 'rubygems/remote_fetcher'
-  Gem::RemoteFetcher.fetcher.fetch_path(uri)
-  rubygems_status = "✅ success"
-rescue => error
-  rubygems_status = "❌ failed     (#{error_reason(error)})"
-end
-puts "RubyGems:      #{rubygems_status}"
-
-begin
   # Try to connect using HTTPS
   Net::HTTP.new(uri.host, uri.port).tap do |http|
     http.use_ssl = true

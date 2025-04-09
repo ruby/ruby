@@ -18,13 +18,16 @@ RSpec.describe "bundle doctor ssl" do
 
     @previous_level = Bundler.ui.level
     Bundler.ui.instance_variable_get(:@warning_history).clear
+    @previous_client = Gem::Request::ConnectionPools.client
     Bundler.ui.level = "info"
     Artifice.activate_with(@dummy_endpoint)
+    Gem::Request::ConnectionPools.client = Gem::Net::HTTP
   end
 
   after(:each) do
     Bundler.ui.level = @previous_level
     Artifice.deactivate
+    Gem::Request::ConnectionPools.client = @previous_client
   end
 
   context "when a diagnostic fails" do
@@ -48,6 +51,8 @@ RSpec.describe "bundle doctor ssl" do
       end
 
       Artifice.replace_net_http(net_http)
+      Gem::Request::ConnectionPools.client = net_http
+      Gem::RemoteFetcher.fetcher.close_all
 
       expected_out = <<~MSG
         Here's your OpenSSL environment:
@@ -61,6 +66,7 @@ RSpec.describe "bundle doctor ssl" do
 
       expected_err = <<~MSG
         Bundler:       failed     (certificate verification)
+        RubyGems:      failed     (certificate verification)
 
       MSG
 
@@ -78,6 +84,8 @@ RSpec.describe "bundle doctor ssl" do
       end
 
       Artifice.replace_net_http(net_http)
+      Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+      Gem::RemoteFetcher.fetcher.close_all
 
       expected_out = <<~MSG
         Here's your OpenSSL environment:
@@ -91,6 +99,7 @@ RSpec.describe "bundle doctor ssl" do
 
       expected_err = <<~MSG
         Bundler:       failed     (SSL/TLS protocol version mismatch)
+        RubyGems:      failed     (SSL/TLS protocol version mismatch)
 
       MSG
 
@@ -109,6 +118,7 @@ RSpec.describe "bundle doctor ssl" do
 
         Trying connections to https://rubygems.org:
         Bundler:       success
+        RubyGems:      success
 
       MSG
 

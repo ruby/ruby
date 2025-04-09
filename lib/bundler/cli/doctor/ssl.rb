@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "rubygems/remote_fetcher"
 require "uri"
 
 module Bundler
@@ -15,6 +16,7 @@ module Bundler
 
       output_ssl_environment
       bundler_success = bundler_connection_successful?
+      rubygem_success = rubygem_connection_successful?
     end
 
     private
@@ -75,6 +77,17 @@ module Bundler
       true
     rescue StandardError => error
       Bundler.ui.warn("Bundler:       failed     (#{Explanation.explain_bundler_or_rubygems_error(error)})")
+
+      false
+    end
+
+    def rubygem_connection_successful?
+      Gem::RemoteFetcher.fetcher.fetch_path(uri)
+      Bundler.ui.info("RubyGems:      success")
+
+      true
+    rescue StandardError => error
+      Bundler.ui.warn("RubyGems:      failed     (#{Explanation.explain_bundler_or_rubygems_error(error)})")
 
       false
     end
