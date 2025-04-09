@@ -91,7 +91,7 @@ RSpec.describe "bundle install with specific platforms" do
            #{Bundler::VERSION}
       L
 
-      # force strict usage of the lock file by setting frozen mode
+      # force strict usage of the lockfile by setting frozen mode
       bundle "config set --local frozen true"
 
       # make sure the platform that got actually installed with the old bundler is used
@@ -750,6 +750,80 @@ RSpec.describe "bundle install with specific platforms" do
       BUNDLED WITH
          #{Bundler::VERSION}
     L
+  end
+
+  it "automatically fixes the lockfile when adding a gem that introduces dependencies with no ruby platform variants transitively" do
+    simulate_platform "x86_64-linux" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.2"
+
+        build_gem "nokogiri", "1.18.2" do |s|
+          s.platform = "x86_64-linux"
+        end
+
+        build_gem("sorbet", "0.5.11835") do |s|
+          s.add_dependency "sorbet-static", "= 0.5.11835"
+        end
+
+        build_gem "sorbet-static", "0.5.11835" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+        gem "sorbet"
+      G
+
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.2)
+            nokogiri (1.18.2-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock"
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "nokogiri", "1.18.2", "x86_64-linux"
+        c.checksum gem_repo4, "sorbet", "0.5.11835"
+        c.checksum gem_repo4, "sorbet-static", "0.5.11835", "x86_64-linux"
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.2)
+            nokogiri (1.18.2-x86_64-linux)
+            sorbet (0.5.11835)
+              sorbet-static (= 0.5.11835)
+            sorbet-static (0.5.11835-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+          sorbet
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
   end
 
   it "automatically fixes the lockfile if multiple platforms locked, but no valid versions of direct dependencies for all of them" do

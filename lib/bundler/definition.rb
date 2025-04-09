@@ -95,6 +95,7 @@ module Bundler
       @locked_ruby_version = nil
       @new_platforms = []
       @removed_platforms = []
+      @originally_invalid_platforms = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -147,9 +148,8 @@ module Bundler
 
       @current_platform_missing = add_current_platform unless Bundler.frozen_bundle?
 
-      converge_path_sources_to_gemspec_sources
-      @path_changes = converge_paths
       @source_changes = converge_sources
+      @path_changes = converge_paths
 
       if conservative
         @gems_to_unlock = @explicit_unlocks.any? ? @explicit_unlocks : @dependencies.map(&:name)
@@ -539,12 +539,13 @@ module Bundler
 
       reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
 
-      msg = String.new
-      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because #{update_refused_reason}"
+      msg = String.new("#{reason.capitalize.strip}, but ")
+      msg << "the lockfile " unless msg.start_with?("Your lockfile")
+      msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
       msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
       msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_lockfile_path} to version control.\n" unless unlocking?
       msg
     end
 
@@ -563,6 +564,7 @@ module Bundler
         @local_changes ||
         @missing_lockfile_dep ||
         @unlocking_bundler ||
+        @locked_spec_with_missing_checksums ||
         @locked_spec_with_missing_deps ||
         @locked_spec_with_invalid_deps
     end
@@ -759,7 +761,11 @@ module Bundler
         end
       end
 
-      @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
+      if should_add_extra_platforms?
+        result.add_extra_platforms!(platforms)
+      elsif @originally_invalid_platforms.any?
+        result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
+      end
 
       SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
@@ -809,13 +815,14 @@ module Bundler
       [
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
-        [@current_platform_missing, "your lockfile does not include the current platform"],
+        [@current_platform_missing, "your lockfile is missing the current platform"],
         [@new_platforms.any?, "you are adding a new platform to your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
-        [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
+        [@missing_lockfile_dep, "your lockfile is missing \"#{@missing_lockfile_dep}\""],
         [@unlocking_bundler, "an update to the version of Bundler itself was requested"],
-        [@locked_spec_with_missing_deps, "your lock file includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
+        [@locked_spec_with_missing_checksums, "your lockfile is missing a CHECKSUMS entry for \"#{@locked_spec_with_missing_checksums}\""],
+        [@locked_spec_with_missing_deps, "your lockfile includes \"#{@locked_spec_with_missing_deps}\" but not some of its dependencies"],
         [@locked_spec_with_invalid_deps, "your lockfile does not satisfy dependencies of \"#{@locked_spec_with_invalid_deps}\""],
       ].select(&:first).map(&:last).join(", ")
     end
@@ -832,8 +839,8 @@ module Bundler
       !locked || dependencies_for_source_changed?(source, locked) || specs_for_source_changed?(source)
     end
 
-    def dependencies_for_source_changed?(source, locked_source = source)
-      deps_for_source = @dependencies.select {|s| s.source == source }
+    def dependencies_for_source_changed?(source, locked_source)
+      deps_for_source = @dependencies.select {|dep| dep.source == source }
       locked_deps_for_source = locked_dependencies.select {|dep| dep.source == locked_source }
 
       deps_for_source.uniq.sort != locked_deps_for_source.sort
@@ -841,7 +848,7 @@ module Bundler
 
     def specs_for_source_changed?(source)
       locked_index = Index.new
-      locked_index.use(@locked_specs.select {|s| source.can_lock?(s) })
+      locked_index.use(@locked_specs.select {|s| s.replace_source_with!(source) })
 
       !locked_index.subset?(source.specs)
     rescue PathError, GitError => e
@@ -873,21 +880,27 @@ module Bundler
     def check_lockfile
       @locked_spec_with_invalid_deps = nil
       @locked_spec_with_missing_deps = nil
+      @locked_spec_with_missing_checksums = nil
 
-      missing = []
+      missing_deps = []
+      missing_checksums = []
       invalid = []
 
       @locked_specs.each do |s|
+        missing_checksums << s if @locked_checksums && s.source.checksum_store.missing?(s)
+
         validation = @locked_specs.validate_deps(s)
 
-        missing << s if validation == :missing
+        missing_deps << s if validation == :missing
         invalid << s if validation == :invalid
       end
 
-      if missing.any?
-        @locked_specs.delete(missing)
+      @locked_spec_with_missing_checksums = missing_checksums.first.name if missing_checksums.any?
 
-        @locked_spec_with_missing_deps = missing.first.name
+      if missing_deps.any?
+        @locked_specs.delete(missing_deps)
+
+        @locked_spec_with_missing_deps = missing_deps.first.name
       end
 
       if invalid.any?
@@ -900,24 +913,6 @@ module Bundler
     def converge_paths
       sources.path_sources.any? do |source|
         specs_changed?(source)
-      end
-    end
-
-    def converge_path_source_to_gemspec_source(source)
-      return source unless source.instance_of?(Source::Path)
-      gemspec_source = sources.path_sources.find {|s| s.is_a?(Source::Gemspec) && s.as_path_source == source }
-      gemspec_source || source
-    end
-
-    def converge_path_sources_to_gemspec_sources
-      @locked_sources.map! do |source|
-        converge_path_source_to_gemspec_source(source)
-      end
-      @locked_specs.each do |spec|
-        spec.source &&= converge_path_source_to_gemspec_source(spec.source)
-      end
-      @locked_deps.each do |_, dep|
-        dep.source &&= converge_path_source_to_gemspec_source(dep.source)
       end
     end
 
@@ -963,11 +958,17 @@ module Bundler
         unless name == "bundler"
           locked_specs = @originally_locked_specs[name]
 
-          if locked_specs.any? && !dep.matches_spec?(locked_specs.first)
-            @gems_to_unlock << name
-            dep_changed = true
-          elsif locked_specs.empty? && dep_changed == false
-            @missing_lockfile_dep = name
+          if locked_specs.empty?
+            @missing_lockfile_dep = name if dep_changed == false
+          else
+            if locked_specs.map(&:source).uniq.size > 1
+              @locked_specs.delete(locked_specs.select {|s| s.source != dep.source })
+            end
+
+            unless dep.matches_spec?(locked_specs.first)
+              @gems_to_unlock << name
+              dep_changed = true
+            end
           end
         end
 
@@ -1141,16 +1142,21 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      platforms.reverse_each do |platform|
+      @originally_invalid_platforms = platforms.select do |platform|
         next if local_platform == platform ||
-                @new_platforms.include?(platform) ||
-                @path_changes ||
-                @dependency_changes ||
-                @locked_spec_with_invalid_deps ||
-                !spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
+                @new_platforms.include?(platform)
 
-        remove_platform(platform)
+        # We should probably avoid removing non-ruby platforms, since that means
+        # lockfile will no longer install on those platforms, so a error to give
+        # heads up to the user may be better. However, we have tests expecting
+        # non ruby platform autoremoval to work, so leaving that in place for
+        # now.
+        next if @dependency_changes && platform != Gem::Platform::RUBY
+
+        spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
       end
+
+      @platforms -= @originally_invalid_platforms
     end
 
     def spec_set_incomplete_for_platform?(spec_set, platform)

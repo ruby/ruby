@@ -273,7 +273,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(the_bundle).to include_gems("depends_on_myrack 1.0.1", "myrack 1.0.0", source: "remote3")
 
           # In https://github.com/bundler/bundler/issues/3585 this failed
-          # when there is already a lock file, and the gems are missing, so try again
+          # when there is already a lockfile, and the gems are missing, so try again
           system_gems []
           bundle :install, artifice: "compact_index"
 
@@ -482,7 +482,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(the_bundle).to include_gems("depends_on_myrack 1.0.1", "myrack 1.0.0")
 
           # In https://github.com/rubygems/bundler/issues/3585 this failed
-          # when there is already a lock file, and the gems are missing, so try again
+          # when there is already a lockfile, and the gems are missing, so try again
           system_gems []
           bundle :install, artifice: "compact_index"
 
@@ -1221,7 +1221,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
           DEPENDENCIES
             myrack!
-          #{checksums_section}
+
           BUNDLED WITH
              #{Bundler::VERSION}
         L

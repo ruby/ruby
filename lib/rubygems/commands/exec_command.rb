@@ -195,7 +195,7 @@ to the same gem path as user-installed gems.
     argv = ARGV.clone
     ARGV.replace options[:args]
 
-    exe = executable = options[:executable]
+    executable = options[:executable]
 
     contains_executable = Gem.loaded_specs.values.select do |spec|
       spec.executables.include?(executable)
@@ -206,13 +206,22 @@ to the same gem path as user-installed gems.
     end
 
     if contains_executable.empty?
-      if (spec = Gem.loaded_specs[executable]) && (exe = spec.executable)
-        contains_executable << spec
-      else
+      spec = Gem.loaded_specs[executable]
+
+      if spec.nil? || spec.executables.empty?
         alert_error "Failed to load executable `#{executable}`," \
               " are you sure the gem `#{options[:gem_name]}` contains it?"
         terminate_interaction 1
       end
+
+      if spec.executables.size > 1
+        alert_error "Ambiguous which executable from gem `#{executable}` should be run: " \
+              "the options are #{spec.executables.sort}, specify one via COMMAND, and use `-g` and `-v` to specify gem and version"
+        terminate_interaction 1
+      end
+
+      contains_executable << spec
+      executable = spec.executable
     end
 
     if contains_executable.size > 1
@@ -223,8 +232,8 @@ to the same gem path as user-installed gems.
     end
 
     old_exe = $0
-    $0 = exe
-    load Gem.activate_bin_path(contains_executable.first.name, exe, ">= 0.a")
+    $0 = executable
+    load Gem.activate_bin_path(contains_executable.first.name, executable, ">= 0.a")
   ensure
     $0 = old_exe if old_exe
     ARGV.replace argv

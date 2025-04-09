@@ -64,7 +64,7 @@ module Bundler
       end
 
       def gem_parser
-        @gem_parser ||= GemParser.new
+        @gem_parser ||= Gem::Resolver::APISet::GemParser.new
       end
 
       # This is mostly the same as `split(" ", 3)` but it avoids allocating extra objects.
