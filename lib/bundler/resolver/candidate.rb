@@ -17,7 +17,7 @@ module Bundler
     # Some candidates may also keep some information explicitly about the
     # package they refer to. These candidates are referred to as "canonical" and
     # are used when materializing resolution results back into RubyGems
-    # specifications that can be installed, written to lock files, and so on.
+    # specifications that can be installed, written to lockfiles, and so on.
     #
     class Candidate
       include Comparable

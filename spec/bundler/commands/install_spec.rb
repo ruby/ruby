@@ -49,7 +49,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app(".bundle")).not_to exist
     end
 
-    it "creates lock files based on the Gemfile name" do
+    it "creates lockfiles based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
         gem "myrack", "1.0"
@@ -1368,7 +1368,7 @@ RSpec.describe "bundle install with gem sources" do
     it "adds the current platform to the lockfile" do
       bundle "install --verbose"
 
-      expect(out).to include("re-resolving dependencies because your lockfile does not include the current platform")
+      expect(out).to include("re-resolving dependencies because your lockfile is missing the current platform")
       expect(out).not_to include("you are adding a new platform to your lockfile")
 
       expect(lockfile).to eq <<~L

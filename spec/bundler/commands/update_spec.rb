@@ -80,7 +80,7 @@ RSpec.describe "bundle update" do
   end
 
   describe "with --gemfile" do
-    it "creates lock files based on the Gemfile name" do
+    it "creates lockfiles based on the Gemfile name" do
       gemfile bundled_app("OmgFile"), <<-G
         source "https://gem.repo1"
         gem "myrack", "1.0"
@@ -640,7 +640,7 @@ RSpec.describe "bundle update" do
                 myrack
 
           PLATFORMS
-            #{local_platform}
+            x86-darwin-100
 
           DEPENDENCIES
             activesupport

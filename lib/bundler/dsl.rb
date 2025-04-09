@@ -77,7 +77,7 @@ module Bundler
 
         @gemspecs << spec
 
-        path path, "glob" => glob, "name" => spec.name do
+        path path, "glob" => glob, "name" => spec.name, "gemspec" => spec do
           add_dependency spec.name
         end
 
@@ -141,8 +141,7 @@ module Bundler
     def path(path, options = {}, &blk)
       source_options = normalize_hash(options).merge(
         "path" => Pathname.new(path),
-        "root_path" => gemfile_root,
-        "gemspec" => gemspecs.find {|g| g.name == options["name"] }
+        "root_path" => gemfile_root
       )
 
       source_options["global"] = true unless block_given?

@@ -160,6 +160,12 @@ class Bundler::ConnectionPool
     @available.shutdown(reload: true, &block)
   end
 
+  ## Reaps idle connections that have been idle for over +idle_seconds+.
+  # +idle_seconds+ defaults to 60.
+  def reap(idle_seconds = 60, &block)
+    @available.reap(idle_seconds, &block)
+  end
+
   # Size of this connection pool
   attr_reader :size
   # Automatically drop all connections after fork
@@ -168,6 +174,11 @@ class Bundler::ConnectionPool
   # Number of pool entries available for checkout at this instant.
   def available
     @available.length
+  end
+
+  # Number of pool entries created and idle in the pool.
+  def idle
+    @available.idle
   end
 end
 

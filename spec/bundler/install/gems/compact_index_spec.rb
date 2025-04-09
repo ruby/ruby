@@ -96,7 +96,6 @@ RSpec.describe "compact index api" do
     bundle :install, artifice: "compact_index"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -1089,5 +1088,12 @@ Running `bundle update rails` should fix the problem.
     bundle "update rails", artifice: "compact_index"
     count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
     expect(lockfile.scan(/activemerchant \(/).size).to eq(count)
+  end
+
+  it "handles an API that does not provide checksums info (undocumented, support may get removed)" do
+    install_gemfile <<-G, artifice: "compact_index_no_checksums"
+      source "https://gem.repo1"
+      gem "rake"
+    G
   end
 end
