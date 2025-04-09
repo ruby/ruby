@@ -334,5 +334,39 @@ RSpec.describe "bundle doctor ssl" do
       expect(net_http.min_version.to_s).to eq("TLS1_3")
       expect(net_http.max_version.to_s).to eq("TLS1_3")
     end
+
+    it "warns when TLS1.2 is not supported" do
+      expected_out = <<~MSG
+        Here's your OpenSSL environment:
+
+        OpenSSL:       #{OpenSSL::VERSION}
+        Compiled with: #{OpenSSL::OPENSSL_VERSION}
+        Loaded with:   #{OpenSSL::OPENSSL_LIBRARY_VERSION}
+
+        Trying connections to https://rubygems.org:
+        Bundler:       success
+        RubyGems:      success
+        Ruby net/http: success
+
+        Hooray! This Ruby can connect to rubygems.org.
+        You are all set to use Bundler and RubyGems.
+
+      MSG
+
+      expected_err = <<~MSG
+
+        WARNING: Although your Ruby can connect to rubygems.org today, your OpenSSL is very old!
+        WARNING: You will need to upgrade OpenSSL to use rubygems.org.
+
+      MSG
+
+      previous_version = OpenSSL::SSL::TLS1_2_VERSION
+      OpenSSL::SSL.send(:remove_const, :TLS1_2_VERSION)
+
+      subject = Bundler::CLI::Doctor::SSL.new({})
+      expect { subject.run }.to output(expected_out).to_stdout.and output(expected_err).to_stderr
+    ensure
+      OpenSSL::SSL.const_set(:TLS1_2_VERSION, previous_version)
+    end
   end
 end

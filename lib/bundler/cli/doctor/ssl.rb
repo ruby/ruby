@@ -105,6 +105,7 @@ module Bundler
       end.start
 
       Bundler.ui.info("Ruby net/http: success")
+      warn_on_unsupported_tls12
 
       true
     rescue StandardError => error
@@ -117,6 +118,28 @@ module Bundler
       MSG
 
       false
+    end
+
+    def warn_on_unsupported_tls12
+      ctx = OpenSSL::SSL::SSLContext.new
+      supported = true
+
+      if ctx.respond_to?(:min_version=)
+        begin
+          ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+        rescue OpenSSL::SSL::SSLError, NameError
+          supported = false
+        end
+      else
+        supported = OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_2) # rubocop:disable Naming/VariableNumber
+      end
+
+      Bundler.ui.warn(<<~EOM) unless supported
+
+        WARNING: Although your Ruby can connect to #{host} today, your OpenSSL is very old!
+        WARNING: You will need to upgrade OpenSSL to use #{host}.
+
+      EOM
     end
 
     module Explanation

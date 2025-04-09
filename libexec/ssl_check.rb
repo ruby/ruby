@@ -29,23 +29,3 @@ puts
 puts "Ruby:          %s" % ruby_version
 puts "RubyGems:      %s" % Gem::VERSION if defined?(Gem::VERSION)
 puts "Bundler:       %s" % Bundler::VERSION if defined?(Bundler::VERSION)
-
-def tls12_supported?
-  ctx = OpenSSL::SSL::SSLContext.new
-  if ctx.methods.include?(:min_version=)
-    ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    true
-  else
-    OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_2)
-  end
-rescue
-end
-
-# We were able to connect, but perhaps this Ruby will have trouble when we require TLSv1.2
-unless tls12_supported?
-  puts "\nWARNING: Although your Ruby can connect to #{host} today, your OpenSSL is very old! 👴",
-         "WARNING: You will need to upgrade OpenSSL to use #{host}."
-  exit 1
-end
-
-exit 0
