@@ -15,8 +15,6 @@ begin
 rescue LoadError
 end
 
-uri = URI("https://#{host}")
-
 if defined?(RUBY_DESCRIPTION)
   ruby_version = RUBY_DESCRIPTION
 else
@@ -44,30 +42,6 @@ def show_ssl_certs
   puts "SSL_CERT_DIR:  %s" % ssl_dir
   puts
 end
-
-def error_reason(error)
-  case error.message
-  when /certificate verify failed/
-    "certificate verification"
-  when /read server hello A/
-    "SSL/TLS protocol version mismatch"
-  when /tlsv1 alert protocol version/
-    "requested TLS version is too old"
-  else
-    error.message
-  end
-end
-
-puts "Trying connections to #{uri.to_s}:"
-puts
-begin
-  b_uri = defined?(Bundler::URI) ? Bundler::URI(uri.to_s) : uri
-  Bundler::Fetcher.new(Bundler::Source::Rubygems::Remote.new(b_uri)).send(:connection).request(b_uri)
-  bundler_status = "✅ success"
-rescue => error
-  bundler_status = "❌ failed     (#{error_reason(error)})"
-end
-puts "Bundler:       #{bundler_status}"
 
 begin
   require 'rubygems/remote_fetcher'
