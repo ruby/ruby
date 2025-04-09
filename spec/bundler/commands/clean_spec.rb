@@ -352,8 +352,8 @@ RSpec.describe "bundle clean" do
     bundle "install"
 
     FileUtils.rm(vendored_gems("bin/myrackup"))
-    FileUtils.rm_rf(vendored_gems("gems/thin-1.0"))
-    FileUtils.rm_rf(vendored_gems("gems/myrack-1.0.0"))
+    FileUtils.rm_r(vendored_gems("gems/thin-1.0"))
+    FileUtils.rm_r(vendored_gems("gems/myrack-1.0.0"))
 
     bundle :clean
 

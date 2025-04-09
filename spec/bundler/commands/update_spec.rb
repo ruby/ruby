@@ -653,7 +653,7 @@ RSpec.describe "bundle update" do
 
         bundle "install"
 
-        FileUtils.rm_rf(gem_repo2)
+        FileUtils.rm_r(gem_repo2)
 
         bundle "update --local --all"
         expect(out).not_to include("Fetching source index")

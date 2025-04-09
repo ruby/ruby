@@ -115,6 +115,10 @@ module Bundler
       raise NoSpaceOnDeviceError.new(path, action)
     rescue Errno::ENOTSUP
       raise OperationNotSupportedError.new(path, action)
+    rescue Errno::EPERM
+      raise OperationNotPermittedError.new(path, action)
+    rescue Errno::EROFS
+      raise ReadOnlyFileSystemError.new(path, action)
     rescue Errno::EEXIST, Errno::ENOENT
       raise
     rescue SystemCallError => e

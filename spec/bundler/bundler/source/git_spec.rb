@@ -70,4 +70,54 @@ RSpec.describe Bundler::Source::Git do
       end
     end
   end
+
+  describe "#locked_revision_checked_out?" do
+    let(:revision) { "abc" }
+    let(:git_proxy_revision) { revision }
+    let(:git_proxy_installed) { true }
+    let(:git_proxy) { subject.send(:git_proxy) }
+    let(:options) do
+      {
+        "uri" => uri,
+        "revision" => revision,
+      }
+    end
+
+    before do
+      allow(git_proxy).to receive(:revision).and_return(git_proxy_revision)
+      allow(git_proxy).to receive(:installed_to?).with(subject.install_path).and_return(git_proxy_installed)
+    end
+
+    context "when the locked revision is checked out" do
+      it "returns true" do
+        expect(subject.send(:locked_revision_checked_out?)).to be true
+      end
+    end
+
+    context "when no revision is provided" do
+      let(:options) do
+        { "uri" => uri }
+      end
+
+      it "returns falsey value" do
+        expect(subject.send(:locked_revision_checked_out?)).to be_falsey
+      end
+    end
+
+    context "when the git proxy revision is different than the git revision" do
+      let(:git_proxy_revision) { revision.next }
+
+      it "returns falsey value" do
+        expect(subject.send(:locked_revision_checked_out?)).to be_falsey
+      end
+    end
+
+    context "when the gem hasn't been installed" do
+      let(:git_proxy_installed) { false }
+
+      it "returns falsey value" do
+        expect(subject.send(:locked_revision_checked_out?)).to be_falsey
+      end
+    end
+  end
 end

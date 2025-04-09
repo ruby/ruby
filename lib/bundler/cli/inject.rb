@@ -35,8 +35,8 @@ module Bundler
         Bundler.ui.confirm(added.map do |d|
           name = "'#{d.name}'"
           requirement = ", '#{d.requirement}'"
-          group = ", :group => #{d.groups.inspect}" if d.groups != Array(:default)
-          source = ", :source => '#{d.source}'" unless d.source.nil?
+          group = ", group: #{d.groups.inspect}" if d.groups != Array(:default)
+          source = ", source: '#{d.source}'" unless d.source.nil?
           %(gem #{name}#{requirement}#{group}#{source})
         end.join("\n"))
       else

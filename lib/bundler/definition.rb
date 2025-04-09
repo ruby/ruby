@@ -94,7 +94,7 @@ module Bundler
 
       @locked_ruby_version = nil
       @new_platforms = []
-      @removed_platform = nil
+      @removed_platforms = []
 
       if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
@@ -330,7 +330,7 @@ module Bundler
           SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
         else
           Bundler.ui.debug "Found no changes, using resolution from the lockfile"
-          if @removed_platform || @locked_gems.may_include_redundant_platform_specific_gems?
+          if @removed_platforms.any? || @locked_gems.may_include_redundant_platform_specific_gems?
             SpecSet.new(filter_specs(@locked_specs, @dependencies))
           else
             @locked_specs
@@ -412,41 +412,8 @@ module Bundler
 
       raise ProductionError, "Frozen mode is set, but there's no lockfile" unless lockfile_exists?
 
-      added =   []
-      deleted = []
-      changed = []
-
-      new_platforms = @platforms - @locked_platforms
-      deleted_platforms = @locked_platforms - @platforms
-      added.concat new_platforms.map {|p| "* platform: #{p}" }
-      deleted.concat deleted_platforms.map {|p| "* platform: #{p}" }
-
-      added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
-      deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
-
-      both_sources = Hash.new {|h, k| h[k] = [] }
-      current_dependencies.each {|d| both_sources[d.name][0] = d }
-      current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
-
-      both_sources.each do |name, (dep, lock_dep)|
-        next if dep.nil? || lock_dep.nil?
-
-        gemfile_source = dep.source || default_source
-        lock_source = lock_dep.source || default_source
-        next if lock_source.include?(gemfile_source)
-
-        gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
-        lockfile_source_name = lock_dep.source ? lock_source.to_gemfile : "no specified source"
-        changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
-      end
-
-      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
-      msg = String.new
-      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because frozen mode is set"
-      msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
-      msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
-      msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
-      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg = lockfile_changes_summary("frozen mode is set")
+      return unless msg
 
       unless explicit_flag
         suggested_command = unless Bundler.settings.locations("frozen").keys.include?(:env)
@@ -456,7 +423,7 @@ module Bundler
                "freeze by running `#{suggested_command}`." if suggested_command
       end
 
-      raise ProductionError, msg if added.any? || deleted.any? || changed.any? || resolve_needed?
+      raise ProductionError, msg
     end
 
     def validate_runtime!
@@ -511,10 +478,10 @@ module Bundler
     end
 
     def remove_platform(platform)
-      removed_platform = @platforms.delete(Gem::Platform.new(platform))
-      @removed_platform ||= removed_platform
-      return if removed_platform
-      raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}"
+      raise InvalidOption, "Unable to remove the platform `#{platform}` since the only platforms are #{@platforms.join ", "}" unless @platforms.include?(platform)
+
+      @removed_platforms << platform
+      @platforms.delete(platform)
     end
 
     def nothing_changed?
@@ -540,6 +507,46 @@ module Bundler
     end
 
     private
+
+    def lockfile_changes_summary(update_refused_reason)
+      added =   []
+      deleted = []
+      changed = []
+
+      added.concat @new_platforms.map {|p| "* platform: #{p}" }
+      deleted.concat @removed_platforms.map {|p| "* platform: #{p}" }
+
+      added.concat new_deps.map {|d| "* #{pretty_dep(d)}" } if new_deps.any?
+      deleted.concat deleted_deps.map {|d| "* #{pretty_dep(d)}" } if deleted_deps.any?
+
+      both_sources = Hash.new {|h, k| h[k] = [] }
+      current_dependencies.each {|d| both_sources[d.name][0] = d }
+      current_locked_dependencies.each {|d| both_sources[d.name][1] = d }
+
+      both_sources.each do |name, (dep, lock_dep)|
+        next if dep.nil? || lock_dep.nil?
+
+        gemfile_source = dep.source || default_source
+        lock_source = lock_dep.source || default_source
+        next if lock_source.include?(gemfile_source)
+
+        gemfile_source_name = dep.source ? gemfile_source.to_gemfile : "no specified source"
+        lockfile_source_name = lock_dep.source ? lock_source.to_gemfile : "no specified source"
+        changed << "* #{name} from `#{lockfile_source_name}` to `#{gemfile_source_name}`"
+      end
+
+      return unless added.any? || deleted.any? || changed.any? || resolve_needed?
+
+      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
+
+      msg = String.new
+      msg << "#{reason.capitalize.strip}, but the lockfile can't be updated because #{update_refused_reason}"
+      msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
+      msg << "\n\nYou have deleted from the Gemfile:\n" << deleted.join("\n") if deleted.any?
+      msg << "\n\nYou have changed in the Gemfile:\n" << changed.join("\n") if changed.any?
+      msg << "\n\nRun `bundle install` elsewhere and add the updated #{SharedHelpers.relative_gemfile_path} to version control.\n" unless unlocking?
+      msg
+    end
 
     def install_needed?
       resolve_needed? || missing_specs?
@@ -601,8 +608,12 @@ module Bundler
         return
       end
 
-      SharedHelpers.filesystem_access(file) do |p|
-        File.open(p, "wb") {|f| f.puts(contents) }
+      begin
+        SharedHelpers.filesystem_access(file) do |p|
+          File.open(p, "wb") {|f| f.puts(contents) }
+        end
+      rescue ReadOnlyFileSystemError
+        raise ProductionError, lockfile_changes_summary("file system is read-only")
       end
     end
 
@@ -625,7 +636,8 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: @new_platforms)
+        new_resolution_platforms = @current_platform_missing ? @new_platforms + [local_platform] : @new_platforms
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlocking_all || @gems_to_unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms)
         packages = additional_base_requirements_to_prevent_downgrades(packages)
         packages = additional_base_requirements_to_force_updates(packages)
         packages
@@ -768,7 +780,6 @@ module Bundler
       @most_specific_non_local_locked_platform = find_most_specific_locked_platform
       return if @most_specific_non_local_locked_platform
 
-      @new_platforms << local_platform
       @platforms << local_platform
       true
     end
@@ -799,7 +810,7 @@ module Bundler
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],
         [@current_platform_missing, "your lockfile does not include the current platform"],
-        [@new_platforms.any?, "you added a new platform to your gemfile"],
+        [@new_platforms.any?, "you are adding a new platform to your lockfile"],
         [@path_changes, "the gemspecs for path gems changed"],
         [@local_changes, "the gemspecs for git local gems changed"],
         [@missing_lockfile_dep, "your lock file is missing \"#{@missing_lockfile_dep}\""],
