@@ -262,14 +262,15 @@ module Bundler
       @env = old
     end
 
-    def plugin(*args)
+    def plugin(name, *args)
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
+      version = args || [">= 0"]
 
-      normalize_hash(options)
+      normalize_options(name, version, options)
       options["type"] = :plugin
       options["require"] = false
 
-      gem(*args, options)
+      add_dependency(name, version, options)
     end
 
     def method_missing(name, *args)

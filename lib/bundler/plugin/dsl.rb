@@ -27,7 +27,7 @@ module Bundler
       end
 
       def gem(*args)
-        super if args.last.is_a?(Hash) && args.last["type"] == :plugin
+        # Ignore regular dependencies when doing the plugins-only pre-parse
       end
 
       def method_missing(name, *args)
