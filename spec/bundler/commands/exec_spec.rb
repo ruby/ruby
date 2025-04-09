@@ -193,74 +193,68 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
-    let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false }
+    let(:default_erb_version) { ruby "gem 'erb', '< 999999'; require 'erb/version'; puts Erb::VERSION", raise_on_error: false }
 
     context "when not specified in Gemfile" do
       before do
-        skip "irb isn't a default gem" if default_irb_version.empty?
-
         install_gemfile "source \"https://gem.repo1\""
       end
 
       it "uses version provided by ruby" do
-        bundle "exec irb --version"
+        bundle "exec erb --version"
 
-        expect(out).to include(default_irb_version)
+        expect(out).to include(default_erb_version)
       end
     end
 
     context "when specified in Gemfile directly" do
-      let(:specified_irb_version) { "0.9.6" }
+      let(:specified_erb_version) { "2.0.0" }
 
       before do
-        skip "irb isn't a default gem" if default_irb_version.empty?
-
         build_repo2 do
-          build_gem "irb", specified_irb_version do |s|
-            s.executables = "irb"
+          build_gem "erb", specified_erb_version do |s|
+            s.executables = "erb"
           end
         end
 
         install_gemfile <<-G
           source "https://gem.repo2"
-          gem "irb", "#{specified_irb_version}"
+          gem "erb", "#{specified_erb_version}"
         G
       end
 
       it "uses version specified" do
-        bundle "exec irb --version"
+        bundle "exec erb --version", artifice: nil
 
-        expect(out).to eq(specified_irb_version)
+        expect(out).to eq(specified_erb_version)
         expect(err).to be_empty
       end
     end
 
     context "when specified in Gemfile indirectly" do
-      let(:indirect_irb_version) { "0.9.6" }
+      let(:indirect_erb_version) { "2.0.0" }
 
       before do
-        skip "irb isn't a default gem" if default_irb_version.empty?
-
         build_repo2 do
-          build_gem "irb", indirect_irb_version do |s|
-            s.executables = "irb"
+          build_gem "erb", indirect_erb_version do |s|
+            s.executables = "erb"
           end
 
-          build_gem "gem_depending_on_old_irb" do |s|
-            s.add_dependency "irb", indirect_irb_version
+          build_gem "gem_depending_on_old_erb" do |s|
+            s.add_dependency "erb", indirect_erb_version
           end
         end
 
         install_gemfile <<-G
           source "https://gem.repo2"
-          gem "gem_depending_on_old_irb"
+          gem "gem_depending_on_old_erb"
         G
 
-        bundle "exec irb --version"
+        bundle "exec erb --version", artifice: nil
       end
 
       it "uses resolved version" do
-        expect(out).to eq(indirect_irb_version)
+        expect(out).to eq(indirect_erb_version)
         expect(err).to be_empty
       end
     end
@@ -657,7 +651,7 @@ RSpec.describe "bundle exec" do
         gem "foo", :path => "#{lib_path("foo-1.0")}"
       G
 
-      bundle "exec irb", raise_on_error: false
+      bundle "exec erb", raise_on_error: false
 
       expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
       expect(err).to match(/missing value for attribute rubygems_version|rubygems_version must not be nil/)
@@ -1262,7 +1256,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "allows calling bundle install after removing gem.build_complete" do
-        FileUtils.rm_rf Dir[bundled_app(".bundle/**/gem.build_complete")]
+        FileUtils.rm_r Dir[bundled_app(".bundle/**/gem.build_complete")]
         bundle "exec #{Gem.ruby} -S bundle install"
       end
     end

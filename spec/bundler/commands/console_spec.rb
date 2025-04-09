@@ -35,6 +35,8 @@ RSpec.describe "bundle console", readline: true do
           end
         RUBY
       end
+
+      build_dummy_irb
     end
   end
 
@@ -46,7 +48,8 @@ RSpec.describe "bundle console", readline: true do
       end
 
       install_gemfile <<-G
-        source "https://gem.repo1"
+        source "https://gem.repo2"
+        gem "irb"
         path "#{lib_path}" do
           gem "loadfuuu", require: true
         end
@@ -66,6 +69,7 @@ RSpec.describe "bundle console", readline: true do
     before do
       install_gemfile <<-G
         source "https://gem.repo2"
+        gem "irb"
         gem "myrack"
         gem "activesupport", :group => :test
         gem "myrack_middleware", :group => :development
@@ -81,16 +85,19 @@ RSpec.describe "bundle console", readline: true do
     end
 
     it "uses IRB as default console" do
+      skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
+
       bundle "console" do |input, _, _|
-        input.puts("__FILE__")
+        input.puts("__method__")
         input.puts("exit")
       end
-      expect(out).to include("(irb)")
+      expect(out).to include("__irb__")
     end
 
     it "starts another REPL if configured as such" do
       install_gemfile <<-G
         source "https://gem.repo2"
+        gem "irb"
         gem "pry"
       G
       bundle "config set console pry"
@@ -103,14 +110,16 @@ RSpec.describe "bundle console", readline: true do
     end
 
     it "falls back to IRB if the other REPL isn't available" do
+      skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
+
       bundle "config set console pry"
       # make sure pry isn't there
 
       bundle "console" do |input, _, _|
-        input.puts("__FILE__")
+        input.puts("__method__")
         input.puts("exit")
       end
-      expect(out).to include("(irb)")
+      expect(out).to include("__irb__")
     end
 
     it "does not try IRB twice if no console is configured and IRB is not available" do
@@ -161,6 +170,7 @@ RSpec.describe "bundle console", readline: true do
     it "performs an automatic bundle install" do
       gemfile <<-G
         source "https://gem.repo2"
+        gem "irb"
         gem "myrack"
         gem "activesupport", :group => :test
         gem "myrack_middleware", :group => :development

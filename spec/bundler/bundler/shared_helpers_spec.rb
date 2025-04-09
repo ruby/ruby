@@ -354,7 +354,7 @@ RSpec.describe Bundler::SharedHelpers do
 
       it "ENV['PATH'] should only contain one instance of bundle bin path" do
         subject.set_bundle_environment
-        paths = (ENV["PATH"]).split(File::PATH_SEPARATOR)
+        paths = ENV["PATH"].split(File::PATH_SEPARATOR)
         expect(paths.count(bundle_path)).to eq(1)
       end
     end

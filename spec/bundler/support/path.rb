@@ -143,6 +143,10 @@ module Spec
       end
     end
 
+    def compact_index_cache_path
+      home(".bundle/cache/compact_index")
+    end
+
     def bundled_app(*path)
       root = tmp("bundled_app")
       FileUtils.mkdir_p(root)

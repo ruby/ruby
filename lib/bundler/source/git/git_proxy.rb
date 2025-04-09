@@ -147,6 +147,12 @@ module Bundler
           end
         end
 
+        def installed_to?(destination)
+          # if copy_to is interrupted, it may leave a partially installed directory that
+          # contains .git but no other files -- consider this not to be installed
+          Dir.exist?(destination) && (Dir.children(destination) - [".git"]).any?
+        end
+
         private
 
         def git_remote_fetch(args)
@@ -179,8 +185,7 @@ module Bundler
             _, err, status = capture(command, nil)
             return extra_ref if status.success?
 
-            if err.include?("Could not find remote branch") || # git up to 2.49
-               err.include?("Remote branch #{branch_option} not found") # git 2.49 or higher
+            if err.include?("Could not find remote branch")
               raise MissingGitRevisionError.new(command_with_no_credentials, nil, explicit_ref, credential_filtered_uri)
             else
               idx = command.index("--depth")
@@ -257,7 +262,7 @@ module Bundler
         end
 
         def not_pinned?
-          branch_option || ref.nil?
+          branch || tag || ref.nil?
         end
 
         def pinned_to_full_sha?
@@ -421,7 +426,7 @@ module Bundler
           # anyways.
           return args if @revision
 
-          args += ["--branch", branch_option] if branch_option
+          args += ["--branch", branch || tag] if branch || tag
           args
         end
 
@@ -435,10 +440,6 @@ module Bundler
           extra_args = [path.to_s, *depth_args]
           extra_args.push(ref)
           extra_args
-        end
-
-        def branch_option
-          branch || tag
         end
 
         def full_clone?

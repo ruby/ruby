@@ -939,10 +939,15 @@ G
     end
   end
 
-  context "bundle console", bundler: "< 3" do
+  context "bundle console" do
     before do
+      build_repo2 do
+        build_dummy_irb
+      end
+
       install_gemfile <<-G
-        source "https://gem.repo1"
+        source "https://gem.repo2"
+        gem "irb"
         gem "myrack"
         gem "activesupport", :group => :test
         gem "myrack_middleware", :group => :development
@@ -950,14 +955,7 @@ G
     end
 
     it "starts IRB with the default group loaded when ruby version matches", :readline do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{ruby_version_correct}
-      G
+      gemfile gemfile + "\n\n#{ruby_version_correct}\n"
 
       bundle "console" do |input, _, _|
         input.puts("puts MYRACK")
@@ -967,14 +965,7 @@ G
     end
 
     it "starts IRB with the default group loaded when ruby version matches", :readline, :jruby_only do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{ruby_version_correct_engineless}
-      G
+      gemfile gemfile + "\n\n#{ruby_version_correct_engineless}\n"
 
       bundle "console" do |input, _, _|
         input.puts("puts MYRACK")
@@ -984,56 +975,28 @@ G
     end
 
     it "fails when ruby version doesn't match" do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{ruby_version_incorrect}
-      G
+      gemfile gemfile + "\n\n#{ruby_version_incorrect}\n"
 
       bundle "console", raise_on_error: false
       should_be_ruby_version_incorrect
     end
 
     it "fails when engine doesn't match" do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{engine_incorrect}
-      G
+      gemfile gemfile + "\n\n#{engine_incorrect}\n"
 
       bundle "console", raise_on_error: false
       should_be_engine_incorrect
     end
 
     it "fails when engine version doesn't match", :jruby_only do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{engine_version_incorrect}
-      G
+      gemfile gemfile + "\n\n#{engine_version_incorrect}\n"
 
       bundle "console", raise_on_error: false
       should_be_engine_version_incorrect
     end
 
     it "fails when patchlevel doesn't match" do
-      gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-        gem "activesupport", :group => :test
-        gem "myrack_middleware", :group => :development
-
-        #{patchlevel_incorrect}
-      G
+      gemfile gemfile + "\n\n#{patchlevel_incorrect}\n"
 
       bundle "console", raise_on_error: false
       should_be_patchlevel_incorrect

@@ -344,8 +344,8 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      simulate_new_machine
-      FileUtils.rm_rf gem_repo2
+      pristine_system_gems :bundler
+      FileUtils.rm_r gem_repo2
 
       bundle "install --local"
       expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -359,8 +359,8 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      simulate_new_machine
-      FileUtils.rm_rf gem_repo2
+      pristine_system_gems :bundler
+      FileUtils.rm_r gem_repo2
 
       bundle "config set --local deployment true"
       bundle "config set --local path vendor/bundle"
@@ -376,8 +376,8 @@ RSpec.describe "bundle install with gem sources" do
       G
 
       bundle :cache
-      simulate_new_machine
-      FileUtils.rm_rf gem_repo2
+      pristine_system_gems :bundler
+      FileUtils.rm_r gem_repo2
 
       bundle "config set --local cache_all_platforms true"
       bundle "config set --local path vendor/bundle"
@@ -433,12 +433,11 @@ RSpec.describe "bundle install with gem sources" do
         bundle "config set path vendor/bundle"
         bundle :cache, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
-        build_repo4 do
-          # simulate removal of all remote gems
-        end
+        # simulate removal of all remote gems
+        empty_repo4
 
         # delete compact index cache
-        FileUtils.rm_rf home(".bundle/cache/compact_index")
+        FileUtils.rm_r home(".bundle/cache/compact_index")
 
         bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
@@ -471,7 +470,7 @@ RSpec.describe "bundle install with gem sources" do
         bundle :cache
       end
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       bundle "config set --local force_ruby_platform true"
 

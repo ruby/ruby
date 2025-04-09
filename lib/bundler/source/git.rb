@@ -360,7 +360,11 @@ module Bundler
       end
 
       def locked_revision_checked_out?
-        locked_revision && locked_revision == revision && install_path.exist?
+        locked_revision && locked_revision == revision && installed?
+      end
+
+      def installed?
+        git_proxy.installed_to?(install_path)
       end
 
       def base_name
