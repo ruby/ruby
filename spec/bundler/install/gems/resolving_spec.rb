@@ -540,9 +540,18 @@ RSpec.describe "bundle install with install-time dependencies" do
           lockfile original_lockfile
         end
 
-        it "keeps both variants in the lockfile, and uses the generic one since it's compatible" do
+        it "keeps both variants in the lockfile when installing, and uses the generic one since it's compatible" do
           simulate_platform "x86_64-linux" do
             bundle "install --verbose"
+
+            expect(lockfile).to eq(original_lockfile)
+            expect(the_bundle).to include_gems("nokogiri 1.16.3")
+          end
+        end
+
+        it "keeps both variants in the lockfile when updating, and uses the generic one since it's compatible" do
+          simulate_platform "x86_64-linux" do
+            bundle "update --verbose"
 
             expect(lockfile).to eq(original_lockfile)
             expect(the_bundle).to include_gems("nokogiri 1.16.3")

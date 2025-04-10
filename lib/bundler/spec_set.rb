@@ -181,7 +181,7 @@ module Bundler
     end
 
     def version_for(name)
-      self[name].first&.version
+      exemplary_spec(name)&.version
     end
 
     def what_required(spec)
@@ -286,8 +286,13 @@ module Bundler
     end
 
     def additional_variants_from(other)
-      other.select do |spec|
-        version_for(spec.name) == spec.version && valid_dependencies?(spec)
+      other.select do |other_spec|
+        spec = exemplary_spec(other_spec.name)
+        next unless spec
+
+        selected = spec.version == other_spec.version && valid_dependencies?(other_spec)
+        other_spec.source = spec.source if selected
+        selected
       end
     end
 
@@ -363,6 +368,10 @@ module Bundler
     def index_spec(hash, key, value)
       hash[key] ||= []
       hash[key] << value
+    end
+
+    def exemplary_spec(name)
+      self[name].first
     end
   end
 end
