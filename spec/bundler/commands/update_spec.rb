@@ -39,6 +39,23 @@ RSpec.describe "bundle update" do
     end
   end
 
+  describe "with --verbose" do
+    before do
+      build_repo2
+
+      install_gemfile <<~G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+    end
+
+    it "logs the reason for re-resolving" do
+      bundle "update --verbose"
+      expect(out).not_to include("Found changes from the lockfile")
+      expect(out).to include("Re-resolving dependencies because bundler is unlocking")
+    end
+  end
+
   describe "with --all" do
     before do
       build_repo2
