@@ -51,7 +51,7 @@ class RbObject(LLDBInterface):
         self.flUser9 = self.ruby_globals["RUBY_FL_USER9"]
         self.flUshift = self.ruby_globals["RUBY_FL_USHIFT"]
 
-        self.tRBasic = self.target.FindFirstType("struct RBasic").GetPointerType()
+        self.tRBasic = self.target.FindFirstType("::RBasic").GetPointerType()
 
         self.val = ptr.Cast(self.tRBasic)
         self.page = HeapPage(self.debugger, self.val)
