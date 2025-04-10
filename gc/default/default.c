@@ -1585,7 +1585,9 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
         objspace->next_object_id += OBJ_ID_INCREMENT;
 
         st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-        st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
+            st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        }
         FL_SET(obj, FL_SEEN_OBJ_ID);
     }
     rb_gc_vm_unlock(lev);
@@ -1593,22 +1595,40 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
     return id;
 }
 
+static int
+build_id_to_obj_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    st_table *id_to_obj_tbl = (st_table *)data;
+    st_insert(id_to_obj_tbl, value, key);
+    return ST_CONTINUE;
+}
+
 VALUE
 rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
+    unsigned int lev = rb_gc_vm_lock();
+
+    if (!objspace->id_to_obj_tbl) {
+        objspace->id_to_obj_tbl = st_init_table_with_size(&object_id_hash_type, st_table_size(objspace->obj_to_id_tbl));
+        st_foreach(objspace->obj_to_id_tbl, build_id_to_obj_i, (st_data_t)objspace->id_to_obj_tbl);
+    }
+
     VALUE obj;
-    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
-            !rb_gc_impl_garbage_object_p(objspace, obj)) {
+    bool found = st_lookup(objspace->id_to_obj_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+
+    rb_gc_vm_unlock(lev);
+
+    if (found) {
         return obj;
     }
 
     if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
     else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
 }
 
@@ -2644,7 +2664,9 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 
     if (st_delete(objspace->obj_to_id_tbl, &o, &id)) {
         GC_ASSERT(id);
-        st_delete(objspace->id_to_obj_tbl, &id, NULL);
+        if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
+            st_delete(objspace->id_to_obj_tbl, &id, NULL);
+        }
     }
     else {
         rb_bug("Object ID seen, but not in mapping table: %s", rb_obj_info(obj));
@@ -7168,7 +7190,9 @@ gc_update_references(rb_objspace_t *objspace)
         }
     }
     gc_ref_update_table_values_only(objspace->obj_to_id_tbl);
-    gc_update_table_refs(objspace->id_to_obj_tbl);
+    if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
+        gc_update_table_refs(objspace->id_to_obj_tbl);
+    }
     gc_update_table_refs(finalizer_table);
 
     rb_gc_update_vm_references((void *)objspace);
@@ -9282,7 +9306,10 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
         heap->total_slots = 0;
     }
 
-    st_free_table(objspace->id_to_obj_tbl);
+
+    if (objspace->id_to_obj_tbl) {
+        st_free_table(objspace->id_to_obj_tbl);
+    }
     st_free_table(objspace->obj_to_id_tbl);
 
     free_stack_chunks(&objspace->mark_stack);
@@ -9423,7 +9450,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     heap_page_alloc_use_mmap = INIT_HEAP_PAGE_ALLOC_USE_MMAP;
 #endif
     objspace->next_object_id = OBJ_ID_INITIAL;
-    objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
+    objspace->id_to_obj_tbl = NULL;
     objspace->obj_to_id_tbl = st_init_numtable();
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;

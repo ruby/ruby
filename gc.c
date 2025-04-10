@@ -1794,11 +1794,11 @@ id2ref(VALUE objid)
                     return ptr;
                 }
                 else {
-                    rb_raise(rb_eRangeError, "%p is not symbol id value", (void *)ptr);
+                    rb_raise(rb_eRangeError, "%p is not a symbol id value", (void *)ptr);
                 }
             }
 
-            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_int2str(objid, 10));
+            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_int2str(objid, 10));
         }
     }
 
@@ -1807,7 +1807,7 @@ id2ref(VALUE objid)
         return obj;
     }
     else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is id of the unshareable object on multi-ractor", rb_int2str(objid, 10));
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is the id of an unshareable object on multi-ractor", rb_int2str(objid, 10));
     }
 }
 
