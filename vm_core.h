@@ -1167,9 +1167,6 @@ typedef struct rb_thread_struct {
         thread_invoke_type_func
     } invoke_type;
 
-    /* statistics data for profiler */
-    VALUE stat_insn_usage;
-
     /* fiber */
     rb_fiber_t *root_fiber;
 
