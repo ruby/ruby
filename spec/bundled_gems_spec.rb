@@ -363,11 +363,36 @@ RSpec.describe "bundled_gems.rb" do
   end
 
   describe ".force_activate" do
-    context "when gem activation fails" do
+    before do
+      allow_any_instance_of(Bundler::Runtime).to receive(:setup).and_raise(Bundler::GemNotFound)
+    end
+
+    context "with bundle environment" do
       before do
-        allow_any_instance_of(Bundler::Runtime).to receive(:setup).and_raise(Bundler::GemNotFound)
+        code = <<-RUBY
+          #!/usr/bin/env ruby
+
+          Gem::BUNDLED_GEMS.force_activate("csv")
+        RUBY
+        create_file("script.rb", code)
+        create_file("Gemfile", "source 'https://rubygems.org'")
       end
 
+      it "lockfile is available" do
+        bundle "install"
+        bundle "exec ./script.rb"
+
+        expect(err).to include("gem install csv")
+      end
+
+      it "lockfile is not available" do
+        bundle "exec ./script.rb"
+
+        expect(err).to include("gem install csv")
+      end
+    end
+
+    context "without bundle environment" do
       it "warns about installation requirement" do
         expect_any_instance_of(Object).to receive(:warn)
         Gem::BUNDLED_GEMS.force_activate("csv")
