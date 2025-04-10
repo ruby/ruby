@@ -213,7 +213,7 @@ module Bundler
     def load_plugins
       Gem.load_plugins
 
-      requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
+      requested_path_gems = @definition.specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.flat_map do |spec|
         spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
       rescue TypeError
