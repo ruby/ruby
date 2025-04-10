@@ -3498,7 +3498,6 @@ thread_mark(void *ptr)
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
-    rb_gc_mark(th->stat_insn_usage);
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
