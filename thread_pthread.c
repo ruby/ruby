@@ -1913,23 +1913,6 @@ static struct {
 extern void *STACK_END_ADDRESS;
 #endif
 
-enum {
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
-    RUBY_STACK_SPACE_RATIO = 5
-};
-
-static size_t
-space_size(size_t stack_size)
-{
-    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
-    if (space_size > RUBY_STACK_SPACE_LIMIT) {
-        return RUBY_STACK_SPACE_LIMIT;
-    }
-    else {
-        return space_size;
-    }
-}
-
 static void
 native_thread_init_main_thread_stack(void *addr)
 {
@@ -1963,9 +1946,6 @@ native_thread_init_main_thread_stack(void *addr)
     {
 #if defined(HAVE_GETRLIMIT)
 #if defined(PTHREAD_STACK_DEFAULT)
-# if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
-#  error "PTHREAD_STACK_DEFAULT is too small"
-# endif
         size_t size = PTHREAD_STACK_DEFAULT;
 #else
         size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
@@ -2071,9 +2051,7 @@ native_thread_create0(struct rb_native_thread *nt)
     pthread_attr_t attr;
 
     const size_t stack_size = nt->vm->default_params.thread_machine_stack_size;
-    const size_t space = space_size(stack_size);
-
-    nt->machine_stack_maxsize = stack_size - space;
+    nt->machine_stack_maxsize = stack_size;
 
 #ifdef USE_SIGALTSTACK
     nt->altstack = rb_allocate_sigaltstack();
@@ -3170,7 +3148,6 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
     else {
         return 0;
     }
-    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
         if (size > ~(size_t)base+1) size = ~(size_t)base+1;
