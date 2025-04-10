@@ -8,14 +8,15 @@ class HeapPageCommand(RbBaseCommand):
     help_string = "prints out 'struct heap_page' for a VALUE pointer in the page"
 
     def call(self, debugger, command, exe_ctx, result):
+        self.result = result
         self.t_heap_page_body = self.target.FindFirstType("struct heap_page_body")
         self.t_heap_page_ptr = self.target.FindFirstType("struct heap_page").GetPointerType()
 
         page = self._get_page(self.frame.EvaluateExpression(command))
         page.Cast(self.t_heap_page_ptr)
 
-        self._append_expression(debugger, "(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-        self._append_expression(debugger, "*(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
+        self._append_expression("(struct heap_page *) %0#x" % page.GetValueAsUnsigned())
+        self._append_expression("*(struct heap_page *) %0#x" % page.GetValueAsUnsigned())
 
     def _get_page(self, val):
         addr = val.GetValueAsUnsigned()
