@@ -366,7 +366,9 @@ rb_mmtk_update_obj_id_tables(void)
     struct objspace *objspace = rb_gc_get_objspace();
 
     st_foreach(objspace->obj_to_id_tbl, rb_mmtk_update_obj_id_tables_obj_to_id_i, 0);
-    st_foreach(objspace->id_to_obj_tbl, rb_mmtk_update_obj_id_tables_id_to_obj_i, 0);
+    if (objspace->id_to_obj_tbl) {
+        st_foreach(objspace->id_to_obj_tbl, rb_mmtk_update_obj_id_tables_id_to_obj_i, 0);
+    }
 }
 
 static int
@@ -1091,7 +1093,7 @@ static const struct st_hash_type object_id_hash_type = {
 static void
 objspace_obj_id_init(struct objspace *objspace)
 {
-    objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
+    objspace->id_to_obj_tbl = NULL;
     objspace->obj_to_id_tbl = st_init_numtable();
     objspace->next_object_id = OBJ_ID_INITIAL;
 }
@@ -1119,7 +1121,9 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
         objspace->next_object_id += OBJ_ID_INCREMENT;
 
         st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-        st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
+            st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        }
         FL_SET(obj, FL_SEEN_OBJ_ID);
     }
     rb_gc_vm_unlock(lev);
@@ -1127,22 +1131,41 @@ rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
     return id;
 }
 
+static int
+build_id_to_obj_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    st_table *id_to_obj_tbl = (st_table *)data;
+    st_insert(id_to_obj_tbl, value, key);
+    return ST_CONTINUE;
+}
+
 VALUE
 rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
 {
     struct objspace *objspace = objspace_ptr;
 
+
+    unsigned int lev = rb_gc_vm_lock();
+
+    if (!objspace->id_to_obj_tbl) {
+        objspace->id_to_obj_tbl = st_init_table_with_size(&object_id_hash_type, st_table_size(objspace->obj_to_id_tbl));
+        st_foreach(objspace->obj_to_id_tbl, build_id_to_obj_i, (st_data_t)objspace->id_to_obj_tbl);
+    }
+
     VALUE obj;
-    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
-            !rb_gc_impl_garbage_object_p(objspace, obj)) {
+    bool found = st_lookup(objspace->id_to_obj_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+
+    rb_gc_vm_unlock(lev);
+
+    if (found) {
         return obj;
     }
 
     if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
     else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
 }
 
