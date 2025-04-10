@@ -191,14 +191,19 @@ module Gem::BUNDLED_GEMS # :nodoc:
   end
 
   def self.force_activate(gem)
+    require "bundler"
     Bundler.reset!
 
     builder = Bundler::Dsl.new
-    if Bundler.definition.gemfiles.empty? # bundler/inline
-      Bundler.definition.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
-    else
-      Bundler.definition.gemfiles.each{|gemfile| builder.eval_gemfile(gemfile) }
+
+    if Bundler::SharedHelpers.in_bundle?
+      if Bundler.locked_gems
+        Bundler.locked_gems.specs.each{|spec| builder.gem spec.name, spec.version.to_s }
+      elsif Bundler.definition.gemfiles.size > 0
+        Bundler.definition.gemfiles.each{|gemfile| builder.eval_gemfile(gemfile) }
+      end
     end
+
     builder.gem gem
 
     definition = builder.to_definition(nil, true)

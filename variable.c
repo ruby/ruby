@@ -2624,6 +2624,7 @@ rb_autoload(VALUE module, ID name, const char *feature)
 }
 
 static void const_set(VALUE klass, ID id, VALUE val);
+static void const_added(VALUE klass, ID const_name);
 
 struct autoload_arguments {
     VALUE module;
@@ -2732,7 +2733,7 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
     VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
 
     if (result == Qtrue) {
-        rb_const_added(module, name);
+        const_added(module, name);
     }
 }
 
@@ -3603,8 +3604,8 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
     RB_VM_LOCK_LEAVE();
 }
 
-void
-rb_const_added(VALUE klass, ID const_name)
+static void
+const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
         VALUE name = ID2SYM(const_name);
@@ -3680,16 +3681,10 @@ const_set(VALUE klass, ID id, VALUE val)
 }
 
 void
-rb_const_set_raw(VALUE klass, ID id, VALUE val)
-{
-    const_set(klass, id, val);
-}
-
-void
 rb_const_set(VALUE klass, ID id, VALUE val)
 {
     const_set(klass, id, val);
-    rb_const_added(klass, id);
+    const_added(klass, id);
 }
 
 static struct autoload_data *

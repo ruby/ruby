@@ -21,14 +21,16 @@ ridk enable ucrt64
 
 pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
 
-cd c:\
-mkdir work
-cd work
-git clone https://github.com/ruby/ruby
+mkdir c:\work\ruby
+cd /d c:\work\ruby
 
-cd c:\work\ruby
-sh autogen.sh
-sh configure  -C --disable-install-doc
+git clone https://github.com/ruby/ruby src
+
+sh ./src/autogen.sh
+
+mkdir build
+cd build
+sh ../src/configure -C --disable-install-doc
 make
 ```
 
@@ -40,14 +42,14 @@ bash
 
 pacman -S --needed $MINGW_PACKAGE_PREFIX-openssl $MINGW_PACKAGE_PREFIX-libyaml $MINGW_PACKAGE_PREFIX-libffi
 
-cd /c/
-mkdir work
-cd work
-git clone https://github.com/ruby/ruby
-cd ruby
+mkdir /c/work/ruby
+cd /c/work/ruby
 
-./autogen.sh
-./configure -C --disable-install-doc
+git clone https://github.com/ruby/ruby src
+
+./src/autogen.sh
+cd build
+../src/configure -C --disable-install-doc
 make
 ```
 
