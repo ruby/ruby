@@ -5,7 +5,7 @@ class Binding
       require 'irb'
     rescue LoadError, Gem::LoadError
       Gem::BUNDLED_GEMS.force_activate 'irb'
-      retry
+      require 'irb'
     end
     irb(...)
   end
