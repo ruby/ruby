@@ -1052,7 +1052,7 @@ module Prism
           builder.index_asgn(
             visit(node.receiver),
             token(node.opening_loc),
-            visit_all(node.arguments.arguments),
+            visit_all(node.arguments&.arguments || []),
             token(node.closing_loc),
           )
         end
