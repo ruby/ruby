@@ -56,7 +56,6 @@ void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
-PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
 
