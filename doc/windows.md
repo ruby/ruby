@@ -102,6 +102,14 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     scoop install git ruby
     ```
 
+    The windows version of `git` configured with `autocrlf` is `true`. The Ruby
+    test suite may fail with `autocrlf` set to `true`. You can set it to `false`
+    like:
+
+    ```batch
+    git config --global core.autocrlf false
+    ```
+
 5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
     directory of ruby repository like:
 
