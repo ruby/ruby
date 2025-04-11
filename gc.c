@@ -1216,14 +1216,14 @@ rb_data_free(void *objspace, VALUE obj)
 void
 rb_gc_obj_free_vm_weak_references(VALUE obj)
 {
-    if (FL_TEST(obj, FL_EXIVAR)) {
+    if (FL_TEST_RAW(obj, FL_EXIVAR)) {
         rb_free_generic_ivar((VALUE)obj);
         FL_UNSET(obj, FL_EXIVAR);
     }
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
-        if (FL_TEST(obj, RSTRING_FSTR)) {
+        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
             rb_gc_free_fstring(obj);
         }
         break;
@@ -1458,7 +1458,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
                BUILTIN_TYPE(obj), (void*)obj, RBASIC(obj)->flags);
     }
 
-    if (FL_TEST(obj, FL_FINALIZE)) {
+    if (FL_TEST_RAW(obj, FL_FINALIZE)) {
         rb_gc_impl_make_zombie(objspace, obj, 0, 0);
         return FALSE;
     }
@@ -2665,7 +2665,7 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 void
 rb_gc_mark_children(void *objspace, VALUE obj)
 {
-    if (FL_TEST(obj, FL_EXIVAR)) {
+    if (FL_TEST_RAW(obj, FL_EXIVAR)) {
         rb_mark_generic_ivar(obj);
     }
 
@@ -2700,7 +2700,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
-        if (FL_TEST(obj, FL_SINGLETON)) {
+        if (FL_TEST_RAW(obj, FL_SINGLETON)) {
             gc_mark_internal(RCLASS_ATTACHED_OBJECT(obj));
         }
         // Continue to the shared T_CLASS/T_MODULE
@@ -3635,7 +3635,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
-        if (FL_TEST(obj, FL_SINGLETON)) {
+        if (FL_TEST_RAW(obj, FL_SINGLETON)) {
             UPDATE_IF_MOVED(objspace, RCLASS_ATTACHED_OBJECT(obj));
         }
         // Continue to the shared T_CLASS/T_MODULE
