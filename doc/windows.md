@@ -53,6 +53,13 @@ cd build
 make
 ```
 
+If you have other MSYS2 environment via other package manager like `scoop`, you need to specify `$MINGW_PACKAGE_PREFIX` is `mingw-w64-ucrt-x86_64`.
+And you need to add `--with-opt-dir` option to `configure` command like:
+
+```batch
+sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\username\scoop\apps\msys2\current\ucrt64
+```
+
 [RubyInstaller-Devkit]: https://rubyinstaller.org/
 [git-for-windows]: https://gitforwindows.org/
 [VSCode]: https://code.visualstudio.com/
