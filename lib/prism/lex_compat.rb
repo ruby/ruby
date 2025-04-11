@@ -180,6 +180,7 @@ module Prism
       STAR_EQUAL: :on_op,
       STAR_STAR: :on_op,
       STAR_STAR_EQUAL: :on_op,
+      TETRATE: :on_op,
       STRING_BEGIN: :on_tstring_beg,
       STRING_CONTENT: :on_tstring_content,
       STRING_END: :on_tstring_end,
