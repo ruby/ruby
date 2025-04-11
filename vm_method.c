@@ -303,27 +303,29 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
 }
 
 static int
-invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data)
+invalidate_cc_refinement(st_data_t key, st_data_t value, st_data_t data)
 {
-    VALUE v = (VALUE)vstart;
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
+    VALUE v = (VALUE)key;
+    void *ptr = rb_asan_poisoned_object_p(v);
+    rb_asan_unpoison_object(v, false);
 
-        if (RBASIC(v)->flags) { // liveness check
-            if (imemo_type_p(v, imemo_callcache)) {
-                const struct rb_callcache *cc = (const struct rb_callcache *)v;
-                if (vm_cc_refinement_p(cc) && cc->klass) {
-                    vm_cc_invalidate(cc);
-                }
-            }
-        }
+    if (rb_gc_pointer_to_heap_p(v) &&
+        !rb_objspace_garbage_object_p(v) &&
+        RBASIC(v)->flags) { // liveness check
+        const struct rb_callcache *cc = (const struct rb_callcache *)v;
 
-        if (ptr) {
-            rb_asan_poison_object(v);
+        VM_ASSERT(vm_cc_refinement_p(cc));
+
+        if (cc->klass) {
+            vm_cc_invalidate(cc);
         }
     }
-    return 0; // continue to iteration
+
+    if (ptr) {
+        rb_asan_poison_object(v);
+    }
+
+    return ST_CONTINUE;
 }
 
 static st_index_t
@@ -436,9 +438,48 @@ rb_vm_ci_free(const struct rb_callinfo *ci)
 }
 
 void
+rb_vm_insert_cc_refinement(st_table *cc_refinement_table, const struct rb_callcache *cc)
+{
+    st_data_t key = (st_data_t)cc;
+
+    if (cc_refinement_table) {
+        st_insert(cc_refinement_table, key, 1);
+    } else {
+        rb_vm_t *vm = GET_VM();
+        RB_VM_LOCK_ENTER();
+        {
+            st_insert(vm->cc_refinement_table, key, 1);
+        }
+        RB_VM_LOCK_LEAVE();
+    }
+}
+
+void rb_st_compact_table(st_table *tab);
+
+void
+rb_vm_delete_cc_refinement(const struct rb_callcache *cc)
+{
+    ASSERT_vm_locking();
+
+    rb_vm_t *vm = GET_VM();
+    st_data_t key = (st_data_t)cc;
+
+    st_delete(vm->cc_refinement_table, &key, NULL);
+}
+
+void
 rb_clear_all_refinement_method_cache(void)
 {
-    rb_objspace_each_objects(invalidate_all_refinement_cc, NULL);
+    rb_vm_t *vm = GET_VM();
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_foreach(vm->cc_refinement_table, invalidate_cc_refinement, (st_data_t)NULL);
+        st_clear(vm->cc_refinement_table);
+        rb_st_compact_table(vm->cc_refinement_table);
+    }
+    RB_VM_LOCK_LEAVE();
+
     rb_yjit_invalidate_all_method_lookup_assumptions();
 }
 
