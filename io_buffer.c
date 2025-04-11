@@ -273,6 +273,21 @@ io_buffer_free(struct rb_io_buffer *buffer)
 }
 
 static void
+rb_io_buffer_type_mark_and_move(void *_buffer)
+{
+    struct rb_io_buffer *buffer = _buffer;
+    if (buffer->source != Qnil) {
+        if (RB_TYPE_P(buffer->source, T_STRING)) {
+            // The `source` String has to be pinned, because the `base` may point to the embedded String content,
+            // which can be otherwise moved by GC compaction.
+            rb_gc_mark(buffer->source);
+        } else {
+            rb_gc_mark_and_move(&buffer->source);
+        }
+    }
+}
+
+static void
 rb_io_buffer_type_free(void *_buffer)
 {
     struct rb_io_buffer *buffer = _buffer;
@@ -293,20 +308,16 @@ rb_io_buffer_type_size(const void *_buffer)
     return total;
 }
 
-RUBY_REFERENCES(io_buffer_refs) = {
-    RUBY_REF_EDGE(struct rb_io_buffer, source),
-    RUBY_REF_END
-};
-
 static const rb_data_type_t rb_io_buffer_type = {
     .wrap_struct_name = "IO::Buffer",
     .function = {
-        .dmark = RUBY_REFS_LIST_PTR(io_buffer_refs),
+        .dmark = rb_io_buffer_type_mark_and_move,
         .dfree = rb_io_buffer_type_free,
         .dsize = rb_io_buffer_type_size,
+        .dcompact = rb_io_buffer_type_mark_and_move,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_DECL_MARKING,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static inline enum rb_io_buffer_flags
