@@ -11,7 +11,7 @@ class PrintFlagsCommand(RbBaseCommand):
 
     # call is where our command logic will be implemented
     def call(self, debugger, command, exe_ctx, result):
-        rclass_t = self.target.FindFirstType("struct RBasic")
+        rclass_t = self.target.FindFirstType("::RBasic")
         rcass_ptr = self.target.EvaluateExpression(command).Cast(rclass_t.GetPointerType())
         obj_flags = rcass_ptr.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
 
