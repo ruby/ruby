@@ -75,6 +75,11 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     **Note** if you want to build x64 version, use native compiler for
     x64.
 
+    The minimum requirement is here:
+      * VC++/MSVC 20XX version build tools.
+      * Windows 10/11 SDK
+        * 10.0.26100 is broken, 10.0.22621 is recommended. see https://bugs.ruby-lang.org/issues/21255
+
 3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
     to run required commands properly from the command line.
     These are set properly by `vcvarall*.bat` usually.
