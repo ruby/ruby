@@ -1382,9 +1382,9 @@ end
 
 describe "$LOAD_PATH.resolve_feature_path" do
   it "returns what will be loaded without actual loading, .rb file" do
-    extension, path = $LOAD_PATH.resolve_feature_path('set')
+    extension, path = $LOAD_PATH.resolve_feature_path('pp')
     extension.should == :rb
-    path.should.end_with?('/set.rb')
+    path.should.end_with?('/pp.rb')
   end
 
   it "returns what will be loaded without actual loading, .so file" do

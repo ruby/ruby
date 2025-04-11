@@ -21,9 +21,11 @@ describe "Set#join" do
     set.join(' | ').should == "a | b | c"
   end
 
-  it "calls #to_a to convert the Set in to an Array" do
-    set = Set[:a, :b, :c]
-    set.should_receive(:to_a).and_return([:a, :b, :c])
-    set.join.should == "abc"
+  ruby_version_is ""..."3.5" do
+    it "calls #to_a to convert the Set in to an Array" do
+      set = Set[:a, :b, :c]
+      set.should_receive(:to_a).and_return([:a, :b, :c])
+      set.join.should == "abc"
+    end
   end
 end
