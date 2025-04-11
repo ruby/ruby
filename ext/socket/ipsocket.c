@@ -295,7 +295,7 @@ struct hostname_resolution_store
 {
     struct hostname_resolution_result v6;
     struct hostname_resolution_result v4;
-    int is_all_finised;
+    int is_all_finished;
 };
 
 static int
@@ -527,7 +527,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     struct timeval *delay_p = NULL;
 
     struct hostname_resolution_store resolution_store;
-    resolution_store.is_all_finised = false;
+    resolution_store.is_all_finished = false;
     resolution_store.v6.ai = NULL;
     resolution_store.v6.finished = false;
     resolution_store.v6.has_error = false;
@@ -574,7 +574,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             resolution_store.v4.finished = true;
             resolution_store.v6.finished = true;
         }
-        resolution_store.is_all_finised = true;
+        resolution_store.is_all_finished = true;
     } else {
         if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
         hostname_resolution_waiter = pipefd[0];
@@ -664,7 +664,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (remote_ai->ai_family == AF_INET6) {
                     if (any_addrinfos(&resolution_store)) continue;
                     if (!in_progress_fds(arg->connection_attempt_fds_size)) break;
-                    if (resolution_store.is_all_finised) break;
+                    if (resolution_store.is_all_finished) break;
 
                     if (local_status < 0) {
                         host = arg->local.host;
@@ -690,7 +690,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     if (!local_ai) {
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
-                        if (!resolution_store.is_all_finised) break;
+                        if (!resolution_store.is_all_finished) break;
 
                         /* Use a different family local address if no choice, this
                          * will cause EAFNOSUPPORT. */
@@ -707,7 +707,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                     if (any_addrinfos(&resolution_store)) continue;
                     if (in_progress_fds(arg->connection_attempt_fds_size)) break;
-                    if (!resolution_store.is_all_finised) break;
+                    if (!resolution_store.is_all_finished) break;
 
                     if (local_status < 0) {
                         host = arg->local.host;
@@ -743,7 +743,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
-                        if (!resolution_store.is_all_finised) break;
+                        if (!resolution_store.is_all_finished) break;
 
                         if (local_status < 0) {
                             host = arg->local.host;
@@ -764,7 +764,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                 if (any_addrinfos(&resolution_store) ||
                     in_progress_fds(arg->connection_attempt_fds_size) ||
-                    !resolution_store.is_all_finised) {
+                    !resolution_store.is_all_finished) {
                     socket_nonblock_set(fd);
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
@@ -824,7 +824,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                 if (any_addrinfos(&resolution_store)) continue;
                 if (in_progress_fds(arg->connection_attempt_fds_size)) break;
-                if (!resolution_store.is_all_finised) break;
+                if (!resolution_store.is_all_finished) break;
 
                 if (local_status < 0) {
                     host = arg->local.host;
@@ -922,7 +922,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
-                        if (!resolution_store.is_all_finised) break;
+                        if (!resolution_store.is_all_finished) break;
 
                         if (local_status < 0) {
                             host = arg->local.host;
@@ -961,7 +961,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (connected_fd >= 0) break;
 
                 if (!in_progress_fds(arg->connection_attempt_fds_size)) {
-                    if (!any_addrinfos(&resolution_store) && resolution_store.is_all_finised) {
+                    if (!any_addrinfos(&resolution_store) && resolution_store.is_all_finished) {
                         if (local_status < 0) {
                             host = arg->local.host;
                             serv = arg->local.serv;
@@ -981,7 +981,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
 
             /* check for hostname resolution */
-            if (!resolution_store.is_all_finised && rb_fd_isset(hostname_resolution_waiter, &arg->readfds)) {
+            if (!resolution_store.is_all_finished && rb_fd_isset(hostname_resolution_waiter, &arg->readfds)) {
                 while (true) {
                     resolved_type_size = read(
                         hostname_resolution_waiter,
@@ -1007,7 +1007,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                                 resolution_store.v6.ai = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->ai;
                             }
                             if (resolution_store.v4.finished) {
-                                resolution_store.is_all_finised = true;
+                                resolution_store.is_all_finished = true;
                                 resolution_delay_expires_at = NULL;
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
@@ -1027,7 +1027,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             }
 
                             if (resolution_store.v6.finished) {
-                                resolution_store.is_all_finised = true;
+                                resolution_store.is_all_finished = true;
                                 resolution_delay_expires_at = NULL;
                                 user_specified_resolv_timeout_at = NULL;
                                 break;
@@ -1055,7 +1055,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
 
         /* For cases where write(2) fails in child threads */
-        if (!resolution_store.is_all_finised) {
+        if (!resolution_store.is_all_finished) {
             if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
                 resolution_store.v6.finished = true;
 
@@ -1071,7 +1071,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
 
                 if (resolution_store.v4.finished) {
-                    resolution_store.is_all_finised = true;
+                    resolution_store.is_all_finished = true;
                     resolution_delay_expires_at = NULL;
                     user_specified_resolv_timeout_at = NULL;
                 }
@@ -1091,7 +1091,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
 
                 if (resolution_store.v6.finished) {
-                    resolution_store.is_all_finised = true;
+                    resolution_store.is_all_finished = true;
                     resolution_delay_expires_at = NULL;
                     user_specified_resolv_timeout_at = NULL;
                 } else {
@@ -1103,7 +1103,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
-                resolution_store.is_all_finised) {
+                resolution_store.is_all_finished) {
                 if (local_status < 0) {
                     host = arg->local.host;
                     serv = arg->local.serv;
@@ -1119,7 +1119,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
 
             if ((is_timeout_tv(user_specified_resolv_timeout_at, now) ||
-                resolution_store.is_all_finised) &&
+                resolution_store.is_all_finished) &&
                 (is_timeout_tv(user_specified_connect_timeout_at, now) ||
                 !in_progress_fds(arg->connection_attempt_fds_size))) {
                 VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
