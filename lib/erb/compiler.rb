@@ -472,7 +472,17 @@ class ERB::Compiler # :nodoc:
     return enc, frozen
   end
 
+  # :stopdoc:
+  WARNING_UPLEVEL = Class.new {
+    attr_reader :c
+    def initialize from
+      @c = caller.length - from.length
+    end
+  }.new(caller(0)).c
+  private_constant :WARNING_UPLEVEL
+  # :startdoc:
+
   def warn_invalid_trim_mode(mode, uplevel:)
-    warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + 1
+    warn "Invalid ERB trim mode: #{mode.inspect} (trim_mode: nil, 0, 1, 2, or String composed of '%' and/or '-', '>', '<>')", uplevel: uplevel + WARNING_UPLEVEL
   end
 end

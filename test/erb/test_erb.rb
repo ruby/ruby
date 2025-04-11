@@ -251,6 +251,12 @@ EOS
     assert_equal("line\r\n" * 3, erb.result)
   end
 
+  def test_safe_level_warning
+    assert_warning(/#{__FILE__}:#{__LINE__ + 1}/) do
+      @erb.new("", 1)
+    end
+  end
+
   def test_invalid_trim_mode
     pend if RUBY_ENGINE == 'truffleruby'
 
