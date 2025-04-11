@@ -25,19 +25,22 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2015
-            vs: 2019
+          - os: 2019
+            vc: 2015
             vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
             test_task: check
-          - vs: 2019
+          - os: 2019
+            vc: 2019
             test_task: check
-          - vs: 2019
+          - os: 2019
+            vc: 2019
             test_task: test-bundled-gems
-          # - vs: 2022
+          # - os: 2022
+          #   vc: 2022
           #   test_task: check
       fail-fast: false
 
-    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    runs-on: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
 
     if: >-
       ${{!(false
@@ -49,11 +52,11 @@ jobs:
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
@@ -123,7 +126,7 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          ::- Set up VC ${{ matrix.vc || matrix.vs }}
+          ::- Set up VC ${{ matrix.vc }}
           set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
           for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
             set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
@@ -179,7 +182,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+          os: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
@@ -194,7 +197,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
