@@ -32,12 +32,14 @@ jobs:
           - os: 2019
             vc: 2019
             test_task: check
-          - os: 2019
+          - os: 2022
             vc: 2019
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The defautl Windows 11 SDK and toolset are broken at windows-2022
+            test_task: check
+          - os: 2022
+            vc: 2019
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2'
             test_task: test-bundled-gems
-          # - os: 2022
-          #   vc: 2022
-          #   test_task: check
       fail-fast: false
 
     runs-on: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
