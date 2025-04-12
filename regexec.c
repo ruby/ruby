@@ -1538,7 +1538,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #else
 # define INC_NUM_FAILS ((void) 0)
 # define MEMOIZE_MATCH_CACHE_POINT ((void) 0)
-# define MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT ((void) 0)
+# define MEMOIZE_LOOKAROUND_MATCH_CACHE_POINT(stkp) ((void) 0)
 #endif
 
 #define STACK_POP_ONE do {\
