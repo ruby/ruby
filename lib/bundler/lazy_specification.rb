@@ -217,10 +217,10 @@ module Bundler
 
       if search
         if search.platform == platform
-          # We don't validate locally installed dependencies but accept what's in
-          # the lockfile instead for performance, since loading locally installed
-          # dependencies would mean evaluating all gemspecs, which would affect
-          # `bundler/setup` performance
+          # We don't validate dependencies of locally installed gems but accept
+          # what's in the lockfile instead for performance, since loading
+          # dependencies of locally installed gems would mean evaluating all
+          # gemspecs, which would affect `bundler/setup` performance
           if search.is_a?(StubSpecification)
             search.dependencies = dependencies
           else
