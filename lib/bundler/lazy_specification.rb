@@ -215,16 +215,18 @@ module Bundler
         search = candidates.last
       end
 
-      if search && search.platform == platform
-        # We don't validate locally installed dependencies but accept what's in
-        # the lockfile instead for performance, since loading locally installed
-        # dependencies would mean evaluating all gemspecs, which would affect
-        # `bundler/setup` performance
-        if search.is_a?(StubSpecification)
-          search.dependencies = dependencies
-        else
-          if !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
-            raise IncorrectLockfileDependencies.new(self)
+      if search
+        if search.platform == platform
+          # We don't validate locally installed dependencies but accept what's in
+          # the lockfile instead for performance, since loading locally installed
+          # dependencies would mean evaluating all gemspecs, which would affect
+          # `bundler/setup` performance
+          if search.is_a?(StubSpecification)
+            search.dependencies = dependencies
+          else
+            if !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
+              raise IncorrectLockfileDependencies.new(self)
+            end
           end
         end
 
