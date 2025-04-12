@@ -2619,4 +2619,49 @@ RSpec.describe "bundle lock" do
       end
     end
   end
+
+  describe "--normalize-platforms with gems without generic variant" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            sorbet-static (1.0-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          sorbet-static
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "sorbet-static" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "sorbet-static"
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "removes invalid platforms" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock --normalize-platforms"
+      end
+
+      expect(lockfile).to eq(original_lockfile.gsub(/^  ruby\n/m, ""))
+    end
+  end
 end

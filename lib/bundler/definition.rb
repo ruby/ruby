@@ -755,7 +755,7 @@ module Bundler
       end
 
       if @most_specific_non_local_locked_platform
-        if spec_set_incomplete_for_platform?(result, @most_specific_non_local_locked_platform)
+        if result.incomplete_for_platform?(current_dependencies, @most_specific_non_local_locked_platform)
           @platforms.delete(@most_specific_non_local_locked_platform)
         elsif local_platform_needed_for_resolvability
           @platforms.delete(local_platform)
@@ -1168,25 +1168,16 @@ module Bundler
     def remove_invalid_platforms!
       return if Bundler.frozen_bundle?
 
-      @originally_invalid_platforms = platforms.select do |platform|
-        next if local_platform == platform ||
-                @new_platforms.include?(platform)
+      skips = (@new_platforms + [local_platform]).uniq
 
-        # We should probably avoid removing non-ruby platforms, since that means
-        # lockfile will no longer install on those platforms, so a error to give
-        # heads up to the user may be better. However, we have tests expecting
-        # non ruby platform autoremoval to work, so leaving that in place for
-        # now.
-        next if @dependency_changes && platform != Gem::Platform::RUBY
+      # We should probably avoid removing non-ruby platforms, since that means
+      # lockfile will no longer install on those platforms, so a error to give
+      # heads up to the user may be better. However, we have tests expecting
+      # non ruby platform autoremoval to work, so leaving that in place for
+      # now.
+      skips |= platforms - [Gem::Platform::RUBY] if @dependency_changes
 
-        spec_set_incomplete_for_platform?(@originally_locked_specs, platform)
-      end
-
-      @platforms -= @originally_invalid_platforms
-    end
-
-    def spec_set_incomplete_for_platform?(spec_set, platform)
-      spec_set.incomplete_for_platform?(current_dependencies, platform)
+      @originally_invalid_platforms = @originally_locked_specs.remove_invalid_platforms!(current_dependencies, platforms, skips: skips)
     end
 
     def source_map

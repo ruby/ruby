@@ -29,6 +29,7 @@ module Bundler
     end
 
     def normalize_platforms!(deps, platforms)
+      remove_invalid_platforms!(deps, platforms)
       add_extra_platforms!(platforms)
 
       platforms.map! do |platform|
@@ -51,6 +52,20 @@ module Bundler
       originally_invalid_platforms.each do |originally_invalid_platform|
         platforms << originally_invalid_platform if complete_platform(originally_invalid_platform)
       end
+    end
+
+    def remove_invalid_platforms!(deps, platforms, skips: [])
+      invalid_platforms = []
+
+      platforms.reject! do |platform|
+        next false if skips.include?(platform)
+
+        invalid = incomplete_for_platform?(deps, platform)
+        invalid_platforms << platform if invalid
+        invalid
+      end
+
+      invalid_platforms
     end
 
     def add_extra_platforms!(platforms)
