@@ -213,7 +213,9 @@ module Bundler
       end
       if search.nil? && fallback_to_non_installable
         search = candidates.last
-      elsif search && search.full_name == full_name
+      end
+
+      if search && search.full_name == full_name
         # We don't validate locally installed dependencies but accept what's in
         # the lockfile instead for performance, since loading locally installed
         # dependencies would mean evaluating all gemspecs, which would affect
@@ -224,9 +226,9 @@ module Bundler
           if !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
             raise IncorrectLockfileDependencies.new(self)
           end
-
-          search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
         end
+
+        search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
       end
       search
     end
