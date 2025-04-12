@@ -215,7 +215,7 @@ module Bundler
         search = candidates.last
       end
 
-      if search && search.full_name == full_name
+      if search && search.platform == platform
         # We don't validate locally installed dependencies but accept what's in
         # the lockfile instead for performance, since loading locally installed
         # dependencies would mean evaluating all gemspecs, which would affect
