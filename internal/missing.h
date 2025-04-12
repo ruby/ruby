@@ -16,4 +16,7 @@ extern void ruby_init_setproctitle(int argc, char *argv[]);
 extern void ruby_free_proctitle(void);
 #endif
 
+/* missing/dtoa.c */
+void ruby_init_dtoa(void);
+
 #endif /* INTERNAL_MISSING_H */
