@@ -312,6 +312,16 @@ module Bundler
       "Gemfile"
     end
 
+    def raise_incomplete!(incomplete_specs)
+      raise_not_found!(@base.get_package(incomplete_specs.first.name))
+    end
+
+    def sort_versions_by_preferred(package, versions)
+      @gem_version_promoter.sort_versions(package, versions)
+    end
+
+    private
+
     def raise_not_found!(package)
       name = package.name
       source = source_for(name)
@@ -347,12 +357,6 @@ module Bundler
 
       raise GemNotFound, message
     end
-
-    def sort_versions_by_preferred(package, versions)
-      @gem_version_promoter.sort_versions(package, versions)
-    end
-
-    private
 
     def filtered_versions_for(package)
       @gem_version_promoter.filter_versions(package, @all_versions[package])

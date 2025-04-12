@@ -711,8 +711,7 @@ module Bundler
         still_incomplete_specs = resolve.incomplete_specs
 
         if still_incomplete_specs == incomplete_specs
-          package = resolution_packages.get_package(incomplete_specs.first.name)
-          resolver.raise_not_found! package
+          resolver.raise_incomplete! incomplete_specs
         end
 
         incomplete_specs = still_incomplete_specs
@@ -746,6 +745,14 @@ module Bundler
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
+
+      @new_platforms.each do |platform|
+        incomplete_specs = result.incomplete_specs_for_platform(current_dependencies, platform)
+
+        if incomplete_specs.any?
+          resolver.raise_incomplete! incomplete_specs
+        end
+      end
 
       if @most_specific_non_local_locked_platform
         if spec_set_incomplete_for_platform?(result, @most_specific_non_local_locked_platform)
