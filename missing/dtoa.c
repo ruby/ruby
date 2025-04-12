@@ -507,6 +507,15 @@ struct Bigint {
 
 typedef struct Bigint Bigint;
 
+static inline int MAXWDS(Bigint *b) {
+    RUBY_ASSERT_ALWAYS(b->maxwds == (1 << b->k));
+    if (b->maxwds != (1 << b->k)) {
+        rb_bug("wtf");
+    }
+    //return b->maxwds;
+    return (1 << b->k);
+}
+
 static Bigint *
 Balloc(int k)
 {
@@ -569,7 +578,7 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 #endif
     } while (++i < wds);
     if (carry) {
-        if (wds >= b->maxwds) {
+        if (wds >= MAXWDS(b)) {
             b1 = Balloc(b->k+1);
             Bcopy(b1, b);
             Bfree(b);
@@ -723,7 +732,7 @@ mult(Bigint *a, Bigint *b)
     wa = a->wds;
     wb = b->wds;
     wc = wa + wb;
-    if (wc > a->maxwds)
+    if (wc > MAXWDS(a))
         k++;
     c = Balloc(k);
     for (x = c->x, xa = x + wc; x < xa; x++)
@@ -846,7 +855,7 @@ lshift(Bigint *b, int k)
 #endif
     k1 = b->k;
     n1 = n + b->wds + 1;
-    for (i = b->maxwds; n1 > i; i <<= 1)
+    for (i = MAXWDS(b); n1 > i; i <<= 1)
         k1++;
     b1 = Balloc(k1);
     x1 = b1->x;
