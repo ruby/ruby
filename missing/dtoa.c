@@ -536,8 +536,12 @@ Bfree(Bigint *v)
     FREE(v);
 }
 
-#define Bcopy(x,y) memcpy((char *)&(x)->sign, (char *)&(y)->sign, \
-(y)->wds*sizeof(Long) + 2*sizeof(int))
+// Copy everything except k and maxwds
+static void Bcopy(Bigint *dst, Bigint *src) {
+    dst->sign = src->sign;
+    dst->wds = src->wds;
+    memcpy(dst->x, src->x, sizeof(Long) * src->wds);
+}
 
 static Bigint *
 multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
