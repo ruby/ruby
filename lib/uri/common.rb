@@ -30,6 +30,9 @@ module URI
     remove_const(:Parser) if defined?(::URI::Parser)
     const_set("Parser", parser.class)
 
+    remove_const(:PARSER) if defined?(::URI::PARSER)
+    const_set("PARSER", parser)
+
     remove_const(:REGEXP) if defined?(::URI::REGEXP)
     remove_const(:PATTERN) if defined?(::URI::PATTERN)
     if Parser == RFC2396_Parser
@@ -227,7 +230,7 @@ module URI
   #    ["fragment", "top"]]
   #
   def self.split(uri)
-    DEFAULT_PARSER.split(uri)
+    PARSER.split(uri)
   end
 
   # Returns a new \URI object constructed from the given string +uri+:
@@ -241,7 +244,7 @@ module URI
   # if it may contain invalid URI characters.
   #
   def self.parse(uri)
-    DEFAULT_PARSER.parse(uri)
+    PARSER.parse(uri)
   end
 
   # Merges the given URI strings +str+
@@ -297,7 +300,7 @@ module URI
   #
   def self.extract(str, schemes = nil, &block) # :nodoc:
     warn "URI.extract is obsolete", uplevel: 1 if $VERBOSE
-    DEFAULT_PARSER.extract(str, schemes, &block)
+    PARSER.extract(str, schemes, &block)
   end
 
   #
@@ -334,7 +337,7 @@ module URI
   #
   def self.regexp(schemes = nil)# :nodoc:
     warn "URI.regexp is obsolete", uplevel: 1 if $VERBOSE
-    DEFAULT_PARSER.make_regexp(schemes)
+    PARSER.make_regexp(schemes)
   end
 
   TBLENCWWWCOMP_ = {} # :nodoc:
