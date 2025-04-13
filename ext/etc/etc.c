@@ -1311,4 +1311,8 @@ Init_etc(void)
     rb_extend_object(sGroup, rb_mEnumerable);
     rb_define_singleton_method(sGroup, "each", etc_each_group, 0);
 #endif
+
+#if defined(HAVE_GETPWENT) || defined(HAVE_GETGRENT)
+    (void)safe_setup_str;
+#endif
 }
