@@ -524,7 +524,7 @@ strscan_get_pos(VALUE self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    return INT2FIX(p->curr);
+    return LONG2NUM(p->curr);
 }
 
 /*
@@ -554,7 +554,7 @@ strscan_set_pos(VALUE self, VALUE v)
     long i;
 
     GET_SCANNER(self, p);
-    i = NUM2INT(v);
+    i = NUM2LONG(v);
     if (i < 0) i += S_LEN(p);
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
