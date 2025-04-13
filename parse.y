@@ -2764,7 +2764,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
 %type <node> top_stmts top_stmt begin_block endless_arg endless_command
-%type <node> bodystmt stmts stmt_or_begin stmt expr arg primary
+%type <node> bodystmt stmts stmt_or_begin stmt expr arg ternary primary
 %type <node> command command_call command_call_value method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
@@ -4039,15 +4039,18 @@ arg		: asgn(arg_rhs)
                         $$ = new_defined(p, $4, &@$);
                     /*% ripper: defined!($:4) %*/
                     }
-                | arg '?' arg '\n'? ':' arg
+                | def_endless_method(endless_arg)
+                | ternary
+                | primary
+                ;
+
+ternary		: arg '?' arg '\n'? ':' arg
                     {
                         value_expr($1);
                         $$ = new_if(p, $1, $3, $6, &@$, &NULL_LOC, &@5, &NULL_LOC);
                         fixpos($$, $1);
                     /*% ripper: ifop!($:1, $:3, $:6) %*/
                     }
-                | def_endless_method(endless_arg)
-                | primary
                 ;
 
 endless_arg	: arg %prec modifier_rescue
