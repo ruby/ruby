@@ -2913,7 +2913,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 /*
  *	parameterizing rules
  */
-%rule asgn(lhs, rhs) <node>
+%rule asgn(rhs) <node>
                 : lhs '=' lex_ctxt rhs
                     {
                         $$ = node_assign(p, (NODE *)$lhs, $rhs, $lex_ctxt, &@$);
@@ -3344,7 +3344,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         $$ = node_assign(p, (NODE *)$1, $4, $3, &@$);
                     /*% ripper: massign!($:1, $:4) %*/
                     }
-                | asgn(lhs, mrhs)
+                | asgn(mrhs)
                 | mlhs '=' lex_ctxt mrhs_arg modifier_rescue
                   after_rescue stmt[resbody]
                     {
@@ -3369,7 +3369,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                     }
                 ;
 
-command_asgn	: asgn(lhs, command_rhs)
+command_asgn	: asgn(command_rhs)
                 | op_asgn(command_rhs)
                 | def_endless_method(endless_command)
                 ;
@@ -3872,7 +3872,7 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
                 | keyword_while | keyword_until
                 ;
 
-arg		: asgn(lhs, arg_rhs)
+arg		: asgn(arg_rhs)
                 | op_asgn(arg_rhs)
                 | arg tDOT2 arg
                     {
