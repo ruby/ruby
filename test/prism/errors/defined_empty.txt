@@ -1,3 +1,0 @@
-defined?()
-        ^ expected an expression after `defined?`
-

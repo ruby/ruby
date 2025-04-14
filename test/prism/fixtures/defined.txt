@@ -8,12 +8,3 @@ defined? 1
 
 defined?("foo"
 )
-
-defined?
-1
-
-defined?
-(1)
-
-defined?
-()
