@@ -13,15 +13,6 @@ require "rubygems" unless defined?(Gem)
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
-# Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
-# versions and ignore patchlevels
-# (https://github.com/rubygems/rubygems/pull/5472,
-# https://github.com/rubygems/rubygems/pull/5486). May be removed once RubyGems
-# 3.3.12 support is dropped.
-unless Gem.ruby_version.to_s == RUBY_VERSION || RUBY_PATCHLEVEL == -1
-  Gem.instance_variable_set(:@ruby_version, Gem::Version.new(RUBY_VERSION))
-end
-
 module Gem
   # Can be removed once RubyGems 3.5.11 support is dropped
   unless Gem.respond_to?(:freebsd_platform?)
@@ -92,20 +83,9 @@ module Gem
           # version
           (
             (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && (normalized_linux_version_ext == other.normalized_linux_version_ext || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
+            (@os == "linux" && (normalized_linux_version == other.normalized_linux_version || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
             @version == other.version
           )
-      end
-
-      # This is a copy of RubyGems 3.3.23 or higher `normalized_linux_method`.
-      # Once only 3.3.23 is supported, we can use the method in RubyGems.
-      def normalized_linux_version_ext
-        return nil unless @version
-
-        without_gnu_nor_abi_modifiers = @version.sub(/\Agnu/, "").sub(/eabi(hf)?\Z/, "")
-        return nil if without_gnu_nor_abi_modifiers.empty?
-
-        without_gnu_nor_abi_modifiers
       end
     end
   end
@@ -143,9 +123,6 @@ module Gem
 
   # Can be removed once RubyGems 3.5.14 support is dropped
   VALIDATES_FOR_RESOLUTION = Specification.new.respond_to?(:validate_for_resolution).freeze
-
-  # Can be removed once RubyGems 3.3.15 support is dropped
-  FLATTENS_REQUIRED_PATHS = Specification.new.respond_to?(:flatten_require_paths).freeze
 
   class Specification
     # Can be removed once RubyGems 3.5.15 support is dropped
@@ -269,27 +246,6 @@ module Gem
     unless VALIDATES_FOR_RESOLUTION
       def validate_for_resolution
         SpecificationPolicy.new(self).validate_for_resolution
-      end
-    end
-
-    unless FLATTENS_REQUIRED_PATHS
-      def flatten_require_paths
-        return unless raw_require_paths.first.is_a?(Array)
-
-        warn "#{name} #{version} includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this"
-        raw_require_paths.flatten!
-      end
-
-      class << self
-        module RequirePathFlattener
-          def from_yaml(input)
-            spec = super(input)
-            spec.flatten_require_paths
-            spec
-          end
-        end
-
-        prepend RequirePathFlattener
       end
     end
 
@@ -470,16 +426,5 @@ module Gem
     end
 
     Package::TarReader::Entry.prepend(FixFullNameEncoding)
-  end
-
-  require "rubygems/uri"
-
-  # Can be removed once RubyGems 3.3.15 support is dropped
-  unless Gem::Uri.respond_to?(:redact)
-    class Uri
-      def self.redact(uri)
-        new(uri).redacted
-      end
-    end
   end
 end
