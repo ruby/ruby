@@ -5255,15 +5255,9 @@ method_call	: fcall paren_args
                         $$ = new_qcall(p, idCOLON2, $1, $3, 0, &@3, &@$);
                     /*% ripper: call!($:1, $:2, $:3) %*/
                     }
-                | primary_value call_op paren_args
+                | primary_value call_op2 paren_args
                     {
                         $$ = new_qcall(p, $2, $1, idCall, $3, &@2, &@$);
-                        nd_set_line($$, @2.end_pos.lineno);
-                    /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
-                    }
-                | primary_value tCOLON2 paren_args
-                    {
-                        $$ = new_qcall(p, idCOLON2, $1, idCall, $3, &@2, &@$);
                         nd_set_line($$, @2.end_pos.lineno);
                     /*% ripper: method_add_arg!(call!($:1, $:2, ID2VAL(idCall)), $:3) %*/
                     }
