@@ -4,7 +4,7 @@
 use core::ffi::c_void;
 use std::collections::HashMap;
 
-use crate::{cruby::*, hir_type::{types::{Empty, Fixnum}, Type}};
+use crate::{cruby::*, hir_type::{types::{Empty, Fixnum}, Type}, virtualmem::CodePtr};
 
 /// Ephemeral state for profiling runtime information
 struct Profiler {
@@ -95,6 +95,9 @@ fn profile_operands(profiler: &mut Profiler, n: usize) {
 pub struct IseqPayload {
     /// Type information of YARV instruction operands, indexed by the instruction index
     opnd_types: HashMap<usize, Vec<Type>>,
+
+    /// JIT code address of the first block
+    pub start_ptr: Option<CodePtr>,
 }
 
 impl IseqPayload {

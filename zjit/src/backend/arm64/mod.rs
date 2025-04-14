@@ -491,19 +491,21 @@ impl Assembler
                     // register.
                     // Note: the iteration order is reversed to avoid corrupting x0,
                     // which is both the return value and first argument register
-                    let mut args: Vec<(Reg, Opnd)> = vec![];
-                    for (idx, opnd) in opnds.into_iter().enumerate().rev() {
-                        // If the value that we're sending is 0, then we can use
-                        // the zero register, so in this case we'll just send
-                        // a UImm of 0 along as the argument to the move.
-                        let value = match opnd {
-                            Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
-                            Opnd::Mem(_) => split_memory_address(asm, *opnd),
-                            _ => *opnd
-                        };
-                        args.push((C_ARG_OPNDS[idx].unwrap_reg(), value));
+                    if !opnds.is_empty() {
+                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        for (idx, opnd) in opnds.into_iter().enumerate().rev() {
+                            // If the value that we're sending is 0, then we can use
+                            // the zero register, so in this case we'll just send
+                            // a UImm of 0 along as the argument to the move.
+                            let value = match opnd {
+                                Opnd::UImm(0) | Opnd::Imm(0) => Opnd::UImm(0),
+                                Opnd::Mem(_) => split_memory_address(asm, *opnd),
+                                _ => *opnd
+                            };
+                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), value));
+                        }
+                        asm.parallel_mov(args);
                     }
-                    asm.parallel_mov(args);
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.

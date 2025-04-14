@@ -345,7 +345,19 @@ pub enum Insn {
     CPushAll,
 
     // C function call with N arguments (variadic)
-    CCall { opnds: Vec<Opnd>, fptr: *const u8, out: Opnd },
+    CCall {
+        opnds: Vec<Opnd>,
+        fptr: *const u8,
+        /// Optional PosMarker to remember the start address of the C call.
+        /// It's embedded here to insert the PosMarker after push instructions
+        /// that are split from this CCall on alloc_regs().
+        start_marker: Option<PosMarkerFn>,
+        /// Optional PosMarker to remember the end address of the C call.
+        /// It's embedded here to insert the PosMarker before pop instructions
+        /// that are split from this CCall on alloc_regs().
+        end_marker: Option<PosMarkerFn>,
+        out: Opnd,
+    },
 
     // C function return
     CRet(Opnd),
@@ -1455,6 +1467,23 @@ impl Assembler
         let mut asm = Assembler::new_with_label_names(take(&mut self.label_names), live_ranges.len());
 
         while let Some((index, mut insn)) = iterator.next() {
+            let before_ccall = match (&insn, iterator.peek().map(|(_, insn)| insn)) {
+                (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
+                (Insn::CCall { .. }, _) if !pool.is_empty() => {
+                    // If C_RET_REG is in use, move it to another register.
+                    // This must happen before last-use registers are deallocated.
+                    if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
+                        let new_reg = pool.alloc_reg(vreg_idx).unwrap(); // TODO: support spill
+                        asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
+                        pool.dealloc_reg(&C_RET_REG);
+                        reg_mapping[vreg_idx] = Some(new_reg);
+                    }
+
+                    true
+                },
+                _ => false,
+            };
+
             // Check if this is the last instruction that uses an operand that
             // spans more than one instruction. In that case, return the
             // allocated register to the pool.
@@ -1477,32 +1506,20 @@ impl Assembler
                 }
             }
 
-            // If we're about to make a C call, save caller-saved registers
-            match (&insn, iterator.peek().map(|(_, insn)| insn)) {
-                (Insn::ParallelMov { .. }, Some(Insn::CCall { .. })) |
-                (Insn::CCall { .. }, _) if !pool.is_empty() => {
-                    // If C_RET_REG is in use, move it to another register
-                    if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_reg = pool.alloc_reg(vreg_idx).unwrap(); // TODO: support spill
-                        asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
-                        pool.dealloc_reg(&C_RET_REG);
-                        reg_mapping[vreg_idx] = Some(new_reg);
-                    }
+            // Save caller-saved registers on a C call.
+            if before_ccall {
+                // Find all live registers
+                saved_regs = pool.live_regs();
 
-                    // Find all live registers
-                    saved_regs = pool.live_regs();
-
-                    // Save live registers
-                    for &(reg, _) in saved_regs.iter() {
-                        asm.cpush(Opnd::Reg(reg));
-                        pool.dealloc_reg(&reg);
-                    }
-                    // On x86_64, maintain 16-byte stack alignment
-                    if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
-                        asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
-                    }
+                // Save live registers
+                for &(reg, _) in saved_regs.iter() {
+                    asm.cpush(Opnd::Reg(reg));
+                    pool.dealloc_reg(&reg);
                 }
-                _ => {},
+                // On x86_64, maintain 16-byte stack alignment
+                if cfg!(target_arch = "x86_64") && saved_regs.len() % 2 == 1 {
+                    asm.cpush(Opnd::Reg(saved_regs.last().unwrap().0));
+                }
             }
 
             // If the output VReg of this instruction is used by another instruction,
@@ -1590,13 +1607,24 @@ impl Assembler
 
             // Push instruction(s)
             let is_ccall = matches!(insn, Insn::CCall { .. });
-            if let Insn::ParallelMov { moves } = insn {
-                // Now that register allocation is done, it's ready to resolve parallel moves.
-                for (reg, opnd) in Self::resolve_parallel_moves(&moves) {
-                    asm.load_into(Opnd::Reg(reg), opnd);
+            match insn {
+                Insn::ParallelMov { moves } => {
+                    // Now that register allocation is done, it's ready to resolve parallel moves.
+                    for (reg, opnd) in Self::resolve_parallel_moves(&moves) {
+                        asm.load_into(Opnd::Reg(reg), opnd);
+                    }
                 }
-            } else {
-                asm.push_insn(insn);
+                Insn::CCall { opnds, fptr, start_marker, end_marker, out } => {
+                    // Split start_marker and end_marker here to avoid inserting push/pop between them.
+                    if let Some(start_marker) = start_marker {
+                        asm.push_insn(Insn::PosMarker(start_marker));
+                    }
+                    asm.push_insn(Insn::CCall { opnds, fptr, start_marker: None, end_marker: None, out });
+                    if let Some(end_marker) = end_marker {
+                        asm.push_insn(Insn::PosMarker(end_marker));
+                    }
+                }
+                _ => asm.push_insn(insn),
             }
 
             // After a C call, restore caller-saved registers
@@ -1720,38 +1748,30 @@ impl Assembler {
         self.push_insn(Insn::Breakpoint);
     }
 
+    /// Call a C function without PosMarkers
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
-        /*
-        // Let vm_check_canary() assert this ccall's leafness if leaf_ccall is set
-        let canary_opnd = self.set_stack_canary(&opnds);
-
-        let old_temps = self.ctx.get_reg_mapping(); // with registers
-        // Spill stack temp registers since they are caller-saved registers.
-        // Note that this doesn't spill stack temps that are already popped
-        // but may still be used in the C arguments.
-        self.spill_regs();
-        let new_temps = self.ctx.get_reg_mapping(); // all spilled
-
-        // Temporarily manipulate RegMappings so that we can use registers
-        // to pass stack operands that are already spilled above.
-        self.ctx.set_reg_mapping(old_temps);
-        */
-
-        // Call a C function
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
-        self.push_insn(Insn::CCall { fptr, opnds, out });
+        self.push_insn(Insn::CCall { fptr, opnds, start_marker: None, end_marker: None, out });
+        out
+    }
 
-        /*
-        // Registers in old_temps may be clobbered by the above C call,
-        // so rollback the manipulated RegMappings to a spilled version.
-        self.ctx.set_reg_mapping(new_temps);
-
-        // Clear the canary after use
-        if let Some(canary_opnd) = canary_opnd {
-            self.mov(canary_opnd, 0.into());
-        }
-        */
-
+    /// Call a C function with PosMarkers. This is used for recording the start and end
+    /// addresses of the C call and rewriting it with a different function address later.
+    pub fn ccall_with_pos_markers(
+        &mut self,
+        fptr: *const u8,
+        opnds: Vec<Opnd>,
+        start_marker: impl Fn(CodePtr, &CodeBlock) + 'static,
+        end_marker: impl Fn(CodePtr, &CodeBlock) + 'static,
+    ) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&opnds));
+        self.push_insn(Insn::CCall {
+            fptr,
+            opnds,
+            start_marker: Some(Box::new(start_marker)),
+            end_marker: Some(Box::new(end_marker)),
+            out,
+        });
         out
     }
 

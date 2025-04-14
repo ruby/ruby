@@ -82,8 +82,8 @@ impl From<&Opnd> for X86Opnd {
 /// This has the same number of registers for x86_64 and arm64.
 /// SCRATCH_REG is excluded.
 pub const ALLOC_REGS: &'static [Reg] = &[
-    RSI_REG,
     RDI_REG,
+    RSI_REG,
     RDX_REG,
     RCX_REG,
     R8_REG,
@@ -338,11 +338,13 @@ impl Assembler
                     assert!(opnds.len() <= C_ARG_OPNDS.len());
 
                     // Load each operand into the corresponding argument register.
-                    let mut args: Vec<(Reg, Opnd)> = vec![];
-                    for (idx, opnd) in opnds.into_iter().enumerate() {
-                        args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                    if !opnds.is_empty() {
+                        let mut args: Vec<(Reg, Opnd)> = vec![];
+                        for (idx, opnd) in opnds.into_iter().enumerate() {
+                            args.push((C_ARG_OPNDS[idx].unwrap_reg(), *opnd));
+                        }
+                        asm.parallel_mov(args);
                     }
-                    asm.parallel_mov(args);
 
                     // Now we push the CCall without any arguments so that it
                     // just performs the call.

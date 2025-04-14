@@ -111,6 +111,28 @@ impl CodeBlock {
         self.get_ptr(self.write_pos)
     }
 
+    /// Set the current write position from a pointer
+    fn set_write_ptr(&mut self, code_ptr: CodePtr) {
+        let pos = code_ptr.as_offset() - self.mem_block.borrow().start_ptr().as_offset();
+        self.write_pos = pos.try_into().unwrap();
+    }
+
+    /// Invoke a callback with write_ptr temporarily adjusted to a given address
+    pub fn with_write_ptr(&mut self, code_ptr: CodePtr, callback: impl Fn(&mut CodeBlock)) {
+        // Temporarily update the write_pos. Ignore the dropped_bytes flag at the old address.
+        let old_write_pos = self.write_pos;
+        let old_dropped_bytes = self.dropped_bytes;
+        self.set_write_ptr(code_ptr);
+        self.dropped_bytes = false;
+
+        // Invoke the callback
+        callback(self);
+
+        // Restore the original write_pos and dropped_bytes flag.
+        self.dropped_bytes = old_dropped_bytes;
+        self.write_pos = old_write_pos;
+    }
+
     /// Get a (possibly dangling) direct pointer into the executable memory block
     pub fn get_ptr(&self, offset: usize) -> CodePtr {
         self.mem_block.borrow().start_ptr().add_bytes(offset)

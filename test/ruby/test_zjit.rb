@@ -389,6 +389,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_method_call
+    assert_compiles '12', %q{
+      def callee(a, b)
+        a - b
+      end
+
+      def test
+        callee(4, 2) + 10
+      end
+
+      test # profile test
+      test
+    }, call_threshold: 2
+  end
+
   def test_recursive_fact
     assert_compiles '[1, 6, 720]', %q{
       def fact(n)
@@ -399,6 +414,19 @@ class TestZJIT < Test::Unit::TestCase
       end
       [fact(0), fact(3), fact(6)]
     }
+  end
+
+  def test_profiled_fact
+    assert_compiles '[1, 6, 720]', %q{
+      def fact(n)
+        if n == 0
+          return 1
+        end
+        return n * fact(n-1)
+      end
+      fact(1) # profile fact
+      [fact(0), fact(3), fact(6)]
+    }, call_threshold: 3, num_profiles: 2
   end
 
   def test_recursive_fib
@@ -413,11 +441,24 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_profiled_fib
+    assert_compiles '[0, 2, 3]', %q{
+      def fib(n)
+        if n < 2
+          return n
+        end
+        return fib(n-1) + fib(n-2)
+      end
+      fib(3) # profile fib
+      [fib(0), fib(3), fib(4)]
+    }, call_threshold: 5, num_profiles: 3
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
   # at a given call_threshold
-  def assert_compiles(expected, test_script, call_threshold: 1)
+  def assert_compiles(expected, test_script, **opts)
     pipe_fd = 3
 
     script = <<~RUBY
@@ -429,7 +470,7 @@ class TestZJIT < Test::Unit::TestCase
       IO.open(#{pipe_fd}).write(result.inspect)
     RUBY
 
-    status, out, err, actual = eval_with_jit(script, call_threshold:, pipe_fd:)
+    status, out, err, actual = eval_with_jit(script, pipe_fd:, **opts)
 
     message = "exited with status #{status.to_i}"
     message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
@@ -440,10 +481,11 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   # Run a Ruby process with ZJIT options and a pipe for writing test results
-  def eval_with_jit(script, call_threshold: 1, timeout: 1000, pipe_fd:, debug: true)
+  def eval_with_jit(script, call_threshold: 1, num_profiles: 1, timeout: 1000, pipe_fd:, debug: true)
     args = [
       "--disable-gems",
       "--zjit-call-threshold=#{call_threshold}",
+      "--zjit-num-profiles=#{num_profiles}",
     ]
     args << "--zjit-debug" if debug
     args << "-e" << script_shell_encode(script)

@@ -1,4 +1,8 @@
+use std::cell::Cell;
+use std::rc::Rc;
+
 use crate::backend::current::{Reg, ALLOC_REGS};
+use crate::profile::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
@@ -17,6 +21,9 @@ struct JITState {
 
     /// Labels for each basic block indexed by the BlockId
     labels: Vec<Option<Target>>,
+
+    /// Branches to an ISEQ that need to be compiled later
+    branch_iseqs: Vec<(Rc<Branch>, IseqPtr)>,
 }
 
 impl JITState {
@@ -26,6 +33,7 @@ impl JITState {
             iseq,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
+            branch_iseqs: Vec::default(),
         }
     }
 
@@ -83,33 +91,47 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     code_ptr
 }
 
-
 /// Compile an entry point for a given ISEQ
 fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
     // Compile ISEQ into High-level IR
-    let mut function = match iseq_to_hir(iseq) {
-        Ok(function) => function,
-        Err(err) => {
-            debug!("ZJIT: iseq_to_hir: {err:?}");
-            return std::ptr::null();
-        }
+    let function = match compile_iseq(iseq) {
+        Some(function) => function,
+        None => return std::ptr::null(),
     };
-    function.optimize();
 
     // Compile the High-level IR
     let cb = ZJITState::get_code_block();
-    let function_ptr = gen_function(cb, iseq, &function);
-    // TODO: Reuse function_ptr for JIT-to-JIT calls
+    let (start_ptr, mut branch_iseqs) = match gen_function(cb, iseq, &function) {
+        Some((start_ptr, branch_iseqs)) => {
+            // Remember the block address to reuse it later
+            let payload = get_or_create_iseq_payload(iseq);
+            payload.start_ptr = Some(start_ptr);
 
-    // Compile an entry point to the JIT code
-    let start_ptr = match function_ptr {
-        Some(function_ptr) => gen_entry(cb, iseq, &function, function_ptr),
-        None => None,
+            // Compile an entry point to the JIT code
+            (gen_entry(cb, iseq, &function, start_ptr), branch_iseqs)
+        },
+        None => (None, vec![]),
     };
+
+    // Recursively compile callee ISEQs
+    while let Some((branch, iseq)) = branch_iseqs.pop() {
+        // Disable profiling. This will be the last use of the profiling information for the ISEQ.
+        unsafe { rb_zjit_profile_disable(iseq); }
+
+        // Compile the ISEQ
+        if let Some((callee_ptr, callee_branch_iseqs)) = gen_iseq(cb, iseq) {
+            let callee_addr = callee_ptr.raw_ptr(cb);
+            branch.regenerate(cb, |asm| {
+                asm.ccall(callee_addr, vec![]);
+            });
+            branch_iseqs.extend(callee_branch_iseqs);
+        }
+    }
 
     // Always mark the code region executable if asm.compile() has been used
     cb.mark_all_executable();
 
+    // Return a JIT code address or a null pointer
     start_ptr.map(|start_ptr| start_ptr.raw_ptr(cb)).unwrap_or(std::ptr::null())
 }
 
@@ -117,18 +139,52 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
 fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Option<CodePtr> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
-    gen_entry_prologue(iseq, &mut asm);
+    gen_entry_prologue(&mut asm, iseq);
     gen_method_params(&mut asm, iseq, function.block(BlockId(0)));
 
-    // Jump to the function. We can't remove this jump by calling gen_entry() first and
-    // then calling gen_function() because gen_function() writes side exit code first.
-    asm.jmp(function_ptr.into());
+    // Jump to the first block using a call instruction
+    asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
+
+    // Restore registers for CFP, EC, and SP after use
+    asm_comment!(asm, "exit to the interpreter");
+    // On x86_64, maintain 16-byte stack alignment
+    if cfg!(target_arch = "x86_64") {
+        asm.cpop_into(SP);
+    }
+    asm.cpop_into(SP);
+    asm.cpop_into(EC);
+    asm.cpop_into(CFP);
+    asm.frame_teardown();
+    asm.cret(C_RET_OPND);
 
     asm.compile(cb).map(|(start_ptr, _)| start_ptr)
 }
 
+/// Compile an ISEQ into machine code
+fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
+    // Return an existing pointer if it's already compiled
+    let payload = get_or_create_iseq_payload(iseq);
+    if let Some(start_ptr) = payload.start_ptr {
+        return Some((start_ptr, vec![]));
+    }
+
+    // Convert ISEQ into High-level IR
+    let mut function = match compile_iseq(iseq) {
+        Some(function) => function,
+        None => return None,
+    };
+    function.optimize();
+
+    // Compile the High-level IR
+    let result = gen_function(cb, iseq, &function);
+    if let Some((start_ptr, _)) = result {
+        payload.start_ptr = Some(start_ptr);
+    }
+    result
+}
+
 /// Compile a function
-fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<CodePtr> {
+fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
     let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks());
     let mut asm = Assembler::new();
 
@@ -141,6 +197,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         // Write a label to jump to the basic block
         let label = jit.get_label(&mut asm, block_id);
         asm.write_label(label);
+
+        // Set up the frame at the first block
+        if block_id == BlockId(0) {
+            asm.frame_setup();
+        }
 
         // Compile all parameters
         for &insn_id in block.params() {
@@ -155,7 +216,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         // Compile all instructions
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
-            if gen_insn(&mut jit, &mut asm, function, insn_id, &insn).is_none() {
+            if gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn).is_none() {
                 debug!("Failed to compile insn: {insn_id} {insn:?}");
                 return None;
             }
@@ -163,11 +224,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
     }
 
     // Generate code if everything can be compiled
-    asm.compile(cb).map(|(start_ptr, _)| start_ptr)
+    asm.compile(cb).map(|(start_ptr, _)| (start_ptr, jit.branch_iseqs))
 }
 
 /// Compile an instruction
-fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
+fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_id: InsnId, insn: &Insn) -> Option<()> {
     // Convert InsnId to lir::Opnd
     macro_rules! opnd {
         ($insn_id:ident) => {
@@ -188,8 +249,8 @@ fn gen_insn(jit: &mut JITState, asm: &mut Assembler, function: &Function, insn_i
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::SendWithoutBlock { call_info, cd, state, .. } | Insn::SendWithoutBlockDirect { call_info, cd, state, .. }
-            => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
+        Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
+        Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -229,7 +290,7 @@ fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[I
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
-fn gen_entry_prologue(iseq: IseqPtr, asm: &mut Assembler) {
+fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
     asm_comment!(asm, "ZJIT entry point: {}", iseq_get_location(iseq, 0));
     asm.frame_setup();
 
@@ -237,6 +298,10 @@ fn gen_entry_prologue(iseq: IseqPtr, asm: &mut Assembler) {
     asm.cpush(CFP);
     asm.cpush(EC);
     asm.cpush(SP);
+    // On x86_64, maintain 16-byte stack alignment
+    if cfg!(target_arch = "x86_64") {
+        asm.cpush(SP);
+    }
 
     // EC and CFP are pased as arguments
     asm.mov(EC, C_ARG_OPNDS[0]);
@@ -397,6 +462,36 @@ fn gen_send_without_block(
     Some(ret)
 }
 
+/// Compile a direct jump to an ISEQ call without block
+fn gen_send_without_block_direct(
+    cb: &mut CodeBlock,
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    iseq: IseqPtr,
+    recv: Opnd,
+    args: &Vec<InsnId>,
+) -> Option<lir::Opnd> {
+    // Set up the new frame
+    gen_push_frame(asm, recv);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    // Set up arguments
+    let mut c_args: Vec<Opnd> = vec![];
+    for &arg in args.iter() {
+        c_args.push(jit.get_opnd(arg)?);
+    }
+
+    // Make a method call. The target address will be rewritten once compiled.
+    let branch = Branch::new();
+    let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
+    jit.branch_iseqs.push((branch.clone(), iseq));
+    Some(asm.ccall_with_branch(dummy_ptr, c_args, &branch))
+}
+
 /// Compile an array duplication instruction
 fn gen_array_dup(
     asm: &mut Assembler,
@@ -423,17 +518,10 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
-    // Set a return value to the register. We do this before popping SP, EC,
-    // and CFP registers because ret_val may depend on them.
-    asm.mov(C_RET_OPND, val);
-
-    asm_comment!(asm, "exit from leave");
-    asm.cpop_into(SP);
-    asm.cpop_into(EC);
-    asm.cpop_into(CFP);
     asm.frame_teardown();
-    asm.cret(C_RET_OPND);
 
+    // Return from the function
+    asm.cret(val);
     Some(())
 }
 
@@ -560,6 +648,18 @@ fn gen_save_sp(asm: &mut Assembler, state: &FrameState) {
     asm.mov(cfp_sp, sp_addr);
 }
 
+/// Compile an interpreter frame
+fn gen_push_frame(asm: &mut Assembler, recv: Opnd) {
+    // Write to a callee CFP
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+
+    asm_comment!(asm, "push callee control frame");
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), recv);
+    // TODO: Write more fields as needed
+}
+
 /// Return a register we use for the basic block argument at a given index
 fn param_reg(idx: usize) -> Reg {
     // To simplify the implementation, allocate a fixed register for each basic block argument for now.
@@ -573,4 +673,67 @@ fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
         .try_into()
         .unwrap();
     local_table_size - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+}
+
+/// Convert ISEQ into High-level IR
+fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
+    let mut function = match iseq_to_hir(iseq) {
+        Ok(function) => function,
+        Err(err) => {
+            debug!("ZJIT: iseq_to_hir: {err:?}");
+            return None;
+        }
+    };
+    function.optimize();
+    Some(function)
+}
+
+impl Assembler {
+    /// Make a C call while marking the start and end positions of it
+    fn ccall_with_branch(&mut self, fptr: *const u8, opnds: Vec<Opnd>, branch: &Rc<Branch>) -> Opnd {
+        // We need to create our own branch rc objects so that we can move the closure below
+        let start_branch = branch.clone();
+        let end_branch = branch.clone();
+
+        self.ccall_with_pos_markers(
+            fptr,
+            opnds,
+            move |code_ptr, _| {
+                start_branch.start_addr.set(Some(code_ptr));
+            },
+            move |code_ptr, _| {
+                end_branch.end_addr.set(Some(code_ptr));
+            },
+        )
+    }
+}
+
+/// Store info about an outgoing branch in a code segment
+#[derive(Debug)]
+struct Branch {
+    /// Position where the generated code starts
+    start_addr: Cell<Option<CodePtr>>,
+
+    /// Position where the generated code ends (exclusive)
+    end_addr: Cell<Option<CodePtr>>,
+}
+
+impl Branch {
+    /// Allocate a new branch
+    fn new() -> Rc<Self> {
+        Rc::new(Branch {
+            start_addr: Cell::new(None),
+            end_addr: Cell::new(None),
+        })
+    }
+
+    /// Regenerate a branch with a given callback
+    fn regenerate(&self, cb: &mut CodeBlock, callback: impl Fn(&mut Assembler)) {
+        cb.with_write_ptr(self.start_addr.get().unwrap(), |cb| {
+            let mut asm = Assembler::new();
+            callback(&mut asm);
+            asm.compile(cb).unwrap();
+            assert_eq!(self.end_addr.get().unwrap(), cb.get_write_ptr());
+        });
+    }
 }
