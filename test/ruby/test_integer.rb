@@ -708,6 +708,10 @@ class TestInteger < Test::Unit::TestCase
     assert_equal(x, Integer.sqrt(x ** 2), "[ruby-core:95453]")
   end
 
+  def test_bug_21217
+    assert_equal(0x10000 * 2**10, Integer.sqrt(0x100000008 * 2**20))
+  end
+
   def test_fdiv
     assert_equal(1.0, 1.fdiv(1))
     assert_equal(0.5, 1.fdiv(2))
