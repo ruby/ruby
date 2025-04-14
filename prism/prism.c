@@ -19557,18 +19557,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t lparen;
             pm_token_t rparen;
             pm_node_t *expression;
+
             context_push(parser, PM_CONTEXT_DEFINED);
+            bool newline = accept1(parser, PM_TOKEN_NEWLINE);
 
             if (accept1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
                 lparen = parser->previous;
-                expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, false, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
 
-                if (parser->recovering) {
+                if (newline && accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
+                    expression = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, NULL, &parser->previous, 0);
+                    lparen = not_provided(parser);
                     rparen = not_provided(parser);
                 } else {
-                    accept1(parser, PM_TOKEN_NEWLINE);
-                    expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
-                    rparen = parser->previous;
+                    expression = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, false, PM_ERR_DEFINED_EXPRESSION, (uint16_t) (depth + 1));
+
+                    if (parser->recovering) {
+                        rparen = not_provided(parser);
+                    } else {
+                        accept1(parser, PM_TOKEN_NEWLINE);
+                        expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
+                        rparen = parser->previous;
+                    }
                 }
             } else {
                 lparen = not_provided(parser);
