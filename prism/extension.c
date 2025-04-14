@@ -1251,7 +1251,7 @@ Init_prism(void) {
     /**
      * The version of the prism library.
      */
-    rb_define_const(rb_cPrism, "VERSION", rb_str_new2(EXPECTED_PRISM_VERSION));
+    rb_define_const(rb_cPrism, "VERSION", rb_str_freeze(rb_str_new_cstr(EXPECTED_PRISM_VERSION)));
 
     // First, the functions that have to do with lexing and parsing.
     rb_define_singleton_method(rb_cPrism, "lex", lex, -1);
