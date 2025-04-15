@@ -31,7 +31,7 @@ struct rb_io {
     int fd;
 
     /** mode flags: FMODE_XXXs */
-    int mode;
+    enum rb_io_mode mode;
 
     /** child's pid (for pipes) */
     rb_pid_t pid;
