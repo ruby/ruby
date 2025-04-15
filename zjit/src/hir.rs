@@ -298,7 +298,7 @@ pub enum Insn {
     StringCopy { val: InsnId },
     StringIntern { val: InsnId },
 
-    NewArray { elements: Vec<InsnId> },
+    NewArray { elements: Vec<InsnId>, state: InsnId },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
 
@@ -423,7 +423,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param { idx } => { write!(f, "Param {idx}") }
-            Insn::NewArray { elements } => {
+            Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
                 let mut prefix = " ";
                 for element in elements {
@@ -1633,12 +1633,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     let mut elements = vec![];
                     for _ in 0..count {
                         elements.push(state.stack_pop()?);
                     }
                     elements.reverse();
-                    state.stack_push(fun.push_insn(block, Insn::NewArray { elements }));
+                    state.stack_push(fun.push_insn(block, Insn::NewArray { elements, state: exit_id }));
                 }
                 YARVINSN_duparray => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -2046,15 +2047,16 @@ mod infer_tests {
     #[test]
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
-        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![] });
+        // Fake FrameState index of 0usize
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
     #[test]
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![] });
         // Fake FrameState index of 0usize
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0usize) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
@@ -2168,8 +2170,8 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:ArrayExact = NewArray
-              Return v1
+              v2:ArrayExact = NewArray
+              Return v2
         "#]]);
     }
 
@@ -2179,8 +2181,8 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:ArrayExact = NewArray v0
-              Return v2
+              v3:ArrayExact = NewArray v0
+              Return v3
         "#]]);
     }
 
@@ -2190,8 +2192,8 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:ArrayExact = NewArray v0, v1
-              Return v3
+              v4:ArrayExact = NewArray v0, v1
+              Return v4
         "#]]);
     }
 
@@ -2989,8 +2991,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v3:Fixnum[5] = Const Value(5)
-              Return v3
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
         "#]]);
     }
 
@@ -3006,8 +3008,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v4:Fixnum[5] = Const Value(5)
-              Return v4
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 

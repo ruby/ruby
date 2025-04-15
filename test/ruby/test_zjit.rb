@@ -187,6 +187,31 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_new_array_empty
+    assert_compiles '[]', %q{
+      def test = []
+      test
+    }
+  end
+
+  def test_new_array_nonempty
+    assert_compiles '[5]', %q{
+      def a = 5
+      def test = [a]
+      test
+    }
+  end
+
+  def test_new_array_order
+    assert_compiles '[3, 2, 1]', %q{
+      def a = 3
+      def b = 2
+      def c = 1
+      def test = [a, b, c]
+      test
+    }
+  end
+
   def test_array_dup
     assert_compiles '[1, 2, 3]', %q{
       def test = [1,2,3]

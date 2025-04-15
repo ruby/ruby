@@ -243,6 +243,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     let out_opnd = match insn {
         Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
+        Insn::NewArray { elements, state } => gen_new_array(jit, asm, elements, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
@@ -507,6 +508,37 @@ fn gen_array_dup(
         rb_ary_resurrect as *const u8,
         vec![val],
     )
+}
+
+/// Compile a new array instruction
+fn gen_new_array(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    elements: &Vec<InsnId>,
+    state: &FrameState,
+) -> lir::Opnd {
+    asm_comment!(asm, "call rb_ary_new");
+
+    // Save PC
+    gen_save_pc(asm, state);
+
+    let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
+
+    let new_array = asm.ccall(
+        rb_ary_new_capa as *const u8,
+        vec![lir::Opnd::Imm(length)],
+    );
+
+    for i in 0..elements.len() {
+        let insn_id = elements.get(i as usize).expect("Element should exist at index");
+        let val = jit.get_opnd(*insn_id).unwrap();
+        asm.ccall(
+            rb_ary_push as *const u8,
+            vec![new_array, val]
+        );
+    }
+
+    new_array
 }
 
 /// Compile code that exits from JIT code with a return value
