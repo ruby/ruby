@@ -45,4 +45,5 @@ benchmark:
   allocate_kwarg_params: "KWArg.new(a: 1, b: 2, c: 3, d: 4)"
   allocate_mixed_params: "Mixed.new(1, 2, c: 3, d: 4)"
   allocate_no_params: "Object.new"
+  allocate_allocate: "Object.allocate"
 loop_count: 100000
