@@ -20,6 +20,10 @@ Note: We're only listing outstanding class updates.
       Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject to handle numbered parameters.
       [[Bug #21049]]
 
+* Set
+
+    * Set is now a core class, instead of an autoloaded stdlib class.
+
 * String
 
     * Update Unicode to Version 15.1.0 and Emoji Version 15.1. [[Feature #19908]]

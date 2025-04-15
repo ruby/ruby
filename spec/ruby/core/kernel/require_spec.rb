@@ -17,6 +17,9 @@ describe "Kernel#require" do
   end
 
   provided = %w[complex enumerator fiber rational thread ruby2_keywords]
+  ruby_version_is "3.5" do
+    provided << "set"
+  end
 
   it "#{provided.join(', ')} are already required" do
     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')
