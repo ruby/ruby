@@ -227,13 +227,7 @@ module JSON
   MinusInfinity = -Infinity
 
   # The base exception for JSON errors.
-  class JSONError < StandardError
-    def self.wrap(exception)
-      obj = new("Wrapped(#{exception.class}): #{exception.message.inspect}")
-      obj.set_backtrace exception.backtrace
-      obj
-    end
-  end
+  class JSONError < StandardError; end
 
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError; end
