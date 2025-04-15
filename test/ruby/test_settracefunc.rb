@@ -2957,4 +2957,62 @@ CODE
 
     assert_kind_of(Thread, target_thread)
   end
+
+  def test_tracepoint_ivar_set_via_direct_assignment
+    events = []
+    line = nil
+
+    TracePoint.new(:ivar_set) do |tp|
+      events << [tp.event, tp.self, tp.lineno]
+    end.enable do
+      @a = 1; line = __LINE__
+    end
+
+    assert_equal([[:ivar_set, self, line]], events)
+  end
+
+  def test_tracepoint_ivar_set_via_attr_writer
+    events = []
+    line = nil
+
+    foo_class = Class.new do
+      attr_writer :a
+    end
+    f = foo_class.new
+
+    TracePoint.new(:ivar_set) do |tp|
+      events << [tp.event, tp.self, tp.lineno]
+    end.enable do
+      f.a = 1; line = __LINE__
+    end
+
+    assert_equal([[:ivar_set, f, line]], events)
+  end
+
+  def test_tracepoint_ivar_set_via_instance_variable_set
+    events = []
+    line = nil
+
+    TracePoint.new(:ivar_set) do |tp|
+      events << [tp.event, tp.self, tp.lineno]
+    end.enable do
+      self.instance_variable_set(:@a, 1); line = __LINE__
+    end
+
+    assert_equal([[:ivar_set, self, line]], events)
+  end
+
+  def test_tracepoint_ivar_set_via_instance_variable_set_isnt_triggered_recursively
+    events = []
+    line = nil
+
+    TracePoint.new(:ivar_set) do |tp|
+      events << [tp.event, tp.self, tp.lineno]
+      self.instance_variable_set(:@not_this, 1)
+    end.enable do
+      self.instance_variable_set(:@a, 1); line = __LINE__
+    end
+
+    assert_equal([[:ivar_set, self, line]], events)
+  end
 end

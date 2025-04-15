@@ -2950,6 +2950,7 @@ rb_obj_ivar_set_m(VALUE obj, VALUE iv, VALUE val)
 {
     ID id = id_for_var(obj, iv, instance);
     if (!id) id = rb_intern_str(iv);
+    EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_IVAR_SET, obj, id, 0, 0, val);
     return rb_ivar_set(obj, id, val);
 }
 
