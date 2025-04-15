@@ -4262,6 +4262,23 @@ __END__
     end
   end if Socket.const_defined?(:MSG_OOB)
 
+  def test_select_timeout
+    assert_equal(nil, IO.select(nil,nil,nil,0))
+    assert_equal(nil, IO.select(nil,nil,nil,0.0))
+    assert_raise(TypeError) { IO.select(nil,nil,nil,"invalid-timeout") }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-1) }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-0.1) }
+    assert_raise(ArgumentError) { IO.select(nil,nil,nil,-Float::INFINITY) }
+    assert_raise(RangeError) { IO.select(nil,nil,nil,Float::NAN) }
+    IO.pipe {|r, w|
+      w << "x"
+      ret = [[r], [], []]
+      assert_equal(ret, IO.select([r],nil,nil,0.1))
+      assert_equal(ret, IO.select([r],nil,nil,1))
+      assert_equal(ret, IO.select([r],nil,nil,Float::INFINITY))
+    }
+  end
+
   def test_recycled_fd_close
     dot = -'.'
     IO.pipe do |sig_rd, sig_wr|

@@ -20,6 +20,11 @@ Note: We're only listing outstanding class updates.
       Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject to handle numbered parameters.
       [[Bug #21049]]
 
+* IO
+
+    * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
+      [[Feature #20610]]
+
 * String
 
     * Update Unicode to Version 15.1.0 and Emoji Version 15.1. [[Feature #19908]]

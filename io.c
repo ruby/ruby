@@ -10993,6 +10993,16 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
 #endif
 }
 
+static int
+is_pos_inf(VALUE x)
+{
+  double f;
+  if (!RB_FLOAT_TYPE_P(x))
+    return 0;
+  f = RFLOAT_VALUE(x);
+  return isinf(f) && 0 < f;
+}
+
 /*
  *  call-seq:
  *    IO.select(read_ios, write_ios = [], error_ios = [], timeout = nil) -> array or nil
@@ -11009,6 +11019,8 @@ rb_io_advise(int argc, VALUE *argv, VALUE io)
  *
  *  Argument +timeout+ is a numeric value (such as integer or float) timeout
  *  interval in seconds.
+ *  +timeout+ can also be +nil+ or +Float::INFINITY+.
+ *  +nil+ and +Float::INFINITY+ means no timeout.
  *
  *  The method monitors the \IO objects given in all three arrays,
  *  waiting for some to be ready;
@@ -11159,7 +11171,7 @@ rb_f_select(int argc, VALUE *argv, VALUE obj)
     int i;
 
     rb_scan_args(argc, argv, "13", &args.read, &args.write, &args.except, &timeout);
-    if (NIL_P(timeout)) {
+    if (NIL_P(timeout) || is_pos_inf(timeout)) {
         args.timeout = 0;
     }
     else {
