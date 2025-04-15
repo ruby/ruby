@@ -35,12 +35,16 @@ STRINGIO_VERSION = "3.1.6";
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
+#ifndef HAVE_TYPE_RB_IO_MODE_T
+typedef int rb_io_mode_t;
+#endif
+
 struct StringIO {
     VALUE string;
     rb_encoding *enc;
     long pos;
     long lineno;
-    int flags;
+    rb_io_mode_t flags;
     int count;
 };
 
@@ -1852,7 +1856,8 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_find_encoding(ext_enc);
 	if (!enc) {
 	    rb_io_enc_t convconfig;
-	    int oflags, fmode;
+	    int oflags;
+	    rb_io_mode_t fmode;
 	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
 	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
 	    enc = convconfig.enc2;
