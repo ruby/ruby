@@ -1866,7 +1866,7 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
     }
     ptr->enc = enc;
     if (!NIL_P(ptr->string) && WRITABLE(self)
-#if RUBY_API_VERSION_MAJOR == 3 || RUBY_API_VERSION_MAJOR >= 4
+#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
             // Do not attempt to modify chilled strings on Ruby 3.4+
             && !FL_TEST_RAW(ptr->string, RUBY_FL_USER2 | RUBY_FL_USER3)
 #endif
