@@ -1289,6 +1289,13 @@ rb_undef_alloc_func(VALUE klass)
     rb_define_alloc_func(klass, UNDEF_ALLOC_FUNC);
 }
 
+void
+rb_prohibit_alloc(VALUE klass)
+{
+    rb_undef_method(CLASS_OF(klass), "allocate");
+    RCLASS_EXT(klass)->alloc_prohibited = true;
+}
+
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {

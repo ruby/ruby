@@ -71,6 +71,7 @@ struct rb_classext_struct {
     unsigned char variation_count;
     bool permanent_classpath : 1;
     bool cloned : 1;
+    bool alloc_prohibited: 1;
     VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;

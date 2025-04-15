@@ -2764,7 +2764,7 @@ Init_Rational(void)
     rb_cRational = rb_define_class("Rational", rb_cNumeric);
 
     rb_define_alloc_func(rb_cRational, nurat_s_alloc);
-    rb_undef_method(CLASS_OF(rb_cRational), "allocate");
+    rb_prohibit_alloc(rb_cRational);
 
     rb_undef_method(CLASS_OF(rb_cRational), "new");
 

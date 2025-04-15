@@ -2612,7 +2612,7 @@ Init_Complex(void)
     rb_cComplex = rb_define_class("Complex", rb_cNumeric);
 
     rb_define_alloc_func(rb_cComplex, nucomp_s_alloc);
-    rb_undef_method(CLASS_OF(rb_cComplex), "allocate");
+    rb_prohibit_alloc(rb_cComplex);
 
     rb_undef_method(CLASS_OF(rb_cComplex), "new");
 
