@@ -48,7 +48,7 @@ module JSON
         end
       end
 
-      # TODO: exact :create_additions support to another gem for version 3.0
+      # TODO: exctract :create_additions support to another gem for version 3.0
       def create_additions_proc(opts)
         if opts[:symbolize_names]
           raise ArgumentError, "options :symbolize_names and :create_additions cannot be  used in conjunction"
@@ -220,9 +220,9 @@ module JSON
     Thread.current[:"JSON.create_id"] || 'json_class'
   end
 
-  NaN           = 0.0/0
+  NaN           = Float::NAN
 
-  Infinity      = 1.0/0
+  Infinity      = Float::INFINITY
 
   MinusInfinity = -Infinity
 
