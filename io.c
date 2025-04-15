@@ -7797,15 +7797,19 @@ is_popen_fork(VALUE prog)
 }
 
 static VALUE
-pipe_open_s(VALUE prog, const char *modestr, int fmode,
+pipe_open_s(VALUE prog, const char *modestr, VALUE opt, int fmode,
             const struct rb_io_encoding *convconfig)
 {
     int argc = 1;
     VALUE *argv = &prog;
     VALUE execarg_obj = Qnil;
 
-    if (!is_popen_fork(prog))
+    if (!is_popen_fork(prog)) {
         execarg_obj = rb_execarg_new(argc, argv, TRUE, FALSE);
+        if (!NIL_P(opt)) {
+            rb_execarg_extract_options(execarg_obj, opt);
+        }
+    }
     return pipe_open(execarg_obj, modestr, fmode, convconfig);
 }
 
@@ -8299,7 +8303,7 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const struct rb_io_encoding *, mode_t);
+static VALUE rb_io_open_generic(VALUE, VALUE, VALUE, int, int, const struct rb_io_encoding *, mode_t);
 
 static VALUE
 rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
@@ -8310,18 +8314,18 @@ rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
 
     rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
     perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
-    return rb_io_open_generic(io, filename, oflags, fmode, &convconfig, perm);
+    return rb_io_open_generic(io, filename, opt, oflags, fmode, &convconfig, perm);
 }
 
 static VALUE
-rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
+rb_io_open_generic(VALUE klass, VALUE filename, VALUE opt, int oflags, int fmode,
                    const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE cmd;
     if (klass == rb_cIO && !NIL_P(cmd = check_pipe_command(filename))) {
         // TODO: when removed in 4.0, update command_injection.rdoc
         rb_warn_deprecated_to_remove_at(4.0, "IO process creation with a leading '|'", "IO.popen");
-        return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), fmode, convconfig);
+        return pipe_open_s(cmd, rb_io_oflags_modestr(oflags), opt, fmode, convconfig);
     }
     else {
         return rb_file_open_generic(io_alloc(klass), filename,
@@ -10662,7 +10666,7 @@ rb_f_backquote(VALUE obj, VALUE str)
 
     StringValue(str);
     rb_last_status_clear();
-    port = pipe_open_s(str, "r", FMODE_READABLE|DEFAULT_TEXTMODE, NULL);
+    port = pipe_open_s(str, "r", Qnil, FMODE_READABLE|DEFAULT_TEXTMODE, NULL);
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
@@ -12326,7 +12330,7 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
     rb_scan_args(argc, argv, "12", NULL, NULL, &offset);
     FilePathValue(argv[0]);
     convconfig.enc = rb_ascii8bit_encoding();
-    arg.io = rb_io_open_generic(io, argv[0], oflags, fmode, &convconfig, 0);
+    arg.io = rb_io_open_generic(io, argv[0], Qnil, oflags, fmode, &convconfig, 0);
     if (NIL_P(arg.io)) return Qnil;
     arg.argv = argv+1;
     arg.argc = (argc > 1) ? 1 : 0;
