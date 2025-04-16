@@ -75,7 +75,7 @@ jobs:
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-          scoop install vcpkg coreutils cmake@3.31.6
+          scoop install vcpkg uutils-coreutils cmake@3.31.6
         shell: pwsh
 
       - name: Export GitHub Actions cache environment variables
@@ -106,15 +106,15 @@ jobs:
             set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
           )
           set VCVARS
-          set | sort > old.env
+          set | uutils sort > old.env
           call %VCVARS% ${{ matrix.vcvars || '' }}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set | sort > new.env
-          comm -13 old.env new.env >> %GITHUB_ENV%
+          set | uutils sort > new.env
+          uutils comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
 
       - name: baseruby version
