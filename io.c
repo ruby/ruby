@@ -220,7 +220,7 @@ static VALUE sym_DATA;
 static VALUE sym_HOLE;
 #endif
 
-static VALUE prep_io(int fd, int fmode, VALUE klass, const char *path);
+static VALUE prep_io(int fd, enum rb_io_mode fmode, VALUE klass, const char *path);
 
 VALUE
 rb_io_blocking_region_wait(struct rb_io *io, rb_blocking_function_t *function, void *argument, enum rb_io_event events)
@@ -6432,7 +6432,7 @@ rb_io_binmode_p(VALUE io)
 }
 
 static const char*
-rb_io_fmode_modestr(int fmode)
+rb_io_fmode_modestr(enum rb_io_mode fmode)
 {
     if (fmode & FMODE_APPEND) {
         if ((fmode & FMODE_READWRITE) == FMODE_READWRITE) {
@@ -6466,10 +6466,10 @@ io_encname_bom_p(const char *name, long len)
     return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
 
-int
+enum rb_io_mode
 rb_io_modestr_fmode(const char *modestr)
 {
-    int fmode = 0;
+    enum rb_io_mode fmode = 0;
     const char *m = modestr, *p = NULL;
 
     switch (*m++) {
@@ -6526,7 +6526,7 @@ rb_io_modestr_fmode(const char *modestr)
 int
 rb_io_oflags_fmode(int oflags)
 {
-    int fmode = 0;
+    enum rb_io_mode fmode = 0;
 
     switch (oflags & O_ACCMODE) {
       case O_RDONLY:
@@ -6562,7 +6562,7 @@ rb_io_oflags_fmode(int oflags)
 }
 
 static int
-rb_io_fmode_oflags(int fmode)
+rb_io_fmode_oflags(enum rb_io_mode fmode)
 {
     int oflags = 0;
 
@@ -6647,7 +6647,7 @@ rb_io_oflags_modestr(int oflags)
  * Qnil => no encoding specified (internal only)
  */
 static void
-rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, rb_encoding **enc2, int fmode)
+rb_io_ext_int_to_encs(rb_encoding *ext, rb_encoding *intern, rb_encoding **enc, rb_encoding **enc2, enum rb_io_mode fmode)
 {
     int default_ext = 0;
 
@@ -6682,12 +6682,12 @@ unsupported_encoding(const char *name, rb_encoding *enc)
 
 static void
 parse_mode_enc(const char *estr, rb_encoding *estr_enc,
-               rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+               rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p)
 {
     const char *p;
     char encname[ENCODING_MAXNAMELEN+1];
     int idx, idx2;
-    int fmode = fmode_p ? *fmode_p : 0;
+    enum rb_io_mode fmode = fmode_p ? *fmode_p : 0;
     rb_encoding *ext_enc, *int_enc;
     long len;
 
@@ -6749,7 +6749,7 @@ parse_mode_enc(const char *estr, rb_encoding *estr_enc,
 }
 
 int
-rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p)
+rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p)
 {
     VALUE encoding=Qnil, extenc=Qundef, intenc=Qundef, tmp;
     int extracted = 0;
@@ -6818,9 +6818,9 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
 }
 
 static void
-validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
+validate_enc_binmode(enum rb_io_mode *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *enc2)
 {
-    int fmode = *fmode_p;
+    enum rb_io_mode fmode = *fmode_p;
 
     if ((fmode & FMODE_READABLE) &&
         !enc2 &&
@@ -6845,7 +6845,7 @@ validate_enc_binmode(int *fmode_p, int ecflags, rb_encoding *enc, rb_encoding *e
 }
 
 static void
-extract_binmode(VALUE opthash, int *fmode)
+extract_binmode(VALUE opthash, enum rb_io_mode *fmode)
 {
     if (!NIL_P(opthash)) {
         VALUE v;
@@ -6875,10 +6875,11 @@ extract_binmode(VALUE opthash, int *fmode)
 
 void
 rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
-        int *oflags_p, int *fmode_p, struct rb_io_encoding *convconfig_p)
+        int *oflags_p, enum rb_io_mode *fmode_p, struct rb_io_encoding *convconfig_p)
 {
     VALUE vmode;
-    int oflags, fmode;
+    int oflags;
+    enum rb_io_mode fmode;
     rb_encoding *enc, *enc2;
     int ecflags;
     VALUE ecopts;
@@ -7193,7 +7194,7 @@ io_set_encoding_by_bom(VALUE io)
 }
 
 static VALUE
-rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
+rb_file_open_generic(VALUE io, VALUE filename, int oflags, enum rb_io_mode fmode,
                      const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE pathv;
@@ -7230,7 +7231,7 @@ rb_file_open_generic(VALUE io, VALUE filename, int oflags, int fmode,
 static VALUE
 rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 {
-    int fmode = rb_io_modestr_fmode(modestr);
+    enum rb_io_mode fmode = rb_io_modestr_fmode(modestr);
     const char *p = strchr(modestr, ':');
     struct rb_io_encoding convconfig;
 
@@ -7546,7 +7547,7 @@ char *rb_execarg_commandline(const struct rb_execarg *eargp, VALUE *prog);
 
 #ifndef __EMSCRIPTEN__
 static VALUE
-pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
+pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
           const struct rb_io_encoding *convconfig)
 {
     struct rb_execarg *eargp = NIL_P(execarg_obj) ? NULL : rb_execarg_get(execarg_obj);
@@ -7775,7 +7776,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
 }
 #else
 static VALUE
-pipe_open(VALUE execarg_obj, const char *modestr, int fmode,
+pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
           const struct rb_io_encoding *convconfig)
 {
     rb_raise(rb_eNotImpError, "popen() is not available");
@@ -7797,7 +7798,7 @@ is_popen_fork(VALUE prog)
 }
 
 static VALUE
-pipe_open_s(VALUE prog, const char *modestr, int fmode,
+pipe_open_s(VALUE prog, const char *modestr, enum rb_io_mode fmode,
             const struct rb_io_encoding *convconfig)
 {
     int argc = 1;
@@ -8006,7 +8007,8 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
 {
     const char *modestr;
     VALUE tmp, execarg_obj = Qnil;
-    int oflags, fmode;
+    int oflags;
+    enum rb_io_mode fmode;
     struct rb_io_encoding convconfig;
 
     tmp = rb_check_array_type(pname);
@@ -8115,8 +8117,9 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
 static VALUE
 rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
 {
+    int oflags;
+    enum rb_io_mode fmode;
     struct rb_io_encoding convconfig;
-    int oflags, fmode;
     mode_t perm;
 
     FilePathValue(fname);
@@ -8299,22 +8302,8 @@ rb_f_open(int argc, VALUE *argv, VALUE _)
     return rb_io_s_open(argc, argv, rb_cFile);
 }
 
-static VALUE rb_io_open_generic(VALUE, VALUE, int, int, const struct rb_io_encoding *, mode_t);
-
 static VALUE
-rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
-{
-    int oflags, fmode;
-    struct rb_io_encoding convconfig;
-    mode_t perm;
-
-    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
-    perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
-    return rb_io_open_generic(io, filename, oflags, fmode, &convconfig, perm);
-}
-
-static VALUE
-rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
+rb_io_open_generic(VALUE klass, VALUE filename, int oflags, enum rb_io_mode fmode,
                    const struct rb_io_encoding *convconfig, mode_t perm)
 {
     VALUE cmd;
@@ -8327,6 +8316,19 @@ rb_io_open_generic(VALUE klass, VALUE filename, int oflags, int fmode,
         return rb_file_open_generic(io_alloc(klass), filename,
                                     oflags, fmode, convconfig, perm);
     }
+}
+
+static VALUE
+rb_io_open(VALUE io, VALUE filename, VALUE vmode, VALUE vperm, VALUE opt)
+{
+    int oflags;
+    enum rb_io_mode fmode;
+    struct rb_io_encoding convconfig;
+    mode_t perm;
+
+    rb_io_extract_modeenc(&vmode, &vperm, opt, &oflags, &fmode, &convconfig);
+    perm = NIL_P(vperm) ? 0666 :  NUM2MODET(vperm);
+    return rb_io_open_generic(io, filename, oflags, fmode, &convconfig, perm);
 }
 
 static VALUE
@@ -8482,7 +8484,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     }
 
     if (!NIL_P(nmode) || !NIL_P(opt)) {
-        int fmode;
+        enum rb_io_mode fmode;
         struct rb_io_encoding convconfig;
 
         rb_io_extract_modeenc(&nmode, 0, opt, &oflags, &fmode, &convconfig);
@@ -9317,7 +9319,7 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
 }
 
 static VALUE
-prep_io(int fd, int fmode, VALUE klass, const char *path)
+prep_io(int fd, enum rb_io_mode fmode, VALUE klass, const char *path)
 {
     VALUE path_value = Qnil;
     rb_encoding *e;
@@ -9363,7 +9365,7 @@ rb_io_fdopen(int fd, int oflags, const char *path)
 }
 
 static VALUE
-prep_stdio(FILE *f, int fmode, VALUE klass, const char *path)
+prep_stdio(FILE *f, enum rb_io_mode fmode, VALUE klass, const char *path)
 {
     rb_io_t *fptr;
     VALUE io = prep_io(fileno(f), fmode|FMODE_EXTERNAL|DEFAULT_TEXTMODE, klass, path);
@@ -9523,7 +9525,8 @@ static VALUE
 io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
 {
     rb_io_t *fp;
-    int fd, fmode, oflags = O_RDONLY;
+    int fd, oflags = O_RDONLY;
+    enum rb_io_mode fmode;
     struct rb_io_encoding convconfig;
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
     int ofmode;
@@ -10135,7 +10138,7 @@ argf_next_argv(VALUE argf)
     char *fn;
     rb_io_t *fptr;
     int stdout_binmode = 0;
-    int fmode;
+    enum rb_io_mode fmode;
 
     VALUE r_stdout = rb_ractor_stdout();
 
@@ -11917,7 +11920,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     VALUE opt;
     rb_io_t *fptr, *fptr2;
     struct io_encoding_set_args ies_args;
-    int fmode = 0;
+    enum rb_io_mode fmode = 0;
     VALUE ret;
 
     argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
