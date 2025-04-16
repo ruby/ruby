@@ -73,7 +73,8 @@ jobs:
 
       - name: Install libraries with scoop
         run: |
-          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+          iwr -useb get.scoop.sh | iex
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
           scoop install vcpkg uutils-coreutils cmake@3.31.6
         shell: pwsh
