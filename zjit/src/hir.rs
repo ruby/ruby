@@ -486,6 +486,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
+            Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
             insn => { write!(f, "{insn:?}") }
         }
     }
