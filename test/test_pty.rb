@@ -205,11 +205,27 @@ class TestPTY < Test::Unit::TestCase
     st1 = st2 = pid = nil
     PTY.spawn("cat") do |r,w,id|
       pid = id
-      assert_nothing_raised(PTY::ChildExited, bug2642) {st1 = PTY.check(pid, true)}
+      assert_nothing_raised(PTY::ChildExited, bug2642) {
+        begin
+          st1 = PTY.check(pid, true)
+        rescue
+          $stderr.puts "\nexit with an exception, status st1: #{st1.inspect}"
+          raise
+        end
+        $stderr.puts "exit without an exception, status st1: #{st1.inspect}"
+      }
       w.close
       r.close
       sleep(0.1)
-      st2 = assert_raise(PTY::ChildExited, bug2642) {PTY.check(pid, true)}.status
+      st2 = assert_raise(PTY::ChildExited, bug2642) {
+        begin
+          st2 = PTY.check(pid, true)
+        rescue
+          $stderr.puts "\nexit with an exception, status st2: #{st2.inspect}"
+          raise
+        end
+        $stderr.puts "exit without an exception, status st2: #{st2.inspect}"
+      }.status
     end
   rescue RuntimeError
     omit $!
