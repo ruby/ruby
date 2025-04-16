@@ -270,6 +270,11 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         ssl.syswrite(str)
         assert_same buf, ssl.sysread(str.size, buf)
         assert_equal(str, buf)
+
+        obj = Object.new
+        obj.define_singleton_method(:to_str) { str }
+        ssl.syswrite(obj)
+        assert_equal(str, ssl.sysread(str.bytesize))
       }
     }
   end

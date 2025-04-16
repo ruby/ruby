@@ -2080,14 +2080,13 @@ ossl_ssl_write_internal_safe(VALUE _args)
 static VALUE
 ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 {
-    VALUE args[3] = {self, str, opts};
-    int state;
-    str = StringValue(str);
-
+    StringValue(str);
     int frozen = RB_OBJ_FROZEN(str);
     if (!frozen) {
-        str = rb_str_locktmp(str);
+        rb_str_locktmp(str);
     }
+    int state;
+    VALUE args[3] = {self, str, opts};
     VALUE result = rb_protect(ossl_ssl_write_internal_safe, (VALUE)args, &state);
     if (!frozen) {
         rb_str_unlocktmp(str);
