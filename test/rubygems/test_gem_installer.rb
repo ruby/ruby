@@ -1247,7 +1247,7 @@ end
     end
 
     assert_raise(Gem::Ext::BuildError) do
-      build_rake_in {installer.install}
+      build_rake_in { installer.install }
     end
 
     assert_path_not_exist(File.join(installer.bin_dir, "executable.lock"))
