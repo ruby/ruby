@@ -5107,6 +5107,19 @@ enum_compact(VALUE obj)
  *   For some methods, though, the usage would not make sense,
  *   and so it is not shown.  Example: #tally would find exactly one of each Hash entry.
  *
+ * == Extended Methods
+ *
+ * A Enumerable class may define extended methods. This section describes the standard
+ * behavior of extension methods for reference purposes.
+ *
+ * === #size
+ *
+ * Returns the size of elements. The size is defined as the number of iterations
+ * the #each method would perform over the elements.
+ * If #each method won't finish and its elements are Numeric, the size is +Infinite+.
+ * If #each method won't finish and its elements are not Numeric, the size is +nil+.
+ * If #each method don't work fine, raise TypeError.
+ *
  */
 
 void
