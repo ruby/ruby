@@ -111,6 +111,9 @@ jobs:
           for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
             set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
           )
+          if "${{ matrix.os }}" == "11-arm" (
+            set VCVARS="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+          )
           set VCVARS
           set | uutils sort > old.env
           call %VCVARS% ${{ matrix.vcvars || '' }}
