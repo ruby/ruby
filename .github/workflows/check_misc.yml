@@ -28,19 +28,14 @@ jobs:
           # Skip overwriting MATZBOT_GITHUB_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
       # Run this step first to make sure auto-style commits are pushed
       - name: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && 'Auto-correct' || 'Check for' }} code styles
         run: |
           set -x
           ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$PUSH_REF"
         env:
-          GITHUB_OLD_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.base.sha || github.before }}
-          GITHUB_NEW_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.merge_commit_sha || github.sha }}
+          GITHUB_OLD_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.base.sha || github.event.before }}
+          GITHUB_NEW_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.merge_commit_sha || github.event.after }}
           PUSH_REF: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && github.ref || '' }}
 
       - name: Check if C-sources are US-ASCII
