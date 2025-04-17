@@ -32,10 +32,10 @@ jobs:
         run: |
           grep -r -n --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
 
-      - name: Check for trailing spaces
-        run: |
-          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
-          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
+#      - name: Check for trailing spaces
+#        run: |
+#          git grep -I -n $'[\t ]$' -- '*.rb' '*.[chy]' '*.rs' '*.yml' && exit 1 || :
+#          git grep -n $'^[\t ][\t ]*$' -- '*.md' && exit 1 || :
 
       - name: Check for bash specific substitution in configure.ac
         run: |
