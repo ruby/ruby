@@ -28,6 +28,11 @@ jobs:
           # Skip overwriting MATZBOT_GITHUB_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       # Run this step first to make sure auto-style commits are pushed
       - name: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && 'Auto-correct' || 'Check for' }} code styles
         run: |
