@@ -6,6 +6,8 @@ class Test_StackOverflow < Test::Unit::TestCase
     omit("Windows stack overflow handling is missing") if RUBY_PLATFORM =~ /mswin|win32|mingw/
 
     assert_separately([], <<~RUBY)
+      # GC may try to scan the top of the stack and cause a SEGV.
+      GC.disable
       require '-test-/stack'
 
       assert_raise(SystemStackError) do
@@ -19,6 +21,7 @@ class Test_StackOverflow < Test::Unit::TestCase
 
     assert_separately([], <<~RUBY)
       require '-test-/stack'
+      GC.disable
 
       thread = Thread.new do
         Thread.current.report_on_exception = false
@@ -36,6 +39,7 @@ class Test_StackOverflow < Test::Unit::TestCase
 
     assert_separately([], <<~RUBY)
       require '-test-/stack'
+      GC.disable
 
       fiber = Fiber.new do
         Thread.alloca_overflow
