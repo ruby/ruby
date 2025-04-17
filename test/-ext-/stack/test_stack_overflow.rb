@@ -4,6 +4,10 @@ require 'test/unit'
 class Test_StackOverflow < Test::Unit::TestCase
   def setup
     omit "Stack overflow tests are not supported on this platform: #{RUBY_PLATFORM.inspect}" unless RUBY_PLATFORM =~ /x86_64-linux|darwin/
+
+    require '-test-/stack'
+
+    omit "Stack overflow tests are not supported with ASAN" if Thread.asan?
   end
 
   def test_overflow
