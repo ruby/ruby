@@ -142,7 +142,7 @@ pub extern "C" fn rb_zjit_init(options: *const u8) {
 
         rb_bug_panic_hook();
 
-        // YJIT enabled and initialized successfully
+        // ZJIT enabled and initialized successfully
         assert!(unsafe{ !rb_zjit_enabled_p });
         unsafe { rb_zjit_enabled_p = true; }
     });

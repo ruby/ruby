@@ -270,7 +270,7 @@ impl From<VALUE> for Opnd {
 #[derive(Clone, Debug)]
 pub enum Target
 {
-    /// Pointer to a piece of YJIT-generated code
+    /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
     // Side exit with a counter
     SideExit(FrameState),

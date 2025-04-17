@@ -1,10 +1,10 @@
-//! This module deals with making relevant C functions available to Rust YJIT.
+//! This module deals with making relevant C functions available to Rust ZJIT.
 //! Some C functions we use we maintain, some are public C extension APIs,
 //! some are internal CRuby APIs.
 //!
 //! ## General notes about linking
 //!
-//! The YJIT crate compiles to a native static library, which for our purposes
+//! The ZJIT crate compiles to a native static library, which for our purposes
 //! we can understand as a collection of object files. On ELF platforms at least,
 //! object files can refer to "external symbols" which we could take some
 //! liberty and understand as assembly labels that refer to code defined in other
@@ -55,9 +55,9 @@
 //! and verified on CI like `make update-deps`.
 //!
 //! Upsides for this design:
-//!  - the YJIT static lib that links with miniruby and friends will not need bindgen
+//!  - the ZJIT static lib that links with miniruby and friends will not need bindgen
 //!    as a dependency at all. This is an important property so Ruby end users can
-//!    build a YJIT enabled Ruby with no internet connection using a release tarball
+//!    build a ZJIT enabled Ruby with no internet connection using a release tarball
 //!  - Less hand-typed boilerplate
 //!  - Helps reduce risk of C definitions and Rust declaration going out of sync since
 //!    CI verifies synchronicity
@@ -67,7 +67,7 @@
 //!    that the project is not committed to maintaining
 //!  - This setup assumes rust-bindgen gives deterministic output, which can't be taken
 //!    for granted
-//!  - YJIT contributors will need to install libclang on their system to get rust-bindgen
+//!  - ZJIT contributors will need to install libclang on their system to get rust-bindgen
 //!    to work if they want to run the generation tool locally
 //!
 //! The elephant in the room is that we'll still need to use Unsafe Rust to call C functions,
@@ -116,7 +116,7 @@ pub use autogened::*;
 
 // These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
-// Use bindgen for functions that are defined in headers or in yjit.c.
+// Use bindgen for functions that are defined in headers or in zjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
@@ -438,8 +438,8 @@ impl VALUE {
     pub fn class_of(self) -> VALUE {
         if !self.special_const_p() {
             let builtin_type = self.builtin_type();
-            assert_ne!(builtin_type, RUBY_T_NONE, "YJIT should only see live objects");
-            assert_ne!(builtin_type, RUBY_T_MOVED, "YJIT should only see live objects");
+            assert_ne!(builtin_type, RUBY_T_NONE, "ZJIT should only see live objects");
+            assert_ne!(builtin_type, RUBY_T_MOVED, "ZJIT should only see live objects");
         }
 
         unsafe { rb_yarv_class_of(self) }
@@ -807,7 +807,7 @@ where
             let _ = catch_unwind(|| {
                 // IO functions can panic too.
                 eprintln!(
-                    "YJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
+                    "ZJIT panicked while holding VM lock acquired at {}:{}. Aborting...",
                     loc.file.to_string_lossy(),
                     line,
                 );
@@ -1159,7 +1159,7 @@ pub fn get_class_name(class: VALUE) -> String {
 }
 
 /// Interned ID values for Ruby symbols and method names.
-/// See [type@crate::cruby::ID] and usages outside of YJIT.
+/// See [type@crate::cruby::ID] and usages outside of ZJIT.
 pub(crate) mod ids {
     use std::sync::atomic::AtomicU64;
     /// Globals to cache IDs on boot. Atomic to use with relaxed ordering

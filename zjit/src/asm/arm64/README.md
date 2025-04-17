@@ -1,6 +1,6 @@
 # Arm64
 
-This module is responsible for encoding YJIT operands into an appropriate Arm64 encoding.
+This module is responsible for encoding ZJIT operands into an appropriate Arm64 encoding.
 
 ## Architecture
 
