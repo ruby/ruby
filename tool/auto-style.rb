@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Usage:
-#   auto-style.rb [repo_path] [args...]
+#   auto-style.rb [oldrev] [newrev] [pushref]
 
 require 'shellwords'
 require 'tmpdir'
@@ -9,10 +9,15 @@ ENV['LC_ALL'] = 'C'
 class Git
   attr_reader :depth
 
-  def initialize(oldrev, newrev, branch)
+  def initialize(oldrev, newrev, branch = nil)
     @oldrev = oldrev
     @newrev = newrev
     @branch = branch
+
+    # GitHub may not fetch github.event.pull_request.base.sha at checkout
+    git('fetch', '--depth=1', 'origin', @oldrev)
+    git('fetch', '--depth=100', 'origin', @newrev)
+
     with_clean_env do
       @revs = {}
       IO.popen(['git', 'log', '--format=%H %s', "#{@oldrev}..#{@newrev}"]) do |f|
@@ -34,7 +39,7 @@ class Git
   end
 
   # [0, 1, 4, ...]
-  def updated_lines(file)
+  def updated_lines(file) # NOTE: This doesn't work well on pull requests, so not used anymore
     lines = []
     revs = @revs.map {|rev, subj| rev unless subj.start_with?("Revert ")}.compact
     revs_pattern = /\A(?:#{revs.join('|')}) /
@@ -49,13 +54,21 @@ class Git
   def commit(log, *files)
     git('add', *files)
     git('commit', '-m', log)
+  end
+
+  def push
     git('push', 'origin', @branch)
+  end
+
+  def diff
+    git('--no-pager', 'diff')
   end
 
   private
 
   def git(*args)
     cmd = ['git', *args].shelljoin
+    puts "+ #{cmd}"
     unless with_clean_env { system(cmd) }
       abort "Failed to run: #{cmd}"
     end
@@ -160,80 +173,79 @@ IGNORED_FILES = [
   %r{\Asample/trick[^/]*/},
 ]
 
-repo_path, *rest = ARGV
-rest.each_slice(3).map do |oldrev, newrev, refname|
-  branch = IO.popen({ 'GIT_DIR' => repo_path }, ['git', 'rev-parse', '--symbolic', '--abbrev-ref', refname], &:read).strip
-  next if branch != 'master' # Stable branches are on svn, and for consistency we should not make a git-specific commit.
-  vcs = Git.new(oldrev, newrev, branch)
+oldrev, newrev, pushref = ARGV
+unless dry_run = pushref.empty?
+  branch = IO.popen(['git', 'rev-parse', '--symbolic', '--abbrev-ref', pushref], &:read).strip
+end
+git = Git.new(oldrev, newrev, branch)
 
-  Dir.mktmpdir do |workdir|
-    depth = vcs.depth + 1
-    system "git clone --depth=#{depth} --branch=#{branch} file:///#{repo_path} #{workdir}"
-    Dir.chdir(workdir)
+paths = git.updated_paths
+paths.select! {|l|
+  /^\d/ !~ l and /\.bat\z/ !~ l and
+  (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
+   /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|)\z/ =~ File.extname(l))
+}
+files = paths.select {|n| File.file?(n) }
+files.reject! do |f|
+  IGNORED_FILES.any? { |re| f.match(re) }
+end
+if files.empty?
+  puts "No files are a auto-style target:\n#{paths.join("\n")}"
+  exit
+end
 
-    paths = vcs.updated_paths
-    paths.select! {|l|
-      /^\d/ !~ l and /\.bat\z/ !~ l and
-      (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
-       /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|)\z/ =~ File.extname(l))
-    }
-    files = paths.select {|n| File.file?(n) }
-    files.reject! do |f|
-      IGNORED_FILES.any? { |re| f.match(re) }
+trailing = eofnewline = expandtab = false
+
+edited_files = files.select do |f|
+  src = File.binread(f) rescue next
+  eofnewline = eofnewline0 = true if src.sub!(/(?<!\A|\n)\z/, "\n")
+
+  trailing0 = false
+  expandtab0 = false
+  src.gsub!(/^.*$/).with_index do |line, lineno|
+    trailing = trailing0 = true if line.sub!(/[ \t]+$/, '')
+    line
+  end
+
+  if f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def'
+    # If and only if unedited lines did not have tab indentation, prevent introducing tab indentation to the file.
+    expandtab_allowed = src.each_line.with_index.all? do |line, lineno|
+      !line.start_with?("\t")
     end
-    next if files.empty?
 
-    trailing = eofnewline = expandtab = false
-
-    edited_files = files.select do |f|
-      src = File.binread(f) rescue next
-      eofnewline = eofnewline0 = true if src.sub!(/(?<!\A|\n)\z/, "\n")
-
-      trailing0 = false
-      expandtab0 = false
-      updated_lines = vcs.updated_lines(f)
-      if !updated_lines.empty?
-        src.gsub!(/^.*$/).with_index do |line, lineno|
-          if updated_lines.include?(lineno)
-            trailing = trailing0 = true if line.sub!(/[ \t]+$/, '')
-          end
+    if expandtab_allowed
+      src.gsub!(/^.*$/).with_index do |line, lineno|
+        if line.start_with?("\t") # last-committed line with hard tabs
+          expandtab = expandtab0 = true
+          line.sub(/\A\t+/) { |tabs| ' ' * (8 * tabs.length) }
+        else
           line
         end
       end
-
-      if !updated_lines.empty? && (f.end_with?('.c') || f.end_with?('.h') || f == 'insns.def')
-        # If and only if unedited lines did not have tab indentation, prevent introducing tab indentation to the file.
-        expandtab_allowed = src.each_line.with_index.all? do |line, lineno|
-          updated_lines.include?(lineno) || !line.start_with?("\t")
-        end
-
-        if expandtab_allowed
-          src.gsub!(/^.*$/).with_index do |line, lineno|
-            if updated_lines.include?(lineno) && line.start_with?("\t") # last-committed line with hard tabs
-              expandtab = expandtab0 = true
-              line.sub(/\A\t+/) { |tabs| ' ' * (8 * tabs.length) }
-            else
-              line
-            end
-          end
-        end
-      end
-
-      if trailing0 or eofnewline0 or expandtab0
-        File.binwrite(f, src)
-        true
-      end
     end
-    unless edited_files.empty?
-      msg = [('remove trailing spaces' if trailing),
-             ('append newline at EOF' if eofnewline),
-             ('expand tabs' if expandtab),
-            ].compact
-      message = "* #{msg.join(', ')}. [ci skip]"
-      if expandtab
-        message += "\nPlease consider using misc/expand_tabs.rb as a pre-commit hook."
-      end
-      vcs.commit(message, *edited_files)
-    end
+  end
+
+  if trailing0 or eofnewline0 or expandtab0
+    File.binwrite(f, src)
+    true
+  end
+end
+if edited_files.empty?
+  puts "All edited lines are formatted well:\n#{paths.join("\n")}"
+else
+  msg = [('remove trailing spaces' if trailing),
+         ('append newline at EOF' if eofnewline),
+         ('expand tabs' if expandtab),
+        ].compact
+  message = "* #{msg.join(', ')}. [ci skip]"
+  if expandtab
+    message += "\nPlease consider using misc/expand_tabs.rb as a pre-commit hook."
+  end
+  if dry_run
+    git.diff
+    abort message
+  else
+    git.commit(message, *edited_files)
+    git.push
   end
 end
