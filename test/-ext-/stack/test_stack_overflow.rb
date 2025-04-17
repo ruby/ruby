@@ -2,9 +2,11 @@
 require 'test/unit'
 
 class Test_StackOverflow < Test::Unit::TestCase
-  def test_proc_overflow
-    omit("Windows stack overflow handling is missing") if RUBY_PLATFORM =~ /mswin|win32|mingw/
+  def setup
+    omit "Stack overflow tests are not supported on this platform: #{RUBY_PLATFORM.inspect}" unless RUBY_PLATFORM =~ /x86_64-linux|darwin/
+  end
 
+  def test_overflow
     assert_separately([], <<~RUBY)
       # GC may try to scan the top of the stack and cause a SEGV.
       GC.disable
@@ -17,8 +19,6 @@ class Test_StackOverflow < Test::Unit::TestCase
   end
 
   def test_thread_stack_overflow
-    omit("Windows stack overflow handling is missing") if RUBY_PLATFORM =~ /mswin|win32|mingw/
-
     assert_separately([], <<~RUBY)
       require '-test-/stack'
       GC.disable
@@ -35,8 +35,6 @@ class Test_StackOverflow < Test::Unit::TestCase
   end
 
   def test_fiber_stack_overflow
-    omit("Windows stack overflow handling is missing") if RUBY_PLATFORM =~ /mswin|win32|mingw/
-
     assert_separately([], <<~RUBY)
       require '-test-/stack'
       GC.disable
