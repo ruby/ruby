@@ -1,0 +1,16 @@
+--- sample.rb
++++ sample.rb
+@@ -2,7 +2,13 @@
+   a + b
+ end
+ 
++def sub(a, b)
++  a - b
++end
++
+ if __FILE__ == $0
+   result = add(3, 5)
+   puts "Three plus five is #{ result }"
++  result = sub(5, 3)
++  puts "five minus three is #{ result }"
+ end
