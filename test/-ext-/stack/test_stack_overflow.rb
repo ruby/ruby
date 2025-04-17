@@ -1,37 +1,43 @@
 # frozen_string_literal: true
 require 'test/unit'
-require '-test-/stack'
 
 class Test_StackOverflow < Test::Unit::TestCase
-  # def test_proc_overflow
-  #   overflow_proc = proc do
-  #     Thread.alloca_overflow
-  #   end
+  def test_proc_overflow
+    assert_separately([], <<~RUBY)
+      require '-test-/stack'
 
-  #   assert_raise(SystemStackError) do
-  #     overflow_proc.call
-  #   end
-  # end
+      assert_raise(SystemStackError) do
+        Thread.alloca_overflow
+      end
+    RUBY
+  end
 
   def test_thread_stack_overflow
-    thread = Thread.new do
-      Thread.current.report_on_exception = false
+    assert_separately([], <<~RUBY)
+      require '-test-/stack'
 
-      Thread.alloca_overflow
-    end
+      thread = Thread.new do
+        Thread.current.report_on_exception = false
+        Thread.alloca_overflow
+      end
 
-    assert_raise(SystemStackError) do
-      thread.join
-    end
+      assert_raise(SystemStackError) do
+        thread.join
+      end
+    RUBY
   end
 
   def test_fiber_stack_overflow
-    fiber = Fiber.new do
-      Thread.alloca_overflow
-    end
+    assert_separately([], <<~RUBY)
+      require '-test-/stack'
 
-    assert_raise(SystemStackError) do
-      fiber.resume
-    end
+      fiber = Fiber.new do
+        Thread.alloca_overflow
+      end
+
+      assert_raise(SystemStackError) do
+        fiber.resume
+      end
+    RUBY
   end
 end
