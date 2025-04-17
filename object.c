@@ -1304,12 +1304,6 @@ rb_obj_dummy(void)
 }
 
 static VALUE
-rb_obj_dummy0(VALUE _)
-{
-    return rb_obj_dummy();
-}
-
-static VALUE
 rb_obj_dummy1(VALUE _x, VALUE _y)
 {
     return rb_obj_dummy();
@@ -2142,6 +2136,14 @@ rb_class_alloc(VALUE klass)
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }
+
+static VALUE
+rb_class_alloc2(rb_execution_context_t *ec, VALUE klass)
+{
+    return rb_class_alloc(klass);
+}
+
+#include "class.rbinc"
 
 static rb_alloc_func_t
 class_get_alloc_func(VALUE klass)
@@ -4307,7 +4309,6 @@ InitVM_Object(void)
     rb_cRefinement = rb_define_class("Refinement", rb_cModule);
 #endif
 
-    rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_initialize, 0);
     rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
@@ -4588,7 +4589,6 @@ InitVM_Object(void)
 
     rb_define_method(rb_singleton_class(rb_cClass), "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
-    rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_method(rb_cClass, "subclasses", rb_class_subclasses, 0); /* in class.c */
