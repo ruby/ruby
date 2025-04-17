@@ -158,6 +158,10 @@ class TestGemPlatform < Gem::TestCase
       "darwin0---" => [nil, "darwin", "0"],
       "x86-linux-x8611.0l" => ["x86", "linux", "x8611"],
       "0-x86linuxx86---" => ["0", "linux", "x86"],
+      "x86_64-macruby-x86" => ["x86_64", "macruby", nil],
+      "x86_64-dotnetx86" => ["x86_64", "dotnet", nil],
+      "x86_64-dalvik0" => ["x86_64", "dalvik", "0"],
+      "x86_64-dotnet1." => ["x86_64", "dotnet", "1"],
     }
 
     test_cases.each do |arch, expected|
