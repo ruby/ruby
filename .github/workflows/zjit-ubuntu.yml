@@ -40,10 +40,6 @@ jobs:
             configure: '--enable-zjit=dev'
             tests: '../src/test/ruby/test_zjit.rb'
 
-          # Test without ZJIT for now
-          - test_task: 'check'
-            configure: '--disable-zjit'
-
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.zjit_opts }}
