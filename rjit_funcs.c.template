@@ -1,0 +1,22 @@
+#include <stddef.h>
+#include "ruby/config.h"
+
+#define FUNCTION_START
+
+#define CHECK(func_name) \
+    extern void func_name(); \
+    if (name == func(#func_name)) { \
+        return (size_t)((void *)(void (*)())func_name); \
+    }
+
+typedef void * (*intern_cstr_func)(const char *);
+
+#if USE_YJIT
+size_t
+rb_rjit_address_of(void * name, intern_cstr_func func)
+{
+    FUNCTION_START;
+
+    return 0;
+}
+#endif

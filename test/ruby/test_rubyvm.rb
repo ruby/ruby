@@ -3,6 +3,11 @@ require 'test/unit'
 require_relative '../lib/parser_support'
 
 class TestRubyVM < Test::Unit::TestCase
+  def test_get_address
+    assert RubyVM::Internals.address_of(:rb_vm_ci_argc)
+  rescue NotImplementedError
+  end
+
   def test_stat
     assert_kind_of Hash, RubyVM.stat
 

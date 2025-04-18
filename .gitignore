@@ -126,6 +126,7 @@ lcov*.info
 /revision.tmp
 /ripper.tmp.y
 /riscos
+/rjit_funcs.c
 /rubicon
 /ruby
 /ruby-runner
