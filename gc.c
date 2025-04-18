@@ -2835,6 +2835,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_internal(RFILE(obj)->fptr->encs.ecopts);
             gc_mark_internal(RFILE(obj)->fptr->write_lock);
             gc_mark_internal(RFILE(obj)->fptr->timeout);
+            gc_mark_internal(RFILE(obj)->fptr->wakeup_mutex);
         }
         break;
 
