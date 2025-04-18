@@ -179,18 +179,18 @@ unless dry_run = pushref.empty?
 end
 git = Git.new(oldrev, newrev, branch)
 
-paths = git.updated_paths
-paths.select! {|l|
+updated_files = git.updated_paths
+files = updated_files.select {|l|
   /^\d/ !~ l and /\.bat\z/ !~ l and
   (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
    /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|)\z/ =~ File.extname(l))
 }
-files = paths.select {|n| File.file?(n) }
+files.select! {|n| File.file?(n) }
 files.reject! do |f|
   IGNORED_FILES.any? { |re| f.match(re) }
 end
 if files.empty?
-  puts "No files are a auto-style target:\n#{paths.join("\n")}"
+  puts "No files are an auto-style target:\n#{updated_files.join("\n")}"
   exit
 end
 
@@ -231,7 +231,7 @@ edited_files = files.select do |f|
   end
 end
 if edited_files.empty?
-  puts "All edited lines are formatted well:\n#{paths.join("\n")}"
+  puts "All edited lines are formatted well:\n#{files.join("\n")}"
 else
   msg = [('remove trailing spaces' if trailing),
          ('append newline at EOF' if eofnewline),
