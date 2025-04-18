@@ -12329,8 +12329,8 @@ rb_io_s_binread(int argc, VALUE *argv, VALUE io)
 {
     VALUE offset;
     struct foreach_arg arg;
+    enum rb_io_mode fmode = FMODE_READABLE|FMODE_BINMODE;
     enum {
-        fmode = FMODE_READABLE|FMODE_BINMODE,
         oflags = O_RDONLY
 #ifdef O_BINARY
                 |O_BINARY
