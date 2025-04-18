@@ -8,7 +8,6 @@ use std::env;
 use std::path::PathBuf;
 
 const SRC_ROOT_ENV: &str = "YJIT_SRC_ROOT_PATH";
-const JIT_NAME: &str = "BINDGEN_JIT_NAME";
 
 fn main() {
     // Path to repo is a required input for supporting running `configure`
@@ -21,9 +20,6 @@ fn main() {
         .as_ref(),
     );
     let src_root = PathBuf::from(src_root);
-
-    let jit_name = env::var(JIT_NAME).expect(JIT_NAME);
-    let c_file = format!("{}.c", jit_name);
 
     assert!(
         src_root.is_dir(),
@@ -50,7 +46,7 @@ fn main() {
         .header("vm_callinfo.h")
 
         // Our C file for glue code
-        .header(src_root.join(c_file).to_str().unwrap())
+        .header(src_root.join("yjit.c").to_str().unwrap())
 
         // Don't want to copy over C comment
         .generate_comments(false)
@@ -93,12 +89,6 @@ fn main() {
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
 
-        // For testing
-        .allowlist_function("ruby_init")
-        .allowlist_function("ruby_init_stack")
-        .allowlist_function("rb_funcallv")
-        .allowlist_function("rb_protect")
-
         // For crashing
         .allowlist_function("rb_bug")
 
@@ -116,7 +106,6 @@ fn main() {
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
         .allowlist_function("rb_obj_frozen_p")
-        .allowlist_function("rb_class_inherited_p")
 
         // From ruby/internal/encoding/encoding.h
         .allowlist_type("ruby_encoding_consts")
@@ -157,7 +146,6 @@ fn main() {
         // From include/ruby/internal/intern/class.h
         .allowlist_function("rb_class_attached_object")
         .allowlist_function("rb_singleton_class")
-        .allowlist_function("rb_define_class")
 
         // From include/ruby/internal/core/rclass.h
         .allowlist_function("rb_class_get_superclass")
@@ -171,7 +159,6 @@ fn main() {
         // VALUE variables for Ruby class objects
         // From include/ruby/internal/globals.h
         .allowlist_var("rb_cBasicObject")
-        .allowlist_var("rb_cObject")
         .allowlist_var("rb_cModule")
         .allowlist_var("rb_cNilClass")
         .allowlist_var("rb_cTrueClass")
@@ -186,7 +173,6 @@ fn main() {
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cClass")
-        .allowlist_var("rb_cISeq")
 
         // From include/ruby/internal/fl_type.h
         .allowlist_type("ruby_fl_type")
@@ -321,17 +307,16 @@ fn main() {
 
         // From yjit.c
         .allowlist_function("rb_object_shape_count")
-        .allowlist_function("rb_iseq_(get|set)_zjit_payload")
+        .allowlist_function("rb_iseq_(get|set)_yjit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
-        .allowlist_function("rb_(yjit|zjit)_reserve_addr_space")
-        .allowlist_function("rb_(yjit|zjit)_mark_writable")
-        .allowlist_function("rb_(yjit|zjit)_mark_executable")
-        .allowlist_function("rb_(yjit|zjit)_mark_unused")
-        .allowlist_function("rb_(yjit|zjit)_get_page_size")
-        .allowlist_function("rb_(yjit|zjit)_iseq_builtin_attrs")
-        .allowlist_function("rb_(yjit|zjit)_iseq_inspect")
-        .allowlist_function("rb_yjit_vm_insns_count")
+        .allowlist_function("rb_yjit_reserve_addr_space")
+        .allowlist_function("rb_yjit_mark_writable")
+        .allowlist_function("rb_yjit_mark_executable")
+        .allowlist_function("rb_yjit_mark_unused")
+        .allowlist_function("rb_yjit_get_page_size")
+        .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_yjit_iseq_inspect")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -359,7 +344,6 @@ fn main() {
         .allowlist_function("rb_yjit_invokeblock_sp_pops")
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_function("rb_yjit_str_concat_codepoint")
-        .allowlist_function("rb_zjit_print_exception")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
@@ -504,7 +488,7 @@ fn main() {
         .expect("Unable to generate bindings");
 
     let mut out_path: PathBuf = src_root;
-    out_path.push(jit_name);
+    out_path.push("yjit");
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
 
