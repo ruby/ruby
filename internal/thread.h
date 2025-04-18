@@ -55,6 +55,7 @@ VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
 void ruby_mn_threads_params(void);
 
+int rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout);
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 
 struct rb_io_close_wait_list {
@@ -73,8 +74,8 @@ RUBY_SYMBOL_EXPORT_BEGIN
 void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */
 
 /* Temporary.  This API will be removed (renamed). */
-VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
-VALUE rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events);
+VALUE rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, void *data1);
+VALUE rb_thread_io_blocking_call(struct rb_io *io, rb_blocking_function_t *func, void *data1, int events);
 
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */

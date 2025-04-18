@@ -1798,12 +1798,12 @@ rb_thread_mn_schedulable(VALUE thval)
 }
 
 VALUE
-rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events)
+rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events)
 {
     rb_execution_context_t *volatile ec = GET_EC();
     rb_thread_t *volatile th = rb_ec_thread_ptr(ec);
 
-    RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
+    RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), io->fd, events);
 
     struct waiting_fd waiting_fd;
     volatile VALUE val = Qundef; /* shouldn't be used */
@@ -1811,6 +1811,8 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     enum ruby_tag_type state;
     volatile bool prev_mn_schedulable = th->mn_schedulable;
     th->mn_schedulable = thread_io_mn_schedulable(th, events, NULL);
+
+    int fd = io->fd;
 
     // `errno` is only valid when there is an actual error - but we can't
     // extract that from the return value of `func` alone, so we clear any
@@ -1824,10 +1826,10 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             volatile enum ruby_tag_type saved_state = state; /* for BLOCKING_REGION */
           retry:
-            BLOCKING_REGION(waiting_fd.th, {
+            BLOCKING_REGION(th, {
                 val = func(data1);
                 saved_errno = errno;
-            }, ubf_select, waiting_fd.th, FALSE);
+            }, ubf_select, th, FALSE);
 
             th = rb_ec_thread_ptr(ec);
             if (events &&
@@ -1866,9 +1868,9 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 }
 
 VALUE
-rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd)
+rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, void *data1)
 {
-    return rb_thread_io_blocking_call(func, data1, fd, 0);
+    return rb_thread_io_blocking_call(io, func, data1, 0);
 }
 
 /*
@@ -4398,8 +4400,8 @@ wait_for_single_fd_blocking_region(rb_thread_t *th, struct pollfd *fds, nfds_t n
 /*
  * returns a mask of events
  */
-int
-rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+static int
+thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     struct pollfd fds[1] = {{
         .fd = fd,
@@ -4533,15 +4535,14 @@ init_set_fd(int fd, rb_fdset_t *fds)
     return fds;
 }
 
-int
-rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+static int
+thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 {
     rb_fdset_t rfds, wfds, efds;
     struct select_args args;
     int r;
     VALUE ptr = (VALUE)&args;
-    rb_execution_context_t *ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_thread_t *th = GET_THREAD();
 
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
@@ -4557,6 +4558,18 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     return r;
 }
 #endif /* ! USE_POLL */
+
+int
+rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
+{
+    return thread_io_wait(NULL, fd, events, timeout);
+}
+
+int
+rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout)
+{
+    return thread_io_wait(io, io->fd, events, timeout);
+}
 
 /*
  * for GC

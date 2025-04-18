@@ -2625,11 +2625,11 @@ io_blocking_fchmod(void *ptr)
 }
 
 static int
-rb_fchmod(int fd, mode_t mode)
+rb_fchmod(struct rb_io* io, mode_t mode)
 {
     (void)rb_chmod; /* suppress unused-function warning when HAVE_FCHMOD */
-    struct nogvl_fchmod_data data = {.fd = fd, .mode = mode};
-    return (int)rb_thread_io_blocking_region(io_blocking_fchmod, &data, fd);
+    struct nogvl_fchmod_data data = {.fd = io->fd, .mode = mode};
+    return (int)rb_thread_io_blocking_region(io, io_blocking_fchmod, &data);
 }
 #endif
 
@@ -2659,7 +2659,7 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (rb_fchmod(fptr->fd, mode) == -1) {
+    if (rb_fchmod(fptr, mode) == -1) {
         if (HAVE_FCHMOD || errno != ENOSYS)
             rb_sys_fail_path(fptr->pathv);
     }
