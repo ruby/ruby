@@ -894,7 +894,7 @@ void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *o
  */
 ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_readable"))
 /**
  * Blocks until the passed file descriptor gets readable.
  *
@@ -906,7 +906,7 @@ ssize_t rb_io_bufwrite(VALUE io, const void *buf, size_t size);
  */
 int rb_io_wait_readable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_maybe_wait_writable"))
 /**
  * Blocks until the passed file descriptor gets writable.
  *
@@ -917,7 +917,7 @@ int rb_io_wait_readable(int fd);
  */
 int rb_io_wait_writable(int fd);
 
-//RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
+RBIMPL_ATTR_DEPRECATED(("use rb_io_wait"))
 /**
  * Blocks until the passed file descriptor is ready for the passed events.
  *
