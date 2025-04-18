@@ -501,18 +501,13 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #define Kmax 15
 
 struct Bigint {
-    int k, maxwds, sign, wds;
+    int k, sign, wds;
     ULong x[1];
 };
 
 typedef struct Bigint Bigint;
 
 static inline int MAXWDS(Bigint *b) {
-    RUBY_ASSERT_ALWAYS(b->maxwds == (1 << b->k));
-    if (b->maxwds != (1 << b->k)) {
-        rb_bug("wtf");
-    }
-    //return b->maxwds;
     return (1 << b->k);
 }
 
@@ -525,7 +520,6 @@ Balloc(int k)
     x = 1 << k;
     rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(ULong));
     rv->k = k;
-    rv->maxwds = x;
     rv->sign = rv->wds = 0;
     return rv;
 }
@@ -536,7 +530,7 @@ Bfree(Bigint *v)
     FREE(v);
 }
 
-// Copy everything except k and maxwds
+// Copy everything except k
 static void Bcopy(Bigint *dst, Bigint *src) {
     dst->sign = src->sign;
     dst->wds = src->wds;
