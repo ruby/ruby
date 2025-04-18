@@ -255,7 +255,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
-        Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
+        Insn::SendWithoutBlockDirect { cme, cd, call_info, state, .. } if unsafe { get_cme_def_type(*cme) } == VM_METHOD_TYPE_CFUNC =>
+            // TODO(max): Make sends to cfunc faster
+            gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
+        Insn::SendWithoutBlockDirect { cme, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -472,7 +475,7 @@ fn gen_send_without_block_direct(
     cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
-    iseq: IseqPtr,
+    cme: *const rb_callable_method_entry_t,
     recv: Opnd,
     args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
@@ -493,7 +496,13 @@ fn gen_send_without_block_direct(
     // Make a method call. The target address will be rewritten once compiled.
     let branch = Branch::new();
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
-    jit.branch_iseqs.push((branch.clone(), iseq));
+    let def_type = unsafe { get_cme_def_type(cme) };
+    if def_type == VM_METHOD_TYPE_ISEQ {
+        let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+        jit.branch_iseqs.push((branch.clone(), iseq));
+    } else {
+        todo!("SendWithoutBlockDirect on non-ISEQ CME");
+    }
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
     Some(asm.ccall_with_branch(dummy_ptr, c_args, &branch))
