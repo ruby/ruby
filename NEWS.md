@@ -27,7 +27,7 @@ Note: We're only listing outstanding class updates.
 
 * String
 
-    * Update Unicode to Version 15.1.0 and Emoji Version 15.1. [[Feature #19908]]
+    * Update Unicode to Version 16.0.0 and Emoji Version 16.0. [[Feature #19908]][[Feature #20724]]
         (also applies to Regexp)
 
 ## Stdlib updates
@@ -95,5 +95,6 @@ The following bundled gems are updated.
 ## JIT
 
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
+[Feature #19908]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
