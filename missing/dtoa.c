@@ -522,17 +522,25 @@ static inline int MAXWDS(Bigint *b) {
 #define STACK_BIGINT_BUF_SIZE (STACK_BIGINT_SIZE * STACK_BIGINT_COUNT)
 
 struct dtoa_state {
+    // a bitmap of available bignums
     unsigned char available;
+
+    // memory buffer to store temporary bignums
     char buf[STACK_BIGINT_BUF_SIZE];
 };
 
-#define DTOA_STATE_INIT  struct dtoa_state _dtoa_state, *dtoa_state = &_dtoa_state; dtoa_state_init(dtoa_state);
+#define DTOA_STATE_INIT(allow_stack)  struct dtoa_state _dtoa_state, *dtoa_state = &_dtoa_state; dtoa_state_init(dtoa_state, allow_stack);
 #define DTOA_STATE_SIG   struct dtoa_state *dtoa_state
 #define DTOA_STATE_CALL  (dtoa_state)
 
 static void
-dtoa_state_init(DTOA_STATE_SIG) {
-    dtoa_state->available = (1 << (STACK_BIGINT_COUNT)) - 1;
+dtoa_state_init(DTOA_STATE_SIG, int allow_stack) {
+    if (allow_stack) {
+        dtoa_state->available = (1 << (STACK_BIGINT_COUNT)) - 1;
+    }
+    else {
+        dtoa_state->available = 0;
+    }
 }
 
 #include "internal/bits.h"
@@ -1463,7 +1471,7 @@ strtod(const char *s00, char **se)
     const char *s2;
 #endif
 
-    DTOA_STATE_INIT;
+    DTOA_STATE_INIT(1);
 
     errno = 0;
     sign = nz0 = nz = 0;
@@ -2641,7 +2649,7 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
     int inexact, oldinexact;
 #endif
 
-    DTOA_STATE_INIT;
+    DTOA_STATE_INIT(1);
 
     dval(d) = d_;
 
@@ -3405,10 +3413,7 @@ hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rv
 }
 
 void ruby_init_dtoa(void) {
-    DTOA_STATE_INIT;
-
-    // HACK: Forbid stack allocation
-    dtoa_state->available = 0;
+    DTOA_STATE_INIT(0);
 
     Bigint *p5 = i2b(DTOA_STATE_CALL, 625);
     p5s_static[0] = p5;
