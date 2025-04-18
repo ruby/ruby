@@ -5114,11 +5114,42 @@ enum_compact(VALUE obj)
  *
  * === #size
  *
- * Returns the size of elements. The size is defined as the number of iterations
- * the #each method would perform over the elements.
- * If #each method won't finish and its elements are Numeric, the size is +Infinite+.
- * If #each method won't finish and its elements are not Numeric, the size is +nil+.
- * If #each method don't work fine, raise TypeError.
+ * \Enumerator has #size method.
+ * It uses the size function argument for +Enumerator.new+.
+ * It should returns the number of iterations (number of #each method yields).
+ * The result is integer or +Float::INFINITY+.
+ * However it may also return nil when it is difficult to determine the result.
+ *
+ * Examples:
+ *
+ *   ["a", "b", "c"].each.size #=> 3
+ *   {a: "x", b: "y", c: "z"}.each.size #=> 3
+ *   (0..20).to_a.permutation.size #=> 51090942171709440000
+ *   loop.size #=> Float::INFINITY
+ *   (1..100).drop_while.size #=> nil  # the size depends on the block values
+ *   File.open("/etc/resolv.conf").each.size #=> nil # not computable without actually read the file.
+ *
+ * The behavior of #size of Range-based enumerator depends on the #begin element.
+
+ * * If the #begin element is an integer, #size methd returns integer or +Float::INFINITY+.
+ * * If the #begin element is an object with #succ method except integer, #size methd returns nil.
+ *   (It is too slow to compute the size by calling #succ repeatedly)
+ * * If the #begin element is an object without #succ method, #size method raises TypeError.
+ *
+ * Examples:
+ *
+ *   (10..42).each.size #=> 33
+ *   (10..42.9).each.size #=> 33 (#end element can be numeric other than integer)
+ *   (10..).each.size #=> Float::INFINITY
+ *   ("a".."z").each.size #=> nil
+ *   ("a"..).each.size #=> nil
+ *   (1.0..9.0).each.size # raises TypeError (There is no Float#succ)
+ *   (..10).each.size # raises TypeError (beginless range has nil as #begin element)
+ *
+ * \Enumerable classes may have #size method.
+ * It returns the result same as Enumerator#size in most cases: Array, Hash.
+ * Some classes have no #size method: IO, Dir.
+ * (Note that File#size is not related to File#each.  It returns nubmer of bytes instead of number of lines.)
  *
  */
 
