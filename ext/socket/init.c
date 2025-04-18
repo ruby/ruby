@@ -449,6 +449,9 @@ rsock_socket0(int domain, int type, int proto)
     rb_fd_fix_cloexec(result);
 
 #ifndef SOCK_NONBLOCK
+#ifdef _WIN32
+    if( type != SOCK_DGRAM )
+#endif
     rsock_make_fd_nonblock(result);
 #endif
 
@@ -612,10 +615,6 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
 void
 rsock_make_fd_nonblock(int fd)
 {
-#ifdef _WIN32
-    return;
-#endif
-
     int flags;
 #ifdef F_GETFL
     flags = fcntl(fd, F_GETFL);
