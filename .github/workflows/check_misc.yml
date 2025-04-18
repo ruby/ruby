@@ -34,6 +34,9 @@ jobs:
           set -x
           ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$PUSH_REF"
         env:
+          EMAIL: svn-admin@ruby-lang.org
+          GIT_AUTHOR_NAME: git
+          GIT_COMMITTER_NAME: git
           GITHUB_OLD_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.base.sha || github.event.before }}
           GITHUB_NEW_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.merge_commit_sha || github.event.after }}
           PUSH_REF: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && github.ref || '' }}
