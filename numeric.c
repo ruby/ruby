@@ -990,17 +990,15 @@ num_negative_p(VALUE num)
 VALUE
 rb_float_new_in_heap(double d)
 {
+    return rb_float_new_from_ptr(&d);
+}
+
+VALUE
+rb_float_new_from_ptr(const double *d)
+{
     NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0), sizeof(struct RFloat), 0);
 
-#if SIZEOF_DOUBLE <= SIZEOF_VALUE
-    flt->float_value = d;
-#else
-    union {
-        double d;
-        rb_float_value_type v;
-    } u = {d};
-    flt->float_value = u.v;
-#endif
+    memcpy(&flt->float_value, d, sizeof(*d));
     OBJ_FREEZE((VALUE)flt);
     return (VALUE)flt;
 }
