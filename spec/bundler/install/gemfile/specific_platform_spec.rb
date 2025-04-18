@@ -367,12 +367,12 @@ RSpec.describe "bundle install with specific platforms" do
       simulate_platform "x86_64-darwin-15" do
         setup_multiplatform_gem
         install_gemfile(google_protobuf)
-        bundle "lock --add-platform=x64-mingw32"
+        bundle "lock --add-platform=x64-mingw-ucrt"
 
-        expect(the_bundle.locked_platforms).to include("x64-mingw32", "universal-darwin")
+        expect(the_bundle.locked_platforms).to include("x64-mingw-ucrt", "universal-darwin")
         expect(the_bundle.locked_gems.specs.map(&:full_name)).to include(*%w[
           google-protobuf-3.0.0.alpha.5.0.5.1-universal-darwin
-          google-protobuf-3.0.0.alpha.5.0.5.1-x64-mingw32
+          google-protobuf-3.0.0.alpha.5.0.5.1-x64-mingw-ucrt
         ])
       end
     end
@@ -1328,7 +1328,7 @@ RSpec.describe "bundle install with specific platforms" do
           s.platform = "arm-linux"
         end
         build_gem "nokogiri", "1.14.0" do |s|
-          s.platform = "x64-mingw32"
+          s.platform = "x64-mingw-ucrt"
         end
         build_gem "nokogiri", "1.14.0" do |s|
           s.platform = "java"
@@ -1823,11 +1823,11 @@ RSpec.describe "bundle install with specific platforms" do
     build_repo2 do
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1")
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x64-mingw32" }
+      build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "x64-mingw-ucrt" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5.1") {|s| s.platform = "universal-darwin" }
 
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x86_64-linux" }
-      build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x64-mingw32" }
+      build_gem("google-protobuf", "3.0.0.alpha.5.0.5") {|s| s.platform = "x64-mingw-ucrt" }
       build_gem("google-protobuf", "3.0.0.alpha.5.0.5")
 
       build_gem("google-protobuf", "3.0.0.alpha.5.0.4") {|s| s.platform = "universal-darwin" }

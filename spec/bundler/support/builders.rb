@@ -111,10 +111,6 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw32"
-        end
-
-        build_gem "platform_specific" do |s|
           s.platform = "x64-mingw-ucrt"
         end
 

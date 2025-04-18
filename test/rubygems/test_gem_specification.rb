@@ -1029,7 +1029,7 @@ dependencies: []
 
     gem = "mingw"
     v   = "1.1.1"
-    platforms = ["x86-mingw32", "x64-mingw32"]
+    platforms = ["x86-mingw32", "x64-mingw-ucrt"]
 
     # create specs
     platforms.each do |plat|
