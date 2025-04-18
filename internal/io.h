@@ -13,10 +13,22 @@
 #define HAVE_RB_IO_T
 struct rb_io;
 
-#include "ruby/io.h"            /* for rb_io_t */
+#include "ruby/io.h"
+
+#include "vm_core.h"
+#include "ccan/list/list.h"
 
 #define IO_WITHOUT_GVL(func, arg) rb_nogvl(func, arg, RUBY_UBF_IO, 0, RB_NOGVL_OFFLOAD_SAFE)
 #define IO_WITHOUT_GVL_INT(func, arg) (int)(VALUE)IO_WITHOUT_GVL(func, arg)
+
+// Represents an in-flight blocking operation:
+struct rb_io_blocking_operation {
+    // The linked list data structure.
+    struct ccan_list_node list;
+
+    // The execution context of the blocking operation:
+    rb_execution_context_t *ec;
+};
 
 /** Ruby's IO, metadata and buffers. */
 struct rb_io {
@@ -111,6 +123,15 @@ struct rb_io {
      * The timeout associated with this IO when performing blocking operations.
      */
     VALUE timeout;
+
+    /**
+     * Threads that are performing a blocking operation without the GVL using
+     * this IO. On calling IO#close, these threads will be interrupted so that
+     * the operation can be cancelled.
+     */
+    struct ccan_list_head blocking_operations;
+    rb_execution_context_t *closing_ec;
+    VALUE wakeup_mutex;
 };
 
 /* io.c */
@@ -125,7 +146,7 @@ VALUE rb_io_prep_stdin(void);
 VALUE rb_io_prep_stdout(void);
 VALUE rb_io_prep_stderr(void);
 
-int rb_io_fptr_finalize(struct rb_io *fptr);
+int rb_io_notify_close(struct rb_io *fptr);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */
