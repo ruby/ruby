@@ -501,8 +501,8 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #define Kmax 15
 
 struct Bigint {
-    unsigned char k;
     unsigned short wds;
+    unsigned char k;
     unsigned char sign : 1;
     ULong x[1];
 };
