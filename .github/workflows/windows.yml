@@ -138,6 +138,8 @@ jobs:
       - name: Install libraries with vcpkg
         run: |
           vcpkg install
+          dir
+          dir vcpkg_installed
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
@@ -173,7 +175,12 @@ jobs:
         shell: pwsh
         if: ${{ matrix.os == '11-arm' }}
 
-      - run: nmake
+      - run: |
+          nmake
+          type ext/openssl/mkmf.log
+          type ext/psych/mkmf.log
+          type ext/zlib/mkmf.log
+          type .bundle/gems/fiddle-1.1.6/ext/fiddle/mkmf.log
 
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
