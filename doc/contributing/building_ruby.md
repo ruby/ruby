@@ -248,6 +248,16 @@ following make targets:
 * `make lldb-ruby`: Runs `test.rb` using Ruby in lldb
 * `make gdb-ruby`: Runs `test.rb` using Ruby in gdb
 
+For VS Code users, you can set up editor-based debugging experience by running:
+
+```shell
+cp -r misc/.vscode .vscode
+```
+
+This will add launch configurations for debugging Ruby itself by running `test.rb` with `lldb`.
+
+**Note**: if you build Ruby under the `./build` folder, you'll need to update `.vscode/launch.json`'s program entry accordingly to: `"${workspaceFolder}/build/ruby"`
+
 ### Compiling for Debugging
 
 You should configure Ruby without optimization and other flags that may
