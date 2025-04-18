@@ -374,6 +374,69 @@ class TestCall < Test::Unit::TestCase
     assert_equal({splat_modified: false}, b)
   end
 
+  UNNECESSARY_POS_SPLAT_MESSAGE = "This method call implicitly allocates a potentially " \
+    "unnecessary array for the positional splat, because a keyword, keyword splat, or " \
+    "block pass expression could cause an evaluation order issue if an array is not " \
+    "allocated for the positional splat\. You can avoid this allocation by assigning " \
+    "the related keyword, keyword splat, or block pass expression to a local variable " \
+    "and using that local variable."
+  def test_unnecessary_positional_splat_alloc_due_to_kw_warning
+    assert_in_out_err([], <<-INPUT, %w(), Regexp.new(UNNECESSARY_POS_SPLAT_MESSAGE))
+      $VERBOSE = false
+      Warning[:performance] = true
+      eval(<<-RUBY)
+        def self.kw = {}
+        def self.x(*, **) = nil
+        a = []
+        x(*a, kw:)
+      RUBY
+    INPUT
+  end
+
+  def test_unnecessary_positional_splat_alloc_due_to_kw_splat_warning
+    assert_in_out_err([], <<-INPUT, %w(), Regexp.new(UNNECESSARY_POS_SPLAT_MESSAGE))
+      $VERBOSE = false
+      Warning[:performance] = true
+      eval(<<-RUBY)
+        def self.kw = {}
+        def self.x(*, **) = nil
+        a = []
+        x(*a, **kw)
+      RUBY
+    INPUT
+  end
+
+  def test_unnecessary_positional_splat_alloc_due_to_block_warning
+    assert_in_out_err([], <<-INPUT, %w(), Regexp.new(UNNECESSARY_POS_SPLAT_MESSAGE))
+      $VERBOSE = false
+      Warning[:performance] = true
+      eval(<<-RUBY)
+        def self.kw = {}
+        def self.x(*, **) = nil
+        a = []
+        x(*a, &kw)
+      RUBY
+    INPUT
+  end
+
+  def test_unnecessary_keyword_splat_alloc_due_to_block_warning
+    message = "This method call implicitly allocates a potentially " \
+        "unnecessary hash for the keyword splat, because the block pass expression could " \
+        "cause an evaluation order issue if a hash is not allocated for the keyword splat. " \
+        "You can avoid this allocation by assigning the block pass expression to a local " \
+        "variable, and using that local variable."
+    assert_in_out_err([], <<-INPUT, %w(), Regexp.new(message));
+      $VERBOSE = false
+      Warning[:performance] = true
+      eval(<<-RUBY)
+        def self.kw = {}
+        def self.x(*, **) = nil
+        h = {}
+        x(**kw, &kw)
+      RUBY
+    INPUT
+  end
+
   def test_anon_splat
     r2kh = Hash.ruby2_keywords_hash(kw: 2)
     r2kea = [r2kh]
