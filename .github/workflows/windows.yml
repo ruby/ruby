@@ -158,6 +158,20 @@ jobs:
       # But not for this Visual Studio workflow. So here we extract gems before building.
       - run: nmake extract-gems
 
+      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
+      - run: |
+          Set-Content -Path "revision.h" -Value @"
+            #define RUBY_REVISION "8aedb979da"
+            #define RUBY_FULL_REVISION "8aedb979da4090116f4fc5a6497f139fd0038881"
+            #define RUBY_BRANCH_NAME "win-arm"
+            #define RUBY_RELEASE_DATETIME "2025-04-16T23:18:54Z"
+            #define RUBY_RELEASE_YEAR 2025
+            #define RUBY_RELEASE_MONTH 4
+            #define RUBY_RELEASE_DAY 17
+          "@
+        shell: pwsh
+        if: ${{ matrix.os == '11-arm' }}
+
       - run: nmake
 
       - name: Set up Launchable
