@@ -38,6 +38,7 @@ jobs:
             test_task: check
           - os: 11-arm
             test_task: check
+            target: arm64
           - os: 2022
             vc: 2019
             vcvars: '10.0.22621.0 -vcvars_ver=14.2'
