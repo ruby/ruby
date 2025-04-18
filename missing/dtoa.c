@@ -503,7 +503,8 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 struct Bigint {
     unsigned short wds;
     unsigned char k;
-    unsigned char sign : 1;
+    unsigned int sign : 1;
+    unsigned int stackbuf_pos : 4;
     ULong x[1];
 };
 
@@ -513,21 +514,42 @@ static inline int MAXWDS(Bigint *b) {
     return (1 << b->k);
 }
 
+#define BIGINT_MEMSIZE(k) (sizeof(Bigint) + ((1 << k) - 1) * sizeof(ULong))
+
+#define STACK_BIGINT_COUNT 4
+#define STACK_BIGINT_K     2
+#define STACK_BIGINT_SIZE (BIGINT_MEMSIZE(STACK_BIGINT_K))
+#define STACK_BIGINT_BUF_SIZE (STACK_BIGINT_SIZE * STACK_BIGINT_COUNT)
+
 struct dtoa_state {
+    unsigned char available;
+    char buf[STACK_BIGINT_BUF_SIZE];
 };
 
-#define DTOA_STATE_INIT  struct dtoa_state __dtoa_state, *_dtoa_state = &__dtoa_state;
-#define DTOA_STATE_SIG   struct dtoa_state *_dtoa_state
-#define DTOA_STATE_CALL  (_dtoa_state)
+#define DTOA_STATE_INIT  struct dtoa_state _dtoa_state, *dtoa_state = &_dtoa_state; dtoa_state_init(dtoa_state);
+#define DTOA_STATE_SIG   struct dtoa_state *dtoa_state
+#define DTOA_STATE_CALL  (dtoa_state)
+
+static void
+dtoa_state_init(DTOA_STATE_SIG) {
+    dtoa_state->available = (1 << (STACK_BIGINT_COUNT)) - 1;
+}
+
+#include "internal/bits.h"
 
 static Bigint *
 Balloc(DTOA_STATE_SIG, int k)
 {
-    int x;
     Bigint *rv;
 
-    x = 1 << k;
-    rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(ULong));
+    if (dtoa_state->available && k <= STACK_BIGINT_K) {
+        int idx = ntz_int32(dtoa_state->available);
+        dtoa_state->available &= ~(1 << idx);
+        rv = (Bigint *)&dtoa_state->buf[idx * STACK_BIGINT_SIZE];
+    } else {
+        rv = (Bigint *)MALLOC(BIGINT_MEMSIZE(k));
+    }
+
     rv->k = k;
     rv->sign = rv->wds = 0;
     return rv;
@@ -536,7 +558,12 @@ Balloc(DTOA_STATE_SIG, int k)
 static void
 Bfree(DTOA_STATE_SIG, Bigint *v)
 {
-    FREE(v);
+    if ((uintptr_t)v >= (uintptr_t)dtoa_state->buf && (uintptr_t)v < ((uintptr_t)dtoa_state->buf + STACK_BIGINT_BUF_SIZE)) {
+        unsigned long idx = ((uintptr_t)v - (uintptr_t)dtoa_state->buf) / STACK_BIGINT_SIZE;
+        dtoa_state->available |= (1 << idx);
+    } else {
+        FREE(v);
+    }
 }
 
 // Copy everything except k
@@ -3379,6 +3406,9 @@ hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rv
 
 void ruby_init_dtoa(void) {
     DTOA_STATE_INIT;
+
+    // HACK: Forbid stack allocation
+    dtoa_state->available = 0;
 
     Bigint *p5 = i2b(DTOA_STATE_CALL, 625);
     p5s_static[0] = p5;
