@@ -16,8 +16,8 @@ describe "RbConfig::CONFIG['UNICODE_EMOJI_VERSION']" do
 
   # Caution: ruby_version_is means is_or_later
   ruby_version_is "3.5" do
-    it "is 15.1" do
-      RbConfig::CONFIG['UNICODE_EMOJI_VERSION'].should == "15.1"
+    it "is 16.0" do
+      RbConfig::CONFIG['UNICODE_EMOJI_VERSION'].should == "16.0"
     end
   end
 end

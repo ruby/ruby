@@ -85,6 +85,7 @@ Older versions may not support all of these.
 - <tt>\p{Ideographic}</tt>, <tt>\p{Ideo}</tt>
 - <tt>\p{Join_Control}</tt>, <tt>\p{Join_C}</tt>
 - <tt>\p{Logical_Order_Exception}</tt>, <tt>\p{LOE}</tt>
+- <tt>\p{Modifier_Combining_Mark}</tt>, <tt>\p{MCM}</tt>
 - <tt>\p{Noncharacter_Code_Point}</tt>, <tt>\p{NChar}</tt>
 - <tt>\p{Other_Alphabetic}</tt>, <tt>\p{OAlpha}</tt>
 - <tt>\p{Other_Default_Ignorable_Code_Point}</tt>, <tt>\p{ODI}</tt>
@@ -173,6 +174,7 @@ Older versions may not support all of these.
 - <tt>\p{Elbasan}</tt>, <tt>\p{Elba}</tt>
 - <tt>\p{Elymaic}</tt>, <tt>\p{Elym}</tt>
 - <tt>\p{Ethiopic}</tt>, <tt>\p{Ethi}</tt>
+- <tt>\p{Garay}</tt>, <tt>\p{Gara}</tt>
 - <tt>\p{Georgian}</tt>, <tt>\p{Geor}</tt>
 - <tt>\p{Glagolitic}</tt>, <tt>\p{Glag}</tt>
 - <tt>\p{Gothic}</tt>, <tt>\p{Goth}</tt>
@@ -181,6 +183,7 @@ Older versions may not support all of these.
 - <tt>\p{Gujarati}</tt>, <tt>\p{Gujr}</tt>
 - <tt>\p{Gunjala_Gondi}</tt>, <tt>\p{Gong}</tt>
 - <tt>\p{Gurmukhi}</tt>, <tt>\p{Guru}</tt>
+- <tt>\p{Gurung_Khema}</tt>, <tt>\p{Gukh}</tt>
 - <tt>\p{Han}</tt>, <tt>\p{Hani}</tt>
 - <tt>\p{Hangul}</tt>, <tt>\p{Hang}</tt>
 - <tt>\p{Hanifi_Rohingya}</tt>, <tt>\p{Rohg}</tt>
@@ -203,6 +206,7 @@ Older versions may not support all of these.
 - <tt>\p{Khmer}</tt>, <tt>\p{Khmr}</tt>
 - <tt>\p{Khojki}</tt>, <tt>\p{Khoj}</tt>
 - <tt>\p{Khudawadi}</tt>, <tt>\p{Sind}</tt>
+- <tt>\p{Kirat_Rai}</tt>, <tt>\p{Krai}</tt>
 - <tt>\p{Lao}</tt>, <tt>\p{Laoo}</tt>
 - <tt>\p{Latin}</tt>, <tt>\p{Latn}</tt>
 - <tt>\p{Lepcha}</tt>, <tt>\p{Lepc}</tt>
@@ -240,6 +244,7 @@ Older versions may not support all of these.
 - <tt>\p{Nyiakeng_Puachue_Hmong}</tt>, <tt>\p{Hmnp}</tt>
 - <tt>\p{Ogham}</tt>, <tt>\p{Ogam}</tt>
 - <tt>\p{Ol_Chiki}</tt>, <tt>\p{Olck}</tt>
+- <tt>\p{Ol_Onal}</tt>, <tt>\p{Onao}</tt>
 - <tt>\p{Old_Hungarian}</tt>, <tt>\p{Hung}</tt>
 - <tt>\p{Old_Italic}</tt>, <tt>\p{Ital}</tt>
 - <tt>\p{Old_North_Arabian}</tt>, <tt>\p{Narb}</tt>
@@ -271,6 +276,7 @@ Older versions may not support all of these.
 - <tt>\p{Sora_Sompeng}</tt>, <tt>\p{Sora}</tt>
 - <tt>\p{Soyombo}</tt>, <tt>\p{Soyo}</tt>
 - <tt>\p{Sundanese}</tt>, <tt>\p{Sund}</tt>
+- <tt>\p{Sunuwar}</tt>, <tt>\p{Sunu}</tt>
 - <tt>\p{Syloti_Nagri}</tt>, <tt>\p{Sylo}</tt>
 - <tt>\p{Syriac}</tt>, <tt>\p{Syrc}</tt>
 - <tt>\p{Tagalog}</tt>, <tt>\p{Tglg}</tt>
@@ -288,7 +294,9 @@ Older versions may not support all of these.
 - <tt>\p{Tibetan}</tt>, <tt>\p{Tibt}</tt>
 - <tt>\p{Tifinagh}</tt>, <tt>\p{Tfng}</tt>
 - <tt>\p{Tirhuta}</tt>, <tt>\p{Tirh}</tt>
+- <tt>\p{Todhri}</tt>, <tt>\p{Todr}</tt>
 - <tt>\p{Toto}</tt>
+- <tt>\p{Tulu_Tigalari}</tt>, <tt>\p{Tutg}</tt>
 - <tt>\p{Ugaritic}</tt>, <tt>\p{Ugar}</tt>
 - <tt>\p{Unknown}</tt>, <tt>\p{Zzzz}</tt>
 - <tt>\p{Vai}</tt>, <tt>\p{Vaii}</tt>
@@ -396,6 +404,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Early_Dynastic_Cuneiform}</tt>
 - <tt>\p{In_Egyptian_Hieroglyph_Format_Controls}</tt>
 - <tt>\p{In_Egyptian_Hieroglyphs}</tt>
+- <tt>\p{In_Egyptian_Hieroglyphs_Extended_A}</tt>
 - <tt>\p{In_Elbasan}</tt>
 - <tt>\p{In_Elymaic}</tt>
 - <tt>\p{In_Emoticons}</tt>
@@ -408,6 +417,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Ethiopic_Extended_A}</tt>
 - <tt>\p{In_Ethiopic_Extended_B}</tt>
 - <tt>\p{In_Ethiopic_Supplement}</tt>
+- <tt>\p{In_Garay}</tt>
 - <tt>\p{In_General_Punctuation}</tt>
 - <tt>\p{In_Geometric_Shapes}</tt>
 - <tt>\p{In_Geometric_Shapes_Extended}</tt>
@@ -423,6 +433,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Gujarati}</tt>
 - <tt>\p{In_Gunjala_Gondi}</tt>
 - <tt>\p{In_Gurmukhi}</tt>
+- <tt>\p{In_Gurung_Khema}</tt>
 - <tt>\p{In_Halfwidth_and_Fullwidth_Forms}</tt>
 - <tt>\p{In_Hangul_Compatibility_Jamo}</tt>
 - <tt>\p{In_Hangul_Jamo}</tt>
@@ -462,6 +473,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Khmer_Symbols}</tt>
 - <tt>\p{In_Khojki}</tt>
 - <tt>\p{In_Khudawadi}</tt>
+- <tt>\p{In_Kirat_Rai}</tt>
 - <tt>\p{In_Lao}</tt>
 - <tt>\p{In_Latin_1_Supplement}</tt>
 - <tt>\p{In_Latin_Extended_A}</tt>
@@ -517,6 +529,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Myanmar}</tt>
 - <tt>\p{In_Myanmar_Extended_A}</tt>
 - <tt>\p{In_Myanmar_Extended_B}</tt>
+- <tt>\p{In_Myanmar_Extended_C}</tt>
 - <tt>\p{In_NKo}</tt>
 - <tt>\p{In_Nabataean}</tt>
 - <tt>\p{In_Nag_Mundari}</tt>
@@ -529,6 +542,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Nyiakeng_Puachue_Hmong}</tt>
 - <tt>\p{In_Ogham}</tt>
 - <tt>\p{In_Ol_Chiki}</tt>
+- <tt>\p{In_Ol_Onal}</tt>
 - <tt>\p{In_Old_Hungarian}</tt>
 - <tt>\p{In_Old_Italic}</tt>
 - <tt>\p{In_Old_North_Arabian}</tt>
@@ -575,6 +589,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Specials}</tt>
 - <tt>\p{In_Sundanese}</tt>
 - <tt>\p{In_Sundanese_Supplement}</tt>
+- <tt>\p{In_Sunuwar}</tt>
 - <tt>\p{In_Superscripts_and_Subscripts}</tt>
 - <tt>\p{In_Supplemental_Arrows_A}</tt>
 - <tt>\p{In_Supplemental_Arrows_B}</tt>
@@ -588,6 +603,7 @@ Older versions may not support all of these.
 - <tt>\p{In_Syloti_Nagri}</tt>
 - <tt>\p{In_Symbols_and_Pictographs_Extended_A}</tt>
 - <tt>\p{In_Symbols_for_Legacy_Computing}</tt>
+- <tt>\p{In_Symbols_for_Legacy_Computing_Supplement}</tt>
 - <tt>\p{In_Syriac}</tt>
 - <tt>\p{In_Syriac_Supplement}</tt>
 - <tt>\p{In_Tagalog}</tt>
@@ -610,8 +626,10 @@ Older versions may not support all of these.
 - <tt>\p{In_Tibetan}</tt>
 - <tt>\p{In_Tifinagh}</tt>
 - <tt>\p{In_Tirhuta}</tt>
+- <tt>\p{In_Todhri}</tt>
 - <tt>\p{In_Toto}</tt>
 - <tt>\p{In_Transport_and_Map_Symbols}</tt>
+- <tt>\p{In_Tulu_Tigalari}</tt>
 - <tt>\p{In_Ugaritic}</tt>
 - <tt>\p{In_Unified_Canadian_Aboriginal_Syllabics}</tt>
 - <tt>\p{In_Unified_Canadian_Aboriginal_Syllabics_Extended}</tt>
@@ -666,6 +684,7 @@ Older versions may not support all of these.
 - <tt>\p{Age_14_0}</tt>
 - <tt>\p{Age_15_0}</tt>
 - <tt>\p{Age_15_1}</tt>
+- <tt>\p{Age_16_0}</tt>
 - <tt>\p{Age_1_1}</tt>
 - <tt>\p{Age_2_0}</tt>
 - <tt>\p{Age_2_1}</tt>
