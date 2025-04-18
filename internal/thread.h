@@ -13,6 +13,7 @@
 #include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
 
 struct rb_thread_struct;        /* in vm_core.h */
+struct rb_io;
 
 #define RB_VM_SAVE_MACHINE_CONTEXT(th)				\
     do {							\
@@ -58,14 +59,8 @@ void ruby_mn_threads_params(void);
 int rb_thread_io_wait(struct rb_io *io, int events, struct timeval * timeout);
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
 
-struct rb_io_close_wait_list {
-    struct ccan_list_head pending_fd_users;
-    VALUE closing_thread;
-    VALUE closing_fiber;
-    VALUE wakeup_mutex;
-};
-int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
-void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
+size_t rb_thread_io_close(struct rb_io *);
+void rb_thread_io_close_wait(struct rb_io *);
 
 void rb_ec_check_ints(struct rb_execution_context_struct *ec);
 
