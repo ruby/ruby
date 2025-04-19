@@ -2129,7 +2129,7 @@ static VALUE
 rb_class_alloc_m(VALUE klass)
 {
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
-    if (!rb_obj_respond_to(klass, rb_intern("allocate"), 1)) {
+    if (RCLASS_EXT(klass)->alloc_prohibited) {
         rb_raise(rb_eTypeError, "calling %"PRIsVALUE".allocate is prohibited",
                  klass);
     }
@@ -4552,7 +4552,8 @@ InitVM_Object(void)
     rb_define_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
     rb_define_alloc_func(rb_cModule, rb_module_s_alloc);
-    rb_undef_method(rb_singleton_class(rb_cModule), "allocate");
+    rb_prohibit_alloc(rb_cModule);
+
     rb_define_method(rb_cModule, "initialize", rb_mod_initialize, 0);
     rb_define_method(rb_cModule, "initialize_clone", rb_mod_initialize_clone, -1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1); /* in class.c */
