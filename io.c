@@ -5674,27 +5674,15 @@ rb_io_fptr_cleanup_all(rb_io_t *fptr)
     clear_codeconv(fptr);
 }
 
-void
-rb_io_fptr_finalize_internal(void *ptr)
-{
-    if (!ptr) return;
-    rb_io_fptr_cleanup_all(ptr);
-    free(ptr);
-}
-
-#undef rb_io_fptr_finalize
 int
-rb_io_fptr_finalize(rb_io_t *fptr)
+rb_io_fptr_finalize(struct rb_io *io)
 {
-    if (!fptr) {
-        return 0;
-    }
-    else {
-        rb_io_fptr_finalize_internal(fptr);
-        return 1;
-    }
+    if (!io) return 0;
+    rb_io_fptr_cleanup_all(io);
+    free(io);
+
+    return 1;
 }
-#define rb_io_fptr_finalize(fptr) rb_io_fptr_finalize_internal(fptr)
 
 size_t
 rb_io_memsize(const rb_io_t *fptr)
