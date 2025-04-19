@@ -420,7 +420,9 @@ struct fstr_update_arg {
     bool force_precompute_hash;
 };
 
-static VALUE build_fstring(VALUE str, struct fstr_update_arg *arg) {
+static VALUE
+build_fstring(VALUE str, struct fstr_update_arg *arg)
+{
     // Unless the string is empty or binary, its coderange has been precomputed.
     int coderange = ENC_CODERANGE(str);
 
@@ -537,7 +539,9 @@ struct fstring_table_struct {
     rb_atomic_t count; // TODO: pad to own cache line?
 };
 
-static void fstring_table_free(void *ptr) {
+static void
+fstring_table_free(void *ptr)
+{
     struct fstring_table_struct *table = ptr;
     xfree(table->entries);
 }
@@ -557,7 +561,8 @@ static const rb_data_type_t fstring_table_type = {
 static VALUE fstring_table_obj;
 
 static VALUE
-new_fstring_table(int capacity) {
+new_fstring_table(int capacity)
+{
     VALUE obj;
     struct fstring_table_struct *table;
     obj = TypedData_Make_Struct(0, struct fstring_table_struct, &fstring_table_type, table);
@@ -567,7 +572,9 @@ new_fstring_table(int capacity) {
     return obj;
 }
 
-void Init_fstring_table(void) {
+void
+Init_fstring_table(void)
+{
     fstring_table_obj = new_fstring_table(8192);
     rb_gc_register_address(&fstring_table_obj);
 }
