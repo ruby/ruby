@@ -10,6 +10,7 @@ use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
+use crate::options::get_option;
 
 /// Ephemeral code generation state
 struct JITState {
@@ -221,6 +222,10 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
                 return None;
             }
         }
+    }
+
+    if get_option!(dump_lir) {
+        println!("LIR:\nfn {}:\n{:?}", iseq_name(iseq), asm);
     }
 
     // Generate code if everything can be compiled
