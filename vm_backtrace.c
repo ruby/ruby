@@ -698,7 +698,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                         // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
-                        if (rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
+                        if (is_internal_location(cfp)) {
                             loc->iseq = NULL;
                             loc->pc = NULL;
                             cfunc_counter++;
