@@ -542,13 +542,20 @@ static void fstring_table_free(void *ptr) {
     xfree(table->entries);
 }
 
+static size_t
+fstring_table_size(const void *ptr)
+{
+    const struct fstring_table_struct *table = ptr;
+    return sizeof(struct fstring_table_struct) + sizeof(struct fstring_table_entry) * table->capacity;
+}
+
 // We declare a type for the table so that we can lean on Ruby's GC for deferred reclamation
 static const rb_data_type_t fstring_table_type = {
-    .wrap_struct_name = "fstring_table",
+    .wrap_struct_name = "VM/fstring_table",
     .function = {
         .dmark = NULL,
         .dfree = fstring_table_free,
-        .dsize = NULL,
+        .dsize = fstring_table_size,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -602,7 +609,9 @@ struct fstring_table_probe {
     int mask;
 };
 
-static int fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code) {
+static int
+fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code)
+{
     RUBY_ASSERT((table->capacity & (table->capacity - 1)) == 0);
     probe->d = 0;
     probe->mask = table->capacity - 1;
@@ -610,7 +619,9 @@ static int fstring_table_probe_start(struct fstring_table_probe *probe, struct f
     return probe->idx;
 }
 
-static int fstring_table_probe_next(struct fstring_table_probe *probe) {
+static int
+fstring_table_probe_next(struct fstring_table_probe *probe)
+{
     probe->d++;
     probe->idx = (probe->idx + probe->d) & probe->mask;
     return probe->idx;
@@ -619,7 +630,9 @@ static int fstring_table_probe_next(struct fstring_table_probe *probe) {
 
 #define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
 
-static void fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VALUE value) {
+static void
+fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VALUE value)
+{
     struct fstring_table_probe probe;
     int idx = fstring_table_probe_start(&probe, table, hash_code);
 
@@ -646,7 +659,9 @@ static void fstring_insert_on_resize(struct fstring_table_struct *table, VALUE h
 }
 
 // Rebuilds the table
-static void fstring_try_resize(VALUE old_table_obj) {
+static void
+fstring_try_resize(VALUE old_table_obj)
+{
     RB_VM_LOCK_ENTER();
 
     // Check if another thread has already resized
@@ -703,7 +718,9 @@ end:
     RB_VM_LOCK_LEAVE();
 }
 
-static VALUE fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg) {
+static VALUE
+fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg)
+{
     struct fstring_table_probe probe;
     bool inserting = false;
     int idx;
@@ -783,7 +800,9 @@ static VALUE fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_up
 
 
 // Removes an fstring from the table. Compares by identity
-static void fstring_delete(VALUE hash_code, VALUE value) {
+static void
+fstring_delete(VALUE hash_code, VALUE value)
+{
     // Delete is never called concurrently, so atomic operations are unnecessary
     VALUE table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
     RUBY_ASSERT_ALWAYS(table_obj);
@@ -842,7 +861,9 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     return result;
 }
 
-void rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg) {
+void
+rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
+{
     // Assume locking and barrier (which there is no assert for)
     ASSERT_vm_locking();
 
@@ -881,13 +902,17 @@ void rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_up
     }
 }
 
-bool rb_obj_is_fstring_table(VALUE obj) {
+bool
+rb_obj_is_fstring_table(VALUE obj)
+{
     ASSERT_vm_locking();
 
     return obj == fstring_table_obj;
 }
 
-void rb_gc_free_fstring(VALUE obj) {
+void
+rb_gc_free_fstring(VALUE obj)
+{
     // Assume locking and barrier (which there is no assert for)
     ASSERT_vm_locking();
 
