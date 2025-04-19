@@ -10219,6 +10219,18 @@ parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
     return comment;
 }
 
+static inline bool
+lex_eof_char(int c) {
+    switch (c) {
+        case '\0': // NUL or end of script
+        case '\004': // ^D
+        case '\032': // ^Z
+            return true;
+        default:
+            return false;
+    }
+}
+
 /**
  * Lex out embedded documentation, and return when we have either hit the end of
  * the file or the end of the embedded documentation. This calls the callback
@@ -10255,9 +10267,7 @@ lex_embdoc(pm_parser_t *parser) {
             (
                 (parser->current.end + 4 == parser->end) || // end of file
                 pm_char_is_whitespace(parser->current.end[4]) || // whitespace
-                (parser->current.end[4] == '\0') || // NUL or end of script
-                (parser->current.end[4] == '\004') || // ^D
-                (parser->current.end[4] == '\032') // ^Z
+                lex_eof_char(parser->current.end[4])
             )
         ) {
             const uint8_t *newline = next_newline(parser->current.end, parser->end - parser->current.end);
@@ -10617,6 +10627,64 @@ pm_lex_percent_delimiter(pm_parser_t *parser) {
     return *parser->current.end++;
 }
 
+static pm_token_type_t
+pm_parser_inline_comment(pm_parser_t *parser)
+{
+    int nest = 1;
+    const uint8_t *pcur = parser->current.end, *pend = parser->end;
+    while (pcur < pend) {
+        int c = (unsigned char)*pcur;
+        if (lex_eof_char(c)) break;
+        switch (c) {
+            case '(':
+                if (++pcur < pend && *pcur == '|') {
+                    ++pcur;
+                    if (nest >= INT_MAX) return PM_TOKEN_EOF;
+                    else ++nest;
+                }
+                break;
+            case '|':
+                if (++pcur < pend && *pcur == ')') {
+                    ++pcur;
+                    if (!--nest) {
+                        parser->current.end = pcur;
+                        return PM_TOKEN_COMMENT;
+                    }
+                }
+                break;
+            default:
+                pcur += parser->encoding->char_width(pcur, pend - pcur);
+                break;
+        }
+    }
+
+    parser->current.end = pcur;
+    pm_parser_err(parser, pcur, pcur, PM_ERR_COMMENT_TERM);
+    return PM_TOKEN_EOF;
+}
+
+static void
+lex_parse_comment(pm_parser_t *parser, pm_comment_t *comment, bool semantic_token_seen) {
+    pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
+
+    parser->current.type = PM_TOKEN_COMMENT;
+    parser_lex_callback(parser);
+
+    // Here, parse the comment to see if it's a magic comment
+    // and potentially change state on the parser.
+    if (!parser_lex_magic_comment(parser, semantic_token_seen) && (parser->current.start == parser->encoding_comment_start)) {
+        ptrdiff_t length = parser->current.end - parser->current.start;
+
+        // If we didn't find a magic comment within the first
+        // pass and we're at the start of the file, then we need
+        // to do another pass to potentially find other patterns
+        // for encoding comments.
+        if (length >= 10 && !parser->encoding_locked) {
+            parser_lex_magic_comment_encoding(parser);
+        }
+    }
+}
+
 /**
  * This is a convenience macro that will set the current token type, call the
  * lex callback, and then return from the parser_lex function.
@@ -10719,7 +10787,7 @@ parser_lex(pm_parser_t *parser) {
 
             // We'll check if we're at the end of the file. If we are, then we
             // need to return the EOF token.
-            if (parser->current.end >= parser->end) {
+            if (parser->current.end >= parser->end || lex_eof_char(*parser->current.end)) {
                 // If we hit EOF, but the EOF came immediately after a newline,
                 // set the start of the token to the newline.  This way any EOF
                 // errors will be reported as happening on that line rather than
@@ -10734,12 +10802,6 @@ parser_lex(pm_parser_t *parser) {
             // Finally, we'll check the current character to determine the next
             // token.
             switch (*parser->current.end++) {
-                case '\0':   // NUL or end of script
-                case '\004': // ^D
-                case '\032': // ^Z
-                    parser->current.end--;
-                    LEX(PM_TOKEN_EOF);
-
                 case '#': { // comments
                     const uint8_t *ending = next_newline(parser->current.end, parser->end - parser->current.end);
                     parser->current.end = ending == NULL ? parser->end : ending;
@@ -10748,26 +10810,8 @@ parser_lex(pm_parser_t *parser) {
                     // add it to the list of comments in the file and keep
                     // lexing.
                     pm_comment_t *comment = parser_comment(parser, PM_COMMENT_INLINE);
-                    pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
-
                     if (ending) parser->current.end++;
-                    parser->current.type = PM_TOKEN_COMMENT;
-                    parser_lex_callback(parser);
-
-                    // Here, parse the comment to see if it's a magic comment
-                    // and potentially change state on the parser.
-                    if (!parser_lex_magic_comment(parser, semantic_token_seen) && (parser->current.start == parser->encoding_comment_start)) {
-                        ptrdiff_t length = parser->current.end - parser->current.start;
-
-                        // If we didn't find a magic comment within the first
-                        // pass and we're at the start of the file, then we need
-                        // to do another pass to potentially find other patterns
-                        // for encoding comments.
-                        if (length >= 10 && !parser->encoding_locked) {
-                            parser_lex_magic_comment_encoding(parser);
-                        }
-                    }
-
+                    lex_parse_comment(parser, comment, semantic_token_seen);
                     lexed_comment = true;
                 }
                 PRISM_FALLTHROUGH
@@ -10919,6 +10963,17 @@ parser_lex(pm_parser_t *parser) {
                 // (
                 case '(': {
                     pm_token_type_t type = PM_TOKEN_PARENTHESIS_LEFT;
+
+                    if (parser->current.end < parser->end && *parser->current.end == '|') {
+                        parser->current.end++;
+                        type = pm_parser_inline_comment(parser);
+                        if (type == PM_TOKEN_COMMENT) {
+                            pm_comment_t *comment = parser_comment(parser, PM_COMMENT_INLINE);
+                            lex_parse_comment(parser, comment, semantic_token_seen);
+                            goto lex_next_token;
+                        }
+                        LEX(type);
+                    }
 
                     if (space_seen && (lex_state_arg_p(parser) || parser->lex_state == (PM_LEX_STATE_END | PM_LEX_STATE_LABEL))) {
                         type = PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES;
