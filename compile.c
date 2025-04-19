@@ -6471,15 +6471,9 @@ keyword_node_single_splat_p(NODE *kwnode)
            RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next == NULL;
 }
 
-#define SPLATARRAY_FALSE 0
-#define SPLATARRAY_TRUE 1
-#define DUP_SINGLE_KW_SPLAT 2
-#define MAYBE_UNNECESSARY_ALLOC_SPLAT 4
-#define MAYBE_UNNECESSARY_ALLOC_KW_SPLAT 8
-
 static void
 compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
-                                     NODE *kwnode, unsigned int *flag_ptr, unsigned int dup_rest)
+                                     NODE *kwnode, unsigned int *flag_ptr)
 {
     *flag_ptr |= VM_CALL_KW_SPLAT_MUT;
     ADD_INSN1(args, argn, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
@@ -6487,16 +6481,19 @@ compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, c
     compile_hash(iseq, args, kwnode, TRUE, FALSE);
     ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
 
-    if (dup_rest & MAYBE_UNNECESSARY_ALLOC_KW_SPLAT) {
-        rb_category_warn(
-            RB_WARN_CATEGORY_PERFORMANCE,
-            "(Line: %d) This method call implicitly allocates a potentially unnecessary hash for the keyword splat, " \
-            "because the block pass expression could cause an evaluation order issue if a hash is not " \
-            "allocated for the keyword splat. You can avoid this allocation by assigning the block pass " \
-            "expression to a local variable, and using that local variable.",
-            nd_line(RNODE(kwnode)));
-    }
+    rb_category_warn(
+        RB_WARN_CATEGORY_PERFORMANCE,
+        "(Line: %d) This method call implicitly allocates a potentially unnecessary hash for the keyword splat, " \
+        "because the block pass expression could cause an evaluation order issue if a hash is not " \
+        "allocated for the keyword splat. You can avoid this allocation by assigning the block pass " \
+        "expression to a local variable, and using that local variable.",
+        nd_line(RNODE(kwnode)));
 }
+
+#define SPLATARRAY_FALSE 0
+#define SPLATARRAY_TRUE 1
+#define DUP_SINGLE_KW_SPLAT 2
+#define MAYBE_UNNECESSARY_ALLOC_SPLAT 4
 
 static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
@@ -6518,7 +6515,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             }
             else {
                 if (keyword_node_single_splat_p(kwnode) && (*dup_rest & DUP_SINGLE_KW_SPLAT)) {
-                    compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr, *dup_rest);
+                    compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
                 }
                 else {
                     compile_hash(iseq, args, kwnode, TRUE, FALSE);
@@ -6600,7 +6597,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                 compile_hash(iseq, args, kwnode, TRUE, FALSE);
             }
             else if (*dup_rest & DUP_SINGLE_KW_SPLAT) {
-                compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr, *dup_rest);
+                compile_single_keyword_splat_mutable(iseq, args, argn, kwnode, flag_ptr);
             }
             else {
                 compile_hash(iseq, args, kwnode, TRUE, FALSE);
@@ -6725,7 +6722,8 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 
         if (check_arg != argn && setup_args_dup_rest_p(RNODE_BLOCK_PASS(argn)->nd_body)) {
             // for block pass that may modify splatted argument, dup rest and kwrest if given
-            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT | MAYBE_UNNECESSARY_ALLOC_SPLAT | MAYBE_UNNECESSARY_ALLOC_KW_SPLAT;
+            if (dup_rest == SPLATARRAY_FALSE) dup_rest |= MAYBE_UNNECESSARY_ALLOC_SPLAT;
+            dup_rest |= SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
         }
     }
     initial_dup_rest = dup_rest;

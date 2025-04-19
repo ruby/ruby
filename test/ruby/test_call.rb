@@ -386,7 +386,7 @@ class TestCall < Test::Unit::TestCase
       Warning[:performance] = true
       eval(<<-RUBY)
         def self.kw = {}
-        def self.x(*, **) = nil
+        def self.x(...) = nil
         a = []
         x(*a, kw:)
       RUBY
@@ -399,7 +399,7 @@ class TestCall < Test::Unit::TestCase
       Warning[:performance] = true
       eval(<<-RUBY)
         def self.kw = {}
-        def self.x(*, **) = nil
+        def self.x(...) = nil
         a = []
         x(*a, **kw)
       RUBY
@@ -412,7 +412,7 @@ class TestCall < Test::Unit::TestCase
       Warning[:performance] = true
       eval(<<-RUBY)
         def self.kw = {}
-        def self.x(*, **) = nil
+        def self.x(...) = nil
         a = []
         x(*a, &kw)
       RUBY
@@ -430,7 +430,7 @@ class TestCall < Test::Unit::TestCase
       Warning[:performance] = true
       eval(<<-RUBY)
         def self.kw = {}
-        def self.x(*, **) = nil
+        def self.x(...) = nil
         h = {}
         x(**kw, &kw)
       RUBY

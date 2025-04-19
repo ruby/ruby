@@ -1565,7 +1565,6 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 #define SPLATARRAY_TRUE 1
 #define DUP_SINGLE_KW_SPLAT 2
 #define MAYBE_UNNECESSARY_ALLOC_SPLAT 4
-#define MAYBE_UNNECESSARY_ALLOC_KW_SPLAT 8
 
 // This is details. Users should call pm_setup_args() instead.
 static int
@@ -1616,15 +1615,13 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                         pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
                         PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
 
-                        if (*dup_rest & MAYBE_UNNECESSARY_ALLOC_KW_SPLAT) {
-                            rb_category_warn(
-                                RB_WARN_CATEGORY_PERFORMANCE,
-                                "(Line %d) This method call implicitly allocates a potentially unnecessary hash for the keyword splat, " \
-                                "because the block pass expression could cause an evaluation order issue if a hash is not " \
-                                "allocated for the keyword splat. You can avoid this allocation by assigning the block pass " \
-                                "expression to a local variable, and using that local variable.",
-                                node_location->line);
-                        }
+                        rb_category_warn(
+                            RB_WARN_CATEGORY_PERFORMANCE,
+                            "(Line %d) This method call implicitly allocates a potentially unnecessary hash for the keyword splat, " \
+                            "because the block pass expression could cause an evaluation order issue if a hash is not " \
+                            "allocated for the keyword splat. You can avoid this allocation by assigning the block pass " \
+                            "expression to a local variable, and using that local variable.",
+                            node_location->line);
                     }
                     else {
                         pm_compile_hash_elements(iseq, argument, elements, 0, Qundef, true, ret, scope_node);
@@ -1904,7 +1901,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
     size_t arguments_size;
 
     // Calls like foo(1, *f, **hash) that use splat and kwsplat could be
-    // eligible for eliding duping the rest array (dup_reset=false).
+    // eligible for eliding duping the rest array (dup_rest=false).
     if (
         arguments_node != NULL &&
         (arguments = &arguments_node->arguments, arguments_size = arguments->size) >= 2 &&
@@ -1951,7 +1948,13 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block,
         const pm_node_t *block_expr = ((const pm_block_argument_node_t *)block)->expression;
 
         if (block_expr && pm_setup_args_dup_rest_p(block_expr)) {
-            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT | MAYBE_UNNECESSARY_ALLOC_SPLAT | MAYBE_UNNECESSARY_ALLOC_KW_SPLAT;
+            if (dup_rest == SPLATARRAY_FALSE ||
+                    (arguments_node != NULL &&
+                    !PM_NODE_FLAG_P(arguments_node, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_MULTIPLE_SPLATS) &&
+                     PM_NODE_TYPE_P(arguments->nodes[arguments_size - 1], PM_SPLAT_NODE))) {
+                dup_rest |= MAYBE_UNNECESSARY_ALLOC_SPLAT;
+            }
+            dup_rest |= SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
             initial_dup_rest = dup_rest;
         }
 
