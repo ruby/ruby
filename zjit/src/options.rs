@@ -27,6 +27,9 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
+    /// Dump low-level IR
+    pub dump_lir: bool,
+
     /// Dump all compiled machine code.
     pub dump_disasm: bool,
 }
@@ -70,6 +73,7 @@ pub fn init_options() -> Options {
         debug: false,
         dump_hir_init: None,
         dump_hir_opt: None,
+        dump_lir: false,
         dump_disasm: false,
     }
 }
@@ -126,6 +130,8 @@ fn parse_option(options: &mut Options, str_ptr: *const std::os::raw::c_char) -> 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
+
+        ("dump-lir", "") => options.dump_lir = true,
 
         ("dump-disasm", "") => options.dump_disasm = true,
 
