@@ -430,7 +430,8 @@ ASSERT_thread_sched_locked(struct rb_thread_sched *sched, rb_thread_t *th)
 
 RBIMPL_ATTR_MAYBE_UNUSED()
 static unsigned int
-rb_ractor_serial(const rb_ractor_t *r) {
+rb_ractor_serial(const rb_ractor_t *r)
+{
     if (r) {
         return rb_ractor_id(r);
     }

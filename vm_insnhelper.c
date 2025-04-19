@@ -3228,7 +3228,8 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                         vm_ci_flag(ci),
                         vm_ci_argc(ci),
                         vm_ci_kwarg(ci));
-            } else {
+            }
+            else {
                 ci = forward_cd->caller_ci;
             }
             can_fastpath = false;
@@ -5568,7 +5569,8 @@ vm_concat_array(VALUE ary1, VALUE ary2st)
 
     if (NIL_P(tmp2)) {
         return rb_ary_push(tmp1, ary2);
-    } else {
+    }
+    else {
         return rb_ary_concat(tmp1, tmp2);
     }
 }
@@ -5585,7 +5587,8 @@ vm_concat_to_array(VALUE ary1, VALUE ary2st)
 
     if (NIL_P(tmp2)) {
         return rb_ary_push(ary1, ary2);
-    } else {
+    }
+    else {
         return rb_ary_concat(ary1, tmp2);
     }
 }

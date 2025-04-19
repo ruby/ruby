@@ -1065,7 +1065,8 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
     else if (f_eqeq_p(dat->real, f_negate(dat->imag))) {
         x = dat->imag;
         dir = 3;
-    } else {
+    }
+    else {
         dir = 0;
     }
 

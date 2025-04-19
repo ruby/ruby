@@ -1742,16 +1742,20 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 RB_GC_GUARD(name_obj);
 
                 pm_string_owned_init(scope_local, (uint8_t *) name_dup, length);
-            } else if (local == idMULT) {
+            }
+            else if (local == idMULT) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_POSITIONALS;
                 pm_string_constant_init(scope_local, FORWARDING_POSITIONALS_STR, 1);
-            } else if (local == idPow) {
+            }
+            else if (local == idPow) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_KEYWORDS;
                 pm_string_constant_init(scope_local, FORWARDING_KEYWORDS_STR, 1);
-            } else if (local == idAnd) {
+            }
+            else if (local == idAnd) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_BLOCK;
                 pm_string_constant_init(scope_local, FORWARDING_BLOCK_STR, 1);
-            } else if (local == idDot3) {
+            }
+            else if (local == idDot3) {
                 forwarding |= PM_OPTIONS_SCOPE_FORWARDING_ALL;
                 pm_string_constant_init(scope_local, FORWARDING_ALL_STR, 1);
             }

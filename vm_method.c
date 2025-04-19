@@ -361,7 +361,8 @@ vm_ci_hash_cmp(VALUE v1, VALUE v2)
                 return 1;
             }
         }
-    } else {
+    }
+    else {
         VM_ASSERT(ci2->kwarg == NULL); // implied by matching flags
     }
     return 0;
@@ -382,7 +383,8 @@ ci_lookup_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
         if (rb_objspace_garbage_object_p((VALUE)ci)) {
             *ret = (st_data_t)NULL;
             return ST_DELETE;
-        } else {
+        }
+        else {
             *ret = *key;
             return ST_STOP;
         }

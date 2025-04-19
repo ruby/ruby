@@ -875,7 +875,8 @@ native_thread_native_thread_id(rb_thread_t *th)
 #define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
 
 void
-rb_add_running_thread(rb_thread_t *th){
+rb_add_running_thread(rb_thread_t *th)
+{
     // do nothing
 }
 

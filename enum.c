@@ -324,7 +324,8 @@ enum_count(int argc, VALUE *argv, VALUE obj)
 
 NORETURN(static void found(VALUE i, VALUE memop));
 static void
-found(VALUE i, VALUE memop) {
+found(VALUE i, VALUE memop)
+{
     struct MEMO *memo = MEMO_CAST(memop);
     MEMO_V1_SET(memo, i);
     memo->u3.cnt = 1;

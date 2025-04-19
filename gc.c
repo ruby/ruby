@@ -990,7 +990,8 @@ rb_gc_obj_slot_size(VALUE obj)
 }
 
 static inline void
-gc_validate_pc(void) {
+gc_validate_pc(void)
+{
 #if RUBY_DEBUG
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp;

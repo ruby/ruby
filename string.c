@@ -594,14 +594,18 @@ struct fstring_table_probe {
     int mask;
 };
 
-static int fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code) {
+static int
+fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code)
+{
     RUBY_ASSERT((table->capacity & (table->capacity - 1)) == 0);
     probe->mask = table->capacity - 1;
     probe->idx = hash_code & probe->mask;
     return probe->idx;
 }
 
-static int fstring_table_probe_next(struct fstring_table_probe *probe) {
+static int
+fstring_table_probe_next(struct fstring_table_probe *probe)
+{
     probe->idx = (probe->idx + 1) & probe->mask;
     return probe->idx;
 }
@@ -769,22 +773,26 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
 
                 RB_GC_GUARD(table_obj);
                 return value;
-            } else {
+            }
+            else {
                 // Nothing was inserted
                 RUBY_ATOMIC_DEC(table->count); // we didn't end up inserting
 
                 // Another thread won the race, try again at the same location
                 continue;
             }
-        } else if (candidate == FSTRING_TABLE_TOMBSTONE) {
+        }
+        else if (candidate == FSTRING_TABLE_TOMBSTONE) {
             // Deleted entry, continue searching
-        } else if (candidate == FSTRING_TABLE_MOVED) {
+        }
+        else if (candidate == FSTRING_TABLE_MOVED) {
             // Wait
             RB_VM_LOCK_ENTER();
             RB_VM_LOCK_LEAVE();
 
             goto retry;
-        } else {
+        }
+        else {
             VALUE candidate_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
             if ((candidate_hash == hash_code || candidate_hash == 0) && !fstring_cmp(candidate, value)) {
                 // We've found a match
@@ -794,7 +802,8 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
                     RUBY_ATOMIC_VALUE_CAS(entry->str, candidate, FSTRING_TABLE_TOMBSTONE);
 
                     // Fall through and continue our search
-                } else {
+                }
+                else {
                     RB_GC_GUARD(table_obj);
                     return candidate;
                 }
@@ -828,7 +837,8 @@ fstring_delete(VALUE hash_code, VALUE value)
         if (candidate == FSTRING_TABLE_EMPTY) {
             // We didn't find our string to delete
             return;
-        } else if (candidate == value) {
+        }
+        else if (candidate == value) {
             // We found our string, replace it with a tombstone and increment the count
             entry->str = FSTRING_TABLE_TOMBSTONE;
             table->deleted_entries++;

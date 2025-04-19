@@ -1842,7 +1842,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
         return ret;
-    } else {
+    }
+    else {
         pm_parse_result_free(&result);
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);

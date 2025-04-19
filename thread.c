@@ -693,7 +693,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     if (state == TAG_NONE) {
         // This must be set AFTER doing all user-level code. At this point, the thread is effectively finished and calls to `Thread#join` will succeed.
         th->value = result;
-    } else {
+    }
+    else {
         errinfo = th->ec->errinfo;
 
         VALUE exc = rb_vm_make_jump_tag_but_local_jump(state, Qundef);
@@ -1726,7 +1727,8 @@ thread_io_wake_pending_closer(struct waiting_fd *wfd)
         rb_thread_t *th = rb_thread_ptr(wfd->busy->closing_thread);
         if (th->scheduler != Qnil) {
             rb_fiber_scheduler_unblock(th->scheduler, wfd->busy->closing_thread, wfd->busy->closing_fiber);
-        } else {
+        }
+        else {
             rb_thread_wakeup(wfd->busy->closing_thread);
         }
         rb_mutex_unlock(wfd->busy->wakeup_mutex);
