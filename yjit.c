@@ -1069,10 +1069,33 @@ rb_IMEMO_TYPE_P(VALUE imemo, enum imemo_type imemo_type)
     return IMEMO_TYPE_P(imemo, imemo_type);
 }
 
-bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+VALUE
+rb_yjit_constcache_value(const struct iseq_inline_constant_cache *ic)
 {
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+    return vm_icc_value(ic);
+}
+
+const ID *
+rb_yjit_constcache_segments(const struct iseq_inline_constant_cache *ic)
+{
+    return vm_icc_segments(ic);
+}
+
+const rb_cref_t *
+rb_yjit_constcache_cref(const struct iseq_inline_constant_cache *ic)
+{
+    return vm_icc_cref(ic);
+}
+
+bool
+rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache *ic)
+{
+    if (vm_icc_embed_p(ic->value)) {
+        return (vm_icc_embed_flags(ic) & CONST_CACHE_SHAREABLE) != 0;
+    }
+
+    struct iseq_inline_constant_cache_entry *entry = (struct iseq_inline_constant_cache_entry *)ic->value;
+    return (entry->flags & CONST_CACHE_SHAREABLE) != 0;
 }
 
 void
