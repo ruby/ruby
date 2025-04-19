@@ -125,6 +125,8 @@ VALUE rb_io_prep_stdin(void);
 VALUE rb_io_prep_stdout(void);
 VALUE rb_io_prep_stderr(void);
 
+int rb_io_fptr_finalize(struct rb_io *fptr);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* io.c (export) */
 void rb_maygvl_fd_fix_cloexec(int fd);
