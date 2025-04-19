@@ -6480,11 +6480,20 @@ compile_single_keyword_splat_mutable(rb_iseq_t *iseq, LINK_ANCHOR *const args, c
     ADD_INSN1(args, argn, newhash, INT2FIX(0));
     compile_hash(iseq, args, kwnode, TRUE, FALSE);
     ADD_SEND(args, argn, id_core_hash_merge_kwd, INT2FIX(2));
+
+    rb_category_warn(
+        RB_WARN_CATEGORY_PERFORMANCE,
+        "(Line: %d) This method call implicitly allocates a potentially unnecessary hash for the keyword splat, " \
+        "because the block pass expression could cause an evaluation order issue if a hash is not " \
+        "allocated for the keyword splat. You can avoid this allocation by assigning the block pass " \
+        "expression to a local variable, and using that local variable.",
+        nd_line(RNODE(kwnode)));
 }
 
 #define SPLATARRAY_FALSE 0
 #define SPLATARRAY_TRUE 1
 #define DUP_SINGLE_KW_SPLAT 2
+#define MAYBE_UNNECESSARY_ALLOC_SPLAT 4
 
 static int
 setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
@@ -6605,10 +6614,21 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 }
 
 static void
-setup_args_splat_mut(unsigned int *flag, int dup_rest, int initial_dup_rest)
+setup_args_splat_mut(unsigned int *flag, int dup_rest, int initial_dup_rest, const NODE *node)
 {
     if ((*flag & VM_CALL_ARGS_SPLAT) && dup_rest != initial_dup_rest) {
         *flag |= VM_CALL_ARGS_SPLAT_MUT;
+
+        if (dup_rest & MAYBE_UNNECESSARY_ALLOC_SPLAT) {
+            rb_category_warn(
+                RB_WARN_CATEGORY_PERFORMANCE,
+                "(Line %d) This method call implicitly allocates a potentially unnecessary array for the positional splat, " \
+                "because a keyword, keyword splat, or block pass expression could cause an evaluation order issue " \
+                "if an array is not allocated for the positional splat. You can avoid this allocation by assigning " \
+                "the related keyword, keyword splat, or block pass expression to a local variable and using that " \
+                "local variable.",
+                nd_line(RNODE(node)));
+        }
     }
 }
 
@@ -6680,14 +6700,14 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
                     while (node) {
                         NODE *key_node = RNODE_LIST(node)->nd_head;
                         if (key_node && setup_args_dup_rest_p(key_node)) {
-                            dup_rest = SPLATARRAY_TRUE;
+                            dup_rest = SPLATARRAY_TRUE | MAYBE_UNNECESSARY_ALLOC_SPLAT;
                             break;
                         }
 
                         node = RNODE_LIST(node)->nd_next;
                         NODE *value_node = RNODE_LIST(node)->nd_head;
                         if (setup_args_dup_rest_p(value_node)) {
-                            dup_rest = SPLATARRAY_TRUE;
+                            dup_rest = SPLATARRAY_TRUE | MAYBE_UNNECESSARY_ALLOC_SPLAT;
                             break;
                         }
 
@@ -6702,7 +6722,8 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
 
         if (check_arg != argn && setup_args_dup_rest_p(RNODE_BLOCK_PASS(argn)->nd_body)) {
             // for block pass that may modify splatted argument, dup rest and kwrest if given
-            dup_rest = SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
+            if (dup_rest == SPLATARRAY_FALSE) dup_rest |= MAYBE_UNNECESSARY_ALLOC_SPLAT;
+            dup_rest |= SPLATARRAY_TRUE | DUP_SINGLE_KW_SPLAT;
         }
     }
     initial_dup_rest = dup_rest;
@@ -6730,7 +6751,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             *flag |= VM_CALL_FORWARDING;
 
             ADD_GETLOCAL(args, argn, idx, get_lvar_level(iseq));
-            setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
+            setup_args_splat_mut(flag, dup_rest, initial_dup_rest, argn);
             return INT2FIX(argc);
         }
         else {
@@ -6754,7 +6775,7 @@ setup_args(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
     else {
         ret = INT2FIX(setup_args_core(iseq, args, argn, &dup_rest, flag, keywords));
     }
-    setup_args_splat_mut(flag, dup_rest, initial_dup_rest);
+    setup_args_splat_mut(flag, dup_rest, initial_dup_rest, argn);
     return ret;
 }
 
