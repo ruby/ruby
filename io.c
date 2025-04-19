@@ -225,7 +225,7 @@ static VALUE prep_io(int fd, enum rb_io_mode fmode, VALUE klass, const char *pat
 VALUE
 rb_io_blocking_region_wait(struct rb_io *io, rb_blocking_function_t *function, void *argument, enum rb_io_event events)
 {
-    return rb_thread_io_blocking_call(function, argument, io->fd, events);
+    return rb_thread_io_blocking_call(io, function, argument, events);
 }
 
 VALUE rb_io_blocking_region(struct rb_io *io, rb_blocking_function_t *function, void *argument)
@@ -1473,7 +1473,7 @@ rb_io_wait(VALUE io, VALUE events, VALUE timeout)
         tv = &tv_storage;
     }
 
-    int ready = rb_thread_wait_for_single_fd(fptr->fd, RB_NUM2INT(events), tv);
+    int ready = rb_thread_io_wait(fptr, RB_NUM2INT(events), tv);
 
     if (ready < 0) {
         rb_sys_fail(0);
