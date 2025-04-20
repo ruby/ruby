@@ -32,25 +32,6 @@ module OpenSSL
         }.call
       }
 
-      if defined?(OpenSSL::PKey::DH)
-        DH_ffdhe2048 = OpenSSL::PKey::DH.new <<-_end_of_pem_
------BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
-+8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a
-87VXE15/V8k1mE8McODmi3fipona8+/och3xWKE2rec1MKzKT0g6eXq8CrGCsyT7
-YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
-7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
-ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
------END DH PARAMETERS-----
-        _end_of_pem_
-        private_constant :DH_ffdhe2048
-
-        DEFAULT_TMP_DH_CALLBACK = lambda { |ctx, is_export, keylen| # :nodoc:
-          warn "using default DH parameters." if $VERBOSE
-          DH_ffdhe2048
-        }
-      end
-
       if !OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL")
         DEFAULT_PARAMS.merge!(
           min_version: OpenSSL::SSL::TLS1_VERSION,
@@ -457,7 +438,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       end
 
       def tmp_dh_callback
-        @context.tmp_dh_callback || OpenSSL::SSL::SSLContext::DEFAULT_TMP_DH_CALLBACK
+        @context.tmp_dh_callback
       end
 
       def session_new_cb

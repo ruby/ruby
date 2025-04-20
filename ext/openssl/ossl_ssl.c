@@ -47,7 +47,7 @@ static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
 	  id_i_session_id_context, id_i_session_get_cb, id_i_session_new_cb,
 	  id_i_session_remove_cb, id_i_npn_select_cb, id_i_npn_protocols,
 	  id_i_alpn_select_cb, id_i_alpn_protocols, id_i_servername_cb,
-	  id_i_verify_hostname, id_i_keylog_cb;
+	  id_i_verify_hostname, id_i_keylog_cb, id_i_tmp_dh_callback;
 static ID id_i_io, id_i_context, id_i_hostname;
 
 static int ossl_ssl_ex_ptr_idx;
@@ -90,6 +90,7 @@ ossl_sslctx_s_alloc(VALUE klass)
         ossl_raise(eSSLError, "SSL_CTX_new");
     }
     SSL_CTX_set_mode(ctx, mode);
+    SSL_CTX_set_dh_auto(ctx, 1);
     RTYPEDDATA_DATA(obj) = ctx;
     SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
 
@@ -703,7 +704,10 @@ ossl_sslctx_setup(VALUE self)
     GetSSLCTX(self, ctx);
 
 #if !defined(OPENSSL_NO_DH)
-    SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
+    if (!NIL_P(rb_attr_get(self, id_i_tmp_dh_callback))) {
+        SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
+        SSL_CTX_set_dh_auto(ctx, 0);
+    }
 #endif
 
 #if !defined(OPENSSL_IS_AWSLC) /* AWS-LC has no support for TLS 1.3 PHA. */
@@ -1177,6 +1181,9 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
     if (!SSL_CTX_set_tmp_dh(ctx, EVP_PKEY_get0_DH(pkey)))
         ossl_raise(eSSLError, "SSL_CTX_set_tmp_dh");
 #endif
+
+    // Turn off the "auto" DH parameters set by ossl_sslctx_s_alloc()
+    SSL_CTX_set_dh_auto(ctx, 0);
 
     return arg;
 }
@@ -3289,6 +3296,7 @@ Init_ossl_ssl(void)
     DefIVarID(servername_cb);
     DefIVarID(verify_hostname);
     DefIVarID(keylog_cb);
+    DefIVarID(tmp_dh_callback);
 
     DefIVarID(io);
     DefIVarID(context);

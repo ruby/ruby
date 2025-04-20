@@ -2129,11 +2129,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx.tmp_dh_callback = nil
     }
     start_server(ctx_proc: ctx_proc) do |port|
-      EnvUtil.suppress_warning { # uses default callback
-        assert_nothing_raised {
-          server_connect(port) { }
-        }
-      }
+      assert_nothing_raised { server_connect(port) { } }
     end
   end
 
