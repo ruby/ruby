@@ -853,6 +853,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
              * otherwise it can cause stack overflow again at the same
              * place. */
             if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
+            rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
