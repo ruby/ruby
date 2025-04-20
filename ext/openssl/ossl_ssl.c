@@ -430,8 +430,9 @@ ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 
     GetSSLCTX(arg, ctx);
     x509 = DupX509CertPtr(i);
-    if(!SSL_CTX_add_extra_chain_cert(ctx, x509)){
-	ossl_raise(eSSLError, NULL);
+    if (!SSL_CTX_add_extra_chain_cert(ctx, x509)) {
+        X509_free(x509);
+        ossl_raise(eSSLError, "SSL_CTX_add_extra_chain_cert");
     }
 
     return i;
