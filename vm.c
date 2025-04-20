@@ -2852,6 +2852,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             if (VM_FRAME_FINISHED_P(ec->cfp)) {
                 rb_vm_pop_frame(ec);
                 ec->errinfo = (VALUE)err;
+                rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
                 ec->tag = ec->tag->prev;
                 EC_JUMP_TAG(ec, state);
             }
