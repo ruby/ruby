@@ -219,5 +219,20 @@ describe "Module#const_added" do
 
       ScratchPad.recorded.should == [:const_added, :inherited]
     end
+
+    it "the superclass of a class assigned to a constant is set before const_added is called" do
+      ScratchPad.record []
+
+      parent = Class.new do
+        def self.const_added(name)
+          ScratchPad << name
+          ScratchPad << const_get(name).superclass
+        end
+      end
+
+      class parent::C < parent; end
+
+      ScratchPad.recorded.should == [:C, parent]
+    end
   end
 end
