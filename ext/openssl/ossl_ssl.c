@@ -36,8 +36,7 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_tmp_dh_callback,
-	  id_npn_protocols_encoded, id_each;
+static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -134,8 +133,6 @@ ossl_client_cert_cb(SSL *ssl, X509 **x509, EVP_PKEY **pkey)
 #if !defined(OPENSSL_NO_DH)
 struct tmp_dh_callback_args {
     VALUE ssl_obj;
-    ID id;
-    int type;
     int is_export;
     int keylength;
 };
@@ -144,48 +141,36 @@ static VALUE
 ossl_call_tmp_dh_callback(VALUE arg)
 {
     struct tmp_dh_callback_args *args = (struct tmp_dh_callback_args *)arg;
-    VALUE cb, dh;
-    EVP_PKEY *pkey;
+    VALUE ctx_obj, cb, obj;
+    const DH *dh;
 
-    cb = rb_funcall(args->ssl_obj, args->id, 0);
+    ctx_obj = rb_attr_get(args->ssl_obj, id_i_context);
+    cb = rb_attr_get(ctx_obj, id_i_tmp_dh_callback);
     if (NIL_P(cb))
-	return (VALUE)NULL;
-    dh = rb_funcall(cb, id_call, 3, args->ssl_obj, INT2NUM(args->is_export),
-		    INT2NUM(args->keylength));
-    pkey = GetPKeyPtr(dh);
-    if (EVP_PKEY_base_id(pkey) != args->type)
-	return (VALUE)NULL;
+        return (VALUE)NULL;
 
-    return (VALUE)pkey;
+    obj = rb_funcall(cb, id_call, 3, args->ssl_obj, INT2NUM(args->is_export),
+                     INT2NUM(args->keylength));
+    // TODO: We should riase if obj is not DH
+    dh = EVP_PKEY_get0_DH(GetPKeyPtr(obj));
+    if (!dh)
+        ossl_clear_error();
+
+    return (VALUE)dh;
 }
-#endif
 
-#if !defined(OPENSSL_NO_DH)
 static DH *
 ossl_tmp_dh_callback(SSL *ssl, int is_export, int keylength)
 {
-    VALUE rb_ssl;
-    EVP_PKEY *pkey;
-    struct tmp_dh_callback_args args;
     int state;
-
-    rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
-    args.ssl_obj = rb_ssl;
-    args.id = id_tmp_dh_callback;
-    args.is_export = is_export;
-    args.keylength = keylength;
-    args.type = EVP_PKEY_DH;
-
-    pkey = (EVP_PKEY *)rb_protect(ossl_call_tmp_dh_callback,
-				  (VALUE)&args, &state);
+    VALUE rb_ssl = (VALUE)SSL_get_ex_data(ssl, ossl_ssl_ex_ptr_idx);
+    struct tmp_dh_callback_args args = {rb_ssl, is_export, keylength};
+    VALUE ret = rb_protect(ossl_call_tmp_dh_callback, (VALUE)&args, &state);
     if (state) {
 	rb_ivar_set(rb_ssl, ID_callback_state, INT2NUM(state));
 	return NULL;
     }
-    if (!pkey)
-	return NULL;
-
-    return (DH *)EVP_PKEY_get0_DH(pkey);
+    return (DH *)ret;
 }
 #endif /* OPENSSL_NO_DH */
 
@@ -2872,6 +2857,23 @@ Init_ossl_ssl(void)
      */
     rb_attr(cSSLContext, rb_intern_const("client_cert_cb"), 1, 1, Qfalse);
 
+#ifndef OPENSSL_NO_DH
+    /*
+     * A callback invoked when DH parameters are required for ephemeral DH key
+     * exchange.
+     *
+     * The callback is invoked with the SSLSocket, a
+     * flag indicating the use of an export cipher and the keylength
+     * required.
+     *
+     * The callback must return an OpenSSL::PKey::DH instance of the correct
+     * key length.
+     *
+     * <b>Deprecated in version 3.0.</b> Use #tmp_dh= instead.
+     */
+    rb_attr(cSSLContext, rb_intern_const("tmp_dh_callback"), 1, 1, Qfalse);
+#endif
+
     /*
      * Sets the context in which a session can be reused.  This allows
      * sessions for multiple applications to be distinguished, for example, by
@@ -3265,7 +3267,6 @@ Init_ossl_ssl(void)
     sym_wait_readable = ID2SYM(rb_intern_const("wait_readable"));
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 
-    id_tmp_dh_callback = rb_intern_const("tmp_dh_callback");
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
 
