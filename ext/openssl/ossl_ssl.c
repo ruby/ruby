@@ -1148,7 +1148,7 @@ ossl_sslctx_set_client_sigalgs(VALUE self, VALUE v)
  * contained in the key object, if any, are ignored. The server will always
  * generate a new key pair for each handshake.
  *
- * Added in version 3.0. See also the man page SSL_set0_tmp_dh_pkey(3).
+ * Added in version 3.0. See also the man page SSL_CTX_set0_tmp_dh_pkey(3).
  *
  * Example:
  *   ctx = OpenSSL::SSL::SSLContext.new
@@ -1169,7 +1169,7 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
     if (EVP_PKEY_base_id(pkey) != EVP_PKEY_DH)
         rb_raise(eSSLError, "invalid pkey type %s (expected DH)",
                  OBJ_nid2sn(EVP_PKEY_base_id(pkey)));
-#ifdef HAVE_SSL_SET0_TMP_DH_PKEY
+#ifdef HAVE_SSL_CTX_SET0_TMP_DH_PKEY
     if (!SSL_CTX_set0_tmp_dh_pkey(ctx, pkey))
         ossl_raise(eSSLError, "SSL_CTX_set0_tmp_dh_pkey");
     EVP_PKEY_up_ref(pkey);
