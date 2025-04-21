@@ -48,6 +48,7 @@ struct rb_shape {
     attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
+    uint8_t flags;
     shape_id_t parent_id;
     redblack_node_t *ancestor_index;
 };
@@ -170,6 +171,12 @@ rb_shape_t *rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id);
 rb_shape_t *rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id);
 
 rb_shape_t *rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape);
+
+static inline bool
+rb_shape_canonical_p(rb_shape_t *shape)
+{
+    return !shape->flags;
+}
 
 static inline uint32_t
 ROBJECT_FIELDS_CAPACITY(VALUE obj)

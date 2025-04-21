@@ -50,6 +50,12 @@ static ID id_t_object;
 #define BLACK 0x0
 #define RED 0x1
 
+enum shape_flags {
+    SHAPE_FL_FROZEN = 1 << 0,
+
+    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN,
+};
+
 static redblack_node_t *
 redblack_left(redblack_node_t *node)
 {
@@ -418,6 +424,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 {
     rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, rb_shape_id(parent));
     shape->type = (uint8_t)type;
+    shape->flags = parent->flags;
     shape->heap_index = parent->heap_index;
     shape->capacity = parent->capacity;
     shape->edges = 0;
@@ -478,6 +485,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
         break;
       case SHAPE_FROZEN:
         new_shape->next_field_index = shape->next_field_index;
+        new_shape->flags |= SHAPE_FL_FROZEN;
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
       case SHAPE_ROOT:
@@ -576,7 +584,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
 bool
 rb_shape_frozen_shape_p(rb_shape_t *shape)
 {
-    return SHAPE_FROZEN == (enum shape_type)shape->type;
+    return SHAPE_FL_FROZEN & shape->flags;
 }
 
 static rb_shape_t *
@@ -975,6 +983,9 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
     return next_shape;
 }
 
+// Rebuild a similar shape with the same ivars but starting from
+// a different SHAPE_T_OBJECT, and don't cary over non-canonical transitions
+// such as SHAPE_FROZEN.
 rb_shape_t *
 rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {

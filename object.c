@@ -358,7 +358,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     rb_shape_t *initial_shape = rb_shape_get_shape(dest);
 
-    if (initial_shape->heap_index != src_shape->heap_index) {
+    if (initial_shape->heap_index != src_shape->heap_index || !rb_shape_canonical_p(src_shape)) {
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
