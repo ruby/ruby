@@ -5,7 +5,7 @@
 To build ZJIT on macOS:
 ```
 ./autogen.sh
-./configure --enable-zjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
+./configure --enable-zjit=dev --prefix=$HOME/.rubies/ruby-zjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
 make -j miniruby
 ```
 
