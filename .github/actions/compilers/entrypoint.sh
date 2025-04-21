@@ -91,6 +91,7 @@ setup_launchable() {
     btest_session_file='launchable_btest_session.txt'
     test_spec_session_file='launchable_test_spec_session.txt'
     btests+=--launchable-test-reports="${btest_report_path}"
+    echo "$LAUNCHABLE_SKIP_TIMEOUT_RETRY"
     echo "::group::Setup Launchable"
     launchable record build --name "${build_name}" || true
     launchable record session \
