@@ -65,13 +65,6 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
             /* use pos-1 because PC points next instruction at the beginning of instruction */
             pos--;
         }
-#if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
-        else {
-            /* SDR() is not possible; that causes infinite loop. */
-            rb_print_backtrace(stderr);
-            __builtin_trap();
-        }
-#endif
         if (lineno) *lineno = rb_iseq_line_no(iseq, pos);
 #ifdef USE_ISEQ_NODE_ID
         if (node_id) *node_id = rb_iseq_node_id(iseq, pos);

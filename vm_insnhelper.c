@@ -431,7 +431,7 @@ vm_push_frame(rb_execution_context_t *ec,
 
     ec->cfp = cfp;
 
-    if (VMDEBUG == 2) {
+    if (VMDEBUG == 2 && rb_current_execution_context(false) != NULL) {
         SDR();
     }
     vm_push_frame_debug_counter_inc(ec, cfp, type);
