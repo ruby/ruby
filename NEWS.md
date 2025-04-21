@@ -95,6 +95,6 @@ The following bundled gems are updated.
 ## JIT
 
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
-[Feature #19908]: https://bugs.ruby-lang.org/issues/20724
+[Feature #20724]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
