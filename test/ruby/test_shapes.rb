@@ -622,6 +622,73 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_too_complex_and_frozen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      shape = RubyVM::Shape.of(tc)
+      assert_predicate shape, :too_complex?
+      refute_predicate shape, :shape_frozen?
+      tc.freeze
+      frozen_shape = RubyVM::Shape.of(tc)
+      refute_equal shape.id, frozen_shape.id
+      assert_predicate frozen_shape, :too_complex?
+      assert_predicate frozen_shape, :shape_frozen?
+
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
+  def test_too_complex_and_frozen_and_object_id
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      shape = RubyVM::Shape.of(tc)
+      assert_predicate shape, :too_complex?
+      refute_predicate shape, :shape_frozen?
+      tc.freeze
+      frozen_shape = RubyVM::Shape.of(tc)
+      refute_equal shape.id, frozen_shape.id
+      assert_predicate frozen_shape, :too_complex?
+      assert_predicate frozen_shape, :shape_frozen?
+      refute_predicate frozen_shape, :has_object_id?
+
+      tc.object_id
+
+      id_shape = RubyVM::Shape.of(tc)
+      refute_equal frozen_shape.id, id_shape.id
+      assert_predicate id_shape, :too_complex?
+      assert_predicate id_shape, :shape_frozen?
+      assert_predicate id_shape, :has_object_id?
+
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
   def test_too_complex_obj_ivar_ractor_share
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

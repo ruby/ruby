@@ -3575,9 +3575,10 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 {
     size_t size = rb_gc_obj_slot_size(obj);
     memcpy((void *)data->replacement, (void *)obj, size);
-    FL_UNSET_RAW(data->replacement, FL_SEEN_OBJ_ID);
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
+
+    rb_gc_obj_id_moved(data->replacement);
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(data->replacement, obj);
@@ -3586,7 +3587,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     // Avoid mutations using bind_call, etc.
     // We keep FL_SEEN_OBJ_ID so GC later clean the obj_id_table.
     MEMZERO((char *)obj + sizeof(struct RBasic), char, size - sizeof(struct RBasic));
-    RBASIC(obj)->flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_SEEN_OBJ_ID);
+    RBASIC(obj)->flags = T_OBJECT | FL_FREEZE;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
     return traverse_cont;
 }

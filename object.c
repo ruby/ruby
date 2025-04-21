@@ -151,7 +151,7 @@ rb_class_allocate_instance(VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
+    VALUE ignored_flags = RUBY_FL_PROMOTED;
     RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
@@ -329,33 +329,27 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
 
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
-    rb_shape_t *src_shape = rb_shape_get_shape(obj);
 
-    if (rb_shape_obj_too_complex(obj)) {
-        // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table *table = st_copy(ROBJECT_FIELDS_HASH(obj));
-        rb_obj_convert_to_too_complex(dest, table);
-
-        return;
-    }
-
-    uint32_t src_num_ivs = RBASIC_FIELDS_COUNT(obj);
-    rb_shape_t *shape_to_set_on_dest = src_shape;
-    VALUE * src_buf;
-    VALUE * dest_buf;
-
+    unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
         return;
     }
 
-    // The copy should be mutable, so we don't want the frozen shape
-    if (rb_shape_frozen_shape_p(src_shape)) {
-        shape_to_set_on_dest = rb_shape_get_parent(src_shape);
+    rb_shape_t *src_shape = rb_shape_get_shape(obj);
+
+    if (rb_shape_too_complex_p(src_shape)) {
+        // obj is TOO_COMPLEX so we can copy its iv_hash
+        st_table *table = st_copy(ROBJECT_FIELDS_HASH(obj));
+        if (rb_shape_has_object_id(src_shape)) {
+            st_data_t id = (st_data_t)ruby_internal_object_id;
+            st_delete(table, &id, NULL);
+        }
+        rb_obj_init_too_complex(dest, table);
+
+        return;
     }
 
-    src_buf = ROBJECT_FIELDS(obj);
-    dest_buf = ROBJECT_FIELDS(dest);
-
+    rb_shape_t *shape_to_set_on_dest = src_shape;
     rb_shape_t *initial_shape = rb_shape_get_shape(dest);
 
     if (initial_shape->heap_index != src_shape->heap_index || !rb_shape_canonical_p(src_shape)) {
@@ -363,25 +357,44 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
         if (UNLIKELY(rb_shape_too_complex_p(shape_to_set_on_dest))) {
-            st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
+            st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
             rb_obj_copy_ivs_to_hash_table(obj, table);
-            rb_obj_convert_to_too_complex(dest, table);
+            rb_obj_init_too_complex(dest, table);
 
             return;
         }
     }
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_too_complex_p(shape_to_set_on_dest));
+    VALUE *src_buf = ROBJECT_FIELDS(obj);
+    VALUE *dest_buf = ROBJECT_FIELDS(dest);
+
+    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
     if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
         rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
         dest_buf = ROBJECT_FIELDS(dest);
     }
 
-    MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
+    if (src_shape->next_field_index == shape_to_set_on_dest->next_field_index) {
+        // Happy path, we can just memcpy the fields content
+        MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
 
-    // Fire write barriers
-    for (uint32_t i = 0; i < src_num_ivs; i++) {
-        RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
+        // Fire write barriers
+        for (uint32_t i = 0; i < src_num_ivs; i++) {
+            RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
+        }
+    }
+    else {
+        rb_shape_t *dest_shape = shape_to_set_on_dest;
+        while (src_shape->parent_id != INVALID_SHAPE_ID) {
+            if (src_shape->type == SHAPE_IVAR) {
+                while (dest_shape->edge_name != src_shape->edge_name) {
+                    dest_shape = rb_shape_get_shape_by_id(dest_shape->parent_id);
+                }
+
+                RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
+            }
+            src_shape = rb_shape_get_shape_by_id(src_shape->parent_id);
+        }
     }
 
     rb_shape_set_shape(dest, shape_to_set_on_dest);

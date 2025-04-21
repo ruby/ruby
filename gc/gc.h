@@ -28,6 +28,8 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_CI_TABLE,
     RB_GC_VM_OVERLOADED_CME_TABLE,
     RB_GC_VM_GLOBAL_SYMBOLS_TABLE,
+    RB_GC_VM_ID_TO_OBJ_TABLE,
+    RB_GC_VM_ID_TO_OBJ_TABLE_KEYS,
     RB_GC_VM_GENERIC_FIELDS_TABLE,
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT
@@ -70,6 +72,7 @@ size_t rb_obj_memsize_of(VALUE obj);
 void rb_gc_prepare_heap_process_object(VALUE obj);
 bool ruby_free_at_exit_p(void);
 bool rb_memerror_reentered(void);
+bool rb_obj_id_p(VALUE);
 
 #if USE_MODULAR_GC
 bool rb_gc_event_hook_required_p(rb_event_flag_t event);

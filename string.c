@@ -45,6 +45,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "shape.h"
 #include "vm_sync.h"
 #include "ruby/internal/attr/nonstring.h"
 
@@ -384,7 +385,16 @@ fstring_hash(VALUE str)
 #define fstring_hash rb_str_hash
 #endif
 
-#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
+static inline bool
+BARE_STRING_P(VALUE str)
+{
+    if (RBASIC_CLASS(str) != rb_cString) return false;
+
+    if (FL_TEST_RAW(str, FL_EXIVAR)) {
+        return rb_ivar_count(str) == 0;
+    }
+    return true;
+}
 
 static inline st_index_t
 str_do_hash(VALUE str)
@@ -873,7 +883,6 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(result));
     RUBY_ASSERT(!FL_TEST_RAW(result, STR_FAKESTR));
-    RUBY_ASSERT(!FL_TEST_RAW(result, FL_EXIVAR));
     RUBY_ASSERT(RBASIC_CLASS(result) == rb_cString);
 
     return result;

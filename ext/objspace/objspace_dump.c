@@ -805,29 +805,29 @@ shape_i(rb_shape_t *shape, void *data)
     dump_append(dc, ", \"depth\":");
     dump_append_sizet(dc, rb_shape_depth(shape));
 
-    dump_append(dc, ", \"shape_type\":");
     switch((enum shape_type)shape->type) {
       case SHAPE_ROOT:
-        dump_append(dc, "\"ROOT\"");
+        dump_append(dc, ", \"shape_type\":\"ROOT\"");
         break;
       case SHAPE_IVAR:
-        dump_append(dc, "\"IVAR\"");
+        dump_append(dc, ", \"shape_type\":\"IVAR\"");
 
         dump_append(dc, ",\"edge_name\":");
         dump_append_id(dc, shape->edge_name);
 
         break;
       case SHAPE_FROZEN:
-        dump_append(dc, "\"FROZEN\"");
+        dump_append(dc, ", \"shape_type\":\"FROZEN\"");
         break;
       case SHAPE_T_OBJECT:
-        dump_append(dc, "\"T_OBJECT\"");
+        dump_append(dc, ", \"shape_type\":\"T_OBJECT\"");
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
-        dump_append(dc, "\"OBJ_TOO_COMPLEX\"");
+        dump_append(dc, ", \"shape_type\":\"OBJ_TOO_COMPLEX\"");
         break;
-      default:
-        rb_bug("[objspace] unexpected shape type");
+      case SHAPE_OBJ_ID:
+        dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
+        break;
     }
 
     dump_append(dc, ", \"edges\":");
