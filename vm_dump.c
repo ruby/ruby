@@ -381,6 +381,8 @@ vm_stack_dump_each(const rb_execution_context_t *ec, const rb_control_frame_t *c
     else {
         rb_bug("unsupported frame type: %08lx", VM_FRAME_TYPE(cfp));
     }
+  error:
+    return;
 }
 #endif
 
@@ -440,7 +442,7 @@ rb_vmdebug_debug_print_pre(const rb_execution_context_t *ec, const rb_control_fr
 
 #if VMDEBUG > 3
     kprintf("        (1)");
-    rb_vmdebug_debug_print_register(errout, ec);
+    rb_vmdebug_debug_print_register(ec, errout);
 #endif
     return true;
 
@@ -452,12 +454,12 @@ bool
 rb_vmdebug_debug_print_post(const rb_execution_context_t *ec, const rb_control_frame_t *cfp, FILE *errout)
 {
 #if VMDEBUG > 9
-    if (!rb_vmdebug_stack_dump_raw(ec, cfp, errout)) goto errout;
+    if (!rb_vmdebug_stack_dump_raw(ec, cfp, errout)) goto error;
 #endif
 
 #if VMDEBUG > 3
     kprintf("        (2)");
-    rb_vmdebug_debug_print_register(errout, ec);
+    rb_vmdebug_debug_print_register(ec, errout);
 #endif
     /* stack_dump_raw(ec, cfp); */
 
