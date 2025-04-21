@@ -977,6 +977,13 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal class_name, JSON.parse(json)["name"]
   end
 
+  def test_dump_include_shareable
+    omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+
+    assert_include(ObjectSpace.dump(ENV), '"shareable":true')
+    assert_not_include(ObjectSpace.dump([]), '"shareable":true')
+  end
+
   def test_utf8_method_names
     name = "utf8_❨╯°□°❩╯︵┻━┻"
     obj = ObjectSpace.trace_object_allocations do

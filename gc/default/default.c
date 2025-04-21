@@ -6199,7 +6199,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
     size_t n = 0;
-    static ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned, ID_object_id;
+    static ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking, ID_marked, ID_pinned, ID_object_id, ID_shareable;
 
     if (!ID_marked) {
 #define I(s) ID_##s = rb_intern(#s);
@@ -6211,6 +6211,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
         I(marked);
         I(pinned);
         I(object_id);
+        I(shareable);
 #undef I
     }
 
@@ -6229,6 +6230,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
     if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
     if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+    if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 
     object_metadata_entries[n].name = 0;
     object_metadata_entries[n].val = 0;
