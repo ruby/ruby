@@ -37,7 +37,7 @@ jobs:
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The defautl Windows 11 SDK and toolset are broken at windows-2022
             test_task: check
           - os: 11-arm
-            test_task: check
+            test_task: test-spec
             target: arm64
           - os: 2022
             vc: 2019
