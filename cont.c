@@ -1511,6 +1511,51 @@ cont_restore_thread(rb_context_t *cont)
             rb_raise(rb_eRuntimeError, "can't call across trace_func");
         }
 
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+        if (th->ec->tag != sec->tag) {
+            /* find the lowest common ancestor tag of the current EC and the saved EC */
+
+            struct rb_vm_tag *lowest_common_ancestor = NULL;
+            size_t num_tags = 0;
+            size_t num_saved_tags = 0;
+            for (struct rb_vm_tag *tag = th->ec->tag; tag != NULL; tag = tag->prev) {
+                ++num_tags;
+            }
+            for (struct rb_vm_tag *tag = sec->tag; tag != NULL; tag = tag->prev) {
+                ++num_saved_tags;
+            }
+
+            size_t min_tags = num_tags <= num_saved_tags ? num_tags : num_saved_tags;
+
+            struct rb_vm_tag *tag = th->ec->tag;
+            while (num_tags > min_tags) {
+                tag = tag->prev;
+                --num_tags;
+            }
+
+            struct rb_vm_tag *saved_tag = sec->tag;
+            while (num_saved_tags > min_tags) {
+                saved_tag = saved_tag->prev;
+                --num_saved_tags;
+            }
+
+            while (min_tags > 0) {
+                if (tag == saved_tag) {
+                    lowest_common_ancestor = tag;
+                    break;
+                }
+                tag = tag->prev;
+                saved_tag = saved_tag->prev;
+                --min_tags;
+            }
+
+            /* free all the jump buffers between the current EC's tag and the lowest common ancestor tag */
+            for (struct rb_vm_tag *tag = th->ec->tag; tag != lowest_common_ancestor; tag = tag->prev) {
+                rb_vm_tag_jmpbuf_deinit(&tag->buf);
+            }
+        }
+#endif
+
         /* copy vm stack */
 #ifdef CAPTURE_JUST_VALID_VM_STACK
         MEMCPY(th->ec->vm_stack,
