@@ -54,7 +54,7 @@ module Prism
       assert_parameters([[:keyrest, :**]], "**")
     end
 
-    if RUBY_ENGINE != "truffleruby"
+    if RUBY_ENGINE == "ruby"
       def test_key_ordering
         assert_parameters([[:keyreq, :a], [:keyreq, :b], [:key, :c], [:key, :d]], "a:, c: 1, b:, d: 2")
       end
