@@ -380,10 +380,11 @@ uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
     shape_id_t orig_shape_id = rb_shape_get_shape_id(obj);
+    if (rb_shape_id_too_complex_p(orig_shape_id)) {
+        return (uint32_t)orig_shape_id;
+    }
+
     rb_shape_t *orig_shape = rb_shape_get_shape_by_id(orig_shape_id);
-
-    if (rb_shape_too_complex_p(orig_shape)) return orig_shape_id;
-
     rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID));
     rb_shape_t *new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
 
@@ -841,9 +842,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(undefine_finalizer);
     load_modular_gc_func(copy_finalizer);
     load_modular_gc_func(shutdown_call_finalizer);
-    // Object ID
-    load_modular_gc_func(object_id);
-    load_modular_gc_func(object_id_to_ref);
     // Forking
     load_modular_gc_func(before_fork);
     load_modular_gc_func(after_fork);
@@ -924,9 +922,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_undefine_finalizer rb_gc_functions.undefine_finalizer
 # define rb_gc_impl_copy_finalizer rb_gc_functions.copy_finalizer
 # define rb_gc_impl_shutdown_call_finalizer rb_gc_functions.shutdown_call_finalizer
-// Object ID
-# define rb_gc_impl_object_id rb_gc_functions.object_id
-# define rb_gc_impl_object_id_to_ref rb_gc_functions.object_id_to_ref
 // Forking
 # define rb_gc_impl_before_fork rb_gc_functions.before_fork
 # define rb_gc_impl_after_fork rb_gc_functions.after_fork
@@ -1212,40 +1207,6 @@ rb_data_free(void *objspace, VALUE obj)
     }
 
     return true;
-}
-
-void
-rb_gc_obj_free_vm_weak_references(VALUE obj)
-{
-    if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-        rb_free_generic_ivar((VALUE)obj);
-        FL_UNSET(obj, FL_EXIVAR);
-    }
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_STRING:
-        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
-            rb_gc_free_fstring(obj);
-        }
-        break;
-      case T_SYMBOL:
-        rb_gc_free_dsymbol(obj);
-        break;
-      case T_IMEMO:
-        switch (imemo_type(obj)) {
-          case imemo_callinfo:
-            rb_vm_ci_free((const struct rb_callinfo *)obj);
-            break;
-          case imemo_ment:
-            rb_free_method_entry_vm_weak_references((const rb_method_entry_t *)obj);
-            break;
-          default:
-            break;
-        }
-        break;
-      default:
-        break;
-    }
 }
 
 bool
@@ -1760,6 +1721,237 @@ rb_gc_pointer_to_heap_p(VALUE obj)
     return rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj);
 }
 
+#define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
+#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
+
+static unsigned long long next_object_id = OBJ_ID_INITIAL;
+static VALUE id_to_obj_value = 0;
+static st_table *id_to_obj_tbl = NULL;
+
+void
+rb_gc_obj_id_moved(VALUE obj)
+{
+    if (UNLIKELY(id_to_obj_tbl)) {
+        st_insert(id_to_obj_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
+    }
+}
+
+static int
+object_id_cmp(st_data_t x, st_data_t y)
+{
+    if (RB_TYPE_P(x, T_BIGNUM)) {
+        return !rb_big_eql(x, y);
+    }
+    else {
+        return x != y;
+    }
+}
+
+static st_index_t
+object_id_hash(st_data_t n)
+{
+    return FIX2LONG(rb_hash((VALUE)n));
+}
+
+static const struct st_hash_type object_id_hash_type = {
+    object_id_cmp,
+    object_id_hash,
+};
+
+static void gc_mark_tbl_no_pin(st_table *table);
+
+static void
+id_to_obj_tbl_mark(void *data)
+{
+    st_table *table = (st_table *)data;
+    if (UNLIKELY(!RB_POSFIXABLE(next_object_id))) {
+        // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
+        rb_mark_set(table);
+    }
+    // We purposedly don't mark values, as they are weak references.
+    // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
+}
+
+static size_t
+id_to_obj_tbl_memsize(const void *data)
+{
+    return rb_st_memsize(data);
+}
+
+static void
+id_to_obj_tbl_compact(void *data)
+{
+    st_table *table = (st_table *)data;
+    if (LIKELY(RB_POSFIXABLE(next_object_id))) {
+        // We know keys are all FIXNUM, so no need to update them.
+        gc_ref_update_table_values_only(table);
+    }
+    else {
+        gc_update_table_refs(table);
+    }
+}
+
+static void
+id_to_obj_tbl_free(void *data)
+{
+    id_to_obj_tbl = NULL; // clear global ref
+    st_table *table = (st_table *)data;
+    st_free_table(table);
+}
+
+static const rb_data_type_t id_to_obj_tbl_type = {
+    .wrap_struct_name = "VM/id_to_obj_table",
+    .function = {
+        .dmark = id_to_obj_tbl_mark,
+        .dfree = id_to_obj_tbl_free,
+        .dsize = id_to_obj_tbl_memsize,
+        .dcompact = id_to_obj_tbl_compact,
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static VALUE
+object_id(VALUE obj)
+{
+    VALUE id = Qfalse;
+    rb_shape_t *shape = rb_shape_get_shape(obj);
+    unsigned int lock_lev;
+
+    // We could avoid locking if the object isn't shareable
+    // but we'll lock anyway to lookup the next shape, and
+    // we'd at least need to generate the object_id using atomics.
+    lock_lev = rb_gc_vm_lock();
+
+    if (rb_shape_too_complex_p(shape)) {
+        st_table *table = ROBJECT_FIELDS_HASH(obj);
+        if (rb_shape_has_object_id(shape)) {
+            st_lookup(table, (st_data_t)ruby_internal_object_id, (st_data_t *)&id);
+            RUBY_ASSERT(id, "object_id missing");
+
+            rb_gc_vm_unlock(lock_lev);
+            return id;
+        }
+
+        id = ULL2NUM(next_object_id);
+        next_object_id += OBJ_ID_INCREMENT;
+        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
+        st_insert(table, (st_data_t)ruby_internal_object_id, (st_data_t)id);
+        rb_shape_set_shape(obj, object_id_shape);
+        if (RB_UNLIKELY(id_to_obj_tbl)) {
+            st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        }
+    }
+    else if (rb_shape_has_object_id(shape)) {
+        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
+        id = rb_field_get(obj, object_id_shape);
+    }
+    else {
+        id = ULL2NUM(next_object_id);
+        next_object_id += OBJ_ID_INCREMENT;
+
+        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
+        rb_obj_field_set(obj, object_id_shape, id);
+        if (RB_UNLIKELY(id_to_obj_tbl)) {
+            st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        }
+    }
+
+    rb_gc_vm_unlock(lock_lev);
+    return id;
+}
+
+static void
+build_id_to_obj_i(VALUE obj, void *data)
+{
+    st_table *id_to_obj_tbl = (st_table *)data;
+    if (rb_shape_obj_has_id(obj)) {
+        st_insert(id_to_obj_tbl, rb_obj_id(obj), obj);
+    }
+}
+
+static VALUE
+object_id_to_ref(void *objspace_ptr, VALUE object_id)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    unsigned int lev = rb_gc_vm_lock();
+
+    if (!id_to_obj_tbl) {
+        rb_gc_vm_barrier(); // stop other ractors
+
+        id_to_obj_tbl = st_init_table(&object_id_hash_type);
+        id_to_obj_value = TypedData_Wrap_Struct(0, &id_to_obj_tbl_type, id_to_obj_tbl);
+        rb_gc_impl_each_object(objspace, build_id_to_obj_i, (void *)id_to_obj_tbl);
+    }
+
+    VALUE obj;
+    bool found = st_lookup(id_to_obj_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+
+    rb_gc_vm_unlock(lev);
+
+    if (found) {
+        return obj;
+    }
+
+    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(next_object_id))) {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+    }
+    else {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
+    }
+}
+
+static inline void
+obj_free_object_id(VALUE obj)
+{
+    if (RB_UNLIKELY(id_to_obj_tbl)) {
+        if (rb_shape_obj_has_id(obj)) {
+            VALUE obj_id = object_id(obj);
+            RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
+
+            if (!st_delete(id_to_obj_tbl, (st_data_t *)&obj_id, NULL)) {
+                rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+            }
+        }
+    }
+}
+
+void
+rb_gc_obj_free_vm_weak_references(VALUE obj)
+{
+    obj_free_object_id(obj);
+
+    if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+        rb_free_generic_ivar((VALUE)obj);
+        FL_UNSET_RAW(obj, FL_EXIVAR);
+    }
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
+            rb_gc_free_fstring(obj);
+        }
+        break;
+      case T_SYMBOL:
+        rb_gc_free_dsymbol(obj);
+        break;
+      case T_IMEMO:
+        switch (imemo_type(obj)) {
+          case imemo_callinfo:
+            rb_vm_ci_free((const struct rb_callinfo *)obj);
+            break;
+          case imemo_ment:
+            rb_free_method_entry_vm_weak_references((const rb_method_entry_t *)obj);
+            break;
+          default:
+            break;
+        }
+        break;
+      default:
+        break;
+    }
+}
+
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
@@ -1807,7 +1999,7 @@ id2ref(VALUE objid)
         }
     }
 
-    VALUE obj = rb_gc_impl_object_id_to_ref(rb_gc_get_objspace(), objid);
+    VALUE obj = object_id_to_ref(rb_gc_get_objspace(), objid);
     if (!rb_multi_ractor_p() || rb_ractor_shareable_p(obj)) {
         return obj;
     }
@@ -1824,7 +2016,7 @@ os_id2ref(VALUE os, VALUE objid)
 }
 
 static VALUE
-rb_find_object_id(void *objspace, VALUE obj, VALUE (*get_heap_object_id)(void *, VALUE))
+rb_find_object_id(void *objspace, VALUE obj, VALUE (*get_heap_object_id)(VALUE))
 {
     if (SPECIAL_CONST_P(obj)) {
 #if SIZEOF_LONG == SIZEOF_VOIDP
@@ -1834,11 +2026,11 @@ rb_find_object_id(void *objspace, VALUE obj, VALUE (*get_heap_object_id)(void *,
 #endif
     }
 
-    return get_heap_object_id(objspace, obj);
+    return get_heap_object_id(obj);
 }
 
 static VALUE
-nonspecial_obj_id(void *_objspace, VALUE obj)
+nonspecial_obj_id(VALUE obj)
 {
 #if SIZEOF_LONG == SIZEOF_VOIDP
     return (VALUE)((SIGNED_VALUE)(obj)|FIXNUM_FLAG);
@@ -1889,7 +2081,13 @@ rb_obj_id(VALUE obj)
      * Otherwise, the object ID is a Numeric that is a non-zero multiple of
      * (RUBY_IMMEDIATE_MASK + 1) which guarantees that it does not collide with
      * any immediates. */
-    return rb_find_object_id(rb_gc_get_objspace(), obj, rb_gc_impl_object_id);
+    return rb_find_object_id(rb_gc_get_objspace(), obj, object_id);
+}
+
+bool
+rb_obj_id_p(VALUE obj)
+{
+    return rb_shape_obj_has_id(obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3462,6 +3660,73 @@ vm_weak_table_gen_fields_foreach_too_complex_replace_i(st_data_t *_key, st_data_
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
+vm_weak_table_id_to_obj_foreach(st_data_t key, st_data_t value, st_data_t data)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    int ret = iter_data->callback((VALUE)value, iter_data->data);
+
+    switch (ret) {
+      case ST_CONTINUE:
+        return ret;
+
+      case ST_DELETE:
+        GC_ASSERT(rb_shape_obj_has_id((VALUE)value));
+        return ST_DELETE;
+
+      case ST_REPLACE: {
+        VALUE new_value = (VALUE)value;
+        ret = iter_data->update_callback(&new_value, iter_data->data);
+        if (value != new_value) {
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                st_insert(id_to_obj_tbl, key, (st_data_t)new_value);
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
+        }
+        return ST_CONTINUE;
+      }
+    }
+
+    return ret;
+}
+
+static int
+vm_weak_table_id_to_obj_keys_foreach(st_data_t key, st_data_t value, st_data_t data)
+{
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+
+    if (LIKELY(FIXNUM_P((VALUE)key))) {
+        return ST_CONTINUE;
+    }
+
+    int ret = iter_data->callback((VALUE)key, iter_data->data);
+
+    switch (ret) {
+      case ST_CONTINUE:
+        return ret;
+
+      case ST_DELETE:
+        return ST_DELETE;
+
+      case ST_REPLACE: {
+          VALUE new_key = (VALUE)key;
+          ret = iter_data->update_callback(&new_key, iter_data->data);
+          if (key != new_key) ret = ST_DELETE;
+          DURING_GC_COULD_MALLOC_REGION_START();
+          {
+              st_insert(id_to_obj_tbl, (st_data_t)new_key, value);
+          }
+          DURING_GC_COULD_MALLOC_REGION_END();
+          key = (st_data_t)new_key;
+          break;
+      }
+    }
+
+    return ret;
+}
+
+static int
 vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
@@ -3588,6 +3853,26 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         }
         break;
       }
+      case RB_GC_VM_ID_TO_OBJ_TABLE: {
+        if (id_to_obj_tbl) {
+            st_foreach(
+                id_to_obj_tbl,
+                vm_weak_table_id_to_obj_foreach,
+                (st_data_t)&foreach_data
+            );
+        }
+        break;
+      }
+      case RB_GC_VM_ID_TO_OBJ_TABLE_KEYS: {
+        if (id_to_obj_tbl && !RB_POSFIXABLE(next_object_id)) {
+            st_foreach(
+                id_to_obj_tbl,
+                vm_weak_table_id_to_obj_keys_foreach,
+                (st_data_t)&foreach_data
+            );
+        }
+        break;
+      }
       case RB_GC_VM_GENERIC_FIELDS_TABLE: {
         st_table *generic_fields_tbl = rb_generic_fields_tbl_get();
         if (generic_fields_tbl) {
@@ -3607,8 +3892,8 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         );
         break;
       }
-      default:
-        rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
+      case RB_GC_VM_WEAK_TABLE_COUNT:
+        rb_bug("Unreacheable");
     }
 }
 
@@ -4993,6 +5278,8 @@ void
 Init_GC(void)
 {
 #undef rb_intern
+    rb_gc_register_address(&id_to_obj_value);
+
     malloc_offset = gc_compute_malloc_offset();
 
     rb_mGC = rb_define_module("GC");

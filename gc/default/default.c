@@ -472,7 +472,6 @@ typedef struct rb_objspace {
     } flags;
 
     rb_event_flag_t hook_events;
-    unsigned long long next_object_id;
 
     rb_heap_t heaps[HEAP_COUNT];
     size_t empty_pages_count;
@@ -590,9 +589,6 @@ typedef struct rb_objspace {
         size_t pooled_slots;
         size_t step_slots;
     } rincgc;
-
-    st_table *id_to_obj_tbl;
-    st_table *obj_to_id_tbl;
 
 #if GC_DEBUG_STRESS_TO_CLASS
     VALUE stress_to_class;
@@ -1512,31 +1508,6 @@ minimum_slots_for_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     return gc_params.heap_init_slots[heap_idx];
 }
 
-static int
-object_id_cmp(st_data_t x, st_data_t y)
-{
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-        return !rb_big_eql(x, y);
-    }
-    else {
-        return x != y;
-    }
-}
-
-static st_index_t
-object_id_hash(st_data_t n)
-{
-    return FIX2LONG(rb_hash((VALUE)n));
-}
-
-#define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
-#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
-
-static const struct st_hash_type object_id_hash_type = {
-    object_id_cmp,
-    object_id_hash,
-};
-
 /* garbage objects will be collected soon. */
 bool
 rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
@@ -1560,76 +1531,6 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
     if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
-}
-
-VALUE
-rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
-{
-    VALUE id;
-    rb_objspace_t *objspace = objspace_ptr;
-
-    unsigned int lev = rb_gc_vm_lock();
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        st_data_t val;
-        if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &val)) {
-            id = (VALUE)val;
-        }
-        else {
-            rb_bug("rb_gc_impl_object_id: FL_SEEN_OBJ_ID flag set but not found in table");
-        }
-    }
-    else {
-        GC_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, NULL));
-
-        id = ULL2NUM(objspace->next_object_id);
-        objspace->next_object_id += OBJ_ID_INCREMENT;
-
-        st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-        if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
-            st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-        }
-        FL_SET(obj, FL_SEEN_OBJ_ID);
-    }
-    rb_gc_vm_unlock(lev);
-
-    return id;
-}
-
-static int
-build_id_to_obj_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    st_table *id_to_obj_tbl = (st_table *)data;
-    st_insert(id_to_obj_tbl, value, key);
-    return ST_CONTINUE;
-}
-
-VALUE
-rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    unsigned int lev = rb_gc_vm_lock();
-
-    if (!objspace->id_to_obj_tbl) {
-        objspace->id_to_obj_tbl = st_init_table_with_size(&object_id_hash_type, st_table_size(objspace->obj_to_id_tbl));
-        st_foreach(objspace->obj_to_id_tbl, build_id_to_obj_i, (st_data_t)objspace->id_to_obj_tbl);
-    }
-
-    VALUE obj;
-    bool found = st_lookup(objspace->id_to_obj_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
-
-    rb_gc_vm_unlock(lev);
-
-    if (found) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
 }
 
 static void free_stack_chunks(mark_stack_t *);
@@ -2666,25 +2567,6 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     page->heap->final_slots_count++;
 }
 
-static void
-obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
-{
-    st_data_t o = (st_data_t)obj, id;
-
-    GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE || FL_TEST(obj, FL_SEEN_OBJ_ID));
-    FL_UNSET(obj, FL_SEEN_OBJ_ID);
-
-    if (st_delete(objspace->obj_to_id_tbl, &o, &id)) {
-        GC_ASSERT(id);
-        if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
-            st_delete(objspace->id_to_obj_tbl, &id, NULL);
-        }
-    }
-    else {
-        rb_bug("Object ID seen, but not in mapping table: %s", rb_obj_info(obj));
-    }
-}
-
 typedef int each_obj_callback(void *, void *, size_t, void *);
 typedef int each_page_callback(struct heap_page *, void *);
 
@@ -2868,7 +2750,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(2, rb_gc_impl_object_id(objspace, obj), block);
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         st_add_direct(finalizer_table, obj, table);
     }
@@ -3558,9 +3440,6 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
                 rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
-                if (FL_TEST_RAW(vp, FL_SEEN_OBJ_ID)) {
-                    obj_free_object_id(objspace, vp);
-                }
                 rb_gc_obj_free_vm_weak_references(vp);
                 if (rb_gc_obj_free(objspace, vp)) {
                     // always add free slots back to the swept pages freelist,
@@ -4621,8 +4500,6 @@ mark_roots(rb_objspace_t *objspace, const char **categoryp)
     if (finalizer_table != NULL) {
         st_foreach(finalizer_table, pin_value, (st_data_t)objspace);
     }
-
-    st_foreach(objspace->obj_to_id_tbl, gc_mark_tbl_no_pin_i, (st_data_t)objspace);
 
     if (stress_to_class) rb_gc_mark(stress_to_class);
 
@@ -6247,7 +6124,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     if (RVALUE_MARKING(objspace, obj)) SET_ENTRY(marking, Qtrue);
     if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
     if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+    if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 
     object_metadata_entries[n].name = 0;
@@ -6978,27 +6855,6 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(src), src);
     CLEAR_IN_BITMAP(GET_HEAP_PAGE(src)->remembered_bits, src);
 
-    if (FL_TEST_RAW(src, FL_SEEN_OBJ_ID)) {
-        /* If the source object's object_id has been seen, we need to update
-         * the object to object id mapping. */
-        st_data_t srcid = (st_data_t)src, id;
-
-        gc_report(4, objspace, "Moving object with seen id: %p -> %p\n", (void *)src, (void *)dest);
-        /* Resizing the st table could cause a malloc */
-        DURING_GC_COULD_MALLOC_REGION_START();
-        {
-            if (!st_delete(objspace->obj_to_id_tbl, &srcid, &id)) {
-                rb_bug("gc_move: object ID seen, but not in mapping table: %s", rb_obj_info((VALUE)src));
-            }
-
-            st_insert(objspace->obj_to_id_tbl, (st_data_t)dest, id);
-        }
-        DURING_GC_COULD_MALLOC_REGION_END();
-    }
-    else {
-        GC_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)src, NULL));
-    }
-
     /* Move the object */
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
 
@@ -7203,10 +7059,7 @@ gc_update_references(rb_objspace_t *objspace)
             }
         }
     }
-    gc_ref_update_table_values_only(objspace->obj_to_id_tbl);
-    if (RB_UNLIKELY(objspace->id_to_obj_tbl)) {
-        gc_update_table_refs(objspace->id_to_obj_tbl);
-    }
+
     gc_update_table_refs(finalizer_table);
 
     rb_gc_update_vm_references((void *)objspace);
@@ -9320,12 +9173,6 @@ rb_gc_impl_objspace_free(void *objspace_ptr)
         heap->total_slots = 0;
     }
 
-
-    if (objspace->id_to_obj_tbl) {
-        st_free_table(objspace->id_to_obj_tbl);
-    }
-    st_free_table(objspace->obj_to_id_tbl);
-
     free_stack_chunks(&objspace->mark_stack);
     mark_stack_free_cache(&objspace->mark_stack);
 
@@ -9465,9 +9312,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     /* Need to determine if we can use mmap at runtime. */
     heap_page_alloc_use_mmap = INIT_HEAP_PAGE_ALLOC_USE_MMAP;
 #endif
-    objspace->next_object_id = OBJ_ID_INITIAL;
-    objspace->id_to_obj_tbl = NULL;
-    objspace->obj_to_id_tbl = st_init_numtable();
 #if RGENGC_ESTIMATE_OLDMALLOC
     objspace->rgengc.oldmalloc_increase_limit = gc_params.oldmalloc_limit_min;
 #endif

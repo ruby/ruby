@@ -322,7 +322,6 @@ pub struct RubyUpcalls {
     pub update_global_tables: extern "C" fn(tbl_idx: c_int),
     pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
-    pub update_obj_id_tables: extern "C" fn(),
 }
 
 unsafe impl Sync for RubyUpcalls {}

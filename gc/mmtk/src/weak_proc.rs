@@ -185,7 +185,6 @@ struct UpdateFinalizerObjIdTables;
 impl GlobalTableProcessingWork for UpdateFinalizerObjIdTables {
     fn process_table(&mut self) {
         (crate::upcalls().update_finalizer_table)();
-        (crate::upcalls().update_obj_id_tables)();
     }
 }
 impl GCWork<Ruby> for UpdateFinalizerObjIdTables {

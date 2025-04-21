@@ -68,7 +68,6 @@ typedef struct MMTk_RubyUpcalls {
     void (*update_global_tables)(int tbl_idx);
     int (*global_tables_count)(void);
     void (*update_finalizer_table)(void);
-    void (*update_obj_id_tables)(void);
 } MMTk_RubyUpcalls;
 
 typedef struct MMTk_RawVecOfObjRef {
