@@ -213,19 +213,19 @@ module UnicodeNormalize  # :nodoc:
 
   DECOMPOSITION_TABLE = {
 % decomposition_table.each do |key, value|
-    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>",
 % end
   }.freeze
 
   KOMPATIBLE_TABLE = {
 % kompatible_table.each do |key, value|
-    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>",
 % end
   }.freeze
 
   COMPOSITION_TABLE = {
 % composition_table.each do |key, value|
-    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>"<%=%>,
+    "<%=key.to_UTF8%>"=>"<%=value.to_UTF8%>",
 % end
   }.freeze
 end
