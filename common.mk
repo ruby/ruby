@@ -18,6 +18,7 @@ ECHO = @$(ECHO0)
 
 mflags = $(MFLAGS)
 gnumake_recursive =
+sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
 
 UNICODE_VERSION = 16.0.0
@@ -1519,7 +1520,7 @@ refresh-gems: update-bundled_gems prepare-gems
 prepare-gems: $(HAVE_BASERUBY:yes=update-gems) $(HAVE_BASERUBY:yes=extract-gems)
 extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 
-update-gems$(gnumake:yes=-sequential): PHONY
+update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -I./tool -rdownloader -answ \
@@ -1533,7 +1534,7 @@ update-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
 	    gems/bundled_gems
 
-extract-gems$(gnumake:yes=-sequential): PHONY
+extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rfileutils -rbundled_gem -answ \
@@ -1549,7 +1550,7 @@ extract-gems$(gnumake:yes=-sequential): PHONY
 	    -e 'end' \
 	    gems/bundled_gems
 
-extract-gems$(gnumake:yes=-sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
+extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
 clone-bundled-gems-src: PHONY
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
@@ -1722,7 +1723,7 @@ UNICODE_FILES = $(UNICODE_SRC_DATA_DIR)/UnicodeData.txt \
 		$(UNICODE_SRC_DATA_DIR)/SpecialCasing.txt \
 		$(empty)
 
-UNICODE_PROPERTY_FILES =  \
+UNICODE_PROPERTY_FILES = \
 		$(UNICODE_SRC_DATA_DIR)/Blocks.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedAge.txt \
 		$(UNICODE_SRC_DATA_DIR)/DerivedCoreProperties.txt \
@@ -1732,7 +1733,7 @@ UNICODE_PROPERTY_FILES =  \
 		$(UNICODE_SRC_DATA_DIR)/Scripts.txt \
 		$(empty)
 
-UNICODE_AUXILIARY_FILES =  \
+UNICODE_AUXILIARY_FILES = \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakProperty.txt \
 		$(UNICODE_SRC_DATA_DIR)/auxiliary/GraphemeBreakTest.txt \
 		$(empty)
@@ -1775,29 +1776,45 @@ UNICODE_EMOJI_DOWNLOAD = \
 	    -d $(UNICODE_SRC_EMOJI_DATA_DIR) \
 	    -p emoji/$(UNICODE_EMOJI_VERSION)
 
-update-unicode-files: $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
-$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES):
+update-unicode-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
 	$(Q) $(UNICODE_DOWNLOAD) $(UNICODE_FILES) $(UNICODE_PROPERTY_FILES)
 
-update-unicode-auxiliary-files: $(UNICODE_AUXILIARY_FILES)
-$(UNICODE_AUXILIARY_FILES):
+update-unicode-auxiliary-files:
 	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
 	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $(UNICODE_AUXILIARY_FILES)
 
-update-unicode-ucd-emoji-files: $(UNICODE_UCD_EMOJI_FILES)
-$(UNICODE_UCD_EMOJI_FILES):
+update-unicode-ucd-emoji-files:
 	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
 	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $(UNICODE_UCD_EMOJI_FILES)
 
-update-unicode-emoji-files: $(UNICODE_EMOJI_FILES)
-$(UNICODE_EMOJI_FILES):
+update-unicode-emoji-files:
 	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
 	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
 	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $(UNICODE_EMOJI_FILES)
+
+$(UNICODE_FILES) $(UNICODE_PROPERTY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) data and property files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)"
+	$(Q) $(UNICODE_DOWNLOAD) $@
+
+$(UNICODE_AUXILIARY_FILES):
+	$(ECHO) Downloading Unicode $(UNICODE_VERSION) auxiliary files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/auxiliary"
+	$(Q) $(UNICODE_AUXILIARY_DOWNLOAD) $@
+
+$(UNICODE_UCD_EMOJI_FILES):
+	$(ECHO) Downloading Unicode UCD emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_DATA_DIR)/emoji"
+	$(Q) $(UNICODE_UCD_EMOJI_DOWNLOAD) $@
+
+$(UNICODE_EMOJI_FILES):
+	$(ECHO) Downloading Unicode emoji $(UNICODE_EMOJI_VERSION) files...
+	$(Q) $(MAKEDIRS) "$(UNICODE_SRC_EMOJI_DATA_DIR)"
+	$(Q) $(UNICODE_EMOJI_DOWNLOAD) $@
 
 $(srcdir)/lib/unicode_normalize/tables.rb: \
 	$(UNICODE_SRC_DATA_DIR)/$(HAVE_BASERUBY:yes=.unicode-tables.time)
