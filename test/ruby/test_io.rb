@@ -3812,7 +3812,7 @@ __END__
   def test_io_select_with_many_files
     bug8080 = '[ruby-core:53349]'
 
-    assert_normal_exit %q{
+    assert_separately [], <<~RUBY
       require "tempfile"
 
       # Unfortunately, ruby doesn't export FD_SETSIZE. then we assume it's 1024.
@@ -3838,7 +3838,7 @@ __END__
           File.unlink(t.path)
         }
       end
-    }, bug8080, timeout: 100
+    RUBY
   end if defined?(Process::RLIMIT_NOFILE)
 
   def test_read_32bit_boundary
