@@ -2632,7 +2632,7 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
     return is_pointer_to_heap(objspace_ptr, ptr);
 }
 
-#define ZOMBIE_OBJ_KEPT_FLAGS (FL_SEEN_OBJ_ID | FL_FINALIZE)
+#define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
 
 void
 rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
@@ -2856,7 +2856,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new3(2, rb_gc_impl_object_id(objspace, obj), block);
         rb_obj_hide(table);
         st_add_direct(finalizer_table, obj, table);
     }
@@ -2898,24 +2898,11 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 }
 
 static VALUE
-get_object_id_in_finalizer(rb_objspace_t *objspace, VALUE obj)
-{
-    if (FL_TEST_RAW(obj, FL_SEEN_OBJ_ID)) {
-        return rb_gc_impl_object_id(objspace, obj);
-    }
-    else {
-        VALUE id = ULL2NUM(objspace->next_object_id);
-        objspace->next_object_id += OBJ_ID_INCREMENT;
-        return id;
-    }
-}
-
-static VALUE
 get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
 }
 
 static void
@@ -2930,7 +2917,7 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
         FL_UNSET(zombie, FL_FINALIZE);
         st_data_t table;
         if (st_delete(finalizer_table, &key, &table)) {
-            rb_gc_run_obj_finalizer(get_object_id_in_finalizer(objspace, zombie), RARRAY_LEN(table), get_final, (void *)table);
+            rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
         }
         else {
             rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
@@ -2956,10 +2943,6 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         int lev = rb_gc_vm_lock();
         {
             GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
-            if (FL_TEST_RAW(zombie, FL_SEEN_OBJ_ID)) {
-                obj_free_object_id(objspace, zombie);
-            }
-
             GC_ASSERT(page->heap->final_slots_count > 0);
             GC_ASSERT(page->final_slots > 0);
 
@@ -3071,16 +3054,15 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 }
 
 static int
-rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t data)
+rb_gc_impl_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
 {
-    rb_objspace_t *objspace = (rb_objspace_t *)data;
     VALUE obj = (VALUE)key;
     VALUE table = (VALUE)val;
 
     GC_ASSERT(RB_FL_TEST(obj, FL_FINALIZE));
     GC_ASSERT(RB_BUILTIN_TYPE(val) == T_ARRAY);
 
-    rb_gc_run_obj_finalizer(rb_gc_impl_object_id(objspace, obj), RARRAY_LEN(table), get_final, (void *)table);
+    rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
 
     FL_UNSET(obj, FL_FINALIZE);
 
@@ -3107,7 +3089,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     }
 
     while (finalizer_table->num_entries) {
-        st_foreach(finalizer_table, rb_gc_impl_shutdown_call_finalizer_i, (st_data_t)objspace);
+        st_foreach(finalizer_table, rb_gc_impl_shutdown_call_finalizer_i, 0);
     }
 
     /* run finalizers */
@@ -3564,12 +3546,11 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 
                 rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
 
-                bool has_object_id = FL_TEST_RAW(vp, FL_SEEN_OBJ_ID);
+                if (FL_TEST_RAW(vp, FL_SEEN_OBJ_ID)) {
+                    obj_free_object_id(objspace, vp);
+                }
                 rb_gc_obj_free_vm_weak_references(vp);
                 if (rb_gc_obj_free(objspace, vp)) {
-                    if (has_object_id) {
-                        obj_free_object_id(objspace, vp);
-                    }
                     // always add free slots back to the swept pages freelist,
                     // so that if we're compacting, we can re-use the slots
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, BASE_SLOT_SIZE);
