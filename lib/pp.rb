@@ -276,7 +276,7 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
-      kwsplat = EMPTY_HASH
+      kwsplat = EMPTY_KWHASH
       list.__send__(iter_method) {|*v|
         if first
           first = false
@@ -286,10 +286,10 @@ class PP < PrettyPrint
         kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
-    EMPTY_HASH = if RUBY_VERSION >= "3.0"
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0"
       {}.freeze
     end
-    private_constant :EMPTY_HASH
+    private_constant :EMPTY_KWHASH
 
     # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
