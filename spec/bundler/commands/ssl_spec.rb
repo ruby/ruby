@@ -43,7 +43,7 @@ RSpec.describe "bundle doctor ssl" do
       expect { subject.run }.to output("").to_stdout.and output(expected_err).to_stderr
     end
 
-    it "fails due to certificate verification" do
+    it "fails due to certificate verification", :ruby_repo do
       net_http = Class.new(Artifice::Net::HTTP) do
         def connect
           raise OpenSSL::SSL::SSLError, "certificate verify failed"
