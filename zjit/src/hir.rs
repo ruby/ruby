@@ -4,7 +4,6 @@
 use crate::{
     cruby::*,
     options::{get_option, DumpHIR},
-    hir_type::types::Fixnum,
     profile::{self, get_or_create_iseq_payload},
     state::ZJITState,
 };
@@ -925,6 +924,43 @@ impl Function {
         }
     }
 
+    fn likely_is_fixnum(&self, val: InsnId, profiled_type: Type) -> bool {
+        return self.is_a(val, types::Fixnum) || profiled_type.is_subtype(types::Fixnum);
+    }
+
+    fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
+        if self.is_a(val, types::Fixnum) { return val; }
+        return self.push_insn(block, Insn::GuardType { val, guard_type: types::Fixnum, state });
+    }
+
+    fn arguments_likely_fixnums(&mut self, payload: &profile:: IseqPayload, left: InsnId, right: InsnId, state: InsnId) -> bool {
+        let mut left_profiled_type = types::BasicObject;
+        let mut right_profiled_type = types::BasicObject;
+        let frame_state = self.frame_state(state);
+        let insn_idx = frame_state.insn_idx;
+        if let Some([left_type, right_type]) = payload.get_operand_types(insn_idx as usize) {
+            left_profiled_type = *left_type;
+            right_profiled_type = *right_type;
+        }
+        self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
+    }
+
+    fn try_rewrite_fixnum_op(&mut self, block: BlockId, orig_insn_id: InsnId, f: &dyn Fn(InsnId, InsnId) -> Insn, bop: u32, left: InsnId, right: InsnId, payload: &profile::IseqPayload, state: InsnId) {
+        if self.arguments_likely_fixnums(payload, left, right, state) {
+            if bop == BOP_NEQ {
+                // For opt_neq, the interpreter checks that both neq and eq are unchanged.
+                self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
+            }
+            self.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop }));
+            let left = self.coerce_to_fixnum(block, left, state);
+            let right = self.coerce_to_fixnum(block, right, state);
+            let result = self.push_insn(block, f(left, right));
+            self.make_equal_to(orig_insn_id, result);
+        } else {
+            self.push_insn_id(block, orig_insn_id);
+        }
+    }
+
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
     /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
     fn optimize_direct_sends(&mut self) {
@@ -934,6 +970,28 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "+" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "*" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "/" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "%" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "==" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "!=" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<=" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], payload, state),
+                    Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
+                        self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], payload, state),
                     Insn::SendWithoutBlock { self_val, call_info, cd, args, state } => {
                         let frame_state = self.frame_state(state);
                         let self_type = match payload.get_operand_types(frame_state.insn_idx) {
@@ -1543,7 +1601,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut visited = HashSet::new();
 
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let payload = get_or_create_iseq_payload(iseq);
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -1575,41 +1632,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
                 .unwrap();
-            // Preserve the actual index for the instruction being compiled
-            let current_insn_idx = insn_idx;
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
-
-            // Push a FixnumXxx instruction if profiled operand types are fixnums
-            macro_rules! push_fixnum_insn {
-                ($insn:ident, $method_name:expr, $bop:ident $(, $key:ident)?) => {
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    if payload.have_two_fixnums(current_insn_idx as usize) {
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: $bop }));
-                        if $bop == BOP_NEQ {
-                            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-                            fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
-                        }
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        let left = fun.push_insn(block, Insn::GuardType { val: left, guard_type: Fixnum, state: exit_id });
-                        let right = fun.push_insn(block, Insn::GuardType { val: right, guard_type: Fixnum, state: exit_id });
-                        state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: exit_id)? }));
-                    } else {
-                        let cd: *const rb_call_data = if $bop == BOP_NEQ {
-                            //  opt_neq is a special case where it has two cd and the first one is opt_eq.
-                            get_arg(pc, 1).as_ptr()
-                        } else {
-                            get_arg(pc, 0).as_ptr()
-                        };
-                        let right = state.stack_pop()?;
-                        let left = state.stack_pop()?;
-                        let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: $method_name.into() }, cd, args: vec![right], state: exit_id });
-                        state.stack_push(send);
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
-                    }
-                };
-            }
 
             match opcode {
                 YARVINSN_nop => {},
@@ -1736,58 +1760,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                 }
 
-                YARVINSN_opt_plus => {
-                    push_fixnum_insn!(FixnumAdd, "+", BOP_PLUS, state);
-                }
-                YARVINSN_opt_minus => {
-                    push_fixnum_insn!(FixnumSub, "-", BOP_MINUS, state);
-                }
-                YARVINSN_opt_mult => {
-                    push_fixnum_insn!(FixnumMult, "*", BOP_MULT, state);
-                }
-                YARVINSN_opt_div => {
-                    push_fixnum_insn!(FixnumDiv, "/", BOP_DIV, state);
-                }
-                YARVINSN_opt_mod => {
-                    push_fixnum_insn!(FixnumMod, "%", BOP_MOD, state);
-                }
-
-                YARVINSN_opt_eq => {
-                    push_fixnum_insn!(FixnumEq, "==", BOP_EQ);
-                }
                 YARVINSN_opt_neq => {
-                    push_fixnum_insn!(FixnumNeq, "!=", BOP_NEQ);
-                }
-                YARVINSN_opt_lt => {
-                    push_fixnum_insn!(FixnumLt, "<", BOP_LT);
-                }
-                YARVINSN_opt_le => {
-                    push_fixnum_insn!(FixnumLe, "<=", BOP_LE);
-                }
-                YARVINSN_opt_gt => {
-                    push_fixnum_insn!(FixnumGt, ">", BOP_GT);
-                }
-                YARVINSN_opt_ge => {
-                    push_fixnum_insn!(FixnumGe, ">==", BOP_GE);
-                }
-                YARVINSN_opt_ltlt => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let right = state.stack_pop()?;
-                    let left = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: left, call_info: CallInfo { method_name: "<<".into() }, cd, args: vec![right], state: exit_id });
-                    state.stack_push(send);
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
-                }
-                YARVINSN_opt_aset => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let set = state.stack_pop()?;
-                    let obj = state.stack_pop()?;
+                    // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
+                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+
+
+                    let method_name = unsafe {
+                        let mid = rb_vm_ci_mid(call_info);
+                        mid.contents_lossy().into_owned()
+                    };
+                    let mut args = vec![];
+                    for _ in 0..argc {
+                        args.push(state.stack_pop()?);
+                    }
+                    args.reverse();
+
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "[]=".into() }, cd, args: vec![obj, set], state: exit_id });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    state.stack_push(send);
                     fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
-                    state.stack_push(set);
                 }
 
                 YARVINSN_leave => {
@@ -1795,6 +1789,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
+                YARVINSN_opt_plus |
+                YARVINSN_opt_minus |
+                YARVINSN_opt_mult |
+                YARVINSN_opt_div |
+                YARVINSN_opt_mod |
+                YARVINSN_opt_eq |
+                YARVINSN_opt_lt |
+                YARVINSN_opt_le |
+                YARVINSN_opt_gt |
+                YARVINSN_opt_ge |
+                YARVINSN_opt_ltlt |
+                YARVINSN_opt_aset |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -2343,11 +2349,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumAdd v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :+, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2360,11 +2364,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumSub v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :-, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2377,11 +2379,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumMult v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :*, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2394,11 +2394,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumDiv v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :/, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2411,11 +2409,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumMod v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :%, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2428,11 +2424,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumEq v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :==, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2445,12 +2439,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v8:BoolExact = FixnumNeq v6, v7
-              Return v8
+              v4:BasicObject = SendWithoutBlock v0, :!=, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2463,11 +2454,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumLt v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :<, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2480,11 +2469,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumLe v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :<=, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2497,11 +2484,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumGt v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :>, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2527,28 +2512,22 @@ mod tests {
               v3:Fixnum[0] = Const Value(0)
               v4:Fixnum[10] = Const Value(10)
               Jump bb2(v3, v4)
-            bb2(v6:Fixnum, v7:Fixnum):
+            bb2(v6:BasicObject, v7:BasicObject):
               v9:Fixnum[0] = Const Value(0)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v12:Fixnum = GuardType v7, Fixnum
-              v13:Fixnum[0] = GuardType v9, Fixnum
-              v14:BoolExact = FixnumGt v12, v13
-              v15:CBool = Test v14
-              IfTrue v15, bb1(v6, v7)
-              v17:NilClassExact = Const Value(nil)
+              v11:BasicObject = SendWithoutBlock v7, :>, v9
+              PatchPoint CalleeModifiedLocals(v11)
+              v13:CBool = Test v11
+              IfTrue v13, bb1(v6, v7)
+              v15:NilClassExact = Const Value(nil)
               Return v6
-            bb1(v19:Fixnum, v20:Fixnum):
-              v22:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v25:Fixnum = GuardType v19, Fixnum
-              v26:Fixnum[1] = GuardType v22, Fixnum
-              v27:Fixnum = FixnumAdd v25, v26
-              v28:Fixnum[1] = Const Value(1)
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v31:Fixnum = GuardType v20, Fixnum
-              v32:Fixnum[1] = GuardType v28, Fixnum
-              v33:Fixnum = FixnumSub v31, v32
-              Jump bb2(v27, v33)
+            bb1(v17:BasicObject, v18:BasicObject):
+              v20:Fixnum[1] = Const Value(1)
+              v22:BasicObject = SendWithoutBlock v17, :+, v20
+              PatchPoint CalleeModifiedLocals(v22)
+              v24:Fixnum[1] = Const Value(1)
+              v26:BasicObject = SendWithoutBlock v18, :-, v24
+              PatchPoint CalleeModifiedLocals(v26)
+              Jump bb2(v22, v26)
         "#]]);
     }
 
@@ -2561,11 +2540,9 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:BoolExact = FixnumGe v5, v6
-              Return v7
+              v4:BasicObject = SendWithoutBlock v0, :>=, v1
+              PatchPoint CalleeModifiedLocals(v4)
+              Return v4
         "#]]);
     }
 
@@ -2732,8 +2709,10 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              PatchPoint CalleeModifiedLocals(v15)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v16:Fixnum[6] = Const Value(6)
+              PatchPoint CalleeModifiedLocals(v16)
               Return v16
         "#]]);
     }
@@ -2754,8 +2733,9 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v10:Fixnum[3] = Const Value(3)
-              Return v10
+              PatchPoint CalleeModifiedLocals(v15)
+              v8:Fixnum[3] = Const Value(3)
+              Return v8
         "#]]);
     }
 
@@ -2775,10 +2755,11 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              PatchPoint CalleeModifiedLocals(v15)
               Jump bb1()
             bb1():
-              v13:Fixnum[4] = Const Value(4)
-              Return v13
+              v11:Fixnum[4] = Const Value(4)
+              Return v11
         "#]]);
     }
 
@@ -2798,8 +2779,9 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v10:Fixnum[3] = Const Value(3)
-              Return v10
+              PatchPoint CalleeModifiedLocals(v15)
+              v8:Fixnum[3] = Const Value(3)
+              Return v8
         "#]]);
     }
 
@@ -2816,9 +2798,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v5:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = FixnumAdd v5, v2
-              Return v7
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = FixnumAdd v8, v2
+              PatchPoint CalleeModifiedLocals(v9)
+              Return v9
         "#]]);
     }
 
@@ -3061,10 +3044,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3081,10 +3065,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3101,10 +3086,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3121,11 +3107,12 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumDiv v5, v6
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              v11:Fixnum = FixnumDiv v9, v10
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3142,11 +3129,12 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v7:Fixnum = FixnumMod v5, v6
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              v11:Fixnum = FixnumMod v9, v10
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3163,10 +3151,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3183,10 +3172,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3203,10 +3193,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3223,10 +3214,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3243,10 +3235,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v5:Fixnum = GuardType v0, Fixnum
-              v6:Fixnum = GuardType v1, Fixnum
-              v8:Fixnum[5] = Const Value(5)
-              Return v8
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v11)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
@@ -3262,12 +3255,13 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v6:Fixnum = GuardType v0, Fixnum
-              v7:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum[5] = Const Value(5)
-              Return v9
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              v10:Fixnum = GuardType v0, Fixnum
+              v11:Fixnum = GuardType v1, Fixnum
+              PatchPoint CalleeModifiedLocals(v12)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
         "#]]);
     }
 
