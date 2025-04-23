@@ -495,6 +495,8 @@ fn gen_send_without_block_direct(
     let branch = Branch::new();
     let dummy_ptr = cb.get_write_ptr().raw_ptr(cb);
     jit.branch_iseqs.push((branch.clone(), iseq));
+    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
     Some(asm.ccall_with_branch(dummy_ptr, c_args, &branch))
 }
 
