@@ -534,8 +534,8 @@ struct fstring_table_entry {
 
 struct fstring_table_struct {
     struct fstring_table_entry *entries;
-    int capacity;
-    int deleted_entries;
+    unsigned int capacity;
+    unsigned int deleted_entries;
     rb_atomic_t count; // TODO: pad to own cache line?
 };
 
@@ -757,7 +757,7 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
                 inserting = true;
             }
 
-            int prev_count = RUBY_ATOMIC_FETCH_ADD(table->count, 1);
+            unsigned int prev_count = RUBY_ATOMIC_FETCH_ADD(table->count, 1);
 
             if (UNLIKELY(prev_count > table->capacity / 2)) {
                 fstring_try_resize(table_obj);
@@ -891,7 +891,7 @@ rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_
     }
     struct fstring_table_struct *table = RTYPEDDATA_GET_DATA(table_obj);
 
-    for (int i = 0; i < table->capacity; i++) {
+    for (unsigned int i = 0; i < table->capacity; i++) {
         VALUE key = table->entries[i].str;
         if(key == FSTRING_TABLE_EMPTY) continue;
         if(key == FSTRING_TABLE_TOMBSTONE) continue;
@@ -12987,7 +12987,7 @@ Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
     struct fstring_table_struct *fstring_table = RTYPEDDATA_GET_DATA(fstring_table_obj);
-    for (int i = 0; i < fstring_table->capacity; i++) {
+    for (unsigned int i = 0; i < fstring_table->capacity; i++) {
         VALUE str = fstring_table->entries[i].str;
         if (!str) continue;
         RBASIC_SET_CLASS(str, rb_cString);
