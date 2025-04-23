@@ -71,7 +71,7 @@ and trailing empty substrings are included:
 
   'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
 
-If a block is given, it is called with each substring, and returns +self+:
+If a block is given, it is called with each substring and returns +self+:
 
   'abc def ghi'.split(' ') {|substring| p substring }
 
@@ -83,9 +83,9 @@ Output:
   => "abc def ghi"
 
 Note that the above example is functionally the same as calling +#each+ after
-+#split+ with the same block. However, the above example has better performance
-because it avoids the creation of an intermediate array. Also, note the
-different return values.
++#split+ and giving the same block. However, the above example has better
+performance because it avoids the creation of an intermediate array. Also,
+note the different return values.
 
   'abc def ghi'.split(' ').each {|substring| p substring }
 
