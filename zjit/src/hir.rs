@@ -113,16 +113,6 @@ pub enum Invariant {
         /// The method ID of the method we want to assume unchanged
         method: ID,
     },
-    /// Any send target can reflectively inspect its call-stack and modify parent call frame
-    /// locals. If that happens, we need to side-exit after the call returns because our
-    /// assumptions and type checks may have been invalidated behind our backs.
-    CalleeModifiedLocals {
-        /// The Send instruction that caused this PatchPoint to be emitted. If by the time we are
-        /// generating LIR the send is no longer a Send(WithoutBlock)(Direct) (meaning it has been
-        /// optimized into a FixnumAdd or similar), we need not emit the PatchPoint; we know the
-        /// function is well-behaved.
-        send: InsnId,
-    },
 }
 
 impl Invariant {
@@ -170,9 +160,6 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     method.contents_lossy(),
                     self.ptr_map.map_id(method.0)
                 )
-            }
-            Invariant::CalleeModifiedLocals { send } => {
-                write!(f, "CalleeModifiedLocals({send})")
             }
         }
     }
@@ -733,7 +720,6 @@ impl Function {
         let insn_id = self.union_find.find_const(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
-            PatchPoint(Invariant::CalleeModifiedLocals { send }) => PatchPoint(Invariant::CalleeModifiedLocals { send: find!(*send) }),
             result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..}
                     | Jump(_) | PatchPoint {..}) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
@@ -1721,14 +1707,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     queue.push_back((state.clone(), target, target_idx));
                     break;  // Don't enqueue the next block as a successor
                 }
-                YARVINSN_opt_nil_p => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
-                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name: "nil?".into() }, cd, args: vec![], state: exit_id });
-                    state.stack_push(send);
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
-                }
                 YARVINSN_getlocal_WC_0 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.getlocal(ep_offset);
@@ -1781,7 +1759,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
                     state.stack_push(send);
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
 
                 YARVINSN_leave => {
@@ -1789,6 +1766,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
+                YARVINSN_opt_nil_p |
                 YARVINSN_opt_plus |
                 YARVINSN_opt_minus |
                 YARVINSN_opt_mult |
@@ -1821,7 +1799,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
                     state.stack_push(send);
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
@@ -1843,7 +1820,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
-                    fun.push_insn(block, Insn::PatchPoint(Invariant::CalleeModifiedLocals { send }));
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
@@ -2266,7 +2242,6 @@ mod tests {
               v1:Fixnum[1] = Const Value(1)
               v2:Fixnum[2] = Const Value(2)
               v4:BasicObject = SendWithoutBlock v1, :+, v2
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2350,7 +2325,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :+, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2365,7 +2339,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :-, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2380,7 +2353,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :*, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2395,7 +2367,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :/, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2410,7 +2381,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :%, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2425,7 +2395,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :==, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2440,7 +2409,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :!=, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2455,7 +2423,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :<, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2470,7 +2437,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :<=, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2485,7 +2451,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :>, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2515,19 +2480,16 @@ mod tests {
             bb2(v6:BasicObject, v7:BasicObject):
               v9:Fixnum[0] = Const Value(0)
               v11:BasicObject = SendWithoutBlock v7, :>, v9
-              PatchPoint CalleeModifiedLocals(v11)
-              v13:CBool = Test v11
-              IfTrue v13, bb1(v6, v7)
-              v15:NilClassExact = Const Value(nil)
+              v12:CBool = Test v11
+              IfTrue v12, bb1(v6, v7)
+              v14:NilClassExact = Const Value(nil)
               Return v6
-            bb1(v17:BasicObject, v18:BasicObject):
-              v20:Fixnum[1] = Const Value(1)
-              v22:BasicObject = SendWithoutBlock v17, :+, v20
-              PatchPoint CalleeModifiedLocals(v22)
-              v24:Fixnum[1] = Const Value(1)
-              v26:BasicObject = SendWithoutBlock v18, :-, v24
-              PatchPoint CalleeModifiedLocals(v26)
-              Jump bb2(v22, v26)
+            bb1(v16:BasicObject, v17:BasicObject):
+              v19:Fixnum[1] = Const Value(1)
+              v21:BasicObject = SendWithoutBlock v16, :+, v19
+              v22:Fixnum[1] = Const Value(1)
+              v24:BasicObject = SendWithoutBlock v17, :-, v22
+              Jump bb2(v21, v24)
         "#]]);
     }
 
@@ -2541,7 +2503,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :>=, v1
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -2591,7 +2552,6 @@ mod tests {
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[3] = Const Value(3)
               v5:BasicObject = SendWithoutBlock v1, :bar, v2, v3
-              PatchPoint CalleeModifiedLocals(v5)
               Return v5
         "#]]);
     }
@@ -2610,7 +2570,6 @@ mod tests {
             fn test:
             bb0(v0:BasicObject):
               v3:BasicObject = Send v0, 0x1000, :each
-              PatchPoint CalleeModifiedLocals(v3)
               Return v3
         "#]]);
     }
@@ -2633,7 +2592,6 @@ mod tests {
               v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
               v11:StringExact = StringCopy v10
               v13:BasicObject = SendWithoutBlock v1, :unknown_method, v4, v7, v9, v11
-              PatchPoint CalleeModifiedLocals(v13)
               Return v13
         "#]]);
     }
@@ -2709,11 +2667,9 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              PatchPoint CalleeModifiedLocals(v15)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v16:Fixnum[6] = Const Value(6)
-              PatchPoint CalleeModifiedLocals(v16)
-              Return v16
+              v14:Fixnum[6] = Const Value(6)
+              Return v14
         "#]]);
     }
 
@@ -2733,9 +2689,8 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              PatchPoint CalleeModifiedLocals(v15)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
+              v7:Fixnum[3] = Const Value(3)
+              Return v7
         "#]]);
     }
 
@@ -2755,11 +2710,10 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              PatchPoint CalleeModifiedLocals(v15)
               Jump bb1()
             bb1():
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
+              v10:Fixnum[4] = Const Value(4)
+              Return v10
         "#]]);
     }
 
@@ -2779,9 +2733,8 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              PatchPoint CalleeModifiedLocals(v15)
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
+              v7:Fixnum[3] = Const Value(3)
+              Return v7
         "#]]);
     }
 
@@ -2798,10 +2751,9 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v0, Fixnum
-              v9:Fixnum = FixnumAdd v8, v2
-              PatchPoint CalleeModifiedLocals(v9)
-              Return v9
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = FixnumAdd v7, v2
+              Return v8
         "#]]);
     }
 
@@ -2820,10 +2772,9 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
-              PatchPoint CalleeModifiedLocals(v8)
-              Return v8
+              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
+              Return v7
         "#]]);
     }
 
@@ -2843,7 +2794,6 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               v3:BasicObject = SendWithoutBlock v1, :foo
-              PatchPoint CalleeModifiedLocals(v3)
               Return v3
         "#]]);
     }
@@ -2864,10 +2814,9 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v8:BasicObject = SendWithoutBlockDirect v7, :foo (0x1018)
-              PatchPoint CalleeModifiedLocals(v8)
-              Return v8
+              v6:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1018)
+              Return v7
         "#]]);
     }
 
@@ -2885,10 +2834,9 @@ mod opt_tests {
               v1:BasicObject = PutSelf
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008)
-              v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v9:BasicObject = SendWithoutBlockDirect v8, :Integer (0x1018), v2
-              PatchPoint CalleeModifiedLocals(v9)
-              Return v9
+              v7:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1018), v2
+              Return v8
         "#]]);
     }
 
@@ -2909,10 +2857,9 @@ mod opt_tests {
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v10:BasicObject = SendWithoutBlockDirect v9, :foo (0x1018), v2, v3
-              PatchPoint CalleeModifiedLocals(v10)
-              Return v10
+              v8:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1018), v2, v3
+              Return v9
         "#]]);
     }
 
@@ -2934,15 +2881,13 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
-              v11:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
-              v12:BasicObject = SendWithoutBlockDirect v11, :foo (0x1018)
-              PatchPoint CalleeModifiedLocals(v12)
-              v5:BasicObject = PutSelf
+              v9:BasicObject[VALUE(0x1010)] = GuardBitEquals v1, VALUE(0x1010)
+              v10:BasicObject = SendWithoutBlockDirect v9, :foo (0x1018)
+              v4:BasicObject = PutSelf
               PatchPoint MethodRedefined(Object@0x1000, bar@0x1020)
-              v14:BasicObject[VALUE(0x1010)] = GuardBitEquals v5, VALUE(0x1010)
-              v15:BasicObject = SendWithoutBlockDirect v14, :bar (0x1018)
-              PatchPoint CalleeModifiedLocals(v15)
-              Return v15
+              v12:BasicObject[VALUE(0x1010)] = GuardBitEquals v4, VALUE(0x1010)
+              v13:BasicObject = SendWithoutBlockDirect v12, :bar (0x1018)
+              Return v13
         "#]]);
     }
 
@@ -3044,11 +2989,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3065,11 +3009,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3086,11 +3029,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3107,12 +3049,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              v11:Fixnum = FixnumDiv v9, v10
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v10:Fixnum = FixnumDiv v8, v9
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3129,12 +3070,11 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              v11:Fixnum = FixnumMod v9, v10
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v10:Fixnum = FixnumMod v8, v9
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3151,11 +3091,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3172,11 +3111,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3193,11 +3131,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3214,11 +3151,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3235,11 +3171,10 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v9:Fixnum = GuardType v0, Fixnum
-              v10:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v11)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3257,11 +3192,10 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v10:Fixnum = GuardType v0, Fixnum
-              v11:Fixnum = GuardType v1, Fixnum
-              PatchPoint CalleeModifiedLocals(v12)
-              v6:Fixnum[5] = Const Value(5)
-              Return v6
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
         "#]]);
     }
 
@@ -3293,10 +3227,9 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
-              v7:Fixnum = GuardType v0, Fixnum
-              v8:BasicObject = CCall itself@0x1010, v7
-              PatchPoint CalleeModifiedLocals(v8)
-              Return v8
+              v6:Fixnum = GuardType v0, Fixnum
+              v7:BasicObject = CCall itself@0x1010, v6
+              Return v7
         "#]]);
     }
 
@@ -3314,7 +3247,6 @@ mod opt_tests {
               v1:Fixnum[1] = Const Value(1)
               v2:Fixnum[0] = Const Value(0)
               v4:BasicObject = SendWithoutBlock v1, :itself, v2
-              PatchPoint CalleeModifiedLocals(v4)
               Return v4
         "#]]);
     }
@@ -3332,9 +3264,8 @@ mod opt_tests {
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
-              v9:Fixnum = CCall bytesize@0x1018, v2
-              PatchPoint CalleeModifiedLocals(v9)
-              Return v9
+              v8:Fixnum = CCall bytesize@0x1018, v2
+              Return v8
         "#]]);
     }
 }
