@@ -89,5 +89,5 @@ make test-all TESTS="test/ruby/test_zjit.rb"
 You can also run a single test case by matching the method name:
 
 ```
-make test-all TESTS="test/ruby/test_zjit.rb -n test_putobject"
+make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
 ```
