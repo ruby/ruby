@@ -25,11 +25,15 @@ class TestFrozenError < Test::Unit::TestCase
   end
 
   def test_message
-    obj = Object.new.freeze
-    e = assert_raise_with_message(FrozenError, /can't modify frozen #{obj.class}/) {
-      obj.instance_variable_set(:@test, true)
-    }
-    assert_include(e.message, obj.inspect)
+    [
+      Object.new.freeze,
+      Object.new.freeze.tap(&:singleton_class),  # [Bug #21282]
+    ].each do |obj|
+      e = assert_raise_with_message(FrozenError, /can't modify frozen #{obj.class}/) {
+        obj.instance_variable_set(:@test, true)
+      }
+      assert_include(e.message, obj.inspect)
+    end
 
     klass = Class.new do
       def init
