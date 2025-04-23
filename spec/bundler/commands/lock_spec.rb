@@ -1609,6 +1609,64 @@ RSpec.describe "bundle lock" do
     end
   end
 
+  context "when a system gem has incorrect dependencies, different from remote gems" do
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.add_dependency "bar"
+        end
+
+        build_gem "bar", "1.0.0"
+      end
+
+      system_gems "foo-1.0.0", gem_repo: gem_repo4, path: default_bundle_path
+
+      # simulate gemspec with wrong empty dependencies
+      foo_gemspec_path = default_bundle_path("specifications/foo-1.0.0.gemspec")
+      foo_gemspec = Gem::Specification.load(foo_gemspec_path.to_s)
+      foo_gemspec.dependencies.clear
+      File.write(foo_gemspec_path, foo_gemspec.to_ruby)
+    end
+
+    it "generates a lockfile using remote dependencies, and prints a warning" do
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "foo"
+      G
+
+      checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo4, "foo", "1.0.0"
+        c.checksum gem_repo4, "bar", "1.0.0"
+      end
+
+      simulate_platform "x86_64-linux" do
+        bundle "lock --verbose"
+      end
+
+      expect(err).to eq("Local specification for foo-1.0.0 has different dependencies than the remote gem, ignoring it")
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            bar (1.0.0)
+            foo (1.0.0)
+              bar
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          foo
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   it "properly shows resolution errors including OR requirements" do
     build_repo4 do
       build_gem "activeadmin", "2.13.1" do |s|
