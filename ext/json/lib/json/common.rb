@@ -236,10 +236,6 @@ module JSON
   # deep.
   class NestingError < ParserError; end
 
-  # :stopdoc:
-  class CircularDatastructure < NestingError; end
-  # :startdoc:
-
   # This exception is raised if a generator or unparser error occurs.
   class GeneratorError < JSONError
     attr_reader :invalid_object

@@ -489,18 +489,17 @@ class VCS
       else
         arg = ["--since=25 Dec 00:00:00", to]
       end
-      writer =
-        if base_url == true
-          remote, = upstream
-          if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
-            remote.chomp!
-            # hack to redirect git.r-l.o to github
-            remote.sub!(/\Agit@git\.ruby-lang\.org:/, 'git@github.com:ruby/')
-            remote.sub!(/\Agit@(.*?):(.*?)(?:\.git)?\z/, 'https://\1/\2/commit/')
-          end
-          base_url = remote
+      if base_url == true
+        remote, = upstream
+        if remote &&= cmd_read(env, %W[#{COMMAND} remote get-url --no-push #{remote}])
+          remote.chomp!
+          # hack to redirect git.r-l.o to github
+          remote.sub!(/\Agit@git\.ruby-lang\.org:/, 'git@github.com:ruby/')
+          remote.sub!(/\Agit@(.*?):(.*?)(?:\.git)?\z/, 'https://\1/\2/commit/')
         end
-        format_changelog(path, arg, base_url)
+        base_url = remote
+      end
+      writer = changelog_formatter(path, arg, base_url)
       if !path or path == '-'
         writer[$stdout]
       else
@@ -510,7 +509,7 @@ class VCS
 
     LOG_FIX_REGEXP_SEPARATORS = '/!:;|,#%&'
 
-    def format_changelog(path, arg, base_url = nil)
+    def changelog_formatter(path, arg, base_url = nil)
       env = {'TZ' => 'JST-9', 'LANG' => 'C', 'LC_ALL' => 'C'}
       cmd = %W[#{COMMAND} log
         --format=fuller --notes=commits --notes=log-fix --topo-order --no-merges
@@ -570,7 +569,7 @@ class VCS
                         next
                       end
                     end
-                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #{n}\n"]
+                    message = ["changelog_formatter failed to replace #{wrong.dump} with #{correct.dump} at #{n}\n"]
                     from = [1, n-2].max
                     to = [s.size-1, n+2].min
                     s.each_with_index do |e, i|

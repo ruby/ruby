@@ -5,6 +5,11 @@ files:
   'doc/yjit/*': [team:yjit]
   'bootstraptest/test_yjit*': [team:yjit]
   'test/ruby/test_yjit*': [team:yjit]
+  'zjit*': [team:yjit]
+  'zjit/**/*': [team:yjit]
+  'zjit/src/cruby_bindings.inc.rs': []
+  'doc/zjit*': [team:yjit]
+  'test/ruby/test_zjit*': [team:yjit]
 options:
   ignore_draft: true
   # This currently doesn't work as intended. We want to skip reviews when only

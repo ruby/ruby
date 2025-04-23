@@ -3704,6 +3704,17 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *  With no block given, returns an Enumerator.
  *
+ *    e = (1..4).drop_while
+ *    p e #=> #<Enumerator: 1..4:drop_while>
+ *    i = e.next; p i; e.feed(i < 3) #=> 1
+ *    i = e.next; p i; e.feed(i < 3) #=> 2
+ *    i = e.next; p i; e.feed(i < 3) #=> 3
+ *    begin
+ *      e.next
+ *    rescue StopIteration
+ *      p $!.result #=> [3, 4]
+ *    end
+ *
  */
 
 static VALUE
@@ -5115,11 +5126,34 @@ enum_compact(VALUE obj)
  *
  * === #size
  *
- * \Enumerator has #size method.
- * It uses the size function argument for +Enumerator.new+.
- * It should returns the number of iterations (number of #each method yields).
- * The result is integer or +Float::INFINITY+.
- * However it may also return nil when it is difficult to determine the result.
+ * \Enumerator has a #size method.
+ * It uses the size function argument passed to +Enumerator.new+.
+ *
+ *   e = Enumerator.new(-> { 3 }) {|y| p y; y.yield :a; y.yield :b; y.yield :c; :z }
+ *   p e.size #=> 3
+ *   p e.next #=> :a
+ *   p e.next #=> :b
+ *   p e.next #=> :c
+ *   begin
+ *     e.next
+ *   rescue StopIteration
+ *     p $!.result #=> :z
+ *   end
+ *
+ * The result of the size function should represent the number of iterations
+ * (i.e., the number of times Enumerator::Yielder#yield is called).
+ * In the above example, the block calls #yield three times, and
+ * the size function, +-> { 3 }+, returns 3 accordingly.
+ * The result of the size function can be an integer, +Float::INFINITY+,
+ * or +nil+.
+ * An integer means the exact number of times #yield will be called,
+ * as shown above.
+ * +Float::INFINITY+ indicates an infinite number of #yield calls.
+ * +nil+ means the number of #yield calls is difficult or impossible to
+ * determine.
+ *
+ * Many iteration methods return an \Enumerator object with an
+ * appropriate size function if no block is given.
  *
  * Examples:
  *
@@ -5127,30 +5161,39 @@ enum_compact(VALUE obj)
  *   {a: "x", b: "y", c: "z"}.each.size #=> 3
  *   (0..20).to_a.permutation.size #=> 51090942171709440000
  *   loop.size #=> Float::INFINITY
- *   (1..100).drop_while.size #=> nil  # the size depends on the block values
- *   File.open("/etc/resolv.conf").each.size #=> nil # not computable without actually read the file.
+ *   (1..100).drop_while.size #=> nil  # size depends on the block's behavior
+ *   STDIN.each.size #=> nil # cannot be computed without consuming input
+ *   File.open("/etc/resolv.conf").each.size #=> nil # cannot be computed without reading the file
  *
- * The behavior of #size of Range-based enumerator depends on the #begin element.
-
- * * If the #begin element is an integer, #size methd returns integer or +Float::INFINITY+.
- * * If the #begin element is an object with #succ method except integer, #size methd returns nil.
- *   (It is too slow to compute the size by calling #succ repeatedly)
- * * If the #begin element is an object without #succ method, #size method raises TypeError.
+ * The behavior of #size for Range-based enumerators depends on the #begin element:
+ *
+ * - If the #begin element is an Integer, the #size method returns an Integer or +Float::INFINITY+.
+ * - If the #begin element is an object with a #succ method (other than Integer), #size returns +nil+.
+ *   (Computing the size would require repeatedly calling #succ, which may be too slow.)
+ * - If the #begin element does not have a #succ method, #size raises a TypeError.
  *
  * Examples:
  *
  *   (10..42).each.size #=> 33
- *   (10..42.9).each.size #=> 33 (#end element can be numeric other than integer)
+ *   (10..42.9).each.size #=> 33 (the #end element may be a non-integer numeric)
  *   (10..).each.size #=> Float::INFINITY
  *   ("a".."z").each.size #=> nil
  *   ("a"..).each.size #=> nil
- *   (1.0..9.0).each.size # raises TypeError (There is no Float#succ)
- *   (..10).each.size # raises TypeError (beginless range has nil as #begin element)
+ *   (1.0..9.0).each.size # raises TypeError (Float does not have #succ)
+ *   (..10).each.size # raises TypeError (beginless range has nil as its #begin)
  *
- * \Enumerable classes may have #size method.
- * It returns the result same as Enumerator#size in most cases: Array, Hash.
- * Some classes have no #size method: IO, Dir.
- * (Note that File#size is not related to File#each.  It returns nubmer of bytes instead of number of lines.)
+ * The \Enumerable module itself does not define a #size method.
+ * A class that includes \Enumerable may define its own #size method.
+ * It is recommended that such a #size method be consistent with
+ * Enumerator#size.
+ *
+ * Array and Hash implement #size and return values consistent with
+ * Enumerator#size.
+ * IO and Dir do not define #size, which is also consistent because the
+ * corresponding enumerator's size function returns +nil+.
+ *
+ * However, it is not strictly required for a class's #size method to match Enumerator#size.
+ * For example, File#size returns the number of bytes in the file, not the number of lines.
  *
  */
 

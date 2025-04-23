@@ -1954,6 +1954,17 @@ Init_Encoding(void)
 }
 
 void
+Init_unicode_version(void)
+{
+    extern const char onigenc_unicode_version_string[];
+
+    VALUE str = rb_usascii_str_new_static(onigenc_unicode_version_string,
+                                          strlen(onigenc_unicode_version_string));
+    OBJ_FREEZE(str);
+    rb_define_const(rb_cEncoding, "UNICODE_VERSION", str);
+}
+
+void
 Init_encodings(void)
 {
     rb_enc_init(&global_enc_table);

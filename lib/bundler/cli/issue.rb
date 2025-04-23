@@ -34,8 +34,8 @@ module Bundler
     end
 
     def doctor
-      require_relative "doctor"
-      Bundler::CLI::Doctor.new({}).run
+      require_relative "doctor/diagnose"
+      Bundler::CLI::Doctor::Diagnose.new({}).run
     end
   end
 end

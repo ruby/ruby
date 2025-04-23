@@ -473,7 +473,7 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  it "generates a valid gemspec", :ruby_repo do
+  it "generates a valid gemspec" do
     bundle "gem newgem --bin"
 
     prepare_gemspec(bundled_app("newgem", "newgem.gemspec"))

@@ -29,7 +29,7 @@ jobs:
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
 
       # Run this step first to make sure auto-style commits are pushed
-      - name: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && 'Auto-correct' || 'Check for' }} code styles
+      - name: ${{ github.ref == 'refs/heads/master' && 'Auto-correct' || 'Check for' }} code styles
         run: |
           set -x
           ruby tool/auto-style.rb "$GITHUB_OLD_SHA" "$GITHUB_NEW_SHA" "$PUSH_REF"
@@ -39,7 +39,8 @@ jobs:
           GIT_COMMITTER_NAME: git
           GITHUB_OLD_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.base.sha || github.event.before }}
           GITHUB_NEW_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.merge_commit_sha || github.event.after }}
-          PUSH_REF: ${{ (github.repository == 'ruby/ruby' && github.ref == 'refs/heads/master') && github.ref || '' }}
+          PUSH_REF: ${{ github.ref == 'refs/heads/master' && github.ref || '' }}
+        if: ${{ github.repository == 'ruby/ruby' }}
 
       - name: Check if C-sources are US-ASCII
         run: |
