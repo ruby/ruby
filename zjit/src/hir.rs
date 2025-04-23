@@ -789,7 +789,7 @@ impl Function {
 
     fn type_of(&self, insn: InsnId) -> Type {
         assert!(self.insns[insn.0].has_output());
-        self.insn_types[insn.0]
+        self.insn_types[self.union_find.find_const(insn).0]
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
