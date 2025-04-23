@@ -1425,14 +1425,6 @@ impl FrameState {
         self.stack.last().ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
 
-    /// Get a stack operand at idx
-    fn stack_opnd(&self, idx: usize) -> Result<InsnId, ParseError> {
-        match self.stack.get(self.stack.len() - idx - 1) {
-            Some(&opnd) => Ok(opnd),
-            _ => Err(ParseError::StackUnderflow(self.clone())),
-        }
-    }
-
     /// Set a stack operand at idx
     fn stack_setn(&mut self, idx: usize, opnd: InsnId) {
         let idx = self.stack.len() - idx - 1;
@@ -1598,7 +1590,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // For opt_neq, the interpreter checks that both neq and eq are unchanged.
                             fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }));
                         }
-                        let (left, right) = guard_two_fixnums(&mut state, exit_id, &mut fun, block)?;
+                        let right = state.stack_pop()?;
+                        let left = state.stack_pop()?;
+                        let left = fun.push_insn(block, Insn::GuardType { val: left, guard_type: Fixnum, state: exit_id });
+                        let right = fun.push_insn(block, Insn::GuardType { val: right, guard_type: Fixnum, state: exit_id });
                         state.stack_push(fun.push_insn(block, Insn::$insn { left, right$(, $key: exit_id)? }));
                     } else {
                         let cd: *const rb_call_data = if $bop == BOP_NEQ {
@@ -1866,18 +1861,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     }
 
     Ok(fun)
-}
-
-/// Generate guards for two fixnum outputs
-fn guard_two_fixnums(state: &mut FrameState, exit_state: InsnId, fun: &mut Function, block: BlockId) -> Result<(InsnId, InsnId), ParseError> {
-    let left = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(1)?, guard_type: Fixnum, state: exit_state });
-    let right = fun.push_insn(block, Insn::GuardType { val: state.stack_opnd(0)?, guard_type: Fixnum, state: exit_state });
-
-    // Pop operands after guards for side exits
-    state.stack_pop()?;
-    state.stack_pop()?;
-
-    Ok((left, right))
 }
 
 #[cfg(test)]
