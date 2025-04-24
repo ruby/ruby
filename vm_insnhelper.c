@@ -79,22 +79,23 @@ vm_stackoverflow(void)
 }
 
 NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
+/* critical level
+ * 0: VM stack overflow or about to machine stack overflow
+ * 1: machine stack overflow but may be recoverable
+ * 2: fatal machine stack overflow
+ */
 void
 rb_ec_stack_overflow(rb_execution_context_t *ec, int crit)
 {
     if (rb_during_gc()) {
         rb_bug("system stack overflow during GC. Faulty native extension?");
     }
-    if (crit) {
+    if (crit > 1) {
         ec->raised_flag = RAISED_STACKOVERFLOW;
         ec->errinfo = rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_stackfatal];
         EC_JUMP_TAG(ec, TAG_RAISE);
     }
-#ifdef USE_SIGALTSTACK
-    ec_stack_overflow(ec, TRUE);
-#else
-    ec_stack_overflow(ec, FALSE);
-#endif
+    ec_stack_overflow(ec, crit == 0);
 }
 
 static inline void stack_check(rb_execution_context_t *ec);

@@ -381,7 +381,7 @@ stack_check(rb_execution_context_t *ec)
     if (!rb_ec_raised_p(ec, RAISED_STACKOVERFLOW) &&
         rb_ec_stack_check(ec)) {
         rb_ec_raised_set(ec, RAISED_STACKOVERFLOW);
-        rb_ec_stack_overflow(ec, FALSE);
+        rb_ec_stack_overflow(ec, 0);
     }
 }
 

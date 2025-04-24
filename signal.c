@@ -856,7 +856,7 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
-        rb_ec_stack_overflow(ec, crit);
+        rb_ec_stack_overflow(ec, crit + 1);
     }
 }
 # else
@@ -867,7 +867,7 @@ check_stack_overflow(int sig, const void *addr)
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
         reset_sigmask(sig);
-        rb_ec_stack_overflow(th->ec, FALSE);
+        rb_ec_stack_overflow(th->ec, 1);
     }
 }
 # endif
