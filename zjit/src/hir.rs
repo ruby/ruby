@@ -978,18 +978,22 @@ impl Function {
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], payload, state),
                     Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
                         self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], payload, state),
-                    Insn::SendWithoutBlock { self_val, call_info, cd, args, state } => {
+                    Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
                         let frame_state = self.frame_state(state);
-                        let self_type = match payload.get_operand_types(frame_state.insn_idx) {
-                            Some([self_type, ..]) if self_type.is_top_self() => self_type,
-                            _ => { self.push_insn_id(block, insn_id); continue; }
+                        let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
+                            // If we know the class statically, use it to fold the lookup at compile-time.
+                            (klass, None)
+                        } else {
+                            // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
+                            match payload.get_operand_types(frame_state.insn_idx) {
+                                Some([self_type, ..]) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
+                                _ => { self.push_insn_id(block, insn_id); continue; }
+                            }
                         };
-                        let top_self = self_type.ruby_object().unwrap();
-                        let top_self_klass = top_self.class_of();
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
                         let mid = unsafe { vm_ci_mid(ci) };
                         // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(top_self_klass, mid) };
+                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
                         if cme.is_null() {
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -998,11 +1002,14 @@ impl Function {
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
                         let def_type = unsafe { get_cme_def_type(cme) };
                         if def_type != VM_METHOD_TYPE_ISEQ {
+                            // TODO(max): Allow non-iseq; cache cme
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: top_self_klass, method: mid }));
+                        self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass, method: mid }));
                         let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                        let self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected: top_self, state });
+                        if let Some(expected) = guard_equal_to {
+                            self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
+                        }
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
@@ -1038,6 +1045,9 @@ impl Function {
             // TODO(alan): there was a seemingly a miscomp here if you swap with
             // `inexact_ruby_class`. Theoretically it can call a method too general
             // for the receiver. Confirm and add a test.
+            //
+            // TODO(max): Use runtime_exact_ruby_class so we can also specialize on known (not just
+            // profiled) types.
             let (recv_class, recv_type) = payload.get_operand_types(iseq_insn_idx)
                 .and_then(|types| types.get(argc as usize))
                 .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type))))
@@ -3351,6 +3361,41 @@ mod opt_tests {
               v2:Fixnum[0] = Const Value(0)
               v4:BasicObject = SendWithoutBlock v1, :itself, v2
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn const_send_direct_integer() {
+        eval("
+            def test(x) = 1.zero?
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint MethodRedefined(Integer@0x1000, zero?@0x1008)
+              v7:BasicObject = SendWithoutBlockDirect v2, :zero? (0x1010)
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn class_known_send_direct_array() {
+        eval("
+            def test(x)
+              a = [1,2,3]
+              a.first
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v3:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v5:ArrayExact = ArrayDup v3
+              PatchPoint MethodRedefined(Array@0x1008, first@0x1010)
+              v10:BasicObject = SendWithoutBlockDirect v5, :first (0x1018)
+              Return v10
         "#]]);
     }
 

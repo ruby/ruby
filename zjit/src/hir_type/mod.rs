@@ -364,6 +364,26 @@ impl Type {
         }
     }
 
+    /// Return a pointer to the Ruby class that an object of this Type would have at run-time, if
+    /// known. This includes classes for HIR types such as ArrayExact or NilClassExact, which have
+    /// canonical Type representations that lack an explicit specialization in their `spec` fields.
+    pub fn runtime_exact_ruby_class(&self) -> Option<VALUE> {
+        if let Some(val) = self.exact_ruby_class() {
+            return Some(val);
+        }
+        if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
+        if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
+        if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
+        if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
+        if self.is_subtype(types::IntegerExact) { return Some(unsafe { rb_cInteger }); }
+        if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
+        if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
+        if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
+        if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }
+        if self.is_subtype(types::TrueClassExact) { return Some(unsafe { rb_cTrueClass }); }
+        None
+    }
+
     /// Check bit equality of two `Type`s. Do not use! You are probably looking for [`Type::is_subtype`].
     pub fn bit_equal(&self, other: Type) -> bool {
         self.bits == other.bits && self.spec == other.spec
