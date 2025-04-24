@@ -66,6 +66,7 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
       RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
@@ -144,8 +145,6 @@ jobs:
         run: |
           vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
         working-directory: src
-        env:
-          VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
 
       # TODO: We should use `../src` instead of `D:/a/ruby/ruby/src`
       - name: Configure
