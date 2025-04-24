@@ -961,6 +961,24 @@ module JSON
     load(...)
   end
   module_function :restore
+
+  class << self
+    private
+
+    def const_missing(const_name)
+      case const_name
+      when :PRETTY_STATE_PROTOTYPE
+        if RUBY_VERSION >= "3.0"
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1, category: :deprecated
+        else
+          warn "JSON::PRETTY_STATE_PROTOTYPE is deprecated and will be removed in json 3.0.0, just use JSON.pretty_generate", uplevel: 1
+        end
+        state.new(PRETTY_GENERATE_OPTIONS)
+      else
+        super
+      end
+    end
+  end
   # :startdoc:
 
   # JSON::Coder holds a parser and generator configuration.
