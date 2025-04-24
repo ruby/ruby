@@ -1028,10 +1028,11 @@ impl Function {
             fun: &mut Function,
             block: BlockId,
             payload: &profile::IseqPayload,
+            self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { self_val, cd, mut args, state, .. } = send else {
+            let Insn::SendWithoutBlock { mut self_val, cd, mut args, state, .. } = send else {
                 return Err(());
             };
 
@@ -1045,13 +1046,14 @@ impl Function {
             // TODO(alan): there was a seemingly a miscomp here if you swap with
             // `inexact_ruby_class`. Theoretically it can call a method too general
             // for the receiver. Confirm and add a test.
-            //
-            // TODO(max): Use runtime_exact_ruby_class so we can also specialize on known (not just
-            // profiled) types.
-            let (recv_class, recv_type) = payload.get_operand_types(iseq_insn_idx)
+            let (recv_class, guard_type) = if let Some(klass) = self_type.runtime_exact_ruby_class() {
+                (klass, None)
+            } else {
+                payload.get_operand_types(iseq_insn_idx)
                 .and_then(|types| types.get(argc as usize))
-                .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type))))
-                .ok_or(())?;
+                .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, Some(recv_type.unspecialized())))))
+                .ok_or(())?
+            };
 
             // Do method lookup
             let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
@@ -1090,8 +1092,10 @@ impl Function {
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
                         // Commit to the replacement. Put PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
-                        // Guard receiver class
-                        let self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: recv_type.unspecialized(), state });
+                        if let Some(guard_type) = guard_type {
+                            // Guard receiver class
+                            self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
+                        }
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
@@ -1119,8 +1123,9 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                if let send @ Insn::SendWithoutBlock { .. } = self.find(insn_id) {
-                    if reduce_to_ccall(self, block, payload, send, insn_id).is_ok() {
+                if let send @ Insn::SendWithoutBlock { self_val, .. } = self.find(insn_id) {
+                    let self_type = self.type_of(self_val);
+                    if reduce_to_ccall(self, block, payload, self_type, send, insn_id).is_ok() {
                         continue;
                     }
                 }
@@ -3330,7 +3335,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn kernel_itself_simple() {
+    fn kernel_itself_const() {
         eval("
             def test(x) = x.itself
             test(0) # profile
@@ -3342,6 +3347,21 @@ mod opt_tests {
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
               v6:Fixnum = GuardType v0, Fixnum
               v7:BasicObject = CCall itself@0x1010, v6
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn kernel_itself_known_type() {
+        eval("
+            def test = [].itself
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v2:ArrayExact = NewArray
+              PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
+              v7:BasicObject = CCall itself@0x1010, v2
               Return v7
         "#]]);
     }
@@ -3412,8 +3432,8 @@ mod opt_tests {
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
-              v8:Fixnum = CCall bytesize@0x1018, v2
-              Return v8
+              v7:Fixnum = CCall bytesize@0x1018, v2
+              Return v7
         "#]]);
     }
 }
