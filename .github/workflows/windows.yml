@@ -142,7 +142,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install
+          vcpkg install --vcpkg-root=C:\Users\runneradmin\scoop\apps\vcpkg\current
         working-directory: src
         env:
           VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
