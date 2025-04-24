@@ -50,6 +50,7 @@ jobs:
 
     env:
       enable_install_doc: no
+      CODEQL_ACTION_CLEANUP_TRAP_CACHES: true
 
     strategy:
       fail-fast: false
