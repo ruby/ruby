@@ -37,10 +37,10 @@ jobs:
           EMAIL: svn-admin@ruby-lang.org
           GIT_AUTHOR_NAME: git
           GIT_COMMITTER_NAME: git
-          GITHUB_OLD_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.base.sha || github.event.before }}
-          GITHUB_NEW_SHA: ${{ startsWith(github.event_name, 'pull') && github.event.pull_request.merge_commit_sha || github.event.after }}
+          GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
+          GITHUB_NEW_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           PUSH_REF: ${{ github.ref == 'refs/heads/master' && github.ref || '' }}
-        if: ${{ github.repository == 'ruby/ruby' }}
+        if: ${{ github.repository == 'ruby/ruby' && startsWith(github.event_name, 'pull') }}
 
       - name: Check if C-sources are US-ASCII
         run: |
