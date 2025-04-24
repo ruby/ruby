@@ -69,7 +69,7 @@ class Git
   def git(*args)
     cmd = ['git', *args].shelljoin
     puts "+ #{cmd}"
-    unless with_clean_env { system(cmd) }
+    unless with_clean_env { system('git', *args) }
       abort "Failed to run: #{cmd}"
     end
   end
