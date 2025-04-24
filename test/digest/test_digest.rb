@@ -6,7 +6,7 @@ require 'test/unit'
 require 'tempfile'
 
 require 'digest'
-%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble].each do |lib|
+%w[digest/md5 digest/rmd160 digest/sha1 digest/sha2 digest/bubblebabble digest/crc32].each do |lib|
   begin
     require lib
   rescue LoadError
@@ -196,6 +196,15 @@ module TestDigest
       Data2 => "12a053384a9c0c88e405a06c27dcf49ada62eb2b",
     }
   end if defined?(Digest::RMD160)
+
+  class TestCRC32 < Test::Unit::TestCase
+    include TestDigest
+    ALGO = Digest::CRC32
+    DATA = {
+      Data1 => "352441c2",
+      Data2 => "171a3f5f",
+    }
+  end
 
   class TestBase < Test::Unit::TestCase
     def test_base
