@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "base"
-require "cgi"
+require "cgi/util"
 
 module Bundler
   class Fetcher
