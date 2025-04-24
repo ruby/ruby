@@ -2892,6 +2892,109 @@ mod opt_tests {
     }
 
     #[test]
+    fn test_optimize_send_into_fixnum_add_both_profiled() {
+        eval("
+            def test(a, b) = a + b
+            test(1,2); test(3,4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = GuardType v1, Fixnum
+              v9:Fixnum = FixnumAdd v7, v8
+              Return v9
+        "#]]);
+    }
+
+    #[test]
+    fn test_optimize_send_into_fixnum_add_left_profiled() {
+        eval("
+            def test(a) = a + 1
+            test(1); test(3)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = FixnumAdd v7, v2
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_optimize_send_into_fixnum_add_right_profiled() {
+        eval("
+            def test(a) = 1 + a
+            test(1); test(3)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = FixnumAdd v2, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_optimize_send_into_fixnum_lt_both_profiled() {
+        eval("
+            def test(a, b) = a < b
+            test(1,2); test(3,4)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:Fixnum = GuardType v1, Fixnum
+              v9:BoolExact = FixnumLt v7, v8
+              Return v9
+        "#]]);
+    }
+
+    #[test]
+    fn test_optimize_send_into_fixnum_lt_left_profiled() {
+        eval("
+            def test(a) = a < 1
+            test(1); test(3)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:BoolExact = FixnumLt v7, v2
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_optimize_send_into_fixnum_lt_right_profiled() {
+        eval("
+            def test(a) = 1 < a
+            test(1); test(3)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v7:Fixnum = GuardType v0, Fixnum
+              v8:BoolExact = FixnumLt v2, v7
+              Return v8
+        "#]]);
+    }
+
+
+    #[test]
     fn test_eliminate_new_array() {
         eval("
             def test()
