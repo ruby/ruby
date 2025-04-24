@@ -43,7 +43,7 @@ The following bundled gems are promoted from default gems.
 * irb 1.15.2
 * reline 0.6.1
 * readline 0.0.4
-* fiddle 1.1.6
+* fiddle 1.1.7
 
 We only list stdlib changes that are notable feature changes.
 
