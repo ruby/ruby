@@ -532,6 +532,12 @@ rb_assert_iseq_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_iseq));
 }
 
+bool
+rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 void
 rb_assert_cme_handle(VALUE handle)
 {
