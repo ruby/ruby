@@ -44,4 +44,4 @@ win32ole            1.9.2   https://github.com/ruby/win32ole
 irb                 1.15.2  https://github.com/ruby/irb
 reline              0.6.1   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
-fiddle              1.1.7   https://github.com/ruby/fiddle
+fiddle              1.1.8   https://github.com/ruby/fiddle
