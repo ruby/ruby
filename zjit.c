@@ -525,6 +525,12 @@ rb_BASIC_OP_UNREDEFINED_P(enum ruby_basic_operators bop, uint32_t klass)
     return BASIC_OP_UNREDEFINED_P(bop, klass);
 }
 
+bool
+rb_zjit_multi_ractor_p(void)
+{
+    return rb_multi_ractor_p();
+}
+
 // For debug builds
 void
 rb_assert_iseq_handle(VALUE handle)

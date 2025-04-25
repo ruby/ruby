@@ -1007,6 +1007,7 @@ unsafe extern "C" {
     pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
     pub fn rb_RSTRUCT_LEN(st: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
+    pub fn rb_zjit_multi_ractor_p() -> bool;
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_assert_cme_handle(handle: VALUE);
