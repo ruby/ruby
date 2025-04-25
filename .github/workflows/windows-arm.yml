@@ -1,4 +1,4 @@
-name: Windows
+name: Windows Arm
 on:
   push:
     paths-ignore:
@@ -25,28 +25,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: 2019
-            vc: 2015
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
-            test_task: check
-          - os: 2019
-            vc: 2019
-            test_task: check
-          - os: 2022
-            vc: 2019
-            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The defautl Windows 11 SDK and toolset are broken at windows-2022
-            test_task: check
-          - os: 2025
-            vc: 2019
-            vcvars: '10.0.22621.0 -vcvars_ver=14.2'
-            test_task: check
-          - os: 2022
-            vc: 2019
-            vcvars: '10.0.22621.0 -vcvars_ver=14.2'
-            test_task: test-bundled-gems
+          - os: 11-arm
+            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
       fail-fast: false
 
-    runs-on: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+    runs-on: windows-${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -62,20 +45,14 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+      OS_VER: windows-${{ matrix.os }}
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-      VCPKG_DEFAULT_TRIPLET: x64-windows
-      RUBY_OPT_DIR: D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+      VCPKG_DEFAULT_TRIPLET: arm64-windows
+      RUBY_OPT_DIR: C:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
     steps:
       - run: md build
         working-directory:
-
-      - uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
-        with:
-          ruby-version: '3.0'
-          bundler: none
-          windows-toolchain: none
 
       - name: Install libraries with scoop
         run: |
@@ -108,10 +85,7 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           ::- Set up VC ${{ matrix.vc }}
-          set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-          for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
-            set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
-          )
+          set VCVARS="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
           set VCVARS
           set | uutils sort > old.env
           call %VCVARS% ${{ matrix.vcvars || '' }}
@@ -156,6 +130,20 @@ jobs:
       # But not for this Visual Studio workflow. So here we extract gems before building.
       - run: nmake extract-gems
 
+      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
+      - run: |
+          Set-Content -Path "revision.h" -Value @"
+            #define RUBY_REVISION "8aedb979da"
+            #define RUBY_FULL_REVISION "8aedb979da4090116f4fc5a6497f139fd0038881"
+            #define RUBY_BRANCH_NAME "win-arm"
+            #define RUBY_RELEASE_DATETIME "2025-04-16T23:18:54Z"
+            #define RUBY_RELEASE_YEAR 2025
+            #define RUBY_RELEASE_MONTH 4
+            #define RUBY_RELEASE_DAY 17
+          "@
+        shell: pwsh
+        if: ${{ matrix.os == '11-arm' }}
+
       - run: nmake
 
       - name: Set up Launchable
@@ -179,16 +167,6 @@ jobs:
           label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
-
-  result:
-    if: ${{ always() }}
-    name: ${{ github.workflow }} result
-    runs-on: windows-latest
-    needs: [make]
-    steps:
-      - run: exit 1
-        working-directory:
-        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:
   run:
