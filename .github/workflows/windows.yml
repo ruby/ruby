@@ -66,7 +66,6 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
-      VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
       RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
@@ -88,13 +87,6 @@ jobs:
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
           scoop install vcpkg uutils-coreutils cmake@3.31.6
         shell: pwsh
-
-      - name: Export GitHub Actions cache environment variables
-        uses: actions/github-script@v7
-        with:
-          script: |
-            core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
-            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -140,6 +132,13 @@ jobs:
       - name: volume info
         run: Get-Volume
         shell: pwsh
+
+        # vcpkg built-in cache is not working now
+      - name: Restore vcpkg artifact
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: C:\Users\runneradmin\AppData\Local\vcpkg\archives
+          key: vcpkg-${{ matrix.target || 'x64' }}-${{ hashFiles('src/vcpkg.json') }}
 
       - name: Install libraries with vcpkg
         run: |
