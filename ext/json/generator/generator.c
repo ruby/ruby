@@ -45,7 +45,7 @@ static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_n
 
 struct generate_json_data;
 
-typedef void (*generator_func)(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
+typedef void (*generator_func)(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 
 struct generate_json_data {
     FBuffer *buffer;
@@ -57,20 +57,20 @@ struct generate_json_data {
 
 static VALUE cState_from_state_s(VALUE self, VALUE opts);
 static VALUE cState_partial_generate(VALUE self, VALUE obj, generator_func, VALUE io);
-static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
+static void generate_json(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 #ifdef RUBY_INTEGER_UNIFICATION
-static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
+static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 #endif
-static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
-static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj);
+static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
+static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 
 static int usascii_encindex, utf8_encindex, binary_encindex;
 
@@ -802,12 +802,12 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     int j;
 
     if (arg->iter > 0) fbuffer_append_char(buffer, ',');
-    if (RB_UNLIKELY(state->object_nl)) {
-        fbuffer_append_str(buffer, state->object_nl);
+    if (RB_UNLIKELY(data->state->object_nl)) {
+        fbuffer_append_str(buffer, data->state->object_nl);
     }
-    if (RB_UNLIKELY(state->indent)) {
+    if (RB_UNLIKELY(data->state->indent)) {
         for (j = 0; j < depth; j++) {
-            fbuffer_append_str(buffer, state->indent);
+            fbuffer_append_str(buffer, data->state->indent);
         }
     }
 
@@ -829,21 +829,22 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     }
 
     if (RB_LIKELY(RBASIC_CLASS(key_to_s) == rb_cString)) {
-        generate_json_string(buffer, data, state, key_to_s);
+        generate_json_string(buffer, data, key_to_s);
     } else {
-        generate_json(buffer, data, state, key_to_s);
+        generate_json(buffer, data, key_to_s);
     }
-    if (RB_UNLIKELY(state->space_before)) fbuffer_append_str(buffer, state->space_before);
+    if (RB_UNLIKELY(state->space_before)) fbuffer_append_str(buffer, data->state->space_before);
     fbuffer_append_char(buffer, ':');
-    if (RB_UNLIKELY(state->space)) fbuffer_append_str(buffer, state->space);
-    generate_json(buffer, data, state, val);
+    if (RB_UNLIKELY(state->space)) fbuffer_append_str(buffer, data->state->space);
+    generate_json(buffer, data, val);
 
     arg->iter++;
     return ST_CONTINUE;
 }
 
-static inline long increase_depth(JSON_Generator_State *state)
+static inline long increase_depth(struct generate_json_data *data)
 {
+    JSON_Generator_State *state = data->state;
     long depth = ++state->depth;
     if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
@@ -851,14 +852,14 @@ static inline long increase_depth(JSON_Generator_State *state)
     return depth;
 }
 
-static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     int j;
-    long depth = increase_depth(state);
+    long depth = increase_depth(data);
 
     if (RHASH_SIZE(obj) == 0) {
         fbuffer_append(buffer, "{}", 2);
-        --state->depth;
+        --data->state->depth;
         return;
     }
 
@@ -870,49 +871,49 @@ static void generate_json_object(FBuffer *buffer, struct generate_json_data *dat
     };
     rb_hash_foreach(obj, json_object_i, (VALUE)&arg);
 
-    depth = --state->depth;
-    if (RB_UNLIKELY(state->object_nl)) {
-        fbuffer_append_str(buffer, state->object_nl);
-        if (RB_UNLIKELY(state->indent)) {
+    depth = --data->state->depth;
+    if (RB_UNLIKELY(data->state->object_nl)) {
+        fbuffer_append_str(buffer, data->state->object_nl);
+        if (RB_UNLIKELY(data->state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, state->indent);
+                fbuffer_append_str(buffer, data->state->indent);
             }
         }
     }
     fbuffer_append_char(buffer, '}');
 }
 
-static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_array(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     int i, j;
-    long depth = increase_depth(state);
+    long depth = increase_depth(data);
 
     if (RARRAY_LEN(obj) == 0) {
         fbuffer_append(buffer, "[]", 2);
-        --state->depth;
+        --data->state->depth;
         return;
     }
 
     fbuffer_append_char(buffer, '[');
-    if (RB_UNLIKELY(state->array_nl)) fbuffer_append_str(buffer, state->array_nl);
+    if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
     for(i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
-            if (RB_UNLIKELY(state->array_nl)) fbuffer_append_str(buffer, state->array_nl);
+            if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
         }
-        if (RB_UNLIKELY(state->indent)) {
+        if (RB_UNLIKELY(data->state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, state->indent);
+                fbuffer_append_str(buffer, data->state->indent);
             }
         }
-        generate_json(buffer, data, state, RARRAY_AREF(obj, i));
+        generate_json(buffer, data, RARRAY_AREF(obj, i));
     }
-    state->depth = --depth;
-    if (RB_UNLIKELY(state->array_nl)) {
-        fbuffer_append_str(buffer, state->array_nl);
-        if (RB_UNLIKELY(state->indent)) {
+    data->state->depth = --depth;
+    if (RB_UNLIKELY(data->state->array_nl)) {
+        fbuffer_append_str(buffer, data->state->array_nl);
+        if (RB_UNLIKELY(data->state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append_str(buffer, state->indent);
+                fbuffer_append_str(buffer, data->state->indent);
             }
         }
     }
@@ -961,7 +962,7 @@ static inline VALUE ensure_valid_encoding(VALUE str)
     return str;
 }
 
-static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     obj = ensure_valid_encoding(obj);
 
@@ -977,9 +978,9 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
-            if (RB_UNLIKELY(state->ascii_only)) {
-                convert_UTF8_to_ASCII_only_JSON(&search, state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
-            } else if (RB_UNLIKELY(state->script_safe)) {
+            if (RB_UNLIKELY(data->state->ascii_only)) {
+                convert_UTF8_to_ASCII_only_JSON(&search, data->state->script_safe ? script_safe_escape_table : ascii_only_escape_table);
+            } else if (RB_UNLIKELY(data->state->script_safe)) {
                 convert_UTF8_to_script_safe_JSON(&search);
             } else {
                 convert_UTF8_to_JSON(&search);
@@ -992,7 +993,7 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
     fbuffer_append_char(buffer, '"');
 }
 
-static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     VALUE tmp;
     if (rb_respond_to(obj, i_to_json)) {
@@ -1002,68 +1003,68 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
     } else {
         tmp = rb_funcall(obj, i_to_s, 0);
         Check_Type(tmp, T_STRING);
-        generate_json_string(buffer, data, state, tmp);
+        generate_json_string(buffer, data, tmp);
     }
 }
 
-static inline void generate_json_symbol(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static inline void generate_json_symbol(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
-    if (state->strict) {
-        generate_json_string(buffer, data, state, rb_sym2str(obj));
+    if (data->state->strict) {
+        generate_json_string(buffer, data, rb_sym2str(obj));
     } else {
-        generate_json_fallback(buffer, data, state, obj);
+        generate_json_fallback(buffer, data, obj);
     }
 }
 
-static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append(buffer, "null", 4);
 }
 
-static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_false(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append(buffer, "false", 5);
 }
 
-static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_true(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append(buffer, "true", 4);
 }
 
-static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append_long(buffer, FIX2LONG(obj));
 }
 
-static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     fbuffer_append_str(buffer, tmp);
 }
 
 #ifdef RUBY_INTEGER_UNIFICATION
-static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_integer(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     if (FIXNUM_P(obj))
-        generate_json_fixnum(buffer, data, state, obj);
+        generate_json_fixnum(buffer, data, obj);
     else
-        generate_json_bignum(buffer, data, state, obj);
+        generate_json_bignum(buffer, data, obj);
 }
 #endif
 
-static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     double value = RFLOAT_VALUE(obj);
-    char allow_nan = state->allow_nan;
+    char allow_nan = data->state->allow_nan;
     if (isinf(value) || isnan(value)) {
         /* for NaN and Infinity values we either raise an error or rely on Float#to_s. */
         if (!allow_nan) {
-            if (state->strict && state->as_json) {
-                VALUE casted_obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
+            if (data->state->strict && data->state->as_json) {
+                VALUE casted_obj = rb_proc_call_with_block(data->state->as_json, 1, &obj, Qnil);
                 if (casted_obj != obj) {
-                    increase_depth(state);
-                    generate_json(buffer, data, state, casted_obj);
-                    state->depth--;
+                    increase_depth(data);
+                    generate_json(buffer, data, casted_obj);
+                    data->state->depth--;
                     return;
                 }
             }
@@ -1089,30 +1090,30 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     buffer->len += len;
 }
 
-static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     VALUE fragment = RSTRUCT_GET(obj, 0);
     Check_Type(fragment, T_STRING);
     fbuffer_append_str(buffer, fragment);
 }
 
-static void generate_json(FBuffer *buffer, struct generate_json_data *data, JSON_Generator_State *state, VALUE obj)
+static void generate_json(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     bool as_json_called = false;
 start:
     if (obj == Qnil) {
-        generate_json_null(buffer, data, state, obj);
+        generate_json_null(buffer, data, obj);
     } else if (obj == Qfalse) {
-        generate_json_false(buffer, data, state, obj);
+        generate_json_false(buffer, data, obj);
     } else if (obj == Qtrue) {
-        generate_json_true(buffer, data, state, obj);
+        generate_json_true(buffer, data, obj);
     } else if (RB_SPECIAL_CONST_P(obj)) {
         if (RB_FIXNUM_P(obj)) {
-            generate_json_fixnum(buffer, data, state, obj);
+            generate_json_fixnum(buffer, data, obj);
         } else if (RB_FLONUM_P(obj)) {
-            generate_json_float(buffer, data, state, obj);
+            generate_json_float(buffer, data, obj);
         } else if (RB_STATIC_SYM_P(obj)) {
-            generate_json_symbol(buffer, data, state, obj);
+            generate_json_symbol(buffer, data, obj);
         } else {
             goto general;
         }
@@ -1120,43 +1121,43 @@ start:
         VALUE klass = RBASIC_CLASS(obj);
         switch (RB_BUILTIN_TYPE(obj)) {
             case T_BIGNUM:
-                generate_json_bignum(buffer, data, state, obj);
+                generate_json_bignum(buffer, data, obj);
                 break;
             case T_HASH:
                 if (klass != rb_cHash) goto general;
-                generate_json_object(buffer, data, state, obj);
+                generate_json_object(buffer, data, obj);
                 break;
             case T_ARRAY:
                 if (klass != rb_cArray) goto general;
-                generate_json_array(buffer, data, state, obj);
+                generate_json_array(buffer, data, obj);
                 break;
             case T_STRING:
                 if (klass != rb_cString) goto general;
-                generate_json_string(buffer, data, state, obj);
+                generate_json_string(buffer, data, obj);
                 break;
             case T_SYMBOL:
-                generate_json_symbol(buffer, data, state, obj);
+                generate_json_symbol(buffer, data, obj);
                 break;
             case T_FLOAT:
                 if (klass != rb_cFloat) goto general;
-                generate_json_float(buffer, data, state, obj);
+                generate_json_float(buffer, data, obj);
                 break;
             case T_STRUCT:
                 if (klass != cFragment) goto general;
-                generate_json_fragment(buffer, data, state, obj);
+                generate_json_fragment(buffer, data, obj);
                 break;
             default:
             general:
-                if (state->strict) {
-                    if (RTEST(state->as_json) && !as_json_called) {
-                        obj = rb_proc_call_with_block(state->as_json, 1, &obj, Qnil);
+                if (data->state->strict) {
+                    if (RTEST(data->state->as_json) && !as_json_called) {
+                        obj = rb_proc_call_with_block(data->state->as_json, 1, &obj, Qnil);
                         as_json_called = true;
                         goto start;
                     } else {
                         raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", CLASS_OF(obj));
                     }
                 } else {
-                    generate_json_fallback(buffer, data, state, obj);
+                    generate_json_fallback(buffer, data, obj);
                 }
         }
     }
@@ -1166,7 +1167,7 @@ static VALUE generate_json_try(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
 
-    data->func(data->buffer, data, data->state, data->obj);
+    data->func(data->buffer, data, data->obj);
 
     return Qnil;
 }
