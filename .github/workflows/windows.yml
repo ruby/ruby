@@ -40,6 +40,9 @@ jobs:
             vc: 2019
             vcvars: '10.0.22621.0 -vcvars_ver=14.2'
             test_task: check
+          - os: 11-arm
+            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+            target: arm64
           - os: 2022
             vc: 2019
             vcvars: '10.0.22621.0 -vcvars_ver=14.2'
@@ -64,8 +67,8 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
       VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
-      VCPKG_DEFAULT_TRIPLET: x64-windows
-      RUBY_OPT_DIR: D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+      VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
+      RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
     steps:
       - run: md build
@@ -76,6 +79,7 @@ jobs:
           ruby-version: '3.0'
           bundler: none
           windows-toolchain: none
+        if: ${{ matrix.os != '11-arm' }}
 
       - name: Install libraries with scoop
         run: |
@@ -111,6 +115,9 @@ jobs:
           set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
           for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
             set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
+          )
+          if "${{ matrix.os }}" == "11-arm" (
+            set VCVARS="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
           )
           set VCVARS
           set | uutils sort > old.env
@@ -155,6 +162,20 @@ jobs:
       # On all other platforms, test-spec depending on extract-gems (in common.mk) is enough.
       # But not for this Visual Studio workflow. So here we extract gems before building.
       - run: nmake extract-gems
+
+      # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
+      - run: |
+          Set-Content -Path "revision.h" -Value @"
+            #define RUBY_REVISION "8aedb979da"
+            #define RUBY_FULL_REVISION "8aedb979da4090116f4fc5a6497f139fd0038881"
+            #define RUBY_BRANCH_NAME "win-arm"
+            #define RUBY_RELEASE_DATETIME "2025-04-16T23:18:54Z"
+            #define RUBY_RELEASE_YEAR 2025
+            #define RUBY_RELEASE_MONTH 4
+            #define RUBY_RELEASE_DAY 17
+          "@
+        shell: pwsh
+        if: ${{ matrix.os == '11-arm' }}
 
       - run: nmake
 
