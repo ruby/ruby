@@ -760,7 +760,6 @@ static const char *received_signal;
 #endif
 
 #if defined(USE_SIGALTSTACK) || defined(_WIN32)
-NORETURN(void rb_ec_stack_overflow(rb_execution_context_t *ec, int crit));
 # if defined __HAIKU__
 #   define USE_UCONTEXT_REG 1
 # elif !(defined(HAVE_UCONTEXT_H) && (defined __i386__ || defined __x86_64__ || defined __amd64__))
@@ -846,18 +845,21 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
     if (sp_page == fault_page || sp_page == fault_page + 1 ||
         (sp_page <= fault_page && fault_page <= bp_page)) {
         rb_execution_context_t *ec = GET_EC();
-        int crit = FALSE;
+        ruby_stack_overflow_critical_level crit = rb_stack_overflow_signal;
         int uplevel = roomof(pagesize, sizeof(*ec->tag)) / 2; /* XXX: heuristic */
         while ((uintptr_t)ec->tag->buf / pagesize <= fault_page + 1) {
             /* drop the last tag if it is close to the fault,
              * otherwise it can cause stack overflow again at the same
              * place. */
-            if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
+            if (!ec->tag->prev || !--uplevel) {
+                crit = rb_stack_overflow_fatal;
+                break;
+            }
             rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
-        rb_ec_stack_overflow(ec, crit + 1);
+        rb_ec_stack_overflow(ec, crit);
     }
 }
 # else
