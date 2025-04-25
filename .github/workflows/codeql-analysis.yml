@@ -26,8 +26,9 @@ concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
 
-permissions: # added using https://github.com/step-security/secure-workflows
+permissions:
   contents: read
+  actions: write # for CODEQL_ACTION_CLEANUP_TRAP_CACHES
 
 jobs:
   analyze:
