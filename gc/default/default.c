@@ -6191,7 +6191,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     }
 }
 
-#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 7
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 9
 static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
