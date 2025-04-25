@@ -88,8 +88,8 @@ module Gem::GemcutterUtilities
       query = uri.query
       return unless query && !query.empty?
 
-      query.split('&') do |param|
-        key, value = param.split('=', 2)
+      query.split("&") do |param|
+        key, value = param.split("=", 2)
         if value && Gem::URI.decode_www_form_component(key) == "code"
           return Gem::URI.decode_www_form_component(value)
         end
