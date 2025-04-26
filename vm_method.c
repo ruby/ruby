@@ -125,7 +125,7 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
 }
 
 static int
-rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t idx, st_data_t arg)
+rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
 {
     ((IC) ic)->entry = NULL;
     return ST_CONTINUE;
@@ -141,8 +141,8 @@ rb_clear_constant_cache_for_id(ID id)
     rb_vm_t *vm = GET_VM();
 
     if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
-        st_table *ics = (st_table *)lookup_result;
-        st_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
+        set_table *ics = (set_table *)lookup_result;
+        set_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
         ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
 
