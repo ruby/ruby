@@ -796,7 +796,7 @@ static VALUE
 iseq_eval_in_namespace(VALUE arg)
 {
     struct iseq_eval_in_namespace_data *data = (struct iseq_eval_in_namespace_data *)arg;
-    if (data->in_builtin) {
+    if (rb_namespace_available() && data->in_builtin) {
         return rb_iseq_eval_with_refinement(data->iseq, rb_mNamespaceRefiner);
     } else {
         return rb_iseq_eval(data->iseq);

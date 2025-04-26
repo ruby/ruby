@@ -108,5 +108,11 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
 void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
-    load_with_builtin_functions(feature_name, table);
+    const rb_iseq_t *iseq;
+    if (rb_namespace_available() && rb_mNamespaceRefiner) {
+        load_with_builtin_functions(feature_name, table);
+    } else {
+        iseq = builtin_iseq_load(feature_name, table);
+        rb_iseq_eval(iseq);
+    }
 }

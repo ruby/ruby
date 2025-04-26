@@ -54,13 +54,10 @@ static VALUE rb_namespace_inspect(VALUE obj);
 int
 rb_namespace_available()
 {
-    // const char *env;
+    const char *env;
     if (namespace_availability) {
         return namespace_availability > 0 ? 1 : 0;
     }
-    return 1;
-    // TODO: command line option?
-    /*
     env = getenv("RUBY_NAMESPACE");
     if (env && strlen(env) > 0) {
         if (strcmp(env, "1") == 0) {
@@ -70,7 +67,6 @@ rb_namespace_available()
     }
     namespace_availability = -1;
     return 0;
-    */
 }
 
 static void namespace_push(rb_thread_t *th, VALUE namespace);
@@ -175,6 +171,9 @@ current_namespace(bool permit_calling_builtin)
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     int calling = 1;
 
+    if (!rb_namespace_available())
+        return 0;
+
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
         // temp code to detect the context is in require/load
         calling = 0;
@@ -224,6 +223,10 @@ rb_loading_namespace(void)
     VALUE namespace;
     long len;
     VALUE require_stack = GET_VM()->require_stack;
+
+    if (!rb_namespace_available())
+        return 0;
+
     if (!require_stack) {
         return current_namespace(false);
     }
@@ -475,9 +478,8 @@ namespace_initialize(VALUE namespace)
     ID id_namespace_entry;
     CONST_ID(id_namespace_entry, "__namespace_entry__");
 
-    if (main_namespace && !rb_namespace_available()) {
-        // Checking main_namespace exists to warn RUBY_NAMESPACE only for initializing non-main namespaces.
-        rb_warning("Namespace is disabled (RUBY_NAMESPACE is not set), so loading extensions may cause unexpected behaviors.");
+    if (!rb_namespace_available()) {
+        rb_raise(rb_eRuntimeError, "Namespace is disabled. Set RUBY_NAMESPACE=1 environment variable to use Namespace.");
     }
 
     entry = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespaceEntry);
@@ -1057,6 +1059,7 @@ rb_namespace_user_loading_func(int argc, VALUE *argv, VALUE _self)
     if (!vm->require_stack)
         rb_bug("require_stack is not ready but require/load is called in user namespaces");
     ns = rb_current_namespace();
+    VM_ASSERT(rb_namespace_available() || !ns);
     rb_namespace_push_loading_namespace(ns);
     struct refiner_calling_super_data data = {
         .argc = argc,
@@ -1099,7 +1102,9 @@ Init_Namespace(void)
     rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
 
     rb_mNamespaceRefiner = rb_define_module_under(rb_cNamespace, "Refiner");
-    setup_builtin_refinement(rb_mNamespaceRefiner);
+    if (rb_namespace_available()) {
+        setup_builtin_refinement(rb_mNamespaceRefiner);
+    }
 
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
     namespace_define_loader_method(rb_mNamespaceLoader, "require", rb_namespace_user_loading_func, -1);
