@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
+#include "internal/set_table.h"
 #include "internal/struct.h"
 #include "variable.h"
 
@@ -6332,13 +6333,13 @@ vm_track_constant_cache(ID id, void *ic)
     rb_vm_t *vm = GET_VM();
     struct rb_id_table *const_cache = vm->constant_cache;
     VALUE lookup_result;
-    st_table *ics;
+    set_table *ics;
 
     if (rb_id_table_lookup(const_cache, id, &lookup_result)) {
-        ics = (st_table *)lookup_result;
+        ics = (set_table *)lookup_result;
     }
     else {
-        ics = st_init_numtable();
+        ics = set_init_numtable();
         rb_id_table_insert(const_cache, id, (VALUE)ics);
     }
 
@@ -6356,7 +6357,7 @@ vm_track_constant_cache(ID id, void *ic)
      */
     vm->inserting_constant_cache_id = id;
 
-    st_insert(ics, (st_data_t) ic, (st_data_t) Qtrue);
+    set_insert(ics, (st_data_t)ic);
 
     vm->inserting_constant_cache_id = (ID)0;
 }

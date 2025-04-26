@@ -8903,6 +8903,7 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/rational.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/serial.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/string.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -19549,6 +19550,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/re.h
 vm.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm.$(OBJEXT): $(top_srcdir)/internal/serial.h
+vm.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 vm.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm.$(OBJEXT): $(top_srcdir)/internal/struct.h

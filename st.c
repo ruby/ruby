@@ -2459,6 +2459,12 @@ set_init_table_with_size(set_table *tab, const struct st_hash_type *type, st_ind
     return tab;
 }
 
+set_table *
+set_init_numtable(void)
+{
+    return set_init_table_with_size(NULL, &type_numhash, 0);
+}
+
 size_t
 set_table_size(const struct set_table *tbl)
 {
