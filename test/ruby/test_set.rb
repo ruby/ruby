@@ -23,10 +23,13 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(set.compare_by_identity?, mset.compare_by_identity?)
     assert_equal(1, mset.instance_variable_get(:@a))
 
-    # Not sure if possible to support?
-    # 'Marshal.load': dump format error (ArgumentError)
-    # old_stdlib_set_data = "\x04\bo:\bSet\x06:\n@hash}\bi\x06Ti\aTi\bTF".b
-    # assert_equal(Set[1, 2, 3], Marshal.load(old_stdlib_set_data))
+    old_stdlib_set_data = "\x04\bo:\bSet\x06:\n@hash}\bi\x06Ti\aTi\bTF".b
+    set = Marshal.load(old_stdlib_set_data)
+    assert_equal(Set[1, 2, 3], set)
+
+    old_stdlib_set_cbi_data = "\x04\bo:\bSet\x06:\n@hashC:\tHash}\ai\x06Ti\aTF".b
+    set = Marshal.load(old_stdlib_set_cbi_data)
+    assert_equal(Set[1, 2].compare_by_identity, set)
   end
 
   def test_aref

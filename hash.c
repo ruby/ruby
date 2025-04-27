@@ -2253,7 +2253,7 @@ rb_hash_default(int argc, VALUE *argv, VALUE hash)
  *  See {Hash Default}[rdoc-ref:Hash@Hash+Default].
  */
 
-static VALUE
+VALUE
 rb_hash_set_default(VALUE hash, VALUE ifnone)
 {
     rb_hash_modify_check(hash);
