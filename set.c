@@ -1850,6 +1850,61 @@ set_i_hash(VALUE set)
     return ST2FIX(hval);
 }
 
+/* :nodoc: */
+static VALUE
+set_i_marshal_dump(VALUE set)
+{
+    VALUE array = rb_ary_new_from_args(2, set_i_to_a(set), set_i_compare_by_identity_p(set));
+
+    if (FL_TEST(set, FL_EXIVAR)) {
+	rb_copy_generic_ivar(array, set);
+	FL_SET(array, FL_EXIVAR);
+    }
+
+    return array;
+}
+
+/* :nodoc: */
+static VALUE
+set_i_marshal_load(VALUE set, VALUE array)
+{
+    rb_check_frozen(set);
+    if (RBASIC(set)->flags & RSET_INITIALIZED) {
+        rb_raise(rb_eArgError, "set is already initialized");
+    }
+    if (!RB_TYPE_P(array, T_ARRAY)) {
+        rb_raise(rb_eArgError, "argument must be array");
+    }
+    if (RARRAY_LEN(array) != 2) {
+        rb_raise(rb_eArgError, "argument must have 2 elements");
+    }
+    VALUE compare_by_identity = RARRAY_AREF(array, 1);
+    array = RARRAY_AREF(array, 0);
+    if (!RB_TYPE_P(array, T_ARRAY)) {
+        rb_raise(rb_eArgError, "first element in argument must be array");
+    }
+    if (compare_by_identity != Qtrue && compare_by_identity != Qfalse) {
+        rb_raise(rb_eArgError, "second element in argument must be true or false");
+    }
+    RBASIC(set)->flags |= RSET_INITIALIZED;
+    if (RTEST(compare_by_identity)) set_i_compare_by_identity(set);
+    set_merge_enum_into(set, array);
+    return set;
+}
+
+/* :nodoc: */
+/*
+ * This is to attempt to load marshalled values from stdlib set, but it
+ * doesn't work (Marshal does not attempt to call it):
+ *
+ *     'Marshal.load': dump format error (ArgumentError)
+ *
+static VALUE
+set_s__load(VALUE klass, VALUE str)
+{
+}
+*/
+
 /*
  *  Document-class: Set
  *
@@ -2072,6 +2127,7 @@ Init_Set(void)
 
     rb_define_alloc_func(rb_cSet, set_s_alloc);
     rb_define_singleton_method(rb_cSet, "[]", set_s_create, -1);
+    // rb_define_singleton_method(rb_cSet, "_load", set_s__load, 1);
 
     rb_define_method(rb_cSet, "initialize", set_i_initialize, -1);
     rb_define_method(rb_cSet, "initialize_copy", set_i_initialize_copy, 1);
@@ -2114,6 +2170,8 @@ Init_Set(void)
     rb_define_method(rb_cSet, "intersect?", set_i_intersect, 1);
     rb_define_method(rb_cSet, "join", set_i_join, -1);
     rb_define_method(rb_cSet, "keep_if", set_i_keep_if, 0);
+    rb_define_method(rb_cSet, "marshal_dump", set_i_marshal_dump, 0);
+    rb_define_method(rb_cSet, "marshal_load", set_i_marshal_load, 1);
     rb_define_method(rb_cSet, "merge", set_i_merge, -1);
     rb_define_method(rb_cSet, "proper_subset?", set_i_proper_subset, 1);
     rb_define_alias(rb_cSet, "<", "proper_subset?");

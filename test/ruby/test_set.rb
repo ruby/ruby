@@ -6,6 +6,29 @@ class TC_Set < Test::Unit::TestCase
   class Set2 < Set
   end
 
+  def test_marshal
+    set = Set[1, 2, 3]
+    mset = Marshal.load(Marshal.dump(set))
+    assert_equal(set, mset)
+    assert_equal(set.compare_by_identity?, mset.compare_by_identity?)
+
+    set.compare_by_identity
+    mset = Marshal.load(Marshal.dump(set))
+    assert_equal(set, mset)
+    assert_equal(set.compare_by_identity?, mset.compare_by_identity?)
+
+    set.instance_variable_set(:@a, 1)
+    mset = Marshal.load(Marshal.dump(set))
+    assert_equal(set, mset)
+    assert_equal(set.compare_by_identity?, mset.compare_by_identity?)
+    assert_equal(1, mset.instance_variable_get(:@a))
+
+    # Not sure if possible to support?
+    # 'Marshal.load': dump format error (ArgumentError)
+    # old_stdlib_set_data = "\x04\bo:\bSet\x06:\n@hash}\bi\x06Ti\aTi\bTF".b
+    # assert_equal(Set[1, 2, 3], Marshal.load(old_stdlib_set_data))
+  end
+
   def test_aref
     assert_nothing_raised {
       Set[]
