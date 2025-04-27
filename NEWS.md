@@ -105,6 +105,11 @@ The following bundled gems are updated.
 
     [[Feature #21258]]
 
+* With the move of `Set` from stdlib to core class, `set/sorted_set.rb` has
+  been removed, and `SortedSet` is no longer an autoloaded constant. Please
+  install the `sorted_set` gem and `require 'sorted_set'` to use `SortedSet`.
+  [[Feature #21287]]
+
 ## C API updates
 
 * IO
@@ -130,3 +135,4 @@ The following bundled gems are updated.
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
+[Feature #21287]: https://bugs.ruby-lang.org/issues/21287
