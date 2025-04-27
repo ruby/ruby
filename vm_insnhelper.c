@@ -3034,7 +3034,7 @@ static void
 warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, void *pc)
 {
     rb_vm_t *vm = GET_VM();
-    st_table *dup_check_table = vm->unused_block_warning_table;
+    set_table *dup_check_table = vm->unused_block_warning_table;
     st_data_t key;
     bool strict_unused_block = rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK);
 
@@ -3051,7 +3051,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     if (!strict_unused_block) {
         key = (st_data_t)cme->def->original_id;
 
-        if (st_lookup(dup_check_table, key, NULL)) {
+        if (set_lookup(dup_check_table, key)) {
             return;
         }
     }
@@ -3071,7 +3071,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     }
 
     // duplication check
-    if (st_insert(dup_check_table, key, 1)) {
+    if (set_insert(dup_check_table, key)) {
         // already shown
     }
     else if (RTEST(ruby_verbose) || strict_unused_block) {

@@ -202,6 +202,7 @@ ancdata.o: $(top_srcdir)/internal/imemo.h
 ancdata.o: $(top_srcdir)/internal/io.h
 ancdata.o: $(top_srcdir)/internal/sanitizers.h
 ancdata.o: $(top_srcdir)/internal/serial.h
+ancdata.o: $(top_srcdir)/internal/set_table.h
 ancdata.o: $(top_srcdir)/internal/static_assert.h
 ancdata.o: $(top_srcdir)/internal/string.h
 ancdata.o: $(top_srcdir)/internal/thread.h
@@ -413,6 +414,7 @@ basicsocket.o: $(top_srcdir)/internal/imemo.h
 basicsocket.o: $(top_srcdir)/internal/io.h
 basicsocket.o: $(top_srcdir)/internal/sanitizers.h
 basicsocket.o: $(top_srcdir)/internal/serial.h
+basicsocket.o: $(top_srcdir)/internal/set_table.h
 basicsocket.o: $(top_srcdir)/internal/static_assert.h
 basicsocket.o: $(top_srcdir)/internal/string.h
 basicsocket.o: $(top_srcdir)/internal/thread.h
@@ -624,6 +626,7 @@ constants.o: $(top_srcdir)/internal/imemo.h
 constants.o: $(top_srcdir)/internal/io.h
 constants.o: $(top_srcdir)/internal/sanitizers.h
 constants.o: $(top_srcdir)/internal/serial.h
+constants.o: $(top_srcdir)/internal/set_table.h
 constants.o: $(top_srcdir)/internal/static_assert.h
 constants.o: $(top_srcdir)/internal/string.h
 constants.o: $(top_srcdir)/internal/thread.h
@@ -836,6 +839,7 @@ ifaddr.o: $(top_srcdir)/internal/imemo.h
 ifaddr.o: $(top_srcdir)/internal/io.h
 ifaddr.o: $(top_srcdir)/internal/sanitizers.h
 ifaddr.o: $(top_srcdir)/internal/serial.h
+ifaddr.o: $(top_srcdir)/internal/set_table.h
 ifaddr.o: $(top_srcdir)/internal/static_assert.h
 ifaddr.o: $(top_srcdir)/internal/string.h
 ifaddr.o: $(top_srcdir)/internal/thread.h
@@ -1047,6 +1051,7 @@ init.o: $(top_srcdir)/internal/imemo.h
 init.o: $(top_srcdir)/internal/io.h
 init.o: $(top_srcdir)/internal/sanitizers.h
 init.o: $(top_srcdir)/internal/serial.h
+init.o: $(top_srcdir)/internal/set_table.h
 init.o: $(top_srcdir)/internal/static_assert.h
 init.o: $(top_srcdir)/internal/string.h
 init.o: $(top_srcdir)/internal/thread.h
@@ -1258,6 +1263,7 @@ ipsocket.o: $(top_srcdir)/internal/imemo.h
 ipsocket.o: $(top_srcdir)/internal/io.h
 ipsocket.o: $(top_srcdir)/internal/sanitizers.h
 ipsocket.o: $(top_srcdir)/internal/serial.h
+ipsocket.o: $(top_srcdir)/internal/set_table.h
 ipsocket.o: $(top_srcdir)/internal/static_assert.h
 ipsocket.o: $(top_srcdir)/internal/string.h
 ipsocket.o: $(top_srcdir)/internal/thread.h
@@ -1469,6 +1475,7 @@ option.o: $(top_srcdir)/internal/imemo.h
 option.o: $(top_srcdir)/internal/io.h
 option.o: $(top_srcdir)/internal/sanitizers.h
 option.o: $(top_srcdir)/internal/serial.h
+option.o: $(top_srcdir)/internal/set_table.h
 option.o: $(top_srcdir)/internal/static_assert.h
 option.o: $(top_srcdir)/internal/string.h
 option.o: $(top_srcdir)/internal/thread.h
@@ -1680,6 +1687,7 @@ raddrinfo.o: $(top_srcdir)/internal/imemo.h
 raddrinfo.o: $(top_srcdir)/internal/io.h
 raddrinfo.o: $(top_srcdir)/internal/sanitizers.h
 raddrinfo.o: $(top_srcdir)/internal/serial.h
+raddrinfo.o: $(top_srcdir)/internal/set_table.h
 raddrinfo.o: $(top_srcdir)/internal/static_assert.h
 raddrinfo.o: $(top_srcdir)/internal/string.h
 raddrinfo.o: $(top_srcdir)/internal/thread.h
@@ -1891,6 +1899,7 @@ socket.o: $(top_srcdir)/internal/imemo.h
 socket.o: $(top_srcdir)/internal/io.h
 socket.o: $(top_srcdir)/internal/sanitizers.h
 socket.o: $(top_srcdir)/internal/serial.h
+socket.o: $(top_srcdir)/internal/set_table.h
 socket.o: $(top_srcdir)/internal/static_assert.h
 socket.o: $(top_srcdir)/internal/string.h
 socket.o: $(top_srcdir)/internal/thread.h
@@ -2102,6 +2111,7 @@ sockssocket.o: $(top_srcdir)/internal/imemo.h
 sockssocket.o: $(top_srcdir)/internal/io.h
 sockssocket.o: $(top_srcdir)/internal/sanitizers.h
 sockssocket.o: $(top_srcdir)/internal/serial.h
+sockssocket.o: $(top_srcdir)/internal/set_table.h
 sockssocket.o: $(top_srcdir)/internal/static_assert.h
 sockssocket.o: $(top_srcdir)/internal/string.h
 sockssocket.o: $(top_srcdir)/internal/thread.h
@@ -2313,6 +2323,7 @@ tcpserver.o: $(top_srcdir)/internal/imemo.h
 tcpserver.o: $(top_srcdir)/internal/io.h
 tcpserver.o: $(top_srcdir)/internal/sanitizers.h
 tcpserver.o: $(top_srcdir)/internal/serial.h
+tcpserver.o: $(top_srcdir)/internal/set_table.h
 tcpserver.o: $(top_srcdir)/internal/static_assert.h
 tcpserver.o: $(top_srcdir)/internal/string.h
 tcpserver.o: $(top_srcdir)/internal/thread.h
@@ -2524,6 +2535,7 @@ tcpsocket.o: $(top_srcdir)/internal/imemo.h
 tcpsocket.o: $(top_srcdir)/internal/io.h
 tcpsocket.o: $(top_srcdir)/internal/sanitizers.h
 tcpsocket.o: $(top_srcdir)/internal/serial.h
+tcpsocket.o: $(top_srcdir)/internal/set_table.h
 tcpsocket.o: $(top_srcdir)/internal/static_assert.h
 tcpsocket.o: $(top_srcdir)/internal/string.h
 tcpsocket.o: $(top_srcdir)/internal/thread.h
@@ -2735,6 +2747,7 @@ udpsocket.o: $(top_srcdir)/internal/imemo.h
 udpsocket.o: $(top_srcdir)/internal/io.h
 udpsocket.o: $(top_srcdir)/internal/sanitizers.h
 udpsocket.o: $(top_srcdir)/internal/serial.h
+udpsocket.o: $(top_srcdir)/internal/set_table.h
 udpsocket.o: $(top_srcdir)/internal/static_assert.h
 udpsocket.o: $(top_srcdir)/internal/string.h
 udpsocket.o: $(top_srcdir)/internal/thread.h
@@ -2946,6 +2959,7 @@ unixserver.o: $(top_srcdir)/internal/imemo.h
 unixserver.o: $(top_srcdir)/internal/io.h
 unixserver.o: $(top_srcdir)/internal/sanitizers.h
 unixserver.o: $(top_srcdir)/internal/serial.h
+unixserver.o: $(top_srcdir)/internal/set_table.h
 unixserver.o: $(top_srcdir)/internal/static_assert.h
 unixserver.o: $(top_srcdir)/internal/string.h
 unixserver.o: $(top_srcdir)/internal/thread.h
@@ -3157,6 +3171,7 @@ unixsocket.o: $(top_srcdir)/internal/imemo.h
 unixsocket.o: $(top_srcdir)/internal/io.h
 unixsocket.o: $(top_srcdir)/internal/sanitizers.h
 unixsocket.o: $(top_srcdir)/internal/serial.h
+unixsocket.o: $(top_srcdir)/internal/set_table.h
 unixsocket.o: $(top_srcdir)/internal/static_assert.h
 unixsocket.o: $(top_srcdir)/internal/string.h
 unixsocket.o: $(top_srcdir)/internal/thread.h

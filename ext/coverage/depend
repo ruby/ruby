@@ -188,6 +188,7 @@ coverage.o: $(top_srcdir)/internal/hash.h
 coverage.o: $(top_srcdir)/internal/imemo.h
 coverage.o: $(top_srcdir)/internal/sanitizers.h
 coverage.o: $(top_srcdir)/internal/serial.h
+coverage.o: $(top_srcdir)/internal/set_table.h
 coverage.o: $(top_srcdir)/internal/static_assert.h
 coverage.o: $(top_srcdir)/internal/thread.h
 coverage.o: $(top_srcdir)/internal/variable.h

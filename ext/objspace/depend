@@ -185,6 +185,7 @@ object_tracing.o: $(top_srcdir)/internal/gc.h
 object_tracing.o: $(top_srcdir)/internal/imemo.h
 object_tracing.o: $(top_srcdir)/internal/sanitizers.h
 object_tracing.o: $(top_srcdir)/internal/serial.h
+object_tracing.o: $(top_srcdir)/internal/set_table.h
 object_tracing.o: $(top_srcdir)/internal/static_assert.h
 object_tracing.o: $(top_srcdir)/internal/vm.h
 object_tracing.o: $(top_srcdir)/internal/warnings.h
@@ -393,6 +394,7 @@ objspace.o: $(top_srcdir)/internal/hash.h
 objspace.o: $(top_srcdir)/internal/imemo.h
 objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
+objspace.o: $(top_srcdir)/internal/set_table.h
 objspace.o: $(top_srcdir)/internal/static_assert.h
 objspace.o: $(top_srcdir)/internal/variable.h
 objspace.o: $(top_srcdir)/internal/vm.h
@@ -605,6 +607,7 @@ objspace_dump.o: $(top_srcdir)/internal/imemo.h
 objspace_dump.o: $(top_srcdir)/internal/io.h
 objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
+objspace_dump.o: $(top_srcdir)/internal/set_table.h
 objspace_dump.o: $(top_srcdir)/internal/static_assert.h
 objspace_dump.o: $(top_srcdir)/internal/string.h
 objspace_dump.o: $(top_srcdir)/internal/variable.h
