@@ -794,7 +794,7 @@ convert_string_subclass(VALUE key)
 {
     VALUE key_to_s = rb_funcall(key, i_to_s, 0);
 
-    if (RB_UNLIKELY(rb_type(key_to_s) != T_STRING)) {
+    if (RB_UNLIKELY(!RB_TYPE_P(key_to_s, T_STRING))) {
         VALUE cname = rb_obj_class(key);
         rb_raise(rb_eTypeError,
                  "can't convert %"PRIsVALUE" to %s (%"PRIsVALUE"#%s gives %"PRIsVALUE")",
