@@ -4158,7 +4158,8 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
-    for branchref in block.incoming.0.take().iter() {
+    let incoming_branches = block.incoming.0.take();
+    for (i, branchref) in incoming_branches.iter().enumerate() {
         let branch = unsafe { branchref.as_ref() };
         let target_idx = if branch.get_target_address(0) == Some(block_start) {
             0
@@ -4218,6 +4219,11 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
         if target_next && branch.end_addr > block.end_addr {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
+        }
+        let is_last_incoming_branch = i == incoming_branches.len() - 1;
+        if target_next && branch.end_addr.get() > block_entry_exit && !is_last_incoming_branch {
+            // We might still need to jump to this exit if we run out of memory when rewriting another incoming branch.
+            panic!("yjit invalidate rewrote branch over exit of invalidated block: {:?}", branch);
         }
         if !target_next && branch.code_size() > old_branch_size {
             panic!(
