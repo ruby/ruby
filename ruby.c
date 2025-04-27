@@ -307,7 +307,9 @@ usage(const char *name, int help, int highlight, int columns)
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 
 #if USE_YJIT
-# define PLATFORM_JIT_OPTION "--yjit"
+# define DEFAULT_JIT_OPTION "--yjit"
+#elif USE_ZJIT
+# define DEFAULT_JIT_OPTION "--zjit"
 #endif
 
     /* This message really ought to be max 23 lines.
@@ -338,13 +340,15 @@ usage(const char *name, int help, int highlight, int columns)
         M("-W[level=2|:category]", "",             "Set warning flag ($-W):\n"
             "0 for silent; 1 for moderate; 2 for verbose."),
         M("-x[dirpath]",   "",			   "Execute Ruby code starting from a #!ruby line."),
-#if USE_YJIT
-        M("--jit",         "",                     "Enable JIT for the platform; same as " PLATFORM_JIT_OPTION "."),
+#if USE_YJIT || USE_ZJIT
+        M("--jit",         "",                     "Enable the default JIT for the build; same as " DEFAULT_JIT_OPTION "."),
 #endif
 #if USE_YJIT
         M("--yjit",        "",                     "Enable in-process JIT compiler."),
 #endif
-        M("--zjit",        "",                     "Enable in-process JIT compiler."),
+#if USE_ZJIT
+        M("--zjit",        "",                     "Enable method-based JIT compiler."),
+#endif
         M("-h",		   "",			   "Print this help message; use --help for longer message."),
     };
     STATIC_ASSERT(usage_msg_size, numberof(usage_msg) < 26);
@@ -382,6 +386,9 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
         M("yjit",                  "", "In-process JIT compiler (default: disabled)."),
 #endif
+#if USE_ZJIT
+        M("zjit",                  "", "Method-based JIT compiler (default: disabled)."),
+#endif
     };
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated",   "", "Deprecated features."),
@@ -418,6 +425,11 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_YJIT
     printf("%s""YJIT options:%s\n", sb, se);
     rb_yjit_show_usage(help, highlight, w, columns);
+#endif
+#if USE_ZJIT
+    printf("%s""ZJIT options:%s\n", sb, se);
+    extern void rb_zjit_show_usage(int help, int highlight, unsigned int width, int columns);
+    rb_zjit_show_usage(help, highlight, w, columns);
 #endif
 }
 
@@ -1993,7 +2005,7 @@ copy_str(VALUE str, rb_encoding *enc, bool intern)
     return rb_enc_interned_str(RSTRING_PTR(str), RSTRING_LEN(str), enc);
 }
 
-#if USE_YJIT
+#if USE_YJIT || USE_ZJIT
 // Check that an environment variable is set to a truthy value
 static bool
 env_var_truthy(const char *name)
@@ -2344,6 +2356,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #if USE_YJIT
         if (!FEATURE_USED_P(opt->features, yjit) && env_var_truthy("RUBY_YJIT_ENABLE")) {
             FEATURE_SET(opt->features, FEATURE_BIT(yjit));
+        }
+#elif USE_ZJIT
+        if (!FEATURE_USED_P(opt->features, zjit) && env_var_truthy("RUBY_ZJIT_ENABLE")) {
+            FEATURE_SET(opt->features, FEATURE_BIT(zjit));
         }
 #endif
     }
