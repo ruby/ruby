@@ -3131,7 +3131,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_vm_postponed_job_free();
 
             rb_id_table_free(vm->constant_cache);
-            st_free_table(vm->unused_block_warning_table);
+            set_free_table(vm->unused_block_warning_table);
 
             xfree(th->nt);
             th->nt = NULL;
@@ -4306,7 +4306,7 @@ Init_BareVM(void)
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
-    vm->unused_block_warning_table = st_init_numtable();
+    vm->unused_block_warning_table = set_init_numtable();
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
