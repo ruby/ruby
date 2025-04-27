@@ -605,6 +605,22 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '{"JSONGeneratorTest::StringWithToS#to_s":1}', JSON.generate(StringWithToS.new => 1)
   end
 
+  def test_string_subclass_with_broken_to_s
+    klass = Class.new(String) do
+      def to_s
+        false
+      end
+    end
+    s = klass.new("test")
+    assert_equal '["test"]', JSON.generate([s])
+
+    omit("Can't figure out how to match behavior in java code") if RUBY_PLATFORM == "java"
+
+    assert_raise TypeError do
+      JSON.generate(s => 1)
+    end
+  end
+
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_valid_utf8_in_different_encoding
       utf8_string = "€™"

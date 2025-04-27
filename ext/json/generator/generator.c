@@ -789,6 +789,21 @@ struct hash_foreach_arg {
     int iter;
 };
 
+static VALUE
+convert_string_subclass(VALUE key)
+{
+    VALUE key_to_s = rb_funcall(key, i_to_s, 0);
+
+    if (RB_UNLIKELY(rb_type(key_to_s) != T_STRING)) {
+        VALUE cname = rb_obj_class(key);
+        rb_raise(rb_eTypeError,
+                 "can't convert %"PRIsVALUE" to %s (%"PRIsVALUE"#%s gives %"PRIsVALUE")",
+                 cname, "String", cname, "to_s", rb_obj_class(key_to_s));
+    }
+
+    return key_to_s;
+}
+
 static int
 json_object_i(VALUE key, VALUE val, VALUE _arg)
 {
@@ -817,7 +832,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             if (RB_LIKELY(RBASIC_CLASS(key) == rb_cString)) {
                 key_to_s = key;
             } else {
-                key_to_s = rb_funcall(key, i_to_s, 0);
+                key_to_s = convert_string_subclass(key);
             }
             break;
         case T_SYMBOL:
