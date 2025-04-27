@@ -4158,7 +4158,19 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
-    let incoming_branches = block.incoming.0.take();
+    let mut incoming_branches = block.incoming.0.take();
+
+    // An adjacent branch will write into the start of the block being invalidated, possibly
+    // overwriting the block's exit. If we run out of memory after doing this, any subsequent
+    // incoming branches we rewrite won't be able use the block's exit as a fallback when they
+    // are unable to generate a stub. To avoid this, if there's an incoming branch that's
+    // adjacent to the invalidated block, make sure we process it last.
+    incoming_branches.sort_by_key(|branchref| {
+        let branch = unsafe { branchref.as_ref() };
+        let target_next = block.start_addr == branch.end_addr.get();
+        target_next
+    });
+
     for (i, branchref) in incoming_branches.iter().enumerate() {
         let branch = unsafe { branchref.as_ref() };
         let target_idx = if branch.get_target_address(0) == Some(block_start) {
