@@ -58,6 +58,10 @@ class RubyVM::TraceInstructions
     return false
   end
 
+  def zjit_profile?
+    return false
+  end
+
   private
 
   @instances = RubyVM::Instructions.map {|i| new i }

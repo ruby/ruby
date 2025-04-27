@@ -3283,7 +3283,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
     VALUE exception = rb_ary_new(); /* [[....]] */
     VALUE misc = rb_hash_new();
 
-    static ID insn_syms[VM_INSTRUCTION_SIZE/2]; /* w/o-trace only */
+    static ID insn_syms[VM_BARE_INSTRUCTION_SIZE]; /* w/o-trace only */
     struct st_table *labels_table = st_init_numtable();
     VALUE labels_wrapper = TypedData_Wrap_Struct(0, &label_wrapper, labels_table);
 
@@ -3745,17 +3745,21 @@ rb_iseq_defined_string(enum defined_type type)
     return rb_fstring_cstr(estr);
 }
 
-/* A map from encoded_insn to insn_data: decoded insn number, its len,
- * non-trace version of encoded insn, and trace version. */
-
+// A map from encoded_insn to insn_data: decoded insn number, its len,
+// decoded ZJIT insn number, non-trace version of encoded insn,
+// trace version, and zjit version.
 static st_table *encoded_insn_data;
 typedef struct insn_data_struct {
     int insn;
     int insn_len;
     void *notrace_encoded_insn;
     void *trace_encoded_insn;
+#if USE_ZJIT
+    int zjit_insn;
+    void *zjit_encoded_insn;
+#endif
 } insn_data_t;
-static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
+static insn_data_t insn_data[VM_BARE_INSTRUCTION_SIZE];
 
 void
 rb_free_encoded_insn_data(void)
@@ -3772,27 +3776,33 @@ rb_vm_encoded_insn_data_table_init(void)
 #else
 #define INSN_CODE(insn) (insn)
 #endif
-    st_data_t insn;
-    encoded_insn_data = st_init_numtable_with_size(VM_INSTRUCTION_SIZE / 2);
+    encoded_insn_data = st_init_numtable_with_size(VM_BARE_INSTRUCTION_SIZE);
 
-    for (insn = 0; insn < VM_INSTRUCTION_SIZE/2; insn++) {
-        st_data_t key1 = (st_data_t)INSN_CODE(insn);
-        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_INSTRUCTION_SIZE/2);
-
-        insn_data[insn].insn = (int)insn;
+    for (int insn = 0; insn < VM_BARE_INSTRUCTION_SIZE; insn++) {
+        insn_data[insn].insn = insn;
         insn_data[insn].insn_len = insn_len(insn);
 
-        if (insn != BIN(opt_invokebuiltin_delegate_leave)) {
-            insn_data[insn].notrace_encoded_insn = (void *) key1;
-            insn_data[insn].trace_encoded_insn = (void *) key2;
-        }
-        else {
-            insn_data[insn].notrace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate));
-            insn_data[insn].trace_encoded_insn = (void *) INSN_CODE(BIN(opt_invokebuiltin_delegate) + VM_INSTRUCTION_SIZE/2);
-        }
+        // When tracing :return events, we convert opt_invokebuiltin_delegate_leave + leave into
+        // opt_invokebuiltin_delegate + trace_leave. https://github.com/ruby/ruby/pull/3256
+        int notrace_insn = (insn != BIN(opt_invokebuiltin_delegate_leave)) ? insn : BIN(opt_invokebuiltin_delegate);
+        insn_data[insn].notrace_encoded_insn = (void *)INSN_CODE(notrace_insn);
+        insn_data[insn].trace_encoded_insn = (void *)INSN_CODE(notrace_insn + VM_BARE_INSTRUCTION_SIZE);
 
+        st_data_t key1 = (st_data_t)INSN_CODE(insn);
+        st_data_t key2 = (st_data_t)INSN_CODE(insn + VM_BARE_INSTRUCTION_SIZE);
         st_add_direct(encoded_insn_data, key1, (st_data_t)&insn_data[insn]);
         st_add_direct(encoded_insn_data, key2, (st_data_t)&insn_data[insn]);
+
+#if USE_ZJIT
+        int zjit_insn = vm_bare_insn_to_zjit_insn(insn);
+        insn_data[insn].zjit_insn = zjit_insn;
+        insn_data[insn].zjit_encoded_insn = (insn != zjit_insn) ? (void *)INSN_CODE(zjit_insn) : 0;
+
+        if (insn != zjit_insn) {
+            st_data_t key3 = (st_data_t)INSN_CODE(zjit_insn);
+            st_add_direct(encoded_insn_data, key3, (st_data_t)&insn_data[insn]);
+        }
+#endif
     }
 }
 
@@ -3821,8 +3831,13 @@ rb_vm_insn_addr2opcode(const void *addr)
         insn_data_t *e = (insn_data_t *)val;
         int opcode = e->insn;
         if (addr == e->trace_encoded_insn) {
-            opcode += VM_INSTRUCTION_SIZE/2;
+            opcode += VM_BARE_INSTRUCTION_SIZE;
         }
+#if USE_ZJIT
+        else if (addr == e->zjit_encoded_insn) {
+            opcode = e->zjit_insn;
+        }
+#endif
         return opcode;
     }
 

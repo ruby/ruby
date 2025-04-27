@@ -17,6 +17,6 @@ RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
                        RubyVM::OperandsUnifications.to_a + \
                        RubyVM::InstructionsUnifications.to_a
 
-require_relative 'zjit_instructions'
 require_relative 'trace_instructions'
+require_relative 'zjit_instructions'
 RubyVM::Instructions.freeze
