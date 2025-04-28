@@ -113,6 +113,13 @@ pub enum Invariant {
         /// The method ID of the method we want to assume unchanged
         method: ID,
     },
+    /// A list of constant expression path segments that must have not been written to for the
+    /// following code to be valid.
+    StableConstantNames {
+        idlist: *const ID,
+    },
+    /// There is one ractor running. If a non-root ractor gets spawned, this is invalidated.
+    SingleRactorMode,
 }
 
 impl Invariant {
@@ -161,6 +168,22 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     self.ptr_map.map_id(method.0)
                 )
             }
+            Invariant::StableConstantNames { idlist } => {
+                write!(f, "StableConstantNames({:p}, ", self.ptr_map.map_ptr(idlist))?;
+                let mut idx = 0;
+                let mut sep = "";
+                loop {
+                    let id = unsafe { *idlist.wrapping_add(idx) };
+                    if id.0 == 0 {
+                        break;
+                    }
+                    write!(f, "{sep}{}", id.contents_lossy())?;
+                    sep = "::";
+                    idx += 1;
+                }
+                write!(f, ")")
+            }
+            Invariant::SingleRactorMode => write!(f, "SingleRactorMode"),
         }
     }
 }
@@ -292,7 +315,7 @@ pub enum Insn {
     // with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
-    GetConstantPath { ic: *const u8 },
+    GetConstantPath { ic: *const iseq_inline_constant_cache },
 
     //NewObject?
     //SetIvar {},
@@ -1013,6 +1036,25 @@ impl Function {
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
+                    Insn::GetConstantPath { ic } => {
+                        let idlist: *const ID = unsafe { (*ic).segments };
+                        let ice = unsafe { (*ic).entry };
+                        if ice.is_null() {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
+                        let multi_ractor_mode = unsafe { rb_zjit_multi_ractor_p() };
+                        if cref_sensitive || multi_ractor_mode {
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        // Assume single-ractor mode.
+                        self.push_insn(block, Insn::PatchPoint(Invariant::SingleRactorMode));
+                        // Invalidate output code on any constant writes associated with constants
+                        // referenced after the PatchPoint.
+                        self.push_insn(block, Insn::PatchPoint(Invariant::StableConstantNames { idlist }));
+                        let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
+                        self.make_equal_to(insn_id, replacement);
+                    }
                     _ => { self.push_insn_id(block, insn_id); }
                 }
             }
@@ -1714,7 +1756,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
                 }
                 YARVINSN_opt_getconstant_path => {
-                    let ic = get_arg(pc, 0).as_ptr::<u8>();
+                    let ic = get_arg(pc, 0).as_ptr();
                     state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic }));
                 }
                 YARVINSN_branchunless => {
@@ -3563,6 +3605,72 @@ mod opt_tests {
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
               v7:Fixnum = CCall bytesize@0x1018, v2
               Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn dont_replace_get_constant_path_with_empty_ic() {
+        eval("
+            def test = Kernel
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:BasicObject = GetConstantPath 0x1000
+              Return v1
+        "#]]);
+    }
+
+    #[test]
+    fn dont_replace_get_constant_path_with_invalidated_ic() {
+        eval("
+            def test = Kernel
+            test
+            Kernel = 5
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:BasicObject = GetConstantPath 0x1000
+              Return v1
+        "#]]);
+    }
+
+    #[test]
+    fn replace_get_constant_path_with_const() {
+        eval("
+            def test = Kernel
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, Kernel)
+              v5:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn replace_nested_get_constant_path_with_const() {
+        eval("
+            module Foo
+              module Bar
+                class C
+                end
+              end
+            end
+            def test = Foo::Bar::C
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
+              v5:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v5
         "#]]);
     }
 }
