@@ -22,7 +22,7 @@ else
       end
     end
 
-    if have_header('x86intrin.h') && have_type('__m128i', headers=['x86intrin.h']) && try_compile(<<~'SRC', opt='-msse2')
+    if have_header('x86intrin.h') && have_type('__m128i', headers=['x86intrin.h']) && try_compile(<<~'SRC')
       #include <x86intrin.h>
       int main() {
           __m128i test = _mm_set1_epi8(32);
