@@ -744,11 +744,21 @@ impl Function {
                 }
             };
         }
+        macro_rules! find_branch_edge {
+            ( $edge:ident ) => {
+                {
+                    BranchEdge {
+                        target: $edge.target,
+                        args: $edge.args.iter().map(|x| self.union_find.find_const(*x)).collect(),
+                    }
+                }
+            };
+        }
         let insn_id = self.union_find.find_const(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(PutSelf | Const {..} | Param {..} | NewArray {..} | GetConstantPath {..}
-                    | Jump(_) | PatchPoint {..}) => result.clone(),
+                    | PatchPoint {..}) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -763,8 +773,9 @@ impl Function {
             StringCopy { val } => StringCopy { val: find!(*val) },
             StringIntern { val } => StringIntern { val: find!(*val) },
             Test { val } => Test { val: find!(*val) },
-            IfTrue { val, target } => IfTrue { val: find!(*val), target: target.clone() },
-            IfFalse { val, target } => IfFalse { val: find!(*val), target: target.clone() },
+            Jump(target) => Jump(find_branch_edge!(target)),
+            IfTrue { val, target } => IfTrue { val: find!(*val), target: find_branch_edge!(target) },
+            IfFalse { val, target } => IfFalse { val: find!(*val), target: find_branch_edge!(target) },
             GuardType { val, guard_type, state } => GuardType { val: find!(*val), guard_type: *guard_type, state: *state },
             GuardBitEquals { val, expected, state } => GuardBitEquals { val: find!(*val), expected: *expected, state: *state },
             FixnumAdd { left, right, state } => FixnumAdd { left: find!(*left), right: find!(*right), state: *state },
