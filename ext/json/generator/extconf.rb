@@ -35,7 +35,5 @@ else
     have_header('cpuid.h')
   end
 
-  create_header
-
   create_makefile 'json/ext/generator'
 end
