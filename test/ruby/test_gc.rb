@@ -411,6 +411,8 @@ class TestGc < Test::Unit::TestCase
       before_weak_references_count = GC.latest_gc_info(:weak_references_count)
       before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
 
+      # Clear ary, so if ary itself is somewhere on the stack, it won't hold all references
+      ary.clear
       ary = nil
 
       # Free ary, which should empty out the wmap
