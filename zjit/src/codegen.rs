@@ -169,7 +169,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
         return Some((start_ptr, vec![]));
     }
 
-    // Convert ISEQ into High-level IR
+    // Convert ISEQ into High-level IR and optimize HIR
     let function = match compile_iseq(iseq) {
         Some(function) => function,
         None => return None,
