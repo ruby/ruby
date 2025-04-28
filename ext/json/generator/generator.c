@@ -320,14 +320,12 @@ static inline FORCE_INLINE uint64_t neon_rules_update(const char *ptr)
 {
     uint8x16_t chunk = vld1q_u8((const unsigned char *)ptr);
 
-    const uint8x16_t lower_bound = vdupq_n_u8(' '); 
-    const uint8x16_t backslash   = vdupq_n_u8('\\');
-    const uint8x16_t dblquote    = vdupq_n_u8('\"');
+    // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
+    // https://lemire.me/blog/2025/04/13/detect-control-characters-quotes-and-backslashes-efficiently-using-swar/
+    const uint8x16_t too_low_or_dbl_quote = vcltq_u8(veorq_u8(chunk, vdupq_n_u8(2)), vdupq_n_u8(33));
 
-    uint8x16_t too_low       = vcltq_u8(chunk, lower_bound);
-    uint8x16_t has_backslash = vceqq_u8(chunk, backslash);
-    uint8x16_t has_dblquote  = vceqq_u8(chunk, dblquote);
-    uint8x16_t needs_escape  = vorrq_u8(too_low, vorrq_u8(has_backslash, has_dblquote));
+    uint8x16_t has_backslash = vceqq_u8(chunk, vdupq_n_u8('\\'));
+    uint8x16_t needs_escape  = vorrq_u8(too_low_or_dbl_quote, has_backslash);
 
     return neon_match_mask(needs_escape);
 }
@@ -467,14 +465,11 @@ static inline TARGET_SSE2 FORCE_INLINE int sse2_update(const char *ptr)
 {
     __m128i chunk         = _mm_loadu_si128((__m128i const*)ptr);
 
-    const __m128i lower_bound = _mm_set1_epi8(' '); 
-    const __m128i backslash   = _mm_set1_epi8('\\');
-    const __m128i dblquote    = _mm_set1_epi8('\"');
-
-    __m128i too_low       = _mm_cmplt_epu8(chunk, lower_bound);
-    __m128i has_backslash = _mm_cmpeq_epi8(chunk, backslash);
-    __m128i has_dblquote  = _mm_cmpeq_epi8(chunk, dblquote);
-    __m128i needs_escape  = _mm_or_si128(too_low, _mm_or_si128(has_backslash, has_dblquote));
+    // Trick: c < 32 || c == 34 can be factored as c ^ 2 < 33
+    // https://lemire.me/blog/2025/04/13/detect-control-characters-quotes-and-backslashes-efficiently-using-swar/
+    __m128i too_low_or_dbl_quote = _mm_cmplt_epu8(_mm_xor_si128(chunk, _mm_set1_epi8(2)), _mm_set1_epi8(33));
+    __m128i has_backslash = _mm_cmpeq_epi8(chunk, _mm_set1_epi8('\\'));
+    __m128i needs_escape  = _mm_or_si128(too_low_or_dbl_quote, has_backslash);
     return _mm_movemask_epi8(needs_escape);
 }
 
