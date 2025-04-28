@@ -1,3 +1,5 @@
+#if USE_ZJIT
+
 MAYBE_UNUSED(static int vm_bare_insn_to_zjit_insn(int insn));
 static int
 vm_bare_insn_to_zjit_insn(int insn)
@@ -25,3 +27,5 @@ vm_zjit_insn_to_bare_insn(int insn)
         return insn;
     }
 }
+
+#endif

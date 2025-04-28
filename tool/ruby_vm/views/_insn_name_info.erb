@@ -6,10 +6,14 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %
-% a = RubyVM::Instructions.map {|i| i.name }
-% b = (0...a.size)
-% c = a.inject([0]) {|r, i| r << (r[-1] + i.length + 1) }
-% c.pop
+% zjit_insns, insns = RubyVM::Instructions.partition { |i| i.name.start_with?('zjit_') }
+%
+% next_offset = 0
+% name_offset = proc do |i|
+%   offset = sprintf("%4d", next_offset)
+%   next_offset += i.name.length + 1 # insn.name + \0
+%   offset
+% end
 %
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_name(VALUE insn)));
 
@@ -20,18 +24,28 @@ extern const unsigned short rb_vm_insn_name_offset[VM_INSTRUCTION_SIZE];
 RUBY_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
-const int rb_vm_max_insn_name_size = <%= a.map(&:size).max %>;
+const int rb_vm_max_insn_name_size = <%= RubyVM::Instructions.map { |i| i.name.size }.max %>;
 
 const char rb_vm_insn_name_base[] =
-% a.each do |i|
-    <%=cstr i%> "\0"
+% insns.each do |i|
+    <%= cstr i.name %> "\0"
 % end
+#if USE_ZJIT
+% zjit_insns.each do |i|
+    <%= cstr i.name %> "\0"
+% end
+#endif
     ;
 
 const unsigned short rb_vm_insn_name_offset[] = {
-% c.each_slice 12 do |d|
-    <%= d.map {|i| sprintf("%4d", i) }.join(', ') %>,
+% insns.each_slice(12) do |row|
+    <%= row.map(&name_offset).join(', ') %>,
 % end
+#if USE_ZJIT
+% zjit_insns.each_slice(12) do |row|
+    <%= row.map(&name_offset).join(', ') %>,
+% end
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_name_offset);

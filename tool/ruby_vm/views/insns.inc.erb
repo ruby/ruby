@@ -6,6 +6,9 @@
 %# granted, to either  redistribute and/or modify this file,  provided that the
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
+%
+% zjit_insns, insns = RubyVM::Instructions.partition { |i| i.name.start_with?('zjit_') }
+%
 <%= render 'copyright' %>
 <%= render 'notice', locals: {
     this_file: 'contains YARV instruction list',
@@ -19,9 +22,14 @@
 #define BIN(n) YARVINSN_##n
 
 enum ruby_vminsn_type {
-% RubyVM::Instructions.each do |i|
+% insns.each do |i|
     <%= i.bin %>,
 % end
+#if USE_ZJIT
+% zjit_insns.each do |i|
+    <%= i.bin %>,
+% end
+#endif
     VM_INSTRUCTION_SIZE
 };
 
