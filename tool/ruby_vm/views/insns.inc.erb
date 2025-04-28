@@ -25,6 +25,8 @@ enum ruby_vminsn_type {
     VM_INSTRUCTION_SIZE
 };
 
+#define VM_BARE_INSTRUCTION_SIZE <%= RubyVM::Instructions.count { |i| i.name !~ /\A(trace|zjit)_/ } %>
+
 #define ASSERT_VM_INSTRUCTION_SIZE(array) \
     STATIC_ASSERT(numberof_##array, numberof(array) == VM_INSTRUCTION_SIZE)
 
