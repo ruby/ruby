@@ -654,6 +654,26 @@ module Psych
   end
 
   ###
+  # Load multiple documents given in +yaml+. Returns the parsed documents
+  # as a list.
+  #
+  # Example:
+  #
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
+  #
+  #   list = []
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") do |ruby|
+  #     list << ruby
+  #   end
+  #   list # => ['foo', 'bar']
+  #
+  def self.safe_load_stream yaml, filename: nil, permitted_classes: [], aliases: false
+    parse_stream(yaml, filename: filename).children.map do |child|
+      safe_load(child.to_yaml, permitted_classes, aliases: aliases)
+    end
+  end
+
+  ###
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified +fallback+ return value, which defaults to +false+.
