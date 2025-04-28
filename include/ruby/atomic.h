@@ -302,6 +302,19 @@ typedef unsigned int rb_atomic_t;
     RBIMPL_CAST(rbimpl_atomic_ptr_load((void **)&var))
 
 /**
+* Identical  to #RUBY_ATOMIC_SET,  except  it expects  its arguments  are
+* `void*`.   There are  cases where  ::rb_atomic_t is  32bit while  ::VALUE is
+* 64bit.  This should  be used for pointer related operations  to support such
+* platforms.
+*
+* @param   var  A variable of `void*`.
+* @param   val   Value to set.
+* @post    `var` holds `val`.
+*/
+#define RUBY_ATOMIC_PTR_SET(var, val) \
+   rbimpl_atomic_ptr_set((volatile void **)&(var), (val))
+
+/**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `void*`.
  * There are cases where ::rb_atomic_t is 32bit while `void*` is 64bit.  This
  * should be used for size related operations to support such platforms.
@@ -786,6 +799,19 @@ rbimpl_atomic_ptr_exchange(void *volatile *ptr, const void *val)
     return RBIMPL_CAST((void *)sret);
 
 #endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline void
+rbimpl_atomic_ptr_set(volatile void **ptr, void *val)
+{
+    RBIMPL_STATIC_ASSERT(sizeof_value, sizeof *ptr == sizeof(size_t));
+
+    const size_t sval = RBIMPL_CAST((size_t)val);
+    volatile size_t *const sptr = RBIMPL_CAST((volatile size_t *)ptr);
+    rbimpl_atomic_size_set(sptr, sval);
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
