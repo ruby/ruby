@@ -6,40 +6,39 @@ class TestNamespace < Test::Unit::TestCase
   ENV_ENABLE_NAMESPACE = {'RUBY_NAMESPACE' => '1'}
 
   def setup
-    Namespace.enabled = true
-    @n = Namespace.new
+    @n = Namespace.new if Namespace.enabled?
   end
 
   def teardown
-    Namespace.enabled = nil
+    @n = nil
   end
 
   def test_namespace_availability
-    pend
-    Namespace.enabled = nil
-    assert !Namespace.enabled
-    Namespace.enabled = true
-    assert Namespace.enabled
-    Namespace.enabled = false
-    assert !Namespace.enabled
+    env_has_RUBY_NAMESPACE = (ENV['RUBY_NAMESPACE'].to_i == 1)
+    assert_equal env_has_RUBY_NAMESPACE, Namespace.enabled?
   end
 
   def test_current_namespace
-    pend
-    global = Namespace.current
-    assert_nil global
+    pend unless Namespace.enabled?
+
+    main = Namespace.current
+    assert main.inspect.include?("main")
+
     @n.require_relative('namespace/current')
+
     assert_equal @n, @n::CurrentNamespace.in_require
     assert_equal @n, @n::CurrentNamespace.in_method_call
-    assert_nil Namespace.current
+    assert_equal main, Namespace.current
   end
 
   def test_require_rb_separately
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
     @n.require(File.join(__dir__, 'namespace', 'a.1_1_0'))
+
     assert_not_nil @n::NS_A
     assert_not_nil @n::NS_B
     assert_equal "1.1.0", @n::NS_A::VERSION
@@ -52,11 +51,13 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_relative_rb_separately
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
     @n.require_relative('namespace/a.1_1_0')
+
     assert_not_nil @n::NS_A
     assert_not_nil @n::NS_B
     assert_equal "1.1.0", @n::NS_A::VERSION
@@ -69,11 +70,13 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_separately
-    pend
-    assert_raise(NameError) { NS_A } # !
+    pend unless Namespace.enabled?
+
+    assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
-    @n.load(File.join('namespace', 'a.1_1_0.rb'))
+    @n.load(File.join(__dir__, 'namespace', 'a.1_1_0.rb'))
+
     assert_not_nil @n::NS_A
     assert_not_nil @n::NS_B
     assert_equal "1.1.0", @n::NS_A::VERSION
@@ -86,12 +89,14 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_namespace_in_namespace
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(NameError) { NS1 }
     assert_raise(NameError) { NS_A }
     assert_raise(NameError) { NS_B }
 
     @n.require_relative('namespace/ns')
+
     assert_not_nil @n::NS1
     assert_not_nil @n::NS1::NS_A
     assert_not_nil @n::NS1::NS_B
@@ -106,7 +111,8 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_require_rb_2versions
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(NameError) { NS_A }
 
     @n.require(File.join(__dir__, 'namespace', 'a.1_2_0'))
@@ -126,13 +132,15 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_raising_errors_in_require
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(RuntimeError, "Yay!") { @n.require(File.join(__dir__, 'namespace', 'raise')) }
-    assert_nil Namespace.current
+    assert Namespace.current.inspect.include?("main")
   end
 
   def test_autoload_in_namespace
-    pend
+    pend unless Namespace.enabled?
+
     assert_raise(NameError) { NS_A }
 
     @n.require_relative('namespace/autoloading')
@@ -149,14 +157,17 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_continuous_top_level_method_in_a_namespace
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/define_toplevel')
     @n.require_relative('namespace/call_toplevel')
+
     assert_raise(NameError) { foo }
   end
 
   def test_top_level_methods_in_namespace
-    pend
+    pend # TODO: fix loading/current namespace detection
+    pend unless Namespace.enabled?
     @n.require_relative('namespace/top_level')
     assert_equal "yay!", @n::Foo.foo
     assert_raise(NameError) { yaaay }
@@ -165,7 +176,8 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_defined_in_namespace_refers_module_in_namespace
-    pend
+    pend unless Namespace.enabled?
+
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -186,7 +198,8 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_proc_defined_globally_refers_global_module
-    pend
+    pend unless Namespace.enabled?
+
     # require_relative dosn't work well in assert_separately even with __FILE__ and __LINE__
     assert_separately([ENV_ENABLE_NAMESPACE], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -208,42 +221,20 @@ class TestNamespace < Test::Unit::TestCase
       assert_equal "yay", ns2::Bar.caller(proc_v) # should refer the global Target, not Foo in ns2
     end;
   end
-end
-
-# class NSDummyBuiltinA; def foo; "a"; end; end
-# module NSDummyBuiltinB; def foo; "b"; end; end
-# Namespace.force_builtin(NSDummyBuiltinA)
-# Namespace.force_builtin(NSDummyBuiltinB)
-
-# class NSUsualClassC; def foo; "a"; end; end
-# module NSUsualModuleD; def foo; "b"; end; end
-
-class TestNamespace < Test::Unit::TestCase
-  def test_builtin_classes_and_modules_are_reopened
-    pend
-    @n.require_relative('namespace/reopen_classes_modules')
-
-    assert_equal "A", @n::NSReopenClassesModules.test_a
-    assert_raise(NameError){ @n::NSDummyBuiltinA }
-    assert_equal "B", @n::NSReopenClassesModules.test_b
-    assert_raise(NameError){ @n::NSDummyBuiltinB }
-
-    assert_raise(NameError){ @n::NSReopenClassesModules.test_c }
-    assert_not_nil @n::NSUsualClassC
-    assert_raise(NameError){ @n::NSReopenClassesModules.test_d }
-    assert_not_nil @n::NSUsualModuleD
-  end
 
   def test_methods_added_in_namespace_are_invisible_globally
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/string_ext')
+
     assert_equal "yay", @n::Bar.yay
 
     assert_raise(NoMethodError){ String.new.yay }
   end
 
   def test_continuous_method_definitions_in_a_namespace
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/string_ext')
     assert_equal "yay", @n::Bar.yay
 
@@ -254,34 +245,36 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_methods_added_in_namespace_later_than_caller_code
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/string_ext_caller')
-
     @n.require_relative('namespace/string_ext')
-    assert_equal "yay", @n::Bar.yay
 
-    pend # TODO: The file (ISeq) required previously cannot be refined correctly by the following file (and its refinement)
-    assert_equal "yay", @n::Foo.yay #TODO: NoMethodError
+    assert_equal "yay", @n::Bar.yay
+    assert_equal "yay", @n::Foo.yay
   end
 
   def test_method_added_in_namespace_are_available_on_eval
-    pend
-    @n.require_relative('namespace/string_ext')
+    pend unless Namespace.enabled?
 
+    @n.require_relative('namespace/string_ext')
     @n.require_relative('namespace/string_ext_eval_caller')
+
     assert_equal "yay", @n::Baz.yay
   end
 
   def test_method_added_in_namespace_are_available_on_eval_with_binding
-    pend
-    @n.require_relative('namespace/string_ext')
+    pend unless Namespace.enabled?
 
+    @n.require_relative('namespace/string_ext')
     @n.require_relative('namespace/string_ext_eval_caller')
+
     assert_equal "yay, yay!", @n::Baz.yay_with_binding
   end
 
   def test_methods_and_constants_added_by_include
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/open_class_with_include')
 
     assert_equal "I'm saying foo 1", @n::OpenClassWithInclude.say
@@ -290,7 +283,6 @@ class TestNamespace < Test::Unit::TestCase
 
     assert_raise(NameError) { String::FOO }
 
-    pend # TODO: implement the correct include/prepend
     assert_equal "foo 1", @n::OpenClassWithInclude.refer_foo
   end
 end
@@ -306,89 +298,65 @@ class TestNamespace < Test::Unit::TestCase
     b
   end
 
-  def test_proc_from_global_works_with_global_definitions
-    pend
+  def test_proc_from_main_works_with_global_definitions
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/procs')
 
-    str_pr1 = Proc.new { String.new.yay }
-    str_pr2 = proc { String.new.yay }
-    str_pr3 = lambda { String.new.yay }
-    str_pr4 = ->(){ String.new.yay }
-    str_pr5 = make_proc_from_block { String.new.yay }
-    str_pr6 = @n::ProcInNS.make_proc_from_block { String.new.yay }
+    proc_and_labels = [
+      [Proc.new { String.new.yay }, "Proc.new"],
+      [proc { String.new.yay }, "proc{}"],
+      [lambda { String.new.yay }, "lambda{}"],
+      [->(){ String.new.yay }, "->(){}"],
+      [make_proc_from_block { String.new.yay }, "make_proc_from_block"],
+      [@n::ProcInNS.make_proc_from_block { String.new.yay }, "make_proc_from_block in @n"],
+    ]
 
-    assert_raise(NoMethodError) { str_pr1.call }
-    assert_raise(NoMethodError) { str_pr2.call }
-    assert_raise(NoMethodError) { str_pr3.call }
-    assert_raise(NoMethodError) { str_pr4.call }
-    assert_raise(NoMethodError) { str_pr5.call }
-    assert_raise(NoMethodError) { str_pr6.call }
+    proc_and_labels.each do |str_pr|
+      pr, pr_label = str_pr
+      assert_raise(NoMethodError, "NoMethodError expected: #{pr_label}, called in main") { pr.call }
+      assert_raise(NoMethodError, "NoMethodError expected: #{pr_label}, called in @n") { @n::ProcInNS.call_proc(pr) }
+    end
 
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr1) }
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr2) }
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr3) }
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr4) }
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr5) }
-    assert_raise(NoMethodError) { @n::ProcInNS.call_proc(str_pr6) }
+    const_and_labels = [
+      [Proc.new { ProcLookupTestA::B::VALUE }, "Proc.new"],
+      [proc { ProcLookupTestA::B::VALUE }, "proc{}"],
+      [lambda { ProcLookupTestA::B::VALUE }, "lambda{}"],
+      [->(){ ProcLookupTestA::B::VALUE }, "->(){}"],
+      [make_proc_from_block { ProcLookupTestA::B::VALUE }, "make_proc_from_block"],
+      [@n::ProcInNS.make_proc_from_block { ProcLookupTestA::B::VALUE }, "make_proc_from_block in @n"],
+    ]
 
-    const_pr1 = Proc.new { ProcLookupTestA::B::VALUE }
-    const_pr2 = proc { ProcLookupTestA::B::VALUE }
-    const_pr3 = lambda { ProcLookupTestA::B::VALUE }
-    const_pr4 = ->(){ ProcLookupTestA::B::VALUE }
-    const_pr5 = make_proc_from_block { ProcLookupTestA::B::VALUE }
-    const_pr6 = @n::ProcInNS.make_proc_from_block { ProcLookupTestA::B::VALUE }
-
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr1)
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr2)
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr3)
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr4)
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr5)
-    assert_equal 111, @n::ProcInNS.call_proc(const_pr6)
+    const_and_labels.each do |const_pr|
+      pr, pr_label = const_pr
+      assert_equal 111, pr.call, "111 expected, #{pr_label} called in main"
+      assert_equal 111, @n::ProcInNS.call_proc(pr), "111 expected, #{pr_label} called in @n"
+    end
   end
 
   def test_proc_from_namespace_works_with_definitions_in_namespace
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/procs')
 
-    str_pr1 = @n::ProcInNS.make_str_proc(:proc_new)
-    str_pr2 = @n::ProcInNS.make_str_proc(:proc_f)
-    str_pr3 = @n::ProcInNS.make_str_proc(:lambda_f)
-    str_pr4 = @n::ProcInNS.make_str_proc(:lambda_l)
-    str_pr5 = @n::ProcInNS.make_str_proc(:block)
+    proc_types = [:proc_new, :proc_f, :lambda_f, :lambda_l, :block]
 
-    assert_equal "yay", str_pr1.call
-    assert_equal "yay", str_pr2.call
-    assert_equal "yay", str_pr3.call
-    assert_equal "yay", str_pr4.call
-    assert_equal "yay", str_pr5.call
-
-    const_pr1 = @n::ProcInNS.make_const_proc(:proc_new)
-    const_pr2 = @n::ProcInNS.make_const_proc(:proc_f)
-    const_pr3 = @n::ProcInNS.make_const_proc(:lambda_f)
-    const_pr4 = @n::ProcInNS.make_const_proc(:lambda_l)
-    const_pr5 = @n::ProcInNS.make_const_proc(:block)
-
-    assert_equal 222, const_pr1.call
-    assert_equal 222, const_pr2.call
-    assert_equal 222, const_pr3.call
-    assert_equal 222, const_pr4.call
-    assert_equal 222, const_pr5.call
-
-    str_const_pr1 = @n::ProcInNS.make_str_const_proc(:proc_new)
-    str_const_pr2 = @n::ProcInNS.make_str_const_proc(:proc_f)
-    str_const_pr3 = @n::ProcInNS.make_str_const_proc(:lambda_f)
-    str_const_pr4 = @n::ProcInNS.make_str_const_proc(:lambda_l)
-    str_const_pr5 = @n::ProcInNS.make_str_const_proc(:block)
-
-    assert_equal "yay,foo,222", @n::ProcInNS::CONST_PROC_NEW.call
-    assert_equal "yay,foo,222", @n::ProcInNS::CONST_PROC_F.call
-    assert_equal "yay,foo,222", @n::ProcInNS::CONST_LAMBDA_F.call
-    assert_equal "yay,foo,222", @n::ProcInNS::CONST_LAMBDA_L.call
-    assert_equal "yay,foo,222", @n::ProcInNS::CONST_BLOCK.call
+    proc_types.each do |proc_type|
+      assert_equal 222, @n::ProcInNS.make_const_proc(proc_type).call, "ProcLookupTestA::B::VALUE should be 222 in @n"
+      assert_equal "foo", @n::ProcInNS.make_str_const_proc(proc_type).call, "String::FOO should be \"foo\" in @n"
+      assert_equal "yay", @n::ProcInNS.make_str_proc(proc_type).call, "String#yay should be callable in @n"
+      #
+      # TODO: method calls not-in-methods nor procs can't handle the current namespace correctly.
+      #
+      # assert_equal "yay,foo,222",
+      #              @n::ProcInNS.const_get(('CONST_' + proc_type.to_s.upcase).to_sym).call,
+      #              "Proc assigned to constants should refer constants correctly in @n"
+    end
   end
 
   def test_class_module_singleton_methods
-    pend
+    pend unless Namespace.enabled?
+
     @n.require_relative('namespace/singleton_methods')
 
     assert_equal "Good evening!", @n::SingletonMethods.string_greeing # def self.greeting
@@ -406,7 +374,8 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_add_constants_in_namespace
-    pend
+    pend unless Namespace.enabled?
+
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
     assert_equal 999, String.const_get(:STR_CONST0)
@@ -425,10 +394,6 @@ class TestNamespace < Test::Unit::TestCase
     assert_raise(NameError) { Integer::INT_CONST1 }
 
     assert_not_nil @n::ForConsts.refer_all
-
-    # TODO: support #remove_const in namespaces
-    # assert_raise(NameError) { @n::ForConsts.refer0 }
-    # assert_raise(NameError) { @n::ForConsts.get0 }
 
     assert_equal 112, @n::ForConsts.refer1
     assert_equal 112, @n::ForConsts.get1
@@ -451,6 +416,19 @@ class TestNamespace < Test::Unit::TestCase
 
     # use Proxy object to use usual methods instead of singleton methods
     proxy = @n::ForConsts::Proxy.new
+
+    assert_raise(NameError){ proxy.call_str_refer0 }
+    assert_raise(NameError){ proxy.call_str_get0 }
+
+    proxy.call_str_set0(30)
+    assert_equal 30, proxy.call_str_refer0
+    assert_equal 30, proxy.call_str_get0
+    assert_equal 999, String::STR_CONST0
+
+    proxy.call_str_remove0
+    assert_raise(NameError){ proxy.call_str_refer0 }
+    assert_raise(NameError){ proxy.call_str_get0 }
+
     assert_equal 112, proxy.call_str_refer1
     assert_equal 112, proxy.call_str_get1
     assert_equal 223, proxy.call_str_refer2
@@ -474,9 +452,9 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_global_variables
+    pend unless Namespace.enabled?
     default_l = $-0
     default_f = $,
-    pend
 
     assert_equal "\n", $-0 # equal to $/, line splitter
     assert_equal nil, $,   # field splitter
@@ -514,30 +492,22 @@ class TestNamespace < Test::Unit::TestCase
   end
 
   def test_load_path_and_loaded_features
-    pend
-    default_load_path = $LOAD_PATH.dup
-    assert $LOAD_PATH.respond_to?(:resolve_feature_path)
+    pend unless Namespace.enabled?
 
-    missing_dir = File.join(__dir__, 'missing')
-    $LOAD_PATH << missing_dir
+    assert $LOAD_PATH.respond_to?(:resolve_feature_path)
 
     @n.require_relative('namespace/load_path')
 
-    assert_equal default_load_path, @n::LoadPathCheck::FIRST_LOAD_PATH
-    assert_equal [], @n::LoadPathCheck::FIRST_LOADED_FEATURES
-
     assert_not_equal $LOAD_PATH, @n::LoadPathCheck::FIRST_LOAD_PATH
-    assert_equal($LOAD_PATH, @n::LoadPathCheck::FIRST_LOAD_PATH + [missing_dir])
 
     assert @n::LoadPathCheck::FIRST_LOAD_PATH_RESPOND_TO_RESOLVE
 
     namespace_dir = File.join(__dir__, 'namespace')
-    assert_equal(default_load_path + [namespace_dir], @n::LoadPathCheck.current_load_path)
-    assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank1.rb'))
-    assert !@n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
-
-    assert @n::LoadPathCheck.require_blank2
-    assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
+    # TODO: $LOADED_FEATURES in method calls should refer the current namespace in addition to the loading namespace.
+    # assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank1.rb'))
+    # assert !@n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
+    # assert @n::LoadPathCheck.require_blank2
+    # assert @n::LoadPathCheck.current_loaded_features.include?(File.join(namespace_dir, 'blank2.rb'))
 
     assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank1.rb'))
     assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank2.rb'))

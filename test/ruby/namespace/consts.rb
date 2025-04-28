@@ -7,8 +7,13 @@ end
 class String
   STR_CONST1 = 112
 
-  # TODO: support remove_const in namespaces
-  # remove_const :STR_CONST0
+  def self.set0(val)
+    const_set(:STR_CONST0, val)
+  end
+
+  def self.remove0
+    remove_const(:STR_CONST0)
+  end
 
   def refer0
     STR_CONST0
@@ -83,6 +88,14 @@ module ForConsts
 
     def call_str_get0
       String.const_get(:STR_CONST0)
+    end
+
+    def call_str_set0(val)
+      String.set0(val)
+    end
+
+    def call_str_remove0
+      String.remove0
     end
 
     def call_str_refer1
