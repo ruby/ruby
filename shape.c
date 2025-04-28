@@ -499,13 +499,26 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
 
     *variation_created = false;
 
+    // Fast path: if the shape has a single child, we can check it without a lock
+    struct rb_id_table *edges = RUBY_ATOMIC_PTR_LOAD(shape->edges);
+    if (edges && SINGLE_CHILD_P(edges)) {
+        rb_shape_t *child = SINGLE_CHILD(edges);
+        if (child->edge_name == id) {
+            return child;
+        }
+    }
+
     RB_VM_LOCK_ENTER();
     {
+        // The situation may have changed while we waited for the lock.
+        // So we load the edge again.
+        edges = RUBY_ATOMIC_PTR_LOAD(shape->edges);
+
         // If the current shape has children
-        if (shape->edges) {
+        if (edges) {
             // Check if it only has one child
-            if (SINGLE_CHILD_P(shape->edges)) {
-                rb_shape_t *child = SINGLE_CHILD(shape->edges);
+            if (SINGLE_CHILD_P(edges)) {
+                rb_shape_t *child = SINGLE_CHILD(edges);
                 // If the one child has a matching edge name, then great,
                 // we found what we want.
                 if (child->edge_name == id) {
@@ -515,7 +528,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             else {
                 // If it has more than one child, do a hash lookup to find it.
                 VALUE lookup_result;
-                if (rb_id_table_lookup(shape->edges, id, &lookup_result)) {
+                if (rb_id_table_lookup(edges, id, &lookup_result)) {
                     res = (rb_shape_t *)lookup_result;
                 }
             }
@@ -531,21 +544,25 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             else {
                 rb_shape_t *new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
 
-                if (!shape->edges) {
+                if (!edges) {
                     // If the shape had no edge yet, we can directly set the new child
-                    shape->edges = TAG_SINGLE_CHILD(new_shape);
+                    edges = TAG_SINGLE_CHILD(new_shape);
                 }
                 else {
                     // If the edge was single child we need to allocate a table.
                     if (SINGLE_CHILD_P(shape->edges)) {
-                        rb_shape_t *old_child = SINGLE_CHILD(shape->edges);
-                        shape->edges = rb_id_table_create(2);
-                        rb_id_table_insert(shape->edges, old_child->edge_name, (VALUE)old_child);
+                        rb_shape_t *old_child = SINGLE_CHILD(edges);
+                        edges = rb_id_table_create(2);
+                        rb_id_table_insert(edges, old_child->edge_name, (VALUE)old_child);
                     }
 
-                    rb_id_table_insert(shape->edges, new_shape->edge_name, (VALUE)new_shape);
+                    rb_id_table_insert(edges, new_shape->edge_name, (VALUE)new_shape);
                     *variation_created = true;
                 }
+
+                // We must use an atomic when setting the edges to ensure the writes
+                // from rb_shape_alloc_new_child are committed.
+                RUBY_ATOMIC_PTR_SET(shape->edges, edges);
 
                 res = new_shape;
             }
