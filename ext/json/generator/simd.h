@@ -1,5 +1,3 @@
-#include "extconf.h"
-
 typedef enum {
     SIMD_NONE,
     SIMD_NEON,
