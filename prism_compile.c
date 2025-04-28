@@ -3722,7 +3722,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
         method_id == rb_intern("new") &&
-        call_node->block == NULL;
+        call_node->block == NULL &&
+        (flags & VM_CALL_ARGS_BLOCKARG) == 0;
 
     if (inline_new) {
         if (LAST_ELEMENT(ret) == opt_new_prelude) {

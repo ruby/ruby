@@ -916,11 +916,13 @@ opt_new
     VALUE argc = vm_ci_argc(cd->ci);
     VALUE val = TOPN(argc);
 
+    // The bookkeeping slot should be empty.
+    RUBY_ASSERT(TOPN(argc + 1) == Qnil);
+
     if (vm_method_cfunc_is(GET_ISEQ(), cd, val, rb_class_new_instance_pass_kw) && !(ruby_vm_event_flags & ISEQ_TRACE_EVENTS)) {
         RB_DEBUG_COUNTER_INC(opt_new_hit);
         val = rb_obj_alloc(val);
         TOPN(argc) = val;
-        RUBY_ASSERT(TOPN(argc + 1) == Qnil);
         TOPN(argc + 1) = val;
     }
     else {
