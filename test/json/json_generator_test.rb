@@ -410,16 +410,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '["\\\\.(?i:gif|jpe?g|png)$"]'
     assert_equal json, generate(data)
     #
-    data = [ '\\"' ]
-    json = '["\\\\\""]'
+    data = [ '\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$' ]
+    json = '["\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$"]'
+    assert_equal json, generate(data)
+    #
+    data = [ '\\"\\"\\"\\"\\"\\"\\"\\"\\"\\"\\"' ]
+    json = '["\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\""]'
     assert_equal json, generate(data)
     #
     data = [ '/' ]
     json = '["/"]'
     assert_equal json, generate(data)
     #
+    data = [ '////////////////////////////////////////////////////////////////////////////////////' ]
+    json = '["////////////////////////////////////////////////////////////////////////////////////"]'
+    assert_equal json, generate(data)
+    #
     data = [ '/' ]
     json = '["\/"]'
+    assert_equal json, generate(data, :script_safe => true)
+    #
+    data = [ '///////////' ]
+    json = '["\/\/\/\/\/\/\/\/\/\/\/"]'
+    assert_equal json, generate(data, :script_safe => true)
+    #
+    data = [ '///////////////////////////////////////////////////////' ]
+    json = '["\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/"]'
     assert_equal json, generate(data, :script_safe => true)
     #
     data = [ "\u2028\u2029" ]
@@ -438,6 +454,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '["\""]'
     assert_equal json, generate(data)
     #
+    data = ['"""""""""""""""""""""""""']
+    json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
+    assert_equal json, generate(data)
+    #
     data = ["'"]
     json = '["\\\'"]'
     assert_equal '["\'"]', generate(data)
@@ -445,6 +465,72 @@ class JSONGeneratorTest < Test::Unit::TestCase
     data = ["倩", "瀨"]
     json = '["倩","瀨"]'
     assert_equal json, generate(data, script_safe: true)
+    #
+    data = '["This is a "test" of the emergency broadcast system."]'
+    json = "\"[\\\"This is a \\\"test\\\" of the emergency broadcast system.\\\"]\""
+    assert_equal json, generate(data)
+    #
+    data = '\tThis is a test of the emergency broadcast system.'
+    json = "\"\\\\tThis is a test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This\tis a test of the emergency broadcast system.'
+    json = "\"This\\\\tis a test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is\ta test of the emergency broadcast system.'
+    json = "\"This is\\\\ta test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is a test of the emergency broadcast\tsystem.'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is a test of the emergency broadcast\tsystem.\n'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\\\\n\""
+    assert_equal json, generate(data)
+    data = '"' * 15
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\""
+    assert_equal json, generate(data)
+    data = "\"\"\"\"\"\"\"\"\"\"\"\"\"\"a"
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"a\""
+    assert_equal json, generate(data)
+    data = "\u0001\u0001\u0001\u0001"
+    json = "\"\\u0001\\u0001\\u0001\\u0001\""
+    assert_equal json, generate(data)
+    data = "\u0001a\u0001a\u0001a\u0001a"
+    json = "\"\\u0001a\\u0001a\\u0001a\\u0001a\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002"
+    json = "\"\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\""
+    assert_equal json, generate(data)
+    data = "ab\u0002c"
+    json = "\"ab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\""
+    assert_equal json, generate(data)
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f\b"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\""
+    assert_equal json, generate(data)
+    data = "a\n\t\f\b\n\t\f\b\n\t\f\b\n\t"
+    json = "\"a\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\""
+    assert_equal json, generate(data)
   end
 
   def test_string_subclass
