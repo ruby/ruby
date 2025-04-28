@@ -99,6 +99,7 @@ VALUE rb_cSet;
 static ID id_each_entry;
 static ID id_any_p;
 static ID id_new;
+static ID id_i_hash;
 static ID id_set_iter_lev;
 
 #define RSET_INITIALIZED FL_USER1
@@ -1850,6 +1851,66 @@ set_i_hash(VALUE set)
     return ST2FIX(hval);
 }
 
+/* :nodoc: */
+static int
+set_to_hash_i(st_data_t key, st_data_t arg)
+{
+    rb_hash_aset((VALUE)arg, (VALUE)key, Qtrue);
+    return ST_CONTINUE;
+}
+
+static VALUE
+set_i_to_h(VALUE set)
+{
+    st_index_t size = RSET_SIZE(set);
+    VALUE hash;
+    if (RSET_COMPARE_BY_IDENTITY(set)) {
+        hash = rb_ident_hash_new_with_size(size);
+    }
+    else {
+        hash = rb_hash_new_with_size(size);
+    }
+    rb_hash_set_default(hash, Qfalse);
+
+    if (size == 0) return hash;
+
+    set_iter(set, set_to_hash_i, (st_data_t)hash);
+    return hash;
+}
+
+static VALUE
+compat_dumper(VALUE set)
+{
+    VALUE dumper = rb_class_new_instance(0, 0, rb_cObject);
+    rb_ivar_set(dumper, id_i_hash, set_i_to_h(set));
+    return dumper;
+}
+
+static int
+set_i_from_hash_i(st_data_t key, st_data_t val, st_data_t set)
+{
+    if ((VALUE)val != Qtrue) {
+        rb_raise(rb_eRuntimeError, "expect true as Set value: %"PRIsVALUE, rb_obj_class((VALUE)val));
+    }
+    set_i_add((VALUE)set, (VALUE)key);
+    return ST_CONTINUE;
+}
+
+static VALUE
+set_i_from_hash(VALUE set, VALUE hash)
+{
+    Check_Type(hash, T_HASH);
+    if (rb_hash_compare_by_id_p(hash)) set_i_compare_by_identity(set);
+    rb_hash_stlike_foreach(hash, set_i_from_hash_i, (st_data_t)set);
+    return set;
+}
+
+static VALUE
+compat_loader(VALUE self, VALUE a)
+{
+    return set_i_from_hash(self, rb_ivar_get(a, id_i_hash));
+}
+
 /*
  *  Document-class: Set
  *
@@ -2068,6 +2129,7 @@ Init_Set(void)
     id_each_entry = rb_intern_const("each_entry");
     id_any_p = rb_intern_const("any?");
     id_new = rb_intern_const("new");
+    id_i_hash = rb_intern_const("@hash");
     id_set_iter_lev = rb_make_internal_id();
 
     rb_define_alloc_func(rb_cSet, set_s_alloc);
@@ -2132,7 +2194,12 @@ Init_Set(void)
     rb_define_method(rb_cSet, "superset?", set_i_superset, 1);
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
+    rb_define_method(rb_cSet, "to_h", set_i_to_h, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
+
+    /* :nodoc: */
+    VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);
+    rb_marshal_define_compat(rb_cSet, compat, compat_dumper, compat_loader);
 
     rb_provide("set.rb");
 }
