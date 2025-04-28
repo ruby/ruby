@@ -2196,7 +2196,6 @@ Init_Set(void)
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
     rb_define_method(rb_cSet, "to_h", set_i_to_h, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
-    // rb_define_singleton_method(rb_cSet, "from_hash", compat_loader, 1);
 
     /* :nodoc: */
     VALUE compat = rb_define_class_under(rb_cSet, "compatible", rb_cObject);
