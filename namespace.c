@@ -161,9 +161,27 @@ namespace_ignore_builtin_primitive_methods_p(const rb_namespace_t *ns, rb_method
     return false;
 }
 
+static inline const rb_namespace_t *
+block_proc_namespace(const VALUE procval)
+{
+    rb_proc_t *proc;
+
+    if (procval) {
+        GetProcPtr(procval, proc);
+        return proc->ns;
+    }
+    else {
+        return NULL;
+    }
+}
+
 static const rb_namespace_t *
 current_namespace(bool permit_calling_builtin)
 {
+    /*
+     * TODO: move this code to vm.c or somewhere else
+     *       when it's fully updated with VM_FRAME_FLAG_*
+     */
     const rb_callable_method_entry_t *cme;
     const rb_namespace_t *ns;
     rb_execution_context_t *ec = GET_EC();
@@ -176,12 +194,19 @@ current_namespace(bool permit_calling_builtin)
 
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
         // temp code to detect the context is in require/load
-        calling = 0;
+        // TODO: this doesn't work well in optional namespaces
+        // calling = 0;
     }
     while (calling) {
-        if (cfp->ns) { // for calling procs
-            if (permit_calling_builtin || NAMESPACE_USER_P(cfp->ns))
-                return cfp->ns;
+        const rb_namespace_t *proc_ns;
+        VALUE bh;
+        if (VM_FRAME_NS_SWITCH_P(cfp)) {
+            bh = rb_vm_frame_block_handler(cfp);
+            if (bh && vm_block_handler_type(bh) == block_handler_type_proc) {
+                proc_ns = block_proc_namespace(VM_BH_TO_PROC(bh));
+                if (permit_calling_builtin || NAMESPACE_USER_P(proc_ns))
+                    return proc_ns;
+            }
         }
         cme = rb_vm_frame_method_entry(cfp);
         if (cme && cme->def) {
@@ -190,7 +215,7 @@ current_namespace(bool permit_calling_builtin)
                 // this method is not a built-in class/module's method
                 // or a built-in primitive (Ruby) method
                 if (!namespace_ignore_builtin_primitive_methods_p(ns, cme->def)) {
-                    if (permit_calling_builtin || NAMESPACE_USER_P(cfp->ns))
+                    if (permit_calling_builtin || (proc_ns && NAMESPACE_USER_P(proc_ns)))
                         return ns;
                 }
             }
@@ -236,6 +261,7 @@ rb_loading_namespace(void)
 
     if (!RB_TYPE_P(require_stack, T_ARRAY))
         rb_bug("require_stack is not an array: %s", rb_type_str(BUILTIN_TYPE(require_stack)));
+
     namespace = RARRAY_AREF(require_stack, len-1);
     return rb_get_namespace_t(namespace);
 }
@@ -292,11 +318,19 @@ rb_current_namespace_details(VALUE opt)
     rb_str_cat_cstr(str, "calls:\n");
 
     while (calling && cfp) {
-        if (cfp->ns) { // for calling procs
-            part = rb_namespace_inspect(cfp->ns->ns_object);
-            snprintf(buf, 2048, " cfp->ns:%s", RSTRING_PTR(part));
-            calling = 0;
-            break;
+        const rb_namespace_t *proc_ns;
+        VALUE bh;
+        if (VM_FRAME_NS_SWITCH_P(cfp)) {
+            bh = rb_vm_frame_block_handler(cfp);
+            if (bh && vm_block_handler_type(bh) == block_handler_type_proc) {
+                proc_ns = block_proc_namespace(VM_BH_TO_PROC(bh));
+                if (NAMESPACE_USER_P(ns)) {
+                    part = rb_namespace_inspect(proc_ns->ns_object);
+                    snprintf(buf, 2048, " cfp->ns:%s", RSTRING_PTR(part));
+                    calling = 0;
+                    break;
+                }
+            }
         }
         cme = rb_vm_frame_method_entry(cfp);
         if (cme && cme->def) {
@@ -519,22 +553,6 @@ rb_namespace_s_getenabled(VALUE namespace)
 }
 
 static VALUE
-rb_namespace_s_setenabled(VALUE namespace, VALUE arg)
-{
-    switch (arg) {
-    case Qnil:
-        namespace_availability = 0; // reset the forced setting
-        break;
-    case Qfalse:
-        namespace_availability = -1; // disable forcibly
-        break;
-    default:
-        namespace_availability = 1; // enable namespaces
-    }
-    return arg;
-}
-
-static VALUE
 rb_namespace_current(VALUE klass)
 {
     const rb_namespace_t *ns = rb_current_namespace();
@@ -553,13 +571,6 @@ rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
     if (RCLASS_PRIME_READABLE_P(klass) && !RCLASS_PRIME_WRITABLE_P(klass))
         return Qtrue;
     return Qfalse;
-}
-
-static VALUE
-rb_namespace_s_force_builtin(VALUE namespace, VALUE klass)
-{
-    RCLASS_SET_PRIME_CLASSEXT_READWRITE(klass, true, false);
-    return Qnil;
 }
 
 static VALUE
@@ -1112,11 +1123,9 @@ Init_Namespace(void)
     namespace_define_loader_method(rb_mNamespaceLoader, "load", rb_namespace_user_loading_func, -1);
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
-    rb_define_singleton_method(rb_cNamespace, "enabled=", rb_namespace_s_setenabled, 1);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
     rb_define_singleton_method(rb_cNamespace, "current_details", rb_current_namespace_details, 0);
     rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
-    rb_define_singleton_method(rb_cNamespace, "force_builtin", rb_namespace_s_force_builtin, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
     rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);

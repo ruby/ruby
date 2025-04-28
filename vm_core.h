@@ -908,7 +908,6 @@ typedef struct rb_control_frame_struct {
 #if VM_DEBUG_BP_CHECK
     VALUE *bp_check;        // cfp[7]
 #endif
-    const rb_namespace_t *ns; // TODO: This is probably NOT OK
 } rb_control_frame_t;
 
 extern const rb_data_type_t ruby_threadptr_data_type;
@@ -1363,11 +1362,11 @@ typedef rb_control_frame_t *
 
 enum vm_frame_env_flags {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM ____ FFFF FFFE EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM __FF FFFF FFFE EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 4 bits Env flags
-     * FF..: 7 bits Frame flags
+     * FF..: 9 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1392,6 +1391,8 @@ enum vm_frame_env_flags {
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
     VM_FRAME_FLAG_CFRAME_KW = 0x0400,
     VM_FRAME_FLAG_PASSED    = 0x0800,
+    VM_FRAME_FLAG_NS_SWITCH = 0x1000,
+    VM_FRAME_FLAG_LOAD_ISEQ = 0x2000,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1488,6 +1489,12 @@ static inline int
 VM_FRAME_RUBYFRAME_P(const rb_control_frame_t *cfp)
 {
     return !VM_FRAME_CFRAME_P(cfp);
+}
+
+static inline int
+VM_FRAME_NS_SWITCH_P(const rb_control_frame_t *cfp)
+{
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_SWITCH) != 0;
 }
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \

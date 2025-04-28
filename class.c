@@ -600,10 +600,12 @@ debug_dump_sorted_methods_i(ID key, VALUE value, void *data)
     VALUE ary = (VALUE)data;
     char buf[2048];
     if (METHOD_ENTRY_INVALIDATED(me)) {
-        snprintf(buf, 2048, "%s[%p](*)", rb_id2name(key), me);
+        // snprintf(buf, 2048, "%s[%p](*)", rb_id2name(key), me);
+        snprintf(buf, 2048, "%s(*)", rb_id2name(key));
         rb_ary_push(ary, rb_str_new_cstr(buf));
     } else {
-        snprintf(buf, 2048, "%s[%p]", rb_id2name(key), me);
+        // snprintf(buf, 2048, "%s[%p]", rb_id2name(key), me);
+        snprintf(buf, 2048, "%s", rb_id2name(key));
         rb_ary_push(ary, rb_str_new_cstr(buf));
     }
     return ID_TABLE_CONTINUE;

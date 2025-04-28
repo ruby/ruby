@@ -417,7 +417,6 @@ vm_push_frame(rb_execution_context_t *ec,
         .bp_check   = sp,
 #endif
         .jit_return = NULL,
-        .ns         = NULL
     };
 
     /* Ensure the initialization of `*cfp` above never gets reordered with the update of `ec->cfp` below.
@@ -5280,21 +5279,21 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     VALUE * const argv = rsp;
     int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, is_lambda ? arg_setup_method : arg_setup_block);
     const rb_namespace_t *ns = rb_current_namespace();
+    int frame_flag = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
 
     SET_SP(rsp);
 
+    if (calling->proc_ns) {
+        frame_flag |= VM_FRAME_FLAG_NS_SWITCH;
+    }
+
     vm_push_frame(ec, iseq,
-                  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
+                  frame_flag,
                   captured->self,
                   VM_GUARDED_PREV_EP(captured->ep), 0,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
                   rsp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size, ISEQ_BODY(iseq)->stack_max);
-
-    if (calling->proc_ns && ns != calling->proc_ns && NAMESPACE_USER_P(calling->proc_ns)) {
-        // TODO: fix this wild manner way to tell namespace
-        ec->cfp->ns = calling->proc_ns;
-    }
 
     return Qundef;
 }
