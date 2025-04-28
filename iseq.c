@@ -2377,6 +2377,8 @@ rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+// Clear tracing event flags and turn off tracing for a given instruction as needed.
+// This is currently used after updating a one-shot line coverage for the current instruction.
 void
 rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset)
 {
@@ -3767,6 +3769,8 @@ rb_free_encoded_insn_data(void)
     st_free_table(encoded_insn_data);
 }
 
+// Initialize a table to decode bare, trace, and zjit instructions.
+// This function also determines which instructions are used when TracePoint is enabled.
 void
 rb_vm_encoded_insn_data_table_init(void)
 {
@@ -3783,7 +3787,8 @@ rb_vm_encoded_insn_data_table_init(void)
         insn_data[insn].insn_len = insn_len(insn);
 
         // When tracing :return events, we convert opt_invokebuiltin_delegate_leave + leave into
-        // opt_invokebuiltin_delegate + trace_leave. https://github.com/ruby/ruby/pull/3256
+        // opt_invokebuiltin_delegate + trace_leave, presumably because we don't want to fire
+        // :return events before invokebuiltin. https://github.com/ruby/ruby/pull/3256
         int notrace_insn = (insn != BIN(opt_invokebuiltin_delegate_leave)) ? insn : BIN(opt_invokebuiltin_delegate);
         insn_data[insn].notrace_encoded_insn = (void *)INSN_CODE(notrace_insn);
         insn_data[insn].trace_encoded_insn = (void *)INSN_CODE(notrace_insn + VM_BARE_INSTRUCTION_SIZE);
@@ -3806,6 +3811,9 @@ rb_vm_encoded_insn_data_table_init(void)
     }
 }
 
+// Decode an insn address to an insn. This returns bare instructions
+// even if they're trace/zjit instructions. Use rb_vm_insn_addr2opcode
+// to decode trace/zjit instructions as is.
 int
 rb_vm_insn_addr2insn(const void *addr)
 {
@@ -3820,7 +3828,8 @@ rb_vm_insn_addr2insn(const void *addr)
     rb_bug("rb_vm_insn_addr2insn: invalid insn address: %p", addr);
 }
 
-// Unlike rb_vm_insn_addr2insn, this function can return trace opcode variants.
+// Decode an insn address to an insn. Unlike rb_vm_insn_addr2insn,
+// this function can return trace/zjit opcode variants.
 int
 rb_vm_insn_addr2opcode(const void *addr)
 {
@@ -3844,7 +3853,9 @@ rb_vm_insn_addr2opcode(const void *addr)
     rb_bug("rb_vm_insn_addr2opcode: invalid insn address: %p", addr);
 }
 
-// Decode `ISEQ_BODY(iseq)->iseq_encoded[i]` to an insn.
+// Decode `ISEQ_BODY(iseq)->iseq_encoded[i]` to an insn. This returns
+// bare instructions even if they're trace/zjit instructions. Use
+// rb_vm_insn_addr2opcode to decode trace/zjit instructions as is.
 int
 rb_vm_insn_decode(const VALUE encoded)
 {
@@ -3856,6 +3867,7 @@ rb_vm_insn_decode(const VALUE encoded)
     return insn;
 }
 
+// Turn on or off tracing for a given instruction address
 static inline int
 encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, bool remain_current_trace)
 {
@@ -3874,6 +3886,7 @@ encoded_iseq_trace_instrument(VALUE *iseq_encoded_insn, rb_event_flag_t turnon, 
     rb_bug("trace_instrument: invalid insn address: %p", (void *)*iseq_encoded_insn);
 }
 
+// Turn off tracing for an instruction at pos after tracing event flags are cleared
 void
 rb_iseq_trace_flag_cleared(const rb_iseq_t *iseq, size_t pos)
 {
