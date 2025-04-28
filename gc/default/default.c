@@ -161,6 +161,7 @@
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
     struct heap_page *using_page;
+    size_t allocated_objects_count;
 } rb_ractor_newobj_heap_cache_t;
 
 typedef struct ractor_newobj_cache {
@@ -2287,6 +2288,8 @@ rb_gc_impl_size_allocatable_p(size_t size)
     return size <= heap_slot_size(HEAP_COUNT - 1);
 }
 
+static const size_t ALLOCATED_COUNT_STEP = 1024;
+
 static inline VALUE
 ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache,
                            size_t heap_idx)
@@ -2309,6 +2312,22 @@ ractor_cache_allocate_slot(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *ca
         VALUE obj = (VALUE)p;
         rb_asan_unpoison_object(obj, true);
         heap_cache->freelist = p->next;
+
+        if (rb_gc_multi_ractor_p()) {
+            heap_cache->allocated_objects_count++;
+            rb_heap_t *heap = &heaps[heap_idx];
+            if (heap_cache->allocated_objects_count >= ALLOCATED_COUNT_STEP) {
+                RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
+                heap_cache->allocated_objects_count = 0;
+            }
+        }
+        else {
+            rb_heap_t *heap = &heaps[heap_idx];
+            heap->total_allocated_objects++;
+            GC_ASSERT(heap->total_slots >=
+                    (heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count));
+        }
+
 #if RGENGC_CHECK_MODE
         GC_ASSERT(rb_gc_impl_obj_slot_size(obj) == heap_slot_size(heap_idx));
         // zero clear
@@ -2460,12 +2479,6 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t he
     if (RB_UNLIKELY(obj == Qfalse)) {
         obj = newobj_cache_miss(objspace, cache, heap_idx, vm_locked);
     }
-
-    rb_heap_t *heap = &heaps[heap_idx];
-    heap->total_allocated_objects++;
-    GC_ASSERT(rb_gc_multi_ractor_p() ||
-        heap->total_slots >=
-            (heap->total_allocated_objects - heap->total_freed_objects - heap->final_slots_count));
 
     return obj;
 }
@@ -6261,6 +6274,14 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
     rb_objspace_t *objspace = objspace_ptr;
 
     objspace->live_ractor_cache_count--;
+    rb_ractor_newobj_cache_t *newobj_cache = (rb_ractor_newobj_cache_t *)cache;
+
+    for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
+        rb_heap_t *heap = &heaps[heap_idx];
+        rb_ractor_newobj_heap_cache_t *heap_cache = &newobj_cache->heap_caches[heap_idx];
+        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
+        heap_cache->allocated_objects_count = 0;
+    }
 
     gc_ractor_newobj_cache_clear(cache, NULL);
     free(cache);
