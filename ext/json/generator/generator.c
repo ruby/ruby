@@ -117,9 +117,9 @@ typedef struct _search_state {
     const char *chunk_end;
     bool has_matches;
 
-#ifdef HAVE_SIMD_NEON
+#if defined(HAVE_SIMD_NEON)
     uint64_t matches_mask;
-#elif HAVE_SIMD_SSE2
+#elif defined(HAVE_SIMD_SSE2)
     int matches_mask;
 #else
 #error "Unknown SIMD Implementation."
