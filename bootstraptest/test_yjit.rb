@@ -3667,6 +3667,74 @@ assert_equal 'new', %q{
   test
 }
 
+# Bug #21257 (infinite jmp)
+assert_equal 'ok', %q{
+  Good = :ok
+
+  def first
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  first
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `first` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  first
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  first
+  first
+}
+
+assert_equal 'ok', %q{
+  # Multiple incoming branches into second
+  Good = :ok
+
+  def incoming_one
+    second
+  end
+
+  def incoming_two
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  incoming_one
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `incoming_one` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  incoming_one
+  incoming_two
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  incoming_one
+}
+
 assert_equal 'ok', %q{
   # Try to compile new method while OOM
   def foo
