@@ -864,6 +864,19 @@ class TC_Set < Test::Unit::TestCase
       assert_equal(klass.new([a]), set, klass.name)
     }
   end
+
+  def test_set_gc_compact_does_not_allocate
+    assert_in_out_err([], <<-"end;", [], [])
+    def x
+      s = Set.new
+      s << Object.new
+      s
+    end
+
+    x
+    GC.compact
+    end;
+  end
 end
 
 class TC_Enumerable < Test::Unit::TestCase
