@@ -24,6 +24,7 @@ extern const unsigned short rb_vm_insn_name_offset[VM_INSTRUCTION_SIZE];
 RUBY_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
+%# "trace_" is longer than "zjit_", so USE_ZJIT doesn't impact the max name size.
 const int rb_vm_max_insn_name_size = <%= RubyVM::Instructions.map { |i| i.name.size }.max %>;
 
 const char rb_vm_insn_name_base[] =
