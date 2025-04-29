@@ -99,7 +99,7 @@ ZJIT_BINDGEN_DIFF_OPTS =
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
@@ -115,6 +115,21 @@ zjit-test: libminiruby.a
 	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
 	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
 	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml' $(ZJIT_TESTS)
+
+# Run a ZJIT test written with Rust #[test] under LLDB
+zjit-test-lldb: libminiruby.a
+	$(Q)set -eu; \
+	    if [ -z '$(ZJIT_TESTS)' ]; then \
+		echo "Please pass a ZJIT_TESTS=... filter to make."; \
+		echo "Many tests only work when it's the only test in the process."; \
+		exit 1; \
+	    fi; \
+	    exe_path=`RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
+	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
+	    CARGO_TARGET_DIR='$(ZJIT_CARGO_TARGET_DIR)' \
+	    $(CARGO) nextest list --manifest-path '$(top_srcdir)/zjit/Cargo.toml' --message-format json --list-type=binaries-only | \
+	    $(BASERUBY) -rjson -e 'puts JSON.load(STDIN.read).dig("rust-binaries", "zjit", "binary-path")'`; \
+	    exec lldb $$exe_path -- --test-threads=1 $(ZJIT_TESTS)
 
 # A library for booting miniruby in tests.
 # Why not use libruby-static.a for this?
