@@ -2220,6 +2220,14 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
   end
 
+  def test_bug_21291 # [Bug #21291]
+    assert_equal 1, "a\n" =~ /$./m
+    assert_equal 1, "a\n" =~ /$.*/m
+    assert_equal 2, "aa\n" =~ /$./m
+    assert_equal 2, "aa\n" =~ /$.*/m
+    assert_equal 2, "aa\n" =~ /$[\S\s]*/m
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
