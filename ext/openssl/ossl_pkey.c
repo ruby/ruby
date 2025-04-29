@@ -711,6 +711,10 @@ ossl_pkey_oid(VALUE self)
 
     GetPKey(self, pkey);
     nid = EVP_PKEY_id(pkey);
+#ifdef OSSL_USE_PROVIDER
+    if (nid == EVP_PKEY_KEYMGMT)
+        ossl_raise(ePKeyError, "EVP_PKEY_id");
+#endif
     return rb_str_new_cstr(OBJ_nid2sn(nid));
 }
 
@@ -724,13 +728,23 @@ static VALUE
 ossl_pkey_inspect(VALUE self)
 {
     EVP_PKEY *pkey;
-    int nid;
 
     GetPKey(self, pkey);
-    nid = EVP_PKEY_id(pkey);
-    return rb_sprintf("#<%"PRIsVALUE":%p oid=%s>",
-                      rb_class_name(CLASS_OF(self)), (void *)self,
-                      OBJ_nid2sn(nid));
+    VALUE str = rb_sprintf("#<%"PRIsVALUE":%p",
+                           rb_obj_class(self), (void *)self);
+    int nid = EVP_PKEY_id(pkey);
+#ifdef OSSL_USE_PROVIDER
+    if (nid != EVP_PKEY_KEYMGMT)
+#endif
+    rb_str_catf(str, " oid=%s", OBJ_nid2sn(nid));
+#ifdef OSSL_USE_PROVIDER
+    rb_str_catf(str, " type_name=%s", EVP_PKEY_get0_type_name(pkey));
+    const OSSL_PROVIDER *prov = EVP_PKEY_get0_provider(pkey);
+    if (prov)
+        rb_str_catf(str, " provider=%s", OSSL_PROVIDER_get0_name(prov));
+#endif
+    rb_str_catf(str, ">");
+    return str;
 }
 
 /*

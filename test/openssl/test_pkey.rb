@@ -8,16 +8,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_instance_of OpenSSL::PKey::RSA, rsa
     assert_equal "rsaEncryption", rsa.oid
     assert_match %r{oid=rsaEncryption}, rsa.inspect
-  end
-
-  def test_generic_oid_inspect_x25519
-    omit_on_fips
-
-    # X25519 private key
-    x25519 = OpenSSL::PKey.generate_key("X25519")
-    assert_instance_of OpenSSL::PKey::PKey, x25519
-    assert_equal "X25519", x25519.oid
-    assert_match %r{oid=X25519}, x25519.inspect
+    assert_match %r{type_name=RSA}, rsa.inspect if openssl?(3, 0, 0)
   end
 
   def test_s_generate_parameters
@@ -152,6 +143,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     alice = OpenSSL::PKey.read(alice_pem)
     bob = OpenSSL::PKey.read(bob_pem)
     assert_instance_of OpenSSL::PKey::PKey, alice
+    assert_equal "X25519", alice.oid
+    assert_match %r{oid=X25519}, alice.inspect
     assert_equal alice_pem, alice.private_to_pem
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
