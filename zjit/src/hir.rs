@@ -666,8 +666,12 @@ impl Function {
     // Add an instruction to the function without adding it to any block
     fn new_insn(&mut self, insn: Insn) -> InsnId {
         let id = InsnId(self.insns.len());
+        if insn.has_output() {
+            self.insn_types.push(types::Any);
+        } else {
+            self.insn_types.push(types::Empty);
+        }
         self.insns.push(insn);
-        self.insn_types.push(types::Empty);
         id
     }
 
@@ -2854,8 +2858,8 @@ mod opt_tests {
             bb0():
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v14:Fixnum[6] = Const Value(6)
-              Return v14
+              v15:Fixnum[6] = Const Value(6)
+              Return v15
         "#]]);
     }
 
