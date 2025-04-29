@@ -482,11 +482,13 @@ class TestZJIT < Test::Unit::TestCase
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
-    zjit, others = RubyVM::INSTRUCTION_NAMES.map.with_index.partition { |name, _| name.start_with?('zjit_') }
+    insn_names = RubyVM::INSTRUCTION_NAMES
+    zjit, others = insn_names.map.with_index.partition { |name, _| name.start_with?('zjit_') }
     zjit_indexes = zjit.map(&:last)
     other_indexes = others.map(&:last)
     zjit_indexes.product(other_indexes).each do |zjit_index, other_index|
-      assert zjit_index > other_index, "ZJIT instruction at #{zjit_index} must be defined after other instruction at #{other_index}"
+      assert zjit_index > other_index, "'#{insn_names[zjit_index]}' at #{zjit_index} "\
+        "must be defined after '#{insn_names[other_index]}' at #{other_index}"
     end
   end
 
