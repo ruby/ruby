@@ -2921,30 +2921,6 @@ set_insert(set_table *tab, st_data_t key)
     return 1;
 }
 
-/* Insert (KEY, HASH) into table TAB.  The table should not have
-   entry with KEY before the insertion.  */
-static inline void
-set_add_direct_with_hash(set_table *tab,
-                        st_data_t key, st_hash_t hash)
-{
-    set_table_entry *entry;
-    st_index_t ind;
-    st_index_t bin_ind;
-
-    assert(hash != RESERVED_HASH_VAL);
-
-    set_rebuild_table_if_necessary(tab);
-    ind = tab->entries_bound++;
-    entry = &tab->entries[ind];
-    entry->hash = hash;
-    entry->key = key;
-    tab->num_entries++;
-    if (tab->bins != NULL) {
-        bin_ind = set_find_table_bin_ind_direct(tab, hash, key);
-        set_bin(tab->bins, set_get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
-    }
-}
-
 /* Create a copy of old_tab into new_tab. */
 static set_table *
 set_replace(set_table *new_tab, set_table *old_tab)
