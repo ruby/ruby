@@ -42,21 +42,21 @@ typedef uint32_t redblack_id_t;
 typedef struct redblack_node redblack_node_t;
 
 struct rb_shape {
-    struct rb_id_table * edges; // id_table from ID (ivar) to next shape
+    struct rb_id_table *edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_iv_index;
     uint32_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
     shape_id_t parent_id;
-    redblack_node_t * ancestor_index;
+    redblack_node_t *ancestor_index;
 };
 
 typedef struct rb_shape rb_shape_t;
 
 struct redblack_node {
     ID key;
-    rb_shape_t * value;
+    rb_shape_t *value;
     redblack_id_t l;
     redblack_id_t r;
 };
@@ -146,27 +146,27 @@ RCLASS_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     set_shape_id_in_flags(obj, shape_id);
 }
 
-rb_shape_t * rb_shape_get_root_shape(void);
+rb_shape_t *rb_shape_get_root_shape(void);
 int32_t rb_shape_id_offset(void);
 
-rb_shape_t * rb_shape_get_parent(rb_shape_t * shape);
+rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
 
 RUBY_FUNC_EXPORTED rb_shape_t *rb_shape_get_shape_by_id(shape_id_t shape_id);
 RUBY_FUNC_EXPORTED shape_id_t rb_shape_get_shape_id(VALUE obj);
-rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
-bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
-bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t * value, shape_id_t *shape_id_hint);
+rb_shape_t *rb_shape_get_next_iv_shape(rb_shape_t *shape, ID id);
+bool rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value);
+bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
 RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex(VALUE obj);
 
-void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
-rb_shape_t* rb_shape_get_shape(VALUE obj);
-int rb_shape_frozen_shape_p(rb_shape_t* shape);
-rb_shape_t* rb_shape_transition_shape_frozen(VALUE obj);
-bool rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
-rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
-rb_shape_t* rb_shape_get_next_no_warnings(rb_shape_t* shape, VALUE obj, ID id);
+void rb_shape_set_shape(VALUE obj, rb_shape_t *shape);
+rb_shape_t *rb_shape_get_shape(VALUE obj);
+int rb_shape_frozen_shape_p(rb_shape_t *shape);
+rb_shape_t *rb_shape_transition_shape_frozen(VALUE obj);
+bool rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE *removed);
+rb_shape_t *rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id);
+rb_shape_t *rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id);
 
-rb_shape_t * rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape);
+rb_shape_t *rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape);
 
 static inline uint32_t
 ROBJECT_IV_CAPACITY(VALUE obj)
@@ -223,12 +223,12 @@ VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
 
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN
-typedef void each_shape_callback(rb_shape_t * shape, void *data);
+typedef void each_shape_callback(rb_shape_t *shape, void *data);
 void rb_shape_each_shape(each_shape_callback callback, void *data);
 size_t rb_shape_memsize(rb_shape_t *shape);
 size_t rb_shape_edges_count(rb_shape_t *shape);
 size_t rb_shape_depth(rb_shape_t *shape);
-shape_id_t rb_shape_id(rb_shape_t * shape);
+shape_id_t rb_shape_id(rb_shape_t *shape);
 RUBY_SYMBOL_EXPORT_END
 
 #endif

@@ -329,7 +329,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
 
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
-    rb_shape_t * src_shape = rb_shape_get_shape(obj);
+    rb_shape_t *src_shape = rb_shape_get_shape(obj);
 
     if (rb_shape_obj_too_complex(obj)) {
         // obj is TOO_COMPLEX so we can copy its iv_hash
@@ -340,7 +340,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
-    rb_shape_t * shape_to_set_on_dest = src_shape;
+    rb_shape_t *shape_to_set_on_dest = src_shape;
     VALUE * src_buf;
     VALUE * dest_buf;
 
@@ -356,7 +356,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     src_buf = ROBJECT_IVPTR(obj);
     dest_buf = ROBJECT_IVPTR(dest);
 
-    rb_shape_t * initial_shape = rb_shape_get_shape(dest);
+    rb_shape_t *initial_shape = rb_shape_get_shape(dest);
 
     if (initial_shape->heap_index != src_shape->heap_index) {
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
@@ -506,7 +506,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+            rb_shape_t *next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                 rb_evict_ivars_to_hash(clone);
             }
@@ -528,7 +528,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
+        rb_shape_t *next_shape = rb_shape_transition_shape_frozen(clone);
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
         if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
