@@ -179,10 +179,9 @@ set_replace_ref(st_data_t *key, st_data_t argp, int existing)
 }
 
 static void
-set_compact(void *ptr)
+set_update_references(void *ptr)
 {
     struct set_object *sobj = ptr;
-    set_compact_table(&sobj->table);
     set_foreach_with_replace(&sobj->table, set_foreach_replace, set_replace_ref, 0);
 }
 
@@ -192,7 +191,7 @@ static const rb_data_type_t set_data_type = {
         .dmark = set_mark,
         .dfree = set_free,
         .dsize = set_size,
-        .dcompact = set_compact,
+        .dcompact = set_update_references,
     },
     .flags = RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE
 };
