@@ -193,7 +193,9 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with: { sparse-checkout-cone-mode: false, sparse-checkout: /.github }
       - { uses: './.github/actions/setup/directories', with: { srcdir: 'src', builddir: 'build', makeup: true, fetch-depth: 10 } }
-      - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit' } }
+      - { uses: './.github/actions/compilers', name: 'disable-jit',         with: { append_configure: '--disable-yjit --disable-zjit' } }
+      - { uses: './.github/actions/compilers', name: 'disable-yjit',        with: { append_configure: '--disable-yjit' } }
+      - { uses: './.github/actions/compilers', name: 'disable-zjit',        with: { append_configure: '--disable-zjit' } }
       - { uses: './.github/actions/compilers', name: 'disable-dln',         with: { append_configure: '--disable-dln' } }
       - { uses: './.github/actions/compilers', name: 'enable-mkmf-verbose', with: { append_configure: '--enable-mkmf-verbose' } }
       - { uses: './.github/actions/compilers', name: 'disable-rubygems',    with: { append_configure: '--disable-rubygems' } }
