@@ -1,18 +1,18 @@
 files:
-  'yjit*': [team:yjit]
-  'yjit/**/*': [team:yjit]
+  'yjit*': [team:jit]
+  'yjit/**/*': [team:jit]
   'yjit/src/cruby_bindings.inc.rs': []
-  'doc/yjit/*': [team:yjit]
-  'bootstraptest/test_yjit*': [team:yjit]
-  'test/ruby/test_yjit*': [team:yjit]
-  'zjit*': [team:yjit]
-  'zjit/**/*': [team:yjit]
+  'doc/yjit/*': [team:jit]
+  'bootstraptest/test_yjit*': [team:jit]
+  'test/ruby/test_yjit*': [team:jit]
+  'zjit*': [team:jit]
+  'zjit/**/*': [team:jit]
   'zjit/src/cruby_bindings.inc.rs': []
-  'doc/zjit*': [team:yjit]
-  'test/ruby/test_zjit*': [team:yjit]
+  'doc/zjit*': [team:jit]
+  'test/ruby/test_zjit*': [team:jit]
 options:
   ignore_draft: true
   # This currently doesn't work as intended. We want to skip reviews when only
   # cruby_bingings.inc.rs is modified, but this skips reviews even when other
-  # yjit files are modified as well. To be enabled after fixing the behavior.
+  # files are modified as well. To be enabled after fixing the behavior.
   #last_files_match_only: true
