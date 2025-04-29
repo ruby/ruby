@@ -874,7 +874,10 @@ class TC_Set < Test::Unit::TestCase
     end
 
     x
-    GC.compact
+    begin
+      GC.compact
+    rescue NotImplementedError
+    end
     end;
   end
 end
