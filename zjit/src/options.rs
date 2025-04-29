@@ -1,4 +1,5 @@
-use std::{ffi::CStr, os::raw::c_char};
+use std::{ffi::{CStr, CString}, ptr::null};
+use std::os::raw::{c_char, c_int, c_uint};
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
@@ -34,6 +35,25 @@ pub struct Options {
     pub dump_disasm: bool,
 }
 
+/// Return an Options with default values
+pub fn init_options() -> Options {
+    Options {
+        num_profiles: 1,
+        debug: false,
+        dump_hir_init: None,
+        dump_hir_opt: None,
+        dump_lir: false,
+        dump_disasm: false,
+    }
+}
+
+/// `ruby --help` descriptions for user-facing options. Do not add options for ZJIT developers.
+/// Note that --help allows only 80 chars per line, including indentation.    80-char limit --> |
+pub const ZJIT_OPTIONS: &'static [(&str, &str)] = &[
+    ("--zjit-call-threshold=num", "Number of calls to trigger JIT (default: 2)."),
+    ("--zjit-num-profiles=num",   "Number of profiled calls before JIT (default: 1)."),
+];
+
 #[derive(Clone, Copy, Debug)]
 pub enum DumpHIR {
     // Dump High-level IR without Snapshot
@@ -64,18 +84,6 @@ pub(crate) use get_option;
 pub extern "C" fn rb_zjit_init_options() -> *const u8 {
     let options = init_options();
     Box::into_raw(Box::new(options)) as *const u8
-}
-
-/// Return an Options with default values
-pub fn init_options() -> Options {
-    Options {
-        num_profiles: 1,
-        debug: false,
-        dump_hir_init: None,
-        dump_hir_opt: None,
-        dump_lir: false,
-        dump_disasm: false,
-    }
 }
 
 /// Parse a --zjit* command-line flag
@@ -152,6 +160,21 @@ fn update_profile_threshold(options: &Options) {
             // Otherwise, profile instructions at least once.
             rb_zjit_profile_threshold = rb_zjit_call_threshold.saturating_sub(options.num_profiles).max(1);
         }
+    }
+}
+
+/// Print YJIT options for `ruby --help`. `width` is width of option parts, and
+/// `columns` is indent width of descriptions.
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_show_usage(help: c_int, highlight: c_int, width: c_uint, columns: c_int) {
+    for &(name, description) in ZJIT_OPTIONS.iter() {
+        unsafe extern "C" {
+            fn ruby_show_usage_line(name: *const c_char, secondary: *const c_char, description: *const c_char,
+                                    help: c_int, highlight: c_int, width: c_uint, columns: c_int);
+        }
+        let name = CString::new(name).unwrap();
+        let description = CString::new(description).unwrap();
+        unsafe { ruby_show_usage_line(name.as_ptr(), null(), description.as_ptr(), help, highlight, width, columns) }
     }
 }
 
