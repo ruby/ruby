@@ -668,8 +668,17 @@ module Psych
   #   list # => ['foo', 'bar']
   #
   def self.safe_load_stream yaml, filename: nil, permitted_classes: [], aliases: false
-    parse_stream(yaml, filename: filename).children.map do |child|
-      safe_load(child.to_yaml, permitted_classes, aliases: aliases)
+    documents = parse_stream(yaml, filename: filename).children.map do |child|
+      stream = Psych::Nodes::Stream.new
+      stream.children << child
+      safe_load stream.to_yaml, permitted_classes: permitted_classes, aliases: aliases
+    end
+
+    if block_given?
+      documents.each { |doc| yield doc }
+      nil
+    else
+      documents
     end
   end
 
