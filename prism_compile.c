@@ -3621,8 +3621,6 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, call_node->base.node_id);
 
-    LINK_ELEMENT *opt_new_prelude = LAST_ELEMENT(ret);
-
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
     LABEL *retry_end_l = NEW_LABEL(location.line);
@@ -3660,6 +3658,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         add_trace_branch_coverage(iseq, ret, &code_location, node_id, 0, "then", branches);
     }
+
+    LINK_ELEMENT *opt_new_prelude = LAST_ELEMENT(ret);
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;

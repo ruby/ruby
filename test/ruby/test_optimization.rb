@@ -1216,6 +1216,11 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_new_with_safe_navigation
+    payload = nil
+    assert_nil payload&.new
+  end
+
   def test_opt_new
     pos_initialize = "
       def initialize a, b
