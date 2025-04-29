@@ -671,7 +671,7 @@ module Psych
     documents = parse_stream(yaml, filename: filename).children.map do |child|
       stream = Psych::Nodes::Stream.new
       stream.children << child
-      safe_load stream.to_yaml, permitted_classes: permitted_classes, aliases: aliases
+      safe_load(stream.to_yaml, permitted_classes: permitted_classes, aliases: aliases)
     end
 
     if block_given?
