@@ -79,7 +79,7 @@ The following bundled gems are updated.
 * minitest 5.25.5
 * test-unit 3.6.8
 * rexml 3.4.1
-* net-imap 0.5.7
+* net-imap 0.5.8
 * net-smtp 0.5.1
 * rbs 3.9.2
 * bigdecimal 3.1.9
