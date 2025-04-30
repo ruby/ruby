@@ -39,7 +39,8 @@ static void
 ASSERT_ractor_unlocking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL && r->sync.locked_by == rb_ractor_self(GET_RACTOR())) {
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec != NULL && r->sync.locked_by == rb_ractor_self(rb_ec_ractor_ptr(ec))) {
         rb_bug("recursive ractor locking");
     }
 #endif
@@ -49,7 +50,8 @@ static void
 ASSERT_ractor_locking(rb_ractor_t *r)
 {
 #if RACTOR_CHECK_MODE > 0
-    if (rb_current_execution_context(false) != NULL && r->sync.locked_by != rb_ractor_self(GET_RACTOR())) {
+    const rb_execution_context_t *ec = rb_current_ec_noinline();
+    if (ec != NULL && r->sync.locked_by != rb_ractor_self(rb_ec_ractor_ptr(ec))) {
         rp(r->sync.locked_by);
         rb_bug("ractor lock is not acquired.");
     }
@@ -77,7 +79,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
 static void
 ractor_lock_self(rb_ractor_t *cr, const char *file, int line)
 {
-    VM_ASSERT(cr == GET_RACTOR());
+    VM_ASSERT(cr == rb_ec_ractor_ptr(rb_current_ec_noinline()));
 #if RACTOR_CHECK_MODE > 0
     VM_ASSERT(cr->sync.locked_by != cr->pub.self);
 #endif
@@ -99,7 +101,7 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 static void
 ractor_unlock_self(rb_ractor_t *cr, const char *file, int line)
 {
-    VM_ASSERT(cr == GET_RACTOR());
+    VM_ASSERT(cr == rb_ec_ractor_ptr(rb_current_ec_noinline()));
 #if RACTOR_CHECK_MODE > 0
     VM_ASSERT(cr->sync.locked_by == cr->pub.self);
 #endif
