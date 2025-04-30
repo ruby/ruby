@@ -2178,6 +2178,18 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
     const struct rb_callcache *cc;
 
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(vm_ci_mid(ci)));
+    }
+
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
     cc = vm_search_cc(klass, ci);
