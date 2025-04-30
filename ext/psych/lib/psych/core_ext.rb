@@ -17,3 +17,17 @@ end
 if defined?(::IRB)
   require_relative 'y'
 end
+
+
+# TODO: how best to check for builtin Set?
+if defined?(::Set) && Object.const_source_location(:Set) == ["ruby", 0]
+  class Set
+    def encode_with(coder)
+      coder["hash"] = to_h
+    end
+
+    def init_with(coder)
+      replace(coder["hash"].keys)
+    end
+  end
+end
