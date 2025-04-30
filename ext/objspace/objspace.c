@@ -792,7 +792,7 @@ objspace_internal_super_of(VALUE self, VALUE obj)
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
-        super = RCLASS_SUPER(obj);
+        super = rb_class_super_of(obj);
         break;
       default:
         rb_raise(rb_eArgError, "class or module is expected");

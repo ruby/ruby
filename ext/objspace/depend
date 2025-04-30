@@ -183,6 +183,7 @@ object_tracing.o: $(top_srcdir)/internal/basic_operators.h
 object_tracing.o: $(top_srcdir)/internal/compilers.h
 object_tracing.o: $(top_srcdir)/internal/gc.h
 object_tracing.o: $(top_srcdir)/internal/imemo.h
+object_tracing.o: $(top_srcdir)/internal/namespace.h
 object_tracing.o: $(top_srcdir)/internal/sanitizers.h
 object_tracing.o: $(top_srcdir)/internal/serial.h
 object_tracing.o: $(top_srcdir)/internal/set_table.h
@@ -392,6 +393,7 @@ objspace.o: $(top_srcdir)/internal/compilers.h
 objspace.o: $(top_srcdir)/internal/gc.h
 objspace.o: $(top_srcdir)/internal/hash.h
 objspace.o: $(top_srcdir)/internal/imemo.h
+objspace.o: $(top_srcdir)/internal/namespace.h
 objspace.o: $(top_srcdir)/internal/sanitizers.h
 objspace.o: $(top_srcdir)/internal/serial.h
 objspace.o: $(top_srcdir)/internal/set_table.h
@@ -605,6 +607,7 @@ objspace_dump.o: $(top_srcdir)/internal/gc.h
 objspace_dump.o: $(top_srcdir)/internal/hash.h
 objspace_dump.o: $(top_srcdir)/internal/imemo.h
 objspace_dump.o: $(top_srcdir)/internal/io.h
+objspace_dump.o: $(top_srcdir)/internal/namespace.h
 objspace_dump.o: $(top_srcdir)/internal/sanitizers.h
 objspace_dump.o: $(top_srcdir)/internal/serial.h
 objspace_dump.o: $(top_srcdir)/internal/set_table.h
