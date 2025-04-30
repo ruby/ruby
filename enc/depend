@@ -7018,6 +7018,7 @@ enc/trans/iso2022.$(OBJEXT): internal/attr/nodiscard.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noexcept.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noinline.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/nonnull.h
+enc/trans/iso2022.$(OBJEXT): internal/attr/nonstring.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/noreturn.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/pure.h
 enc/trans/iso2022.$(OBJEXT): internal/attr/restrict.h
