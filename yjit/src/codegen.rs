@@ -4913,7 +4913,13 @@ fn gen_opt_new(
         // call rb_class_alloc to actually allocate
         jit_prepare_non_leaf_call(jit, asm);
 
-        let allocator = unsafe { rb_get_alloc_func(comptime_recv) };
+        let allocator =
+            if unsafe { FL_TEST(comptime_recv, VALUE(RUBY_FL_SINGLETON as usize)) } != VALUE(0) {
+                None
+            } else {
+                unsafe { rb_get_alloc_func(comptime_recv) }
+            };
+
         let allocator = allocator.unwrap_or(rb_obj_alloc);
         let obj = asm.ccall(allocator as _, vec![comptime_recv.into()]);
 
