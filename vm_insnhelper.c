@@ -1230,7 +1230,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivar_list = ROBJECT_IVPTR(obj);
+        ivar_list = ROBJECT_FIELDS(obj);
         VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
 
 #if !SHAPE_IN_BASIC_FLAGS
@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            ivar_list = RCLASS_IVPTR(obj);
+            ivar_list = RCLASS_FIELDS(obj);
 
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = RCLASS_SHAPE_ID(obj);
@@ -1266,12 +1266,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
+            struct gen_fields_tbl *fields_tbl;
+            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
 #if !SHAPE_IN_BASIC_FLAGS
-            shape_id = ivtbl->shape_id;
+            shape_id = fields_tbl->shape_id;
 #endif
-            ivar_list = ivtbl->as.shape.ivptr;
+            ivar_list = fields_tbl->as.shape.fields;
         }
         else {
             return default_value;
@@ -1335,17 +1335,17 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = (st_table *)RCLASS_IVPTR(obj);
+                table = (st_table *)RCLASS_FIELDS(obj);
                 break;
 
               case T_OBJECT:
-                table = ROBJECT_IV_HASH(obj);
+                table = ROBJECT_FIELDS_HASH(obj);
                 break;
 
               default: {
-                struct gen_ivtbl *ivtbl;
-                if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                    table = ivtbl->as.complex.table;
+                struct gen_fields_tbl *fields_tbl;
+                if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
+                    table = fields_tbl->as.complex.table;
                 }
                 break;
               }
@@ -1469,7 +1469,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     shape_id_t shape_id = rb_generic_shape_id(obj);
 #endif
 
-    struct gen_ivtbl *ivtbl = 0;
+    struct gen_fields_tbl *fields_tbl = 0;
 
     // Cache hit case
     if (shape_id == dest_shape_id) {
@@ -1490,17 +1490,17 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    rb_gen_ivtbl_get(obj, 0, &ivtbl);
+    rb_gen_fields_tbl_get(obj, 0, &fields_tbl);
 
     if (shape_id != dest_shape_id) {
 #if SHAPE_IN_BASIC_FLAGS
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
 #else
-        ivtbl->shape_id = dest_shape_id;
+        fields_tbl->shape_id = dest_shape_id;
 #endif
     }
 
-    RB_OBJ_WRITE(obj, &ivtbl->as.shape.ivptr[index], val);
+    RB_OBJ_WRITE(obj, &fields_tbl->as.shape.fields[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 
@@ -1544,7 +1544,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 break;
             }
 
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            VALUE *ptr = ROBJECT_FIELDS(obj);
 
             RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);

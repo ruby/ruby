@@ -586,7 +586,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
+        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
         if (rb_shape_obj_too_complex(obj)) {
             dump_append(dc, ", \"too_complex_shape\":true");
         }

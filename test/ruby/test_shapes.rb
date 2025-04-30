@@ -852,13 +852,13 @@ class TestShapes < Test::Unit::TestCase
   def test_iv_index
     example = RemoveAndAdd.new
     initial_shape = RubyVM::Shape.of(example)
-    assert_equal 0, initial_shape.next_iv_index
+    assert_equal 0, initial_shape.next_field_index
 
     example.add_foo # makes a transition
     add_foo_shape = RubyVM::Shape.of(example)
     assert_equal([:@foo], example.instance_variables)
     assert_equal(initial_shape.id, add_foo_shape.parent.id)
-    assert_equal(1, add_foo_shape.next_iv_index)
+    assert_equal(1, add_foo_shape.next_field_index)
 
     example.remove_foo # makes a transition
     remove_foo_shape = RubyVM::Shape.of(example)
@@ -869,7 +869,7 @@ class TestShapes < Test::Unit::TestCase
     bar_shape = RubyVM::Shape.of(example)
     assert_equal([:@bar], example.instance_variables)
     assert_equal(initial_shape.id, bar_shape.parent_id)
-    assert_equal(1, bar_shape.next_iv_index)
+    assert_equal(1, bar_shape.next_field_index)
   end
 
   def test_remove_then_add_again

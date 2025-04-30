@@ -2938,7 +2938,7 @@ fn gen_get_ivar(
         }
         Some(ivar_index) => {
             if embed_test_result {
-                // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
+                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
                 // Load the variable
                 let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
@@ -2951,7 +2951,7 @@ fn gen_get_ivar(
                 // Compile time value is *not* embedded.
 
                 // Get a pointer to the extended table
-                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR as i32));
+                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
                 // Read the ivar from the extended table
                 let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
@@ -3020,7 +3020,7 @@ fn gen_write_iv(
         // Compile time value is *not* embedded.
 
         // Get a pointer to the extended table
-        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR as i32));
+        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
         // Write the ivar in to the extended table
         let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
@@ -3126,7 +3126,7 @@ fn gen_set_ivar(
             let needs_extension = unsafe { (*current_shape).capacity != (*next_shape).capacity };
 
             // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { (*current_shape).next_iv_index } as usize;
+            let ivar_index = unsafe { (*current_shape).next_field_index } as usize;
 
             let needs_extension = if needs_extension {
                 Some((current_capacity, unsafe { (*next_shape).capacity }))

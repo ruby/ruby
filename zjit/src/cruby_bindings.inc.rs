@@ -405,7 +405,7 @@ pub type redblack_node_t = redblack_node;
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
-    pub next_iv_index: attr_index_t,
+    pub next_field_index: attr_index_t,
     pub capacity: attr_index_t,
     pub type_: u8,
     pub heap_index: u8,

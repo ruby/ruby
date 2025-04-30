@@ -41,7 +41,7 @@ struct rb_cvar_class_tbl_entry {
 };
 
 struct rb_classext_struct {
-    VALUE *iv_ptr;
+    VALUE *fields; // Fields are either ivar or other internal properties stored inline
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
@@ -94,7 +94,7 @@ struct RClass_and_rb_classext_t {
 #define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
 #define RCLASS_M_TBL(c) (RCLASS(c)->m_tbl)
-#define RCLASS_IVPTR(c) (RCLASS_EXT(c)->iv_ptr)
+#define RCLASS_FIELDS(c) (RCLASS_EXT(c)->fields)
 #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
 #define RCLASS_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT(c)->cvc_tbl)
@@ -114,23 +114,23 @@ struct RClass_and_rb_classext_t {
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
 
 static inline st_table *
-RCLASS_IV_HASH(VALUE obj)
+RCLASS_FIELDS_HASH(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    return (st_table *)RCLASS_IVPTR(obj);
+    return (st_table *)RCLASS_FIELDS(obj);
 }
 
 static inline void
-RCLASS_SET_IV_HASH(VALUE obj, const st_table *tbl)
+RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    RCLASS_IVPTR(obj) = (VALUE *)tbl;
+    RCLASS_FIELDS(obj) = (VALUE *)tbl;
 }
 
 static inline uint32_t
-RCLASS_IV_COUNT(VALUE obj)
+RCLASS_FIELDS_COUNT(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     if (rb_shape_obj_too_complex(obj)) {
@@ -140,14 +140,14 @@ RCLASS_IV_COUNT(VALUE obj)
         // parallel, so lets lock around getting the hash size.
         RB_VM_LOCK_ENTER();
         {
-            count = (uint32_t)rb_st_table_size(RCLASS_IV_HASH(obj));
+            count = (uint32_t)rb_st_table_size(RCLASS_FIELDS_HASH(obj));
         }
         RB_VM_LOCK_LEAVE();
 
         return count;
     }
     else {
-        return rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(obj))->next_iv_index;
+        return rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(obj))->next_field_index;
     }
 }
 

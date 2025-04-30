@@ -648,7 +648,7 @@ pub type redblack_node_t = redblack_node;
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
-    pub next_iv_index: attr_index_t,
+    pub next_field_index: attr_index_t,
     pub capacity: attr_index_t,
     pub type_: u8,
     pub heap_index: u8,
@@ -973,7 +973,7 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
-pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: robject_offsets = 16;
+pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: robject_offsets = 16;
 pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;
 pub type robject_offsets = u32;
 pub const RUBY_OFFSET_RSTRING_LEN: rstring_offsets = 16;

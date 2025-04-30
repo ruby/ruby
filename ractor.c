@@ -3358,8 +3358,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 } while (0)
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
-        struct gen_ivtbl *ivtbl;
-        rb_ivar_generic_ivtbl_lookup(obj, &ivtbl);
+        struct gen_fields_tbl *fields_tbl;
+        rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
 
         if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
             struct obj_traverse_replace_callback_data d = {
@@ -3368,7 +3368,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 .src = obj,
             };
             rb_st_foreach_with_replace(
-                ivtbl->as.complex.table,
+                fields_tbl->as.complex.table,
                 obj_iv_hash_traverse_replace_foreach_i,
                 obj_iv_hash_traverse_replace_i,
                 (st_data_t)&d
@@ -3376,9 +3376,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             if (d.stop) return 1;
         }
         else {
-            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                if (!UNDEF_P(ivtbl->as.shape.ivptr[i])) {
-                    CHECK_AND_REPLACE(ivtbl->as.shape.ivptr[i]);
+            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
+                if (!UNDEF_P(fields_tbl->as.shape.fields[i])) {
+                    CHECK_AND_REPLACE(fields_tbl->as.shape.fields[i]);
                 }
             }
         }
@@ -3406,7 +3406,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                     .src = obj,
                 };
                 rb_st_foreach_with_replace(
-                    ROBJECT_IV_HASH(obj),
+                    ROBJECT_FIELDS_HASH(obj),
                     obj_iv_hash_traverse_replace_foreach_i,
                     obj_iv_hash_traverse_replace_i,
                     (st_data_t)&d
@@ -3414,8 +3414,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 if (d.stop) return 1;
             }
             else {
-                uint32_t len = ROBJECT_IV_COUNT(obj);
-                VALUE *ptr = ROBJECT_IVPTR(obj);
+                uint32_t len = ROBJECT_FIELDS_COUNT(obj);
+                VALUE *ptr = ROBJECT_FIELDS(obj);
 
                 for (uint32_t i = 0; i < len; i++) {
                     CHECK_AND_REPLACE(ptr[i]);

@@ -1267,13 +1267,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
             RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
-            st_free_table(ROBJECT_IV_HASH(obj));
+            st_free_table(ROBJECT_FIELDS_HASH(obj));
         }
         else if (RBASIC(obj)->flags & ROBJECT_EMBED) {
             RB_DEBUG_COUNTER_INC(obj_obj_embed);
         }
         else {
-            xfree(ROBJECT(obj)->as.heap.ivptr);
+            xfree(ROBJECT(obj)->as.heap.fields);
             RB_DEBUG_COUNTER_INC(obj_obj_ptr);
         }
         break;
@@ -1282,10 +1282,10 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         rb_id_table_free(RCLASS_M_TBL(obj));
         rb_cc_table_free(obj);
         if (rb_shape_obj_too_complex(obj)) {
-            st_free_table((st_table *)RCLASS_IVPTR(obj));
+            st_free_table((st_table *)RCLASS_FIELDS(obj));
         }
         else {
-            xfree(RCLASS_IVPTR(obj));
+            xfree(RCLASS_FIELDS(obj));
         }
 
         if (RCLASS_CONST_TBL(obj)) {
@@ -1925,10 +1925,10 @@ rb_obj_memsize_of(VALUE obj)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         if (rb_shape_obj_too_complex(obj)) {
-            size += rb_st_memsize(ROBJECT_IV_HASH(obj));
+            size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
         }
         else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            size += ROBJECT_IV_CAPACITY(obj) * sizeof(VALUE);
+            size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
         }
         break;
       case T_MODULE:
@@ -1937,7 +1937,7 @@ rb_obj_memsize_of(VALUE obj)
             size += rb_id_table_memsize(RCLASS_M_TBL(obj));
         }
         // class IV sizes are allocated as powers of two
-        size += SIZEOF_VALUE << bit_length(RCLASS_IV_COUNT(obj));
+        size += SIZEOF_VALUE << bit_length(RCLASS_FIELDS_COUNT(obj));
         if (RCLASS_CVC_TBL(obj)) {
             size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
         }
@@ -2713,11 +2713,11 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         mark_cvc_tbl(objspace, obj);
         rb_cc_table_mark(obj);
         if (rb_shape_obj_too_complex(obj)) {
-            gc_mark_tbl_no_pin((st_table *)RCLASS_IVPTR(obj));
+            gc_mark_tbl_no_pin((st_table *)RCLASS_FIELDS(obj));
         }
         else {
-            for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
-                gc_mark_internal(RCLASS_IVPTR(obj)[i]);
+            for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(obj); i++) {
+                gc_mark_internal(RCLASS_FIELDS(obj)[i]);
             }
         }
 
@@ -2802,12 +2802,12 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
 
         if (rb_shape_obj_too_complex(obj)) {
-            gc_mark_tbl_no_pin(ROBJECT_IV_HASH(obj));
+            gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
         }
         else {
-            const VALUE * const ptr = ROBJECT_IVPTR(obj);
+            const VALUE * const ptr = ROBJECT_FIELDS(obj);
 
-            uint32_t len = ROBJECT_IV_COUNT(obj);
+            uint32_t len = ROBJECT_FIELDS_COUNT(obj);
             for (uint32_t i = 0; i < len; i++) {
                 gc_mark_internal(ptr[i]);
             }
@@ -2817,7 +2817,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             VALUE klass = RBASIC_CLASS(obj);
 
             // Increment max_iv_count if applicable, used to determine size pool allocation
-            attr_index_t num_of_ivs = shape->next_iv_index;
+            attr_index_t num_of_ivs = shape->next_field_index;
             if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
                 RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
             }
@@ -2893,7 +2893,7 @@ rb_gc_obj_optimal_size(VALUE obj)
             return sizeof(struct RObject);
         }
         else {
-            return rb_obj_embedded_size(ROBJECT_IV_CAPACITY(obj));
+            return rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
         }
 
       case T_STRING:
@@ -3129,24 +3129,24 @@ gc_ref_update_array(void *objspace, VALUE v)
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
-    VALUE *ptr = ROBJECT_IVPTR(v);
+    VALUE *ptr = ROBJECT_FIELDS(v);
 
     if (rb_shape_obj_too_complex(v)) {
-        gc_ref_update_table_values_only(ROBJECT_IV_HASH(v));
+        gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
         return;
     }
 
     size_t slot_size = rb_gc_obj_slot_size(v);
-    size_t embed_size = rb_obj_embedded_size(ROBJECT_IV_CAPACITY(v));
+    size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
     if (slot_size >= embed_size && !RB_FL_TEST_RAW(v, ROBJECT_EMBED)) {
         // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_IV_COUNT(v));
+        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
         RB_FL_SET_RAW(v, ROBJECT_EMBED);
         xfree(ptr);
         ptr = ROBJECT(v)->as.ary;
     }
 
-    for (uint32_t i = 0; i < ROBJECT_IV_COUNT(v); i++) {
+    for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
         UPDATE_IF_MOVED(objspace, ptr[i]);
     }
 }
@@ -3427,17 +3427,17 @@ vm_weak_table_foreach_update_weak_value(st_data_t *key, st_data_t *value, st_dat
 }
 
 static void
-free_gen_ivtbl(VALUE obj, struct gen_ivtbl *ivtbl)
+free_gen_fields_tbl(VALUE obj, struct gen_fields_tbl *fields_tbl)
 {
     if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
-        st_free_table(ivtbl->as.complex.table);
+        st_free_table(fields_tbl->as.complex.table);
     }
 
-    xfree(ivtbl);
+    xfree(fields_tbl);
 }
 
 static int
-vm_weak_table_gen_ivar_foreach_too_complex_i(st_data_t _key, st_data_t value, st_data_t data, int error)
+vm_weak_table_gen_fields_foreach_too_complex_i(st_data_t _key, st_data_t value, st_data_t data, int error)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
@@ -3449,7 +3449,7 @@ vm_weak_table_gen_ivar_foreach_too_complex_i(st_data_t _key, st_data_t value, st
 }
 
 static int
-vm_weak_table_gen_ivar_foreach_too_complex_replace_i(st_data_t *_key, st_data_t *value, st_data_t data, int existing)
+vm_weak_table_gen_fields_foreach_too_complex_replace_i(st_data_t *_key, st_data_t *value, st_data_t data, int existing)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
@@ -3458,10 +3458,10 @@ vm_weak_table_gen_ivar_foreach_too_complex_replace_i(st_data_t *_key, st_data_t 
     return iter_data->update_callback((VALUE *)value, iter_data->data);
 }
 
-struct st_table *rb_generic_ivtbl_get(void);
+struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
-vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data)
+vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
@@ -3472,7 +3472,7 @@ vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data)
         break;
 
       case ST_DELETE:
-        free_gen_ivtbl((VALUE)key, (struct gen_ivtbl *)value);
+        free_gen_fields_tbl((VALUE)key, (struct gen_fields_tbl *)value);
 
         FL_UNSET((VALUE)key, FL_EXIVAR);
         return ST_DELETE;
@@ -3483,7 +3483,7 @@ vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data)
         if (key != new_key) ret = ST_DELETE;
         DURING_GC_COULD_MALLOC_REGION_START();
         {
-            st_insert(rb_generic_ivtbl_get(), (st_data_t)new_key, value);
+            st_insert(rb_generic_fields_tbl_get(), (st_data_t)new_key, value);
         }
         DURING_GC_COULD_MALLOC_REGION_END();
         key = (st_data_t)new_key;
@@ -3495,29 +3495,29 @@ vm_weak_table_gen_ivar_foreach(st_data_t key, st_data_t value, st_data_t data)
     }
 
     if (!iter_data->weak_only) {
-        struct gen_ivtbl *ivtbl = (struct gen_ivtbl *)value;
+        struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
 
         if (rb_shape_obj_too_complex((VALUE)key)) {
             st_foreach_with_replace(
-                ivtbl->as.complex.table,
-                vm_weak_table_gen_ivar_foreach_too_complex_i,
-                vm_weak_table_gen_ivar_foreach_too_complex_replace_i,
+                fields_tbl->as.complex.table,
+                vm_weak_table_gen_fields_foreach_too_complex_i,
+                vm_weak_table_gen_fields_foreach_too_complex_replace_i,
                 data
             );
         }
         else {
-            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                if (SPECIAL_CONST_P(ivtbl->as.shape.ivptr[i])) continue;
+            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
+                if (SPECIAL_CONST_P(fields_tbl->as.shape.fields[i])) continue;
 
-                int ivar_ret = iter_data->callback(ivtbl->as.shape.ivptr[i], iter_data->data);
+                int ivar_ret = iter_data->callback(fields_tbl->as.shape.fields[i], iter_data->data);
                 switch (ivar_ret) {
                   case ST_CONTINUE:
                     break;
                   case ST_REPLACE:
-                    iter_data->update_callback(&ivtbl->as.shape.ivptr[i], iter_data->data);
+                    iter_data->update_callback(&fields_tbl->as.shape.fields[i], iter_data->data);
                     break;
                   default:
-                    rb_bug("vm_weak_table_gen_ivar_foreach: return value %d not supported", ivar_ret);
+                    rb_bug("vm_weak_table_gen_fields_foreach: return value %d not supported", ivar_ret);
                 }
             }
         }
@@ -3587,12 +3587,12 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         }
         break;
       }
-      case RB_GC_VM_GENERIC_IV_TABLE: {
-        st_table *generic_iv_tbl = rb_generic_ivtbl_get();
-        if (generic_iv_tbl) {
+      case RB_GC_VM_GENERIC_FIELDS_TABLE: {
+        st_table *generic_fields_tbl = rb_generic_fields_tbl_get();
+        if (generic_fields_tbl) {
             st_foreach(
-                generic_iv_tbl,
-                vm_weak_table_gen_ivar_foreach,
+                generic_fields_tbl,
+                vm_weak_table_gen_fields_foreach,
                 (st_data_t)&foreach_data
             );
         }
@@ -3649,11 +3649,11 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         update_superclasses(objspace, obj);
 
         if (rb_shape_obj_too_complex(obj)) {
-            gc_ref_update_table_values_only(RCLASS_IV_HASH(obj));
+            gc_ref_update_table_values_only(RCLASS_FIELDS_HASH(obj));
         }
         else {
-            for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
-                UPDATE_IF_MOVED(objspace, RCLASS_IVPTR(obj)[i]);
+            for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(obj); i++) {
+                UPDATE_IF_MOVED(objspace, RCLASS_FIELDS(obj)[i]);
             }
         }
 
@@ -4336,17 +4336,17 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
           case T_OBJECT:
             {
                 if (rb_shape_obj_too_complex(obj)) {
-                    size_t hash_len = rb_st_table_size(ROBJECT_IV_HASH(obj));
+                    size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
                     APPEND_F("(too_complex) len:%zu", hash_len);
                 }
                 else {
-                    uint32_t len = ROBJECT_IV_CAPACITY(obj);
+                    uint32_t len = ROBJECT_FIELDS_CAPACITY(obj);
 
                     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
                         APPEND_F("(embed) len:%d", len);
                     }
                     else {
-                        VALUE *ptr = ROBJECT_IVPTR(obj);
+                        VALUE *ptr = ROBJECT_FIELDS(obj);
                         APPEND_F("len:%d ptr:%p", len, (void *)ptr);
                     }
                 }

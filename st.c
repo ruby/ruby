@@ -748,7 +748,7 @@ rebuild_table(st_table *tab)
     else {
         st_table *new_tab;
         /* This allocation could trigger GC and compaction. If tab is the
-         * gen_iv_tbl, then tab could have changed in size due to objects being
+         * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
         new_tab = st_init_table_with_size(tab->type,
                                           2 * tab->num_entries - 1);
@@ -2534,7 +2534,7 @@ set_rebuild_table(set_table *tab)
     else {
         set_table *new_tab;
         /* This allocation could trigger GC and compaction. If tab is the
-         * gen_iv_tbl, then tab could have changed in size due to objects being
+         * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
         new_tab = set_init_table_with_size(NULL, tab->type,
                                           2 * tab->num_entries - 1);
