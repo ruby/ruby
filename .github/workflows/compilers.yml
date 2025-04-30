@@ -86,6 +86,7 @@ jobs:
           optflags: '-O2'
           enable_shared: false
       - { uses: './.github/actions/compilers', name: 'ext/Setup', with: { static_exts: 'etc json/* */escape' } }
+      - { uses: './.github/actions/compilers', name: 'GCC 15', with: { tag: 'gcc-15' } }
       - { uses: './.github/actions/compilers', name: 'GCC 14', with: { tag: 'gcc-14' } }
       - { uses: './.github/actions/compilers', name: 'GCC 13', with: { tag: 'gcc-13' } }
       - { uses: './.github/actions/compilers', name: 'GCC 12', with: { tag: 'gcc-12' } }
