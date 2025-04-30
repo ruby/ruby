@@ -95,9 +95,9 @@ static VALUE rb_cFalseClass_to_s;
 /*! \endcond */
 
 size_t
-rb_obj_embedded_size(uint32_t numiv)
+rb_obj_embedded_size(uint32_t fields_count)
 {
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
 }
 
 VALUE
@@ -139,8 +139,8 @@ rb_class_allocate_instance(VALUE klass)
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
+    VALUE *ptr = ROBJECT_FIELDS(obj);
+    for (size_t i = 0; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
     }
 #endif
@@ -333,13 +333,13 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     if (rb_shape_obj_too_complex(obj)) {
         // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table *table = st_copy(ROBJECT_IV_HASH(obj));
+        st_table *table = st_copy(ROBJECT_FIELDS_HASH(obj));
         rb_obj_convert_to_too_complex(dest, table);
 
         return;
     }
 
-    uint32_t src_num_ivs = RBASIC_IV_COUNT(obj);
+    uint32_t src_num_ivs = RBASIC_FIELDS_COUNT(obj);
     rb_shape_t *shape_to_set_on_dest = src_shape;
     VALUE * src_buf;
     VALUE * dest_buf;
@@ -353,8 +353,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         shape_to_set_on_dest = rb_shape_get_parent(src_shape);
     }
 
-    src_buf = ROBJECT_IVPTR(obj);
-    dest_buf = ROBJECT_IVPTR(dest);
+    src_buf = ROBJECT_FIELDS(obj);
+    dest_buf = ROBJECT_FIELDS(dest);
 
     rb_shape_t *initial_shape = rb_shape_get_shape(dest);
 
@@ -374,7 +374,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID);
     if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
         rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
-        dest_buf = ROBJECT_IVPTR(dest);
+        dest_buf = ROBJECT_FIELDS(dest);
     }
 
     MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);

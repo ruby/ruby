@@ -45,8 +45,8 @@ void rb_gvar_ractor_local(const char *name);
  */
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
-struct gen_ivtbl;
-int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
+struct gen_fields_tbl;
+int rb_gen_fields_tbl_get(VALUE obj, ID id, struct gen_fields_tbl **fields_tbl);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_convert_to_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
@@ -56,7 +56,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 void rb_mark_generic_ivar(VALUE obj);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
-void rb_iv_tbl_copy(VALUE dst, VALUE src);
+void rb_fields_tbl_copy(VALUE dst, VALUE src);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_ivar_lookup(VALUE obj, ID id, VALUE undef);

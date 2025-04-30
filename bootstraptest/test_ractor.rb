@@ -1595,7 +1595,7 @@ assert_equal "ok", %Q{
   :ok
 }
 
-# Generic ivtbl
+# Generic fields_tbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
   2.times.map{

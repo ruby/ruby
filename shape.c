@@ -406,7 +406,7 @@ rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
     rb_shape_t *shape = shape_alloc();
 
     shape->edge_name = edge_name;
-    shape->next_iv_index = 0;
+    shape->next_field_index = 0;
     shape->parent_id = parent_id;
     shape->edges = NULL;
 
@@ -466,18 +466,18 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 
     switch (shape_type) {
       case SHAPE_IVAR:
-        if (UNLIKELY(shape->next_iv_index >= shape->capacity)) {
-            RUBY_ASSERT(shape->next_iv_index == shape->capacity);
+        if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
+            RUBY_ASSERT(shape->next_field_index == shape->capacity);
             new_shape->capacity = (uint32_t)rb_malloc_grow_capa(shape->capacity, sizeof(VALUE));
         }
-        RUBY_ASSERT(new_shape->capacity > shape->next_iv_index);
-        new_shape->next_iv_index = shape->next_iv_index + 1;
-        if (new_shape->next_iv_index > ANCESTOR_CACHE_THRESHOLD) {
+        RUBY_ASSERT(new_shape->capacity > shape->next_field_index);
+        new_shape->next_field_index = shape->next_field_index + 1;
+        if (new_shape->next_field_index > ANCESTOR_CACHE_THRESHOLD) {
             redblack_cache_ancestors(new_shape);
         }
         break;
       case SHAPE_FROZEN:
-        new_shape->next_iv_index = shape->next_iv_index;
+        new_shape->next_field_index = shape->next_field_index;
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
       case SHAPE_ROOT:
@@ -639,39 +639,39 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
             return false;
         }
 
-        RUBY_ASSERT(new_shape->next_iv_index == shape->next_iv_index - 1);
+        RUBY_ASSERT(new_shape->next_field_index == shape->next_field_index - 1);
 
-        VALUE *ivptr;
+        VALUE *fields;
         switch(BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            ivptr = RCLASS_IVPTR(obj);
+            fields = RCLASS_FIELDS(obj);
             break;
           case T_OBJECT:
-            ivptr = ROBJECT_IVPTR(obj);
+            fields = ROBJECT_FIELDS(obj);
             break;
           default: {
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
-            ivptr = ivtbl->as.shape.ivptr;
+            struct gen_fields_tbl *fields_tbl;
+            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
+            fields = fields_tbl->as.shape.fields;
             break;
           }
         }
 
-        *removed = ivptr[removed_shape->next_iv_index - 1];
+        *removed = fields[removed_shape->next_field_index - 1];
 
-        memmove(&ivptr[removed_shape->next_iv_index - 1], &ivptr[removed_shape->next_iv_index],
-                ((new_shape->next_iv_index + 1) - removed_shape->next_iv_index) * sizeof(VALUE));
+        memmove(&fields[removed_shape->next_field_index - 1], &fields[removed_shape->next_field_index],
+                ((new_shape->next_field_index + 1) - removed_shape->next_field_index) * sizeof(VALUE));
 
         // Re-embed objects when instances become small enough
         // This is necessary because YJIT assumes that objects with the same shape
         // have the same embeddedness for efficiency (avoid extra checks)
         if (BUILTIN_TYPE(obj) == T_OBJECT &&
                 !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
-                rb_obj_embedded_size(new_shape->next_iv_index) <= rb_gc_obj_slot_size(obj)) {
+                rb_obj_embedded_size(new_shape->next_field_index) <= rb_gc_obj_slot_size(obj)) {
             RB_FL_SET_RAW(obj, ROBJECT_EMBED);
-            memcpy(ROBJECT_IVPTR(obj), ivptr, new_shape->next_iv_index * sizeof(VALUE));
-            xfree(ivptr);
+            memcpy(ROBJECT_FIELDS(obj), fields, new_shape->next_field_index * sizeof(VALUE));
+            xfree(fields);
         }
 
         rb_shape_set_shape(obj, new_shape);
@@ -743,8 +743,8 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
     // Check if we should update max_iv_count on the object's class
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
         VALUE klass = rb_obj_class(obj);
-        if (new_shape->next_iv_index > RCLASS_EXT(klass)->max_iv_count) {
-            RCLASS_EXT(klass)->max_iv_count = new_shape->next_iv_index;
+        if (new_shape->next_field_index > RCLASS_EXT(klass)->max_iv_count) {
+            RCLASS_EXT(klass)->max_iv_count = new_shape->next_field_index;
         }
 
         if (variation_created) {
@@ -799,12 +799,12 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
     // eventually using the index, as in case of a match it will be faster.
     // However if the shape doesn't have an index, we walk the entire tree.
     int depth = INT_MAX;
-    if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+    if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
         depth = ANCESTOR_SEARCH_MAX_DEPTH;
     }
 
-    while (depth > 0 && shape->next_iv_index > index_hint) {
-        while (shape_hint->next_iv_index > shape->next_iv_index) {
+    while (depth > 0 && shape->next_field_index > index_hint) {
+        while (shape_hint->next_field_index > shape->next_field_index) {
             shape_hint = rb_shape_get_parent(shape_hint);
         }
 
@@ -816,7 +816,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         }
         if (shape->edge_name == id) {
             // We found the matching id before a common ancestor
-            *value = shape->next_iv_index - 1;
+            *value = shape->next_field_index - 1;
             *shape_id_hint = rb_shape_id(shape);
             return true;
         }
@@ -844,8 +844,8 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 
             switch (shape_type) {
               case SHAPE_IVAR:
-                RUBY_ASSERT(shape->next_iv_index > 0);
-                *value = shape->next_iv_index - 1;
+                RUBY_ASSERT(shape->next_field_index > 0);
+                *value = shape->next_field_index - 1;
                 return true;
               case SHAPE_ROOT:
               case SHAPE_T_OBJECT:
@@ -865,11 +865,11 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 static bool
 shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
-    if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+    if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
         redblack_node_t *node = redblack_find(shape->ancestor_index, id);
         if (node) {
             rb_shape_t *shape = redblack_value(node);
-            *value = shape->next_iv_index - 1;
+            *value = shape->next_field_index - 1;
 
 #if RUBY_DEBUG
             attr_index_t shape_tree_index;
@@ -897,7 +897,7 @@ rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 
     if (!shape_cache_get_iv_index(shape, id, value)) {
         // If it wasn't in the ancestor cache, then don't do a linear search
-        if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+        if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
             return false;
         }
         else {
@@ -1074,7 +1074,7 @@ rb_shape_t_to_rb_cShape(rb_shape_t *shape)
             INT2NUM(rb_shape_id(shape)),
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
-            INT2NUM(shape->next_iv_index),
+            INT2NUM(shape->next_field_index),
             INT2NUM(shape->heap_index),
             INT2NUM(shape->type),
             INT2NUM(shape->capacity));
@@ -1323,7 +1323,7 @@ Init_shape(void)
             "id",
             "parent_id",
             "edge_name",
-            "next_iv_index",
+            "next_field_index",
             "heap_index",
             "type",
             "capacity",
