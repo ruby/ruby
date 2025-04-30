@@ -23,11 +23,13 @@ VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
 VALUE rb_autoload_at_p(VALUE, ID, int);
+void rb_autoload_copy_table_for_namespace(st_table *, const rb_namespace_t *);
 NORETURN(VALUE rb_mod_const_missing(VALUE,VALUE));
 rb_gvar_getter_t *rb_gvar_getter_function_of(ID);
 rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 void rb_gvar_ractor_local(const char *name);
+void rb_gvar_namespace_ready(const char *name);
 
 /**
  * Sets the name of a module.

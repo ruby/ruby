@@ -219,6 +219,7 @@ class Gem::Package
   # Adds a checksum for each entry in the gem to checksums.yaml.gz.
 
   def add_checksums(tar)
+    require 'psych'
     Gem.load_yaml
 
     checksums_by_algorithm = Hash.new {|h, algorithm| h[algorithm] = {} }
@@ -552,6 +553,7 @@ EOM
   # Reads and loads checksums.yaml.gz from the tar file +gem+
 
   def read_checksums(gem)
+    require_relative 'safe_yaml'
     Gem.load_yaml
 
     @checksums = gem.seek "checksums.yaml.gz" do |entry|
