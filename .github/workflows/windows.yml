@@ -26,20 +26,20 @@ jobs:
       matrix:
         include:
           - vc: 2019
-            vs: 2022
+            os: 2022
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: check
           - vc: 2019
-            vs: 2025
+            os: 2025
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: check
           - vc: 2019
-            vs: 2025
+            os: 2025
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: test-bundled-gems
       fail-fast: false
 
-    runs-on: windows-${{ matrix.vs }}
+    runs-on: windows-${{ matrix.os }}
 
     if: >-
       ${{!(false
@@ -51,11 +51,11 @@ jobs:
       || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vc || matrix.vs }} (${{ matrix.test_task }})
+    name: Win ${{ matrix.os }} VS ${{ matrix.vc }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.vs }}
+      OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
@@ -125,7 +125,7 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          ::- Set up VC ${{ matrix.vc || matrix.vs }}
+          ::- Set up VC ${{ matrix.vc }}
           set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
           for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
             set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
@@ -180,7 +180,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.vs }}
+          os: windows-${{ matrix.os }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
@@ -195,7 +195,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
+          label: Win ${{ matrix.os }} VS ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
