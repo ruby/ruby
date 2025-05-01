@@ -929,21 +929,46 @@ unsafe extern "C" {
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_get_page_size() -> u32;
     pub fn rb_zjit_reserve_addr_space(mem_size: u32) -> *mut u8;
+    pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
+    pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_zjit_multi_ractor_p() -> bool;
+    pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
+    pub fn rb_zjit_vm_unlock(
+        recursive_lock_level: *mut ::std::os::raw::c_uint,
+        file: *const ::std::os::raw::c_char,
+        line: ::std::os::raw::c_int,
+    );
+    pub fn rb_zjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
+    pub fn rb_zjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
+    pub fn rb_zjit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
+    pub fn rb_zjit_icache_invalidate(
+        start: *mut ::std::os::raw::c_void,
+        end: *mut ::std::os::raw::c_void,
+    );
+    pub fn rb_zjit_vm_lock_then_barrier(
+        recursive_lock_level: *mut ::std::os::raw::c_uint,
+        file: *const ::std::os::raw::c_char,
+        line: ::std::os::raw::c_int,
+    );
+    pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
+    pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
+    pub fn rb_zjit_print_exception();
+    pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
+    pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
+    pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
     pub fn rb_RSTRING_LEN(str_: VALUE) -> ::std::os::raw::c_ulong;
     pub fn rb_RSTRING_PTR(str_: VALUE) -> *mut ::std::os::raw::c_char;
-    pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
-    pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
-    pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
-    pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_insn_name(insn: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
-    pub fn rb_get_cfp_iseq(cfp: *mut rb_control_frame_struct) -> *const rb_iseq_t;
-    pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_get_cfp_sp(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
-    pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
-    pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
-    pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_vm_ci_argc(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
+    pub fn rb_vm_ci_mid(ci: *const rb_callinfo) -> ID;
+    pub fn rb_vm_ci_flag(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
+    pub fn rb_vm_ci_kwarg(ci: *const rb_callinfo) -> *const rb_callinfo_kwarg;
+    pub fn rb_get_cikw_keyword_len(cikw: *const rb_callinfo_kwarg) -> ::std::os::raw::c_int;
+    pub fn rb_get_cikw_keywords_idx(
+        cikw: *const rb_callinfo_kwarg,
+        idx: ::std::os::raw::c_int,
+    ) -> VALUE;
+    pub fn rb_METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
     pub fn rb_get_cme_def_type(cme: *const rb_callable_method_entry_t) -> rb_method_type_t;
     pub fn rb_get_cme_def_body_attr_id(cme: *const rb_callable_method_entry_t) -> ID;
     pub fn rb_get_cme_def_body_optimized_type(
@@ -961,6 +986,7 @@ unsafe extern "C" {
     pub fn rb_get_mct_func(mct: *const rb_method_cfunc_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_get_def_iseq_ptr(def: *mut rb_method_definition_t) -> *const rb_iseq_t;
     pub fn rb_get_iseq_body_local_iseq(iseq: *const rb_iseq_t) -> *const rb_iseq_t;
+    pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_get_iseq_body_iseq_encoded(iseq: *const rb_iseq_t) -> *mut VALUE;
     pub fn rb_get_iseq_body_stack_max(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_get_iseq_body_type(iseq: *const rb_iseq_t) -> rb_iseq_type;
@@ -983,48 +1009,22 @@ unsafe extern "C" {
     pub fn rb_get_iseq_body_param_lead_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
     pub fn rb_get_iseq_body_param_opt_num(iseq: *const rb_iseq_t) -> ::std::os::raw::c_int;
     pub fn rb_get_iseq_body_param_opt_table(iseq: *const rb_iseq_t) -> *const VALUE;
-    pub fn rb_get_iseq_body_local_table_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
-    pub fn rb_get_cikw_keyword_len(cikw: *const rb_callinfo_kwarg) -> ::std::os::raw::c_int;
-    pub fn rb_get_cikw_keywords_idx(
-        cikw: *const rb_callinfo_kwarg,
-        idx: ::std::os::raw::c_int,
-    ) -> VALUE;
-    pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
+    pub fn rb_get_ec_cfp(ec: *const rb_execution_context_t) -> *mut rb_control_frame_struct;
+    pub fn rb_get_cfp_iseq(cfp: *mut rb_control_frame_struct) -> *const rb_iseq_t;
+    pub fn rb_get_cfp_pc(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_get_cfp_sp(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_get_cfp_self(cfp: *mut rb_control_frame_struct) -> VALUE;
+    pub fn rb_get_cfp_ep(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
+    pub fn rb_get_cfp_ep_level(cfp: *mut rb_control_frame_struct, lv: u32) -> *const VALUE;
+    pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
     pub fn rb_RSTRUCT_LEN(st: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
-    pub fn rb_zjit_multi_ractor_p() -> bool;
-    pub fn rb_assert_iseq_handle(handle: VALUE);
-    pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
-    pub fn rb_assert_cme_handle(handle: VALUE);
-    pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
-    pub fn rb_zjit_vm_unlock(
-        recursive_lock_level: *mut ::std::os::raw::c_uint,
-        file: *const ::std::os::raw::c_char,
-        line: ::std::os::raw::c_int,
-    );
-    pub fn rb_zjit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
-    pub fn rb_zjit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
-    pub fn rb_zjit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
-    pub fn rb_zjit_icache_invalidate(
-        start: *mut ::std::os::raw::c_void,
-        end: *mut ::std::os::raw::c_void,
-    );
-    pub fn rb_vm_ci_argc(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
-    pub fn rb_vm_ci_mid(ci: *const rb_callinfo) -> ID;
-    pub fn rb_vm_ci_flag(ci: *const rb_callinfo) -> ::std::os::raw::c_uint;
-    pub fn rb_vm_ci_kwarg(ci: *const rb_callinfo) -> *const rb_callinfo_kwarg;
-    pub fn rb_METHOD_ENTRY_VISI(me: *const rb_callable_method_entry_t) -> rb_method_visibility_t;
-    pub fn rb_yarv_class_of(obj: VALUE) -> VALUE;
-    pub fn rb_zjit_vm_lock_then_barrier(
-        recursive_lock_level: *mut ::std::os::raw::c_uint,
-        file: *const ::std::os::raw::c_char,
-        line: ::std::os::raw::c_int,
-    );
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
-    pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
-    pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
-    pub fn rb_zjit_print_exception();
+    pub fn rb_assert_iseq_handle(handle: VALUE);
+    pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
+    pub fn rb_assert_cme_handle(handle: VALUE);
 }

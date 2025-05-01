@@ -3967,6 +3967,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
         LDFLAGS="$LDFLAGS -lpthread -lc++abi"
     ])
     YJIT_OBJ='yjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
     AS_IF([test x"$YJIT_SUPPORT" != "xyes" ], [
         AC_DEFINE_UNQUOTED(YJIT_SUPPORT, [$YJIT_SUPPORT])
     ])
@@ -4008,6 +4009,7 @@ AS_CASE(["${ZJIT_SUPPORT}"],
         LDFLAGS="$LDFLAGS -lpthread -lc++abi"
     ])
     ZJIT_OBJ='zjit.$(OBJEXT)'
+    JIT_OBJ='jit.$(OBJEXT)'
     AS_IF([test x"$ZJIT_SUPPORT" != "xyes" ], [
         AC_DEFINE_UNQUOTED(ZJIT_SUPPORT, [$ZJIT_SUPPORT])
     ])
@@ -4025,8 +4027,9 @@ AC_SUBST(ZJIT_CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl for optionally building the Rust parts of YJIT
-AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of YJIT
+AC_SUBST(ZJIT_LIBS)dnl for optionally building the Rust parts of ZJIT
+AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
+AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
 }
 
 [begin]_group "build section" && {
