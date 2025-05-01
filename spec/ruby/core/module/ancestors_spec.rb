@@ -7,7 +7,7 @@ describe "Module#ancestors" do
     ModuleSpecs.ancestors.should == [ModuleSpecs]
     ModuleSpecs::Basic.ancestors.should == [ModuleSpecs::Basic]
     ModuleSpecs::Super.ancestors.should == [ModuleSpecs::Super, ModuleSpecs::Basic]
-    if Namespace.enabled?
+    if defined?(Namespace) && Namespace.enabled?
       ModuleSpecs.without_test_modules(ModuleSpecs::Parent.ancestors).should ==
         [ModuleSpecs::Parent, Object, Namespace::Loader, Kernel, BasicObject]
       ModuleSpecs.without_test_modules(ModuleSpecs::Child.ancestors).should ==
