@@ -88,7 +88,8 @@ jobs:
         include:
           - test_task: 'yjit-bindgen'
             hint: 'To fix: use patch in logs'
-            configure: '--with-gcc=clang-12 --enable-yjit=dev'
+            configure: '--with-gcc=clang-14 --enable-yjit=dev'
+            libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'check'
             # YJIT should be automatically built in release mode on x86-64 Linux with rustc present
@@ -173,6 +174,7 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
+          LIBCLANG_PATH: ${{ matrix.libclang_path }}
         continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
 
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
