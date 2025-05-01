@@ -32,7 +32,7 @@ jobs:
     name: cargo test
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -64,7 +64,7 @@ jobs:
     name: cargo clippy
 
     # GitHub Action's image seems to already contain a Rust 1.58.0.
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
@@ -118,7 +118,7 @@ jobs:
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     if: >-
       ${{!(false
