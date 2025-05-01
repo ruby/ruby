@@ -177,6 +177,7 @@ object_tracing.o: $(top_srcdir)/ccan/check_type/check_type.h
 object_tracing.o: $(top_srcdir)/ccan/container_of/container_of.h
 object_tracing.o: $(top_srcdir)/ccan/list/list.h
 object_tracing.o: $(top_srcdir)/ccan/str/str.h
+object_tracing.o: $(top_srcdir)/id_table.h
 object_tracing.o: $(top_srcdir)/internal.h
 object_tracing.o: $(top_srcdir)/internal/array.h
 object_tracing.o: $(top_srcdir)/internal/basic_operators.h
