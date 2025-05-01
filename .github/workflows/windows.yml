@@ -34,7 +34,7 @@ jobs:
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: check
           - vc: 2019
-            os: 2025
+            os: 2022
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: test-bundled-gems
       fail-fast: false
@@ -95,6 +95,7 @@ jobs:
           ruby-version: '3.0'
           bundler: none
           windows-toolchain: none
+        if: ${{ matrix.os != '2025' }}
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v7
