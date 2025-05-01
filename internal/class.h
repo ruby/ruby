@@ -155,7 +155,6 @@ struct RClass_and_rb_classext_t {
 
 static inline bool RCLASS_SINGLETON_P(VALUE klass);
 
-static inline void RCLASS_SET_CLASSEXT_TABLE(VALUE obj, st_table *tbl);
 static inline void RCLASS_SET_PRIME_CLASSEXT_READWRITE(VALUE obj, bool readable, bool writable);
 
 #define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
@@ -268,7 +267,6 @@ static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
-static inline void RCLASS_WRITE_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
 static inline void RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
 static inline void RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
 
