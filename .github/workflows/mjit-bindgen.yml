@@ -52,7 +52,7 @@ jobs:
           build-essential \
           libssl-dev libyaml-dev libreadline6-dev \
           zlib1g-dev libncurses5-dev libffi-dev \
-          libclang1-10 \
+          libclang1-14 \
           bison autoconf
           sudo apt-get install -q -y pkg-config || :
       - name: Set up Ruby
