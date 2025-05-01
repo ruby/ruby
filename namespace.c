@@ -1094,10 +1094,10 @@ setup_pushing_loading_namespace(rb_namespace_t *ns)
 }
 
 static void
-namespace_define_loader_method(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
+namespace_define_loader_method(const char *name)
 {
-    rb_define_private_method(module, name, func, argc);
-    rb_define_singleton_method(module, name, func, argc);
+    rb_define_private_method(rb_mNamespaceLoader, name, rb_namespace_user_loading_func, -1);
+    rb_define_singleton_method(rb_mNamespaceLoader, name, rb_namespace_user_loading_func, -1);
 }
 
 void
@@ -1118,9 +1118,9 @@ Init_Namespace(void)
     }
 
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
-    namespace_define_loader_method(rb_mNamespaceLoader, "require", rb_namespace_user_loading_func, -1);
-    namespace_define_loader_method(rb_mNamespaceLoader, "require_relative", rb_namespace_user_loading_func, -1);
-    namespace_define_loader_method(rb_mNamespaceLoader, "load", rb_namespace_user_loading_func, -1);
+    namespace_define_loader_method("require");
+    namespace_define_loader_method("require_relative");
+    namespace_define_loader_method("load");
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
