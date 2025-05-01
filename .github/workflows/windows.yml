@@ -25,19 +25,21 @@ jobs:
     strategy:
       matrix:
         include:
-          - vc: 2015
-            vs: 2019
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
+          - vc: 2019
+            vs: 2022
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: check
-          - vs: 2019
+          - vc: 2019
+            vs: 2025
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: check
-          - vs: 2019
+          - vc: 2019
+            vs: 2025
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in VS 2022 is broken.
             test_task: test-bundled-gems
-          # - vs: 2022
-          #   test_task: check
       fail-fast: false
 
-    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    runs-on: windows-${{ matrix.vs }}
 
     if: >-
       ${{!(false
@@ -53,7 +55,7 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      OS_VER: windows-${{ matrix.vs }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
 
     steps:
@@ -178,7 +180,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+          os: windows-${{ matrix.vs }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
