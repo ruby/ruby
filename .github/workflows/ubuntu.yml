@@ -53,7 +53,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       RUBY_DEBUG: ci
       SETARCH: ${{ matrix.arch && format('setarch {0}', matrix.arch) }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build

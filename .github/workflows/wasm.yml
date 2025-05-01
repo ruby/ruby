@@ -50,7 +50,7 @@ jobs:
       WASI_SDK_VERSION_MINOR: 0
       BINARYEN_VERSION: 109
       WASMTIME_VERSION: v0.33.0
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     steps:
       - run: mkdir build
