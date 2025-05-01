@@ -172,7 +172,7 @@ rb_id_attrset(ID id)
 
     /* make new symbol and ID */
     if (!(str = lookup_id_str(id))) {
-        RBIMPL_ATTR_NONSTRING() static const char id_types[][8] = {
+        static const char id_types[][8] = {
             "local",
             "instance",
             "invalid",
