@@ -2347,9 +2347,14 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
 }
 
 /*
+ * The documentation block below uses an include (instead of inline text)
+ * because the included text has non-ASCII characters (which are not allowed in a C file).
+ */
+
+/*
  *
  *  call-seq:
- *    String.new(string = '', **opts) -> new_string
+ *    String.new(string = ''.encode(Encoding::ASCII_8BIT) , **options) -> new_string
  *
  *  :include: doc/string/new.rdoc
  *
