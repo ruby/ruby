@@ -2020,7 +2020,7 @@ method_namespace(VALUE obj)
     if (!ns) return Qfalse;
     if (ns->ns_object) return ns->ns_object;
     // This should not happen
-    rb_bug("Unexpected namespace on the method definition: %p", ns);
+    rb_bug("Unexpected namespace on the method definition: %p", (void*) ns);
     return Qtrue;
 }
 
