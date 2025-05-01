@@ -46,7 +46,6 @@ module SyncDefaultGems
     resolv: "ruby/resolv",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
-    set: "ruby/set",
     shellwords: "ruby/shellwords",
     singleton: "ruby/singleton",
     stringio: 'ruby/stringio',
@@ -295,9 +294,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/digest", "test")
       cp_r("#{upstream}/digest.gemspec", "ext/digest")
       `git checkout ext/digest/depend ext/digest/*/depend`
-    when "set"
-      sync_lib gem, upstream
-      cp_r(Dir.glob("#{upstream}/test/*"), "test/set")
     when "optparse"
       sync_lib gem, upstream
       rm_rf(%w[doc/optparse])
