@@ -47,6 +47,7 @@ fn main() {
 
         // Our C file for glue code
         .header(src_root.join("yjit.c").to_str().unwrap())
+        .header(src_root.join("jit.c").to_str().unwrap())
 
         // Don't want to copy over C comment
         .generate_comments(false)
