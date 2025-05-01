@@ -92,7 +92,7 @@ class TestISeq < Test::Unit::TestCase
         42
       end
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_forwardable
@@ -102,7 +102,7 @@ class TestISeq < Test::Unit::TestCase
         def foo(...); bar(...); end
       }
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval.new.foo(40, 2))
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval.new.foo(40, 2))
   end
 
   def test_super_with_block
@@ -112,7 +112,7 @@ class TestISeq < Test::Unit::TestCase
       end
       42
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_super_with_block_hash_0
@@ -123,7 +123,7 @@ class TestISeq < Test::Unit::TestCase
       end
       42
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_super_with_block_and_kwrest
@@ -133,7 +133,7 @@ class TestISeq < Test::Unit::TestCase
       end
       42
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_lambda_with_ractor_roundtrip
@@ -143,7 +143,7 @@ class TestISeq < Test::Unit::TestCase
       Ractor.make_shareable(y)
       y.call
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_super_with_anonymous_block
@@ -153,7 +153,7 @@ class TestISeq < Test::Unit::TestCase
       end
       42
     EOF
-    assert_equal(42, ISeq.load_from_binary(iseq.to_binary).eval)
+    assert_equal(42, ISeq.load_from_binary(iseq_to_binary(iseq)).eval)
   end
 
   def test_ractor_unshareable_outer_variable
@@ -182,7 +182,7 @@ class TestISeq < Test::Unit::TestCase
       # shareable_constant_value: literal
       REGEX = /#{}/ # [Bug #20569]
     RUBY
-    assert_includes iseq.to_binary, "REGEX".b
+    assert_includes iseq_to_binary(iseq), "REGEX".b
   end
 
   def test_disasm_encoding
@@ -566,16 +566,20 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
+  def iseq_to_binary(iseq)
+    iseq.to_binary
+  rescue RuntimeError => e
+    omit e.message if /compile with coverage/ =~ e.message
+    raise
+  end
+
   def assert_iseq_to_binary(code, mesg = nil)
     iseq = RubyVM::InstructionSequence.compile(code)
     bin = assert_nothing_raised(mesg) do
-      iseq.to_binary
-    rescue RuntimeError => e
-      omit e.message if /compile with coverage/ =~ e.message
-      raise
+      iseq_to_binary(iseq)
     end
     10.times do
-      bin2 = iseq.to_binary
+      bin2 = iseq_to_binary(iseq)
       assert_equal(bin, bin2, message(mesg) {diff hexdump(bin), hexdump(bin2)})
     end
     iseq2 = RubyVM::InstructionSequence.load_from_binary(bin)
@@ -593,7 +597,7 @@ class TestISeq < Test::Unit::TestCase
   def test_to_binary_with_hidden_local_variables
     assert_iseq_to_binary("for _foo in bar; end")
 
-    bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
+    bin = iseq_to_binary(RubyVM::InstructionSequence.compile(<<-RUBY))
       Object.new.instance_eval do
         a = []
         def self.bar; [1] end
@@ -668,7 +672,7 @@ class TestISeq < Test::Unit::TestCase
       end
     RUBY
 
-    iseq_bin = iseq.to_binary
+    iseq_bin = iseq_to_binary(iseq)
     iseq = ISeq.load_from_binary(iseq_bin)
     lines = []
     TracePoint.new(tracepoint_type){|tp|
@@ -764,7 +768,7 @@ class TestISeq < Test::Unit::TestCase
   def test_iseq_builtin_load
     Tempfile.create(["builtin", ".iseq"]) do |f|
       f.binmode
-      f.write(RubyVM::InstructionSequence.of(1.method(:abs)).to_binary)
+      f.write(iseq_to_binary(RubyVM::InstructionSequence.of(1.method(:abs))))
       f.close
       assert_separately(["-", f.path], "#{<<~"begin;"}\n#{<<~'end;'}")
       begin;
@@ -857,7 +861,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_loading_kwargs_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
-    a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
+    a = iseq_to_binary(RubyVM::InstructionSequence.compile("foo(bar: :baz)"))
     begin;
       1_000_000.times do
         RubyVM::InstructionSequence.load_from_binary(a)
@@ -868,7 +872,7 @@ class TestISeq < Test::Unit::TestCase
   def test_ibf_bignum
     iseq = RubyVM::InstructionSequence.compile("0x0"+"_0123_4567_89ab_cdef"*5)
     expected = iseq.eval
-    result = RubyVM::InstructionSequence.load_from_binary(iseq.to_binary).eval
+    result = RubyVM::InstructionSequence.load_from_binary(iseq_to_binary(iseq)).eval
     assert_equal expected, result, proc {sprintf("expected: %x, result: %x", expected, result)}
   end
 
