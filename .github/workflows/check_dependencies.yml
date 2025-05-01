@@ -33,7 +33,7 @@ jobs:
   update-deps:
     strategy:
       matrix:
-        os: [ubuntu-20.04]
+        os: [ubuntu-22.04]
       fail-fast: true
     runs-on: ${{ matrix.os }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
