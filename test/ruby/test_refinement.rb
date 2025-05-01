@@ -2724,6 +2724,18 @@ class TestRefinement < Test::Unit::TestCase
     assert_equal :qux, meth.name
   end
 
+  def test_symbol_proc_from_using_scope
+    # assert_separately to contain the side effects of refining Kernel
+    assert_separately([], <<~RUBY)
+      class RefinedScope
+        using(Module.new { refine(Kernel) { def itself = 0 } })
+        ITSELF = :itself.to_proc
+      end
+
+      assert_equal(1, RefinedScope::ITSELF[1], "[Bug #21265]")
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
