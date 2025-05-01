@@ -25,13 +25,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: 2019
-            vc: 2015
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
-            test_task: check
-          - os: 2019
-            vc: 2019
-            test_task: check
           - os: 2022
             vc: 2019
             vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The defautl Windows 11 SDK and toolset are broken at windows-2022
@@ -65,7 +58,7 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
+      OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
       RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
