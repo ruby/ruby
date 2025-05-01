@@ -52,7 +52,7 @@ VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_namespace_inspect(VALUE obj);
 
 int
-rb_namespace_available()
+rb_namespace_available(void)
 {
     const char *env;
     if (namespace_availability) {
