@@ -66,7 +66,7 @@ The following default gems are updated.
 * json 2.11.3
 * optparse 0.7.0.dev.2
 * prism 1.4.0
-* psych 5.2.3
+* psych 5.2.4
 * stringio 3.1.8.dev
 * strscan 3.1.4.dev
 * uri 1.0.3
