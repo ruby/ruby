@@ -74,7 +74,7 @@ jobs:
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
-          scoop install vcpkg cmake@3.31.6
+          scoop install cmake@3.31.6
           vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
         shell:
           pwsh
