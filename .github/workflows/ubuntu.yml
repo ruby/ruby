@@ -37,7 +37,7 @@ jobs:
             timeout: 50
           - test_task: test-bundled-gems
           - test_task: check
-            os: ubuntu-20.04
+            os: ubuntu-22.04
           - test_task: check
             os: ubuntu-24.04
       fail-fast: false
