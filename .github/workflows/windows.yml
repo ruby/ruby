@@ -34,16 +34,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - vs: 2019
-          # - vs: 2022
+          - vs: 2022
+            vcvers: 10.0.22621.0 -vcvars_ver=14.2
       fail-fast: false
-    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    runs-on: windows-${{ matrix.vs }}
     if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
     name: VisualStudio ${{ matrix.vs }}
     env:
       GITPULLOPTIONS: --no-tags origin ${{github.ref}}
       PATCH: C:\msys64\usr\bin\patch.exe
-      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      OS_VER: windows-${{ matrix.vs }}
     steps:
       - run: md build
         working-directory:
@@ -97,14 +97,12 @@ jobs:
         # msys2/setup-msys2 installs MSYS2 to D:/a/_temp/msys64/usr/bin
         run: |
           set Path=D:/a/_temp/msys64/usr/bin;%Path%
-          set VS=${{ matrix.vs }}
-          set VCVARS=${{ matrix.vcvars }}
           if not "%VCVARS%" == "" goto :vcset
-            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           :vcset
           set | C:\msys64\usr\bin\sort > old.env
-          call %VCVARS%
+          call %VCVARS% ${{ matrix.vcvers || ''}}
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
