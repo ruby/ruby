@@ -43,7 +43,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       # For now we can't run cargo test --offline because it complains about the
       # capstone dependency, even though the dependency is optional
@@ -75,7 +75,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       # Check that we don't have linting errors in release mode, too
       - run: cargo clippy --all-targets --all-features
@@ -130,7 +130,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github

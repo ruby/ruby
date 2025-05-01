@@ -11,11 +11,11 @@ jobs:
 
     steps:
       - name: Dependabot metadata
-        uses: dependabot/fetch-metadata@c9c4182bf1b97f5224aee3906fd373f6b61b4526 # v1.6.0
+        uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7 # v2.3.0
         id: metadata
 
       - name: Wait for status checks
-        uses: lewagon/wait-on-check-action@e106e5c43e8ca1edea6383a39a01c5ca495fd812 # v1.3.1
+        uses: lewagon/wait-on-check-action@ccfb013c15c8afb7bf2b7c028fb74dc5a068cccc # v1.3.4
         with:
           repo-token: ${{ secrets.MATZBOT_GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.head.sha || github.sha }}

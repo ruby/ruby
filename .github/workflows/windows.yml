@@ -85,7 +85,7 @@ jobs:
           NEEDED_TOOLS: >-
             patch.exe
 
-      - uses: msys2/setup-msys2@d40200dc2db4c351366b048a9565ad82919e1c24 # v2
+      - uses: msys2/setup-msys2@61f9e5e925871ba6c9e3e8da24ede83ea27fa91f # v2.27.0
         id: setup-msys2
         with:
           update: true
@@ -93,7 +93,7 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
@@ -101,7 +101,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
 
-      - uses: actions/cache@0c907a75c2c80ebcb7f088228285e798b750cf8f # v4.2.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
@@ -120,7 +120,7 @@ jobs:
           scoop install vcpkg cmake@3.31.6
         shell: pwsh
 
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
