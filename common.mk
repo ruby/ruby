@@ -6821,6 +6821,7 @@ eval.$(OBJEXT): $(top_srcdir)/internal/hash.h
 eval.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 eval.$(OBJEXT): $(top_srcdir)/internal/inits.h
 eval.$(OBJEXT): $(top_srcdir)/internal/io.h
+eval.$(OBJEXT): $(top_srcdir)/internal/missing.h
 eval.$(OBJEXT): $(top_srcdir)/internal/object.h
 eval.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 eval.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -18677,6 +18678,7 @@ transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/internal/array.h
+util.$(OBJEXT): $(top_srcdir)/internal/bits.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 util.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 util.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
