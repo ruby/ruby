@@ -37,11 +37,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - vs: 2019
-          # - vs: 2022
+          - vs: 2022
+            vcvers: 10.0.22621.0 -vcvars_ver=14.2
       fail-fast: false
 
-    runs-on: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+    runs-on: windows-${{ matrix.vs }}
 
     if: >-
       ${{!(false
@@ -55,7 +55,7 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.vs < 2022 && '2019' || matrix.vs }}
+      OS_VER: windows-${{ matrix.vs }}
       # FIXME: This is a workaround for the vcpkg's issue present as of openssl 3.1.1
       # where OpenSSL's default modules directory is incorrectly set to C:\vcpkg\packages\openssl_x64-windows\bin
       # cf. https://github.com/ruby/openssl/pull/635#issuecomment-1596833720
@@ -134,14 +134,12 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          set VS=${{ matrix.vs }}
-          set VCVARS=${{ matrix.vcvars || '' }}
           if not "%VCVARS%" == "" goto :vcset
-            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           :vcset
           set | C:\msys64\usr\bin\sort > old.env
-          call %VCVARS%
+          call %VCVARS% ${{ matrix.vcvers || ''}}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
