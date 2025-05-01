@@ -4,7 +4,7 @@ typedef enum {
     SIMD_SSE2
 } SIMD_Implementation;
 
-#ifdef ENABLE_SIMD
+#ifdef JSON_ENABLE_SIMD
 
 #ifdef __clang__
   #if __has_builtin(__builtin_ctzll)
@@ -56,6 +56,7 @@ static SIMD_Implementation find_simd_implementation(void) {
     return SIMD_NEON;
 }
 
+#define HAVE_SIMD 1
 #define HAVE_SIMD_NEON 1
 
 uint8x16x4_t load_uint8x16_4(const unsigned char *table) {
@@ -74,6 +75,7 @@ uint8x16x4_t load_uint8x16_4(const unsigned char *table) {
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h>
 
+#define HAVE_SIMD 1
 #define HAVE_SIMD_SSE2 1
 
 #ifdef HAVE_CPUID_H
@@ -101,7 +103,7 @@ static SIMD_Implementation find_simd_implementation(void) {
 #endif /* HAVE_X86INTRIN_H */
 #endif /* X86_64 Support */
 
-#endif /* ENABLE_SIMD */
+#endif /* JSON_ENABLE_SIMD */
 
 #ifndef FIND_SIMD_IMPLEMENTATION_DEFINED
 static SIMD_Implementation find_simd_implementation(void) {

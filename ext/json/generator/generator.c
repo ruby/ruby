@@ -112,7 +112,7 @@ typedef struct _search_state {
     const char *cursor;
     FBuffer *buffer;
 
-#ifdef ENABLE_SIMD
+#ifdef HAVE_SIMD
     const char *chunk_base;
     const char *chunk_end;
     bool has_matches;
@@ -124,7 +124,7 @@ typedef struct _search_state {
 #else
 #error "Unknown SIMD Implementation."
 #endif /* HAVE_SIMD_NEON */
-#endif /* ENABLE_SIMD */ 
+#endif /* HAVE_SIMD */
 } search_state;
 
 #if (defined(__GNUC__ ) || defined(__clang__))
@@ -189,15 +189,11 @@ static inline FORCE_INLINE void escape_UTF8_char_basic(search_state *search)
         case '\r': fbuffer_append(search->buffer, "\\r", 2);  break;
         case '\t': fbuffer_append(search->buffer, "\\t", 2);  break;
         default: {
-            if (ch < ' ') {
-                const char *hexdig = "0123456789abcdef";
-                char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
-                scratch[4] = hexdig[(ch >> 4) & 0xf];
-                scratch[5] = hexdig[ch & 0xf];
-                fbuffer_append(search->buffer, scratch, 6);
-            } else {
-                fbuffer_append_char(search->buffer, ch);
-            }
+            const char *hexdig = "0123456789abcdef";
+            char scratch[6] = { '\\', 'u', '0', '0', 0, 0 };
+            scratch[4] = hexdig[(ch >> 4) & 0xf];
+            scratch[5] = hexdig[ch & 0xf];
+            fbuffer_append(search->buffer, scratch, 6);
             break;
         }
     }
@@ -265,7 +261,7 @@ static inline void escape_UTF8_char(search_state *search, unsigned char ch_len)
     search->cursor = (search->ptr += ch_len);
 }
 
-#ifdef ENABLE_SIMD
+#ifdef HAVE_SIMD
 
 static inline FORCE_INLINE char *copy_remaining_bytes(search_state *search, unsigned long vec_len, unsigned long len)
 {
@@ -537,7 +533,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
 
 #endif /* HAVE_SIMD_SSE2 */
 
-#endif /* ENABLE_SIMD */
+#endif /* HAVE_SIMD */
 
 static const unsigned char script_safe_escape_table[256] = {
     // ASCII Control Characters
@@ -1302,11 +1298,11 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
     search.cursor = search.ptr;
     search.end = search.ptr + len;
 
-#ifdef ENABLE_SIMD
+#ifdef HAVE_SIMD
     search.matches_mask = 0;
     search.has_matches = false;
     search.chunk_base = NULL;
-#endif /* ENABLE_SIMD */
+#endif /* HAVE_SIMD */
 
     switch(rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
@@ -2174,7 +2170,7 @@ void Init_generator(void)
 
 
     switch(find_simd_implementation()) {
-#ifdef ENABLE_SIMD
+#ifdef HAVE_SIMD
 #ifdef HAVE_SIMD_NEON
         case SIMD_NEON:
             search_escape_basic_impl = search_escape_basic_neon;
@@ -2185,7 +2181,7 @@ void Init_generator(void)
             search_escape_basic_impl = search_escape_basic_sse2;
             break;
 #endif /* HAVE_SIMD_SSE2 */
-#endif /* ENABLE_SIMD */
+#endif /* HAVE_SIMD */
         default:
             search_escape_basic_impl = search_escape_basic;
             break;

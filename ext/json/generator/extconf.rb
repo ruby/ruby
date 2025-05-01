@@ -18,7 +18,7 @@ else
               return 0;
           }
         SRC
-          $defs.push("-DENABLE_SIMD")
+          $defs.push("-DJSON_ENABLE_SIMD")
       end
     end
 
@@ -29,7 +29,7 @@ else
           return 0;
       }
       SRC
-        $defs.push("-DENABLE_SIMD")
+        $defs.push("-DJSON_ENABLE_SIMD")
     end
 
     have_header('cpuid.h')
