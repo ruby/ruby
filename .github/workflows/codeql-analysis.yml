@@ -56,7 +56,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install libraries
         uses: ./.github/actions/setup/ubuntu
@@ -86,7 +86,7 @@ jobs:
         continue-on-error: true
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0
+        uses: advanced-security/filter-sarif@bc96d9fb9338c5b48cc440b1b4d0a350b26a20db # v1.0.0
         with:
           patterns: |
             +**/*.rb
