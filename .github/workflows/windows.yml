@@ -58,7 +58,6 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-      OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
       RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
