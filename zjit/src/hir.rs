@@ -1573,6 +1573,12 @@ impl FrameState {
         self.stack[idx] = opnd;
     }
 
+    /// Get a stack operand at idx
+    fn stack_topn(&mut self, idx: usize) -> Result<InsnId, ParseError> {
+        let idx = self.stack.len() - idx - 1;
+        self.stack.get(idx).ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
+    }
+
     fn setlocal(&mut self, ep_offset: u32, opnd: InsnId) {
         let idx = ep_offset_to_local_idx(self.iseq, ep_offset);
         self.locals[idx] = opnd;
@@ -1896,6 +1902,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let top = state.stack_top()?;
                     state.stack_setn(n, top);
                 }
+                YARVINSN_topn => {
+                    let n = get_arg(pc, 0).as_usize();
+                    let top = state.stack_topn(n)?;
+                    state.stack_push(top);
+                }
                 YARVINSN_adjuststack => {
                     let mut n = get_arg(pc, 0).as_usize();
                     while n > 0 {
@@ -1946,6 +1957,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_ge |
                 YARVINSN_opt_ltlt |
                 YARVINSN_opt_aset |
+                YARVINSN_opt_length |
+                YARVINSN_opt_size |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -2907,6 +2920,34 @@ mod tests {
               Return v5
         "#]]);
     }
+
+    #[test]
+    fn test_opt_length() {
+        eval("
+            def test(a,b) = [a,b].length
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:ArrayExact = NewArray v0, v1
+              v6:BasicObject = SendWithoutBlock v4, :length
+              Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_size() {
+        eval("
+            def test(a,b) = [a,b].size
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:ArrayExact = NewArray v0, v1
+              v6:BasicObject = SendWithoutBlock v4, :size
+              Return v6
+        "#]]);
+    }
 }
 
 #[cfg(test)]
@@ -3848,6 +3889,34 @@ mod opt_tests {
               Jump bb2(v10, v5)
             bb2(v12:BasicObject, v13:NilClassExact):
               Return v12
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_length() {
+        eval("
+            def test(a,b) = [a,b].length
+        ");
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:ArrayExact = NewArray v0, v1
+              v6:BasicObject = SendWithoutBlock v4, :length
+              Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_size() {
+        eval("
+            def test(a,b) = [a,b].size
+        ");
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:ArrayExact = NewArray v0, v1
+              v6:BasicObject = SendWithoutBlock v4, :size
+              Return v6
         "#]]);
     }
 }
