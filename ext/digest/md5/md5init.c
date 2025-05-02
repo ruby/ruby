@@ -3,6 +3,7 @@
 
 #include <ruby/ruby.h>
 #include "../digest.h"
+#include "../defs.h"
 #if defined(MD5_USE_COMMONDIGEST)
 #include "md5cc.h"
 #else
