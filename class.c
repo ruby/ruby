@@ -1187,7 +1187,7 @@ static void
 class_initialize_method_table(VALUE c)
 {
     // initialize the prime classext m_tbl
-    RCLASS_SET_M_TBL(c, rb_id_table_create(0));
+    RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
 }
 
 static void
@@ -1210,8 +1210,11 @@ rb_class_boot(VALUE super)
 {
     VALUE klass = class_alloc(T_CLASS, rb_cClass);
 
-    class_associate_super(klass, super, true);
+    // initialize method table prior to class_associate_super()
+    // because class_associate_super() may cause GC and promote klass
     class_initialize_method_table(klass);
+
+    class_associate_super(klass, super, true);
 
     return (VALUE)klass;
 }
@@ -1496,7 +1499,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         struct clone_method_arg arg;
         arg.old_klass = orig;
         arg.new_klass = clone;
-        class_initialize_method_table(clone);
+        // TODO: use class_initialize_method_table() instead of RCLASS_SET_M_TBL_*
+        //       after RCLASS_SET_M_TBL is protected by write barrier
+        RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(clone, rb_id_table_create(0));
         rb_id_table_foreach(RCLASS_M_TBL(orig), clone_method_i, &arg);
     }
 
@@ -1613,6 +1618,9 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
             RBASIC_SET_CLASS(clone, klass_metaclass_clone);
         }
 
+        // initialize method table before any GC chance
+        class_initialize_method_table(clone);
+
         rb_class_set_super(clone, RCLASS_SUPER(klass));
         rb_fields_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
@@ -1626,7 +1634,6 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         if (!UNDEF_P(attach)) {
             rb_singleton_class_attached(clone, attach);
         }
-        class_initialize_method_table(clone);
         {
             struct clone_method_arg arg;
             arg.old_klass = klass;
