@@ -114,6 +114,7 @@ token_ops = %[\
   UPlus         +@      UPLUS
   UMinus        -@      UMINUS
   Pow           **      POW
+  Tetrate       ***     TETRATE
   Cmp           <=>     CMP
   PLUS          +
   MINUS         -
