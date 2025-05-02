@@ -33,7 +33,7 @@ module Bundler
       lazy_spec
     end
 
-    def initialize(name, version, platform, source = nil)
+    def initialize(name, version, platform, source = nil, **materialization_options)
       @name          = name
       @version       = version
       @dependencies  = []
@@ -43,6 +43,7 @@ module Bundler
 
       @original_source = source
       @source = source
+      @materialization_options = materialization_options
 
       @force_ruby_platform = default_force_ruby_platform
       @most_specific_locked_platform = nil
@@ -226,12 +227,13 @@ module Bundler
     # Validate dependencies of this locked spec are consistent with dependencies
     # of the actual spec that was materialized.
     #
-    # Note that we don't validate dependencies of locally installed gems but
+    # Note that unless we are in strict mode (which we set during installation)
+    # we don't validate dependencies of locally installed gems but
     # accept what's in the lockfile instead for performance, since loading
     # dependencies of locally installed gems would mean evaluating all gemspecs,
     # which would affect `bundler/setup` performance.
     def validate_dependencies(spec)
-      if spec.is_a?(StubSpecification)
+      if !@materialization_options[:strict] && spec.is_a?(StubSpecification)
         spec.dependencies = dependencies
       else
         if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort

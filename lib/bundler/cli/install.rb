@@ -66,7 +66,9 @@ module Bundler
 
       Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
 
-      definition = Bundler.definition
+      # For install we want to enable strict validation
+      # (rather than some optimizations we perform at app runtime).
+      definition = Bundler.definition(strict: true)
       definition.validate_runtime!
 
       installer = Installer.install(Bundler.root, definition, options)
