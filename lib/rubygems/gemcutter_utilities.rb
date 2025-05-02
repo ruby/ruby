@@ -319,7 +319,7 @@ module Gem::GemcutterUtilities
   end
 
   def get_scope_params(scope)
-    scope_params = { index_rubygems: true }
+    scope_params = { index_rubygems: true, push_rubygem: true }
 
     if scope
       scope_params = { scope => true }
