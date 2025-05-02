@@ -14,6 +14,7 @@
 #include "internal/symbol.h"
 #include "internal/variable.h"
 #include "ruby_assert.h"
+#include "builtin.h"
 
 #include <stdio.h>
 #ifdef HAVE_STDLIB_H
@@ -2202,3 +2203,5 @@ Init_Set(void)
 
     rb_provide("set.rb");
 }
+
+#include "set.rbinc"

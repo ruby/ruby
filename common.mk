@@ -1219,6 +1219,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/symbol.rb \
+		$(srcdir)/set.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
 		$(srcdir)/nilclass.rb \
@@ -16716,6 +16717,8 @@ set.$(OBJEXT): {$(VPATH)}ruby_assert.h
 set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 set.$(OBJEXT): {$(VPATH)}rubyparser.h
 set.$(OBJEXT): {$(VPATH)}set.c
+set.$(OBJEXT): {$(VPATH)}builtin.h
+set.$(OBJEXT): {$(VPATH)}set.rbinc
 set.$(OBJEXT): {$(VPATH)}shape.h
 set.$(OBJEXT): {$(VPATH)}st.h
 set.$(OBJEXT): {$(VPATH)}subst.h
