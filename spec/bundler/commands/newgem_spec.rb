@@ -47,7 +47,7 @@ RSpec.describe "bundle gem" do
     git("config --global github.user bundleuser")
 
     global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
-                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false"
+                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false", "BUNDLE_GEM__BUNDLE" => "false"
   end
 
   describe "git repo initialization" do
@@ -158,6 +158,26 @@ RSpec.describe "bundle gem" do
     it "generates a gem skeleton without a CHANGELOG" do
       gem_skeleton_assertions
       expect(bundled_app("#{gem_name}/CHANGELOG.md")).to_not exist
+    end
+  end
+
+  shared_examples_for "--bundle flag" do
+    before do
+      bundle "gem #{gem_name} --bundle"
+    end
+    it "generates a gem skeleton with bundle install" do
+      gem_skeleton_assertions
+      expect(Kernel).to receive(:system).with("bundle", "install").once
+    end
+  end
+
+  shared_examples_for "--no-bundle flag" do
+    before do
+      bundle "gem #{gem_name} --no-bundle"
+    end
+    it "generates a gem skeleton without bundle install" do
+      gem_skeleton_assertions
+      expect(Kernel).not_to receive(:system).with("bundle", "install")
     end
   end
 
