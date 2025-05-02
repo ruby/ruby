@@ -148,7 +148,7 @@ extern "C" {
         val: VALUE,
         ic: ICVARC,
     ) -> VALUE;
-    pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
+    pub fn rb_vm_ic_fetch(ic: IC, reg_ep: *const VALUE) -> VALUE;
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
 }

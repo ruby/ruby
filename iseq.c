@@ -142,7 +142,7 @@ iseq_clear_ic_references(const rb_iseq_t *iseq)
 
         // Iterate over the IC's constant path's segments and clean any references to
         // the ICs out of the VM's constant cache table.
-        const ID *segments = ic->segments;
+        const ID *segments = vm_icc_segments(ic);
 
         // It's possible that segments is NULL if we overallocated an IC but
         // optimizations removed the instruction using it
@@ -292,9 +292,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         // IC Entries
         for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
             IC ic = (IC)is_entries;
-            if (ic->entry) {
-                rb_gc_mark_and_move_ptr(&ic->entry);
-            }
+            rb_gc_mark_and_move(&ic->value);
         }
     }
 
@@ -475,7 +473,7 @@ rb_iseq_memsize(const rb_iseq_t *iseq)
             /* IC entries constant segments */
             for (unsigned int ic_idx = 0; ic_idx < body->ic_size; ic_idx++) {
                 IC ic = &ISEQ_IS_IC_ENTRY(body, ic_idx);
-                const ID *ids = ic->segments;
+                const ID *ids = vm_icc_segments((IC)ic);
                 if (!ids) continue;
                 while (*ids++) {
                     size += sizeof(ID);
@@ -2522,7 +2520,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
       case TS_IC:
         {
             ret = rb_sprintf("<ic:%"PRIdPTRDIFF" ", (union iseq_inline_storage_entry *)op - ISEQ_BODY(iseq)->is_entries);
-            const ID *segments = ((IC)op)->segments;
+            const ID *segments = vm_icc_segments((IC)op);
             rb_str_cat2(ret, rb_id2name(*segments++));
             while (*segments) {
                 rb_str_catf(ret, "::%s", rb_id2name(*segments++));
@@ -3401,7 +3399,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
               case TS_IC:
                 {
                     VALUE list = rb_ary_new();
-                    const ID *ids = ((IC)*seq)->segments;
+                    const ID *ids = vm_icc_segments((IC)*seq);
                     while (*ids) {
                         rb_ary_push(list, ID2SYM(*ids++));
                     }

@@ -254,6 +254,11 @@ union ic_serial_entry {
     VALUE data[2];
 };
 
+enum iseq_inline_constant_cache_flags {
+    CONST_CACHE_SHAREABLE = 0x1,
+    CONST_CACHE_FLAGS_MASK = 0x3,
+};
+
 #define IMEMO_CONST_CACHE_SHAREABLE IMEMO_FL_USER0
 
 // imemo_constcache
@@ -270,21 +275,84 @@ STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
                sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
-    struct iseq_inline_constant_cache_entry *entry;
-
-    /**
-     * A null-terminated list of ids, used to represent a constant's path
-     * idNULL is used to represent the :: prefix, and 0 is used to donate the end
-     * of the list.
-     *
-     * For example
-     *   FOO        {rb_intern("FOO"), 0}
-     *   FOO::BAR   {rb_intern("FOO"), rb_intern("BAR"), 0}
-     *   ::FOO      {idNULL, rb_intern("FOO"), 0}
-     *   ::FOO::BAR {idNULL, rb_intern("FOO"), rb_intern("BAR"), 0}
-     */
-    const ID *segments;
+    VALUE value; // value is Qundef if the cache hasn't been set
+    VALUE tagged_segments;
 };
+
+static inline bool
+vm_icc_embed_p(VALUE val)
+{
+    return SPECIAL_CONST_P(val) || !RB_TYPE_P(val, T_IMEMO);
+}
+
+static inline VALUE
+vm_icc_embed_flags(const struct iseq_inline_constant_cache *cc)
+{
+    return cc->tagged_segments;
+}
+
+static inline void
+vm_icc_reset(struct iseq_inline_constant_cache *cc)
+{
+    if (!UNDEF_P(cc->value)) {
+        cc->value = Qundef;
+        cc->tagged_segments &= ~CONST_CACHE_FLAGS_MASK;
+    }
+}
+
+static inline void
+vm_icc_init(struct iseq_inline_constant_cache *cc, const ID *segments)
+{
+    cc->value = Qundef;
+    cc->tagged_segments = (VALUE)segments;
+}
+
+/**
+ * A null-terminated list of ids, used to represent a constant's path
+ * idNULL is used to represent the :: prefix, and 0 is used to donate the end
+ * of the list.
+ *
+ * For example
+ *   FOO        {rb_intern("FOO"), 0}
+ *   FOO::BAR   {rb_intern("FOO"), rb_intern("BAR"), 0}
+ *   ::FOO      {idNULL, rb_intern("FOO"), 0}
+ *   ::FOO::BAR {idNULL, rb_intern("FOO"), rb_intern("BAR"), 0}
+ */
+static inline const ID *
+vm_icc_segments(const struct iseq_inline_constant_cache *cc)
+{
+    return (const ID *)(cc->tagged_segments & ~(VALUE)CONST_CACHE_FLAGS_MASK);
+}
+
+static inline void
+vm_icc_embed_set_flag(struct iseq_inline_constant_cache *cc, VALUE flags)
+{
+    cc->tagged_segments |= flags;
+}
+
+static inline VALUE
+vm_icc_value(const struct iseq_inline_constant_cache *cc)
+{
+    VALUE val = cc->value;
+    if (vm_icc_embed_p(val)) {
+        return val;
+    }
+    else {
+        return ((struct iseq_inline_constant_cache_entry *)val)->value;
+    }
+}
+
+static inline const rb_cref_t *
+vm_icc_cref(const struct iseq_inline_constant_cache *cc)
+{
+    VALUE val = cc->value;
+    if (vm_icc_embed_p(val)) {
+        return NULL;
+    }
+    else {
+        return ((struct iseq_inline_constant_cache_entry *)val)->ic_cref;
+    }
+}
 
 struct iseq_inline_iv_cache_entry {
     uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits

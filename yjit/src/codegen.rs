@@ -10310,7 +10310,7 @@ fn gen_opt_getconstant_path(
 ) -> Option<CodegenStatus> {
     let const_cache_as_value = jit.get_arg(0);
     let ic: *const iseq_inline_constant_cache = const_cache_as_value.as_ptr();
-    let idlist: *const ID = unsafe { (*ic).segments };
+    let idlist: *const ID = unsafe { rb_yjit_constcache_segments(ic) };
 
     // Make sure there is an exit for this block as the interpreter might want
     // to invalidate this block from yjit_constant_ic_update().
@@ -10318,8 +10318,7 @@ fn gen_opt_getconstant_path(
 
     // See vm_ic_hit_p(). The same conditions are checked in yjit_constant_ic_update().
     // If a cache is not filled, fallback to the general C call.
-    let ice = unsafe { (*ic).entry };
-    if ice.is_null() {
+    if unsafe { rb_yjit_constcache_value(ic) == Qundef } {
         // Prepare for const_missing
         jit_prepare_non_leaf_call(jit, asm);
 
@@ -10338,8 +10337,8 @@ fn gen_opt_getconstant_path(
         return jump_to_next_insn(jit, asm);
     }
 
-    let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-    let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
+    let cref_sensitive = !unsafe { rb_yjit_constcache_cref(ic) }.is_null();
+    let is_shareable = unsafe { rb_yjit_constcache_shareable(ic) };
     let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
     if needs_checks {
@@ -10349,38 +10348,21 @@ fn gen_opt_getconstant_path(
         // Call function to verify the cache. It doesn't allocate or call methods.
         // This includes a check for Ractor safety
         let ret_val = asm.ccall(
-            rb_vm_ic_hit_p as *const u8,
+            rb_vm_ic_fetch as *const u8,
             vec![inline_cache, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP)]
         );
 
-        // Check the result. SysV only specifies one byte for _Bool return values,
-        // so it's important we only check one bit to ignore the higher bits in the register.
-        asm.test(ret_val, 1.into());
-        asm.jz(Target::side_exit(Counter::opt_getconstant_path_ic_miss));
+        asm.cmp(ret_val, Qundef.into());
+        asm.je(Target::side_exit(Counter::opt_getconstant_path_ic_miss));
 
-        let inline_cache = asm.load(Opnd::const_ptr(ic as *const u8));
-
-        let ic_entry = asm.load(Opnd::mem(
-            64,
-            inline_cache,
-            RUBY_OFFSET_IC_ENTRY
-        ));
-
-        let ic_entry_val = asm.load(Opnd::mem(
-            64,
-            ic_entry,
-            RUBY_OFFSET_ICE_VALUE
-        ));
-
-        // Push ic->entry->value
         let stack_top = asm.stack_push(Type::Unknown);
-        asm.store(stack_top, ic_entry_val);
+        asm.store(stack_top, ret_val);
     } else {
         // Invalidate output code on any constant writes associated with
         // constants referenced within the current block.
         jit.assume_stable_constant_names(asm, idlist);
 
-        jit_putobject(asm, unsafe { (*ice).value });
+        jit_putobject(asm, unsafe { rb_yjit_constcache_value(ic) });
     }
 
     jump_to_next_insn(jit, asm)

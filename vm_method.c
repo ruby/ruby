@@ -127,7 +127,7 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
 static int
 rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
 {
-    ((IC) ic)->entry = NULL;
+    vm_icc_reset((IC) ic);
     return ST_CONTINUE;
 }
 
