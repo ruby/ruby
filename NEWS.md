@@ -68,7 +68,7 @@ The following default gems are updated.
 * prism 1.4.0
 * psych 5.2.4
 * stringio 3.1.8.dev
-* strscan 3.1.4.dev
+* strscan 3.1.5.dev
 * uri 1.0.3
 
 The following bundled gems are added.
