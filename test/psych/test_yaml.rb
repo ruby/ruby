@@ -1042,7 +1042,6 @@ EOY
     end
 
     def test_ruby_struct
-        Struct.send(:remove_const, :MyBookStruct) if Struct.const_defined?(:MyBookStruct)
         # Ruby structures
         book_struct = Struct::new( "MyBookStruct", :author, :title, :year, :isbn )
         assert_to_yaml(
@@ -1074,11 +1073,12 @@ EOY
 c: 123
 EOY
 
+    ensure
+        Struct.__send__(:remove_const, :MyBookStruct) if book_struct
     end
 
     def test_ruby_data
         omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
-        Object.remove_const :MyBookData if Object.const_defined?(:MyBookData)
         # Ruby Data value objects
         book_class = Data.define(:author, :title, :year, :isbn)
         Object.const_set(:MyBookData, book_class)
@@ -1112,6 +1112,8 @@ EOY
 c: 123
 EOY
 
+    ensure
+        Object.__send__(:remove_const, :MyBookData) if book_class
     end
 
     def test_ruby_rational
