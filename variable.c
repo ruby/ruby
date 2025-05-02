@@ -325,6 +325,13 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
     return mod;
 }
 
+VALUE
+rb_mod_anonymous_p(VALUE mod)
+{
+    // Nothing in this world is truly permanent.
+    return RCLASS_EXT(mod)->permanent_classpath ? Qfalse : Qtrue;
+}
+
 static VALUE
 make_temporary_path(VALUE obj, VALUE klass)
 {
