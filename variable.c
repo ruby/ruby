@@ -1197,7 +1197,7 @@ IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
 
 #define CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR() \
   if (UNLIKELY(!rb_ractor_main_p())) { \
-      rb_raise(rb_eRactorIsolationError, "can not access class variables from non-main Ractors"); \
+      rb_raise(rb_eRactorIsolationError, "can not access class variable %s from non-main Ractors", rb_id2name(id)); \
   }
 
 static inline void
