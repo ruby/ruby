@@ -1274,26 +1274,6 @@ rb_generic_shape_id(VALUE obj)
 }
 #endif
 
-static size_t
-gen_ivtbl_count(VALUE obj, const struct gen_ivtbl *ivtbl)
-{
-    uint32_t i;
-    size_t n = 0;
-
-    if (rb_shape_obj_too_complex(obj)) {
-        n = st_table_size(ivtbl->as.complex.table);
-    }
-    else {
-        for (i = 0; i < ivtbl->as.shape.numiv; i++) {
-            if (!UNDEF_P(ivtbl->as.shape.ivptr[i])) {
-                n++;
-            }
-        }
-    }
-
-    return n;
-}
-
 VALUE
 rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
@@ -2104,13 +2084,16 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
 
     rb_check_frozen(clone);
 
-    if (!FL_TEST(obj, FL_EXIVAR)) {
-        goto clear;
+    if (BUILTIN_TYPE(obj) <= T_MODULE) {
+        RUBY_ASSERT(!FL_TEST(obj, FL_EXIVAR));
+        RUBY_ASSERT(!FL_TEST(clone, FL_EXIVAR));
+        return;
     }
 
-    if (rb_gen_ivtbl_get(obj, 0, &obj_ivtbl)) {
-        if (gen_ivtbl_count(obj, obj_ivtbl) == 0)
-            goto clear;
+    uint32_t iv_count = (uint32_t)rb_ivar_count(obj);
+
+    if (iv_count > 0) {
+        rb_gen_ivtbl_get(obj, 0, &obj_ivtbl);
 
         FL_SET(clone, FL_EXIVAR);
 
@@ -2122,9 +2105,9 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
             new_ivtbl->as.complex.table = st_copy(obj_ivtbl->as.complex.table);
         }
         else {
-            new_ivtbl = gen_ivtbl_resize(0, obj_ivtbl->as.shape.numiv);
+            new_ivtbl = gen_ivtbl_resize(0, iv_count);
 
-            for (uint32_t i=0; i<obj_ivtbl->as.shape.numiv; i++) {
+            for (uint32_t i=0; i<iv_count; i++) {
                 RB_OBJ_WRITE(clone, &new_ivtbl->as.shape.ivptr[i], obj_ivtbl->as.shape.ivptr[i]);
             }
         }
@@ -2148,12 +2131,11 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
             rb_shape_set_shape(clone, obj_shape);
         }
     }
-    return;
-
-  clear:
-    if (FL_TEST(clone, FL_EXIVAR)) {
-        rb_free_generic_ivar(clone);
-        FL_UNSET(clone, FL_EXIVAR);
+    else {
+        if (FL_TEST(clone, FL_EXIVAR)) {
+            rb_free_generic_ivar(clone);
+            FL_UNSET(clone, FL_EXIVAR);
+        }
     }
 }
 
@@ -2216,10 +2198,13 @@ rb_ivar_count(VALUE obj)
         return RCLASS_IV_COUNT(obj);
       default:
         if (FL_TEST(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-
-            if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                return gen_ivtbl_count(obj, ivtbl);
+            if (rb_shape_obj_too_complex(obj)) {
+                struct gen_ivtbl *ivtbl;
+                rb_gen_ivtbl_get(obj, 0, &ivtbl);
+                return st_table_size(ivtbl->as.complex.table);
+            }
+            else {
+                return RBASIC_IV_COUNT(obj);
             }
         }
         break;
