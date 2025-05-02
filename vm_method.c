@@ -1371,7 +1371,6 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
         if (me->defined_class == 0) {
             RB_DEBUG_COUNTER_INC(mc_cme_complement);
             VM_ASSERT_TYPE2(defined_class, T_ICLASS, T_MODULE);
-            VM_ASSERT(me->defined_class == 0, "me->defined_class: %s", rb_obj_info(me->defined_class));
 
             mtbl = RCLASS_CALLABLE_M_TBL(defined_class);
 
