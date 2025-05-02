@@ -1122,6 +1122,19 @@ class_alloc(VALUE flags, VALUE klass)
     const rb_namespace_t *ns = rb_definition_namespace();
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
+    // class_alloc is supposed to return a new object that is not promoted yet.
+    // So, we need to avoid GC after NEWOBJ_OF.
+    // To achieve that, we allocate subclass lists before NEWOBJ_OF.
+    //
+    // TODO: Note that this could cause memory leak.
+    // If NEWOBJ_OF fails with out of memory, these buffers will leak.
+    ns_subclasses = ZALLOC(rb_ns_subclasses_t);
+    ns_subclasses->refcount = 1;
+    ns_subclasses->tbl = st_init_numtable();
+    anchor = ZALLOC(rb_subclass_anchor_t);
+    anchor->ns_subclasses = ns_subclasses;
+    anchor->head = ZALLOC(rb_subclass_entry_t);
+
     flags &= T_MASK;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
@@ -1136,21 +1149,14 @@ class_alloc(VALUE flags, VALUE klass)
      */
 
     RCLASS_PRIME_NS((VALUE)obj) = ns;
-    // Classes/Modules defined in main/local namespaces are
-    // writable directly.
+    // Classes/Modules defined in user namespaces are
+    // writable directly because it exists only in a namespace.
     RCLASS_SET_PRIME_CLASSEXT_READWRITE((VALUE)obj, true, NAMESPACE_USER_P(ns) ? true : false);
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
     RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
-    // ns_subclasses = IMEMO_NEW(rb_ns_subclasses_t, imemo_ns_subclasses, klass);
-    ns_subclasses = ZALLOC(rb_ns_subclasses_t);
-    ns_subclasses->refcount = 1;
-    ns_subclasses->tbl = st_init_numtable();
-    anchor = ZALLOC(rb_subclass_anchor_t);
-    anchor->ns_subclasses = ns_subclasses;
-    anchor->head = ZALLOC(rb_subclass_entry_t);
     RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
 
     return (VALUE)obj;
@@ -1187,7 +1193,7 @@ class_initialize_method_table(VALUE c)
 static void
 class_clear_method_table(VALUE c)
 {
-    RCLASS_WRITE_M_TBL(c, rb_id_table_create(0));
+    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
 }
 
 /**
@@ -1409,7 +1415,7 @@ copy_tables(VALUE clone, VALUE orig)
         RCLASS_WRITE_CVC_TBL(clone, rb_cvc_tbl_dup);
     }
     rb_id_table_free(RCLASS_M_TBL(clone));
-    RCLASS_WRITE_M_TBL(clone, 0);
+    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(clone, 0);
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
 
@@ -2400,7 +2406,7 @@ rb_prepend_module(VALUE klass, VALUE module)
                 if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
                     // backfill an origin iclass to handle refinements and future prepends
                     rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
-                    RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
+                    RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(subclass, klass_m_tbl);
                     VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
                     rb_class_set_super(subclass, origin);
                     RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
