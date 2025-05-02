@@ -643,6 +643,12 @@ pub type attr_index_t = u32;
 pub type shape_id_t = u32;
 pub type redblack_id_t = u32;
 pub type redblack_node_t = redblack_node;
+pub const SHAPE_ROOT: shape_type = 0;
+pub const SHAPE_IVAR: shape_type = 1;
+pub const SHAPE_FROZEN: shape_type = 2;
+pub const SHAPE_T_OBJECT: shape_type = 3;
+pub const SHAPE_OBJ_TOO_COMPLEX: shape_type = 4;
+pub type shape_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
@@ -650,10 +656,33 @@ pub struct rb_shape {
     pub edge_name: ID,
     pub next_iv_index: attr_index_t,
     pub capacity: u32,
-    pub type_: u8,
+    pub ancestor_index: *mut redblack_node_t,
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub heap_index: u8,
     pub parent_id: shape_id_t,
-    pub ancestor_index: *mut redblack_node_t,
+}
+impl rb_shape {
+    #[inline]
+    pub fn type_(&self) -> shape_type {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_type(&mut self, val: shape_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(type_: shape_type) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let type_: u32 = unsafe { ::std::mem::transmute(type_) };
+            type_ as u64
+        });
+        __bindgen_bitfield_unit
+    }
 }
 pub type rb_shape_t = rb_shape;
 #[repr(C)]
