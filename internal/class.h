@@ -253,11 +253,11 @@ static inline void RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
 static inline st_table * RCLASS_FIELDS_HASH(VALUE obj);
 static inline st_table * RCLASS_WRITABLE_FIELDS_HASH(VALUE obj);
+static inline uint32_t RCLASS_FIELDS_COUNT(VALUE obj);
 static inline void RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *table);
 static inline void RCLASS_WRITE_FIELDS_HASH(VALUE obj, const st_table *table);
-static inline uint32_t RCLASS_FIELDS_COUNT(VALUE obj);
-static inline void RCLASS_SET_M_TBL(VALUE klass, struct rb_id_table *table);
-// TODO: rename RCLASS_WRITE_M_TBL_WORKAROUND to RCLASS_WRITE_M_TBL with write barrier
+// TODO: rename RCLASS_SET_M_TBL_WORKAROUND (and _WRITE_) to RCLASS_SET_M_TBL with write barrier
+static inline void RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
@@ -562,10 +562,13 @@ RCLASS_FIELDS_COUNT(VALUE obj)
     }
 }
 
+#define RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_SET_M_TBL_WORKAROUND(klass, table, false)
+#define RCLASS_SET_M_TBL(klass, table) RCLASS_SET_M_TBL_WORKAROUND(klass, table, true)
+
 static inline void
-RCLASS_SET_M_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted)
 {
-    RUBY_ASSERT(!RB_OBJ_PROMOTED(klass));
+    RUBY_ASSERT(!check_promoted || !RB_OBJ_PROMOTED(klass));
     RCLASSEXT_M_TBL(RCLASS_EXT(klass)) = table;
 }
 
