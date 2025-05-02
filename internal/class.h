@@ -257,7 +257,8 @@ static inline void RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *table);
 static inline void RCLASS_WRITE_FIELDS_HASH(VALUE obj, const st_table *table);
 static inline uint32_t RCLASS_FIELDS_COUNT(VALUE obj);
 static inline void RCLASS_SET_M_TBL(VALUE klass, struct rb_id_table *table);
-static inline void RCLASS_WRITE_M_TBL(VALUE klass, struct rb_id_table *table);
+// TODO: rename RCLASS_WRITE_M_TBL_WORKAROUND to RCLASS_WRITE_M_TBL with write barrier
+static inline void RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
@@ -568,10 +569,15 @@ RCLASS_SET_M_TBL(VALUE klass, struct rb_id_table *table)
     RCLASSEXT_M_TBL(RCLASS_EXT(klass)) = table;
 }
 
+#define RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_WRITE_M_TBL_WORKAROUND(klass, table, false)
+#define RCLASS_WRITE_M_TBL(klass, table) RCLASS_WRITE_M_TBL_WORKAROUND(klass, table, true)
+
 static inline void
-RCLASS_WRITE_M_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted)
 {
-    RUBY_ASSERT(!RB_OBJ_PROMOTED(klass));
+    RUBY_ASSERT(!check_promoted || !RB_OBJ_PROMOTED(klass));
+    // TODO: add write barrier here to guard assigning m_tbl
+    //       see commit 28a6e4ea9d9379a654a8f7c4b37fa33aa3ccd0b7
     RCLASSEXT_M_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
 }
 
