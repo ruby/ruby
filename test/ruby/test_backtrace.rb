@@ -454,4 +454,10 @@ class TestBacktrace < Test::Unit::TestCase
     foo::Bar.baz
     end;
   end
+
+  def test_backtrace_internal_frame
+    backtrace = tap { break caller_locations(0) }
+    assert_equal(__FILE__, backtrace[1].path) # not "<internal:kernel>"
+    assert_equal("Kernel#tap", backtrace[1].label)
+  end
 end
