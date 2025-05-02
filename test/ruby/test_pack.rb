@@ -532,13 +532,30 @@ class TestPack < Test::Unit::TestCase
     nan = inf/inf
     [0.0, 1.0, 3.0, inf, -inf, nan].each do |x|
       %w(f d e E g G).each do |f|
-        v = [x].pack(f).unpack(f)
+        packed = [x].pack(f)
+        v = packed.unpack(f)
         if x.nan?
           assert_predicate(v.first, :nan?)
+          assert_equal(packed, v.pack(f))
         else
           assert_equal([x], v)
         end
       end
+    end
+  end
+
+  def test_pack_unpack_float_nan
+    snan = [0x7fc00000, 0x7fffe000, 0x7fbfe000, 0x7ffff000, 0x7fbff000]
+    snan.concat(snan.map {|x| 0x80000000 | x}) # negative
+    snan.each do |x|
+      msg = "nan(%x)" % x
+      packed = [x].pack("L")
+      f = packed.unpack1("f")
+
+      assert_predicate(f, :nan?, msg)
+      assert_equal packed, [f].pack("f"), msg
+      b64 = [((x & 0xff80_0000) << 32) | 0x70_0000_0000_0000 | ((x & 0x007f_ffff) << 29)].pack("Q")
+      assert_equal b64, [f].pack("d"), msg
     end
   end
 

@@ -11633,10 +11633,13 @@ pack.$(OBJEXT): $(CCAN_DIR)/str/str.h
 pack.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pack.$(OBJEXT): $(top_srcdir)/internal/array.h
 pack.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+pack.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 pack.$(OBJEXT): $(top_srcdir)/internal/bits.h
 pack.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pack.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 pack.$(OBJEXT): $(top_srcdir)/internal/gc.h
 pack.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+pack.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 pack.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 pack.$(OBJEXT): $(top_srcdir)/internal/serial.h
 pack.$(OBJEXT): $(top_srcdir)/internal/set_table.h
