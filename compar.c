@@ -149,25 +149,81 @@ cmp_le(VALUE x, VALUE y)
     return RBOOL(cmpint(x, y) <= 0);
 }
 
+static void
+clamp_args(int argc, VALUE *argv, VALUE *minp, VALUE *maxp, int *exclp)
+{
+    VALUE min, max;
+    int excl = 0;
+    if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
+        VALUE range = min;
+        if (!rb_range_values(range, &min, &max, &excl)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(range));
+        }
+    }
+    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
+        rb_raise(rb_eArgError, "min argument must be less than or equal to max argument");
+    }
+    *minp = min;
+    *maxp = max;
+    *exclp = excl;
+}
+
 /*
  *  call-seq:
  *     obj.between?(min, max)    -> true or false
+ *     obj.between?(range)       -> true or false
  *
- *  Returns <code>false</code> if _obj_ <code><=></code> _min_ is less
- *  than zero or if _obj_ <code><=></code> _max_ is greater than zero,
- *  <code>true</code> otherwise.
+ *  In <code>(min, max)</code> form, returns +false+ if _obj_
+ *  <code><=></code> _min_ is less than zero or if _obj_
+ *  <code><=></code> _max_ is greater than zero, +true+ otherwise.
  *
  *     3.between?(1, 5)               #=> true
  *     6.between?(1, 5)               #=> false
  *     'cat'.between?('ant', 'dog')   #=> true
  *     'gnu'.between?('ant', 'dog')   #=> false
  *
+ * In <code>(range)</code> form, returns +false+ if _obj_
+ * <code><=></code> _range.begin_ is less than zero, _range.end_ if
+ * _obj_ <code><=></code> _range.end_ is greater than zero or equals
+ * when _range.end_ is excluded, and +true+ otherwise.
+ *
+ *     12.between?(0..100)         #=> true
+ *     523.between?(0..100)        #=> false
+ *     -3.123.between?(0..100)     #=> false
+ *     100.between?(0..100)        #=> true
+ *     100.between?(0...100)       #=> false
+ *
+ *     'd'.between?('a'..'f')      #=> true
+ *     'z'.between?('a'..'f')      #=> false
+ *
+ * If _range.begin_ is +nil+, it is considered smaller than _obj_,
+ * and if _range.end_ is +nil+, it is considered greater than
+ * _obj_.
+ *
+ *     -20.between?(0..)           #=> false
+ *     523.between?(..100)         #=> false
+ *
  */
 
 static VALUE
-cmp_between(VALUE x, VALUE min, VALUE max)
+cmp_between_p(int argc, VALUE *argv, VALUE x)
 {
-    return RBOOL((cmpint(x, min) >= 0 && cmpint(x, max) <= 0));
+    VALUE min, max;
+    int c, excl = 0;
+
+    clamp_args(argc, argv, &min, &max, &excl);
+
+    if (!NIL_P(min)) {
+        c = cmpint(x, min);
+        if (c < 0) return Qfalse;
+    }
+    if (!NIL_P(max)) {
+        c = cmpint(x, max);
+        if (c > 0) return Qfalse;
+        if (excl && c == 0) return Qfalse;
+    }
+    return Qtrue;
 }
 
 /*
@@ -224,18 +280,9 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
     VALUE min, max;
     int c, excl = 0;
 
-    if (rb_scan_args(argc, argv, "11", &min, &max) == 1) {
-        VALUE range = min;
-        if (!rb_range_values(range, &min, &max, &excl)) {
-            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
-                     rb_builtin_class_name(range));
-        }
-        if (!NIL_P(max)) {
-            if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
-        }
-    }
-    if (!NIL_P(min) && !NIL_P(max) && cmpint(min, max) > 0) {
-        rb_raise(rb_eArgError, "min argument must be less than or equal to max argument");
+    clamp_args(argc, argv, &min, &max, &excl);
+    if (!NIL_P(max)) {
+        if (excl) rb_raise(rb_eArgError, "cannot clamp with an exclusive range");
     }
 
     if (!NIL_P(min)) {
@@ -318,6 +365,6 @@ Init_Comparable(void)
     rb_define_method(rb_mComparable, ">=", cmp_ge, 1);
     rb_define_method(rb_mComparable, "<", cmp_lt, 1);
     rb_define_method(rb_mComparable, "<=", cmp_le, 1);
-    rb_define_method(rb_mComparable, "between?", cmp_between, 2);
+    rb_define_method(rb_mComparable, "between?", cmp_between_p, -1);
     rb_define_method(rb_mComparable, "clamp", cmp_clamp, -1);
 }
