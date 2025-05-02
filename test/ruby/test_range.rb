@@ -1134,6 +1134,7 @@ class TestRange < Test::Unit::TestCase
     assert_operator(nil.., :cover?, nil...)
     assert_not_operator(nil..., :cover?, nil..)
     assert_not_operator(nil..., :cover?, 1..)
+    assert_not_operator(nil.., :cover?, 1..0)
   end
 
   def test_beg_len
