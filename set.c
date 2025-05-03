@@ -1120,14 +1120,10 @@ set_merge_enum_into(VALUE set, VALUE arg)
         set_iter(arg, set_merge_i, (st_data_t)&args);
     }
     else if (RB_TYPE_P(arg, T_ARRAY)) {
-        long len = RARRAY_LEN(arg);
-        if (RARRAY_LEN(arg) != 0) {
-            set_table *into = RSET_TABLE(set);
-            RARRAY_PTR_USE(arg, ptr, {
-                for(; len > 0; len--, ptr++) {
-                    set_table_insert_wb(into, set, *ptr, NULL);
-                }
-            });
+        long i;
+        set_table *into = RSET_TABLE(set);
+        for (i=0; i<RARRAY_LEN(arg); i++) {
+            set_table_insert_wb(into, set, RARRAY_AREF(arg, i), NULL);
         }
     }
     else {
