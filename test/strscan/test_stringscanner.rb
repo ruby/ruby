@@ -1006,6 +1006,12 @@ module StringScannerTests
     assert_equal(huge_integer.to_i, s.scan_integer)
     assert_equal(2_000, s.pos)
     assert_predicate(s, :matched?)
+
+    s = create_string_scanner('abc1')
+    s.pos = 3
+    assert_equal(1, s.scan_integer)
+    assert_equal(4, s.pos)
+    assert_predicate(s, :matched?)
   end
 
   def test_scan_integer_unmatch
