@@ -3613,7 +3613,7 @@ str_uplus(VALUE str)
  *
  * Otherwise, +frozen_string+ is a frozen copy of +self+.
  *
- * Note that method #- is convenient for defining a constant:
+ * Note that method #-@ is convenient for defining a constant:
  *
  *    FileName = -'config/database.yml'
  *
