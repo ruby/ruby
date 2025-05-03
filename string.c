@@ -3602,24 +3602,26 @@ str_uplus(VALUE str)
 
 /*
  * call-seq:
- *   -string -> frozen_string
- *   dedup -> frozen_string
+ *   -self -> frozen_string
  *
- * Returns a frozen, possibly pre-existing copy of the string.
+ * Returns a frozen string containing the same content as +self+.
  *
- * The returned +String+ will be deduplicated as long as it does not have
- * any instance variables set on it and is not a String subclass.
+ * The returned +frozen_string+ is +self+, frozen, if +self+:
  *
- * Note that <tt>-string</tt> variant is more convenient for defining
- * constants:
+ * - Is an instance of \String (rather than of a subclass of \String)
+ * - Has no instance variables set on it.
  *
- *    FILENAME = -'config/database.yml'
+ * Otherwise, +frozen_string+ is a frozen copy of +self+.
  *
- * while +dedup+ is better suitable for using the method in chains
- * of calculations:
+ * Note that method #- is convenient for defining a constant:
  *
- *    @url_list.concat(urls.map(&:dedup))
+ *    FileName = -'config/database.yml'
  *
+ * While its alias #dedup is better suited for chaining:
+ *
+ *   'foo'.dedup.gsub!('o')
+ *
+ * Related: see {Methods for a Frozen/Unfrozen String}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String].
  */
 static VALUE
 str_uminus(VALUE str)
