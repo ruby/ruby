@@ -23,7 +23,6 @@ require_relative 'psych/parser'
 require_relative 'psych/omap'
 require_relative 'psych/set'
 require_relative 'psych/coder'
-require_relative 'psych/core_ext'
 require_relative 'psych/stream'
 require_relative 'psych/json/tree_builder'
 require_relative 'psych/json/stream'
@@ -761,3 +760,5 @@ module Psych
   self.domain_types = {}
   # :startdoc:
 end
+
+require_relative 'psych/core_ext'
