@@ -5725,7 +5725,7 @@ io_close_fptr(VALUE io)
     if (!fptr) return 0;
     if (fptr->fd < 0) return 0;
 
-    if (rb_thread_io_close(fptr)) {
+    if (rb_thread_io_close_interrupt(fptr)) {
         /* calls close(fptr->fd): */
         fptr_finalize_flush(fptr, FALSE, KEEPGVL);
     }
@@ -8371,7 +8371,7 @@ io_reopen(VALUE io, VALUE nfile)
     fd2 = orig->fd;
     if (fd != fd2) {
         // Interrupt all usage of the old file descriptor:
-        rb_thread_io_close(fptr);
+        rb_thread_io_close_interrupt(fptr);
         rb_thread_io_close_wait(fptr);
 
         if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2 || !fptr->stdio_file) {

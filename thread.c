@@ -2662,7 +2662,7 @@ thread_io_close_notify_all(VALUE _io)
 }
 
 size_t
-rb_thread_io_close(struct rb_io *io)
+rb_thread_io_close_interrupt(struct rb_io *io)
 {
     // We guard this operation based on `io->closing_ec` -> only one thread will ever enter this function.
     if (io->closing_ec) {
