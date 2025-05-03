@@ -2772,12 +2772,13 @@ rb_str_empty(VALUE str)
 
 /*
  *  call-seq:
- *    string + other_string -> new_string
+ *    self + other_string -> new_string
  *
- *  Returns a new +String+ containing +other_string+ concatenated to +self+:
+ *  Returns a new string containing +other_string+ concatenated to +self+:
  *
- *    "Hello from " + self.to_s # => "Hello from main"
+ *    'Hello from ' + self.to_s # => "Hello from main"
  *
+ *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
  */
 
 VALUE
