@@ -2473,6 +2473,32 @@ find_timezone(VALUE time, VALUE zone)
     return rb_check_funcall_default(klass, id_find_timezone, 1, &zone, Qnil);
 }
 
+static void
+vtm_normalize_month_mday(struct vtm *vtm)
+{
+    switch (vtm->mon) {
+      case 2:
+        {
+            /* this drops higher bits but it's not a problem to calc leap year */
+            unsigned int mday2 = leap_year_v_p(vtm->year) ? 29 : 28;
+            if (vtm->mday > mday2) {
+                vtm->mday -= mday2;
+                vtm->mon++;
+            }
+        }
+        break;
+      case 4:
+      case 6:
+      case 9:
+      case 11:
+        if (vtm->mday == 31) {
+            vtm->mon++;
+            vtm->mday = 1;
+        }
+        break;
+    }
+}
+
 /* Turn the special case 24:00:00 of already validated vtm into
  * 00:00:00 the next day */
 static void
@@ -2571,6 +2597,7 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     if (utc == UTC_ZONE) {
         time_set_timew(time, tobj, timegmw(&vtm));
         vtm.isdst = 0; /* No DST in UTC */
+        vtm_normalize_month_mday(&vtm);
         vtm_day_wraparound(&vtm);
         time_set_vtm(time, tobj, vtm);
         tobj->vtm.tm_got = 1;
@@ -3229,28 +3256,7 @@ time_arg(int argc, const VALUE *argv, struct vtm *vtm)
         vtm->mday = obj2ubits(v[2], 5);
     }
 
-    /* normalize month-mday */
-    switch (vtm->mon) {
-      case 2:
-        {
-            /* this drops higher bits but it's not a problem to calc leap year */
-            unsigned int mday2 = leap_year_v_p(vtm->year) ? 29 : 28;
-            if (vtm->mday > mday2) {
-                vtm->mday -= mday2;
-                vtm->mon++;
-            }
-        }
-        break;
-      case 4:
-      case 6:
-      case 9:
-      case 11:
-        if (vtm->mday == 31) {
-            vtm->mon++;
-            vtm->mday = 1;
-        }
-        break;
-    }
+    vtm_normalize_month_mday(vtm);
 
     vtm->hour = NIL_P(v[3])?0:obj2ubits(v[3], 5);
 
