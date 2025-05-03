@@ -5613,7 +5613,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
         VALUE elt = rb_ary_elt(ary, i);
         for (j = 0; j < argc; j++) {
             if (is_hash[j]) {
-                if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
+                if (rb_hash_stlike_lookup(argv[j], elt, NULL))
                     break;
             }
             else {
