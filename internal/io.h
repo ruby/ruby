@@ -15,7 +15,6 @@ struct rb_io;
 
 #include "ruby/io.h"
 
-#include "vm_core.h"
 #include "ccan/list/list.h"
 
 #define IO_WITHOUT_GVL(func, arg) rb_nogvl(func, arg, RUBY_UBF_IO, 0, RB_NOGVL_OFFLOAD_SAFE)
@@ -27,7 +26,7 @@ struct rb_io_blocking_operation {
     struct ccan_list_node list;
 
     // The execution context of the blocking operation:
-    rb_execution_context_t *ec;
+    struct rb_execution_context_struct *ec;
 };
 
 /** Ruby's IO, metadata and buffers. */
@@ -130,7 +129,7 @@ struct rb_io {
      * the operation can be cancelled.
      */
     struct ccan_list_head blocking_operations;
-    rb_execution_context_t *closing_ec;
+    struct rb_execution_context_struct *closing_ec;
     VALUE wakeup_mutex;
 };
 
