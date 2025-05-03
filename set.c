@@ -1858,9 +1858,20 @@ set_to_hash_i(st_data_t key, st_data_t arg)
     return ST_CONTINUE;
 }
 
+/*
+ *  call-seq:
+ *    to_h -> hash
+ *    to_h {|element| ...} -> hash
+ *
+ *  Without a block, returns a hash where the set's elements
+ *  are keys, and all values are true.  With a block, calls
+ *  super (Enumerable#to_h).
+ */
 static VALUE
 set_i_to_h(VALUE set)
 {
+    if (rb_block_given_p()) return rb_call_super(0, NULL);
+
     st_index_t size = RSET_SIZE(set);
     VALUE hash;
     if (RSET_COMPARE_BY_IDENTITY(set)) {
