@@ -2184,7 +2184,6 @@ Init_Set(void)
     rb_define_method(rb_cSet, "superset?", set_i_superset, 1);
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
-    rb_define_method(rb_cSet, "to_h", set_i_to_h, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
 
     /* :nodoc: */
