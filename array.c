@@ -5356,7 +5356,18 @@ rb_ary_hash_values(long len, const VALUE *elements)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
+    long i;
+    st_index_t h;
+    VALUE n;
+
+    h = rb_hash_start(RARRAY_LEN(ary));
+    h = rb_hash_uint(h, (st_index_t)rb_ary_hash_values);
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        n = rb_hash(RARRAY_AREF(ary, i));
+        h = rb_hash_uint(h, NUM2LONG(n));
+    }
+    h = rb_hash_end(h);
+    return ST2FIX(h);
 }
 
 /*
