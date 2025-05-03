@@ -2665,14 +2665,18 @@ size_t
 rb_thread_io_close(struct rb_io *io)
 {
     // We guard this operation based on `io->closing_ec` -> only one thread will ever enter this function.
-    if (io->closing_ec) return 0;
+    if (io->closing_ec) {
+        return 0;
+    }
+
+    // If there are no blocking operations, we are done:
+    if (ccan_list_empty(&io->blocking_operations)) {
+        return 0;
+    }
 
     // Otherwise, we are now closing the IO:
     rb_execution_context_t *ec = GET_EC();
     io->closing_ec = ec;
-
-    // If there are no blocking operations, we are done:
-    if (ccan_list_empty(&io->blocking_operations)) return 0;
 
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
@@ -2696,6 +2700,10 @@ rb_thread_io_close_wait(struct rb_io* io)
         rb_mutex_sleep(wakeup_mutex, Qnil);
     }
     rb_mutex_unlock(wakeup_mutex);
+
+    // We are done closing:
+    io->wakeup_mutex = Qnil;
+    io->closing_ec = NULL;
 }
 
 void
