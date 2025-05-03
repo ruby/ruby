@@ -23,7 +23,7 @@ end
 if defined?(::Set) && Object.const_source_location(:Set) == ["ruby", 0]
   class Set
     def encode_with(coder)
-      coder["hash"] = to_h
+      coder["hash"] = to_h { |e| [e, true] }
     end
 
     def init_with(coder)
