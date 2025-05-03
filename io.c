@@ -8370,6 +8370,10 @@ io_reopen(VALUE io, VALUE nfile)
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
+        // Interrupt all usage of the old file descriptor:
+        rb_thread_io_close(fptr);
+        rb_thread_io_close_wait(fptr);
+
         if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2 || !fptr->stdio_file) {
             /* need to keep FILE objects of stdin, stdout and stderr */
             if (rb_cloexec_dup2(fd2, fd) < 0)
@@ -8385,7 +8389,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_update_max_fd(fd);
             fptr->fd = fd;
         }
-        rb_thread_fd_close(fd);
+
         if ((orig->mode & FMODE_READABLE) && pos >= 0) {
             if (io_seek(fptr, pos, SEEK_SET) < 0 && errno) {
                 rb_sys_fail_path(fptr->pathv);
