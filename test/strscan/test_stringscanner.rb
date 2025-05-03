@@ -1001,6 +1001,16 @@ module StringScannerTests
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
+    s = create_string_scanner('-')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
+    s = create_string_scanner('+')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
     huge_integer = '1' * 2_000
     s = create_string_scanner(huge_integer)
     assert_equal(huge_integer.to_i, s.scan_integer)
