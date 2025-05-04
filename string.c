@@ -3613,6 +3613,9 @@ str_uplus(VALUE str)
  *
  * Otherwise, +frozen_string+ is a frozen copy of +self+.
  *
+ * Returning +self+, when possible, saves duplicating data;
+ * see {Data deduplication}[https://en.wikipedia.org/wiki/Data_deduplication].
+ *
  * Note that method #-@ is convenient for defining a constant:
  *
  *    FileName = -'config/database.yml'
