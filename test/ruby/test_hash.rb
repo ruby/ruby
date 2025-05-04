@@ -308,6 +308,13 @@ class TestHash < Test::Unit::TestCase
     assert_equal(:xyzzy, @h.default)
   end
 
+  def test_default_after_freeze
+    assert_nil(@h.default)
+    h = @cls.new(:xyzzy)
+    h.freeze
+    assert_equal(nil, h.default)
+  end
+
   def test_delete
     h1 = @cls[ 1 => 'one', 2 => 'two', true => 'true' ]
     h2 = @cls[ 1 => 'one', 2 => 'two' ]
@@ -965,6 +972,12 @@ class TestHash < Test::Unit::TestCase
     assert_equal(true, h[:nope])
     h = @cls[]
     assert_nil(h.default_proc)
+  end
+
+  def test_default_proc_after_freeze
+    h = @cls.new {|hh, k| hh + k + "baz" }
+    h.freeze
+    assert_equal(nil, h.default_proc)
   end
 
   def test_shift2
