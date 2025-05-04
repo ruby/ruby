@@ -262,6 +262,8 @@ retry:
     }
 }
 
+static bool is_internal_iseq(const rb_iseq_t *iseq);
+
 // Return true if a given location is a C method or supposed to behave like one.
 static inline bool
 location_cfunc_p(rb_backtrace_location_t *loc)
@@ -272,7 +274,7 @@ location_cfunc_p(rb_backtrace_location_t *loc)
       case VM_METHOD_TYPE_CFUNC:
         return true;
       case VM_METHOD_TYPE_ISEQ:
-        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+	return is_internal_iseq(loc->cme->def->body.iseq.iseqptr);
       default:
         return false;
     }
@@ -607,9 +609,15 @@ backtrace_size(const rb_execution_context_t *ec)
 static bool
 is_internal_location(const rb_control_frame_t *cfp)
 {
+    return is_internal_iseq(cfp->iseq);
+}
+
+static bool
+is_internal_iseq(const rb_iseq_t *iseq)
+{
     static const char prefix[] = "<internal:";
     const size_t prefix_len = sizeof(prefix) - 1;
-    VALUE file = rb_iseq_path(cfp->iseq);
+    VALUE file = rb_iseq_path(iseq);
     return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
 }
 
@@ -698,7 +706,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                         // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
-                        if (is_internal_location(cfp)) {
+			if (is_internal_location(cfp)) {
                             loc->iseq = NULL;
                             loc->pc = NULL;
                             cfunc_counter++;
