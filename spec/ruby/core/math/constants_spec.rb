@@ -11,6 +11,16 @@ describe "Math::PI" do
   end
 end
 
+describe "Math::TAU" do
+  it "approximates the value of tau" do
+    Math::TAU.should be_close(6.28318_53071_79586_47693, TOLERANCE)
+  end
+
+  it "is accessible to a class that includes Math" do
+    IncludesMath::TAU.should == Math.TAU
+  end
+end
+
 describe "Math::E" do
   it "approximates the value of Napier's constant" do
     Math::E.should be_close(2.71828_18284_59045_23536, TOLERANCE)
