@@ -349,7 +349,7 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	--crate-type=staticlib \
-	--edition=2021 \
+	--edition=2024 \
 	-g \
 	-C lto=thin \
 	-C opt-level=3 \
