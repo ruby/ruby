@@ -380,7 +380,7 @@ rb_shape_depth(rb_shape_t *shape)
     return depth;
 }
 
-rb_shape_t*
+rb_shape_t *
 rb_shape_get_shape(VALUE obj)
 {
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj));
@@ -489,7 +489,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
     return new_shape;
 }
 
-static rb_shape_t*
+static rb_shape_t *
 get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bool *variation_created, bool new_variations_allowed)
 {
     rb_shape_t *res = NULL;
@@ -574,7 +574,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
 }
 
 int
-rb_shape_frozen_shape_p(rb_shape_t* shape)
+rb_shape_frozen_shape_p(rb_shape_t *shape)
 {
     return SHAPE_FROZEN == (enum shape_type)shape->type;
 }
@@ -682,7 +682,7 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
 rb_shape_t *
 rb_shape_transition_shape_frozen(VALUE obj)
 {
-    rb_shape_t* shape = rb_shape_get_shape(obj);
+    rb_shape_t *shape = rb_shape_get_shape(obj);
     RUBY_ASSERT(shape);
     RUBY_ASSERT(RB_OBJ_FROZEN(obj));
 
@@ -690,7 +690,7 @@ rb_shape_transition_shape_frozen(VALUE obj)
         return shape;
     }
 
-    rb_shape_t* next_shape;
+    rb_shape_t *next_shape;
 
     if (shape == rb_shape_get_root_shape()) {
         return rb_shape_get_shape_by_id(SPECIAL_CONST_SHAPE_ID);
@@ -909,7 +909,7 @@ rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 }
 
 void
-rb_shape_set_shape(VALUE obj, rb_shape_t* shape)
+rb_shape_set_shape(VALUE obj, rb_shape_t *shape)
 {
     rb_shape_set_shape_id(obj, rb_shape_id(shape));
 }
@@ -1085,14 +1085,14 @@ rb_shape_t_to_rb_cShape(rb_shape_t *shape)
 static enum rb_id_table_iterator_result
 rb_edges_to_hash(ID key, VALUE value, void *ref)
 {
-    rb_hash_aset(*(VALUE *)ref, parse_key(key), rb_shape_t_to_rb_cShape((rb_shape_t*)value));
+    rb_hash_aset(*(VALUE *)ref, parse_key(key), rb_shape_t_to_rb_cShape((rb_shape_t *)value));
     return ID_TABLE_CONTINUE;
 }
 
 static VALUE
 rb_shape_edges(VALUE self)
 {
-    rb_shape_t* shape;
+    rb_shape_t *shape;
 
     shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
 
@@ -1126,7 +1126,7 @@ rb_shape_edge_name(rb_shape_t *shape)
 static VALUE
 rb_shape_export_depth(VALUE self)
 {
-    rb_shape_t* shape;
+    rb_shape_t *shape;
     shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     return SIZET2NUM(rb_shape_depth(shape));
 }
@@ -1171,11 +1171,11 @@ rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
-VALUE rb_obj_shape(rb_shape_t* shape);
+VALUE rb_obj_shape(rb_shape_t *shape);
 
 static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE value, void *ref)
 {
-    rb_hash_aset(*(VALUE *)ref, parse_key(key), rb_obj_shape((rb_shape_t*)value));
+    rb_hash_aset(*(VALUE *)ref, parse_key(key), rb_obj_shape((rb_shape_t *)value));
     return ID_TABLE_CONTINUE;
 }
 
@@ -1193,7 +1193,7 @@ static VALUE edges(struct rb_id_table* edges)
 }
 
 VALUE
-rb_obj_shape(rb_shape_t* shape)
+rb_obj_shape(rb_shape_t *shape)
 {
     VALUE rb_shape = rb_hash_new();
 
