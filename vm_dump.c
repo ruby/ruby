@@ -515,7 +515,7 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 static bool
 is_coroutine_start(unw_word_t ip)
 {
-#if USE_MN_THREADS
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
     struct coroutine_context;
     extern void ruby_coroutine_start(struct coroutine_context *, struct coroutine_context *);
     return ((void *)(ip) == (void *)ruby_coroutine_start);
