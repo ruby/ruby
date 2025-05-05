@@ -43,6 +43,10 @@ pub struct Options {
     // 1 means always create generic versions
     pub max_versions: usize,
 
+    // CPU time since the start of compilation after which we consider
+    // a branch to be "cold" and not worth compiling
+    pub branch_timeout: u32,
+
     // The number of registers allocated for stack temps
     pub num_temp_regs: usize,
 
@@ -96,6 +100,7 @@ pub static mut OPTIONS: Options = Options {
     exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
+    branch_timeout: 80,
     num_temp_regs: 5,
     c_builtin: false,
     gen_stats: false,
@@ -254,6 +259,13 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("max-versions", _) => match opt_val.parse() {
             Ok(n) => unsafe { OPTIONS.max_versions = n },
+            Err(_) => {
+                return None;
+            }
+        },
+
+        ("branch-timeout", _) => match opt_val.parse() {
+            Ok(v) => unsafe { OPTIONS.branch_timeout = v },
             Err(_) => {
                 return None;
             }
