@@ -115,7 +115,6 @@ fn main() {
         .allowlist_function("rb_shape_id")
         .allowlist_function("rb_shape_obj_too_complex")
         .allowlist_var("SHAPE_ID_NUM_BITS")
-        .allowlist_var("OBJ_TOO_COMPLEX_SHAPE_ID")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")

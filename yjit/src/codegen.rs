@@ -3109,6 +3109,7 @@ fn gen_set_ivar(
     };
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
+    let mut new_shape_too_complex = false;
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
         let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
@@ -3116,7 +3117,8 @@ fn gen_set_ivar(
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        if next_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape) };
+        if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { (*current_shape).capacity };
@@ -3138,7 +3140,6 @@ fn gen_set_ivar(
     } else {
         None
     };
-    let new_shape_too_complex = matches!(new_shape, Some((OBJ_TOO_COMPLEX_SHAPE_ID, _, _)));
 
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
