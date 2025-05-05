@@ -52,11 +52,13 @@ class TestGemPackageTarWriter < Gem::Package::TarTestCase
 
   def test_add_file_with_mtime
     Time.stub :now, Time.at(1_458_518_157) do
-      @tar_writer.add_file "x", 0o644, Time.now do |f|
+      mtime = Time.now
+
+      @tar_writer.add_file "x", 0o644, mtime do |f|
         f.write "a" * 10
       end
 
-      assert_headers_equal(tar_file_header("x", "", 0o644, 10, Time.now),
+      assert_headers_equal(tar_file_header("x", "", 0o644, 10, mtime),
                          @io.string[0, 512])
     end
   end
