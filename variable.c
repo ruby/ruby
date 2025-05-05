@@ -1482,6 +1482,7 @@ void
 rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+    rb_shape_t *too_complex_shape = rb_shape_transition_shape_too_complex(obj);
 
     VALUE *old_fields = NULL;
 
@@ -1490,13 +1491,13 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
         if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             old_fields = ROBJECT_FIELDS(obj);
         }
-        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+        rb_shape_set_shape(obj, too_complex_shape);
         ROBJECT_SET_FIELDS_HASH(obj, table);
         break;
       case T_CLASS:
       case T_MODULE:
         old_fields = RCLASS_FIELDS(obj);
-        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+        rb_shape_set_shape(obj, too_complex_shape);
         RCLASS_SET_FIELDS_HASH(obj, table);
         break;
       default:
@@ -1513,9 +1514,9 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
                  * compaction. We want the table to be updated rather than
                  * the original fields. */
 #if SHAPE_IN_BASIC_FLAGS
-                rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+                rb_shape_set_shape(obj, too_complex_shape);
 #else
-                old_fields_tbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+                old_fields_tbl->shape_id = rb_shape_id(too_complex_shape);
 #endif
                 old_fields_tbl->as.complex.table = table;
                 old_fields = (VALUE *)old_fields_tbl;
@@ -1524,10 +1525,11 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
             struct gen_fields_tbl *fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
             fields_tbl->as.complex.table = table;
             st_insert(gen_ivs, (st_data_t)obj, (st_data_t)fields_tbl);
+            
 #if SHAPE_IN_BASIC_FLAGS
-            rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+            rb_shape_set_shape(obj, too_complex_shape);
 #else
-            fields_tbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+            fields_tbl->shape_id = rb_shape_id(too_complex_shape);
 #endif
         }
         RB_VM_LOCK_LEAVE();
@@ -1570,7 +1572,7 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
 
     rb_shape_t *current_shape = rb_shape_get_shape(obj);
 
-    if (UNLIKELY(current_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+    if (UNLIKELY(rb_shape_too_complex_p(current_shape))) {
         goto too_complex;
     }
 
@@ -1584,7 +1586,7 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
         }
 
         rb_shape_t *next_shape = rb_shape_get_next(current_shape, obj, id);
-        if (UNLIKELY(next_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        if (UNLIKELY(rb_shape_too_complex_p(next_shape))) {
             transition_too_complex_func(obj, data);
             goto too_complex;
         }
@@ -1709,7 +1711,7 @@ generic_ivar_set_too_complex_table(VALUE obj, void *data)
     if (!rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
         fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
 #if !SHAPE_IN_BASIC_FLAGS
-        fields_tbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+        fields_tbl->shape_id = rb_shape_id(rb_shape_transition_shape_too_complex(obj));
 #endif
         fields_tbl->as.complex.table = st_init_numtable_with_size(1);
 
@@ -1886,7 +1888,7 @@ void rb_obj_freeze_inline(VALUE x)
 
         // If we're transitioning from "not complex" to "too complex"
         // then evict ivars.  This can happen if we run out of shapes
-        if (!rb_shape_obj_too_complex(x) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
+        if (!rb_shape_obj_too_complex(x) && rb_shape_too_complex_p(next_shape)) {
             rb_evict_ivars_to_hash(x);
         }
         rb_shape_set_shape(x, next_shape);
@@ -2029,7 +2031,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_FROZEN:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
-      default:
         rb_bug("Unreachable");
     }
 }
@@ -2117,7 +2118,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
         if (rb_shape_obj_too_complex(obj)) {
             new_fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
 #if !SHAPE_IN_BASIC_FLAGS
-            new_fields_tbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+            new_fields_tbl->shape_id = old_fields_tbl->shape_id;
 #endif
             new_fields_tbl->as.complex.table = st_copy(obj_fields_tbl->as.complex.table);
         }
@@ -2140,7 +2141,7 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
         }
         RB_VM_LOCK_LEAVE();
 
-        rb_shape_t * obj_shape = rb_shape_get_shape(obj);
+        rb_shape_t *obj_shape = rb_shape_get_shape(obj);
         if (rb_shape_frozen_shape_p(obj_shape)) {
             rb_shape_set_shape_id(clone, obj_shape->parent_id);
         }

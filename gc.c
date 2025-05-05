@@ -379,9 +379,10 @@ rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
-    rb_shape_t *orig_shape = rb_shape_get_shape(obj);
+    shape_id_t orig_shape_id = rb_shape_get_shape_id(obj);
+    rb_shape_t *orig_shape = rb_shape_get_shape_by_id(orig_shape_id);
 
-    if (rb_shape_obj_too_complex(obj)) return (uint32_t)OBJ_TOO_COMPLEX_SHAPE_ID;
+    if (rb_shape_too_complex_p(orig_shape)) return orig_shape_id;
 
     rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID));
     rb_shape_t *new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
