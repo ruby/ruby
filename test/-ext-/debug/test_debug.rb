@@ -75,4 +75,19 @@ class TestDebug < Test::Unit::TestCase
     end
     assert_equal true, x, '[Bug #15105]'
   end
+
+  # This is a YJIT test, but we can't test this without a C extension that calls
+  # rb_debug_inspector_open(), so we're testing it using "-test-/debug" here.
+  def test_yjit_invalidates_setlocal_after_inspector_call
+    val = setlocal_after_proc_call(proc { Bug::Debug.inspector; :ok })
+    assert_equal :ok, val
+  end if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+  private
+
+  def setlocal_after_proc_call(block)
+    local = block.call # setlocal followed by OPTIMIZED_METHOD_TYPE_CALL
+    itself # split a block using a C call
+    local # getlocal
+  end
 end
