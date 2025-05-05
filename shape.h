@@ -45,7 +45,7 @@ struct rb_shape {
     struct rb_id_table *edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_iv_index;
-    uint32_t capacity; // Total capacity of the object with this shape
+    attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
     shape_id_t parent_id;
