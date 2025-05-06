@@ -1,0 +1,6 @@
+case 1
+in 2
+  A.print message:
+in 3
+  A.print message:
+end
