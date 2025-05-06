@@ -22176,6 +22176,12 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call, (uint16_t) (depth + 1));
 
+        if (context_terminator(parser->current_context->context, &parser->current)) {
+            // If this token terminates the current context, then we need to
+            // stop parsing the expression, as it has become a statement.
+            return node;
+        }
+
         switch (PM_NODE_TYPE(node)) {
             case PM_MULTI_WRITE_NODE:
                 // Multi-write nodes are statements, and cannot be followed by
