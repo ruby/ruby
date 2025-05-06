@@ -8586,85 +8586,66 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
 /* Context manipulations                                                      */
 /******************************************************************************/
 
-static bool
-context_terminator(pm_context_t context, pm_token_t *token) {
-    switch (context) {
-        case PM_CONTEXT_MAIN:
-        case PM_CONTEXT_DEF_PARAMS:
-        case PM_CONTEXT_DEFINED:
-        case PM_CONTEXT_MULTI_TARGET:
-        case PM_CONTEXT_TERNARY:
-        case PM_CONTEXT_RESCUE_MODIFIER:
-            return token->type == PM_TOKEN_EOF;
-        case PM_CONTEXT_DEFAULT_PARAMS:
-            return token->type == PM_TOKEN_COMMA || token->type == PM_TOKEN_PARENTHESIS_RIGHT;
-        case PM_CONTEXT_PREEXE:
-        case PM_CONTEXT_POSTEXE:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_MODULE:
-        case PM_CONTEXT_CLASS:
-        case PM_CONTEXT_SCLASS:
-        case PM_CONTEXT_LAMBDA_DO_END:
-        case PM_CONTEXT_DEF:
-        case PM_CONTEXT_BLOCK_KEYWORDS:
-            return token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_RESCUE || token->type == PM_TOKEN_KEYWORD_ENSURE;
-        case PM_CONTEXT_WHILE:
-        case PM_CONTEXT_UNTIL:
-        case PM_CONTEXT_ELSE:
-        case PM_CONTEXT_FOR:
-        case PM_CONTEXT_BEGIN_ENSURE:
-        case PM_CONTEXT_BLOCK_ENSURE:
-        case PM_CONTEXT_CLASS_ENSURE:
-        case PM_CONTEXT_DEF_ENSURE:
-        case PM_CONTEXT_LAMBDA_ENSURE:
-        case PM_CONTEXT_MODULE_ENSURE:
-        case PM_CONTEXT_SCLASS_ENSURE:
-            return token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_LOOP_PREDICATE:
-            return token->type == PM_TOKEN_KEYWORD_DO || token->type == PM_TOKEN_KEYWORD_THEN;
-        case PM_CONTEXT_FOR_INDEX:
-            return token->type == PM_TOKEN_KEYWORD_IN;
-        case PM_CONTEXT_CASE_WHEN:
-            return token->type == PM_TOKEN_KEYWORD_WHEN || token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_ELSE;
-        case PM_CONTEXT_CASE_IN:
-            return token->type == PM_TOKEN_KEYWORD_IN || token->type == PM_TOKEN_KEYWORD_END || token->type == PM_TOKEN_KEYWORD_ELSE;
-        case PM_CONTEXT_IF:
-        case PM_CONTEXT_ELSIF:
-            return token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_ELSIF || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_UNLESS:
-            return token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_EMBEXPR:
-            return token->type == PM_TOKEN_EMBEXPR_END;
-        case PM_CONTEXT_BLOCK_BRACES:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_PARENS:
-            return token->type == PM_TOKEN_PARENTHESIS_RIGHT;
-        case PM_CONTEXT_BEGIN:
-        case PM_CONTEXT_BEGIN_RESCUE:
-        case PM_CONTEXT_BLOCK_RESCUE:
-        case PM_CONTEXT_CLASS_RESCUE:
-        case PM_CONTEXT_DEF_RESCUE:
-        case PM_CONTEXT_LAMBDA_RESCUE:
-        case PM_CONTEXT_MODULE_RESCUE:
-        case PM_CONTEXT_SCLASS_RESCUE:
-            return token->type == PM_TOKEN_KEYWORD_ENSURE || token->type == PM_TOKEN_KEYWORD_RESCUE || token->type == PM_TOKEN_KEYWORD_ELSE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_BEGIN_ELSE:
-        case PM_CONTEXT_BLOCK_ELSE:
-        case PM_CONTEXT_CLASS_ELSE:
-        case PM_CONTEXT_DEF_ELSE:
-        case PM_CONTEXT_LAMBDA_ELSE:
-        case PM_CONTEXT_MODULE_ELSE:
-        case PM_CONTEXT_SCLASS_ELSE:
-            return token->type == PM_TOKEN_KEYWORD_ENSURE || token->type == PM_TOKEN_KEYWORD_END;
-        case PM_CONTEXT_LAMBDA_BRACES:
-            return token->type == PM_TOKEN_BRACE_RIGHT;
-        case PM_CONTEXT_PREDICATE:
-            return token->type == PM_TOKEN_KEYWORD_THEN || token->type == PM_TOKEN_NEWLINE || token->type == PM_TOKEN_SEMICOLON;
-        case PM_CONTEXT_NONE:
-            return false;
-    }
+static const uint32_t context_terminators[] = {
+    [PM_CONTEXT_NONE] = 0,
+    [PM_CONTEXT_BEGIN] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BEGIN_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_BRACES] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_BLOCK_KEYWORDS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_BLOCK_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_BLOCK_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CASE_WHEN] = (1 << PM_TOKEN_KEYWORD_WHEN) | (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_ELSE),
+    [PM_CONTEXT_CASE_IN] = (1 << PM_TOKEN_KEYWORD_IN) | (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_ELSE),
+    [PM_CONTEXT_CLASS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_CLASS_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CLASS_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_CLASS_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_DEF_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_DEF_PARAMS] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_DEFINED] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_DEFAULT_PARAMS] = (1 << PM_TOKEN_COMMA) | (1 << PM_TOKEN_PARENTHESIS_RIGHT),
+    [PM_CONTEXT_ELSE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_ELSIF] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_ELSIF) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_EMBEXPR] = (1 << PM_TOKEN_EMBEXPR_END),
+    [PM_CONTEXT_FOR] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_FOR_INDEX] = (1 << PM_TOKEN_KEYWORD_IN),
+    [PM_CONTEXT_IF] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_ELSIF) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_BRACES] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_LAMBDA_DO_END] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_LAMBDA_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LAMBDA_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_LOOP_PREDICATE] = (1 << PM_TOKEN_KEYWORD_DO) | (1 << PM_TOKEN_KEYWORD_THEN),
+    [PM_CONTEXT_MAIN] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_MODULE] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_MODULE_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MODULE_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MODULE_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_MULTI_TARGET] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_PARENS] = (1 << PM_TOKEN_PARENTHESIS_RIGHT),
+    [PM_CONTEXT_POSTEXE] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_PREDICATE] = (1 << PM_TOKEN_KEYWORD_THEN) | (1 << PM_TOKEN_NEWLINE) | (1 << PM_TOKEN_SEMICOLON),
+    [PM_CONTEXT_PREEXE] = (1 << PM_TOKEN_BRACE_RIGHT),
+    [PM_CONTEXT_RESCUE_MODIFIER] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_SCLASS] = (1 << PM_TOKEN_KEYWORD_END) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ENSURE),
+    [PM_CONTEXT_SCLASS_ENSURE] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_SCLASS_ELSE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_SCLASS_RESCUE] = (1 << PM_TOKEN_KEYWORD_ENSURE) | (1 << PM_TOKEN_KEYWORD_RESCUE) | (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_TERNARY] = (1 << PM_TOKEN_EOF),
+    [PM_CONTEXT_UNLESS] = (1 << PM_TOKEN_KEYWORD_ELSE) | (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_UNTIL] = (1 << PM_TOKEN_KEYWORD_END),
+    [PM_CONTEXT_WHILE] = (1 << PM_TOKEN_KEYWORD_END),
+};
 
-    return false;
+static inline bool
+context_terminator(pm_context_t context, pm_token_t *token) {
+    return token->type < 32 && (context_terminators[context] & (1 << token->type));
 }
 
 /**

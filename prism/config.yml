@@ -322,13 +322,42 @@ warnings:
   - UNUSED_LOCAL_VARIABLE
   - VOID_STATEMENT
 tokens:
+  # The order of the tokens at the beginning is important, because we use them
+  # for a lookup table.
   - name: EOF
     value: 1
     comment: final token in the file
-  - name: MISSING
-    comment: "a token that was expected but not found"
-  - name: NOT_PROVIDED
-    comment: "a token that was not present but it is okay"
+  - name: BRACE_RIGHT
+    comment: "}"
+  - name: COMMA
+    comment: ","
+  - name: EMBEXPR_END
+    comment: "}"
+  - name: KEYWORD_DO
+    comment: "do"
+  - name: KEYWORD_ELSE
+    comment: "else"
+  - name: KEYWORD_ELSIF
+    comment: "elsif"
+  - name: KEYWORD_END
+    comment: "end"
+  - name: KEYWORD_ENSURE
+    comment: "ensure"
+  - name: KEYWORD_IN
+    comment: "in"
+  - name: KEYWORD_RESCUE
+    comment: "rescue"
+  - name: KEYWORD_THEN
+    comment: "then"
+  - name: KEYWORD_WHEN
+    comment: "when"
+  - name: NEWLINE
+    comment: "a newline character outside of other tokens"
+  - name: PARENTHESIS_RIGHT
+    comment: ")"
+  - name: SEMICOLON
+    comment: ";"
+  # Tokens from here on are not used for lookup, and can be in any order.
   - name: AMPERSAND
     comment: "&"
   - name: AMPERSAND_AMPERSAND
@@ -351,8 +380,6 @@ tokens:
     comment: "!~"
   - name: BRACE_LEFT
     comment: "{"
-  - name: BRACE_RIGHT
-    comment: "}"
   - name: BRACKET_LEFT
     comment: "["
   - name: BRACKET_LEFT_ARRAY
@@ -375,8 +402,6 @@ tokens:
     comment: ":"
   - name: COLON_COLON
     comment: "::"
-  - name: COMMA
-    comment: ","
   - name: COMMENT
     comment: "a comment"
   - name: CONSTANT
@@ -395,8 +420,6 @@ tokens:
     comment: "a line inside of embedded documentation"
   - name: EMBEXPR_BEGIN
     comment: "#{"
-  - name: EMBEXPR_END
-    comment: "}"
   - name: EMBVAR
     comment: "#"
   - name: EQUAL
@@ -463,20 +486,10 @@ tokens:
     comment: "def"
   - name: KEYWORD_DEFINED
     comment: "defined?"
-  - name: KEYWORD_DO
-    comment: "do"
   - name: KEYWORD_DO_LOOP
     comment: "do keyword for a predicate in a while, until, or for loop"
-  - name: KEYWORD_ELSE
-    comment: "else"
-  - name: KEYWORD_ELSIF
-    comment: "elsif"
-  - name: KEYWORD_END
-    comment: "end"
   - name: KEYWORD_END_UPCASE
     comment: "END"
-  - name: KEYWORD_ENSURE
-    comment: "ensure"
   - name: KEYWORD_FALSE
     comment: "false"
   - name: KEYWORD_FOR
@@ -485,8 +498,6 @@ tokens:
     comment: "if"
   - name: KEYWORD_IF_MODIFIER
     comment: "if in the modifier form"
-  - name: KEYWORD_IN
-    comment: "in"
   - name: KEYWORD_MODULE
     comment: "module"
   - name: KEYWORD_NEXT
@@ -499,8 +510,6 @@ tokens:
     comment: "or"
   - name: KEYWORD_REDO
     comment: "redo"
-  - name: KEYWORD_RESCUE
-    comment: "rescue"
   - name: KEYWORD_RESCUE_MODIFIER
     comment: "rescue in the modifier form"
   - name: KEYWORD_RETRY
@@ -511,8 +520,6 @@ tokens:
     comment: "self"
   - name: KEYWORD_SUPER
     comment: "super"
-  - name: KEYWORD_THEN
-    comment: "then"
   - name: KEYWORD_TRUE
     comment: "true"
   - name: KEYWORD_UNDEF
@@ -525,8 +532,6 @@ tokens:
     comment: "until"
   - name: KEYWORD_UNTIL_MODIFIER
     comment: "until in the modifier form"
-  - name: KEYWORD_WHEN
-    comment: "when"
   - name: KEYWORD_WHILE
     comment: "while"
   - name: KEYWORD_WHILE_MODIFIER
@@ -563,16 +568,12 @@ tokens:
     comment: "-="
   - name: MINUS_GREATER
     comment: "->"
-  - name: NEWLINE
-    comment: "a newline character outside of other tokens"
   - name: NUMBERED_REFERENCE
     comment: "a numbered reference to a capture group in the previous regular expression match"
   - name: PARENTHESIS_LEFT
     comment: "("
   - name: PARENTHESIS_LEFT_PARENTHESES
     comment: "( for a parentheses node"
-  - name: PARENTHESIS_RIGHT
-    comment: ")"
   - name: PERCENT
     comment: "%"
   - name: PERCENT_EQUAL
@@ -605,8 +606,6 @@ tokens:
     comment: "the beginning of a regular expression"
   - name: REGEXP_END
     comment: "the end of a regular expression"
-  - name: SEMICOLON
-    comment: ";"
   - name: SLASH
     comment: "/"
   - name: SLASH_EQUAL
@@ -651,6 +650,10 @@ tokens:
     comment: "a separator between words in a list"
   - name: __END__
     comment: "marker for the point in the file at which the parser should stop"
+  - name: MISSING
+    comment: "a token that was expected but not found"
+  - name: NOT_PROVIDED
+    comment: "a token that was not present but it is okay"
 flags:
   - name: ArgumentsNodeFlags
     values:
