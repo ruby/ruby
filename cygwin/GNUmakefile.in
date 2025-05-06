@@ -6,14 +6,9 @@ MUNICODE_FLAG := $(if $(filter mingw%,$(target_os)),-municode)
 override EXE_LDFLAGS += $(MUNICODE_FLAG)
 
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
-ifeq (@USE_LLVM_WINDRES@,yes) # USE_LLVM_WINDRES
-	# llvm-windres fails when preprocessor options are added
-	windres-cpp :=
-else
-	windres-cpp := $(CPP) -xc
-	windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
-		$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
-endif
+windres-cpp := $(CPP) -xc
+windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
+	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
 WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 
