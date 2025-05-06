@@ -212,6 +212,11 @@ pub const BOP_INCLUDE_P: ruby_basic_operators = 33;
 pub const BOP_LAST_: ruby_basic_operators = 34;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_id_table {
+    _unused: [u8; 0],
+}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -286,11 +291,6 @@ pub const OPTIMIZED_METHOD_TYPE_STRUCT_AREF: method_optimized_type = 3;
 pub const OPTIMIZED_METHOD_TYPE_STRUCT_ASET: method_optimized_type = 4;
 pub const OPTIMIZED_METHOD_TYPE__MAX: method_optimized_type = 5;
 pub type method_optimized_type = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
-    _unused: [u8; 0],
-}
 pub type rb_num_t = ::std::os::raw::c_ulong;
 pub const RUBY_TAG_NONE: ruby_tag_type = 0;
 pub const RUBY_TAG_RETURN: ruby_tag_type = 1;
@@ -391,6 +391,8 @@ pub const VM_FRAME_FLAG_LAMBDA: vm_frame_env_flags = 256;
 pub const VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM: vm_frame_env_flags = 512;
 pub const VM_FRAME_FLAG_CFRAME_KW: vm_frame_env_flags = 1024;
 pub const VM_FRAME_FLAG_PASSED: vm_frame_env_flags = 2048;
+pub const VM_FRAME_FLAG_NS_SWITCH: vm_frame_env_flags = 4096;
+pub const VM_FRAME_FLAG_LOAD_ISEQ: vm_frame_env_flags = 8192;
 pub const VM_ENV_FLAG_LOCAL: vm_frame_env_flags = 2;
 pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
