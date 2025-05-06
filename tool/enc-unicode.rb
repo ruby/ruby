@@ -142,7 +142,7 @@ def define_posix_props(data)
   data['Alnum'] = data['Alpha'] + data['Digit']
   data['Space'] = data['White_Space']
   data['Blank'] = data['Space_Separator'] + [0x0009]
-  data['Cntrl'] = data['Cc']
+  data['Cntrl'] = data['Cc'] + data['Cf']
   data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] + data['Connector_Punctuation']
   data['Graph'] = data['Any'] - data['Space'] - data['Cntrl'] -
     data['Surrogate'] - data['Unassigned']
