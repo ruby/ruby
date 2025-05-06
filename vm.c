@@ -452,7 +452,9 @@ jit_compile(rb_execution_context_t *ec)
             rb_zjit_compile_iseq(iseq, ec, false);
         }
     }
-#elif USE_YJIT
+#endif
+
+#if USE_YJIT
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
     if (body->jit_entry == NULL && rb_yjit_enabled_p) {
         body->jit_entry_calls++;

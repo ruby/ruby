@@ -246,6 +246,9 @@ lcov*.info
 /yjit-bench
 /yjit_exit_locations.dump
 
+# Rust
+/target
+
 # /wasm/
 /wasm/tests/*.wasm
 
