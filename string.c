@@ -3606,12 +3606,13 @@ str_uplus(VALUE str)
  *
  * Returns a frozen string equal to +self+.
  *
- * The returned +frozen_string+ is +self+, frozen, if +self+:
+ * The return string is +self+ if and only if all of the following are true:
  *
- * - Is an instance of \String (rather than of a subclass of \String)
- * - Has no instance variables set on it.
+ * - +self+ is already frozen.
+ * - +self+ is an instance of \String (rather than of a subclass of \String)
+ * - +self+ has no instance variables set on it.
  *
- * Otherwise, +frozen_string+ is a frozen copy of +self+.
+ * Otherwise, the returned string is a frozen copy of +self+.
  *
  * Returning +self+, when possible, saves duplicating data;
  * see {Data deduplication}[https://en.wikipedia.org/wiki/Data_deduplication].
