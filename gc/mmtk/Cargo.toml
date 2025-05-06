@@ -35,3 +35,5 @@ default = []
 
 # When moving an object, clear its original copy.
 clear_old_copy = []
+
+[workspace]
