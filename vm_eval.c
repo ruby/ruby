@@ -2149,7 +2149,7 @@ rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat)
 /* block eval under the class/module context */
 
 static VALUE
-yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat)
+yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int is_eval, int kw_splat)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_control_frame_t *cfp = ec->cfp;
@@ -2191,7 +2191,7 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
     }
 
     VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
-    cref = vm_cref_push(ec, self, ep, TRUE, singleton);
+    cref = vm_cref_push(ec, self, ep, is_eval, singleton);
 
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }
@@ -2234,7 +2234,7 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
 {
     if (rb_block_given_p()) {
         rb_check_arity(argc, 0, 0);
-        return yield_under(self, singleton, 1, &self, kw_splat);
+        return yield_under(self, singleton, 1, &self, TRUE, kw_splat);
     }
     else {
         VALUE file = Qnil;
@@ -2325,13 +2325,13 @@ rb_obj_instance_eval(int argc, const VALUE *argv, VALUE self)
 static VALUE
 rb_obj_instance_exec_internal(int argc, const VALUE *argv, VALUE self)
 {
-    return yield_under(self, TRUE, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    return yield_under(self, TRUE, argc, argv, TRUE, RB_PASS_CALLED_KEYWORDS);
 }
 
 VALUE
 rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 {
-    return yield_under(self, TRUE, argc, argv, RB_NO_KEYWORDS);
+    return yield_under(self, TRUE, argc, argv, TRUE, RB_NO_KEYWORDS);
 }
 
 /*
@@ -2398,13 +2398,19 @@ rb_mod_module_eval(int argc, const VALUE *argv, VALUE mod)
 static VALUE
 rb_mod_module_exec_internal(int argc, const VALUE *argv, VALUE mod)
 {
-    return yield_under(mod, FALSE, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    return yield_under(mod, FALSE, argc, argv, TRUE, RB_PASS_CALLED_KEYWORDS);
 }
 
 VALUE
 rb_mod_module_exec(int argc, const VALUE *argv, VALUE mod)
 {
-    return yield_under(mod, FALSE, argc, argv, RB_NO_KEYWORDS);
+    return yield_under(mod, FALSE, argc, argv, TRUE, RB_NO_KEYWORDS);
+}
+
+VALUE
+rb_mod_yield_under(int argc, const VALUE *argv, VALUE mod)
+{
+    return yield_under(mod, FALSE, argc, argv, FALSE, RB_NO_KEYWORDS);
 }
 
 /*
