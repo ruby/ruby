@@ -2948,6 +2948,102 @@ mod tests {
               Return v6
         "#]]);
     }
+
+    #[test]
+    fn test_case_when_class() {
+        eval(r#"
+            def test(x)
+              case x
+                when Array
+                  :array
+                when String
+                  :string
+                else
+                  :unknown
+              end
+            end
+            test []
+            test "foo"
+            test 1
+        "#);
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:BasicObject = GetConstantPath 0x1000
+              v4:BasicObject = SendWithoutBlock v2, :===, v0
+              v5:CBool = Test v4
+              IfTrue v5, bb1(v0, v0)
+              v7:BasicObject = GetConstantPath 0x1000
+              v9:BasicObject = SendWithoutBlock v7, :===, v0
+              v10:CBool = Test v9
+              IfTrue v10, bb2(v0, v0)
+              v12:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v12
+            bb1(v14:BasicObject, v15:BasicObject):
+              v17:StaticSymbol[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              Return v17
+            bb2(v19:BasicObject, v20:BasicObject):
+              v22:StaticSymbol[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              Return v22
+        "#]]);
+    }
+
+    #[test]
+    fn test_case_when_array() {
+        eval(r#"
+            def test(x)
+              case x
+                when []
+                  :empty
+                when [1, 2]
+                  :two
+                else
+                  :unknown
+              end
+            end
+            test []
+            test [1,2]
+            test 1
+        "#);
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = NewArray
+              v5:BasicObject = SendWithoutBlock v3, :===, v0
+              v6:CBool = Test v5
+              IfTrue v6, bb1(v0, v0)
+              v8:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v10:ArrayExact = ArrayDup v8
+              v12:BasicObject = SendWithoutBlock v10, :===, v0
+              v13:CBool = Test v12
+              IfTrue v13, bb2(v0, v0)
+              v15:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v15
+            bb1(v17:BasicObject, v18:BasicObject):
+              v20:StaticSymbol[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              Return v20
+            bb2(v22:BasicObject, v23:BasicObject):
+              v25:StaticSymbol[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              Return v25
+        "#]]);
+    }
+
+    #[test]
+    fn test_case_when_string() {
+        eval(r#"
+            def test(x)
+              case x
+                when "abc"
+                  :abc
+                else
+                  :unknown
+              end
+            end
+            test "abc"
+            test 1
+        "#);
+        assert_compile_fails("test", ParseError::UnknownOpcode("opt_case_dispatch".into()))
+    }
 }
 
 #[cfg(test)]
@@ -3917,6 +4013,91 @@ mod opt_tests {
               v4:ArrayExact = NewArray v0, v1
               v6:BasicObject = SendWithoutBlock v4, :size
               Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_case_when_class() {
+        eval(r#"
+            def test(x)
+              case x
+                when Array
+                  :array
+                when String
+                  :string
+                else
+                  :unknown
+              end
+            end
+            test []
+            test "foo"
+            test 1
+        "#);
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, Array)
+              v26:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint MethodRedefined(Class@0x1010, ===@0x1018)
+              v31:BoolExact = CCall ===@0x1020, v26, v0
+              v5:CBool = Test v31
+              IfTrue v5, bb1(v0, v0)
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1028, String)
+              v29:BasicObject[VALUE(0x1030)] = Const Value(VALUE(0x1030))
+              PatchPoint MethodRedefined(Class@0x1038, ===@0x1018)
+              v33:BoolExact = CCall ===@0x1020, v29, v0
+              v10:CBool = Test v33
+              IfTrue v10, bb2(v0, v0)
+              v12:StaticSymbol[VALUE(0x1040)] = Const Value(VALUE(0x1040))
+              Return v12
+            bb1(v14:BasicObject, v15:BasicObject):
+              v17:StaticSymbol[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+              Return v17
+            bb2(v19:BasicObject, v20:BasicObject):
+              v22:StaticSymbol[VALUE(0x1050)] = Const Value(VALUE(0x1050))
+              Return v22
+        "#]]);
+    }
+
+    #[test]
+    fn test_case_when_array() {
+        eval(r#"
+            def test(x)
+              case x
+                when []
+                  :empty
+                when [1, 2]
+                  :two
+                else
+                  :unknown
+              end
+            end
+            test []
+            test [1,2]
+            test 1
+        "#);
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = NewArray
+              v5:BasicObject = SendWithoutBlock v3, :===, v0
+              v6:CBool = Test v5
+              IfTrue v6, bb1(v0, v0)
+              v8:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v10:ArrayExact = ArrayDup v8
+              v12:BasicObject = SendWithoutBlock v10, :===, v0
+              v13:CBool = Test v12
+              IfTrue v13, bb2(v0, v0)
+              v15:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v15
+            bb1(v17:BasicObject, v18:BasicObject):
+              v20:StaticSymbol[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              Return v20
+            bb2(v22:BasicObject, v23:BasicObject):
+              v25:StaticSymbol[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              Return v25
         "#]]);
     }
 }
