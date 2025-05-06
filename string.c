@@ -3604,7 +3604,7 @@ str_uplus(VALUE str)
  * call-seq:
  *   -self -> frozen_string
  *
- * Returns a frozen string containing the same content as +self+.
+ * Returns a frozen string equal to +self+.
  *
  * The returned +frozen_string+ is +self+, frozen, if +self+:
  *
