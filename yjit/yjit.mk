@@ -19,60 +19,21 @@ YJIT_SRC_FILES = $(wildcard \
 # rebuild at the next build.
 YJIT_LIB_TOUCH = touch $@
 
+# Absolute path to match RUST_LIB rules to avoid picking
+# the "target" dir in the source directory through VPATH.
+BUILD_YJIT_LIBS = $(TOP_BUILD_DIR)/$(YJIT_LIBS)
+
 # YJIT_SUPPORT=yes when `configure` gets `--enable-yjit`
 ifeq ($(YJIT_SUPPORT),yes)
-$(YJIT_LIBS): $(YJIT_SRC_FILES)
+yjit-libs: $(BUILD_YJIT_LIBS)
+$(BUILD_YJIT_LIBS): $(YJIT_SRC_FILES)
 	$(ECHO) 'building Rust YJIT (release mode)'
 	+$(Q) $(RUSTC) $(YJIT_RUSTC_ARGS)
 	$(YJIT_LIB_TOUCH)
-else ifeq ($(YJIT_SUPPORT),no)
-$(YJIT_LIBS):
-	$(ECHO) 'Error: Tried to build YJIT without configuring it first. Check `make showconfig`?'
-	@false
-else ifeq ($(YJIT_SUPPORT),$(filter dev dev_nodebug stats,$(YJIT_SUPPORT)))
-# NOTE: MACOSX_DEPLOYMENT_TARGET to match `rustc --print deployment-target` to avoid the warning below.
-#    ld: warning: object file (yjit/target/debug/libyjit.a(<libcapstone object>)) was built for
-#    newer macOS version (15.2) than being linked (15.0)
-# We don't use newer macOS feature as of yet.
-$(YJIT_LIBS): $(YJIT_SRC_FILES)
-	$(ECHO) 'building Rust YJIT ($(YJIT_SUPPORT) mode)'
-	+$(Q)$(CHDIR) $(top_srcdir)/yjit && \
-	        CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
-	        CARGO_TERM_PROGRESS_WHEN='never' \
-	        MACOSX_DEPLOYMENT_TARGET=11.0 \
-	        $(CARGO) $(CARGO_VERBOSE) build $(CARGO_BUILD_ARGS)
-	$(YJIT_LIB_TOUCH)
-else
 endif
 
-yjit-libobj: $(YJIT_LIBOBJ)
-
-YJIT_LIB_SYMBOLS = $(YJIT_LIBS:.a=).symbols
-$(YJIT_LIBOBJ): $(YJIT_LIBS)
-	$(ECHO) 'partial linking $(YJIT_LIBS) into $@'
-ifneq ($(findstring darwin,$(target_os)),)
-	$(Q) $(CC) -nodefaultlibs -r -o $@ -exported_symbols_list $(YJIT_LIB_SYMBOLS) $(YJIT_LIBS)
-else
-	$(Q) $(LD) -r -o $@ --whole-archive $(YJIT_LIBS)
-	-$(Q) $(OBJCOPY) --wildcard --keep-global-symbol='$(SYMBOL_PREFIX)rb_*' $(@)
-endif
-
-# For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
-# Unfortunately, using wildcard like '_rb_*' with -exported-symbol does not work, at least
-# not on version 820.1. Assume llvm-nm, so XCode 8.0 (from 2016) or newer.
-#
-# The -exported_symbols_list pulls out the right archive members. Symbols not listed
-# in the list are made private extern, which are in turn made local as we're using `ld -r`.
-# Note, section about -keep_private_externs in ld's man page hints at this behavior on which
-# we rely.
-ifneq ($(findstring darwin,$(target_os)),)
-$(YJIT_LIB_SYMBOLS): $(YJIT_LIBS)
-	$(Q) $(tooldir)/darwin-ar $(NM) --defined-only --extern-only $(YJIT_LIBS) | \
-	sed -n -e 's/.* //' -e '/^$(SYMBOL_PREFIX)rb_/p' \
-	-e '/^$(SYMBOL_PREFIX)rust_eh_personality/p' \
-	> $@
-
-$(YJIT_LIBOBJ): $(YJIT_LIB_SYMBOLS)
+ifneq ($(YJIT_SUPPORT),no)
+$(RUST_LIB): $(YJIT_SRC_FILES)
 endif
 
 # By using YJIT_BENCH_OPTS instead of RUN_OPTS, you can skip passing the options to `make install`
@@ -94,7 +55,7 @@ RUST_VERSION = +1.58.0
 .PHONY: yjit-smoke-test
 yjit-smoke-test:
 ifneq ($(strip $(CARGO)),)
-	$(CARGO) $(RUST_VERSION) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
+	$(CARGO) test --all-features -q --manifest-path='$(top_srcdir)/yjit/Cargo.toml'
 endif
 	$(MAKE) btest RUN_OPTS='--yjit-call-threshold=1' BTESTS=-j
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_yjit.rb'

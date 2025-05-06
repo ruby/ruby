@@ -1,7 +1,8 @@
 fn main() {
     use std::env;
 
-    if let Ok(ruby_build_dir) = env::var("RUBY_BUILD_DIR") {
+    // option_env! automatically registers a rerun-if-env-changed
+    if let Some(ruby_build_dir) = option_env!("RUBY_BUILD_DIR") {
         // Link against libminiruby
         println!("cargo:rustc-link-search=native={ruby_build_dir}");
         println!("cargo:rustc-link-lib=static:-bundle=miniruby");
