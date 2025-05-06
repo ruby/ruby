@@ -9191,6 +9191,7 @@ jit.$(OBJEXT): $(top_srcdir)/internal/class.h
 jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 jit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+jit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 jit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 jit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
