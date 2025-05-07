@@ -3660,70 +3660,30 @@ vm_weak_table_gen_fields_foreach_too_complex_replace_i(st_data_t *_key, st_data_
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
-vm_weak_table_id_to_obj_foreach(st_data_t key, st_data_t value, st_data_t data)
+vm_weak_table_id_to_obj_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
-    int ret = iter_data->callback((VALUE)value, iter_data->data);
-
-    switch (ret) {
-      case ST_CONTINUE:
-        return ret;
-
-      case ST_DELETE:
-        GC_ASSERT(rb_shape_obj_has_id((VALUE)value));
-        return ST_DELETE;
-
-      case ST_REPLACE: {
-        VALUE new_value = (VALUE)value;
-        ret = iter_data->update_callback(&new_value, iter_data->data);
-        if (value != new_value) {
-            DURING_GC_COULD_MALLOC_REGION_START();
-            {
-                st_insert(id_to_obj_tbl, key, (st_data_t)new_value);
-            }
-            DURING_GC_COULD_MALLOC_REGION_END();
-        }
-        return ST_CONTINUE;
-      }
+    if (!iter_data->weak_only && !FIXNUM_P((VALUE)key)) {
+        int ret = iter_data->callback((VALUE)key, iter_data->data);
+        if (ret != ST_CONTINUE) return ret;
     }
 
-    return ret;
+    return iter_data->callback((VALUE)value, iter_data->data);
 }
 
 static int
-vm_weak_table_id_to_obj_keys_foreach(st_data_t key, st_data_t value, st_data_t data)
+vm_weak_table_id_to_obj_foreach_update(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
-    if (LIKELY(FIXNUM_P((VALUE)key))) {
-        return ST_CONTINUE;
+    iter_data->update_callback((VALUE *)value, iter_data->data);
+
+    if (!iter_data->weak_only && !FIXNUM_P((VALUE)*key)) {
+        iter_data->update_callback((VALUE *)key, iter_data->data);
     }
 
-    int ret = iter_data->callback((VALUE)key, iter_data->data);
-
-    switch (ret) {
-      case ST_CONTINUE:
-        return ret;
-
-      case ST_DELETE:
-        return ST_DELETE;
-
-      case ST_REPLACE: {
-          VALUE new_key = (VALUE)key;
-          ret = iter_data->update_callback(&new_key, iter_data->data);
-          if (key != new_key) ret = ST_DELETE;
-          DURING_GC_COULD_MALLOC_REGION_START();
-          {
-              st_insert(id_to_obj_tbl, (st_data_t)new_key, value);
-          }
-          DURING_GC_COULD_MALLOC_REGION_END();
-          key = (st_data_t)new_key;
-          break;
-      }
-    }
-
-    return ret;
+    return ST_CONTINUE;
 }
 
 static int
@@ -3855,19 +3815,12 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
       }
       case RB_GC_VM_ID_TO_OBJ_TABLE: {
         if (id_to_obj_tbl) {
-            st_foreach(
+            st_foreach_with_replace(
                 id_to_obj_tbl,
                 vm_weak_table_id_to_obj_foreach,
+                vm_weak_table_id_to_obj_foreach_update,
                 (st_data_t)&foreach_data
             );
-
-            if (!RB_POSFIXABLE(next_object_id)) {
-                st_foreach(
-                    id_to_obj_tbl,
-                    vm_weak_table_id_to_obj_keys_foreach,
-                    (st_data_t)&foreach_data
-                );
-            }
         }
         break;
       }
