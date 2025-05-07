@@ -752,7 +752,9 @@ impl Function {
         macro_rules! find {
             ( $x:expr ) => {
                 {
-                    self.union_find.borrow_mut().find($x)
+                    // TODO(max): Figure out why borrow_mut().find() causes `already borrowed:
+                    // BorrowMutError`
+                    self.union_find.borrow().find_const($x)
                 }
             };
         }
@@ -773,7 +775,7 @@ impl Function {
                 }
             };
         }
-        let insn_id = self.union_find.borrow_mut().find(insn_id);
+        let insn_id = find!(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(PutSelf | Const {..} | Param {..} | GetConstantPath {..}
