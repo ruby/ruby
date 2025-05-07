@@ -33,7 +33,13 @@
 # include "probes.h"
 #endif
 
-#include "debug_counter.h"
+#ifdef BUILDING_MODULAR_GC
+# define RB_DEBUG_COUNTER_INC(_name) ((void)0)
+# define RB_DEBUG_COUNTER_INC_IF(_name, cond) (!!(cond))
+#else
+# include "debug_counter.h"
+#endif
+
 #include "internal/sanitizers.h"
 
 /* MALLOC_HEADERS_BEGIN */
