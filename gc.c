@@ -3860,16 +3860,14 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
                 vm_weak_table_id_to_obj_foreach,
                 (st_data_t)&foreach_data
             );
-        }
-        break;
-      }
-      case RB_GC_VM_ID_TO_OBJ_TABLE_KEYS: {
-        if (id_to_obj_tbl && !RB_POSFIXABLE(next_object_id)) {
-            st_foreach(
-                id_to_obj_tbl,
-                vm_weak_table_id_to_obj_keys_foreach,
-                (st_data_t)&foreach_data
-            );
+
+            if (!RB_POSFIXABLE(next_object_id)) {
+                st_foreach(
+                    id_to_obj_tbl,
+                    vm_weak_table_id_to_obj_keys_foreach,
+                    (st_data_t)&foreach_data
+                );
+            }
         }
         break;
       }
