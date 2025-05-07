@@ -4913,12 +4913,6 @@ rb_asan_poisoned_object_p(VALUE obj)
     return __asan_region_is_poisoned(ptr, rb_gc_obj_slot_size(obj));
 }
 
-#define asan_unpoisoning_object(obj) \
-    for (void *poisoned = asan_unpoison_object_temporary(obj), \
-              *unpoisoning = &poisoned; /* flag to loop just once */ \
-         unpoisoning; \
-         unpoisoning = asan_poison_object_restore(obj, poisoned))
-
 const char *
 rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 {
