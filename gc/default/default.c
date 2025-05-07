@@ -6481,7 +6481,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
               reason,
               do_full_mark, !is_incremental_marking(objspace), objspace->flags.immediate_sweep);
 
-#if USE_DEBUG_COUNTER
     RB_DEBUG_COUNTER_INC(gc_count);
 
     if (reason & GPR_FLAG_MAJOR_MASK) {
@@ -6500,7 +6499,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_capi,   reason & GPR_FLAG_CAPI);
         (void)RB_DEBUG_COUNTER_INC_IF(gc_minor_stress, reason & GPR_FLAG_STRESS);
     }
-#endif
 
     objspace->profile.count++;
     objspace->profile.latest_gc_info = reason;
