@@ -3606,7 +3606,7 @@ str_uplus(VALUE str)
  *
  * Returns a frozen string equal to +self+.
  *
- * The return string is +self+ if and only if all of the following are true:
+ * The returned string is +self+ if and only if all of the following are true:
  *
  * - +self+ is already frozen.
  * - +self+ is an instance of \String (rather than of a subclass of \String)
@@ -3614,8 +3614,15 @@ str_uplus(VALUE str)
  *
  * Otherwise, the returned string is a frozen copy of +self+.
  *
- * Returning +self+, when possible, saves duplicating data;
+ * Returning +self+, when possible, saves duplicating +self+;
  * see {Data deduplication}[https://en.wikipedia.org/wiki/Data_deduplication].
+ *
+ * It may also save duplicating other, already-existing, strings:
+ *
+ *   s0 = 'foo'
+ *   s1 = 'foo'
+ *   s0.object_id == s1.object_id       # => false
+ *   (-s0).object_id == (-s1).object_id # => true
  *
  * Note that method #-@ is convenient for defining a constant:
  *
