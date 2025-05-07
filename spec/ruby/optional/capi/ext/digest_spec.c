@@ -26,7 +26,7 @@ void* context = NULL;
 int digest_spec_plugin_init(void *raw_ctx) {
     // Make the context accessible to tests. This isn't safe, but there's no way to access the context otherwise.
     context = raw_ctx;
- 
+
     struct CTX *ctx = (struct CTX *)raw_ctx;
     size_t len = strlen(init_string);
 
@@ -44,7 +44,7 @@ int digest_spec_plugin_init(void *raw_ctx) {
 void digest_spec_plugin_update(void *raw_ctx, unsigned char *ptr, size_t size) {
     struct CTX *ctx = (struct CTX *)raw_ctx;
     size_t update_str_len = strlen(update_string);
-    
+
     if (ctx->pos + update_str_len + size >= PAYLOAD_SIZE) {
         rb_raise(rb_eRuntimeError, "update size too large; reset the digest and write fewer updates");
     }
@@ -63,7 +63,7 @@ void digest_spec_plugin_update(void *raw_ctx, unsigned char *ptr, size_t size) {
 int digest_spec_plugin_finish(void *raw_ctx, unsigned char *ptr) {
     struct CTX *ctx = (struct CTX *)raw_ctx;
     size_t finish_string_len = strlen(finish_string);
-    
+
     // We're always going to write DIGEST_LENGTH bytes. In a real plugin, this would be the digest value. Here we
     // write out a text string in order to make validation in tests easier.
     //
