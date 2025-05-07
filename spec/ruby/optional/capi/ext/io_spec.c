@@ -28,13 +28,7 @@ static int set_non_blocking(int fd) {
 }
 
 static int io_spec_get_fd(VALUE io) {
-#ifdef RUBY_VERSION_IS_3_1
   return rb_io_descriptor(io);
-#else
-  rb_io_t* fp;
-  GetOpenFile(io, fp);
-  return fp->fd;
-#endif
 }
 
 VALUE io_spec_GetOpenFile_fd(VALUE self, VALUE io) {
@@ -143,11 +137,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
     errno = saved_errno;
   }
 
-#ifdef RUBY_VERSION_IS_3_1
   ret = rb_io_maybe_wait_readable(errno, io, Qnil);
-#else
-  ret = rb_io_wait_readable(fd);
-#endif
 
   if (RTEST(read_p)) {
     ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
@@ -166,22 +156,15 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
 }
 
 VALUE io_spec_rb_io_wait_writable(VALUE self, VALUE io) {
-#ifdef RUBY_VERSION_IS_3_1
   int ret = rb_io_maybe_wait_writable(errno, io, Qnil);
-#else
-  int ret = rb_io_wait_writable(io_spec_get_fd(io));
-#endif
   return ret ? Qtrue : Qfalse;
 }
 
-#ifdef RUBY_VERSION_IS_3_1
 VALUE io_spec_rb_io_maybe_wait_writable(VALUE self, VALUE error, VALUE io, VALUE timeout) {
   int ret = rb_io_maybe_wait_writable(NUM2INT(error), io, timeout);
   return INT2NUM(ret);
 }
-#endif
 
-#ifdef RUBY_VERSION_IS_3_1
 #ifdef SET_NON_BLOCKING_FAILS_ALWAYS
 NORETURN(VALUE io_spec_rb_io_maybe_wait_readable(VALUE self, VALUE error, VALUE io, VALUE timeout, VALUE read_p));
 #endif
@@ -224,13 +207,10 @@ VALUE io_spec_rb_io_maybe_wait_readable(VALUE self, VALUE error, VALUE io, VALUE
   UNREACHABLE_RETURN(Qnil);
 #endif
 }
-#endif
 
-#ifdef RUBY_VERSION_IS_3_1
 VALUE io_spec_rb_io_maybe_wait(VALUE self, VALUE error, VALUE io, VALUE events, VALUE timeout) {
   return rb_io_maybe_wait(NUM2INT(error), io, events, timeout);
 }
-#endif
 
 VALUE io_spec_rb_thread_wait_fd(VALUE self, VALUE io) {
   rb_thread_wait_fd(io_spec_get_fd(io));
@@ -238,7 +218,6 @@ VALUE io_spec_rb_thread_wait_fd(VALUE self, VALUE io) {
 }
 
 VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE secs, VALUE usecs) {
-#ifdef RUBY_VERSION_IS_3_0
   VALUE timeout = Qnil;
   if (!NIL_P(secs)) {
       timeout = rb_float_new((double)FIX2INT(secs) + (0.000001 * FIX2INT(usecs)));
@@ -246,15 +225,6 @@ VALUE io_spec_rb_wait_for_single_fd(VALUE self, VALUE io, VALUE events, VALUE se
   VALUE result = rb_io_wait(io, events, timeout);
   if (result == Qfalse) return INT2FIX(0);
   else return result;
-#else
-  struct timeval tv;
-  if (!NIL_P(secs)) {
-    tv.tv_sec = FIX2INT(secs);
-    tv.tv_usec = FIX2INT(usecs);
-  }
-  int fd = io_spec_get_fd(io);
-  return INT2FIX(rb_wait_for_single_fd(fd, FIX2INT(events), NIL_P(secs) ? NULL : &tv));
-#endif
 }
 
 VALUE io_spec_rb_thread_fd_writable(VALUE self, VALUE io) {
@@ -409,11 +379,9 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_taint_check", io_spec_rb_io_taint_check, 1);
   rb_define_method(cls, "rb_io_wait_readable", io_spec_rb_io_wait_readable, 2);
   rb_define_method(cls, "rb_io_wait_writable", io_spec_rb_io_wait_writable, 1);
-#ifdef RUBY_VERSION_IS_3_1
   rb_define_method(cls, "rb_io_maybe_wait_writable", io_spec_rb_io_maybe_wait_writable, 3);
   rb_define_method(cls, "rb_io_maybe_wait_readable", io_spec_rb_io_maybe_wait_readable, 4);
   rb_define_method(cls, "rb_io_maybe_wait", io_spec_rb_io_maybe_wait, 4);
-#endif
   rb_define_method(cls, "rb_thread_wait_fd", io_spec_rb_thread_wait_fd, 1);
   rb_define_method(cls, "rb_thread_fd_writable", io_spec_rb_thread_fd_writable, 1);
   rb_define_method(cls, "rb_thread_fd_select_read", io_spec_rb_thread_fd_select_read, 1);

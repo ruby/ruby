@@ -22,6 +22,7 @@ describe :kernel_sprintf, shared: true do
       @method.call("%d", "112").should == "112"
       @method.call("%d", "0127").should == "87"
       @method.call("%d", "0xc4").should == "196"
+      @method.call("%d", "0").should == "0"
     end
 
     it "raises TypeError exception if cannot convert to Integer" do
@@ -56,6 +57,11 @@ describe :kernel_sprintf, shared: true do
 
         it "works well with large numbers" do
           @method.call("%#{f}", 1234567890987654321).should == "1234567890987654321"
+        end
+
+        it "converts to the empty string if precision is 0 and value is 0" do
+          @method.call("%.#{f}", 0).should == ""
+          @method.call("%.0#{f}", 0).should == ""
         end
       end
     end
@@ -289,28 +295,12 @@ describe :kernel_sprintf, shared: true do
         @method.call("%c", "a").should == "a"
       end
 
-      ruby_version_is ""..."3.2" do
-        it "raises ArgumentError if argument is a string of several characters" do
-          -> {
-            @method.call("%c", "abc")
-          }.should raise_error(ArgumentError, /%c requires a character/)
-        end
-
-        it "raises ArgumentError if argument is an empty string" do
-          -> {
-            @method.call("%c", "")
-          }.should raise_error(ArgumentError, /%c requires a character/)
-        end
+      it "displays only the first character if argument is a string of several characters" do
+        @method.call("%c", "abc").should == "a"
       end
 
-      ruby_version_is "3.2" do
-        it "displays only the first character if argument is a string of several characters" do
-          @method.call("%c", "abc").should == "a"
-        end
-
-        it "displays no characters if argument is an empty string" do
-          @method.call("%c", "").should == ""
-        end
+      it "displays no characters if argument is an empty string" do
+        @method.call("%c", "").should == ""
       end
 
       it "raises TypeError if argument is not String or Integer and cannot be converted to them" do

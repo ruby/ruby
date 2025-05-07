@@ -361,30 +361,28 @@ describe "Marshal.dump" do
     end
   end
 
-  ruby_version_is "3.2" do
-    describe "with a Data" do
-      it "dumps a Data" do
-        Marshal.dump(MarshalSpec::DataSpec::Measure.new(100, 'km')).should == "\x04\bS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm"
-      end
+  describe "with a Data" do
+    it "dumps a Data" do
+      Marshal.dump(MarshalSpec::DataSpec::Measure.new(100, 'km')).should == "\x04\bS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "dumps an extended Data" do
-        obj = MarshalSpec::DataSpec::MeasureExtended.new(100, "km")
-        Marshal.dump(obj).should == "\x04\bS:+MarshalSpec::DataSpec::MeasureExtended\a:\vamountii:\tunit\"\akm"
-      end
+    it "dumps an extended Data" do
+      obj = MarshalSpec::DataSpec::MeasureExtended.new(100, "km")
+      Marshal.dump(obj).should == "\x04\bS:+MarshalSpec::DataSpec::MeasureExtended\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "ignores overridden name method" do
-        obj = MarshalSpec::DataSpec::MeasureWithOverriddenName.new(100, "km")
-        Marshal.dump(obj).should == "\x04\bS:5MarshalSpec::DataSpec::MeasureWithOverriddenName\a:\vamountii:\tunit\"\akm"
-      end
+    it "ignores overridden name method" do
+      obj = MarshalSpec::DataSpec::MeasureWithOverriddenName.new(100, "km")
+      Marshal.dump(obj).should == "\x04\bS:5MarshalSpec::DataSpec::MeasureWithOverriddenName\a:\vamountii:\tunit\"\akm"
+    end
 
-      it "uses object links for objects repeatedly dumped" do
-        d = MarshalSpec::DataSpec::Measure.new(100, 'km')
-        Marshal.dump([d, d]).should == "\x04\b[\aS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm@\x06" # @\x06 is a link to the object
-      end
+    it "uses object links for objects repeatedly dumped" do
+      d = MarshalSpec::DataSpec::Measure.new(100, 'km')
+      Marshal.dump([d, d]).should == "\x04\b[\aS:#MarshalSpec::DataSpec::Measure\a:\vamountii:\tunit\"\akm@\x06" # @\x06 is a link to the object
+    end
 
-      it "raises TypeError with an anonymous Struct" do
-        -> { Marshal.dump(Data.define(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
-      end
+    it "raises TypeError with an anonymous Struct" do
+      -> { Marshal.dump(Data.define(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
     end
   end
 

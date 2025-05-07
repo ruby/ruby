@@ -62,37 +62,18 @@ describe "A block yielded a single" do
       m([1, 2, 3, 4, 5, 6]) { |a, b=5, c=6, *d, e, f| [a, b, c, d, e, f] }.should == [1, 2, 3, [4], 5, 6]
     end
 
-    ruby_version_is "3.2" do
-      it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
-        m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
-      end
-
-      it "does not autosplat single argument to required arguments when keyword arguments are present" do
-        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
-      end
-
-      it "raises error when required keyword arguments are present" do
-        -> {
-          m([1, 2]) { |a, b:, c:| [a, b, c] }
-        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
-      end
+    it "does not autosplat single argument to required arguments when a keyword rest argument is present" do
+      m([1, 2]) { |a, **k| [a, k] }.should == [[1, 2], {}]
     end
 
-    ruby_version_is ''..."3.2" do
-      # https://bugs.ruby-lang.org/issues/18633
-      it "autosplats single argument to required arguments when a keyword rest argument is present" do
-        m([1, 2]) { |a, **k| [a, k] }.should == [1, {}]
-      end
+    it "does not autosplat single argument to required arguments when keyword arguments are present" do
+      m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [[1, 2], :b, :c]
+    end
 
-      it "autosplats single argument to required arguments when optional keyword arguments are present" do
-        m([1, 2]) { |a, b: :b, c: :c| [a, b, c] }.should == [1, :b, :c]
-      end
-
-      it "raises error when required keyword arguments are present" do
-        -> {
-          m([1, 2]) { |a, b:, c:| [a, b, c] }
-        }.should raise_error(ArgumentError, "missing keywords: :b, :c")
-      end
+    it "raises error when required keyword arguments are present" do
+      -> {
+        m([1, 2]) { |a, b:, c:| [a, b, c] }
+      }.should raise_error(ArgumentError, "missing keywords: :b, :c")
     end
 
     it "assigns elements to mixed argument types" do
@@ -1040,25 +1021,23 @@ describe "Anonymous block forwarding" do
     no_kw(:a) { 1 }.should == 1
   end
 
-  ruby_version_is "3.2" do
-    it "works alongside explicit keyword arguments" do
-      eval <<-EOF
-          def inner; yield end
-          def rest_kw(*a, kwarg: 1, &); inner(&) end
-          def kw(kwarg: 1, &); inner(&) end
-          def pos_kw_kwrest(arg1, kwarg: 1, **kw, &); inner(&) end
-          def pos_rkw(arg1, kwarg1:, &); inner(&) end
-          def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &); inner(&) end
-          def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &); inner(&) end
-      EOF
+  it "works alongside explicit keyword arguments" do
+    eval <<-EOF
+        def inner; yield end
+        def rest_kw(*a, kwarg: 1, &); inner(&) end
+        def kw(kwarg: 1, &); inner(&) end
+        def pos_kw_kwrest(arg1, kwarg: 1, **kw, &); inner(&) end
+        def pos_rkw(arg1, kwarg1:, &); inner(&) end
+        def all(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, &); inner(&) end
+        def all_kwrest(arg1, arg2, *rest, post1, post2, kw1: 1, kw2: 2, okw1:, okw2:, **kw, &); inner(&) end
+    EOF
 
-      rest_kw { 1 }.should == 1
-      kw { 1 }.should == 1
-      pos_kw_kwrest(:a) { 1 }.should == 1
-      pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
-      all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
-      all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
-    end
+    rest_kw { 1 }.should == 1
+    kw { 1 }.should == 1
+    pos_kw_kwrest(:a) { 1 }.should == 1
+    pos_rkw(:a, kwarg1: 3) { 1 }.should == 1
+    all(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
+    all_kwrest(:a, :b, :c, :d, :e, okw1: 'x', okw2: 'y') { 1 }.should == 1
   end
 end
 
@@ -1088,5 +1067,12 @@ describe "`it` calls without arguments in a block with no ordinary parameters" d
     it "does not emit a deprecation warning when `it` calls with explicit empty arguments list" do
       -> { eval "proc { it() }" }.should_not complain
     end
+  end
+end
+
+describe "if `it` is defined outside of a block" do
+  it "treats `it` as a captured variable" do
+    it = 5
+    proc { it }.call(0).should == 5
   end
 end

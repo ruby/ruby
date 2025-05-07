@@ -13,9 +13,7 @@ describe "String#to_c" do
 
   it "ignores trailing garbage" do
     '79+4iruby'.to_c.should == Complex(79, 4)
-    ruby_bug "[Bug #19087]", ""..."3.2" do
-      '7__9+4__0i'.to_c.should == Complex(7, 0)
-    end
+    '7__9+4__0i'.to_c.should == Complex(7, 0)
   end
 
   context "it treats special float value strings as characters" do
@@ -43,15 +41,13 @@ describe "String#to_c" do
     }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
 
-  ruby_version_is "3.2" do
-    it "treats a sequence of underscores as an end of Complex string" do
-      "5+3_1i".to_c.should == Complex(5, 31)
-      "5+3__1i".to_c.should == Complex(5)
-      "5+3___1i".to_c.should == Complex(5)
+  it "treats a sequence of underscores as an end of Complex string" do
+    "5+3_1i".to_c.should == Complex(5, 31)
+    "5+3__1i".to_c.should == Complex(5)
+    "5+3___1i".to_c.should == Complex(5)
 
-      "12_3".to_c.should == Complex(123)
-      "12__3".to_c.should == Complex(12)
-      "12___3".to_c.should == Complex(12)
-    end
+    "12_3".to_c.should == Complex(123)
+    "12__3".to_c.should == Complex(12)
+    "12___3".to_c.should == Complex(12)
   end
 end
