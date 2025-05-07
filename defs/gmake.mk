@@ -509,7 +509,7 @@ update-deps:
 $(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 	$(ECHO) building $@
 	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
+	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) -I$(EXTOUT)/include $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
 ifneq ($(POSTLINK),)
 	$(Q) $(POSTLINK)
 endif
