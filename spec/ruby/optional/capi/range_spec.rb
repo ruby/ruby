@@ -92,4 +92,140 @@ describe "C-API Range function" do
       result.should be_nil
     end
   end
+
+  describe "rb_arithmetic_sequence_extract" do
+    it "returns begin, end, step, exclude end of an instance of an Enumerator::ArithmeticSequence" do
+      enum = (10..20).step(5)
+      enum.should.kind_of?(Enumerator::ArithmeticSequence)
+
+      @s.rb_arithmetic_sequence_extract(enum).should == [1, 10, 20, 5, false]
+    end
+
+    it "returns begin, end, step, exclude end of an instance of a Range" do
+      range = (10..20)
+      @s.rb_arithmetic_sequence_extract(range).should == [1, 10, 20, 1, false]
+    end
+
+    it "returns begin, end, step, exclude end of a non-Range object with Range properties" do
+      object = Object.new
+      def object.begin
+        10
+      end
+      def object.end
+        20
+      end
+      def object.exclude_end?
+        false
+      end
+
+      @s.rb_arithmetic_sequence_extract(object).should == [1, 10, 20, 1, false]
+    end
+
+    it "returns failed status if given object is not Enumerator::ArithmeticSequence or Range or Range-like object" do
+      object = Object.new
+      @s.rb_arithmetic_sequence_extract(object).should == [0]
+    end
+  end
+
+  describe "rb_arithmetic_sequence_beg_len_step" do
+    it "returns correct begin, length, step and result" do
+      as = (2..5).step(5)
+      error_code = 0
+
+      success, beg, len, step = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+
+      beg.should == 2
+      len.should == 4
+      step.should == 5
+    end
+
+    it "takes into account excluded end boundary" do
+      as = (2...5).step(1)
+      error_code = 0
+
+      success, _, len, _ = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+      len.should == 3
+    end
+
+    it "adds length to negative begin boundary" do
+      as = (-2..5).step(1)
+      error_code = 0
+
+      success, beg, len, _ = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+
+      beg.should == 4
+      len.should == 2
+    end
+
+    it "adds length to negative end boundary" do
+      as = (2..-1).step(1)
+      error_code = 0
+
+      success, beg, len, _ = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+
+      beg.should == 2
+      len.should == 4
+    end
+
+    it "truncates arithmetic sequence length if end boundary greater than specified length value" do
+      as = (2..10).step(1)
+      error_code = 0
+
+      success, _, len, _ = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+      len.should == 4
+    end
+
+    it "returns inverted begin and end boundaries when step is negative" do
+      as = (2..5).step(-2)
+      error_code = 0
+
+      success, beg, len, step = @s.rb_arithmetic_sequence_beg_len_step(as, 6, error_code)
+      success.should be_true
+
+      beg.should == 5
+      len.should == 0
+      step.should == -2
+    end
+
+    it "returns nil when not in range and error code = 0" do
+      as = (2..5).step(1)
+      error_code = 0
+
+      success, = @s.rb_arithmetic_sequence_beg_len_step(as, 1, error_code)
+      success.should be_nil
+    end
+
+    it "returns nil when not in range, negative boundaries and error code = 0" do
+      as = (-5..-1).step(1)
+      error_code = 0
+
+      success, = @s.rb_arithmetic_sequence_beg_len_step(as, 1, 0)
+      success.should be_nil
+    end
+
+    it "returns begin, length and step and doesn't raise a RangeError when not in range and error code = 1" do
+      as = (2..5).step(1)
+      error_code = 1
+
+      success, beg, len, step = @s.rb_arithmetic_sequence_beg_len_step(as, 1, error_code)
+      success.should be_true
+
+      beg.should == 2
+      len.should == 4
+      step.should == 1
+    end
+
+    it "returns nil and doesn't raise a RangeError when not in range, negative boundaries and error code = 1" do
+      as = (-5..-1).step(1)
+      error_code = 1
+
+      success, = @s.rb_arithmetic_sequence_beg_len_step(as, 1, error_code)
+      success.should be_nil
+    end
+  end
 end

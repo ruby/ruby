@@ -76,122 +76,60 @@ describe "Module#ruby2_keywords" do
     Hash.ruby2_keywords_hash?(marked).should == true
   end
 
-  ruby_version_is "3.2" do
-    it "makes a copy and unmark the Hash when calling a method taking (*args)" do
-      obj = Object.new
-      obj.singleton_class.class_exec do
-        def splat(*args)
-          args.last
-        end
-
-        def splat1(arg, *args)
-          args.last
-        end
-
-        def proc_call(*args)
-          -> *a { a.last }.call(*args)
-        end
+  it "makes a copy and unmark the Hash when calling a method taking (*args)" do
+    obj = Object.new
+    obj.singleton_class.class_exec do
+      def splat(*args)
+        args.last
       end
 
-      h = { a: 1 }
-      args = mark(**h)
-      marked = args.last
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      after_usage = obj.splat(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should_not.equal?(marked)
-      Hash.ruby2_keywords_hash?(after_usage).should == false
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(1, **h)
-      marked = args.last
-      after_usage = obj.splat1(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should_not.equal?(marked)
-      Hash.ruby2_keywords_hash?(after_usage).should == false
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(**h)
-      marked = args.last
-      after_usage = obj.proc_call(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should_not.equal?(marked)
-      Hash.ruby2_keywords_hash?(after_usage).should == false
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(**h)
-      marked = args.last
-      after_usage = obj.send(:splat, *args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should_not.equal?(marked)
-      Hash.ruby2_keywords_hash?(after_usage).should == false
-      Hash.ruby2_keywords_hash?(marked).should == true
-    end
-  end
-
-  ruby_version_is ""..."3.2" do
-    # https://bugs.ruby-lang.org/issues/18625
-    it "does NOT copy the Hash when calling a method taking (*args)" do
-      obj = Object.new
-      obj.singleton_class.class_exec do
-        def splat(*args)
-          args.last
-        end
-
-        def splat1(arg, *args)
-          args.last
-        end
-
-        def proc_call(*args)
-          -> *a { a.last }.call(*args)
-        end
+      def splat1(arg, *args)
+        args.last
       end
 
-      h = { a: 1 }
-      args = mark(**h)
-      marked = args.last
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      after_usage = obj.splat(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should.equal?(marked) # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(after_usage).should == true # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(1, **h)
-      marked = args.last
-      after_usage = obj.splat1(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should.equal?(marked) # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(after_usage).should == true # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(**h)
-      marked = args.last
-      after_usage = obj.proc_call(*args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      after_usage.should.equal?(marked) # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(after_usage).should == true # https://bugs.ruby-lang.org/issues/18625
-      Hash.ruby2_keywords_hash?(marked).should == true
-
-      args = mark(**h)
-      marked = args.last
-      after_usage = obj.send(:splat, *args)
-      after_usage.should == h
-      after_usage.should_not.equal?(h)
-      send_copies = RUBY_ENGINE == "ruby" # inconsistent with Proc#call above for CRuby
-      after_usage.equal?(marked).should == !send_copies
-      Hash.ruby2_keywords_hash?(after_usage).should == !send_copies
-      Hash.ruby2_keywords_hash?(marked).should == true
+      def proc_call(*args)
+        -> *a { a.last }.call(*args)
+      end
     end
+
+    h = { a: 1 }
+    args = mark(**h)
+    marked = args.last
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    after_usage = obj.splat(*args)
+    after_usage.should == h
+    after_usage.should_not.equal?(h)
+    after_usage.should_not.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == false
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    args = mark(1, **h)
+    marked = args.last
+    after_usage = obj.splat1(*args)
+    after_usage.should == h
+    after_usage.should_not.equal?(h)
+    after_usage.should_not.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == false
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    args = mark(**h)
+    marked = args.last
+    after_usage = obj.proc_call(*args)
+    after_usage.should == h
+    after_usage.should_not.equal?(h)
+    after_usage.should_not.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == false
+    Hash.ruby2_keywords_hash?(marked).should == true
+
+    args = mark(**h)
+    marked = args.last
+    after_usage = obj.send(:splat, *args)
+    after_usage.should == h
+    after_usage.should_not.equal?(h)
+    after_usage.should_not.equal?(marked)
+    Hash.ruby2_keywords_hash?(after_usage).should == false
+    Hash.ruby2_keywords_hash?(marked).should == true
   end
 
   it "applies to the underlying method and applies across aliasing" do

@@ -1,6 +1,7 @@
 # -*- encoding: binary -*-
 
 require_relative '../spec_helper'
+require_relative 'fixtures/class_with_class_variable'
 
 # TODO: rewrite these horrid specs. it "are..." seriously?!
 
@@ -25,6 +26,11 @@ describe "Ruby character strings" do
 
   it "interpolate global variables just with the # character" do
     "#$ip".should == 'xxx'
+  end
+
+  it "interpolate class variables just with the # character" do
+    object = StringSpecs::ClassWithClassVariable.new
+    object.foo.should == 'xxx'
   end
 
   it "allows underscore as part of a variable name in a simple interpolation" do
@@ -280,15 +286,15 @@ describe "Ruby String interpolation" do
 
   it "creates a non-frozen String" do
     code = <<~'RUBY'
-    "a#{6*7}c"
+      "a#{6*7}c"
     RUBY
     eval(code).should_not.frozen?
   end
 
   it "creates a non-frozen String when # frozen-string-literal: true is used" do
     code = <<~'RUBY'
-    # frozen-string-literal: true
-    "a#{6*7}c"
+      # frozen-string-literal: true
+      "a#{6*7}c"
     RUBY
     eval(code).should_not.frozen?
   end
