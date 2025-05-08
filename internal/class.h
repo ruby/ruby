@@ -117,7 +117,7 @@ static inline st_table *
 RCLASS_FIELDS_HASH(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     return (st_table *)RCLASS_FIELDS(obj);
 }
 
@@ -125,7 +125,7 @@ static inline void
 RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     RCLASS_FIELDS(obj) = (VALUE *)tbl;
 }
 
@@ -133,7 +133,7 @@ static inline uint32_t
 RCLASS_FIELDS_COUNT(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    if (rb_shape_obj_too_complex(obj)) {
+    if (rb_shape_obj_too_complex_p(obj)) {
         uint32_t count;
 
         // "Too complex" classes could have their IV hash mutated in
