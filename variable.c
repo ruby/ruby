@@ -1316,7 +1316,7 @@ rb_field_get(VALUE obj, rb_shape_t *target_shape)
         return ROBJECT_FIELDS(obj)[attr_index];
       default:
         RUBY_ASSERT(FL_TEST_RAW(obj, FL_EXIVAR));
-        struct gen_fields_tbl *fields_tbl;
+        struct gen_fields_tbl *fields_tbl = NULL;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
         RUBY_ASSERT(fields_tbl);
         return fields_tbl->as.shape.fields[attr_index];
@@ -2184,6 +2184,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
         rb_bug("Unreachable");
+        UNREACHABLE_RETURN(false);
     }
 }
 
