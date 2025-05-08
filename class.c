@@ -256,7 +256,7 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 static void
 class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_namespace_t *ns)
 {
-    rb_classext_t *src = RCLASS_EXT(iclass);
+    rb_classext_t *src = RCLASS_EXT_PRIME(iclass);
     rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, ns);
     int first_set = 0;
 
@@ -416,7 +416,7 @@ rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *
         foreach_arg.callback_arg = arg;
         rb_st_foreach(tbl, class_classext_foreach_i, (st_data_t)&foreach_arg);
     }
-    func(RCLASS_EXT(klass), true, (VALUE)NULL, arg);
+    func(RCLASS_EXT_PRIME(klass), true, (VALUE)NULL, arg);
 }
 
 VALUE
@@ -545,7 +545,7 @@ debug_dump_super_chain(rb_classext_t *ext, const rb_namespace_t *ns)
             if (ns) {
                 s = RCLASSEXT_SUPER(RCLASS_EXT_READABLE_IN_NS(s, ns));
             } else {
-                s = RCLASSEXT_SUPER(RCLASS_EXT(s));
+                s = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(s));
             }
         } else {
             chaining = false;
@@ -835,9 +835,9 @@ rb_class_debug_dump_all_classext(VALUE klass)
     rb_str_cat_cstr(r, buf);
     rb_str_cat_cstr(r, "========================\n");
     rb_str_cat_cstr(r, "Namespace: ");
-    rb_str_concat(r, debug_dump_inspect_or_return_type(rb_get_namespace_object((rb_namespace_t *)RCLASSEXT_NS(RCLASS_EXT(klass)))));
+    rb_str_concat(r, debug_dump_inspect_or_return_type(rb_get_namespace_object((rb_namespace_t *)RCLASSEXT_NS(RCLASS_EXT_PRIME(klass)))));
     rb_str_cat_cstr(r, "\n");
-    rb_str_concat(r, debug_dump_classext(RCLASS_EXT(klass), klass, (rb_namespace_t *)NULL));
+    rb_str_concat(r, debug_dump_classext(RCLASS_EXT_PRIME(klass), klass, (rb_namespace_t *)NULL));
     rb_str_cat_cstr(r, "----\n");
     if (RCLASS(klass)->ns_classext_tbl) {
         rb_st_foreach(RCLASS(klass)->ns_classext_tbl, debug_dump_classext_i, (st_data_t)r);
@@ -1143,7 +1143,7 @@ class_alloc(VALUE flags, VALUE klass)
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
-    memset(RCLASS_EXT(obj), 0, sizeof(rb_classext_t));
+    memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
