@@ -1089,7 +1089,7 @@ extern "C" {
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_shape_id_offset() -> i32;
     pub fn RSHAPE(shape_id: shape_id_t) -> *mut rb_shape_t;
-    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn RB_OBJ_SHAPE_ID(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_shape_too_complex_p(shape: *mut rb_shape_t) -> bool;

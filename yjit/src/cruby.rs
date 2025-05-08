@@ -445,7 +445,7 @@ impl VALUE {
     }
 
     pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_shape_get_shape_id(self) }
+        unsafe { RB_OBJ_SHAPE_ID(self) }
     }
 
     pub fn shape_of(self) -> *mut rb_shape {

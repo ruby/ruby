@@ -94,7 +94,7 @@ fn main() {
         .allowlist_function("rb_bug")
 
         // From shape.h
-        .allowlist_function("rb_shape_get_shape_id")
+        .allowlist_function("RB_OBJ_SHAPE_ID")
         .allowlist_function("RSHAPE")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")

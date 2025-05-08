@@ -713,18 +713,18 @@ has_ivars(VALUE obj, VALUE encname, VALUE *ivobj)
 static void
 w_ivar_each(VALUE obj, st_index_t num, struct dump_call_arg *arg)
 {
-    shape_id_t shape_id = rb_shape_get_shape_id(arg->obj);
+    shape_id_t shape_id = RB_OBJ_SHAPE_ID(arg->obj);
     struct w_ivar_arg ivarg = {arg, num};
     if (!num) return;
     rb_ivar_foreach(obj, w_obj_each, (st_data_t)&ivarg);
 
-    shape_id_t actual_shape_id = rb_shape_get_shape_id(arg->obj);
+    shape_id_t actual_shape_id = RB_OBJ_SHAPE_ID(arg->obj);
     if (shape_id != actual_shape_id) {
         // If the shape tree got _shorter_ then we probably removed an IV
         // If the shape tree got longer, then we probably added an IV.
         // The exception message might not be accurate when someone adds and
         // removes the same number of IVs, but they will still get an exception
-        if (rb_shape_depth(shape_id) > rb_shape_depth(rb_shape_get_shape_id(arg->obj))) {
+        if (rb_shape_depth(shape_id) > rb_shape_depth(RB_OBJ_SHAPE_ID(arg->obj))) {
             rb_raise(rb_eRuntimeError, "instance variable removed from %"PRIsVALUE" instance",
                     CLASS_OF(arg->obj));
         }

@@ -414,7 +414,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_shape_get_shape_id(obj);
+    size_t shape_id = RB_OBJ_SHAPE_ID(obj);
     dump_append(dc, ", \"shape_id\":");
     dump_append_sizet(dc, shape_id);
 
