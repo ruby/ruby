@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'cgi'
+require 'cgi/util'
 
 class CGIUtilTest < Test::Unit::TestCase
 

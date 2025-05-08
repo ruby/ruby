@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'cgi'
+require 'cgi/escape'
 require 'stringio'
 require_relative 'update_env'
 
