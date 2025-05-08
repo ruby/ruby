@@ -6,7 +6,7 @@ require_relative 'update_env'
 
 
 class CGIUtilTest < Test::Unit::TestCase
-  include CGI::Util
+  include CGI::Escape
   include UpdateEnv
 
   def setup
@@ -63,7 +63,7 @@ class CGIUtilTest < Test::Unit::TestCase
     return unless defined?(::Encoding)
 
     assert_raise(TypeError) {CGI.unescape('', nil)}
-    assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-rcgi/escape], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       assert_equal("", CGI.unescape(''))
     end;
@@ -120,7 +120,7 @@ class CGIUtilTest < Test::Unit::TestCase
     return unless defined?(::Encoding)
 
     assert_raise(TypeError) {CGI.unescapeURIComponent('', nil)}
-    assert_separately(%w[-rcgi/util], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-rcgi/escape], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       assert_equal("", CGI.unescapeURIComponent(''))
     end;
@@ -300,21 +300,21 @@ end
 
 class CGIUtilPureRubyTest < Test::Unit::TestCase
   def setup
-    CGI::Escape.module_eval do
+    CGI::EscapeExt.module_eval do
       alias _escapeHTML escapeHTML
       remove_method :escapeHTML
       alias _unescapeHTML unescapeHTML
       remove_method :unescapeHTML
-    end if defined?(CGI::Escape)
+    end if defined?(CGI::EscapeExt)
   end
 
   def teardown
-    CGI::Escape.module_eval do
+    CGI::EscapeExt.module_eval do
       alias escapeHTML _escapeHTML
       remove_method :_escapeHTML
       alias unescapeHTML _unescapeHTML
       remove_method :_unescapeHTML
-    end if defined?(CGI::Escape)
+    end if defined?(CGI::EscapeExt)
   end
 
   include CGIUtilTest::UnescapeHTMLTests
