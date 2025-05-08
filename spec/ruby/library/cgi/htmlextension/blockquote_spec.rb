@@ -1,33 +1,36 @@
 require_relative '../../../spec_helper'
-require 'cgi'
-require_relative 'fixtures/common'
 
-describe "CGI::HtmlExtension#blockquote" do
-  before :each do
-    @html = CGISpecs.cgi_new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
+  require_relative 'fixtures/common'
 
-  describe "when passed a String" do
-    it "returns a 'blockquote'-element, using the passed String for the 'cite'-attribute" do
-      output = @html.blockquote("http://www.example.com/quotes/foo.html")
-      output.should equal_element("BLOCKQUOTE", "CITE" => "http://www.example.com/quotes/foo.html")
+  describe "CGI::HtmlExtension#blockquote" do
+    before :each do
+      @html = CGISpecs.cgi_new
     end
 
-    it "includes the passed block's return value when passed a block" do
-      output = @html.blockquote("http://www.example.com/quotes/foo.html") { "Foo!" }
-      output.should equal_element("BLOCKQUOTE", { "CITE" => "http://www.example.com/quotes/foo.html" }, "Foo!")
-    end
-  end
+    describe "when passed a String" do
+      it "returns a 'blockquote'-element, using the passed String for the 'cite'-attribute" do
+        output = @html.blockquote("http://www.example.com/quotes/foo.html")
+        output.should equal_element("BLOCKQUOTE", "CITE" => "http://www.example.com/quotes/foo.html")
+      end
 
-  describe "when passed a Hash" do
-    it "returns a 'blockquote'-element, using the passed Hash for attributes" do
-      output = @html.blockquote("CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test")
-      output.should equal_element("BLOCKQUOTE", "CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test")
+      it "includes the passed block's return value when passed a block" do
+        output = @html.blockquote("http://www.example.com/quotes/foo.html") { "Foo!" }
+        output.should equal_element("BLOCKQUOTE", { "CITE" => "http://www.example.com/quotes/foo.html" }, "Foo!")
+      end
     end
 
-    it "includes the passed block's return value when passed a block" do
-      output = @html.blockquote("CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test") { "Foo!" }
-      output.should equal_element("BLOCKQUOTE", {"CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test"}, "Foo!")
+    describe "when passed a Hash" do
+      it "returns a 'blockquote'-element, using the passed Hash for attributes" do
+        output = @html.blockquote("CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test")
+        output.should equal_element("BLOCKQUOTE", "CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test")
+      end
+
+      it "includes the passed block's return value when passed a block" do
+        output = @html.blockquote("CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test") { "Foo!" }
+        output.should equal_element("BLOCKQUOTE", {"CITE" => "http://www.example.com/quotes/foo.html", "ID" => "test"}, "Foo!")
+      end
     end
   end
 end
