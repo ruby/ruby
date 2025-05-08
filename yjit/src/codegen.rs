@@ -3112,8 +3112,8 @@ fn gen_set_ivar(
     let mut new_shape_too_complex = false;
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
-        let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
-        let next_shape_id = unsafe { rb_shape_id(next_shape) };
+        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
+        let next_shape = unsafe { RSHAPE(next_shape_id) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).

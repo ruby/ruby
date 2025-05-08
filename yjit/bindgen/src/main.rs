@@ -98,7 +98,7 @@ fn main() {
         .allowlist_function("RSHAPE")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
-        .allowlist_function("rb_shape_get_next_no_warnings")
+        .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_shape_id")
         .allowlist_function("rb_shape_obj_too_complex_p")
         .allowlist_function("rb_shape_too_complex_p")
