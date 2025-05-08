@@ -1511,7 +1511,7 @@ static void
 obj_transition_too_complex(VALUE obj, st_table *table)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    shape_id_t shape_id = rb_shape_id(rb_shape_transition_shape_too_complex(obj));
+    shape_id_t shape_id = rb_shape_transition_complex(obj);
 
     VALUE *old_fields = NULL;
 
@@ -1803,7 +1803,7 @@ generic_ivar_set_too_complex_table(VALUE obj, void *data)
     if (!rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
         fields_tbl = xmalloc(sizeof(struct gen_fields_tbl));
 #if !SHAPE_IN_BASIC_FLAGS
-        fields_tbl->shape_id = rb_shape_id(rb_shape_transition_shape_too_complex(obj));
+        fields_tbl->shape_id = rb_shape_transition_complex(obj);
 #endif
         fields_tbl->as.complex.table = st_init_numtable_with_size(1);
 

@@ -742,11 +742,11 @@ shape_transition_too_complex(rb_shape_t *original_shape)
     return next_shape;
 }
 
-rb_shape_t *
-rb_shape_transition_shape_too_complex(VALUE obj)
+shape_id_t
+rb_shape_transition_complex(VALUE obj)
 {
     rb_shape_t *original_shape = rb_shape_get_shape(obj);
-    return shape_transition_too_complex(original_shape);
+    return rb_shape_id(shape_transition_too_complex(original_shape));
 }
 
 bool
