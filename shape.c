@@ -588,7 +588,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
     return res;
 }
 
-bool
+static inline bool
 rb_shape_frozen_shape_p(rb_shape_t *shape)
 {
     return SHAPE_FL_FROZEN & shape->flags;
