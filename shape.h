@@ -173,7 +173,6 @@ shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 
 rb_shape_t *rb_shape_object_id_shape(VALUE obj);
 bool rb_shape_has_object_id(rb_shape_t *shape);
-attr_index_t rb_shape_object_id_index(rb_shape_t *shape);
 void rb_shape_free_all(void);
 
 rb_shape_t *rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape);
