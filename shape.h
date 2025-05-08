@@ -232,7 +232,7 @@ RBASIC_FIELDS_COUNT(VALUE obj)
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj))->next_field_index;
 }
 
-rb_shape_t *rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *orig_shape);
+shape_id_t rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t orig_shape_id);
 
 bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 

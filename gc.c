@@ -384,13 +384,14 @@ rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
         return (uint32_t)orig_shape_id;
     }
 
-    rb_shape_t *orig_shape = rb_shape_get_shape_by_id(orig_shape_id);
-    rb_shape_t *initial_shape = rb_shape_get_shape_by_id((shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID));
-    rb_shape_t *new_shape = rb_shape_traverse_from_new_root(initial_shape, orig_shape);
+    shape_id_t initial_shape_id = (shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID);
+    shape_id_t new_shape_id = rb_shape_traverse_from_new_root(initial_shape_id, orig_shape_id);
 
-    if (!new_shape) return 0;
+    if (new_shape_id == INVALID_SHAPE_ID) {
+         return 0;
+     }
 
-    return (uint32_t)rb_shape_id(new_shape);
+    return (uint32_t)new_shape_id;
 }
 
 void rb_vm_update_references(void *ptr);
