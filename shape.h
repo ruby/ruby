@@ -158,7 +158,7 @@ RUBY_FUNC_EXPORTED shape_id_t rb_shape_get_shape_id(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
-RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex(VALUE obj);
+RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
 bool rb_shape_too_complex_p(rb_shape_t *shape);
 bool rb_shape_id_too_complex_p(shape_id_t shape_id);
 
@@ -189,7 +189,7 @@ ROBJECT_FIELDS_CAPACITY(VALUE obj)
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     return RSHAPE(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
@@ -197,7 +197,7 @@ static inline st_table *
 ROBJECT_FIELDS_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     return (st_table *)ROBJECT(obj)->as.heap.fields;
 }
 
@@ -205,7 +205,7 @@ static inline void
 ROBJECT_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     ROBJECT(obj)->as.heap.fields = (VALUE *)tbl;
 }
 
@@ -214,12 +214,12 @@ size_t rb_id_table_size(const struct rb_id_table *tbl);
 static inline uint32_t
 ROBJECT_FIELDS_COUNT(VALUE obj)
 {
-    if (rb_shape_obj_too_complex(obj)) {
+    if (rb_shape_obj_too_complex_p(obj)) {
         return (uint32_t)rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
     }
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+        RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
         return RSHAPE(ROBJECT_SHAPE_ID(obj))->next_field_index;
     }
 }

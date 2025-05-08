@@ -1228,7 +1228,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             RB_DEBUG_COUNTER_INC(obj_obj_too_complex);
             st_free_table(ROBJECT_FIELDS_HASH(obj));
         }
@@ -1244,7 +1244,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
         rb_cc_table_free(obj);
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             st_free_table((st_table *)RCLASS_FIELDS(obj));
         }
         else {
@@ -2124,7 +2124,7 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
         }
         else if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
@@ -2912,7 +2912,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         mark_m_tbl(objspace, RCLASS_M_TBL(obj));
         mark_cvc_tbl(objspace, obj);
         rb_cc_table_mark(obj);
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin((st_table *)RCLASS_FIELDS(obj));
         }
         else {
@@ -3001,7 +3001,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       case T_OBJECT: {
         rb_shape_t *shape = RSHAPE(ROBJECT_SHAPE_ID(obj));
 
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
         }
         else {
@@ -3089,7 +3089,7 @@ rb_gc_obj_optimal_size(VALUE obj)
         return rb_ary_size_as_embedded(obj);
 
       case T_OBJECT:
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             return sizeof(struct RObject);
         }
         else {
@@ -3331,7 +3331,7 @@ gc_ref_update_object(void *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_FIELDS(v);
 
-    if (rb_shape_obj_too_complex(v)) {
+    if (rb_shape_obj_too_complex_p(v)) {
         gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
         return;
     }
@@ -3629,7 +3629,7 @@ vm_weak_table_foreach_update_weak_value(st_data_t *key, st_data_t *value, st_dat
 static void
 free_gen_fields_tbl(VALUE obj, struct gen_fields_tbl *fields_tbl)
 {
-    if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
+    if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
         st_free_table(fields_tbl->as.complex.table);
     }
 
@@ -3724,7 +3724,7 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
     if (!iter_data->weak_only) {
         struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
 
-        if (rb_shape_obj_too_complex((VALUE)key)) {
+        if (rb_shape_obj_too_complex_p((VALUE)key)) {
             st_foreach_with_replace(
                 fields_tbl->as.complex.table,
                 vm_weak_table_gen_fields_foreach_too_complex_i,
@@ -3886,7 +3886,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         update_cvc_tbl(objspace, obj);
         update_superclasses(objspace, obj);
 
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             gc_ref_update_table_values_only(RCLASS_FIELDS_HASH(obj));
         }
         else {
@@ -4573,7 +4573,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (rb_shape_obj_too_complex(obj)) {
+                if (rb_shape_obj_too_complex_p(obj)) {
                     size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
                     APPEND_F("(too_complex) len:%zu", hash_len);
                 }

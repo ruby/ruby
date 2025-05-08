@@ -1546,7 +1546,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
             VALUE *ptr = ROBJECT_FIELDS(obj);
 
-            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+            RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);

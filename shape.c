@@ -1110,7 +1110,7 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 }
 
 RUBY_FUNC_EXPORTED bool
-rb_shape_obj_too_complex(VALUE obj)
+rb_shape_obj_too_complex_p(VALUE obj)
 {
     return rb_shape_too_complex_p(rb_shape_get_shape(obj));
 }

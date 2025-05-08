@@ -138,7 +138,7 @@ rb_class_allocate_instance(VALUE klass)
     ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_heap_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
 
 #if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     VALUE *ptr = ROBJECT_FIELDS(obj);
     for (size_t i = 0; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
         ptr[i] = Qundef;
@@ -520,7 +520,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            if (!rb_shape_obj_too_complex(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
+            if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
                 rb_evict_ivars_to_hash(clone);
             }
             else {
@@ -544,7 +544,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
+        if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
             rb_evict_ivars_to_hash(clone);
         }
         else {
