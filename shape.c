@@ -347,12 +347,6 @@ RSHAPE(shape_id_t shape_id)
     return &GET_SHAPE_TREE()->shape_list[shape_id];
 }
 
-rb_shape_t *
-rb_shape_get_parent(rb_shape_t *shape)
-{
-    return RSHAPE(shape->parent_id);
-}
-
 #if !SHAPE_IN_BASIC_FLAGS
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
@@ -388,7 +382,7 @@ rb_shape_depth(shape_id_t shape_id)
 
     while (shape->parent_id != INVALID_SHAPE_ID) {
         depth++;
-        shape = rb_shape_get_parent(shape);
+        shape = RSHAPE(shape->parent_id);
     }
 
     return depth;
@@ -446,7 +440,7 @@ redblack_cache_ancestors(rb_shape_t *shape)
     if (!(shape->ancestor_index || shape->parent_id == INVALID_SHAPE_ID)) {
         redblack_node_t *parent_index;
 
-        parent_index = redblack_cache_ancestors(rb_shape_get_parent(shape));
+        parent_index = redblack_cache_ancestors(RSHAPE(shape->parent_id));
 
         if (shape->type == SHAPE_IVAR) {
             shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
@@ -612,11 +606,11 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
         if (shape->type == SHAPE_IVAR && shape->edge_name == id) {
             *removed_shape = shape;
 
-            return rb_shape_get_parent(shape);
+            return RSHAPE(shape->parent_id);
         }
         else {
             // This isn't the IV we want to remove, keep walking up.
-            rb_shape_t *new_parent = remove_shape_recursive(rb_shape_get_parent(shape), id, removed_shape);
+            rb_shape_t *new_parent = remove_shape_recursive(RSHAPE(shape->parent_id), id, removed_shape);
 
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
@@ -765,7 +759,7 @@ rb_shape_object_id_shape(VALUE obj)
 
     if (shape->flags & SHAPE_FL_HAS_OBJECT_ID) {
         while (shape->type != SHAPE_OBJ_ID) {
-            shape = rb_shape_get_parent(shape);
+            shape = RSHAPE(shape->parent_id);
         }
         return shape;
     }
@@ -886,7 +880,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
 
     while (depth > 0 && shape->next_field_index > index_hint) {
         while (shape_hint->next_field_index > shape->next_field_index) {
-            shape_hint = rb_shape_get_parent(shape_hint);
+            shape_hint = RSHAPE(shape_hint->parent_id);
         }
 
         if (shape_hint == shape) {
@@ -902,7 +896,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
             return true;
         }
 
-        shape = rb_shape_get_parent(shape);
+        shape = RSHAPE(shape->parent_id);
         depth--;
     }
 
@@ -938,7 +932,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
             }
         }
 
-        shape = rb_shape_get_parent(shape);
+        shape = RSHAPE(shape->parent_id);
     }
 
     return false;
@@ -1009,7 +1003,7 @@ shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     rb_shape_t *next_shape = initial_shape;
 
     if (dest_shape->type != initial_shape->type) {
-        next_shape = shape_traverse_from_new_root(initial_shape, rb_shape_get_parent(dest_shape));
+        next_shape = shape_traverse_from_new_root(initial_shape, RSHAPE(dest_shape->parent_id));
         if (!next_shape) {
             return NULL;
         }
@@ -1075,7 +1069,7 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT || initial_shape->type == SHAPE_ROOT);
 
     if (dest_shape->type != initial_shape->type) {
-        midway_shape = rb_shape_rebuild_shape(initial_shape, rb_shape_get_parent(dest_shape));
+        midway_shape = rb_shape_rebuild_shape(initial_shape, RSHAPE(dest_shape->parent_id));
         if (UNLIKELY(rb_shape_id(midway_shape) == ROOT_TOO_COMPLEX_SHAPE_ID)) {
             return midway_shape;
         }
@@ -1257,7 +1251,7 @@ rb_shape_parent(VALUE self)
     rb_shape_t *shape;
     shape = RSHAPE(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     if (shape->parent_id != INVALID_SHAPE_ID) {
-        return rb_shape_t_to_rb_cShape(rb_shape_get_parent(shape));
+        return rb_shape_t_to_rb_cShape(RSHAPE(shape->parent_id));
     }
     else {
         return Qnil;

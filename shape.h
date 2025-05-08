@@ -151,8 +151,6 @@ RCLASS_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 
 int32_t rb_shape_id_offset(void);
 
-rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
-
 RUBY_FUNC_EXPORTED rb_shape_t *RSHAPE(shape_id_t shape_id);
 RUBY_FUNC_EXPORTED shape_id_t RB_OBJ_SHAPE_ID(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
