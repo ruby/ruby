@@ -645,8 +645,10 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 }
 
 bool
-rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE *removed)
+rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed)
 {
+    rb_shape_t *shape = rb_shape_get_shape(obj);
+
     if (UNLIKELY(rb_shape_too_complex_p(shape))) {
         return false;
     }

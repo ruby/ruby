@@ -1460,13 +1460,11 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     rb_check_frozen(obj);
 
     VALUE val = undef;
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
     }
 
-    if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
+    if (!rb_shape_transition_remove_ivar(obj, id, &val)) {
         if (!rb_shape_obj_too_complex_p(obj)) {
             rb_evict_fields_to_hash(obj);
         }
