@@ -6,6 +6,7 @@ use crate::{
     options::{get_option, DumpHIR},
     profile::{self, get_or_create_iseq_payload},
     state::ZJITState,
+    cast::IntoUsize,
 };
 use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
 use crate::hir_type::{Type, types};
@@ -1674,15 +1675,9 @@ pub enum ParseError {
     UnhandledCallType(CallType),
 }
 
-fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
-    let result = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
-    assert!(result >= 0, "Can't have negative # of parameters");
-    result as usize
-}
-
 /// Return the number of locals in the current ISEQ (includes parameters)
 fn num_locals(iseq: *const rb_iseq_t) -> usize {
-    (unsafe { get_iseq_body_local_table_size(iseq) }) as usize
+    (unsafe { get_iseq_body_local_table_size(iseq) }).as_usize()
 }
 
 /// If we can't handle the type of send (yet), bail out.
@@ -1717,9 +1712,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
     let mut queue = std::collections::VecDeque::new();
+    // The HIR function will have the same number of parameter as the iseq so
+    // we properly handle calls from the interpreter. Roughly speaking, each
+    // item between commas in the source increase the parameter count by one,
+    // regardless of parameter kind.
     let mut entry_state = FrameState::new(iseq);
     for idx in 0..num_locals(iseq) {
-        if idx < num_lead_params(iseq) {
+        if idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Param { idx }));
         } else {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Const::Value(Qnil) }));
