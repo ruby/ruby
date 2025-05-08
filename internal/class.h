@@ -157,7 +157,7 @@ static inline bool RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE obj);
 static inline bool RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE obj);
 static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 
-#define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
+#define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns);
@@ -200,17 +200,17 @@ static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE o
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
 
 /* Prime classext entry accessor for very specific reason */
-#define RCLASS_PRIME_NS(c) (RCLASS_EXT(c)->ns)
+#define RCLASS_PRIME_NS(c) (RCLASS_EXT_PRIME(c)->ns)
 // To invalidate CC by inserting&invalidating method entry into tables containing the target cme
 // See clear_method_cache_by_id_in_class()
-#define RCLASS_PRIME_FIELDS(c) (RCLASS_EXT(c)->fields)
-#define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT(c)->m_tbl)
-#define RCLASS_PRIME_CONST_TBL(c) (RCLASS_EXT(c)->const_tbl)
-#define RCLASS_PRIME_CALLABLE_M_TBL(c) (RCLASS_EXT(c)->callable_m_tbl)
-#define RCLASS_PRIME_CC_TBL(c) (RCLASS_EXT(c)->cc_tbl)
-#define RCLASS_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT(c)->m_tbl != tbl)
-#define RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT(c)->callable_m_tbl != tbl)
-#define RCLASS_CC_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT(c)->cc_tbl != tbl)
+#define RCLASS_PRIME_FIELDS(c) (RCLASS_EXT_PRIME(c)->fields)
+#define RCLASS_PRIME_M_TBL(c) (RCLASS_EXT_PRIME(c)->m_tbl)
+#define RCLASS_PRIME_CONST_TBL(c) (RCLASS_EXT_PRIME(c)->const_tbl)
+#define RCLASS_PRIME_CALLABLE_M_TBL(c) (RCLASS_EXT_PRIME(c)->callable_m_tbl)
+#define RCLASS_PRIME_CC_TBL(c) (RCLASS_EXT_PRIME(c)->cc_tbl)
+#define RCLASS_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT_PRIME(c)->m_tbl != tbl)
+#define RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT_PRIME(c)->callable_m_tbl != tbl)
+#define RCLASS_CC_TBL_NOT_PRIME_P(c, tbl) (RCLASS_EXT_PRIME(c)->cc_tbl != tbl)
 
 // Read accessor, regarding namespaces
 #define RCLASS_SUPER(c) (RCLASS_EXT_READABLE(c)->super)
@@ -235,9 +235,9 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
 
 // namespaces don't make changes on these refined_class/attached_object/includer
-#define RCLASS_REFINED_CLASS(c) (RCLASS_EXT(c)->refined_class)
-#define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT(c)->as.singleton_class.attached_object)
-#define RCLASS_INCLUDER(c) (RCLASS_EXT(c)->includer)
+#define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
+#define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
+#define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->includer)
 
 // Writable classext entries (instead of RCLASS_SET_*) because member data will be operated directly
 #define RCLASS_WRITABLE_M_TBL(c) (RCLASS_EXT_WRITABLE(c)->m_tbl)
@@ -369,7 +369,7 @@ RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
     if (ext)
         return ext;
     // Classext for the ns not found. Refer the prime one instead.
-    return RCLASS_EXT(obj);
+    return RCLASS_EXT_PRIME(obj);
 }
 
 static inline rb_classext_t *
@@ -378,7 +378,7 @@ RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
     if (!ns
         || NAMESPACE_BUILTIN_P(ns)
         || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
 }
@@ -388,12 +388,12 @@ RCLASS_EXT_READABLE(VALUE obj)
 {
     const rb_namespace_t *ns;
     if (RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     // delay namespace loading to optimize for unmodified classes
     ns = rb_current_namespace();
     if (!ns || NAMESPACE_BUILTIN_P(ns)) {
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
 }
@@ -417,7 +417,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
         if (!ext) {
-            ext = rb_class_duplicate_classext(RCLASS_EXT(obj), obj, ns);
+            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, ns);
             first_set = RCLASS_SET_NAMESPACE_CLASSEXT(obj, ns, ext);
             if (first_set) {
                 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
@@ -434,7 +434,7 @@ RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
     if (!ns
         || NAMESPACE_BUILTIN_P(ns)
         || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
 }
@@ -444,14 +444,14 @@ RCLASS_EXT_WRITABLE(VALUE obj)
 {
     const rb_namespace_t *ns;
     if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     // delay namespace loading to optimize for unmodified classes
     ns = rb_current_namespace();
     if (!ns || NAMESPACE_BUILTIN_P(ns)) {
         // If no namespace is specified, Ruby VM is in bootstrap
         // and the clean class definition is under construction.
-        return RCLASS_EXT(obj);
+        return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
 }
@@ -521,7 +521,7 @@ RCLASS_SINGLETON_P(VALUE klass)
 static inline void
 RCLASS_SET_SUPER(VALUE klass, VALUE super)
 {
-    RB_OBJ_WRITE(klass, &RCLASSEXT_SUPER(RCLASS_EXT(klass)), super);
+    RB_OBJ_WRITE(klass, &RCLASSEXT_SUPER(RCLASS_EXT_PRIME(klass)), super);
 }
 
 static inline void
@@ -551,7 +551,7 @@ RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
-    RCLASSEXT_FIELDS(RCLASS_EXT(obj)) = (VALUE *)tbl;
+    RCLASSEXT_FIELDS(RCLASS_EXT_PRIME(obj)) = (VALUE *)tbl;
 }
 
 static inline void
@@ -591,7 +591,7 @@ static inline void
 RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted)
 {
     RUBY_ASSERT(!check_promoted || !RB_OBJ_PROMOTED(klass));
-    RCLASSEXT_M_TBL(RCLASS_EXT(klass)) = table;
+    RCLASSEXT_M_TBL(RCLASS_EXT_PRIME(klass)) = table;
 }
 
 #define RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_WRITE_M_TBL_WORKAROUND(klass, table, false)
@@ -609,7 +609,7 @@ RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check
 static inline void
 RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared)
 {
-    rb_classext_t *ext = RCLASS_EXT(klass);
+    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
     RCLASSEXT_CONST_TBL(ext) = table;
     if (shared)
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
@@ -639,7 +639,7 @@ RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table)
 static inline void
 RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table)
 {
-    RCLASSEXT_CVC_TBL(RCLASS_EXT(klass)) = table;
+    RCLASSEXT_CVC_TBL(RCLASS_EXT_PRIME(klass)) = table;
 }
 
 static inline void
@@ -651,7 +651,7 @@ RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table)
 static inline void
 RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined)
 {
-    RB_OBJ_WRITE(klass, &RCLASSEXT_REFINED_CLASS(RCLASS_EXT(klass)), refined);
+    RB_OBJ_WRITE(klass, &RCLASSEXT_REFINED_CLASS(RCLASS_EXT_PRIME(klass)), refined);
 }
 
 static inline rb_alloc_func_t
@@ -660,20 +660,20 @@ RCLASS_ALLOCATOR(VALUE klass)
     if (RCLASS_SINGLETON_P(klass)) {
         return 0;
     }
-    return RCLASS_EXT(klass)->as.class.allocator;
+    return RCLASS_EXT_PRIME(klass)->as.class.allocator;
 }
 
 static inline void
 RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
 {
     assert(!RCLASS_SINGLETON_P(klass));
-    RCLASS_EXT(klass)->as.class.allocator = allocator; // Allocator is set only on the initial definition
+    RCLASS_EXT_PRIME(klass)->as.class.allocator = allocator; // Allocator is set only on the initial definition
 }
 
 static inline void
 RCLASS_SET_ORIGIN(VALUE klass, VALUE origin)
 {
-    rb_classext_t *ext = RCLASS_EXT(klass);
+    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
     RB_OBJ_WRITE(klass, &RCLASSEXT_ORIGIN(ext), origin);
     if (klass != origin) RCLASSEXT_ICLASS_IS_ORIGIN(RCLASS_EXT_WRITABLE(origin)) = true;
 }
@@ -689,7 +689,7 @@ RCLASS_WRITE_ORIGIN(VALUE klass, VALUE origin)
 static inline void
 RICLASS_SET_ORIGIN_SHARED_MTBL(VALUE iclass)
 {
-    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(RCLASS_EXT(iclass)) = true;
+    RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(RCLASS_EXT_PRIME(iclass)) = true;
 }
 
 static inline void
@@ -724,7 +724,7 @@ RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool o
 static inline void
 RCLASS_SET_SUBCLASSES(VALUE klass, struct rb_subclass_anchor *anchor)
 {
-    rb_classext_t *ext = RCLASS_EXT(klass);
+    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
     RCLASSEXT_SUBCLASSES(ext) = anchor;
 }
 
@@ -773,14 +773,14 @@ RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 {
     assert(RCLASS_SINGLETON_P(klass));
 
-    RB_OBJ_WRITE(klass, &RCLASS_EXT(klass)->as.singleton_class.attached_object, attached_object);
+    RB_OBJ_WRITE(klass, &RCLASS_EXT_PRIME(klass)->as.singleton_class.attached_object, attached_object);
     return attached_object;
 }
 
 static inline void
 RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 {
-    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT(klass)) = count;
+    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_PRIME(klass)) = count;
 }
 
 static inline void
@@ -792,7 +792,7 @@ RCLASS_WRITE_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 static inline void
 RCLASS_SET_CLONED(VALUE klass, bool cloned)
 {
-    RCLASSEXT_CLONED(RCLASS_EXT(klass)) = cloned;
+    RCLASSEXT_CLONED(RCLASS_EXT_PRIME(klass)) = cloned;
 }
 
 #endif /* INTERNAL_CLASS_H */

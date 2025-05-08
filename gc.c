@@ -3749,7 +3749,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     } else {
         // Classext is not copied in this case
         for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(klass); i++) {
-            UPDATE_IF_MOVED(objspace, RCLASSEXT_FIELDS(RCLASS_EXT(klass))[i]);
+            UPDATE_IF_MOVED(objspace, RCLASSEXT_FIELDS(RCLASS_EXT_PRIME(klass))[i]);
         }
     }
 
