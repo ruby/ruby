@@ -7632,6 +7632,8 @@ Init_Hash(void)
      * envtbl = rb_define_class("ENV", rb_cObject);
      */
     origenviron = environ;
+
+    rb_gc_register_address(&envtbl);
     envtbl = TypedData_Wrap_Struct(rb_cObject, &env_data_type, NULL);
     rb_extend_object(envtbl, rb_mEnumerable);
     FL_SET_RAW(envtbl, RUBY_FL_SHAREABLE);
