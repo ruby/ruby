@@ -2010,14 +2010,14 @@ void rb_obj_freeze_inline(VALUE x)
             RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
         }
 
-        rb_shape_t * next_shape = rb_shape_transition_shape_frozen(x);
+        shape_id_t next_shape_id = rb_shape_transition_frozen(x);
 
         // If we're transitioning from "not complex" to "too complex"
         // then evict ivars.  This can happen if we run out of shapes
-        if (rb_shape_too_complex_p(next_shape) && !rb_shape_obj_too_complex(x)) {
+        if (rb_shape_id_too_complex_p(next_shape_id) && !rb_shape_obj_too_complex(x)) {
             rb_evict_fields_to_hash(x);
         }
-        rb_shape_set_shape(x, next_shape);
+        rb_shape_set_shape_id(x, next_shape_id);
 
         if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
