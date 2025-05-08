@@ -156,7 +156,7 @@ rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
 
 RUBY_FUNC_EXPORTED rb_shape_t *rb_shape_get_shape_by_id(shape_id_t shape_id);
 RUBY_FUNC_EXPORTED shape_id_t rb_shape_get_shape_id(VALUE obj);
-rb_shape_t *rb_shape_get_next_iv_shape(rb_shape_t *shape, ID id);
+shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
 RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex(VALUE obj);
