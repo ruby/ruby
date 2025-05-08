@@ -2999,7 +2999,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
-        rb_shape_t *shape = rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj));
+        rb_shape_t *shape = RSHAPE(ROBJECT_SHAPE_ID(obj));
 
         if (rb_shape_obj_too_complex(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
