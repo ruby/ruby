@@ -2999,8 +2999,6 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
-        rb_shape_t *shape = RSHAPE(ROBJECT_SHAPE_ID(obj));
-
         if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
         }
@@ -3013,13 +3011,13 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             }
         }
 
-        if (shape) {
+        attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
+        if (fields_count) {
             VALUE klass = RBASIC_CLASS(obj);
 
             // Increment max_iv_count if applicable, used to determine size pool allocation
-            attr_index_t num_of_ivs = shape->next_field_index;
-            if (RCLASS_EXT(klass)->max_iv_count < num_of_ivs) {
-                RCLASS_EXT(klass)->max_iv_count = num_of_ivs;
+            if (RCLASS_EXT(klass)->max_iv_count < fields_count) {
+                RCLASS_EXT(klass)->max_iv_count = fields_count;
             }
         }
 
