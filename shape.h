@@ -154,7 +154,7 @@ int32_t rb_shape_id_offset(void);
 rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
 
 RUBY_FUNC_EXPORTED rb_shape_t *RSHAPE(shape_id_t shape_id);
-RUBY_FUNC_EXPORTED shape_id_t rb_shape_get_shape_id(VALUE obj);
+RUBY_FUNC_EXPORTED shape_id_t RB_OBJ_SHAPE_ID(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
@@ -163,7 +163,7 @@ bool rb_shape_too_complex_p(rb_shape_t *shape);
 bool rb_shape_id_too_complex_p(shape_id_t shape_id);
 
 void rb_shape_set_shape(VALUE obj, rb_shape_t *shape);
-rb_shape_t *rb_shape_get_shape(VALUE obj);
+rb_shape_t *RB_OBJ_SHAPE(VALUE obj);
 bool rb_shape_frozen_shape_p(rb_shape_t *shape);
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
@@ -227,7 +227,7 @@ ROBJECT_FIELDS_COUNT(VALUE obj)
 static inline uint32_t
 RBASIC_FIELDS_COUNT(VALUE obj)
 {
-    return RSHAPE(rb_shape_get_shape_id(obj))->next_field_index;
+    return RSHAPE(RB_OBJ_SHAPE_ID(obj))->next_field_index;
 }
 
 shape_id_t rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t orig_shape_id);
@@ -237,7 +237,7 @@ bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 static inline bool
 rb_shape_obj_has_id(VALUE obj)
 {
-    return rb_shape_has_object_id(rb_shape_get_shape(obj));
+    return rb_shape_has_object_id(RB_OBJ_SHAPE(obj));
 }
 
 // For ext/objspace

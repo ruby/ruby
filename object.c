@@ -132,7 +132,7 @@ rb_class_allocate_instance(VALUE klass)
               T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
     VALUE obj = (VALUE)o;
 
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
+    RUBY_ASSERT(RB_OBJ_SHAPE(obj)->type == SHAPE_ROOT);
 
     // Set the shape to the specific T_OBJECT shape.
     ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_heap_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
@@ -335,7 +335,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         return;
     }
 
-    rb_shape_t *src_shape = rb_shape_get_shape(obj);
+    rb_shape_t *src_shape = RB_OBJ_SHAPE(obj);
 
     if (rb_shape_too_complex_p(src_shape)) {
         // obj is TOO_COMPLEX so we can copy its iv_hash
@@ -350,7 +350,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_t *shape_to_set_on_dest = src_shape;
-    rb_shape_t *initial_shape = rb_shape_get_shape(dest);
+    rb_shape_t *initial_shape = RB_OBJ_SHAPE(dest);
 
     if (initial_shape->heap_index != src_shape->heap_index || !rb_shape_canonical_p(src_shape)) {
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);

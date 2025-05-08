@@ -358,7 +358,7 @@ shape_id_t rb_generic_shape_id(VALUE obj);
 #endif
 
 RUBY_FUNC_EXPORTED shape_id_t
-rb_shape_get_shape_id(VALUE obj)
+RB_OBJ_SHAPE_ID(VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) {
         return SPECIAL_CONST_SHAPE_ID;
@@ -395,9 +395,9 @@ rb_shape_depth(shape_id_t shape_id)
 }
 
 rb_shape_t *
-rb_shape_get_shape(VALUE obj)
+RB_OBJ_SHAPE(VALUE obj)
 {
-    return RSHAPE(rb_shape_get_shape_id(obj));
+    return RSHAPE(RB_OBJ_SHAPE_ID(obj));
 }
 
 static rb_shape_t *
@@ -647,7 +647,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 bool
 rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed)
 {
-    rb_shape_t *shape = rb_shape_get_shape(obj);
+    rb_shape_t *shape = RB_OBJ_SHAPE(obj);
 
     if (UNLIKELY(rb_shape_too_complex_p(shape))) {
         return false;
@@ -707,7 +707,7 @@ rb_shape_transition_frozen(VALUE obj)
 {
     RUBY_ASSERT(RB_OBJ_FROZEN(obj));
 
-    shape_id_t shape_id = rb_shape_get_shape_id(obj);
+    shape_id_t shape_id = RB_OBJ_SHAPE_ID(obj);
     if (shape_id == ROOT_SHAPE_ID) {
         return SPECIAL_CONST_SHAPE_ID;
     }
@@ -747,7 +747,7 @@ shape_transition_too_complex(rb_shape_t *original_shape)
 shape_id_t
 rb_shape_transition_complex(VALUE obj)
 {
-    rb_shape_t *original_shape = rb_shape_get_shape(obj);
+    rb_shape_t *original_shape = RB_OBJ_SHAPE(obj);
     return rb_shape_id(shape_transition_too_complex(original_shape));
 }
 
@@ -760,7 +760,7 @@ rb_shape_has_object_id(rb_shape_t *shape)
 rb_shape_t *
 rb_shape_object_id_shape(VALUE obj)
 {
-    rb_shape_t* shape = rb_shape_get_shape(obj);
+    rb_shape_t* shape = RB_OBJ_SHAPE(obj);
     RUBY_ASSERT(shape);
 
     if (shape->flags & SHAPE_FL_HAS_OBJECT_ID) {
@@ -850,13 +850,13 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 shape_id_t
 rb_shape_transition_add_ivar(VALUE obj, ID id)
 {
-    return rb_shape_id(shape_get_next(rb_shape_get_shape(obj), obj, id, true));
+    return rb_shape_id(shape_get_next(RB_OBJ_SHAPE(obj), obj, id, true));
 }
 
 shape_id_t
 rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id)
 {
-    return rb_shape_id(shape_get_next(rb_shape_get_shape(obj), obj, id, false));
+    return rb_shape_id(shape_get_next(RB_OBJ_SHAPE(obj), obj, id, false));
 }
 
 // Same as rb_shape_get_iv_index, but uses a provided valid shape id and index
@@ -1104,7 +1104,7 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 RUBY_FUNC_EXPORTED bool
 rb_shape_obj_too_complex_p(VALUE obj)
 {
-    return rb_shape_too_complex_p(rb_shape_get_shape(obj));
+    return rb_shape_too_complex_p(RB_OBJ_SHAPE(obj));
 }
 
 bool
@@ -1267,7 +1267,7 @@ rb_shape_parent(VALUE self)
 static VALUE
 rb_shape_debug_shape(VALUE self, VALUE obj)
 {
-    return rb_shape_t_to_rb_cShape(rb_shape_get_shape(obj));
+    return rb_shape_t_to_rb_cShape(RB_OBJ_SHAPE(obj));
 }
 
 static VALUE
