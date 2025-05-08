@@ -25,14 +25,13 @@ typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_FIELDS (attr_index_t)(-1)
 
-# define SHAPE_MASK (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
 # define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
 
 # define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 # define SHAPE_MAX_VARIATIONS 8
 
-# define INVALID_SHAPE_ID SHAPE_MASK
+# define INVALID_SHAPE_ID (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
 
 #define ROOT_SHAPE_ID               0x0
 #define SPECIAL_CONST_SHAPE_ID      0x1
@@ -95,7 +94,7 @@ static inline shape_id_t
 get_shape_id_from_flags(VALUE obj)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    return (shape_id_t)(SHAPE_MASK & ((RBASIC(obj)->flags) >> SHAPE_FLAG_SHIFT));
+    return (shape_id_t)((RBASIC(obj)->flags) >> SHAPE_FLAG_SHIFT);
 }
 
 static inline void
