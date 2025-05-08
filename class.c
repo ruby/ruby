@@ -83,23 +83,25 @@ RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 static rb_subclass_entry_t *
 push_subclass_entry_to_list(VALUE super, VALUE klass)
 {
-    rb_subclass_entry_t *entry, *head;
-
-    entry = ZALLOC(rb_subclass_entry_t);
+    rb_subclass_entry_t *entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
 
-    head = RCLASS_SUBCLASSES(super);
-    if (!head) {
-        head = ZALLOC(rb_subclass_entry_t);
-        RCLASS_SUBCLASSES(super) = head;
-    }
-    entry->next = head->next;
-    entry->prev = head;
+    RB_VM_LOCK_ENTER();
+    {
+        rb_subclass_entry_t *head = RCLASS_SUBCLASSES(super);
+        if (!head) {
+            head = ZALLOC(rb_subclass_entry_t);
+            RCLASS_SUBCLASSES(super) = head;
+        }
+        entry->next = head->next;
+        entry->prev = head;
 
-    if (head->next) {
-        head->next->prev = entry;
+        if (head->next) {
+            head->next->prev = entry;
+        }
+        head->next = entry;
     }
-    head->next = entry;
+    RB_VM_LOCK_LEAVE();
 
     return entry;
 }
