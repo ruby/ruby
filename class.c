@@ -39,7 +39,9 @@
  *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    RUBY_FL_SINGLETON
  *           This class is a singleton class.
- * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF // TODO: Delete this
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This class's prime classext is the only classext and writable from any namespaces.
+ *           If unset, the prime classext is writable only from the root namespace.
  * if !SHAPE_IN_BASIC_FLAGS
  * 4-19: SHAPE_FLAG_MASK
  *           Shape ID for the class.
@@ -48,9 +50,9 @@
 
 /* Flags of T_ICLASS
  *
- * 0:    RICLASS_IS_ORIGIN // TODO: Delete this
- * 3:    RICLASS_ORIGIN_SHARED_MTBL // TODO: Delete this
- *           The T_ICLASS does not own the method table.
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This module's prime classext is the only classext and writable from any namespaces.
+ *           If unset, the prime classext is writable only from the root namespace.
  * if !SHAPE_IN_BASIC_FLAGS
  * 4-19: SHAPE_FLAG_MASK
  *           Shape ID. This is set but not used.
@@ -64,7 +66,9 @@
  *           This is done for classes defined from C to allow storing them in global variables.
  * 1:    RMODULE_ALLOCATED_BUT_NOT_INITIALIZED
  *           Module has not been initialized.
- * 2:    RCLASS_SUPERCLASSES_INCLUDE_SELF // TODO: Delete this
+ * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
+ *           This module's prime classext is the only classext and writable from any namespaces.
+ *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RMODULE_IS_REFINEMENT
  *           Module is used for refinements.
  * if !SHAPE_IN_BASIC_FLAGS
@@ -254,7 +258,7 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 {
     rb_classext_t *src = RCLASS_EXT(iclass);
     rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, ns);
-    int table_created = 0;
+    int first_set = 0;
 
     if (ext) {
         // iclass classext for the ns is only for cc/callable_m_tbl if it's created earlier than module's one
@@ -290,9 +294,9 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
-    table_created = RCLASS_SET_NAMESPACE_CLASSEXT(iclass, ns, ext);
-    if (table_created) {
-        RCLASS_SET_PRIME_CLASSEXT_READWRITE(iclass, false, false);
+    first_set = RCLASS_SET_NAMESPACE_CLASSEXT(iclass, ns, ext);
+    if (first_set) {
+        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
     }
 }
 
@@ -825,8 +829,8 @@ rb_class_debug_dump_all_classext(VALUE klass)
     }
     snprintf(buf, 2048,
              "classext-dump:\n  readable:%s\n  writable:%s\n  table size:%zu\n",
-             RCLASS(klass)->prime_classext_readable ? "true" : "false",
-             RCLASS(klass)->prime_classext_writable ? "true" : "false",
+             RCLASS_PRIME_CLASSEXT_READABLE_P(klass) ? "true" : "false",
+             RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass) ? "true" : "false",
              RCLASS(klass)->ns_classext_tbl ? st_table_size(RCLASS(klass)->ns_classext_tbl) : 0);
     rb_str_cat_cstr(r, buf);
     rb_str_cat_cstr(r, "========================\n");
@@ -1151,7 +1155,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_READWRITE((VALUE)obj, true, NAMESPACE_USER_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, NAMESPACE_USER_P(ns) ? true : false);
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);

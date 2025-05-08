@@ -527,10 +527,9 @@ namespace_initialize(VALUE namespace)
 
     // Set the Namespace object unique/consistent from any namespaces to have just single
     // constant table from any view of every (including main) namespace.
-    // If a code in the namespace adds a constant, the constant will be visible even from main.
-    RCLASS_SET_PRIME_CLASSEXT_READWRITE(namespace, true, true);
+    // If a code in the namespace adds a constant, the constant will be visible even from root/main.
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE(namespace, true);
 
-    // TODO: Handle object shapes properly
     // fallback to ivptr for ivars from shapes to manipulate the constant table
     rb_evict_ivars_to_hash(namespace);
 
@@ -568,7 +567,7 @@ rb_namespace_current(VALUE klass)
 static VALUE
 rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
 {
-    if (RCLASS_PRIME_READABLE_P(klass) && !RCLASS_PRIME_WRITABLE_P(klass))
+    if (RCLASS_PRIME_CLASSEXT_READABLE_P(klass) && !RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass))
         return Qtrue;
     return Qfalse;
 }
