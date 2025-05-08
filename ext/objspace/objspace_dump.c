@@ -786,7 +786,7 @@ shape_i(rb_shape_t *shape, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    size_t shape_id = rb_shape_id(shape);
+    shape_id_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
@@ -803,7 +803,7 @@ shape_i(rb_shape_t *shape, void *data)
     }
 
     dump_append(dc, ", \"depth\":");
-    dump_append_sizet(dc, rb_shape_depth(shape));
+    dump_append_sizet(dc, rb_shape_depth(shape_id));
 
     switch((enum shape_type)shape->type) {
       case SHAPE_ROOT:
@@ -831,10 +831,10 @@ shape_i(rb_shape_t *shape, void *data)
     }
 
     dump_append(dc, ", \"edges\":");
-    dump_append_sizet(dc, rb_shape_edges_count(shape));
+    dump_append_sizet(dc, rb_shape_edges_count(shape_id));
 
     dump_append(dc, ", \"memsize\":");
-    dump_append_sizet(dc, rb_shape_memsize(shape));
+    dump_append_sizet(dc, rb_shape_memsize(shape_id));
 
     dump_append(dc, "}\n");
 }

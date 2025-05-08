@@ -382,9 +382,10 @@ rb_shape_get_shape_id(VALUE obj)
 }
 
 size_t
-rb_shape_depth(rb_shape_t *shape)
+rb_shape_depth(shape_id_t shape_id)
 {
     size_t depth = 1;
+    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
 
     while (shape->parent_id != INVALID_SHAPE_ID) {
         depth++;
@@ -1120,8 +1121,9 @@ rb_shape_too_complex_p(rb_shape_t *shape)
 }
 
 size_t
-rb_shape_edges_count(rb_shape_t *shape)
+rb_shape_edges_count(shape_id_t shape_id)
 {
+    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
     if (shape->edges) {
         if (SINGLE_CHILD_P(shape->edges)) {
             return 1;
@@ -1134,8 +1136,10 @@ rb_shape_edges_count(rb_shape_t *shape)
 }
 
 size_t
-rb_shape_memsize(rb_shape_t *shape)
+rb_shape_memsize(shape_id_t shape_id)
 {
+    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+
     size_t memsize = sizeof(rb_shape_t);
     if (shape->edges && !SINGLE_CHILD_P(shape->edges)) {
         memsize += rb_id_table_memsize(shape->edges);
@@ -1244,9 +1248,8 @@ rb_shape_edge_name(rb_shape_t *shape)
 static VALUE
 rb_shape_export_depth(VALUE self)
 {
-    rb_shape_t *shape;
-    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
-    return SIZET2NUM(rb_shape_depth(shape));
+    shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
+    return SIZET2NUM(rb_shape_depth(shape_id));
 }
 
 static VALUE
