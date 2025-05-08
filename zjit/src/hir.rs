@@ -3139,14 +3139,48 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_rest_param_get_bb_param() {
+    fn test_param_forms_get_bb_param() {
         eval("
             def rest(*array) = array
+            def kw(k:) = k
+            def kw_rest(**k) = k
+            def post(*rest, post) = post
+            def block(&b) = nil
+            def forwardable(...) = nil
         ");
+
         assert_optimized_method_hir("rest", expect![[r#"
             fn rest:
             bb0(v0:ArrayExact):
               Return v0
+        "#]]);
+        // extra hidden param for the set of specified keywords
+        assert_optimized_method_hir("kw", expect![[r#"
+            fn kw:
+            bb0(v0:BasicObject, v1:BasicObject):
+              Return v0
+        "#]]);
+        assert_optimized_method_hir("kw_rest", expect![[r#"
+            fn kw_rest:
+            bb0(v0:BasicObject):
+              Return v0
+        "#]]);
+        assert_optimized_method_hir("block", expect![[r#"
+            fn block:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              Return v2
+        "#]]);
+        assert_optimized_method_hir("post", expect![[r#"
+            fn post:
+            bb0(v0:ArrayExact, v1:BasicObject):
+              Return v1
+        "#]]);
+        assert_optimized_method_hir("forwardable", expect![[r#"
+            fn forwardable:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              Return v2
         "#]]);
     }
 
