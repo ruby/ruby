@@ -8,7 +8,14 @@ use crate::{
     state::ZJITState,
     cast::IntoUsize,
 };
-use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
+use std::{
+    cell::{OnceCell, RefCell},
+    collections::{HashMap, HashSet, VecDeque},
+    ffi::{c_int, c_void},
+    mem::{align_of, size_of},
+    ptr,
+    slice::Iter
+};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -655,6 +662,8 @@ pub struct Function {
     // ISEQ this function refers to
     iseq: *const rb_iseq_t,
 
+    rest_param_idx: OnceCell<c_int>,
+
     // TODO: get method name and source location from the ISEQ
 
     insns: Vec<Insn>,
@@ -673,6 +682,7 @@ impl Function {
             union_find: UnionFind::new().into(),
             blocks: vec![Block::default()],
             entry_block: BlockId(0),
+            rest_param_idx: OnceCell::new(),
         }
     }
 
@@ -913,9 +923,27 @@ impl Function {
     fn infer_types(&mut self) {
         // Reset all types
         self.insn_types.fill(types::Empty);
-        for param in &self.blocks[self.entry_block.0].params {
+
+        // Index of the rest parameter for comparison below
+        let rest_param_idx = *self.rest_param_idx.get_or_init(|| {
+            if !self.iseq.is_null() && unsafe { get_iseq_flags_has_rest(self.iseq) } {
+                let opt_num = unsafe { get_iseq_body_param_opt_num(self.iseq) };
+                let lead_num = unsafe { get_iseq_body_param_lead_num(self.iseq) };
+                opt_num + lead_num
+            } else {
+                -1
+            }
+        });
+
+        // Fill parameter types
+        for (idx, param) in self.blocks[self.entry_block.0].params.iter().enumerate() {
             // We know that function parameters are BasicObject or some subclass
             self.insn_types[param.0] = types::BasicObject;
+
+            // Rest parameters are always ArrayExact
+            if let Ok(true) = c_int::try_from(idx).map(|idx| idx == rest_param_idx) {
+                self.insn_types[param.0] = types::ArrayExact;
+            }
         }
         let rpo = self.rpo();
         // Walk the graph, computing types until fixpoint
@@ -3118,7 +3146,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("rest", expect![[r#"
             fn rest:
-            bb0(v0:BasicObject):
+            bb0(v0:ArrayExact):
               Return v0
         "#]]);
     }
