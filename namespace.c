@@ -463,7 +463,7 @@ const rb_data_type_t rb_namespace_data_type = {
         namespace_entry_memsize,
         rb_namespace_gc_update_references,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED
 };
 
 VALUE
