@@ -2143,12 +2143,12 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         return false;
       case SHAPE_OBJ_ID:
         if (itr_data->ivar_only) {
-            return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
+            return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
         }
         // fallthrough
       case SHAPE_IVAR:
         ASSUME(callback);
-        if (iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data)) {
+        if (iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data)) {
             return true;
         }
 
@@ -2180,7 +2180,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
         }
         return false;
       case SHAPE_FROZEN:
-        return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
+        return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
       default:
         rb_bug("Unreachable");
