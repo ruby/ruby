@@ -11041,6 +11041,7 @@ namespace.$(OBJEXT): $(top_srcdir)/internal/array.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/class.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/error.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/eval.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/file.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -11053,6 +11054,7 @@ namespace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/st.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+namespace.$(OBJEXT): $(top_srcdir)/internal/string.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/warnings.h

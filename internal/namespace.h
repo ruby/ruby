@@ -4,12 +4,12 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 /**
- * @author     Satoshi Tagomori <tagomoris@gmail.com>
+ * @author     Ruby developers <ruby-core@ruby-lang.org>
  * @copyright  This  file  is   a  part  of  the   programming  language  Ruby.
  *             Permission  is hereby  granted,  to  either redistribute  and/or
  *             modify this file, provided that  the conditions mentioned in the
  *             file COPYING are met.  Consult the file for details.
- * @brief      Internal header for Fiber.
+ * @brief      Internal header for Namespace.
  */
 struct rb_namespace_struct {
     /*
