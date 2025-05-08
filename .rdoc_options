@@ -7,6 +7,7 @@ title: Documentation for Ruby development version
 visibility: :private
 rdoc_include:
 - doc
+embed_mixins: true
 
 exclude:
 - \Alib/irb
