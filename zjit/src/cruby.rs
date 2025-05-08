@@ -487,7 +487,7 @@ impl VALUE {
 
     pub fn shape_of(self) -> *mut rb_shape {
         unsafe {
-            let shape = rb_shape_get_shape_by_id(self.shape_id_of());
+            let shape = RSHAPE(self.shape_id_of());
 
             if shape.is_null() {
                 panic!("Shape should not be null");

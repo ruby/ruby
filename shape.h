@@ -154,7 +154,7 @@ int32_t rb_shape_id_offset(void);
 
 rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
 
-RUBY_FUNC_EXPORTED rb_shape_t *rb_shape_get_shape_by_id(shape_id_t shape_id);
+RUBY_FUNC_EXPORTED rb_shape_t *RSHAPE(shape_id_t shape_id);
 RUBY_FUNC_EXPORTED shape_id_t rb_shape_get_shape_id(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value);
@@ -191,7 +191,7 @@ ROBJECT_FIELDS_CAPACITY(VALUE obj)
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->capacity;
+    return RSHAPE(ROBJECT_SHAPE_ID(obj))->capacity;
 }
 
 static inline st_table *
@@ -221,14 +221,14 @@ ROBJECT_FIELDS_COUNT(VALUE obj)
     else {
         RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
         RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-        return rb_shape_get_shape_by_id(ROBJECT_SHAPE_ID(obj))->next_field_index;
+        return RSHAPE(ROBJECT_SHAPE_ID(obj))->next_field_index;
     }
 }
 
 static inline uint32_t
 RBASIC_FIELDS_COUNT(VALUE obj)
 {
-    return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj))->next_field_index;
+    return RSHAPE(rb_shape_get_shape_id(obj))->next_field_index;
 }
 
 shape_id_t rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t orig_shape_id);

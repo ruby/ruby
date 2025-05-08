@@ -1476,8 +1476,8 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
     }
     else if (dest_shape_id != INVALID_SHAPE_ID) {
-        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-        rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+        rb_shape_t *shape = RSHAPE(shape_id);
+        rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
 
         if (shape_id == dest_shape->parent_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
             RUBY_ASSERT(index < dest_shape->capacity);
@@ -1524,8 +1524,8 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 VM_ASSERT(!rb_ractor_shareable_p(obj));
             }
             else if (dest_shape_id != INVALID_SHAPE_ID) {
-                rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-                rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+                rb_shape_t *shape = RSHAPE(shape_id);
+                rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {

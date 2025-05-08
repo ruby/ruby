@@ -388,12 +388,12 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         while (src_shape->parent_id != INVALID_SHAPE_ID) {
             if (src_shape->type == SHAPE_IVAR) {
                 while (dest_shape->edge_name != src_shape->edge_name) {
-                    dest_shape = rb_shape_get_shape_by_id(dest_shape->parent_id);
+                    dest_shape = RSHAPE(dest_shape->parent_id);
                 }
 
                 RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
             }
-            src_shape = rb_shape_get_shape_by_id(src_shape->parent_id);
+            src_shape = RSHAPE(src_shape->parent_id);
         }
     }
 

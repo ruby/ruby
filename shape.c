@@ -332,7 +332,7 @@ void
 rb_shape_each_shape(each_shape_callback callback, void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
+    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
     while (cursor < end) {
         callback(cursor, data);
         cursor += 1;
@@ -340,18 +340,17 @@ rb_shape_each_shape(each_shape_callback callback, void *data)
 }
 
 RUBY_FUNC_EXPORTED rb_shape_t *
-rb_shape_get_shape_by_id(shape_id_t shape_id)
+RSHAPE(shape_id_t shape_id)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
 
-    rb_shape_t *shape = &GET_SHAPE_TREE()->shape_list[shape_id];
-    return shape;
+    return &GET_SHAPE_TREE()->shape_list[shape_id];
 }
 
 rb_shape_t *
 rb_shape_get_parent(rb_shape_t *shape)
 {
-    return rb_shape_get_shape_by_id(shape->parent_id);
+    return RSHAPE(shape->parent_id);
 }
 
 #if !SHAPE_IN_BASIC_FLAGS
@@ -385,7 +384,7 @@ size_t
 rb_shape_depth(shape_id_t shape_id)
 {
     size_t depth = 1;
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
 
     while (shape->parent_id != INVALID_SHAPE_ID) {
         depth++;
@@ -398,7 +397,7 @@ rb_shape_depth(shape_id_t shape_id)
 rb_shape_t *
 rb_shape_get_shape(VALUE obj)
 {
-    return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj));
+    return RSHAPE(rb_shape_get_shape_id(obj));
 }
 
 static rb_shape_t *
@@ -715,7 +714,7 @@ rb_shape_transition_shape_frozen(VALUE obj)
     rb_shape_t *next_shape;
 
     if (shape == rb_shape_get_root_shape()) {
-        return rb_shape_get_shape_by_id(SPECIAL_CONST_SHAPE_ID);
+        return RSHAPE(SPECIAL_CONST_SHAPE_ID);
     }
 
     bool dont_care;
@@ -728,7 +727,7 @@ rb_shape_transition_shape_frozen(VALUE obj)
 static rb_shape_t *
 shape_transition_too_complex(rb_shape_t *original_shape)
 {
-    rb_shape_t *next_shape = rb_shape_get_shape_by_id(ROOT_TOO_COMPLEX_SHAPE_ID);
+    rb_shape_t *next_shape = RSHAPE(ROOT_TOO_COMPLEX_SHAPE_ID);
 
     if (original_shape->flags & SHAPE_FL_FROZEN) {
         bool dont_care;
@@ -800,7 +799,7 @@ shape_get_next_iv_shape(rb_shape_t *shape, ID id)
 shape_id_t
 rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
 {
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     rb_shape_t *next_shape = shape_get_next_iv_shape(shape, id);
     return rb_shape_id(next_shape);
 }
@@ -874,7 +873,7 @@ bool
 rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint)
 {
     attr_index_t index_hint = *value;
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     rb_shape_t *initial_shape = shape;
 
     if (*shape_id_hint == INVALID_SHAPE_ID) {
@@ -882,7 +881,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         return rb_shape_get_iv_index(shape, id, value);
     }
 
-    rb_shape_t *shape_hint = rb_shape_get_shape_by_id(*shape_id_hint);
+    rb_shape_t *shape_hint = RSHAPE(*shape_id_hint);
 
     // We assume it's likely shape_id_hint and shape_id have a close common
     // ancestor, so we check up to ANCESTOR_SEARCH_MAX_DEPTH ancestors before
@@ -1065,8 +1064,8 @@ shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 shape_id_t
 rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
-    rb_shape_t *initial_shape = rb_shape_get_shape_by_id(initial_shape_id);
-    rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+    rb_shape_t *initial_shape = RSHAPE(initial_shape_id);
+    rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
     return rb_shape_id(shape_traverse_from_new_root(initial_shape, dest_shape));
 }
 
@@ -1119,7 +1118,7 @@ rb_shape_obj_too_complex(VALUE obj)
 bool
 rb_shape_id_too_complex_p(shape_id_t shape_id)
 {
-    return rb_shape_too_complex_p(rb_shape_get_shape_by_id(shape_id));
+    return rb_shape_too_complex_p(RSHAPE(shape_id));
 }
 
 bool
@@ -1131,7 +1130,7 @@ rb_shape_too_complex_p(rb_shape_t *shape)
 size_t
 rb_shape_edges_count(shape_id_t shape_id)
 {
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     if (shape->edges) {
         if (SINGLE_CHILD_P(shape->edges)) {
             return 1;
@@ -1146,7 +1145,7 @@ rb_shape_edges_count(shape_id_t shape_id)
 size_t
 rb_shape_memsize(shape_id_t shape_id)
 {
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
 
     size_t memsize = sizeof(rb_shape_t);
     if (shape->edges && !SINGLE_CHILD_P(shape->edges)) {
@@ -1164,7 +1163,7 @@ static VALUE
 shape_too_complex(VALUE self)
 {
     shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     return RBOOL(rb_shape_too_complex_p(shape));
 }
 
@@ -1172,7 +1171,7 @@ static VALUE
 shape_frozen(VALUE self)
 {
     shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     return RBOOL(rb_shape_frozen_shape_p(shape));
 }
 
@@ -1180,7 +1179,7 @@ static VALUE
 shape_has_object_id(VALUE self)
 {
     shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
-    rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+    rb_shape_t *shape = RSHAPE(shape_id);
     return RBOOL(rb_shape_has_object_id(shape));
 }
 
@@ -1224,7 +1223,7 @@ rb_shape_edges(VALUE self)
 {
     rb_shape_t *shape;
 
-    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
+    shape = RSHAPE(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
 
     VALUE hash = rb_hash_new();
 
@@ -1264,7 +1263,7 @@ static VALUE
 rb_shape_parent(VALUE self)
 {
     rb_shape_t *shape;
-    shape = rb_shape_get_shape_by_id(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
+    shape = RSHAPE(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
     if (shape->parent_id != INVALID_SHAPE_ID) {
         return rb_shape_t_to_rb_cShape(rb_shape_get_parent(shape));
     }
@@ -1353,7 +1352,7 @@ rb_shape_find_by_id(VALUE mod, VALUE id)
     if (shape_id >= GET_SHAPE_TREE()->next_shape_id) {
         rb_raise(rb_eArgError, "Shape ID %d is out of bounds\n", shape_id);
     }
-    return rb_shape_t_to_rb_cShape(rb_shape_get_shape_by_id(shape_id));
+    return rb_shape_t_to_rb_cShape(RSHAPE(shape_id));
 }
 #endif
 
@@ -1457,7 +1456,7 @@ void
 rb_shape_free_all(void)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
+    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
     while (cursor < end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             rb_id_table_free(cursor->edges);

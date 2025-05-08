@@ -1360,7 +1360,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 }
                 else {
                     attr_index_t index = 0;
-                    shape = rb_shape_get_shape_by_id(shape_id);
+                    shape = RSHAPE(shape_id);
                     found = rb_shape_get_iv_index(shape, id, &index);
 
                     if (found) {
@@ -1432,7 +1432,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     attr_index_t index = 0;
-    shape = rb_shape_get_shape_by_id(shape_id);
+    shape = RSHAPE(shape_id);
     if (rb_shape_get_iv_index(shape, id, &index)) {
         return ivar_list[index];
     }
@@ -1729,7 +1729,7 @@ generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int e
     if (!existing || fields_lookup->resize) {
         if (existing) {
             RUBY_ASSERT(fields_lookup->shape->type == SHAPE_IVAR || fields_lookup->shape->type == SHAPE_OBJ_ID);
-            RUBY_ASSERT(rb_shape_get_shape_by_id(fields_lookup->shape->parent_id)->capacity < fields_lookup->shape->capacity);
+            RUBY_ASSERT(RSHAPE(fields_lookup->shape->parent_id)->capacity < fields_lookup->shape->capacity);
         }
         else {
             FL_SET_RAW((VALUE)*k, FL_EXIVAR);
@@ -2338,12 +2338,12 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             while (src_shape->parent_id != INVALID_SHAPE_ID) {
                 if (src_shape->type == SHAPE_IVAR) {
                     while (dest_shape->edge_name != src_shape->edge_name) {
-                        dest_shape = rb_shape_get_shape_by_id(dest_shape->parent_id);
+                        dest_shape = RSHAPE(dest_shape->parent_id);
                     }
 
                     RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
                 }
-                src_shape = rb_shape_get_shape_by_id(src_shape->parent_id);
+                src_shape = RSHAPE(src_shape->parent_id);
             }
         }
 
