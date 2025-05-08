@@ -293,12 +293,6 @@ static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool per
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
 // 4-19: SHAPE_FLAG_MASK
 
-VALUE rb_class_debug_duplicate_classext(VALUE klass, VALUE namespace); // TODO: only for development
-VALUE rb_class_debug_dump_all_classext(VALUE klass);                   // TODO: only for development
-VALUE rb_class_debug_dump_all_classext_super(VALUE klass, VALUE upto); // TODO: only for development
-void rb_class_debug_print_classext(const char *label, const char *opt, VALUE klass);
-VALUE rb_class_debug_print_module(VALUE);
-
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
 void rb_class_ensure_writable(VALUE obj);

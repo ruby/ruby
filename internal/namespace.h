@@ -75,6 +75,4 @@ VALUE rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path);
 
 void rb_initialize_main_namespace(void);
 
-bool rb_namespace_debug_mode_p(void);
-
 #endif /* INTERNAL_NAMESPACE_H */
