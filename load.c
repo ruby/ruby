@@ -798,7 +798,8 @@ iseq_eval_in_namespace(VALUE arg)
     struct iseq_eval_in_namespace_data *data = (struct iseq_eval_in_namespace_data *)arg;
     if (rb_namespace_available() && data->in_builtin) {
         return rb_iseq_eval_with_refinement(data->iseq, rb_mNamespaceRefiner);
-    } else {
+    }
+    else {
         return rb_iseq_eval(data->iseq);
     }
 }
@@ -865,7 +866,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             .in_builtin = NAMESPACE_BUILTIN_P(loading_ns),
         };
         rb_namespace_exec(loading_ns, iseq_eval_in_namespace, (VALUE)&arg);
-    } else {
+    }
+    else {
         rb_iseq_eval(iseq);
     }
 }
@@ -891,7 +893,8 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
             ns->top_self = rb_obj_clone(rb_vm_top_self());
         }
         th->top_self = ns->top_self;
-    } else {
+    }
+    else {
         th->top_self = rb_obj_clone(rb_vm_top_self());
     }
     th->top_wrapper = load_wrapper;
@@ -1441,7 +1444,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                         // check with NAMESPACE_OPTIONAL_P (not NAMESPACE_USER_P) for NS1::xxx naming
                         // it is not expected for the main namespace
                         load_wrapping(saved.ec, path, vm_ns->ns->ns_object);
-                    } else {
+                    }
+                    else {
                         load_iseq_eval(saved.ec, path);
                     }
                     break;

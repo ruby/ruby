@@ -2243,7 +2243,8 @@ rb_obj_memsize_of(VALUE obj)
 
         if (rb_shape_obj_too_complex_p(obj)) {
             rb_class_classext_foreach(obj, classext_fields_hash_memsize, (void *)&size);
-        } else {
+        }
+        else {
             // class IV sizes are allocated as powers of two
             size += SIZEOF_VALUE << bit_length(RCLASS_FIELDS_COUNT(obj));
         }
@@ -3746,7 +3747,8 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 
     if (args->obj_too_complex) {
         gc_ref_update_table_values_only((st_table *)RCLASSEXT_FIELDS(ext));
-    } else {
+    }
+    else {
         // Classext is not copied in this case
         for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(klass); i++) {
             UPDATE_IF_MOVED(objspace, RCLASSEXT_FIELDS(RCLASS_EXT_PRIME(klass))[i]);
