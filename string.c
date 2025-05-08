@@ -2787,7 +2787,7 @@ rb_str_empty(VALUE str)
  *
  *    'Hello from ' + self.to_s # => "Hello from main"
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 VALUE
@@ -2860,7 +2860,7 @@ rb_str_opt_plus(VALUE str1, VALUE str2)
  *    'Ho!' * 3 # => "Ho!Ho!Ho!"
  *    'No!' * 0 # => ""
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 VALUE
@@ -2938,7 +2938,7 @@ rb_str_times(VALUE str, VALUE times)
  *    'foo = %{foo}' % {foo: 'bar'}                           # => "foo = bar"
  *    'foo = %{foo}, baz = %{baz}' % {foo: 'bar', baz: 'bat'} # => "foo = bar, baz = bat"
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -3645,7 +3645,7 @@ str_uplus(VALUE str)
  *
  *   'foo'.dedup.gsub!('o')
  *
- * Related: see {Methods for a Frozen/Unfrozen String}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String].
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
  */
 static VALUE
 str_uminus(VALUE str)
