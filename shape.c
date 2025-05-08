@@ -1432,6 +1432,21 @@ Init_default_shapes(void)
 }
 
 void
+rb_shape_free_all(void)
+{
+    rb_shape_t *cursor = rb_shape_get_root_shape();
+    rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
+    while (cursor < end) {
+        if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
+            rb_id_table_free(cursor->edges);
+        }
+        cursor++;
+    }
+
+    xfree(GET_SHAPE_TREE());
+}
+
+void
 Init_shape(void)
 {
 #if SHAPE_DEBUG
