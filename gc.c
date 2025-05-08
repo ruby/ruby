@@ -1545,6 +1545,17 @@ os_obj_of(VALUE of)
  *     2.2250738585072e-308
  *     Total count: 7
  *
+ *  When the process is in multi-Ractor mode (when <code>Ractor.new</code>
+ *  has been called within the process at least once), this method yields
+ *  Ractor-shareable objects only.
+ *
+ *     a = 12345678987654321 # shareable
+ *     b = [].freeze # shareable
+ *     c = {} # not shareable
+ *     ObjectSpace.each_object {|x| x } # yields a, b, and c
+ *     Ractor.new {} # enter multi-Ractor mode
+ *     ObjectSpace.each_object {|x| x } # does not yield c
+ *
  */
 
 static VALUE
