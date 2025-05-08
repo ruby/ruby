@@ -3,6 +3,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/eval.h"
+#include "internal/error.h"
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
@@ -960,6 +961,8 @@ rb_namespace_require_relative(VALUE namespace, VALUE fname)
     return rb_ensure(rb_require_relative_entrypoint, fname, namespace_both_pop, (VALUE)&arg);
 }
 
+static int namespace_experimental_warned = 0;
+
 void
 rb_initialize_main_namespace(void)
 {
@@ -967,6 +970,13 @@ rb_initialize_main_namespace(void)
     rb_vm_t *vm = GET_VM();
     rb_thread_t *th = GET_THREAD();
     VALUE main_ns;
+
+    if (!namespace_experimental_warned) {
+        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
+                         "Namespace is experimental, and the behavior may change in the future!\n"
+                         "See doc/namespace.md for know issues, etc.");
+        namespace_experimental_warned = 1;
+    }
 
     main_ns = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespace);
     ns = rb_get_namespace_t(main_ns);
