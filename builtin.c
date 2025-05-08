@@ -55,7 +55,8 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     // exec
     if (rb_namespace_available() && rb_mNamespaceRefiner) {
         rb_iseq_eval_with_refinement(rb_iseq_check(iseq), rb_mNamespaceRefiner);
-    } else {
+    }
+    else {
         rb_iseq_eval(rb_iseq_check(iseq));
     }
 

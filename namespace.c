@@ -149,11 +149,13 @@ namespace_ignore_builtin_primitive_methods_p(const rb_namespace_t *ns, rb_method
                 ) {
                 return true;
             }
-        } else if (strcmp(path, "<internal:warning>") == 0) {
+        }
+        else if (strcmp(path, "<internal:warning>") == 0) {
             if (mid == rb_intern("warn")) {
                 return true;
             }
-        } else if (strcmp(path, "<internal:marshal>") == 0) {
+        }
+        else if (strcmp(path, "<internal:marshal>") == 0) {
             if (mid == rb_intern("load"))
                 return true;
         }
@@ -220,7 +222,8 @@ current_namespace(bool permit_calling_builtin)
                 }
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-        } else {
+        }
+        else {
             calling = 0;
         }
     }
@@ -349,21 +352,24 @@ rb_current_namespace_details(VALUE opt)
                     rb_str_cat_cstr(str, buf);
                     calling = 0;
                     break;
-                } else {
+                }
+                else {
                     snprintf(buf, 2048, " cfp cme->def id:%s, ns:%s, exprim:f, path:%s\n",
                              rb_id2name(cme->def->original_id),
                              RSTRING_PTR(part),
                              path);
                     rb_str_cat_cstr(str, buf);
                 }
-            } else {
+            }
+            else {
                 snprintf(buf, 2048, " cfp cme->def id:%s, ns:null, path:%s\n",
                          rb_id2name(cme->def->original_id),
                          path);
                 rb_str_cat_cstr(str, buf);
             }
             cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-        } else {
+        }
+        else {
             calling = 0;
         }
     }
@@ -750,11 +756,13 @@ copy_ext_file(char *src_path, char *dst_path)
                 if (ferror(dst)) {
                     retvalue = 4;
                     break;
-                } else { // partial write
+                }
+                else { // partial write
                     clean_read = 0;
                     written += wrote;
                 }
-            } else { // Wrote the entire buffer to dst, next read is clean one
+            }
+            else { // Wrote the entire buffer to dst, next read is clean one
                 clean_read = 1;
             }
         }
@@ -762,7 +770,8 @@ copy_ext_file(char *src_path, char *dst_path)
             if (clean_read && feof(src)) {
                 // If it's not clean, buffer should have bytes not written yet.
                 eof = 1;
-            } else if (ferror(src)) {
+            }
+            else if (ferror(src)) {
                 retvalue = 3;
                 // Writes could be partial/dirty, but this load is failure anyway
                 break;
@@ -852,7 +861,8 @@ namespace_push(rb_thread_t *th, VALUE namespace)
 {
     if (RTEST(th->namespaces)) {
         rb_ary_push(th->namespaces, namespace);
-    } else {
+    }
+    else {
         th->namespaces = rb_ary_new_from_args(1, namespace);
     }
     th->ns = rb_get_namespace_t(namespace);
@@ -873,7 +883,8 @@ namespace_pop(VALUE th_value)
     if (stack_len == 0) {
         th->namespaces = 0;
         th->ns = main_namespace;
-    } else {
+    }
+    else {
         upper_ns = RARRAY_AREF(namespaces, stack_len-1);
         th->ns = rb_get_namespace_t(upper_ns);
     }
@@ -990,7 +1001,8 @@ rb_namespace_inspect(VALUE obj)
     }
     if (NAMESPACE_MAIN_P(ns)) {
         rb_str_cat_cstr(r, ",main");
-    } else if (NAMESPACE_OPTIONAL_P(ns)) {
+    }
+    else if (NAMESPACE_OPTIONAL_P(ns)) {
         rb_str_cat_cstr(r, ",optional");
     }
     rb_str_cat_cstr(r, ">");

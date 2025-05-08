@@ -274,7 +274,8 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     // See also: rb_include_class_new()
     if (RCLASSEXT_ICLASS_IS_ORIGIN(src) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(src)) {
         RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(src), iclass, true);
-    } else {
+    }
+    else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
     }
     RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
@@ -318,14 +319,16 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
     if (RCLASSEXT_FIELDS(orig)) {
         RCLASSEXT_FIELDS(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_FIELDS(orig));
         rb_autoload_copy_table_for_namespace((st_table *)RCLASSEXT_FIELDS(ext), ns);
-    } else {
+    }
+    else {
         RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
         RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(orig);
         RCLASSEXT_SHARED_CONST_TBL(ext) = true;
-    } else {
+    }
+    else {
         RCLASSEXT_CONST_TBL(ext) = duplicate_classext_const_tbl(RCLASSEXT_CONST_TBL(orig), klass);
         RCLASSEXT_SHARED_CONST_TBL(ext) = false;
     }
@@ -544,16 +547,19 @@ debug_dump_super_chain(rb_classext_t *ext, const rb_namespace_t *ns)
             rb_str_cat_cstr(result, " -> ");
             if (ns) {
                 s = RCLASSEXT_SUPER(RCLASS_EXT_READABLE_IN_NS(s, ns));
-            } else {
+            }
+            else {
                 s = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(s));
             }
-        } else {
+        }
+        else {
             chaining = false;
         }
     }
     if (count >= 100) {
         rb_str_cat_cstr(result, " -> ... (chain size >= 100)\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(result, "\n");
     }
     return result;
@@ -571,9 +577,11 @@ debug_dump_ivars_foreach_i(st_data_t k, st_data_t v, st_data_t arg)
     // to suppress the very long Gem ivar values
     if (key == rb_intern("@loaded_specs")) {
         rb_str_cat_cstr(result, "[ ... ]");
-    } else if (key == rb_intern("@path_to_default_spec_map")) {
+    }
+    else if (key == rb_intern("@path_to_default_spec_map")) {
         rb_str_cat_cstr(result, "{ ... }");
-    } else {
+    }
+    else {
         rb_str_concat(result, debug_dump_inspect_or_return_type(value));
     }
     rb_str_cat_cstr(result, "\n");
@@ -607,7 +615,8 @@ debug_dump_sorted_methods_i(ID key, VALUE value, void *data)
         // snprintf(buf, 2048, "%s[%p](*)", rb_id2name(key), me);
         snprintf(buf, 2048, "%s(*)", rb_id2name(key));
         rb_ary_push(ary, rb_str_new_cstr(buf));
-    } else {
+    }
+    else {
         // snprintf(buf, 2048, "%s[%p]", rb_id2name(key), me);
         snprintf(buf, 2048, "%s", rb_id2name(key));
         rb_ary_push(ary, rb_str_new_cstr(buf));
@@ -666,10 +675,12 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     } else {
         if (!RCLASSEXT_FIELDS(ext)) {
             rb_str_cat_cstr(result, "Ivars: NONE\n");
-        } else if (st_table_size((st_table *)RCLASSEXT_FIELDS(ext)) == 0) {
+        }
+        else if (st_table_size((st_table *)RCLASSEXT_FIELDS(ext)) == 0) {
             snprintf(buf, 2048, "IVars: NONE (%p)\n", (void *)RCLASSEXT_FIELDS(ext));
             rb_str_cat_cstr(result, buf);
-        } else {
+        }
+        else {
             snprintf(buf, 2048, "IVars: %zu (%p)\n", st_table_size((st_table *)RCLASSEXT_FIELDS(ext)), (void *)RCLASSEXT_FIELDS(ext));
             rb_str_cat_cstr(result, buf);
             st_foreach((st_table *)RCLASSEXT_FIELDS(ext), debug_dump_ivars_foreach_i, (st_data_t)result);
@@ -677,7 +688,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_CONST_TBL(ext) || rb_id_table_size(RCLASSEXT_CONST_TBL(ext)) == 0) {
         rb_str_cat_cstr(result, "Constants: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Constants: %zu\n  ", rb_id_table_size(RCLASSEXT_CONST_TBL(ext)));
         rb_str_cat_cstr(result, buf);
         rb_str_concat(result, debug_dump_sorted_constants(RCLASSEXT_CONST_TBL(ext)));
@@ -685,7 +697,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_M_TBL(ext) || rb_id_table_size(RCLASSEXT_M_TBL(ext)) == 0) {
         rb_str_cat_cstr(result, "Methods: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Methods: %zu\n  ", rb_id_table_size(RCLASSEXT_M_TBL(ext)));
         rb_str_cat_cstr(result, buf);
         rb_str_concat(result, debug_dump_sorted_methods(RCLASSEXT_M_TBL(ext)));
@@ -693,7 +706,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_CALLABLE_M_TBL(ext) || rb_id_table_size(RCLASSEXT_CALLABLE_M_TBL(ext)) == 0) {
         rb_str_cat_cstr(result, "Callable Methods: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Callable Methods: %zu\n  ", rb_id_table_size(RCLASSEXT_CALLABLE_M_TBL(ext)));
         rb_str_cat_cstr(result, buf);
         rb_str_concat(result, debug_dump_sorted_list_of_id_table_keys(RCLASSEXT_CALLABLE_M_TBL(ext)));
@@ -701,7 +715,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_CC_TBL(ext) || rb_id_table_size(RCLASSEXT_CC_TBL(ext)) == 0) {
         rb_str_cat_cstr(result, "Call Caches: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Call Caches: %zu\n  ", rb_id_table_size(RCLASSEXT_CC_TBL(ext)));
         rb_str_cat_cstr(result, buf);
         rb_str_concat(result, debug_dump_sorted_list_of_id_table_keys(RCLASSEXT_CC_TBL(ext)));
@@ -709,7 +724,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_CVC_TBL(ext) || rb_id_table_size(RCLASSEXT_CVC_TBL(ext)) == 0) {
         rb_str_cat_cstr(result, "CVar Caches: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "CVar Caches: %zu\n  ", rb_id_table_size(RCLASSEXT_CVC_TBL(ext)));
         rb_str_cat_cstr(result, buf);
         rb_str_concat(result, debug_dump_sorted_list_of_id_table_keys(RCLASSEXT_CVC_TBL(ext)));
@@ -717,7 +733,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (RCLASSEXT_SUPERCLASS_DEPTH(ext) == 0) {
         rb_str_cat_cstr(result, "Superclasses: NONE\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(result, "Superclasses: ");
         len = (int)RCLASSEXT_SUPERCLASS_DEPTH(ext);
         for (i=0; i<len; i++) {
@@ -732,7 +749,8 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     rb_str_cat_cstr(result, buf);
     if (!RCLASSEXT_SUBCLASSES(ext)) {
         rb_str_cat_cstr(result, "Subclasses: NONE\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(result, "Subclasses: ");
         subclass = RCLASSEXT_SUBCLASSES(ext)->head;
         while (subclass->next) {
@@ -746,26 +764,30 @@ debug_dump_classext(rb_classext_t *ext, VALUE klass, const rb_namespace_t *ns)
     }
     if (!RCLASSEXT_NS_SUPER_SUBCLASSES(ext)) {
         rb_str_cat_cstr(result, "Namespace Super Subclass Table: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Namespace Super Subclass Table: %p\n", (void *)RCLASSEXT_NS_SUPER_SUBCLASSES(ext));
         rb_str_cat_cstr(result, buf);
     }
     if (!RCLASSEXT_NS_MODULE_SUBCLASSES(ext)) {
         rb_str_cat_cstr(result, "Namespace Module Subclass Table: NONE\n");
-    } else {
+    }
+    else {
         snprintf(buf, 2048, "Namespace Module Subclass Table: %p\n", (void *)RCLASSEXT_NS_MODULE_SUBCLASSES(ext));
         rb_str_cat_cstr(result, buf);
     }
     if (!RCLASSEXT_ORIGIN(ext)) {
         rb_str_cat_cstr(result, "Origin: NONE\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(result, "Origin: ");
         rb_str_concat(result, debug_dump_inspect_or_return_type(RCLASSEXT_ORIGIN(ext)));
         rb_str_cat_cstr(result, "\n");
     }
     if (!RCLASSEXT_INCLUDER(ext)) {
         rb_str_cat_cstr(result, "Includer: NONE\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(result, "Includer: ");
         rb_str_concat(result, debug_dump_inspect_or_return_type(RCLASSEXT_INCLUDER(ext)));
         rb_str_cat_cstr(result, "\n");
@@ -818,13 +840,15 @@ rb_class_debug_dump_all_classext(VALUE klass)
     rb_str_cat_cstr(r, "klass: ");
     if (METACLASS_OF(klass)) {
         rb_str_concat(r, debug_dump_inspect_or_return_type(METACLASS_OF(klass)));
-    } else {
+    }
+    else {
         rb_str_cat_cstr(r, "NONE\n");
     }
     rb_str_cat_cstr(r, "\n");
     if (RCLASS_SINGLETON_P(klass)) {
         rb_str_cat_cstr(r, "singleton class: true\n");
-    } else {
+    }
+    else {
         rb_str_cat_cstr(r, "singleton class: false\n");
     }
     snprintf(buf, 2048,
@@ -866,7 +890,8 @@ rb_class_debug_print_classext(const char *label, const char *opt, VALUE klass)
     VALUE d = rb_class_debug_dump_all_classext(klass);
     if (opt) {
         fprintf(stderr, "***** %s (%s)\n%s", label, opt, StringValueCStr(d));
-    } else {
+    }
+    else {
         fprintf(stderr, "***** %s\n%s", label, StringValueCStr(d));
     }
 }
@@ -930,7 +955,8 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
 
     if (is_module) {
         RCLASS_WRITE_NS_MODULE_SUBCLASSES(klass, anchor->ns_subclasses);
-    } else {
+    }
+    else {
         RCLASS_WRITE_NS_SUPER_SUBCLASSES(klass, anchor->ns_subclasses);
     }
 }
@@ -989,13 +1015,15 @@ remove_class_from_subclasses(struct st_table *tbl, VALUE ns_id, VALUE klass)
             if (first_entry) {
                 if (next) {
                     st_insert(tbl, ns_id, (st_data_t)next);
-                } else {
+                }
+                else {
                     // no subclass entries in this ns
                     st_delete(tbl, &ns_id, NULL);
                 }
             }
             break;
-        } else if (first_entry) {
+        }
+        else if (first_entry) {
             first_entry = false;
         }
         entry = entry->next;
@@ -1174,7 +1202,8 @@ class_associate_super(VALUE klass, VALUE super, bool init)
     }
     if (init) {
         RCLASS_SET_SUPER(klass, super);
-    } else {
+    }
+    else {
         RCLASS_WRITE_SUPER(klass, super);
     }
     rb_class_update_superclasses(klass);
@@ -1274,7 +1303,8 @@ rb_class_update_superclasses(VALUE klass)
     super_depth = RCLASS_SUPERCLASS_DEPTH(super);
     if (RCLASS_SUPERCLASSES_WITH_SELF_P(super)) {
         superclasses = RCLASS_SUPERCLASSES(super);
-    } else {
+    }
+    else {
         superclasses = class_superclasses_including_self(super);
         RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true, true);
     }
@@ -2117,7 +2147,8 @@ rb_include_class_new(VALUE module, VALUE super)
     RUBY_ASSERT(!RB_TYPE_P(module, T_ICLASS));
     if (RCLASS_WRITABLE_CONST_TBL(module)) {
         RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
-    } else {
+    }
+    else {
         RCLASS_WRITE_CONST_TBL(module, rb_id_table_create(0), false);
         RCLASS_SET_CONST_TBL(klass, RCLASS_WRITABLE_CONST_TBL(module), true);
     }

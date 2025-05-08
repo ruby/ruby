@@ -1009,7 +1009,8 @@ rb_gvar_set(ID id, VALUE val)
         rb_hash_aset(ns->gvar_tbl, rb_id2sym(entry->id), val);
         retval = val;
         // TODO: think about trace
-    } else {
+    }
+    else {
         retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
@@ -1034,14 +1035,16 @@ rb_gvar_get(ID id)
         key = rb_id2sym(entry->id);
         if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
             retval = rb_hash_aref(gvars, key);
-        } else {
+        }
+        else {
             retval = (*var->getter)(entry->id, var->data);
             if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
                 retval = rb_funcall(retval, rb_intern("clone"), 0);
             }
             rb_hash_aset(gvars, key, retval);
         }
-    } else {
+    }
+    else {
         retval = (*var->getter)(entry->id, var->data);
     }
     return retval;
@@ -3787,11 +3790,10 @@ rb_const_remove(VALUE mod, ID id)
         val = Qnil;
     }
 
-    if (ce == const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
-        // skip free'ing the ce because it still exists in the prime classext
-    } else {
+    if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
         ruby_xfree(ce);
     }
+    // else - skip free'ing the ce because it still exists in the prime classext
 
     return val;
 }
