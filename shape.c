@@ -618,13 +618,13 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
             if (new_parent) {
-                if (UNLIKELY(new_parent->type == SHAPE_OBJ_TOO_COMPLEX)) {
+                if (UNLIKELY(rb_shape_too_complex_p(new_parent))) {
                     return new_parent;
                 }
 
                 bool dont_care;
                 rb_shape_t *new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
-                if (UNLIKELY(new_child->type == SHAPE_OBJ_TOO_COMPLEX)) {
+                if (UNLIKELY(rb_shape_too_complex_p(new_child))) {
                     return new_child;
                 }
 
@@ -644,7 +644,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 bool
 rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE *removed)
 {
-    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+    if (UNLIKELY(rb_shape_too_complex_p(shape))) {
         return false;
     }
 
@@ -653,7 +653,7 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
     if (new_shape) {
         RUBY_ASSERT(removed_shape != NULL);
 
-        if (UNLIKELY(new_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        if (UNLIKELY(rb_shape_too_complex_p(new_shape))) {
             return false;
         }
 
@@ -797,7 +797,7 @@ static inline rb_shape_t *
 shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
-    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+    if (UNLIKELY(rb_shape_too_complex_p(shape))) {
         return shape;
     }
 
