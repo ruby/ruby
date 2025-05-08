@@ -2183,6 +2183,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_FROZEN:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
+      default:
         rb_bug("Unreachable");
         UNREACHABLE_RETURN(false);
     }
