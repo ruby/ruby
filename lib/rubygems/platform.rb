@@ -126,7 +126,7 @@ class Gem::Platform
                       when /solaris-?(\d+\.\d+)?/ then       ["solaris",   $1]
                       when /wasi/ then                       ["wasi",      nil]
                       # test
-                      when /^(\w+_platform)(\d+)?/ then      [$1,          $2]
+                      when /^(\w+_platform)-?(\d+)?/ then    [$1,          $2]
                       else ["unknown", nil]
       end
     when Gem::Platform then
