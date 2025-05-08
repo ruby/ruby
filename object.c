@@ -519,12 +519,12 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            rb_shape_t *next_shape = rb_shape_transition_shape_frozen(clone);
-            if (!rb_shape_obj_too_complex(clone) && rb_shape_too_complex_p(next_shape)) {
+            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            if (!rb_shape_obj_too_complex(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
                 rb_evict_ivars_to_hash(clone);
             }
             else {
-                rb_shape_set_shape(clone, next_shape);
+                rb_shape_set_shape_id(clone, next_shape_id);
             }
         }
         break;
@@ -541,14 +541,14 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
-        rb_shape_t *next_shape = rb_shape_transition_shape_frozen(clone);
+        shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex(clone) && rb_shape_too_complex_p(next_shape)) {
+        if (!rb_shape_obj_too_complex(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
             rb_evict_ivars_to_hash(clone);
         }
         else {
-            rb_shape_set_shape(clone, next_shape);
+            rb_shape_set_shape_id(clone, next_shape_id);
         }
         break;
       }

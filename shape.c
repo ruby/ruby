@@ -700,28 +700,28 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
     return true;
 }
 
-rb_shape_t *
-rb_shape_transition_shape_frozen(VALUE obj)
+shape_id_t
+rb_shape_transition_frozen(VALUE obj)
 {
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-    RUBY_ASSERT(shape);
     RUBY_ASSERT(RB_OBJ_FROZEN(obj));
 
-    if (rb_shape_frozen_shape_p(shape)) {
-        return shape;
+    shape_id_t shape_id = rb_shape_get_shape_id(obj);
+    if (shape_id == ROOT_SHAPE_ID) {
+        return SPECIAL_CONST_SHAPE_ID;
     }
 
-    rb_shape_t *next_shape;
+    rb_shape_t *shape = RSHAPE(shape_id);
+    RUBY_ASSERT(shape);
 
-    if (shape == rb_shape_get_root_shape()) {
-        return RSHAPE(SPECIAL_CONST_SHAPE_ID);
+    if (rb_shape_frozen_shape_p(shape)) {
+        return shape_id;
     }
 
     bool dont_care;
-    next_shape = get_next_shape_internal(shape, id_frozen, SHAPE_FROZEN, &dont_care, true);
+    rb_shape_t *next_shape = get_next_shape_internal(shape, id_frozen, SHAPE_FROZEN, &dont_care, true);
 
     RUBY_ASSERT(next_shape);
-    return next_shape;
+    return rb_shape_id(next_shape);
 }
 
 static rb_shape_t *
