@@ -136,26 +136,26 @@ STATIC_ASSERT(shape_max_variations, SHAPE_MAX_VARIATIONS < (1 << (sizeof(((rb_cl
 struct RClass {
     struct RBasic basic;
     st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
-    bool prime_classext_readable : 1;
-    bool prime_classext_writable : 1;
+    /*
+     * If ns_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
+     * For the check whether writable or not, check flag RCLASS_PRIME_CLASSEXT_WRITABLE
+     */
 };
 
-/** TODO: Update or remove this assertion
- * // Assert that classes can be embedded in heaps[2] (which has 160B slot size)
- * STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
- */
+// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
+// TODO: check this assertion's validity
+// STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
 
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
 };
 
-#define RCLASS_PRIME_READABLE_P(obj) (RCLASS(obj)->prime_classext_readable)
-#define RCLASS_PRIME_WRITABLE_P(obj) (RCLASS(obj)->prime_classext_writable)
-
 static inline bool RCLASS_SINGLETON_P(VALUE klass);
 
-static inline void RCLASS_SET_PRIME_CLASSEXT_READWRITE(VALUE obj, bool readable, bool writable);
+static inline bool RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE obj);
+static inline bool RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE obj);
+static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 
 #define RCLASS_EXT(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
@@ -217,11 +217,9 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_M_TBL(c) (RCLASS_EXT_READABLE(c)->m_tbl)
 #define RCLASS_CONST_TBL(c) (RCLASS_EXT_READABLE(c)->const_tbl)
 /*
- * Both cc_tbl/callable_m_tbl are cache and always be changed when referreed,
- * so always should be writable.
+ * Both cc_tbl/callable_m_tbl are cache-like and always be changed when referreed,
+ * so always those should be writable.
  */
-// #define RCLASS_CALLABLE_M_TBL(c) (RCLASS_EXT_READABLE(c)->callable_m_tbl)
-// #define RCLASS_CC_TBL(c) (RCLASS_EXT_READABLE(c)->cc_tbl)
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT_READABLE(c)->cvc_tbl)
 #define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_READABLE(c)->superclass_depth)
 #define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_READABLE(c)->superclasses)
@@ -290,9 +288,10 @@ static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool perma
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 
 #define RCLASS_IS_ROOT FL_USER0
-// #define RICLASS_IS_ORIGIN FL_USER0 // TODO: Delete this
-// #define RCLASS_SUPERCLASSES_INCLUD_SELF FL_USER2 // TODO: Delete this
-// #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3 // TODO: Delete this
+// 1 is for RUBY_FL_SINGLETON or RMODULE_ALLOCATED_BUT_NOT_INITIALIZED (see class.c)
+#define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
+// 3 is RMODULE_IS_REFINEMENT for RMODULE
+// 4-19: SHAPE_FLAG_MASK
 
 VALUE rb_class_debug_duplicate_classext(VALUE klass, VALUE namespace); // TODO: only for development
 VALUE rb_class_debug_dump_all_classext(VALUE klass);                   // TODO: only for development
@@ -307,23 +306,47 @@ void rb_class_ensure_writable(VALUE obj);
 static inline int
 RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t *ext)
 {
-    int tbl_created = 0;
+    int first_set = 0;
     st_table *tbl = RCLASS_CLASSEXT_TBL(obj);
     VM_ASSERT(NAMESPACE_USER_P(ns)); // non-prime classext is only for user namespace, with ns_object
+    VM_ASSERT(ns->ns_object);
     VM_ASSERT(RCLASSEXT_NS(ext) == ns);
     if (!tbl) {
         RCLASS_CLASSEXT_TBL(obj) = tbl = st_init_numtable_with_size(1);
-        tbl_created = 1;
+    }
+    if (rb_st_table_size(tbl) == 0) {
+        first_set = 1;
     }
     rb_st_insert(tbl, (st_data_t)ns->ns_object, (st_data_t)ext);
-    return tbl_created;
+    return first_set;
+}
+
+static inline bool
+RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    // if the lookup table exists, then it means the prime classext is NOT directly readable.
+    return RCLASS_CLASSEXT_TBL(klass) == NULL;
+}
+
+static inline bool
+RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+    return FL_TEST(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
 static inline void
-RCLASS_SET_PRIME_CLASSEXT_READWRITE(VALUE obj, bool readable, bool writable)
+RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
 {
-    RCLASS(obj)->prime_classext_readable = readable;
-    RCLASS(obj)->prime_classext_writable = writable;
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
+
+    if (writable) {
+        FL_SET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+    }
+    else {
+        FL_UNSET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+    }
 }
 
 static inline rb_classext_t *
@@ -354,7 +377,7 @@ RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
 {
     if (!ns
         || NAMESPACE_BUILTIN_P(ns)
-        || RCLASS(obj)->prime_classext_readable) {
+        || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
@@ -364,7 +387,7 @@ static inline rb_classext_t *
 RCLASS_EXT_READABLE(VALUE obj)
 {
     const rb_namespace_t *ns;
-    if (RCLASS(obj)->prime_classext_readable) {
+    if (RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT(obj);
     }
     // delay namespace loading to optimize for unmodified classes
@@ -379,14 +402,13 @@ static inline rb_classext_t *
 RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
 {
     rb_classext_t *ext;
-    int table_created = 0;
+    int first_set = 0;
 
     ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
     if (ext)
         return ext;
 
     if (!rb_shape_obj_too_complex_p(obj)) {
-        // TODO: Handle object shapes properly
         rb_evict_ivars_to_hash(obj); // fallback to ivptr for ivars from shapes
     }
 
@@ -396,9 +418,9 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
         if (!ext) {
             ext = rb_class_duplicate_classext(RCLASS_EXT(obj), obj, ns);
-            table_created = RCLASS_SET_NAMESPACE_CLASSEXT(obj, ns, ext);
-            if (table_created) {
-                RCLASS_SET_PRIME_CLASSEXT_READWRITE(obj, false, false);
+            first_set = RCLASS_SET_NAMESPACE_CLASSEXT(obj, ns, ext);
+            if (first_set) {
+                RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
             }
         }
     }
@@ -411,7 +433,7 @@ RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
 {
     if (!ns
         || NAMESPACE_BUILTIN_P(ns)
-        || RCLASS(obj)->prime_classext_writable) {
+        || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
@@ -421,7 +443,7 @@ static inline rb_classext_t *
 RCLASS_EXT_WRITABLE(VALUE obj)
 {
     const rb_namespace_t *ns;
-    if (RCLASS(obj)->prime_classext_writable) {
+    if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT(obj);
     }
     // delay namespace loading to optimize for unmodified classes
