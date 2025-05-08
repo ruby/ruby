@@ -242,8 +242,6 @@ rb_shape_obj_has_id(VALUE obj)
     return rb_shape_has_object_id(rb_shape_get_shape(obj));
 }
 
-VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
-
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN
 typedef void each_shape_callback(rb_shape_t *shape, void *data);
