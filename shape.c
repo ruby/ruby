@@ -757,16 +757,6 @@ rb_shape_has_object_id(rb_shape_t *shape)
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;
 }
 
-attr_index_t
-rb_shape_object_id_index(rb_shape_t *shape)
-{
-    RUBY_ASSERT(shape->flags & SHAPE_FL_HAS_OBJECT_ID);
-    while (shape->type != SHAPE_OBJ_ID) {
-        shape = rb_shape_get_parent(shape);
-    }
-    return shape->next_field_index - 1;
-}
-
 rb_shape_t *
 rb_shape_object_id_shape(VALUE obj)
 {
