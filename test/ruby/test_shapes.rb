@@ -788,7 +788,40 @@ class TestShapes < Test::Unit::TestCase
     assert_equal 3, tc.a3_m # make sure IV is initialized
     assert tc.instance_variable_defined?(:@a3)
     tc.remove_instance_variable(:@a3)
+    refute tc.instance_variable_defined?(:@a3)
     assert_nil tc.a3
+  end
+
+  def test_delete_iv_after_complex_and_object_id
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+
+    assert_equal 3, tc.a3_m # make sure IV is initialized
+    assert tc.instance_variable_defined?(:@a3)
+    tc.object_id
+    tc.remove_instance_variable(:@a3)
+    refute tc.instance_variable_defined?(:@a3)
+    assert_nil tc.a3
+  end
+
+  def test_delete_iv_after_complex_and_freeze
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+
+    assert_equal 3, tc.a3_m # make sure IV is initialized
+    assert tc.instance_variable_defined?(:@a3)
+    tc.freeze
+    assert_raise FrozenError do
+      tc.remove_instance_variable(:@a3)
+    end
+    assert tc.instance_variable_defined?(:@a3)
+    assert_equal 3, tc.a3
   end
 
   def test_delete_undefined_after_complex
