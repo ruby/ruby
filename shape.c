@@ -322,6 +322,9 @@ rb_shape_get_root_shape(void)
 shape_id_t
 rb_shape_id(rb_shape_t *shape)
 {
+    if (shape == NULL) {
+        return INVALID_SHAPE_ID;
+    }
     return (shape_id_t)(shape - GET_SHAPE_TREE()->shape_list);
 }
 
@@ -999,14 +1002,14 @@ rb_shape_id_offset(void)
     return sizeof(uintptr_t) - SHAPE_ID_NUM_BITS / sizeof(uintptr_t);
 }
 
-rb_shape_t *
-rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
+static rb_shape_t *
+shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {
     RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
     rb_shape_t *next_shape = initial_shape;
 
     if (dest_shape->type != initial_shape->type) {
-        next_shape = rb_shape_traverse_from_new_root(initial_shape, rb_shape_get_parent(dest_shape));
+        next_shape = shape_traverse_from_new_root(initial_shape, rb_shape_get_parent(dest_shape));
         if (!next_shape) {
             return NULL;
         }
@@ -1048,6 +1051,14 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
     }
 
     return next_shape;
+}
+
+shape_id_t
+rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
+{
+    rb_shape_t *initial_shape = rb_shape_get_shape_by_id(initial_shape_id);
+    rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+    return rb_shape_id(shape_traverse_from_new_root(initial_shape, dest_shape));
 }
 
 // Rebuild a similar shape with the same ivars but starting from
