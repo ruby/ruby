@@ -150,7 +150,6 @@ RCLASS_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     set_shape_id_in_flags(obj, shape_id);
 }
 
-rb_shape_t *rb_shape_get_root_shape(void);
 int32_t rb_shape_id_offset(void);
 
 rb_shape_t *rb_shape_get_parent(rb_shape_t *shape);
