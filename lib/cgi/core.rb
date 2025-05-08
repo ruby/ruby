@@ -4,12 +4,12 @@
 # generating HTTP responses.
 #++
 class CGI
-  unless const_defined?(:Util)
-    module Util
+  unless const_defined?(:Escape)
+    module Escape
       @@accept_charset = "UTF-8" # :nodoc:
     end
-    include Util
-    extend Util
+    include Escape
+    extend Escape
   end
 
   $CGI_ENV = ENV    # for FCGI support
