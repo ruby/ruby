@@ -1639,7 +1639,8 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
             rb_raise(rb_eArgError, "too many instance variables");
         }
 
-        rb_shape_t *next_shape = rb_shape_get_next(current_shape, obj, id);
+        shape_id_t next_shape_id = rb_shape_transition_add_ivar(obj, id);
+        rb_shape_t *next_shape = RSHAPE(next_shape_id);
         if (UNLIKELY(rb_shape_too_complex_p(next_shape))) {
             transition_too_complex_func(obj, data);
             goto too_complex;

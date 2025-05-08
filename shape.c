@@ -857,16 +857,16 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
     return new_shape;
 }
 
-rb_shape_t *
-rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
+shape_id_t
+rb_shape_transition_add_ivar(VALUE obj, ID id)
 {
-    return shape_get_next(shape, obj, id, true);
+    return rb_shape_id(shape_get_next(rb_shape_get_shape(obj), obj, id, true));
 }
 
-rb_shape_t *
-rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id)
+shape_id_t
+rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id)
 {
-    return shape_get_next(shape, obj, id, false);
+    return rb_shape_id(shape_get_next(rb_shape_get_shape(obj), obj, id, false));
 }
 
 // Same as rb_shape_get_iv_index, but uses a provided valid shape id and index

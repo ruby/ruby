@@ -168,8 +168,9 @@ bool rb_shape_frozen_shape_p(rb_shape_t *shape);
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 bool rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed);
-rb_shape_t *rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id);
-rb_shape_t *rb_shape_get_next_no_warnings(rb_shape_t *shape, VALUE obj, ID id);
+shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
+shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
+
 rb_shape_t *rb_shape_object_id_shape(VALUE obj);
 bool rb_shape_has_object_id(rb_shape_t *shape);
 attr_index_t rb_shape_object_id_index(rb_shape_t *shape);
