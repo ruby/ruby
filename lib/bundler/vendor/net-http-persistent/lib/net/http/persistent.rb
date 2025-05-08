@@ -1,6 +1,11 @@
 require_relative '../../../../../vendored_net_http'
 require_relative '../../../../../vendored_uri'
-require 'cgi' # for escaping
+# for escaping
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
