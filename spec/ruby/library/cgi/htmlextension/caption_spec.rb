@@ -1,33 +1,36 @@
 require_relative '../../../spec_helper'
-require 'cgi'
-require_relative 'fixtures/common'
 
-describe "CGI::HtmlExtension#caption" do
-  before :each do
-    @html = CGISpecs.cgi_new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
+  require_relative 'fixtures/common'
 
-  describe "when passed a String" do
-    it "returns a 'caption'-element, using the passed String for the 'align'-attribute" do
-      output = @html.caption("left")
-      output.should equal_element("CAPTION", "ALIGN" => "left")
+  describe "CGI::HtmlExtension#caption" do
+    before :each do
+      @html = CGISpecs.cgi_new
     end
 
-    it "includes the passed block's return value when passed a block" do
-      output = @html.caption("left") { "Capital Cities" }
-      output.should equal_element("CAPTION", {"ALIGN" => "left"}, "Capital Cities")
-    end
-  end
+    describe "when passed a String" do
+      it "returns a 'caption'-element, using the passed String for the 'align'-attribute" do
+        output = @html.caption("left")
+        output.should equal_element("CAPTION", "ALIGN" => "left")
+      end
 
-  describe "when passed a Hash" do
-    it "returns a 'caption'-element, using the passed Hash for attributes" do
-      output = @html.caption("ALIGN" => "left", "ID" => "test")
-      output.should equal_element("CAPTION", "ALIGN" => "left", "ID" => "test")
+      it "includes the passed block's return value when passed a block" do
+        output = @html.caption("left") { "Capital Cities" }
+        output.should equal_element("CAPTION", {"ALIGN" => "left"}, "Capital Cities")
+      end
     end
 
-    it "includes the passed block's return value when passed a block" do
-      output = @html.caption("ALIGN" => "left", "ID" => "test") { "Capital Cities" }
-      output.should equal_element("CAPTION", {"ALIGN" => "left", "ID" => "test"}, "Capital Cities")
+    describe "when passed a Hash" do
+      it "returns a 'caption'-element, using the passed Hash for attributes" do
+        output = @html.caption("ALIGN" => "left", "ID" => "test")
+        output.should equal_element("CAPTION", "ALIGN" => "left", "ID" => "test")
+      end
+
+      it "includes the passed block's return value when passed a block" do
+        output = @html.caption("ALIGN" => "left", "ID" => "test") { "Capital Cities" }
+        output.should equal_element("CAPTION", {"ALIGN" => "left", "ID" => "test"}, "Capital Cities")
+      end
     end
   end
 end
