@@ -520,12 +520,11 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
-                rb_evict_ivars_to_hash(clone);
-            }
-            else {
-                rb_shape_set_shape_id(clone, next_shape_id);
-            }
+
+            // After freezing an object we never need to evict to hash.
+            RUBY_ASSERT(!rb_shape_id_too_complex_p(next_shape_id) || rb_shape_obj_too_complex_p(obj));
+
+            rb_shape_set_shape_id(clone, next_shape_id);
         }
         break;
       case Qtrue: {
@@ -542,14 +541,11 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
         RBASIC(clone)->flags |= FL_FREEZE;
         shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-        // If we're out of shapes, but we want to freeze, then we need to
-        // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
-            rb_evict_ivars_to_hash(clone);
-        }
-        else {
-            rb_shape_set_shape_id(clone, next_shape_id);
-        }
+
+        // After freezing an object we never need to evict to hash.
+        RUBY_ASSERT(!rb_shape_id_too_complex_p(next_shape_id) || rb_shape_obj_too_complex_p(obj));
+
+        rb_shape_set_shape_id(clone, next_shape_id);
         break;
       }
       case Qfalse: {

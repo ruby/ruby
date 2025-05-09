@@ -36,7 +36,7 @@ typedef uint32_t redblack_id_t;
 #define ROOT_SHAPE_ID               0x0
 #define SPECIAL_CONST_SHAPE_ID      0x1
 //      ROOT_TOO_COMPLEX_SHAPE_ID   0x2
-#define FIRST_T_OBJECT_SHAPE_ID     0x3
+#define FIRST_T_OBJECT_SHAPE_ID     0x4
 
 extern ID ruby_internal_object_id;
 
@@ -67,7 +67,6 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
-    SHAPE_FROZEN,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
 };
@@ -168,8 +167,8 @@ shape_id_t rb_shape_transition_complex(VALUE obj);
 bool rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
+shape_id_t rb_shape_transition_object_id(VALUE obj);
 
-rb_shape_t *rb_shape_object_id_shape(VALUE obj);
 bool rb_shape_has_object_id(rb_shape_t *shape);
 void rb_shape_free_all(void);
 
@@ -187,10 +186,13 @@ rb_shape_canonical_p(rb_shape_t *shape)
     return !shape->flags;
 }
 
+static const size_t SHAPE_ID_SHIFT = 1;
+#define SHAPE_ID_FLAGS ((1 << SHAPE_ID_SHIFT) - 1)
+
 static inline shape_id_t
 rb_shape_root(size_t heap_id)
 {
-    return (shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID);
+    return FIRST_T_OBJECT_SHAPE_ID + (shape_id_t)(heap_id << SHAPE_ID_SHIFT);
 }
 
 static inline uint32_t
