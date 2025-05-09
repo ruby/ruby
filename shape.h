@@ -170,6 +170,9 @@ bool rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 
+bool rb_obj_old_address_p(VALUE obj);
+rb_shape_t *rb_obj_old_address_shape(VALUE obj);
+
 rb_shape_t *rb_shape_object_id_shape(VALUE obj);
 bool rb_shape_has_object_id(rb_shape_t *shape);
 void rb_shape_free_all(void);

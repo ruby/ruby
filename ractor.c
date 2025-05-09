@@ -17,6 +17,7 @@
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/thread.h"
+#include "internal/variable.h"
 #include "variable.h"
 #include "yjit.h"
 
@@ -3595,6 +3596,17 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(data->replacement, obj);
+    }
+
+    if (FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(obj)) {
+        rb_shape_t *old_address_shape = rb_obj_old_address_shape(obj);
+        VALUE old_address;
+#if SIZEOF_LONG == SIZEOF_VOIDP
+        old_address = LONG2NUM(obj);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+        old_address = LL2NUM(obj);
+#endif
+        rb_obj_field_set(data->replacement, old_address_shape, old_address);
     }
 
     // Avoid mutations using bind_call, etc.

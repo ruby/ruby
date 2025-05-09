@@ -769,6 +769,31 @@ rb_shape_transition_old_address(VALUE obj)
 }
 
 bool
+rb_obj_old_address_p(VALUE obj)
+{
+    return rb_obj_shape(obj)->flags & SHAPE_FL_HAS_OLD_ADDRESS;
+}
+
+rb_shape_t *
+rb_obj_old_address_shape(VALUE obj)
+{
+    rb_shape_t* shape = rb_obj_shape(obj);
+    RUBY_ASSERT(shape);
+
+    if (shape->flags & SHAPE_FL_HAS_OLD_ADDRESS) {
+        while (shape->type != SHAPE_OLD_ADDRESS) {
+            shape = RSHAPE(shape->parent_id);
+        }
+        return shape;
+    }
+
+    bool dont_care;
+    rb_shape_t* next_shape = get_next_shape_internal(shape, id_old_address, SHAPE_OLD_ADDRESS, &dont_care, true);
+    RUBY_ASSERT(next_shape);
+    return next_shape;
+}
+
+bool
 rb_shape_has_object_id(rb_shape_t *shape)
 {
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;

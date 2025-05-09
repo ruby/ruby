@@ -6095,7 +6095,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 struct rb_gc_object_metadata_names {
     // Must be ID only
     ID ID_wb_protected, ID_age, ID_old, ID_uncollectible, ID_marking,
-        ID_marked, ID_pinned, ID_object_id, ID_shareable;
+        ID_marked, ID_pinned, ID_object_id, ID_shareable, ID_address_seen;
 };
 
 #define RB_GC_OBJECT_METADATA_ENTRY_COUNT (sizeof(struct rb_gc_object_metadata_names) / sizeof(ID))
@@ -6118,6 +6118,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
         I(marked);
         I(pinned);
         I(object_id);
+        I(address_seen);
         I(shareable);
 #undef I
     }
@@ -6137,6 +6138,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     if (RVALUE_MARKED(objspace, obj)) SET_ENTRY(marked, Qtrue);
     if (RVALUE_PINNED(objspace, obj)) SET_ENTRY(pinned, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
+    if (FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN)) SET_ENTRY(address_seen, Qtrue);
     if (FL_TEST(obj, FL_SHAREABLE)) SET_ENTRY(shareable, Qtrue);
 
     object_metadata_entries[n].name = 0;
@@ -6896,6 +6898,17 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     }
     else {
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(dest), dest);
+    }
+
+    if (FL_TEST_RAW(src, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(src)) {
+        rb_shape_t *old_address_shape = rb_obj_old_address_shape(src);
+        VALUE old_address;
+#if SIZEOF_LONG == SIZEOF_VOIDP
+        old_address = LONG2NUM(src);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+        old_address = LL2NUM(src);
+#endif
+        rb_obj_field_set(dest, old_address_shape, old_address);
     }
 
     RVALUE_AGE_SET(dest, age);
