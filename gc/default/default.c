@@ -5450,9 +5450,13 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
     rb_shape_t *old_address_shape = NULL;
 
     if (FL_TEST_RAW(src, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(src)) {
-        old_address_shape = rb_obj_old_address_shape(src);
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            old_address_shape = rb_obj_old_address_shape(src);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
 #if SIZEOF_LONG == SIZEOF_VOIDP
-        old_address = LONG2NUM(src);
+            old_address = LONG2NUM(src);
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
         old_address = LL2NUM(src);
 #endif
@@ -5492,7 +5496,11 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
         RMOVED(src)->original_shape_id = orig_shape;
     }
     if (old_address) {
-        rb_obj_field_set(dest, old_address_shape, old_address);
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            rb_obj_field_set(dest, old_address_shape, old_address);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
     }
     return true;
 }
