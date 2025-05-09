@@ -2142,6 +2142,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_T_OBJECT:
         return false;
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
         if (itr_data->ivar_only) {
             return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
         }

@@ -47,6 +47,7 @@
 
 static ID id_frozen;
 static ID id_t_object;
+static ID id_old_address;
 ID ruby_internal_object_id; // extern
 
 #define LEAF 0
@@ -57,8 +58,9 @@ enum shape_flags {
     SHAPE_FL_FROZEN             = 1 << 0,
     SHAPE_FL_HAS_OBJECT_ID      = 1 << 1,
     SHAPE_FL_TOO_COMPLEX        = 1 << 2,
+    SHAPE_FL_HAS_OLD_ADDRESS    = 1 << 3,
 
-    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID,
+    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID | SHAPE_FL_HAS_OLD_ADDRESS,
 };
 
 static redblack_node_t *
@@ -468,8 +470,14 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
     rb_shape_t *new_shape = rb_shape_alloc(id, shape, shape_type);
 
     switch (shape_type) {
+      case SHAPE_OLD_ADDRESS:
       case SHAPE_OBJ_ID:
-        new_shape->flags |= SHAPE_FL_HAS_OBJECT_ID;
+        if (shape_type == SHAPE_OBJ_ID) {
+            new_shape->flags |= SHAPE_FL_HAS_OBJECT_ID;
+        }
+        else {
+            new_shape->flags |= SHAPE_FL_HAS_OLD_ADDRESS;
+        } 
         // fallthrough
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
@@ -739,6 +747,27 @@ rb_shape_transition_complex(VALUE obj)
     return rb_shape_id(shape_transition_too_complex(original_shape));
 }
 
+static rb_shape_t *
+shape_transition_old_address(rb_shape_t *shape)
+{
+    bool dont_care;
+    rb_shape_t *next_shape = get_next_shape_internal(shape, id_old_address, SHAPE_OLD_ADDRESS, &dont_care, true);
+
+    RUBY_ASSERT(next_shape);
+    return next_shape;
+}
+
+shape_id_t
+rb_shape_transition_old_address(VALUE obj)
+{
+    // TODO: RUBY_ASSERT(RB_OBJ_ADDRESS_SEEN(obj));
+    rb_shape_t *original_shape = rb_obj_shape(obj);
+    if (original_shape->flags & SHAPE_FL_HAS_OLD_ADDRESS) {
+        return rb_obj_shape_id(obj);
+    }
+    return rb_shape_id(shape_transition_old_address(original_shape));
+}
+
 bool
 rb_shape_has_object_id(rb_shape_t *shape)
 {
@@ -921,6 +950,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
                 return false;
               case SHAPE_OBJ_TOO_COMPLEX:
               case SHAPE_OBJ_ID:
+              case SHAPE_OLD_ADDRESS:
               case SHAPE_FROZEN:
                 rb_bug("Ivar should not exist on transition");
             }
@@ -1006,6 +1036,7 @@ shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     switch ((enum shape_type)dest_shape->type) {
       case SHAPE_IVAR:
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
       case SHAPE_FROZEN:
         if (!next_shape->edges) {
             return NULL;
@@ -1077,6 +1108,7 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
         midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
         break;
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
       case SHAPE_ROOT:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
@@ -1365,6 +1397,7 @@ Init_default_shapes(void)
 
     id_frozen = rb_make_internal_id();
     id_t_object = rb_make_internal_id();
+    id_old_address = rb_make_internal_id();
     ruby_internal_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP

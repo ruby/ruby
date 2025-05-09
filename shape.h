@@ -67,6 +67,7 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
+    SHAPE_OLD_ADDRESS,
     SHAPE_FROZEN,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
