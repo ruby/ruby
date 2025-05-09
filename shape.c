@@ -1419,7 +1419,7 @@ Init_default_shapes(void)
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_id_table_create(0);
         t_object_shape->ancestor_index = LEAF;
-        RUBY_ASSERT(rb_shape_id(t_object_shape) == (shape_id_t)(i + FIRST_T_OBJECT_SHAPE_ID));
+        RUBY_ASSERT(rb_shape_id(t_object_shape) == rb_shape_root(i));
     }
 
     // Prebuild TOO_COMPLEX variations so that they already exist if we ever need them after we
