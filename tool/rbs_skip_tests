@@ -72,3 +72,6 @@ test_iconv(JSONSingletonTest)
 # https://github.com/ruby/json/pull/774
 test_recurse_proc(JSONInstanceTest)
 test_recurse_proc(JSONSingletonTest)
+
+CGITest CGI retired
+CGISingletonTest CGI retired
