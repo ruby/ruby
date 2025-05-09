@@ -477,7 +477,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
         }
         else {
             new_shape->flags |= SHAPE_FL_HAS_OLD_ADDRESS;
-        } 
+        }
         // fallthrough
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
