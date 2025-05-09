@@ -3,7 +3,7 @@
 source "https://rubygems.org"
 
 gem "rack", "~> 3.0"
-gem "cgi", "~> 0.4.2"
+gem "cgi", "~> 0.5.0.beta1"
 gem "rackup", "~> 2.1"
 gem "webrick", "~> 1.9"
 gem "rack-test", "~> 2.1"

@@ -3,8 +3,8 @@ GEM
   specs:
     base64 (0.2.0)
     builder (3.3.0)
-    cgi (0.4.2)
-    cgi (0.4.2-java)
+    cgi (0.5.0.beta1)
+    cgi (0.5.0.beta1-java)
     compact_index (0.15.0)
     fiddle (1.1.6)
     logger (1.7.0)
@@ -49,7 +49,7 @@ PLATFORMS
 
 DEPENDENCIES
   builder (~> 3.2)
-  cgi (~> 0.4.2)
+  cgi (~> 0.5.0.beta1)
   compact_index (~> 0.15.0)
   fiddle
   rack (~> 3.0)
@@ -64,8 +64,8 @@ DEPENDENCIES
 CHECKSUMS
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   builder (3.3.0) sha256=497918d2f9dca528fdca4b88d84e4ef4387256d984b8154e9d5d3fe5a9c8835f
-  cgi (0.4.2) sha256=a3cb190d46a820ca01a3e28bd5b64e67003ff99d7884b70512448566f35347e6
-  cgi (0.4.2-java) sha256=009a20f179f86e5df89771fc079a08dda1d7f891c3b5909f5801834de8965859
+  cgi (0.5.0.beta1) sha256=e89d89608613f9bd053b82268cf202a64a589816d5b0f4f0a313945305d83b6d
+  cgi (0.5.0.beta1-java) sha256=1f638a6a14879ca2c78d7d42835efe7a27be8f39d4fad44d6e226fb877bbb8e2
   compact_index (0.15.0) sha256=5c6c404afca8928a7d9f4dde9524f6e1610db17e675330803055db282da84a8b
   fiddle (1.1.6) sha256=79e8d909e602d979434cf9fccfa6e729cb16432bb00e39c7596abe6bee1249ab
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
