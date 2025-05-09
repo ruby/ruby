@@ -504,26 +504,6 @@ update-deps:
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
 
-# order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
-# because the same named directory exists in the source tree.
-$(RUBYSPEC_CAPIEXT)/%.$(DLEXT): $(srcdir)/$(RUBYSPEC_CAPIEXT)/%.c $(srcdir)/$(RUBYSPEC_CAPIEXT)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
-	$(ECHO) building $@
-	$(Q) $(MAKEDIRS) $(@D)
-	$(Q) $(DLDSHARED) -L. $(XDLDFLAGS) $(XLDFLAGS) $(LDFLAGS) $(INCFLAGS) -I$(EXTOUT)/include $(CPPFLAGS) $(OUTFLAG)$@ $< $(LIBRUBYARG)
-ifneq ($(POSTLINK),)
-	$(Q) $(POSTLINK)
-endif
-	$(Q) $(RMALL) $@.*
-
-RUBYSPEC_CAPIEXT_SO := $(patsubst %.c,$(RUBYSPEC_CAPIEXT)/%.$(DLEXT),$(notdir $(wildcard $(srcdir)/$(RUBYSPEC_CAPIEXT)/*.c)))
-rubyspec-capiext: $(RUBYSPEC_CAPIEXT_SO)
-	@ $(NULLCMD)
-
-ifeq ($(ENABLE_SHARED),yes)
-ruby: $(if $(LIBRUBY_SO_UPDATE),$(RUBYSPEC_CAPIEXT_SO))
-exts: rubyspec-capiext
-endif
-
 spec/%/ spec/%_spec.rb: programs exts PHONY
 	+$(RUNRUBY) -r./$(arch)-fake $(srcdir)/spec/mspec/bin/mspec-run -B $(srcdir)/spec/default.mspec $(SPECOPTS) $(patsubst %,$(srcdir)/%,$@)
 
