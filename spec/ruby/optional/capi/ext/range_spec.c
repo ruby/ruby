@@ -25,9 +25,9 @@ VALUE range_spec_rb_range_values(VALUE self, VALUE range) {
   return ary;
 }
 
-VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE begpv, VALUE lenpv, VALUE lenv, VALUE errv) {
-  long begp = FIX2LONG(begpv);
-  long lenp = FIX2LONG(lenpv);
+VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE lenv, VALUE errv) {
+  long begp = 0;
+  long lenp = 0;
   long len = FIX2LONG(lenv);
   int err = FIX2INT(errv);
   VALUE ary = rb_ary_new();
@@ -58,7 +58,9 @@ VALUE range_spec_rb_arithmetic_sequence_extract(VALUE self, VALUE object) {
 }
 
 VALUE range_spec_rb_arithmetic_sequence_beg_len_step(VALUE self, VALUE aseq, VALUE lenv, VALUE errv) {
-  long begp, lenp, stepp;
+  long begp = 0;
+  long lenp = 0;
+  long stepp = 0;
 
   long len = FIX2LONG(lenv);
   int err = FIX2INT(errv);
@@ -78,7 +80,7 @@ void Init_range_spec(void) {
   VALUE cls = rb_define_class("CApiRangeSpecs", rb_cObject);
   rb_define_method(cls, "rb_range_new", range_spec_rb_range_new, -1);
   rb_define_method(cls, "rb_range_values", range_spec_rb_range_values, 1);
-  rb_define_method(cls, "rb_range_beg_len", range_spec_rb_range_beg_len, 5);
+  rb_define_method(cls, "rb_range_beg_len", range_spec_rb_range_beg_len, 3);
   rb_define_method(cls, "rb_arithmetic_sequence_extract", range_spec_rb_arithmetic_sequence_extract, 1);
   rb_define_method(cls, "rb_arithmetic_sequence_beg_len_step", range_spec_rb_arithmetic_sequence_beg_len_step, 3);
 }
