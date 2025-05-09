@@ -135,7 +135,7 @@ rb_class_allocate_instance(VALUE klass)
     RUBY_ASSERT(rb_obj_shape(obj)->type == SHAPE_ROOT);
 
     // Set the shape to the specific T_OBJECT shape.
-    ROBJECT_SET_SHAPE_ID(obj, (shape_id_t)(rb_gc_heap_id_for_size(size) + FIRST_T_OBJECT_SHAPE_ID));
+    ROBJECT_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));

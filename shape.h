@@ -187,6 +187,12 @@ rb_shape_canonical_p(rb_shape_t *shape)
     return !shape->flags;
 }
 
+static inline shape_id_t
+rb_shape_root(size_t heap_id)
+{
+    return (shape_id_t)(heap_id + FIRST_T_OBJECT_SHAPE_ID);
+}
+
 static inline uint32_t
 ROBJECT_FIELDS_CAPACITY(VALUE obj)
 {
