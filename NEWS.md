@@ -92,6 +92,14 @@ The following bundled gems are updated.
 
 ## Stdlib compatibility issues
 
+* CGI library is removed from the default gems. Now we only provide `cgi/escape` for
+  the following methods:
+  * `CGI.escape` and `CGI.unescape`
+  * `CGI.escapeHTML` and `CGI.unescapeHTML`
+  * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent`
+  * `CGI.escapeElement` and `CGI.unescapeElement`
+  [[Feature #21258]]
+
 ## C API updates
 
 ## Implementation improvements
@@ -103,3 +111,4 @@ The following bundled gems are updated.
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
+[Feature #21258]: https://bugs.ruby-lang.org/issues/21258
