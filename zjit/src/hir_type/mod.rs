@@ -163,6 +163,11 @@ impl Type {
         else if val == Qnil { types::NilClassExact }
         else if val == Qtrue { types::TrueClassExact }
         else if val == Qfalse { types::FalseClassExact }
+        else if val.cme_p() {
+            // NB: Checking for CME has to happen before looking at class_of because that's not
+            // valid on imemo.
+            Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
+        }
         else if val.class_of() == unsafe { rb_cInteger } {
             Type { bits: bits::Bignum, spec: Specialization::Object(val) }
         }

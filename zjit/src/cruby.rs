@@ -575,6 +575,11 @@ impl VALUE {
         ptr
     }
 
+    pub fn cme_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> CmePtr {
         let ptr: CmePtr = self.as_ptr();
