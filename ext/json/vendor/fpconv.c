@@ -41,7 +41,7 @@ typedef struct Fp {
     int exp;
 } Fp;
 
-static Fp powers_ten[] = {
+static const Fp powers_ten[] = {
     { 18054884314459144840U, -1220 }, { 13451937075301367670U, -1193 },
     { 10022474136428063862U, -1166 }, { 14934650266808366570U, -1140 },
     { 11127181549972568877U, -1113 }, { 16580792590934885855U, -1087 },
@@ -123,7 +123,7 @@ static Fp find_cachedpow10(int exp, int* k)
 #define absv(n) ((n) < 0 ? -(n) : (n))
 #define minv(a, b) ((a) < (b) ? (a) : (b))
 
-static uint64_t tens[] = {
+static const uint64_t tens[] = {
     10000000000000000000U, 1000000000000000000U, 100000000000000000U,
     10000000000000000U, 1000000000000000U, 100000000000000U,
     10000000000000U, 1000000000000U, 100000000000U,
@@ -244,7 +244,7 @@ static int generate_digits(Fp* fp, Fp* upper, Fp* lower, char* digits, int* K)
     uint64_t part2 = upper->frac & (one.frac - 1);
 
     int idx = 0, kappa = 10;
-    uint64_t* divp;
+    const uint64_t* divp;
     /* 1000000000 */
     for(divp = tens + 10; kappa > 0; divp++) {
 
@@ -268,7 +268,7 @@ static int generate_digits(Fp* fp, Fp* upper, Fp* lower, char* digits, int* K)
     }
 
     /* 10 */
-    uint64_t* unit = tens + 18;
+    const uint64_t* unit = tens + 18;
 
     while(true) {
         part2 *= 10;

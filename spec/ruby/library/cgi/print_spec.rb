@@ -1,26 +1,29 @@
 require_relative '../../spec_helper'
-require 'cgi'
 
-describe "CGI#print" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI#print" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "passes all arguments to $stdout.print" do
-    $stdout.should_receive(:print).with("test")
-    @cgi.print("test")
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
 
-    $stdout.should_receive(:print).with("one", "two", "three", ["four", "five"])
-    @cgi.print("one", "two", "three", ["four", "five"])
-  end
+    it "passes all arguments to $stdout.print" do
+      $stdout.should_receive(:print).with("test")
+      @cgi.print("test")
 
-  it "returns the result of calling $stdout.print" do
-    $stdout.should_receive(:print).with("test").and_return(:expected)
-    @cgi.print("test").should == :expected
+      $stdout.should_receive(:print).with("one", "two", "three", ["four", "five"])
+      @cgi.print("one", "two", "three", ["four", "five"])
+    end
+
+    it "returns the result of calling $stdout.print" do
+      $stdout.should_receive(:print).with("test").and_return(:expected)
+      @cgi.print("test").should == :expected
+    end
   end
 end

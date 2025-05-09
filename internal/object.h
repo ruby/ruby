@@ -11,7 +11,7 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 /* object.c */
-size_t rb_obj_embedded_size(uint32_t numiv);
+size_t rb_obj_embedded_size(uint32_t fields_count);
 VALUE rb_class_allocate_instance(VALUE klass);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));

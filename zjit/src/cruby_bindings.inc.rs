@@ -48,7 +48,6 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
-pub const OBJ_TOO_COMPLEX_SHAPE_ID: u32 = 2;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -104,7 +103,7 @@ pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
 pub const RUBY_FL_TAINT: ruby_fl_type = 0;
 pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
 pub const RUBY_FL_UNTRUSTED: ruby_fl_type = 0;
-pub const RUBY_FL_SEEN_OBJ_ID: ruby_fl_type = 512;
+pub const RUBY_FL_UNUSED9: ruby_fl_type = 512;
 pub const RUBY_FL_EXIVAR: ruby_fl_type = 1024;
 pub const RUBY_FL_FREEZE: ruby_fl_type = 2048;
 pub const RUBY_FL_USER0: ruby_fl_type = 4096;
@@ -405,10 +404,11 @@ pub type redblack_node_t = redblack_node;
 pub struct rb_shape {
     pub edges: *mut rb_id_table,
     pub edge_name: ID,
-    pub next_iv_index: attr_index_t,
-    pub capacity: u32,
+    pub next_field_index: attr_index_t,
+    pub capacity: attr_index_t,
     pub type_: u8,
     pub heap_index: u8,
+    pub flags: u8,
     pub parent_id: shape_id_t,
     pub ancestor_index: *mut redblack_node_t,
 }
@@ -868,15 +868,11 @@ unsafe extern "C" {
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_shape_get_shape_by_id(shape_id: shape_id_t) -> *mut rb_shape_t;
-    pub fn rb_shape_get_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_lookup(shape_id: shape_id_t) -> *mut rb_shape_t;
+    pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_obj_too_complex(obj: VALUE) -> bool;
-    pub fn rb_shape_get_next_no_warnings(
-        shape: *mut rb_shape_t,
-        obj: VALUE,
-        id: ID,
-    ) -> *mut rb_shape_t;
+    pub fn rb_shape_obj_too_complex_p(obj: VALUE) -> bool;
+    pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
     pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;

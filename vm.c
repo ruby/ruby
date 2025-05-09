@@ -3117,16 +3117,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
             rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
-            rb_shape_t *cursor = rb_shape_get_root_shape();
-            rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
-            while (cursor < end) {
-                // 0x1 == SINGLE_CHILD_P
-                if (cursor->edges && !(((uintptr_t)cursor->edges) & 0x1))
-                    rb_id_table_free(cursor->edges);
-                cursor += 1;
-            }
-
-            xfree(GET_SHAPE_TREE());
+            rb_shape_free_all();
 
             st_free_table(vm->static_ext_inits);
 
@@ -3171,7 +3162,7 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (objspace) {
             if (rb_free_at_exit) {
                 rb_objspace_free_objects(objspace);
-                rb_free_generic_iv_tbl_();
+                rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
                 if (th && vm->fork_gen == 0) {
                     /* If we have forked, main_thread may not be the initial thread */

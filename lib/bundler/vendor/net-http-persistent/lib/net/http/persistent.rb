@@ -1,6 +1,10 @@
 require_relative '../../../../../vendored_net_http'
 require_relative '../../../../../vendored_uri'
-require 'cgi' # for escaping
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi/util' # for escaping
+end
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
@@ -782,7 +786,7 @@ class Gem::Net::HTTP::Persistent
       @proxy_connection_id = [nil, *@proxy_args].join ':'
 
       if @proxy_uri.query then
-        @no_proxy = CGI.parse(@proxy_uri.query)['no_proxy'].join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
+        @no_proxy = Gem::URI.decode_www_form(@proxy_uri.query).filter_map { |k, v| v if k == 'no_proxy' }.join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
       end
     end
 

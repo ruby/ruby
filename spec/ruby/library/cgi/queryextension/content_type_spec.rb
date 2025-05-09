@@ -1,22 +1,25 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#content_type" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI::QueryExtension#content_type" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "returns ENV['CONTENT_TYPE']" do
-    old_value, ENV['CONTENT_TYPE'] = ENV['CONTENT_TYPE'], "text/html"
-    begin
-      @cgi.content_type.should == "text/html"
-    ensure
-      ENV['CONTENT_TYPE'] = old_value
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
+
+    it "returns ENV['CONTENT_TYPE']" do
+      old_value, ENV['CONTENT_TYPE'] = ENV['CONTENT_TYPE'], "text/html"
+      begin
+        @cgi.content_type.should == "text/html"
+      ensure
+        ENV['CONTENT_TYPE'] = old_value
+      end
     end
   end
 end

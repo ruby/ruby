@@ -289,6 +289,7 @@ module Spec
         ruby2_keywords
         base64
         logger
+        cgi
       ]
       Dir[base_system_gem_path.join("gems/{#{deps.join(",")}}-*/lib")].map(&:to_s)
     end

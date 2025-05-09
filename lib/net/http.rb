@@ -1917,7 +1917,11 @@ module Net   #:nodoc:
     private
 
     def unescape(value)
-      require 'cgi/util'
+      begin
+        require "cgi/escape"
+      rescue LoadError
+        require "cgi/util"
+      end
       CGI.unescape(value)
     end
 

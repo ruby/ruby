@@ -23,7 +23,7 @@
  * who is implementing the internals) could have used those macros for a while.
  * Kept public as-is here to keep some theoretical backwards compatibility.
  */
-#define RMODULE_IV_TBL(m) RCLASS_IV_TBL(m)
+#define RMODULE_IV_TBL(m) RCLASS_FIELDS(m)
 #define RMODULE_CONST_TBL(m) RCLASS_CONST_TBL(m)
 #define RMODULE_M_TBL(m) RCLASS_M_TBL(m)
 #define RMODULE_SUPER(m) RCLASS_SUPER(m)

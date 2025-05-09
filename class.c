@@ -249,7 +249,7 @@ class_alloc(VALUE flags, VALUE klass)
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
       RCLASS_M_TBL(obj) = 0;
-      RCLASS_IV_INDEX_TBL(obj) = 0;
+      RCLASS_FIELDS(obj) = 0;
       RCLASS_SET_SUPER((VALUE)obj, 0);
       RCLASS_SUBCLASSES(obj) = NULL;
       RCLASS_PARENT_SUBCLASSES(obj) = NULL;
@@ -485,7 +485,7 @@ copy_tables(VALUE clone, VALUE orig)
     if (!RB_TYPE_P(clone, T_ICLASS)) {
         st_data_t id;
 
-        rb_iv_tbl_copy(clone, orig);
+        rb_fields_tbl_copy(clone, orig);
         CONST_ID(id, "__tmp_classpath__");
         rb_attr_delete(clone, id);
         CONST_ID(id, "__classpath__");
@@ -679,7 +679,7 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
         }
 
         RCLASS_SET_SUPER(clone, RCLASS_SUPER(klass));
-        rb_iv_tbl_copy(clone, klass);
+        rb_fields_tbl_copy(clone, klass);
         if (RCLASS_CONST_TBL(klass)) {
             struct clone_const_arg arg;
             arg.tbl = RCLASS_CONST_TBL(clone) = rb_id_table_create(0);

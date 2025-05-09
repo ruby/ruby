@@ -1230,7 +1230,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivar_list = ROBJECT_IVPTR(obj);
+        ivar_list = ROBJECT_FIELDS(obj);
         VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
 
 #if !SHAPE_IN_BASIC_FLAGS
@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            ivar_list = RCLASS_IVPTR(obj);
+            ivar_list = RCLASS_FIELDS(obj);
 
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = RCLASS_SHAPE_ID(obj);
@@ -1266,12 +1266,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
+            struct gen_fields_tbl *fields_tbl;
+            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
 #if !SHAPE_IN_BASIC_FLAGS
-            shape_id = ivtbl->shape_id;
+            shape_id = fields_tbl->shape_id;
 #endif
-            ivar_list = ivtbl->as.shape.ivptr;
+            ivar_list = fields_tbl->as.shape.fields;
         }
         else {
             return default_value;
@@ -1289,7 +1289,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 
     if (LIKELY(cached_id == shape_id)) {
-        RUBY_ASSERT(cached_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+        RUBY_ASSERT(!rb_shape_id_too_complex_p(cached_id));
 
         if (index == ATTR_INDEX_NOT_SET) {
             return default_value;
@@ -1330,22 +1330,22 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
+        if (rb_shape_id_too_complex_p(shape_id)) {
             st_table *table = NULL;
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = (st_table *)RCLASS_IVPTR(obj);
+                table = (st_table *)RCLASS_FIELDS(obj);
                 break;
 
               case T_OBJECT:
-                table = ROBJECT_IV_HASH(obj);
+                table = ROBJECT_FIELDS_HASH(obj);
                 break;
 
               default: {
-                struct gen_ivtbl *ivtbl;
-                if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                    table = ivtbl->as.complex.table;
+                struct gen_fields_tbl *fields_tbl;
+                if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
+                    table = fields_tbl->as.complex.table;
                 }
                 break;
               }
@@ -1408,7 +1408,7 @@ general_path:
 static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
-    RUBY_ASSERT(next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(!rb_shape_id_too_complex_p(next_shape_id));
 
     // Cache population code
     if (is_attr) {
@@ -1436,7 +1436,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
         shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-        if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+        if (!rb_shape_id_too_complex_p(next_shape_id)) {
             populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
         }
 
@@ -1469,15 +1469,15 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     shape_id_t shape_id = rb_generic_shape_id(obj);
 #endif
 
-    struct gen_ivtbl *ivtbl = 0;
+    struct gen_fields_tbl *fields_tbl = 0;
 
     // Cache hit case
     if (shape_id == dest_shape_id) {
         RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
     }
     else if (dest_shape_id != INVALID_SHAPE_ID) {
-        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-        rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+        rb_shape_t *shape = RSHAPE(shape_id);
+        rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
 
         if (shape_id == dest_shape->parent_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
             RUBY_ASSERT(index < dest_shape->capacity);
@@ -1490,17 +1490,17 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    rb_gen_ivtbl_get(obj, 0, &ivtbl);
+    rb_gen_fields_tbl_get(obj, 0, &fields_tbl);
 
     if (shape_id != dest_shape_id) {
 #if SHAPE_IN_BASIC_FLAGS
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
 #else
-        ivtbl->shape_id = dest_shape_id;
+        fields_tbl->shape_id = dest_shape_id;
 #endif
     }
 
-    RB_OBJ_WRITE(obj, &ivtbl->as.shape.ivptr[index], val);
+    RB_OBJ_WRITE(obj, &fields_tbl->as.shape.fields[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 
@@ -1517,15 +1517,15 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = ROBJECT_SHAPE_ID(obj);
-            RUBY_ASSERT(dest_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+            RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_id_too_complex_p(dest_shape_id));
 
             if (LIKELY(shape_id == dest_shape_id)) {
                 RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
                 VM_ASSERT(!rb_ractor_shareable_p(obj));
             }
             else if (dest_shape_id != INVALID_SHAPE_ID) {
-                rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-                rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+                rb_shape_t *shape = RSHAPE(shape_id);
+                rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
@@ -1533,7 +1533,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
                     ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
 
-                    RUBY_ASSERT(rb_shape_get_next_iv_shape(rb_shape_get_shape_by_id(source_shape_id), id) == dest_shape);
+                    RUBY_ASSERT(rb_shape_get_next_iv_shape(source_shape_id, id) == dest_shape_id);
                     RUBY_ASSERT(index < dest_shape->capacity);
                 }
                 else {
@@ -1544,9 +1544,9 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 break;
             }
 
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            VALUE *ptr = ROBJECT_FIELDS(obj);
 
-            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+            RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);

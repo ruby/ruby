@@ -307,21 +307,21 @@
 #
 # Here, class +String+ provides methods that are useful for:
 #
-# - {Creating a String}[rdoc-ref:String@Methods+for+Creating+a+String]
-# - {Frozen/Unfrozen Strings}[rdoc-ref:String@Methods+for+a+Frozen-2FUnfrozen+String]
-# - {Querying}[rdoc-ref:String@Methods+for+Querying]
-# - {Comparing}[rdoc-ref:String@Methods+for+Comparing]
-# - {Modifying a String}[rdoc-ref:String@Methods+for+Modifying+a+String]
-# - {Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String]
-# - {Converting to Non-String}[rdoc-ref:String@Methods+for+Converting+to+Non-String]
-# - {Iterating}[rdoc-ref:String@Methods+for+Iterating]
+# - {Creating a \String}[rdoc-ref:String@Creating+a+String].
+# - {Freezing/Unfreezing a \String}[rdoc-ref:String@Freezing-2FUnfreezing].
+# - {Querying a \String}[rdoc-ref:String@Querying].
+# - {Comparing Strings}[rdoc-ref:String@Comparing].
+# - {Modifying a \String}[rdoc-ref:String@Modifying].
+# - {Converting to a new \String}[rdoc-ref:String@Converting+to+New+String].
+# - {Converting to a non-\String}[rdoc-ref:String@Converting+to+Non--5CString].
+# - {Iterating over a \String}[rdoc-ref:String@Iterating].
 #
-# === Methods for Creating a +String+
+# === Creating a \String
 #
 # - ::new: Returns a new string.
 # - ::try_convert: Returns a new string created from a given object.
 #
-# === Methods for a Frozen/Unfrozen String
+# === Freezing/Unfreezing
 #
 # - #+@: Returns a string that is not frozen: +self+ if not frozen;
 #   +self.dup+ otherwise.
@@ -329,7 +329,7 @@
 #   +self.freeze+ otherwise.
 # - #freeze: Freezes +self+ if not already frozen; returns +self+.
 #
-# === Methods for Querying
+# === Querying
 #
 # _Counts_
 #
@@ -365,7 +365,7 @@
 # - #sum: Returns a basic checksum for the string: the sum of each byte.
 # - #hash: Returns the integer hash code.
 #
-# === Methods for Comparing
+# === Comparing
 #
 # - #== (aliased as #===): Returns +true+ if a given other string has the same content as +self+.
 # - #eql?: Returns +true+ if the content is the same as the given other string.
@@ -376,7 +376,7 @@
 # - #casecmp?: Returns +true+ if the string is equal to a given string after Unicode case folding;
 #   +false+ otherwise.
 #
-# === Methods for Modifying a +String+
+# === Modifying
 #
 # Each of these methods modifies +self+.
 #
@@ -432,7 +432,7 @@
 # - #chop!: Removes trailing newline characters if found; otherwise removes the last character;
 #   returns +self+ if any changes, +nil+ otherwise.
 #
-# === Methods for Converting to New +String+
+# === Converting to New \String
 #
 # Each of these methods returns a new +String+ based on +self+,
 # often just a modified copy of +self+.
@@ -501,7 +501,7 @@
 # - #to_s (aliased as #to_str): If +self+ is a subclass of +String+, returns +self+ copied into a +String+;
 #   otherwise, returns +self+.
 #
-# === Methods for Converting to Non-+String+
+# === Converting to Non-\String
 #
 # Each of these methods converts the contents of +self+ to a non-+String+.
 #
@@ -543,7 +543,7 @@
 # - #inspect: Returns a copy of +self+, enclosed in double quotes, with special characters escaped.
 # - #intern (aliased as #to_sym): Returns the symbol corresponding to +self+.
 #
-# === Methods for Iterating
+# === Iterating
 #
 # - #each_byte: Calls the given block with each successive byte in +self+.
 # - #each_char: Calls the given block with each successive character in +self+.

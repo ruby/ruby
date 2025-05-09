@@ -280,24 +280,12 @@ ruby_fl_type {
 
                          = 0,
 
-    /**
-     * This flag has something to do with  object IDs.  Unlike in the old days,
-     * an object's object  ID (that a user can  query using `Object#object_id`)
-     * is no longer its physical address represented using Ruby level integers.
-     * It is  now a  monotonic-increasing integer  unrelated to  the underlying
-     * memory arrangement.  Object IDs are assigned when necessary; objects are
-     * born without one,  and will eventually have such  property when queried.
-     * The interpreter has to manage which one is which.  This is the flag that
-     * helps the  management.  Objects  with this  flag set  are the  ones with
-     * object IDs assigned.
-     *
-     * @internal
-     *
-     * But honestly, @shyouhei  doesn't think this flag should  be visible from
-     * 3rd parties.  It must be an implementation detail that they should never
-     * know.  Might better be hidden.
-     */
-    RUBY_FL_SEEN_OBJ_ID  = (1<<9),
+   /**
+    * This flag is no longer in use
+    *
+    * @internal
+    */
+    RUBY_FL_UNUSED9  = (1<<9),
 
     /**
      * This flag has something to do with instance variables.  3rd parties need

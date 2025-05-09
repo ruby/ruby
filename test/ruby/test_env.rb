@@ -914,11 +914,11 @@ class TestEnv < Test::Unit::TestCase
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
         Ractor.yield [h1, h2]
-        Ractor.yield (ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" }).object_id
+        Ractor.yield (ENV.delete_if {|k, v| #{ignore_case_str} ? k.upcase == "TEST" : k == "test" })
       end
       h1, h2 = r.take
       assert_equal(h1, h2)
-      assert_equal(ENV.object_id, r.take)
+      assert_same(ENV, r.take)
     end;
   end
 
@@ -968,11 +968,11 @@ class TestEnv < Test::Unit::TestCase
         h2 = {}
         ENV.each_pair {|k, v| h2[k] = v }
         Ractor.yield [h1, h2]
-        Ractor.yield (ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" }).object_id
+        Ractor.yield (ENV.keep_if {|k, v| #{ignore_case_str} ? k.upcase != "TEST" : k != "test" })
       end
       h1, h2 = r.take
       assert_equal(h1, h2)
-      assert_equal(ENV.object_id, r.take)
+      assert_equal(ENV, r.take)
     end;
   end
 
