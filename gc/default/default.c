@@ -5446,6 +5446,18 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
         }
     }
 
+    VALUE old_address = 0;
+    rb_shape_t *old_address_shape = NULL;
+
+    if (FL_TEST_RAW(src, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(src)) {
+        old_address_shape = rb_obj_old_address_shape(src);
+#if SIZEOF_LONG == SIZEOF_VOIDP
+        old_address = LONG2NUM(src);
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+        old_address = LL2NUM(src);
+#endif
+    }
+
     while (!try_move(objspace, dest_pool, dest_pool->free_pages, src)) {
         struct gc_sweep_context ctx = {
             .page = dest_pool->sweeping_page,
@@ -5471,14 +5483,17 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
         }
     }
 
+    VALUE dest = rb_gc_impl_location(objspace, src);
+
     if (orig_shape != 0) {
         if (new_shape != 0) {
-            VALUE dest = rb_gc_impl_location(objspace, src);
             rb_gc_set_shape(dest, new_shape);
         }
         RMOVED(src)->original_shape_id = orig_shape;
     }
-
+    if (old_address) {
+        rb_obj_field_set(dest, old_address_shape, old_address);
+    }
     return true;
 }
 
@@ -6898,17 +6913,6 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
     }
     else {
         CLEAR_IN_BITMAP(GET_HEAP_UNCOLLECTIBLE_BITS(dest), dest);
-    }
-
-    if (FL_TEST_RAW(src, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(src)) {
-        rb_shape_t *old_address_shape = rb_obj_old_address_shape(src);
-        VALUE old_address;
-#if SIZEOF_LONG == SIZEOF_VOIDP
-        old_address = LONG2NUM(src);
-#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-        old_address = LL2NUM(src);
-#endif
-        rb_obj_field_set(dest, old_address_shape, old_address);
     }
 
     RVALUE_AGE_SET(dest, age);
