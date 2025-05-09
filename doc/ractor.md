@@ -281,6 +281,19 @@ end
 r.take #=> `ok`
 ```
 
+The size of the incoming queue can be queried with `Ractor#queue_size`.
+
+```ruby
+ractor = Ractor.new do
+  loop { sleep(1) }
+end
+ractor.queue_size #=> 0
+ractor << "message"
+ractor.queue_size #=> 1
+ractor << "message"
+ractor.queue_size #=> 2
+```
+
 ### Return value of a block for `Ractor.new`
 
 As already explained, the return value of `Ractor.new` (an evaluated value of `expr` in `Ractor.new{ expr }`) can be taken by `Ractor#take`.
