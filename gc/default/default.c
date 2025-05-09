@@ -6162,13 +6162,6 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
     rb_objspace_t *objspace = objspace_ptr;
 
     objspace->live_ractor_cache_count--;
-    rb_ractor_newobj_cache_t *newobj_cache = (rb_ractor_newobj_cache_t *)cache;
-
-    for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
-        rb_heap_t *heap = &heaps[heap_idx];
-        rb_ractor_newobj_heap_cache_t *heap_cache = &newobj_cache->heap_caches[heap_idx];
-    }
-
     gc_ractor_newobj_cache_clear(cache, NULL);
     free(cache);
 }
