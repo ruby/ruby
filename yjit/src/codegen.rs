@@ -2894,7 +2894,7 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = RSHAPE(shape_id);
+        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
         if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
@@ -2909,7 +2909,7 @@ fn gen_get_ivar(
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
 
-    let expected_shape = unsafe { RB_OBJ_SHAPE_ID(comptime_receiver) };
+    let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -3097,7 +3097,7 @@ fn gen_set_ivar(
     let shape_too_complex = comptime_receiver.shape_too_complex();
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = unsafe { RSHAPE(shape_id) };
+        let shape = unsafe { rb_shape_lookup(shape_id) };
         let mut ivar_index: u32 = 0;
         if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
@@ -3113,7 +3113,7 @@ fn gen_set_ivar(
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
         let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
-        let next_shape = unsafe { RSHAPE(next_shape_id) };
+        let next_shape = unsafe { rb_shape_lookup(next_shape_id) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
@@ -3187,7 +3187,7 @@ fn gen_set_ivar(
         // Upgrade type
         guard_object_is_heap(asm, recv, recv_opnd, Counter::setivar_not_heap);
 
-        let expected_shape = unsafe { RB_OBJ_SHAPE_ID(comptime_receiver) };
+        let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
         let shape_id_offset = unsafe { rb_shape_id_offset() };
         let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -3387,7 +3387,7 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let shape = RSHAPE(shape_id);
+        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
         rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
     };
