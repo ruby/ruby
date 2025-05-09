@@ -62,7 +62,6 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* cgi 0.4.2
 * json 2.11.3
 * optparse 0.7.0.dev.2
 * prism 1.4.0
