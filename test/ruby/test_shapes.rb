@@ -1059,7 +1059,7 @@ class TestShapes < Test::Unit::TestCase
     refute_predicate(obj2, :frozen?)
     # dup'd objects shouldn't be frozen, and the shape should be the
     # parent shape of the copied object
-    assert_equal(RubyVM::Shape.of(obj).parent.id, RubyVM::Shape.of(obj2).id)
+    assert_equal(RubyVM::Shape.of(obj).parent, RubyVM::Shape.of(obj2))
   end
 
   def test_freezing_and_duplicating_object_with_ivars
@@ -1092,7 +1092,7 @@ class TestShapes < Test::Unit::TestCase
     obj2 = obj.clone(freeze: true)
     assert_predicate(obj2, :frozen?)
     refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
-    assert_equal(RubyVM::Shape::SHAPE_FROZEN, RubyVM::Shape.of(obj2).type)
+    assert_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
     assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2).parent)
   end
 
