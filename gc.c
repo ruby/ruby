@@ -367,7 +367,7 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 uint32_t
 rb_gc_get_shape(VALUE obj)
 {
-    return (uint32_t)RB_OBJ_SHAPE_ID(obj);
+    return (uint32_t)rb_obj_shape_id(obj);
 }
 
 void
@@ -379,7 +379,7 @@ rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
-    shape_id_t orig_shape_id = RB_OBJ_SHAPE_ID(obj);
+    shape_id_t orig_shape_id = rb_obj_shape_id(obj);
     if (rb_shape_id_too_complex_p(orig_shape_id)) {
         return (uint32_t)orig_shape_id;
     }
@@ -1815,7 +1815,7 @@ static VALUE
 object_id(VALUE obj)
 {
     VALUE id = Qfalse;
-    rb_shape_t *shape = RB_OBJ_SHAPE(obj);
+    rb_shape_t *shape = rb_obj_shape(obj);
     unsigned int lock_lev;
 
     // We could avoid locking if the object isn't shareable

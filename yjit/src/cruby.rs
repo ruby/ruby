@@ -445,12 +445,12 @@ impl VALUE {
     }
 
     pub fn shape_id_of(self) -> u32 {
-        unsafe { RB_OBJ_SHAPE_ID(self) }
+        unsafe { rb_obj_shape_id(self) }
     }
 
     pub fn shape_of(self) -> *mut rb_shape {
         unsafe {
-            let shape = RSHAPE(self.shape_id_of());
+            let shape = rb_shape_lookup(self.shape_id_of());
 
             if shape.is_null() {
                 panic!("Shape should not be null");
