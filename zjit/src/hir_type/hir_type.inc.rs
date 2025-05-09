@@ -26,44 +26,45 @@ mod bits {
   pub const CUInt8: u64 = 1u64 << 16;
   pub const CUnsigned: u64 = CUInt16 | CUInt32 | CUInt64 | CUInt8;
   pub const CValue: u64 = CBool | CDouble | CInt | CNull | CPtr;
-  pub const DynamicSymbol: u64 = 1u64 << 17;
+  pub const CallableMethodEntry: u64 = 1u64 << 17;
+  pub const DynamicSymbol: u64 = 1u64 << 18;
   pub const Empty: u64 = 0u64;
   pub const FalseClass: u64 = FalseClassExact | FalseClassSubclass;
-  pub const FalseClassExact: u64 = 1u64 << 18;
-  pub const FalseClassSubclass: u64 = 1u64 << 19;
-  pub const Fixnum: u64 = 1u64 << 20;
+  pub const FalseClassExact: u64 = 1u64 << 19;
+  pub const FalseClassSubclass: u64 = 1u64 << 20;
+  pub const Fixnum: u64 = 1u64 << 21;
   pub const Float: u64 = FloatExact | FloatSubclass;
   pub const FloatExact: u64 = Flonum | HeapFloat;
-  pub const FloatSubclass: u64 = 1u64 << 21;
-  pub const Flonum: u64 = 1u64 << 22;
+  pub const FloatSubclass: u64 = 1u64 << 22;
+  pub const Flonum: u64 = 1u64 << 23;
   pub const Hash: u64 = HashExact | HashSubclass;
-  pub const HashExact: u64 = 1u64 << 23;
-  pub const HashSubclass: u64 = 1u64 << 24;
-  pub const HeapFloat: u64 = 1u64 << 25;
+  pub const HashExact: u64 = 1u64 << 24;
+  pub const HashSubclass: u64 = 1u64 << 25;
+  pub const HeapFloat: u64 = 1u64 << 26;
   pub const Immediate: u64 = FalseClassExact | Fixnum | Flonum | NilClassExact | StaticSymbol | TrueClassExact | Undef;
   pub const Integer: u64 = IntegerExact | IntegerSubclass;
   pub const IntegerExact: u64 = Bignum | Fixnum;
-  pub const IntegerSubclass: u64 = 1u64 << 26;
+  pub const IntegerSubclass: u64 = 1u64 << 27;
   pub const NilClass: u64 = NilClassExact | NilClassSubclass;
-  pub const NilClassExact: u64 = 1u64 << 27;
-  pub const NilClassSubclass: u64 = 1u64 << 28;
+  pub const NilClassExact: u64 = 1u64 << 28;
+  pub const NilClassSubclass: u64 = 1u64 << 29;
   pub const Object: u64 = Array | FalseClass | Float | Hash | Integer | NilClass | ObjectExact | ObjectSubclass | String | Symbol | TrueClass;
-  pub const ObjectExact: u64 = 1u64 << 29;
-  pub const ObjectSubclass: u64 = 1u64 << 30;
-  pub const RubyValue: u64 = BasicObject | Undef;
-  pub const StaticSymbol: u64 = 1u64 << 31;
+  pub const ObjectExact: u64 = 1u64 << 30;
+  pub const ObjectSubclass: u64 = 1u64 << 31;
+  pub const RubyValue: u64 = BasicObject | CallableMethodEntry | Undef;
+  pub const StaticSymbol: u64 = 1u64 << 32;
   pub const String: u64 = StringExact | StringSubclass;
-  pub const StringExact: u64 = 1u64 << 32;
-  pub const StringSubclass: u64 = 1u64 << 33;
+  pub const StringExact: u64 = 1u64 << 33;
+  pub const StringSubclass: u64 = 1u64 << 34;
   pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | FalseClassSubclass | FloatSubclass | HashSubclass | IntegerSubclass | NilClassSubclass | ObjectSubclass | StringSubclass | SymbolSubclass | TrueClassSubclass;
   pub const Symbol: u64 = SymbolExact | SymbolSubclass;
   pub const SymbolExact: u64 = DynamicSymbol | StaticSymbol;
-  pub const SymbolSubclass: u64 = 1u64 << 34;
+  pub const SymbolSubclass: u64 = 1u64 << 35;
   pub const TrueClass: u64 = TrueClassExact | TrueClassSubclass;
-  pub const TrueClassExact: u64 = 1u64 << 35;
-  pub const TrueClassSubclass: u64 = 1u64 << 36;
-  pub const Undef: u64 = 1u64 << 37;
-  pub const AllBitPatterns: [(&'static str, u64); 63] = [
+  pub const TrueClassExact: u64 = 1u64 << 36;
+  pub const TrueClassSubclass: u64 = 1u64 << 37;
+  pub const Undef: u64 = 1u64 << 38;
+  pub const AllBitPatterns: [(&'static str, u64); 64] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -104,6 +105,7 @@ mod bits {
     ("FalseClassSubclass", FalseClassSubclass),
     ("FalseClassExact", FalseClassExact),
     ("DynamicSymbol", DynamicSymbol),
+    ("CallableMethodEntry", CallableMethodEntry),
     ("CValue", CValue),
     ("CInt", CInt),
     ("CUnsigned", CUnsigned),
@@ -128,7 +130,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 38;
+  pub const NumTypeBits: u64 = 39;
 }
 pub mod types {
   use super::*;
@@ -158,6 +160,7 @@ pub mod types {
   pub const CUInt8: Type = Type::from_bits(bits::CUInt8);
   pub const CUnsigned: Type = Type::from_bits(bits::CUnsigned);
   pub const CValue: Type = Type::from_bits(bits::CValue);
+  pub const CallableMethodEntry: Type = Type::from_bits(bits::CallableMethodEntry);
   pub const DynamicSymbol: Type = Type::from_bits(bits::DynamicSymbol);
   pub const Empty: Type = Type::from_bits(bits::Empty);
   pub const FalseClass: Type = Type::from_bits(bits::FalseClass);

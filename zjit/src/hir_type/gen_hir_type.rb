@@ -48,6 +48,7 @@ any = Type.new "Any"
 # Build the Ruby object universe.
 value = any.subtype "RubyValue"
 undef_ = value.subtype "Undef"
+value.subtype "CallableMethodEntry"  # rb_callable_method_entry_t*
 basic_object = value.subtype "BasicObject"
 basic_object_exact = basic_object.subtype "BasicObjectExact"
 basic_object_subclass = basic_object.subtype "BasicObjectSubclass"
