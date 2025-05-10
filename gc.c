@@ -1545,10 +1545,9 @@ os_obj_of(VALUE of)
  *     2.2250738585072e-308
  *     Total count: 7
  *
- *  Due to implementation limitations, this method will not yield
- *  Ractor-unshareable the process is in multi-Ractor mode (when
+ *  Due to a current known Ractor implementation issue, this method will not yield
+ *  Ractor-unshareable objects in multi-Ractor mode (when
  *  <code>Ractor.new</code> has been called within the process at least once).
- *  This behavior is not considered ideal.
  *  See https://bugs.ruby-lang.org/issues/19387 for more information.
  *
  *     a = 12345678987654321 # shareable
