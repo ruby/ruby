@@ -841,4 +841,12 @@ CODE
     klass.define_method(:bar) {}
     assert_equal klass, klass.remove_method(:bar), '[Bug #19164]'
   end
+
+  def test_method_table_assignment_just_after_class_init
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", 'm_tbl assignment should be done only when Class object is not promoted'
+    begin;
+      GC.stress = true
+      class C; end
+    end;
+  end
 end

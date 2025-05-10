@@ -656,7 +656,7 @@ rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed)
         switch(BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            fields = RCLASS_FIELDS(obj);
+            fields = RCLASS_PRIME_FIELDS(obj);
             break;
           case T_OBJECT:
             fields = ROBJECT_FIELDS(obj);
@@ -803,7 +803,7 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
         VALUE klass = rb_obj_class(obj);
-        allow_new_shape = RCLASS_EXT(klass)->variation_count < SHAPE_MAX_VARIATIONS;
+        allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;
     }
 
     bool variation_created = false;
@@ -812,14 +812,14 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
     // Check if we should update max_iv_count on the object's class
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
         VALUE klass = rb_obj_class(obj);
-        if (new_shape->next_field_index > RCLASS_EXT(klass)->max_iv_count) {
-            RCLASS_EXT(klass)->max_iv_count = new_shape->next_field_index;
+        if (new_shape->next_field_index > RCLASS_MAX_IV_COUNT(klass)) {
+            RCLASS_SET_MAX_IV_COUNT(klass, new_shape->next_field_index);
         }
 
         if (variation_created) {
-            RCLASS_EXT(klass)->variation_count++;
+            RCLASS_VARIATION_COUNT(klass)++;
             if (emit_warnings && rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
-                if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
+                if (RCLASS_VARIATION_COUNT(klass) >= SHAPE_MAX_VARIATIONS) {
                     rb_category_warn(
                         RB_WARN_CATEGORY_PERFORMANCE,
                         "The class %"PRIsVALUE" reached %d shape variations, instance variables accesses will be slower and memory usage increased.\n"
