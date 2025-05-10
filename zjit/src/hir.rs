@@ -1667,11 +1667,23 @@ pub enum CallType {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum ParamType {
+    Opt,
+    Rest,
+    Post,
+    Kw,
+    KwRest,
+    Block,
+    Forwardable,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
     UnknownOpcode(String),
     UnknownNewArraySend(String),
     UnhandledCallType(CallType),
+    UnhandledParamType(ParamType),
 }
 
 fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
@@ -1701,8 +1713,21 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
     Ok(())
 }
 
+/// If we can't handle the type of params (yet), bail out.
+fn filter_translatable_params(iseq: IseqPtr) -> Result<(), ParseError> {
+    if unsafe { rb_get_iseq_flags_has_opt(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Opt)); }
+    if unsafe { rb_get_iseq_flags_has_rest(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Rest)); }
+    if unsafe { rb_get_iseq_flags_has_post(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Post)); }
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Kw)); }
+    if unsafe { rb_get_iseq_flags_has_kwrest(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::KwRest)); }
+    if unsafe { rb_get_iseq_flags_has_block(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Block)); }
+    if unsafe { rb_get_iseq_flags_forwardable(iseq) } { return Err(ParseError::UnhandledParamType(ParamType::Forwardable)); }
+    Ok(())
+}
+
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    filter_translatable_params(iseq)?;
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
     let jump_targets = compute_jump_targets(iseq);
@@ -2791,7 +2816,64 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_splat() {
+    fn test_cant_compile_opt_param() {
+        eval("
+            def test(a=1) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Opt))
+    }
+
+    #[test]
+    fn test_cant_compile_rest_param() {
+        eval("
+            def test(*a) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Rest))
+    }
+
+    #[test]
+    fn test_cant_compile_post_param() {
+        eval("
+            def test(*a, b) = 1
+        ");
+        // TODO(max): Change to Post when we support Rest
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Rest))
+    }
+
+    #[test]
+    fn test_cant_compile_kw_param() {
+        eval("
+            def test(a:) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Kw))
+    }
+
+    #[test]
+    fn test_cant_compile_kwrest_param() {
+        eval("
+            def test(**a) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::KwRest))
+    }
+
+    #[test]
+    fn test_cant_compile_block_param() {
+        eval("
+            def test(&a) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Block))
+    }
+
+    #[test]
+    fn test_cant_compile_forwardable_param() {
+        eval("
+            def test(...) = 1
+        ");
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Forwardable))
+    }
+
+    #[test]
+    fn test_cant_compile_send_splat() {
         eval("
             def test(a) = foo(*a)
         ");
@@ -2799,7 +2881,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_block_arg() {
+    fn test_cant_compile_send_block_arg() {
         eval("
             def test(a) = foo(&a)
         ");
@@ -2807,7 +2889,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_kwarg() {
+    fn test_cant_compile_send_kwarg() {
         eval("
             def test(a) = foo(a: 1)
         ");
@@ -2815,7 +2897,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_kw_splat() {
+    fn test_cant_compile_send_kw_splat() {
         eval("
             def test(a) = foo(**a)
         ");
@@ -2825,7 +2907,7 @@ mod tests {
     // TODO(max): Figure out how to generate a call with TAILCALL flag
 
     #[test]
-    fn test_cant_compile_super() {
+    fn test_cant_compile_send_super() {
         eval("
             def test = super()
         ");
@@ -2833,7 +2915,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_zsuper() {
+    fn test_cant_compile_send_zsuper() {
         eval("
             def test = super
         ");
@@ -2841,17 +2923,18 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_super_forward() {
+    fn test_cant_compile_send_super_forward() {
         eval("
             def test(...) = super(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("invokesuperforward".into()))
+        // TODO(max): Change to test about invokesuperforward when we support Forwardable params
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Forwardable))
     }
 
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
 
     #[test]
-    fn test_cant_compile_kw_splat_mut() {
+    fn test_cant_compile_send_kw_splat_mut() {
         eval("
             def test(a) = foo **a, b: 1
         ");
@@ -2859,19 +2942,21 @@ mod tests {
     }
 
     #[test]
-    fn test_cant_compile_splat_mut() {
+    fn test_cant_compile_send_splat_mut() {
         eval("
             def test(*) = foo *, 1
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("splatarray".into()))
+        // TODO(max): Change to unhandled splat mut call type when we support rest params
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Rest))
     }
 
     #[test]
-    fn test_cant_compile_forwarding() {
+    fn test_cant_compile_send_forwarding() {
         eval("
             def test(...) = foo(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("sendforward".into()))
+        // TODO(max): Change to test about sendforward when we support Forwardable params
+        assert_compile_fails("test", ParseError::UnhandledParamType(ParamType::Forwardable))
     }
 
     #[test]
