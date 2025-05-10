@@ -143,6 +143,12 @@ class TC_Set < Test::Unit::TestCase
     assert_equal([1,2,3], ary.sort)
   end
 
+  def test_to_h
+    set = Set[1,2]
+    assert_equal({1 => true, 2 => true}, set.to_h)
+    assert_equal({1 => false, 2 => false}, set.to_h { [it, false] })
+  end
+
   def test_flatten
     # test1
     set1 = Set[
