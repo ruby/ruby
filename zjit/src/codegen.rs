@@ -141,7 +141,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
-    gen_method_params(&mut asm, iseq, function.block(BlockId(0)));
+    gen_method_params(&mut asm, iseq, function.block(BlockId(0)))?;
 
     // Jump to the first block using a call instruction
     asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
@@ -207,7 +207,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         for &insn_id in block.params() {
             match function.find(insn_id) {
                 Insn::Param { idx } => {
-                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
+                    jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx)?);
                 },
                 insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
             }
@@ -319,14 +319,17 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 }
 
 /// Assign method arguments to basic block arguments at JIT entry
-fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
+fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) -> Option<()> {
     let num_params = entry_block.params().len();
     if num_params > 0 {
         asm_comment!(asm, "set method params: {num_params}");
 
         // Allocate registers for basic block arguments
+        if num_params >= ALLOC_REGS.len() {
+            return None;
+        }
         let params: Vec<Opnd> = (0..num_params).map(|idx|
-            gen_param(asm, idx)
+            gen_param(asm, idx).unwrap()
         ).collect();
 
         // Assign local variables to the basic block arguments
@@ -335,6 +338,7 @@ fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
             asm.load_into(param, local);
         }
     }
+    Some(())
 }
 
 /// Set branch params to basic block arguments
@@ -343,7 +347,7 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
         asm_comment!(asm, "set branch params: {}", branch.args.len());
         let mut moves: Vec<(Reg, Opnd)> = vec![];
         for (idx, &arg) in branch.args.iter().enumerate() {
-            moves.push((param_reg(idx), jit.get_opnd(arg)?));
+            moves.push((param_reg(idx)?, jit.get_opnd(arg)?));
         }
         asm.parallel_mov(moves);
     }
@@ -382,14 +386,14 @@ fn gen_const(val: VALUE) -> lir::Opnd {
 }
 
 /// Compile a basic block argument
-fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
-    asm.live_reg_opnd(Opnd::Reg(param_reg(idx)))
+fn gen_param(asm: &mut Assembler, idx: usize) -> Option<lir::Opnd> {
+    Some(asm.live_reg_opnd(Opnd::Reg(param_reg(idx)?)))
 }
 
 /// Compile a jump to a basic block
 fn gen_jump(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdge) -> Option<()> {
     // Set basic block arguments
-    gen_branch_params(jit, asm, branch);
+    gen_branch_params(jit, asm, branch)?;
 
     // Jump to the basic block
     let target = jit.get_label(asm, branch.target);
@@ -407,7 +411,7 @@ fn gen_if_true(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch: 
     // If val is not zero, set basic block arguments and jump to the branch target.
     // TODO: Consider generating the loads out-of-line
     let if_true = jit.get_label(asm, branch.target);
-    gen_branch_params(jit, asm, branch);
+    gen_branch_params(jit, asm, branch)?;
     asm.jmp(if_true);
 
     asm.write_label(if_false);
@@ -425,7 +429,7 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
     // If val is zero, set basic block arguments and jump to the branch target.
     // TODO: Consider generating the loads out-of-line
     let if_false = jit.get_label(asm, branch.target);
-    gen_branch_params(jit, asm, branch);
+    gen_branch_params(jit, asm, branch)?;
     asm.jmp(if_false);
 
     asm.write_label(if_true);
@@ -699,10 +703,10 @@ fn gen_push_frame(asm: &mut Assembler, recv: Opnd) {
 }
 
 /// Return a register we use for the basic block argument at a given index
-fn param_reg(idx: usize) -> Reg {
+fn param_reg(idx: usize) -> Option<Reg> {
     // To simplify the implementation, allocate a fixed register for each basic block argument for now.
     // TODO: Allow allocating arbitrary registers for basic block arguments
-    ALLOC_REGS[idx]
+    ALLOC_REGS.get(idx).copied()
 }
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
