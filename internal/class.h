@@ -143,7 +143,7 @@ struct RClass {
 };
 
 // Assert that classes can be embedded in heaps[2] (which has 160B slot size)
-// TODO: check this assertion's validity
+// TODO: restore this assertion after removing several fields from rb_classext_t
 // STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
 
 struct RClass_and_rb_classext_t {
