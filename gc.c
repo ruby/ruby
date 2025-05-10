@@ -1724,9 +1724,28 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
-static unsigned long long object_id_counter = 0;
 static VALUE id_to_obj_value = 0;
 static st_table *id_to_obj_tbl = NULL;
+
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+static size_t object_id_counter = 1;
+#else
+static unsigned long long object_id_counter = 1;
+#endif
+
+static inline VALUE
+generate_next_object_id(void)
+{
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+    // 64bit atomics are available
+    return SIZET2NUM(RUBY_ATOMIC_SIZE_FETCH_ADD(object_id_counter, 1) * OBJ_ID_INCREMENT);
+#else
+    unsigned int lock_lev = rb_gc_vm_lock();
+    VALUE id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
+    rb_gc_vm_unlock(lock_lev);
+    return id;
+#endif
+}
 
 void
 rb_gc_obj_id_moved(VALUE obj)
@@ -1823,16 +1842,11 @@ object_id0(VALUE obj)
          return id;
     }
 
-    // TODO: can we do 64bit atomics? Or accept that `object_id_counter`
-    // is sometimes only 32 bits?
-    unsigned int lock_lev = rb_gc_vm_lock();
-    id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
-    rb_gc_vm_unlock(lock_lev);
-
     // rb_shape_object_id_shape may lock if it needs to lock if the current
     // shape has multiple children.
     rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
 
+    id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape, id);
     if (RB_UNLIKELY(id_to_obj_tbl)) {
         st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);

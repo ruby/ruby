@@ -198,6 +198,18 @@ typedef unsigned int rb_atomic_t;
 #define RUBY_ATOMIC_DEC(var) rbimpl_atomic_dec(&(var))
 
 /**
+ * Identical to #RUBY_ATOMIC_FETCH_ADD,  except it expects its arguments to be `size_t`.
+ * There are cases where ::rb_atomic_t is  32bit while `size_t` is 64bit.  This
+ * should be used for size related operations to support such platforms.
+ *
+ * @param   var  A variable of `size_t`.
+ * @param   val  Value to add.
+ * @return  What was stored in `var` before the addition.
+ * @post    `var` holds `var + val`.
+ */
+#define RUBY_ATOMIC_SIZE_FETCH_ADD(var, val) rbimpl_atomic_size_fetch_add(&(var), (val))
+
+/**
  * Identical to #RUBY_ATOMIC_INC,  except it expects its  argument is `size_t`.
  * There are cases where ::rb_atomic_t is  32bit while `size_t` is 64bit.  This
  * should be used for size related operations to support such platforms.
@@ -398,6 +410,38 @@ rbimpl_atomic_fetch_add(volatile rb_atomic_t *ptr, rb_atomic_t val)
 
 #else
 # error Unsupported platform.
+#endif
+}
+
+/** @cond INTERNAL_MACRO */
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline size_t
+rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_fetch_add(ptr, val, __ATOMIC_SEQ_CST);
+
+#elif defined(HAVE_GCC_SYNC_BUILTINS)
+    return __sync_fetch_and_add(ptr, val);
+
+#elif defined(_WIN32)
+    return InterlockedExchangeAdd64(ptr, val);
+
+#elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
+    /* Ditto for `atomic_add_int_nv`. */
+    RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
+    atomic_add_long(ptr, val);
+
+#else
+    RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
+
+    volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
+    rbimpl_atomic_fetch_add(tmp, val);
+
 #endif
 }
 
