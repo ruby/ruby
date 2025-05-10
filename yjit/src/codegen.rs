@@ -2446,6 +2446,11 @@ fn gen_getlocal_generic(
     level: u32,
 ) -> Option<CodegenStatus> {
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm) {
+        // Split the block if we need to invalidate this instruction when EP escapes
+        if !jit.at_compile_target() {
+            return jit.defer_compilation(asm);
+        }
+
         // Load the local using SP register
         asm.local_opnd(ep_offset)
     } else {
@@ -2536,6 +2541,11 @@ fn gen_setlocal_generic(
     }
 
     let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm) {
+        // Split the block if we need to invalidate this instruction when EP escapes
+        if !jit.at_compile_target() {
+            return jit.defer_compilation(asm);
+        }
+
         // Load flags and the local using SP register
         let flags_opnd = asm.ctx.ep_opnd(VM_ENV_DATA_INDEX_FLAGS as i32);
         let local_opnd = asm.local_opnd(ep_offset);
