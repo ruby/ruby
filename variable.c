@@ -4806,7 +4806,7 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
     RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
 
     RUBY_ASSERT(rb_obj_shape(dst)->type == SHAPE_ROOT);
-    RUBY_ASSERT(!RCLASS_FIELDS(dst));
+    RUBY_ASSERT(!RCLASS_PRIME_FIELDS(dst));
 
     rb_ivar_foreach(src, tbl_copy_i, dst);
 }
