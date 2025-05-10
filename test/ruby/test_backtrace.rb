@@ -328,7 +328,7 @@ class TestBacktrace < Test::Unit::TestCase
       th_backtrace = th.backtrace
       th_locations = th.backtrace_locations
 
-      assert_equal(10, th_backtrace.count{|e| e =~ /th_rec/})
+      assert_equal(11, th_backtrace.count{|e| e =~ /th_rec/})
       assert_equal(th_backtrace, th_locations.map{|e| e.to_s})
       assert_equal(th_backtrace, th.backtrace(0))
       assert_equal(th_locations.map{|e| e.to_s},
