@@ -1302,25 +1302,53 @@ VALUE
 rb_obj_field_get(VALUE obj, rb_shape_t *target_shape)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     RUBY_ASSERT(target_shape->type == SHAPE_IVAR || target_shape->type == SHAPE_OBJ_ID);
 
-    attr_index_t attr_index = target_shape->next_field_index - 1;
+    if (rb_shape_too_complex_p(target_shape)) {
+        st_table *fields_hash;
+        switch (BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            ASSERT_vm_locking();
+            fields_hash = RCLASS_FIELDS_HASH(obj);
+            break;
+          case T_OBJECT:
+            fields_hash = ROBJECT_FIELDS_HASH(obj);
+            break;
+          default:
+            RUBY_ASSERT(FL_TEST_RAW(obj, FL_EXIVAR));
+            struct gen_fields_tbl *fields_tbl = NULL;
+            rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
+            RUBY_ASSERT(fields_tbl);
+            fields_hash = fields_tbl->as.complex.table;
+            break;
+        }
+        VALUE value = Qundef;
+        st_lookup(fields_hash, target_shape->edge_name, &value);
+        RUBY_ASSERT(!UNDEF_P(value));
+        return value;
+    }
 
+    attr_index_t attr_index = target_shape->next_field_index - 1;
+    VALUE *fields;
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         ASSERT_vm_locking();
-        return RCLASS_FIELDS(obj)[attr_index];
+        fields = RCLASS_FIELDS(obj);
+        break;
       case T_OBJECT:
-        return ROBJECT_FIELDS(obj)[attr_index];
+        fields = ROBJECT_FIELDS(obj);
+        break;
       default:
         RUBY_ASSERT(FL_TEST_RAW(obj, FL_EXIVAR));
         struct gen_fields_tbl *fields_tbl = NULL;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
         RUBY_ASSERT(fields_tbl);
-        return fields_tbl->as.shape.fields[attr_index];
+        fields = fields_tbl->as.shape.fields;
+        break;
     }
+    return fields[attr_index];
 }
 
 VALUE
