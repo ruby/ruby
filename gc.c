@@ -1835,23 +1835,26 @@ object_id(VALUE obj)
 
         id = ULL2NUM(next_object_id);
         next_object_id += OBJ_ID_INCREMENT;
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
+        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
         st_insert(table, (st_data_t)ruby_internal_object_id, (st_data_t)id);
-        rb_shape_set_shape(obj, object_id_shape);
+        rb_shape_set_shape_id(obj, object_id_shape_id);
         if (RB_UNLIKELY(id_to_obj_tbl)) {
             st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         }
     }
     else if (rb_shape_has_object_id(shape)) {
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        id = rb_field_get(obj, object_id_shape);
+        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+        id = rb_field_get(obj, RSHAPE(object_id_shape_id));
     }
     else {
         id = ULL2NUM(next_object_id);
         next_object_id += OBJ_ID_INCREMENT;
 
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        rb_obj_field_set(obj, object_id_shape, id);
+        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+        RUBY_ASSERT(RSHAPE(object_id_shape_id)->type == SHAPE_OBJ_ID);
+        RUBY_ASSERT(RSHAPE(object_id_shape_id)->next_field_index > 0);
+
+        rb_obj_field_set(obj, RSHAPE(object_id_shape_id), id);
         if (RB_UNLIKELY(id_to_obj_tbl)) {
             st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         }

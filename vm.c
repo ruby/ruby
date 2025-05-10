@@ -733,7 +733,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_invalidations, ruby_vm_constant_cache_invalidations);
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
-    SET(next_shape_id, (rb_serial_t)GET_SHAPE_TREE()->next_shape_id);
+    SET(next_shape_id, (rb_serial_t)(GET_SHAPE_TREE()->next_shape_id));
     SET(shape_cache_size, (rb_serial_t)GET_SHAPE_TREE()->cache_size);
 #undef SET
 
