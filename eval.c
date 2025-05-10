@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/missing.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
 #include "probes.h"
@@ -77,6 +78,7 @@ ruby_setup(void)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
     Init_BareVM();
+    ruby_init_dtoa();
     rb_vm_encoded_insn_data_table_init();
     Init_vm_objects();
     Init_fstring_table();
