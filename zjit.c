@@ -9,6 +9,7 @@
 #include "internal/numeric.h"
 #include "internal/gc.h"
 #include "internal/vm.h"
+#include "yjit.h"
 #include "vm_core.h"
 #include "vm_callinfo.h"
 #include "builtin.h"

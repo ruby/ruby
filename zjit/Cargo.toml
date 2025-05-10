@@ -1,24 +1,9 @@
 [package]
 name = "zjit"
 version = "0.0.1"
-edition = "2024"        # Rust 2021 edition to compile with
+edition = "2024"
 rust-version = "1.85.0" # Minimally supported rust version
 publish = false         # Don't publish to crates.io
-
-[lib]
-crate-type = ["staticlib"]
-
-[profile.release]
-# NOTE: --enable-zjit builds use `rustc` without going through Cargo. You
-# might want to update the `rustc` invocation if you change this profile.
-opt-level = 3
-# The extra robustness that comes from checking for arithmetic overflow is
-# worth the performance cost for the compiler.
-overflow-checks = true
-# Generate debug info
-debug = true
-# Use ThinLTO. Much smaller output for a small amount of build time increase.
-lto = "thin"
 
 [dependencies]
 # No required dependencies to simplify build process. TODO: Link to yet to be
