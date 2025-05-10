@@ -344,7 +344,7 @@ pub enum Insn {
     // Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, cme: *const rb_callable_method_entry_t, args: Vec<InsnId>, state: InsnId },
 
     // Control flow instructions
     Return { val: InsnId },
@@ -467,8 +467,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::SendWithoutBlockDirect { self_val, call_info, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", call_info.method_name, self.ptr_map.map_ptr(iseq))?;
+            Insn::SendWithoutBlockDirect { self_val, call_info, cme, args, .. } => {
+                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", call_info.method_name, self.ptr_map.map_ptr(cme))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -817,11 +817,11 @@ impl Function {
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
-            SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state } => SendWithoutBlockDirect {
+            SendWithoutBlockDirect { self_val, call_info, cd, cme, args, state } => SendWithoutBlockDirect {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
                 cd: *cd,
-                iseq: *iseq,
+                cme: *cme,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
@@ -1063,16 +1063,14 @@ impl Function {
                         // It allows you to use a faster ISEQ if possible.
                         cme = unsafe { rb_check_overloaded_cme(cme, ci) };
                         let def_type = unsafe { get_cme_def_type(cme) };
-                        if def_type != VM_METHOD_TYPE_ISEQ {
-                            // TODO(max): Allow non-iseq; cache cme
+                        if !(def_type == VM_METHOD_TYPE_ISEQ || def_type == VM_METHOD_TYPE_CFUNC) {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass, method: mid }));
-                        let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                         if let Some(expected) = guard_equal_to {
                             self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
                         }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state });
+                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic } => {
@@ -1113,7 +1111,8 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::SendWithoutBlock { mut self_val, cd, mut args, state, .. } = send else {
+            let is_send_direct = matches!(send, Insn::SendWithoutBlockDirect { .. });
+            let (Insn::SendWithoutBlock { mut self_val, cd, mut args, state, .. } | Insn::SendWithoutBlockDirect { mut self_val, cd, mut args, state, .. }) = send else {
                 return Err(());
             };
 
@@ -1171,8 +1170,10 @@ impl Function {
                     let ci_flags = unsafe { vm_ci_flag(call_info) };
                     // Filter for simple call sites (i.e. no splats etc.)
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
-                        // Commit to the replacement. Put PatchPoint.
-                        fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
+                        if !is_send_direct {
+                            // Commit to the replacement. Put PatchPoint if we don't already have a guarantee from SendWithoutBlockDirect.
+                            fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
+                        }
                         if let Some(guard_type) = guard_type {
                             // Guard receiver class
                             self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
@@ -1204,7 +1205,7 @@ impl Function {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
-                if let send @ Insn::SendWithoutBlock { self_val, .. } = self.find(insn_id) {
+                if let send @ Insn::SendWithoutBlock { self_val, .. } | send @ Insn::SendWithoutBlockDirect { self_val, .. } = self.find(insn_id) {
                     let self_type = self.type_of(self_val);
                     if reduce_to_ccall(self, block, payload, self_type, send, insn_id).is_ok() {
                         continue;
@@ -3701,8 +3702,8 @@ mod opt_tests {
             bb0():
               v2:ArrayExact = NewArray
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
-              v7:BasicObject = CCall itself@0x1010, v2
-              Return v7
+              v8:BasicObject = CCall itself@0x1010, v2
+              Return v8
         "#]]);
     }
 
@@ -3719,8 +3720,9 @@ mod opt_tests {
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v2:Fixnum[0] = Const Value(0)
-              v4:BasicObject = SendWithoutBlock v1, :itself, v2
-              Return v4
+              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
+              v7:BasicObject = SendWithoutBlockDirect v1, :itself (0x1010), v2
+              Return v7
         "#]]);
     }
 
@@ -3772,8 +3774,8 @@ mod opt_tests {
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
-              v7:Fixnum = CCall bytesize@0x1018, v2
-              Return v7
+              v8:Fixnum = CCall bytesize@0x1018, v2
+              Return v8
         "#]]);
     }
 
@@ -3903,8 +3905,9 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = SendWithoutBlock v4, :length
-              Return v6
+              PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
+              v9:BasicObject = SendWithoutBlockDirect v4, :length (0x1010)
+              Return v9
         "#]]);
     }
 
@@ -3917,8 +3920,9 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = SendWithoutBlock v4, :size
-              Return v6
+              PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
+              v9:BasicObject = SendWithoutBlockDirect v4, :size (0x1010)
+              Return v9
         "#]]);
     }
 }
