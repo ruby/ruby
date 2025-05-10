@@ -281,11 +281,13 @@ ruby_fl_type {
                          = 0,
 
    /**
-    * This flag is no longer in use
+    * This flag is used to mark when an object address has been observed by
+    * `rb_obj_hash` or similar. This indicates to the GC that the old address
+    * must be recorded inside the moved object to keep `rb_obj_hash` stable.
     *
     * @internal
     */
-    RUBY_FL_UNUSED9  = (1<<9),
+    RUBY_FL_ADDRESS_SEEN  = (1<<9),
 
     /**
      * This flag has something to do with instance variables.  3rd parties need

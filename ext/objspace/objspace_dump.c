@@ -828,6 +828,9 @@ shape_i(rb_shape_t *shape, void *data)
       case SHAPE_OBJ_ID:
         dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
         break;
+      case SHAPE_OLD_ADDRESS:
+        dump_append(dc, ", \"shape_type\":\"OLD_ADDRESS\"");
+        break;
     }
 
     dump_append(dc, ", \"edges\":");

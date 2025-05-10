@@ -312,17 +312,20 @@ rb_objid_hash(st_index_t index)
 }
 
 static st_index_t
-objid_hash(VALUE obj)
+obj_address_hash(VALUE obj)
 {
-    VALUE object_id = rb_obj_id(obj);
-    if (!FIXNUM_P(object_id))
-        object_id = rb_big_hash(object_id);
-
+    if (rb_obj_old_address_p(obj)) {
+        VALUE address = rb_field_get(obj, rb_obj_old_address_shape(obj));
 #if SIZEOF_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(object_id));
+            return (st_index_t)st_index_hash((st_index_t)NUM2LONG(address));
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LL(object_id));
+            return (st_index_t)st_index_hash((st_index_t)NUM2LL(address));
 #endif
+    }
+    else {
+        FL_SET_RAW(obj, RUBY_FL_ADDRESS_SEEN);
+        return (st_index_t)st_index_hash((st_index_t)obj);
+    }
 }
 
 /**
@@ -363,7 +366,7 @@ objid_hash(VALUE obj)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    long hnum = any_hash(obj, objid_hash);
+    long hnum = any_hash(obj, obj_address_hash);
     return ST2FIX(hnum);
 }
 

@@ -3085,27 +3085,39 @@ rb_gc_mark_children(void *objspace, VALUE obj)
 size_t
 rb_gc_obj_optimal_size(VALUE obj)
 {
+    size_t optimal_size;
+
     switch (BUILTIN_TYPE(obj)) {
       case T_ARRAY:
-        return rb_ary_size_as_embedded(obj);
+        optimal_size = rb_ary_size_as_embedded(obj);
+        break;
 
       case T_OBJECT:
         if (rb_shape_obj_too_complex_p(obj)) {
-            return sizeof(struct RObject);
+            optimal_size = sizeof(struct RObject);
         }
         else {
-            return rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
+            optimal_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(obj));
         }
+        break;
 
       case T_STRING:
-        return rb_str_size_as_embedded(obj);
+        optimal_size = rb_str_size_as_embedded(obj);
+        break;
 
       case T_HASH:
-        return sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));
+        optimal_size = sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));
+        break;
 
       default:
-        return 0;
+        optimal_size = 0;
     }
+
+    if (FL_TEST_RAW(obj, RUBY_FL_ADDRESS_SEEN) && !rb_obj_old_address_p(obj)) {
+        optimal_size += sizeof(VALUE);
+    }
+
+    return optimal_size;
 }
 
 void

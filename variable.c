@@ -1303,7 +1303,7 @@ rb_field_get(VALUE obj, rb_shape_t *target_shape)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    RUBY_ASSERT(target_shape->type == SHAPE_IVAR || target_shape->type == SHAPE_OBJ_ID);
+    RUBY_ASSERT(target_shape->type == SHAPE_IVAR || target_shape->type == SHAPE_OBJ_ID || target_shape->type == SHAPE_OLD_ADDRESS);
 
     attr_index_t attr_index = target_shape->next_field_index - 1;
 
@@ -2142,6 +2142,7 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
       case SHAPE_T_OBJECT:
         return false;
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
         if (itr_data->ivar_only) {
             return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
         }
