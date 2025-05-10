@@ -51,7 +51,7 @@ void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_init_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
 void rb_evict_fields_to_hash(VALUE obj);
-VALUE rb_field_get(VALUE obj, rb_shape_t *target_shape);
+VALUE rb_obj_field_get(VALUE obj, rb_shape_t *target_shape);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 void rb_obj_field_set(VALUE obj, rb_shape_t *target_shape, VALUE val);
 

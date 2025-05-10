@@ -1299,7 +1299,7 @@ gen_fields_tbl_count(VALUE obj, const struct gen_fields_tbl *fields_tbl)
 }
 
 VALUE
-rb_field_get(VALUE obj, rb_shape_t *target_shape)
+rb_obj_field_get(VALUE obj, rb_shape_t *target_shape)
 {
     RUBY_ASSERT(!SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));

@@ -1844,7 +1844,7 @@ object_id(VALUE obj)
     }
     else if (rb_shape_has_object_id(shape)) {
         rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        id = rb_field_get(obj, object_id_shape);
+        id = rb_obj_field_get(obj, object_id_shape);
     }
     else {
         id = ULL2NUM(next_object_id);
