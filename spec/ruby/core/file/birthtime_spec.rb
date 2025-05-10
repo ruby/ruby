@@ -1,15 +1,15 @@
 require_relative '../../spec_helper'
 
-describe "File.birthtime" do
-  before :each do
-    @file = __FILE__
-  end
+platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
+  describe "File.birthtime" do
+    before :each do
+      @file = __FILE__
+    end
 
-  after :each do
-    @file = nil
-  end
+    after :each do
+      @file = nil
+    end
 
-  platform_is :windows, :darwin, :freebsd, :netbsd do
     it "returns the birth time for the named file as a Time object" do
       File.birthtime(@file)
       File.birthtime(@file).should be_kind_of(Time)
@@ -24,35 +24,19 @@ describe "File.birthtime" do
     end
   end
 
-  platform_is :openbsd do
-    it "raises an NotImplementedError" do
-      -> { File.birthtime(@file) }.should raise_error(NotImplementedError)
+  describe "File#birthtime" do
+    before :each do
+      @file = File.open(__FILE__)
     end
-  end
 
-  # TODO: depends on Linux kernel version
-end
+    after :each do
+      @file.close
+      @file = nil
+    end
 
-describe "File#birthtime" do
-  before :each do
-    @file = File.open(__FILE__)
-  end
-
-  after :each do
-    @file.close
-    @file = nil
-  end
-
-  platform_is :windows, :darwin, :freebsd, :netbsd do
     it "returns the birth time for self" do
       @file.birthtime
       @file.birthtime.should be_kind_of(Time)
-    end
-  end
-
-  platform_is :openbsd do
-    it "raises an NotImplementedError" do
-      -> { @file.birthtime }.should raise_error(NotImplementedError)
     end
   end
 
