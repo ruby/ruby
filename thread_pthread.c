@@ -320,7 +320,7 @@ static void native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_
 static void native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_thread *nt);
 static void native_thread_assign(struct rb_native_thread *nt, rb_thread_t *th);
 
-static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r);
+static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r, bool allow_already_in);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
@@ -588,8 +588,16 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
             while (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
                 RUBY_DEBUG_LOG("barrier-wait");
 
-                ractor_sched_barrier_join_signal_locked(vm);
-                ractor_sched_barrier_join_wait_locked(vm, add_th);
+                rb_thread_t *lock_owner = NULL;
+#if VM_CHECK_MODE
+                lock_owner = sched->lock_owner;
+#endif
+                thread_sched_unlock(sched, lock_owner);
+                {
+                    ractor_sched_barrier_join_signal_locked(vm);
+                    ractor_sched_barrier_join_wait_locked(vm, add_th);
+                }
+                thread_sched_lock(sched, lock_owner);
             }
 
             VM_ASSERT(!ractor_sched_running_threads_contain_p(vm, add_th));
@@ -786,7 +794,7 @@ thread_sched_wakeup_running_thread(struct rb_thread_sched *sched, rb_thread_t *n
             }
             else {
                 RUBY_DEBUG_LOG("th:%u (enq)", rb_th_serial(next_th));
-                ractor_sched_enq(next_th->vm, next_th->ractor);
+                ractor_sched_enq(next_th->vm, next_th->ractor, false);
             }
         }
     }
@@ -1211,10 +1219,11 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 
 static void
-ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
+ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r, bool allow_already_in)
 {
     struct rb_thread_sched *sched = &r->threads.sched;
     rb_ractor_t *cr = NULL; // timer thread can call this function
+    rb_ractor_t *tr;
 
     VM_ASSERT(sched->running != NULL);
     VM_ASSERT(sched->running->nt == NULL);
@@ -1222,12 +1231,22 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
     ractor_sched_lock(vm, cr);
     {
 #if VM_CHECK_MODE > 0
-        // check if grq contains r
-        rb_ractor_t *tr;
-        ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
-            VM_ASSERT(r != tr);
+        if (!allow_already_in) {
+            // check if grq contains r
+            ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
+                VM_ASSERT(r != tr);
+            }
         }
 #endif
+        if (allow_already_in) {
+            // check if grq contains r
+            ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
+                if (tr == r) {
+                    ractor_sched_unlock(vm, cr);
+                    return;
+                }
+            }
+        }
 
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
@@ -1448,6 +1467,7 @@ ractor_sched_barrier_join_signal_locked(rb_vm_t *vm)
 static void
 ractor_sched_barrier_join_wait_locked(rb_vm_t *vm, rb_thread_t *th)
 {
+    ASSERT_ractor_sched_locked(vm, NULL);
     VM_ASSERT(vm->ractor.sched.barrier_waiting);
 
     unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
