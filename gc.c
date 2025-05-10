@@ -1772,12 +1772,30 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 }
 
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
-#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
-
-static unsigned long long next_object_id = OBJ_ID_INITIAL;
+#define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
 static st_table *id2ref_tbl = NULL;
 static bool id2ref_tbl_built = false;
+
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+static size_t object_id_counter = 1;
+#else
+static unsigned long long object_id_counter = 1;
+#endif
+
+static inline VALUE
+generate_next_object_id(void)
+{
+#if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
+    // 64bit atomics are available
+    return SIZET2NUM(RUBY_ATOMIC_SIZE_FETCH_ADD(object_id_counter, 1) * OBJ_ID_INCREMENT);
+#else
+    unsigned int lock_lev = rb_gc_vm_lock();
+    VALUE id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
+    rb_gc_vm_unlock(lock_lev);
+    return id;
+#endif
+}
 
 void
 rb_gc_obj_id_moved(VALUE obj)
@@ -1815,7 +1833,7 @@ static void
 id2ref_tbl_mark(void *data)
 {
     st_table *table = (st_table *)data;
-    if (UNLIKELY(!RB_POSFIXABLE(next_object_id))) {
+    if (UNLIKELY(!RB_POSFIXABLE(LAST_OBJECT_ID()))) {
         // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
         rb_mark_set(table);
     }
@@ -1833,7 +1851,7 @@ static void
 id2ref_tbl_compact(void *data)
 {
     st_table *table = (st_table *)data;
-    if (LIKELY(RB_POSFIXABLE(next_object_id))) {
+    if (LIKELY(RB_POSFIXABLE(LAST_OBJECT_ID()))) {
         // We know keys are all FIXNUM, so no need to update them.
         gc_ref_update_table_values_only(table);
     }
@@ -1869,8 +1887,7 @@ class_object_id(VALUE klass)
     VALUE id = RUBY_ATOMIC_VALUE_LOAD(RCLASS(klass)->object_id);
     if (!id) {
         unsigned int lock_lev = rb_gc_vm_lock();
-        id = ULL2NUM(next_object_id);
-        next_object_id += OBJ_ID_INCREMENT;
+        id = generate_next_object_id();
         VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
         if (existing_id) {
             id = existing_id;
@@ -1879,6 +1896,30 @@ class_object_id(VALUE klass)
             st_insert(id2ref_tbl, id, klass);
         }
         rb_gc_vm_unlock(lock_lev);
+    }
+    return id;
+}
+
+static VALUE
+object_id0(VALUE obj)
+{
+    VALUE id = Qfalse;
+
+    if (rb_shape_has_object_id(rb_obj_shape(obj))) {
+        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+        id = rb_obj_field_get(obj, object_id_shape_id);
+        RUBY_ASSERT(id, "object_id missing");
+        return id;
+    }
+
+    // rb_shape_object_id_shape may lock if the current shape has
+    // multiple children.
+    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+
+    id = generate_next_object_id();
+    rb_obj_field_set(obj, object_id_shape_id, id);
+    if (RB_UNLIKELY(id2ref_tbl)) {
+        st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
     }
     return id;
 }
@@ -1897,32 +1938,14 @@ object_id(VALUE obj)
         break;
     }
 
-    VALUE id = Qfalse;
-    unsigned int lock_lev;
-
-    // We could avoid locking if the object isn't shareable
-    // but we'll lock anyway to lookup the next shape, and
-    // we'd at least need to generate the object_id using atomics.
-    lock_lev = rb_gc_vm_lock();
-
-    shape_id_t shape_id = rb_obj_shape_id(obj);
-    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
-
-    if (shape_id >= object_id_shape_id) {
-        id = rb_obj_field_get(obj, object_id_shape_id);
-    }
-    else {
-        id = ULL2NUM(next_object_id);
-        next_object_id += OBJ_ID_INCREMENT;
-
-        rb_obj_field_set(obj, object_id_shape_id, id);
-        if (RB_UNLIKELY(id2ref_tbl)) {
-            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
-        }
+    if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+        unsigned int lock_lev = rb_gc_vm_lock();
+        VALUE id = object_id0(obj);
+        rb_gc_vm_unlock(lock_lev);
+        return id;
     }
 
-    rb_gc_vm_unlock(lock_lev);
-    return id;
+    return object_id0(obj);
 }
 
 static void
@@ -1973,7 +1996,7 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         return obj;
     }
 
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(next_object_id))) {
+    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(LAST_OBJECT_ID()))) {
         rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
     }
     else {
