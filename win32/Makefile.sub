@@ -1468,6 +1468,38 @@ loadpath: verconf.h
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
 
+RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_EXTS =
+
+!if [echo>rubyspec-capiext.mk RUBYSPEC_CAPIEXT_EXTS = \]
+!else if [for %I in ($(RUBYSPEC_CAPIEXT_SRCDIR)\*_spec.c) do \
+	@echo. $$(RUBYSPEC_CAPIEXT)/%~nI.so \>>rubyspec-capiext.mk]
+!else if [echo. $$(empty)>>rubyspec-capiext.mk]
+!else
+! include rubyspec-capiext.mk
+! if [del rubyspec-capiext.mk > nul]
+! endif
+!endif
+
+$(RUBYSPEC_CAPIEXT_EXTS): $(RUBYSPEC_CAPIEXT_DEPS)
+rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
+	@ $(NULLCMD)
+
+{$(RUBYSPEC_CAPIEXT_SRCDIR)}.c{$(RUBYSPEC_CAPIEXT)}.so:
+	$(ECHO) building $(@F)
+	$(Q)$(MAKEDIRS) $(@D)
+	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+!if defined(LDSHARED_0)
+	$(Q)$(LDSHARED_0)
+	$(Q)$(LDSHARED_1)
+	$(Q)$(LDSHARED_2)
+!endif
+	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
+
+exts: rubyspec-capiext
+
 yesterday:
 	for /f "usebackq" %H in \
 	    (`$(GIT) -C $(srcdir) log -1 "--before=00:00+0900" "--format=%H"`) do \
