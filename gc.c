@@ -1777,6 +1777,7 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 static unsigned long long next_object_id = OBJ_ID_INITIAL;
 static VALUE id_to_obj_value = 0;
 static st_table *id_to_obj_tbl = NULL;
+static bool id_to_obj_tbl_built = false;
 
 void
 rb_gc_obj_id_moved(VALUE obj)
@@ -1910,9 +1911,13 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
     if (!id_to_obj_tbl) {
         rb_gc_vm_barrier(); // stop other ractors
 
+        // GC Must not trigger while we build the table, otherwise if we end
+        // up freeing an object that had an ID, we might try to delete it from
+        // the table even though it wasn't inserted yet.
         id_to_obj_tbl = st_init_table(&object_id_hash_type);
         id_to_obj_value = TypedData_Wrap_Struct(0, &id_to_obj_tbl_type, id_to_obj_tbl);
         rb_gc_impl_each_object(objspace, build_id_to_obj_i, (void *)id_to_obj_tbl);
+        id_to_obj_tbl_built = true;
     }
 
     VALUE obj;
@@ -1941,7 +1946,10 @@ obj_free_object_id(VALUE obj)
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
 
             if (!st_delete(id_to_obj_tbl, (st_data_t *)&obj_id, NULL)) {
-                rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+                // If we're currently building the table then it's not a bug
+                if (id_to_obj_tbl_built) {
+                    rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+                }
             }
         }
     }
