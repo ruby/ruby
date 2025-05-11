@@ -462,7 +462,6 @@ rb_namespace_entry_mark(void *ptr)
 }
 
 #define namespace_entry_free RUBY_TYPED_DEFAULT_FREE
-// TODO: free all objects in rb_namespace_t, including st_table members?
 
 static size_t
 namespace_entry_memsize(const void *ptr)
@@ -478,7 +477,7 @@ const rb_data_type_t rb_namespace_data_type = {
         namespace_entry_memsize,
         rb_namespace_gc_update_references,
     },
-    0, 0, RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
 VALUE
