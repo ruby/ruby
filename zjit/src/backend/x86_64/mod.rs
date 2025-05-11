@@ -109,6 +109,11 @@ impl Assembler
         vec![RAX_REG, RCX_REG, RDX_REG, RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG, R11_REG]
     }
 
+    /// Get the address that the current frame returns to
+    pub fn return_addr_opnd() -> Opnd {
+        Opnd::mem(64, Opnd::Reg(RSP_REG), 0)
+    }
+
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 
@@ -665,7 +670,7 @@ impl Assembler
                 // Conditional jump to a label
                 Insn::Jmp(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jmp_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label) => jmp_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -673,7 +678,7 @@ impl Assembler
 
                 Insn::Je(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => je_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label) => je_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -681,7 +686,7 @@ impl Assembler
 
                 Insn::Jne(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jne_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label) => jne_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -689,7 +694,7 @@ impl Assembler
 
                 Insn::Jl(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jl_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label) => jl_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -697,7 +702,7 @@ impl Assembler
 
                 Insn::Jg(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jg_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label) => jg_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -705,7 +710,7 @@ impl Assembler
 
                 Insn::Jge(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jge_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label) => jge_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -713,7 +718,7 @@ impl Assembler
 
                 Insn::Jbe(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jbe_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label) => jbe_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -721,7 +726,7 @@ impl Assembler
 
                 Insn::Jb(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jb_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label) => jb_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -729,7 +734,7 @@ impl Assembler
 
                 Insn::Jz(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jz_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label) => jz_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -737,7 +742,7 @@ impl Assembler
 
                 Insn::Jnz(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jnz_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label) => jnz_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -746,7 +751,7 @@ impl Assembler
                 Insn::Jo(target) |
                 Insn::JoMul(target) => {
                     match *target {
-                        Target::CodePtr(code_ptr) | Target::SideExitPtr(code_ptr) => jo_ptr(cb, code_ptr),
+                        Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label) => jo_label(cb, label),
                         Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_side_exits"),
                     }
@@ -831,6 +836,7 @@ impl Assembler
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
         let asm = self.x86_split();
         let mut asm = asm.alloc_regs(regs);
+        asm.compile_side_exits()?;
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {

@@ -644,7 +644,7 @@ pub fn mov(cb: &mut CodeBlock, rd: A64Opnd, rm: A64Opnd) {
 
             LogicalImm::mov(rd.reg_no, bitmask_imm, rd.num_bits).into()
         },
-        _ => panic!("Invalid operand combination to mov instruction")
+        _ => panic!("Invalid operand combination to mov instruction: {rd:?}, {rm:?}")
     };
 
     cb.write_bytes(&bytes);
@@ -940,7 +940,7 @@ pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
 
             LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rn.num_bits).into()
         },
-        _ => panic!("Invalid operand combination to stur instruction.")
+        _ => panic!("Invalid operand combination to stur instruction: {rt:?}, {rn:?}")
     };
 
     cb.write_bytes(&bytes);

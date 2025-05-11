@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::cruby::{self, rb_bug_panic_hook, EcPtr, Qnil, VALUE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
@@ -29,6 +31,9 @@ pub struct ZJITState {
 
     /// Properties of core library methods
     method_annotations: cruby_methods::Annotations,
+
+    /// The address of the instruction that JIT-to-JIT calls return to
+    iseq_return_addrs: HashSet<*const u8>,
 }
 
 /// Private singleton instance of the codegen globals
@@ -82,7 +87,8 @@ impl ZJITState {
             options,
             invariants: Invariants::default(),
             assert_compiles: false,
-            method_annotations: cruby_methods::init()
+            method_annotations: cruby_methods::init(),
+            iseq_return_addrs: HashSet::new(),
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
     }
@@ -125,6 +131,16 @@ impl ZJITState {
     pub fn enable_assert_compiles() {
         let instance = ZJITState::get_instance();
         instance.assert_compiles = true;
+    }
+
+    /// Record an address that a JIT-to-JIT call returns to
+    pub fn add_iseq_return_addr(addr: *const u8) {
+        ZJITState::get_instance().iseq_return_addrs.insert(addr);
+    }
+
+    /// Returns true if a JIT-to-JIT call returns to a given address
+    pub fn is_iseq_return_addr(addr: *const u8) -> bool {
+        ZJITState::get_instance().iseq_return_addrs.contains(&addr)
     }
 }
 
