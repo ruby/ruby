@@ -2744,7 +2744,6 @@ struct mark_cc_entry_args {
 static enum rb_id_table_iterator_result
 mark_cc_entry_i(ID id, VALUE ccs_ptr, void *data)
 {
-    struct mark_cc_entry_args *args = (struct mark_cc_entry_args *)data;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
 
     VM_ASSERT(vm_ccs_p(ccs));
@@ -2758,7 +2757,7 @@ mark_cc_entry_i(ID id, VALUE ccs_ptr, void *data)
         gc_mark_internal((VALUE)ccs->cme);
 
         for (int i=0; i<ccs->len; i++) {
-            VM_ASSERT(args->klass == ccs->entries[i].cc->klass);
+            VM_ASSERT(((struct mark_cc_entry_args *)data)->klass == ccs->entries[i].cc->klass);
             VM_ASSERT(vm_cc_check_cme(ccs->entries[i].cc, ccs->cme));
 
             gc_mark_internal((VALUE)ccs->entries[i].cc);
