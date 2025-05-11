@@ -1872,26 +1872,7 @@ object_id(VALUE obj)
     // we'd at least need to generate the object_id using atomics.
     lock_lev = rb_gc_vm_lock();
 
-    if (rb_shape_too_complex_p(shape)) {
-        st_table *table = ROBJECT_FIELDS_HASH(obj);
-        if (rb_shape_has_object_id(shape)) {
-            st_lookup(table, (st_data_t)ruby_internal_object_id, (st_data_t *)&id);
-            RUBY_ASSERT(id, "object_id missing");
-
-            rb_gc_vm_unlock(lock_lev);
-            return id;
-        }
-
-        id = ULL2NUM(next_object_id);
-        next_object_id += OBJ_ID_INCREMENT;
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        st_insert(table, (st_data_t)ruby_internal_object_id, (st_data_t)id);
-        rb_shape_set_shape(obj, object_id_shape);
-        if (RB_UNLIKELY(id_to_obj_tbl)) {
-            st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-        }
-    }
-    else if (rb_shape_has_object_id(shape)) {
+    if (rb_shape_has_object_id(shape)) {
         rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
         id = rb_obj_field_get(obj, object_id_shape);
     }

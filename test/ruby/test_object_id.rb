@@ -137,10 +137,14 @@ class TestObjectIdTooComplex < TestObjectId
       assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
     end
     8.times do |i|
-      TooComplex.new.instance_variable_set("@a#{i}", 1)
+      TooComplex.new.instance_variable_set("@TestObjectIdTooComplex#{i}", 1)
     end
     @obj = TooComplex.new
-    @obj.instance_variable_set(:@test, 1)
+    @obj.instance_variable_set("@a#{rand(10_000)}", 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+    end
   end
 end
 
@@ -152,11 +156,21 @@ class TestObjectIdTooComplexClass < TestObjectId
     if defined?(RubyVM::Shape::SHAPE_MAX_VARIATIONS)
       assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
     end
-    8.times do |i|
-      TooComplex.new.instance_variable_set("@a#{i}", 1)
-    end
+
     @obj = TooComplex.new
-    @obj.instance_variable_set(:@test, 1)
+
+    @obj.instance_variable_set("@___#{rand(100_000)}", 1)
+
+    8.times do |i|
+      @obj.instance_variable_set("@TestObjectIdTooComplexClass#{i}", 1)
+      @obj.remove_instance_variable("@TestObjectIdTooComplexClass#{i}")
+    end
+
+    @obj.instance_variable_set("@___#{rand(100_000)}", 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+    end
   end
 end
 
@@ -169,9 +183,14 @@ class TestObjectIdTooComplexGeneric < TestObjectId
       assert_equal 8, RubyVM::Shape::SHAPE_MAX_VARIATIONS
     end
     8.times do |i|
-      TooComplex.new.instance_variable_set("@a#{i}", 1)
+      TooComplex.new.instance_variable_set("@TestObjectIdTooComplexGeneric#{i}", 1)
     end
     @obj = TooComplex.new
-    @obj.instance_variable_set(:@test, 1)
+    @obj.instance_variable_set("@a#{rand(10_000)}", 1)
+    @obj.instance_variable_set("@a#{rand(10_000)}", 1)
+
+    if defined?(RubyVM::Shape)
+      assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)
+    end
   end
 end
