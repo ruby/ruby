@@ -1015,7 +1015,7 @@ rb_namespace_inspect(VALUE obj)
     }
     ns = rb_get_namespace_t(obj);
     r = rb_str_new_cstr("#<Namespace:");
-    rb_str_concat(r, rb_funcall(rb_obj_id(obj), rb_intern("to_s"), 0));
+    rb_str_concat(r, rb_funcall(LONG2NUM(ns->ns_id), rb_intern("to_s"), 0));
     if (NAMESPACE_BUILTIN_P(ns)) {
         rb_str_cat_cstr(r, ",builtin");
     }
