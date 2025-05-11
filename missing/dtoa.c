@@ -501,38 +501,87 @@ extern double rnd_prod(double, double), rnd_quot(double, double);
 #define Kmax 15
 
 struct Bigint {
-    struct Bigint *next;
-    int k, maxwds, sign, wds;
+    int wds;
+    unsigned char k;
+    int sign : 1;
     ULong x[1];
 };
 
 typedef struct Bigint Bigint;
 
+static inline int MAXWDS(Bigint *b) {
+    return (1 << b->k);
+}
+
+#define BIGINT_MEMSIZE(k) (sizeof(Bigint) + ((1 << k) - 1) * sizeof(ULong))
+
+#define STACK_BIGINT_COUNT 4
+#define STACK_BIGINT_K     2
+#define STACK_BIGINT_SIZE (BIGINT_MEMSIZE(STACK_BIGINT_K))
+#define STACK_BIGINT_BUF_SIZE (STACK_BIGINT_SIZE * STACK_BIGINT_COUNT)
+
+struct dtoa_state {
+    // a bitmap of available bignums
+    unsigned char available;
+
+    // memory buffer to store temporary bignums
+    char buf[STACK_BIGINT_BUF_SIZE];
+};
+
+#define DTOA_STATE_INIT(allow_stack)  struct dtoa_state _dtoa_state, *dtoa_state = &_dtoa_state; dtoa_state_init(dtoa_state, allow_stack);
+#define DTOA_STATE_SIG   struct dtoa_state *dtoa_state
+#define DTOA_STATE_CALL  (dtoa_state)
+
+static void
+dtoa_state_init(DTOA_STATE_SIG, int allow_stack) {
+    if (allow_stack) {
+        dtoa_state->available = (1 << (STACK_BIGINT_COUNT)) - 1;
+    }
+    else {
+        dtoa_state->available = 0;
+    }
+}
+
+#include "internal/bits.h"
+
 static Bigint *
-Balloc(int k)
+Balloc(DTOA_STATE_SIG, int k)
 {
-    int x;
     Bigint *rv;
 
-    x = 1 << k;
-    rv = (Bigint *)MALLOC(sizeof(Bigint) + (x-1)*sizeof(ULong));
+    if (dtoa_state->available && k <= STACK_BIGINT_K) {
+        int idx = ntz_int32(dtoa_state->available);
+        dtoa_state->available &= ~(1 << idx);
+        rv = (Bigint *)&dtoa_state->buf[idx * STACK_BIGINT_SIZE];
+    } else {
+        rv = (Bigint *)MALLOC(BIGINT_MEMSIZE(k));
+    }
+
     rv->k = k;
-    rv->maxwds = x;
     rv->sign = rv->wds = 0;
     return rv;
 }
 
 static void
-Bfree(Bigint *v)
+Bfree(DTOA_STATE_SIG, Bigint *v)
 {
-    FREE(v);
+    if ((uintptr_t)v >= (uintptr_t)dtoa_state->buf && (uintptr_t)v < ((uintptr_t)dtoa_state->buf + STACK_BIGINT_BUF_SIZE)) {
+        unsigned long idx = ((uintptr_t)v - (uintptr_t)dtoa_state->buf) / STACK_BIGINT_SIZE;
+        dtoa_state->available |= (1 << idx);
+    } else {
+        FREE(v);
+    }
 }
 
-#define Bcopy(x,y) memcpy((char *)&(x)->sign, (char *)&(y)->sign, \
-(y)->wds*sizeof(Long) + 2*sizeof(int))
+// Copy everything except k
+static void Bcopy(Bigint *dst, Bigint *src) {
+    dst->sign = src->sign;
+    dst->wds = src->wds;
+    memcpy(dst->x, src->x, sizeof(Long) * src->wds);
+}
 
 static Bigint *
-multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
+multadd(DTOA_STATE_SIG, Bigint *b, int m, int a)   /* multiply by m and add a */
 {
     int i, wds;
     ULong *x;
@@ -570,10 +619,10 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 #endif
     } while (++i < wds);
     if (carry) {
-        if (wds >= b->maxwds) {
-            b1 = Balloc(b->k+1);
+        if (wds >= MAXWDS(b)) {
+            b1 = Balloc(DTOA_STATE_CALL, b->k+1);
             Bcopy(b1, b);
-            Bfree(b);
+            Bfree(DTOA_STATE_CALL, b);
             b = b1;
         }
         b->x[wds++] = (ULong)carry;
@@ -583,7 +632,7 @@ multadd(Bigint *b, int m, int a)   /* multiply by m and add a */
 }
 
 static Bigint *
-s2b(const char *s, int nd0, int nd, ULong y9)
+s2b(DTOA_STATE_SIG, const char *s, int nd0, int nd, ULong y9)
 {
     Bigint *b;
     int i, k;
@@ -592,11 +641,11 @@ s2b(const char *s, int nd0, int nd, ULong y9)
     x = (nd + 8) / 9;
     for (k = 0, y = 1; x > y; y <<= 1, k++) ;
 #ifdef Pack_32
-    b = Balloc(k);
+    b = Balloc(DTOA_STATE_CALL, k);
     b->x[0] = y9;
     b->wds = 1;
 #else
-    b = Balloc(k+1);
+    b = Balloc(DTOA_STATE_CALL, k+1);
     b->x[0] = y9 & 0xffff;
     b->wds = (b->x[1] = y9 >> 16) ? 2 : 1;
 #endif
@@ -605,14 +654,14 @@ s2b(const char *s, int nd0, int nd, ULong y9)
     if (9 < nd0) {
         s += 9;
         do {
-            b = multadd(b, 10, *s++ - '0');
+            b = multadd(DTOA_STATE_CALL, b, 10, *s++ - '0');
         } while (++i < nd0);
         s++;
     }
     else
         s += 10;
     for (; i < nd; i++)
-        b = multadd(b, 10, *s++ - '0');
+        b = multadd(DTOA_STATE_CALL, b, 10, *s++ - '0');
     return b;
 }
 
@@ -689,18 +738,18 @@ lo0bits(ULong *y)
 }
 
 static Bigint *
-i2b(int i)
+i2b(DTOA_STATE_SIG, int i)
 {
     Bigint *b;
 
-    b = Balloc(1);
+    b = Balloc(DTOA_STATE_CALL, 1);
     b->x[0] = i;
     b->wds = 1;
     return b;
 }
 
 static Bigint *
-mult(Bigint *a, Bigint *b)
+mult(DTOA_STATE_SIG, Bigint *a, Bigint *b)
 {
     Bigint *c;
     int k, wa, wb, wc;
@@ -724,9 +773,9 @@ mult(Bigint *a, Bigint *b)
     wa = a->wds;
     wb = b->wds;
     wc = wa + wb;
-    if (wc > a->maxwds)
+    if (wc > MAXWDS(a))
         k++;
-    c = Balloc(k);
+    c = Balloc(DTOA_STATE_CALL, k);
     for (x = c->x, xa = x + wc; x < xa; x++)
         *x = 0;
     xa = a->x;
@@ -800,63 +849,41 @@ mult(Bigint *a, Bigint *b)
     return c;
 }
 
-static Bigint *p5s;
+#define MAX_P5 8
+static Bigint *p5s_static[MAX_P5];
 
 static Bigint *
-pow5mult(Bigint *b, int k)
+pow5mult(DTOA_STATE_SIG, Bigint *b, int k)
 {
-    Bigint *b1, *p5, *p51;
-    Bigint *p5tmp;
+    Bigint *b1, *p5, **p5s;
     int i;
     static const int p05[3] = { 5, 25, 125 };
 
     if ((i = k & 3) != 0)
-        b = multadd(b, p05[i-1], 0);
+        b = multadd(DTOA_STATE_CALL, b, p05[i-1], 0);
 
     if (!(k >>= 2))
         return b;
-    if (!(p5 = p5s)) {
-        /* first time */
-        ACQUIRE_DTOA_LOCK(1);
-        if (!(p5 = p5s)) {
-            p5 = i2b(625);
-            p5->next = 0;
-            p5tmp = ATOMIC_PTR_CAS(p5s, NULL, p5);
-            if (UNLIKELY(p5tmp)) {
-                Bfree(p5);
-                p5 = p5tmp;
-            }
-        }
-        FREE_DTOA_LOCK(1);
-    }
+    p5s = &p5s_static[0];
     for (;;) {
+        assert(p5s < &p5s_static[MAX_P5]);
+        p5 = *p5s++;
+        assert(p5);
+
         if (k & 1) {
-            b1 = mult(b, p5);
-            Bfree(b);
+            b1 = mult(DTOA_STATE_CALL, b, p5);
+            Bfree(DTOA_STATE_CALL, b);
             b = b1;
         }
+
         if (!(k >>= 1))
             break;
-        if (!(p51 = p5->next)) {
-            ACQUIRE_DTOA_LOCK(1);
-            if (!(p51 = p5->next)) {
-                p51 = mult(p5,p5);
-                p51->next = 0;
-                p5tmp = ATOMIC_PTR_CAS(p5->next, NULL, p51);
-                if (UNLIKELY(p5tmp)) {
-                    Bfree(p51);
-                    p51 = p5tmp;
-                }
-            }
-            FREE_DTOA_LOCK(1);
-        }
-        p5 = p51;
     }
     return b;
 }
 
 static Bigint *
-lshift(Bigint *b, int k)
+lshift(DTOA_STATE_SIG, Bigint *b, int k)
 {
     int i, k1, n, n1;
     Bigint *b1;
@@ -869,9 +896,9 @@ lshift(Bigint *b, int k)
 #endif
     k1 = b->k;
     n1 = n + b->wds + 1;
-    for (i = b->maxwds; n1 > i; i <<= 1)
+    for (i = MAXWDS(b); n1 > i; i <<= 1)
         k1++;
-    b1 = Balloc(k1);
+    b1 = Balloc(DTOA_STATE_CALL, k1);
     x1 = b1->x;
     for (i = 0; i < n; i++)
         *x1++ = 0;
@@ -905,7 +932,7 @@ lshift(Bigint *b, int k)
             *x1++ = *x++;
         } while (x < xe);
     b1->wds = n1 - 1;
-    Bfree(b);
+    Bfree(DTOA_STATE_CALL, b);
     return b1;
 }
 
@@ -938,9 +965,9 @@ cmp(Bigint *a, Bigint *b)
     return 0;
 }
 
-NO_SANITIZE("unsigned-integer-overflow", static Bigint * diff(Bigint *a, Bigint *b));
+NO_SANITIZE("unsigned-integer-overflow", static Bigint * diff(DTOA_STATE_SIG, Bigint *a, Bigint *b));
 static Bigint *
-diff(Bigint *a, Bigint *b)
+diff(DTOA_STATE_SIG, Bigint *a, Bigint *b)
 {
     Bigint *c;
     int i, wa, wb;
@@ -956,7 +983,7 @@ diff(Bigint *a, Bigint *b)
 
     i = cmp(a,b);
     if (!i) {
-        c = Balloc(0);
+        c = Balloc(DTOA_STATE_CALL, 0);
         c->wds = 1;
         c->x[0] = 0;
         return c;
@@ -969,7 +996,7 @@ diff(Bigint *a, Bigint *b)
     }
     else
         i = 0;
-    c = Balloc(a->k);
+    c = Balloc(DTOA_STATE_CALL, a->k);
     c->sign = i;
     wa = a->wds;
     xa = a->x;
@@ -1129,7 +1156,7 @@ ret_d:
 }
 
 static Bigint *
-d2b(double d_, int *e, int *bits)
+d2b(DTOA_STATE_SIG, double d_, int *e, int *bits)
 {
     double_u d;
     Bigint *b;
@@ -1151,9 +1178,9 @@ d2b(double d_, int *e, int *bits)
 #endif
 
 #ifdef Pack_32
-    b = Balloc(1);
+    b = Balloc(DTOA_STATE_CALL, 1);
 #else
-    b = Balloc(2);
+    b = Balloc(DTOA_STATE_CALL, 2);
 #endif
     x = b->x;
 
@@ -1442,6 +1469,8 @@ strtod(const char *s00, char **se)
 #ifdef USE_LOCALE
     const char *s2;
 #endif
+
+    DTOA_STATE_INIT(1);
 
     errno = 0;
     sign = nz0 = nz = 0;
@@ -1904,13 +1933,13 @@ undfl:
 
     /* Put digits into bd: true value = bd * 10^e */
 
-    bd0 = s2b(s0, nd0, nd, y);
+    bd0 = s2b(DTOA_STATE_CALL, s0, nd0, nd, y);
 
     for (;;) {
-        bd = Balloc(bd0->k);
+        bd = Balloc(DTOA_STATE_CALL, bd0->k);
         Bcopy(bd, bd0);
-        bb = d2b(dval(rv), &bbe, &bbbits);  /* rv = bb * 2^bbe */
-        bs = i2b(1);
+        bb = d2b(DTOA_STATE_CALL, dval(rv), &bbe, &bbbits);  /* rv = bb * 2^bbe */
+        bs = i2b(DTOA_STATE_CALL, 1);
 
         if (e >= 0) {
             bb2 = bb5 = 0;
@@ -1966,20 +1995,20 @@ undfl:
             bs2 -= i;
         }
         if (bb5 > 0) {
-            bs = pow5mult(bs, bb5);
-            bb1 = mult(bs, bb);
-            Bfree(bb);
+            bs = pow5mult(DTOA_STATE_CALL, bs, bb5);
+            bb1 = mult(DTOA_STATE_CALL, bs, bb);
+            Bfree(DTOA_STATE_CALL, bb);
             bb = bb1;
         }
         if (bb2 > 0)
-            bb = lshift(bb, bb2);
+            bb = lshift(DTOA_STATE_CALL, bb, bb2);
         if (bd5 > 0)
-            bd = pow5mult(bd, bd5);
+            bd = pow5mult(DTOA_STATE_CALL, bd, bd5);
         if (bd2 > 0)
-            bd = lshift(bd, bd2);
+            bd = lshift(DTOA_STATE_CALL, bd, bd2);
         if (bs2 > 0)
-            bs = lshift(bs, bs2);
-        delta = diff(bb, bd);
+            bs = lshift(DTOA_STATE_CALL, bs, bs2);
+        delta = diff(DTOA_STATE_CALL, bb, bd);
         dsign = delta->sign;
         delta->sign = 0;
         i = cmp(delta, bs);
@@ -2011,7 +2040,7 @@ undfl:
                         if (y)
 #endif
                         {
-                            delta = lshift(delta,Log2P);
+                            delta = lshift(DTOA_STATE_CALL, delta,Log2P);
                             if (cmp(delta, bs) <= 0)
                                 adj = -0.5;
                         }
@@ -2100,7 +2129,7 @@ apply_adj:
 #endif
                 break;
             }
-            delta = lshift(delta,Log2P);
+            delta = lshift(DTOA_STATE_CALL, delta,Log2P);
             if (cmp(delta, bs) > 0)
                 goto drop_down;
             break;
@@ -2324,10 +2353,10 @@ drop_down:
         }
 #endif
 cont:
-        Bfree(bb);
-        Bfree(bd);
-        Bfree(bs);
-        Bfree(delta);
+        Bfree(DTOA_STATE_CALL, bb);
+        Bfree(DTOA_STATE_CALL, bd);
+        Bfree(DTOA_STATE_CALL, bs);
+        Bfree(DTOA_STATE_CALL, delta);
     }
 #ifdef SET_INEXACT
     if (inexact) {
@@ -2360,11 +2389,11 @@ cont:
     }
 #endif
 retfree:
-    Bfree(bb);
-    Bfree(bd);
-    Bfree(bs);
-    Bfree(bd0);
-    Bfree(delta);
+    Bfree(DTOA_STATE_CALL, bb);
+    Bfree(DTOA_STATE_CALL, bd);
+    Bfree(DTOA_STATE_CALL, bs);
+    Bfree(DTOA_STATE_CALL, bd0);
+    Bfree(DTOA_STATE_CALL, delta);
 ret:
     if (se)
         *se = (char *)s;
@@ -2619,6 +2648,8 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
     int inexact, oldinexact;
 #endif
 
+    DTOA_STATE_INIT(1);
+
     dval(d) = d_;
 
 #ifndef MULTIPLE_THREADS
@@ -2674,7 +2705,7 @@ dtoa(double d_, int mode, int ndigits, int *decpt, int *sign, char **rve)
     }
 #endif
 
-    b = d2b(dval(d), &be, &bbits);
+    b = d2b(DTOA_STATE_CALL, dval(d), &be, &bbits);
 #ifdef Sudden_Underflow
     i = (int)(word0(d) >> Exp_shift1 & (Exp_mask>>Exp_shift1));
 #else
@@ -2980,7 +3011,7 @@ bump_up:
 #endif
         b2 += i;
         s2 += i;
-        mhi = i2b(1);
+        mhi = i2b(DTOA_STATE_CALL, 1);
     }
     if (m2 > 0 && s2 > 0) {
         i = m2 < s2 ? m2 : s2;
@@ -2991,20 +3022,20 @@ bump_up:
     if (b5 > 0) {
         if (leftright) {
             if (m5 > 0) {
-                mhi = pow5mult(mhi, m5);
-                b1 = mult(mhi, b);
-                Bfree(b);
+                mhi = pow5mult(DTOA_STATE_CALL, mhi, m5);
+                b1 = mult(DTOA_STATE_CALL, mhi, b);
+                Bfree(DTOA_STATE_CALL, b);
                 b = b1;
             }
             if ((j = b5 - m5) != 0)
-                b = pow5mult(b, j);
+                b = pow5mult(DTOA_STATE_CALL, b, j);
         }
         else
-            b = pow5mult(b, b5);
+            b = pow5mult(DTOA_STATE_CALL, b, b5);
     }
-    S = i2b(1);
+    S = i2b(DTOA_STATE_CALL, 1);
     if (s5 > 0)
-        S = pow5mult(S, s5);
+        S = pow5mult(DTOA_STATE_CALL, S, s5);
 
     /* Check for special case that d is a normalized power of 2. */
 
@@ -3053,20 +3084,20 @@ bump_up:
         s2 += i;
     }
     if (b2 > 0)
-        b = lshift(b, b2);
+        b = lshift(DTOA_STATE_CALL, b, b2);
     if (s2 > 0)
-        S = lshift(S, s2);
+        S = lshift(DTOA_STATE_CALL, S, s2);
     if (k_check) {
         if (cmp(b,S) < 0) {
             k--;
-            b = multadd(b, 10, 0);  /* we botched the k estimate */
+            b = multadd(DTOA_STATE_CALL, b, 10, 0);  /* we botched the k estimate */
             if (leftright)
-                mhi = multadd(mhi, 10, 0);
+                mhi = multadd(DTOA_STATE_CALL, mhi, 10, 0);
             ilim = ilim1;
         }
     }
     if (ilim <= 0 && (mode == 3 || mode == 5)) {
-        if (ilim < 0 || cmp(b,S = multadd(S,5,0)) <= 0) {
+        if (ilim < 0 || cmp(b,S = multadd(DTOA_STATE_CALL, S,5,0)) <= 0) {
             /* no digits, fcvt style */
 no_digits:
             k = -1 - ndigits;
@@ -3079,7 +3110,7 @@ one_digit:
     }
     if (leftright) {
         if (m2 > 0)
-            mhi = lshift(mhi, m2);
+            mhi = lshift(DTOA_STATE_CALL, mhi, m2);
 
         /* Compute mlo -- check for special case
          * that d is a normalized power of 2.
@@ -3087,9 +3118,9 @@ one_digit:
 
         mlo = mhi;
         if (spec_case) {
-            mhi = Balloc(mhi->k);
+            mhi = Balloc(DTOA_STATE_CALL, mhi->k);
             Bcopy(mhi, mlo);
-            mhi = lshift(mhi, Log2P);
+            mhi = lshift(DTOA_STATE_CALL, mhi, Log2P);
         }
 
         for (i = 1;;i++) {
@@ -3098,9 +3129,9 @@ one_digit:
              * that will round to d?
              */
             j = cmp(b, mlo);
-            delta = diff(S, mhi);
+            delta = diff(DTOA_STATE_CALL, S, mhi);
             j1 = delta->sign ? 1 : cmp(b, delta);
-            Bfree(delta);
+            Bfree(DTOA_STATE_CALL, delta);
 #ifndef ROUND_BIASED
             if (j1 == 0 && mode != 1 && !(word1(d) & 1)
 #ifdef Honor_FLT_ROUNDS
@@ -3138,7 +3169,7 @@ one_digit:
                     }
 #endif /*Honor_FLT_ROUNDS*/
                 if (j1 > 0) {
-                    b = lshift(b, 1);
+                    b = lshift(DTOA_STATE_CALL, b, 1);
                     j1 = cmp(b, S);
                     if ((j1 > 0 || (j1 == 0 && (dig & 1))) && dig++ == '9')
                         goto round_9_up;
@@ -3166,12 +3197,12 @@ keep_dig:
             *s++ = dig;
             if (i == ilim)
                 break;
-            b = multadd(b, 10, 0);
+            b = multadd(DTOA_STATE_CALL, b, 10, 0);
             if (mlo == mhi)
-                mlo = mhi = multadd(mhi, 10, 0);
+                mlo = mhi = multadd(DTOA_STATE_CALL, mhi, 10, 0);
             else {
-                mlo = multadd(mlo, 10, 0);
-                mhi = multadd(mhi, 10, 0);
+                mlo = multadd(DTOA_STATE_CALL, mlo, 10, 0);
+                mhi = multadd(DTOA_STATE_CALL, mhi, 10, 0);
             }
         }
     }
@@ -3186,7 +3217,7 @@ keep_dig:
             }
             if (i >= ilim)
                 break;
-            b = multadd(b, 10, 0);
+            b = multadd(DTOA_STATE_CALL, b, 10, 0);
         }
 
     /* Round off last digit */
@@ -3197,7 +3228,7 @@ keep_dig:
       case 2: goto roundoff;
     }
 #endif
-    b = lshift(b, 1);
+    b = lshift(DTOA_STATE_CALL, b, 1);
     j = cmp(b, S);
     if (j > 0 || (j == 0 && (dig & 1))) {
  roundoff:
@@ -3215,11 +3246,11 @@ keep_dig:
     }
     s++;
 ret:
-    Bfree(S);
+    Bfree(DTOA_STATE_CALL, S);
     if (mhi) {
         if (mlo && mlo != mhi)
-            Bfree(mlo);
-        Bfree(mhi);
+            Bfree(DTOA_STATE_CALL, mlo);
+        Bfree(DTOA_STATE_CALL, mhi);
     }
 ret1:
 #ifdef SET_INEXACT
@@ -3233,7 +3264,7 @@ ret1:
     else if (!oldinexact)
         clear_inexact();
 #endif
-    Bfree(b);
+    Bfree(DTOA_STATE_CALL, b);
     *s = 0;
     *decpt = k + 1;
     if (rve)
@@ -3378,6 +3409,17 @@ hdtoa(double d, const char *xdigs, int ndigits, int *decpt, int *sign, char **rv
 	if (rve != NULL)
 		*rve = s;
 	return (s0);
+}
+
+void ruby_init_dtoa(void) {
+    DTOA_STATE_INIT(0);
+
+    Bigint *p5 = i2b(DTOA_STATE_CALL, 625);
+    p5s_static[0] = p5;
+    for (int i = 1; i < MAX_P5; i++) {
+        p5 = mult(DTOA_STATE_CALL, p5,p5);
+        p5s_static[i] = p5;
+    }
 }
 
 #ifdef __cplusplus
