@@ -11,6 +11,7 @@ Namespace is designed to provide separated spaces in a Ruby process, to isolate 
 
 ## TODOs
 
+* Identify the CI failure cause and restore temporarily skipped tests (mmtk, test/ruby/test_allocation on i686)
 * Reconstruct current/loading namespace management based on control frames
 * Add the loaded namespace on iseq to check if another namespace tries running the iseq (add a field only when VM_CHECK_MODE?)
 * Delete per-namespace extension files (.so) lazily or process exit
