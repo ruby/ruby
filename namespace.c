@@ -201,7 +201,7 @@ current_namespace(bool permit_calling_builtin)
         // calling = 0;
     }
     while (calling) {
-        const rb_namespace_t *proc_ns;
+        const rb_namespace_t *proc_ns = NULL;
         VALUE bh;
         if (VM_FRAME_NS_SWITCH_P(cfp)) {
             bh = rb_vm_frame_block_handler(cfp);
@@ -745,7 +745,7 @@ copy_ext_file(char *src_path, char *dst_path)
 #else
     FILE *src, *dst;
     char buffer[1024];
-    size_t read, wrote, written;
+    size_t read = 0, wrote, written = 0;
     size_t maxread = sizeof(buffer);
     int eof = 0;
     int clean_read = 1;
