@@ -62,11 +62,10 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* cgi 0.4.2
 * json 2.11.3
 * optparse 0.7.0.dev.2
 * prism 1.4.0
-* psych 5.2.4
+* psych 5.2.5
 * stringio 3.1.8.dev
 * strscan 3.1.5.dev
 * uri 1.0.3
@@ -81,7 +80,7 @@ The following bundled gems are updated.
 * rexml 3.4.1
 * net-imap 0.5.8
 * net-smtp 0.5.1
-* rbs 3.9.2
+* rbs 3.9.3
 * bigdecimal 3.1.9
 * syslog 0.3.0
 * csv 3.3.4
@@ -92,6 +91,14 @@ The following bundled gems are updated.
 ## Compatibility issues
 
 ## Stdlib compatibility issues
+
+* CGI library is removed from the default gems. Now we only provide `cgi/escape` for
+  the following methods:
+  * `CGI.escape` and `CGI.unescape`
+  * `CGI.escapeHTML` and `CGI.unescapeHTML`
+  * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent`
+  * `CGI.escapeElement` and `CGI.unescapeElement`
+  [[Feature #21258]]
 
 ## C API updates
 
@@ -104,3 +111,4 @@ The following bundled gems are updated.
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
+[Feature #21258]: https://bugs.ruby-lang.org/issues/21258

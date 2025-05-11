@@ -74,12 +74,19 @@ def compile_extension(name)
         init_mkmf unless required
         create_makefile(ext, tmpdir)
       else
+        # Workaround for digest C-API specs to find the ruby/digest.h header
+        # when run in the CRuby repository via make test-spec
+        if MSpecScript.instance_variable_defined?(:@testing_ruby)
+          ruby_repository_extra_include_dir = "-I#{RbConfig::CONFIG.fetch("prefix")}/#{RbConfig::CONFIG.fetch("EXTOUT")}/include"
+        end
+
         File.write("extconf.rb", <<-RUBY)
           require 'mkmf'
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
           append_cflags '-Wno-declaration-after-statement'
+          #{"append_cflags #{ruby_repository_extra_include_dir.inspect}" if ruby_repository_extra_include_dir}
           create_makefile(#{ext.inspect})
         RUBY
         output = ruby_exe("extconf.rb")

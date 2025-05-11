@@ -735,14 +735,12 @@ describe "C-API Encoding function" do
       index.should == Encoding.list.size - 1
     end
 
-    ruby_version_is "3.2" do
-      it "raises EncodingError if too many encodings" do
-        code = <<-RUBY
-          require #{extension_path.dump}
-          1_000.times {|i| CApiEncodingSpecs.new.rb_define_dummy_encoding("R_\#{i}") }
-        RUBY
-        ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
-      end
+    it "raises EncodingError if too many encodings" do
+      code = <<-RUBY
+        require #{extension_path.dump}
+        1_000.times {|i| CApiEncodingSpecs.new.rb_define_dummy_encoding("R_\#{i}") }
+      RUBY
+      ruby_exe(code, args: "2>&1", exit_status: 1).should.include?('too many encoding (> 256) (EncodingError)')
     end
   end
 end

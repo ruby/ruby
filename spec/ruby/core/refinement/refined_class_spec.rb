@@ -2,7 +2,7 @@ require_relative "../../spec_helper"
 require_relative 'shared/target'
 
 describe "Refinement#refined_class" do
-  ruby_version_is "3.2"..."3.3" do
+  ruby_version_is ""..."3.3" do
     it_behaves_like :refinement_target, :refined_class
   end
 

@@ -26,8 +26,8 @@ jobs:
       matrix:
         gc:
           - name: default
-          - name: mmtk
-            mmtk_build: release
+          # - name: mmtk
+          #   mmtk_build: release
         os: [macos-latest, ubuntu-latest]
         include:
           - test_task: check

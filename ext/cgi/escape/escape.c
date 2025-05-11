@@ -8,7 +8,7 @@ RUBY_EXTERN const signed char ruby_digit36_to_number_table[];
 #define upper_hexdigits (ruby_hexdigits+16)
 #define char_to_number(c) ruby_digit36_to_number_table[(unsigned char)(c)]
 
-static VALUE rb_cCGI, rb_mUtil, rb_mEscape;
+static VALUE rb_cCGI, rb_mEscape, rb_mEscapeExt;
 static ID id_accept_charset;
 
 #define HTML_ESCAPE_MAX_LEN 6
@@ -471,17 +471,17 @@ Init_escape(void)
 void
 InitVM_escape(void)
 {
-    rb_cCGI    = rb_define_class("CGI", rb_cObject);
-    rb_mEscape = rb_define_module_under(rb_cCGI, "Escape");
-    rb_mUtil   = rb_define_module_under(rb_cCGI, "Util");
-    rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
-    rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
-    rb_define_method(rb_mEscape, "escapeURIComponent", cgiesc_escape_uri_component, 1);
-    rb_define_alias(rb_mEscape, "escape_uri_component", "escapeURIComponent");
-    rb_define_method(rb_mEscape, "unescapeURIComponent", cgiesc_unescape_uri_component, -1);
-    rb_define_alias(rb_mEscape, "unescape_uri_component", "unescapeURIComponent");
-    rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
-    rb_define_method(rb_mEscape, "unescape", cgiesc_unescape, -1);
-    rb_prepend_module(rb_mUtil, rb_mEscape);
-    rb_extend_object(rb_cCGI, rb_mEscape);
+    rb_cCGI       = rb_define_class("CGI", rb_cObject);
+    rb_mEscapeExt = rb_define_module_under(rb_cCGI, "EscapeExt");
+    rb_mEscape    = rb_define_module_under(rb_cCGI, "Escape");
+    rb_define_method(rb_mEscapeExt, "escapeHTML", cgiesc_escape_html, 1);
+    rb_define_method(rb_mEscapeExt, "unescapeHTML", cgiesc_unescape_html, 1);
+    rb_define_method(rb_mEscapeExt, "escapeURIComponent", cgiesc_escape_uri_component, 1);
+    rb_define_alias(rb_mEscapeExt, "escape_uri_component", "escapeURIComponent");
+    rb_define_method(rb_mEscapeExt, "unescapeURIComponent", cgiesc_unescape_uri_component, -1);
+    rb_define_alias(rb_mEscapeExt, "unescape_uri_component", "unescapeURIComponent");
+    rb_define_method(rb_mEscapeExt, "escape", cgiesc_escape, 1);
+    rb_define_method(rb_mEscapeExt, "unescape", cgiesc_unescape, -1);
+    rb_prepend_module(rb_mEscape, rb_mEscapeExt);
+    rb_extend_object(rb_cCGI, rb_mEscapeExt);
 }

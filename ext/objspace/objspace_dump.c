@@ -414,7 +414,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_shape_get_shape_id(obj);
+    size_t shape_id = rb_obj_shape_id(obj);
     dump_append(dc, ", \"shape_id\":");
     dump_append_sizet(dc, shape_id);
 
@@ -537,7 +537,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
         dump_append(dc, ", \"variation_count\":");
-        dump_append_d(dc, RCLASS_EXT(obj)->variation_count);
+        dump_append_d(dc, rb_class_variation_count(obj));
 
       case T_MODULE:
         if (rb_class_get_superclass(obj)) {
@@ -560,7 +560,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (RCLASS_SINGLETON_P(obj)) {
+            if (rb_class_singleton_p(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }
@@ -587,7 +587,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
-        if (rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex_p(obj)) {
             dump_append(dc, ", \"too_complex_shape\":true");
         }
         break;
@@ -786,7 +786,7 @@ shape_i(rb_shape_t *shape, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    size_t shape_id = rb_shape_id(shape);
+    shape_id_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
@@ -803,7 +803,7 @@ shape_i(rb_shape_t *shape, void *data)
     }
 
     dump_append(dc, ", \"depth\":");
-    dump_append_sizet(dc, rb_shape_depth(shape));
+    dump_append_sizet(dc, rb_shape_depth(shape_id));
 
     switch((enum shape_type)shape->type) {
       case SHAPE_ROOT:
@@ -831,10 +831,10 @@ shape_i(rb_shape_t *shape, void *data)
     }
 
     dump_append(dc, ", \"edges\":");
-    dump_append_sizet(dc, rb_shape_edges_count(shape));
+    dump_append_sizet(dc, rb_shape_edges_count(shape_id));
 
     dump_append(dc, ", \"memsize\":");
-    dump_append_sizet(dc, rb_shape_memsize(shape));
+    dump_append_sizet(dc, rb_shape_memsize(shape_id));
 
     dump_append(dc, "}\n");
 }

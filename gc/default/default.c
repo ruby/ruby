@@ -3659,12 +3659,18 @@ static int compare_pinned_slots(const void *left, const void *right, void *d);
 static void
 gc_ractor_newobj_cache_clear(void *c, void *data)
 {
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     rb_ractor_newobj_cache_t *newobj_cache = c;
 
     newobj_cache->incremental_mark_step_allocated_slots = 0;
 
     for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
+
         rb_ractor_newobj_heap_cache_t *cache = &newobj_cache->heap_caches[heap_idx];
+
+        rb_heap_t *heap = &heaps[heap_idx];
+        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, cache->allocated_objects_count);
+        cache->allocated_objects_count = 0;
 
         struct heap_page *page = cache->using_page;
         struct free_slot *freelist = cache->freelist;
@@ -6156,15 +6162,6 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
     rb_objspace_t *objspace = objspace_ptr;
 
     objspace->live_ractor_cache_count--;
-    rb_ractor_newobj_cache_t *newobj_cache = (rb_ractor_newobj_cache_t *)cache;
-
-    for (size_t heap_idx = 0; heap_idx < HEAP_COUNT; heap_idx++) {
-        rb_heap_t *heap = &heaps[heap_idx];
-        rb_ractor_newobj_heap_cache_t *heap_cache = &newobj_cache->heap_caches[heap_idx];
-        RUBY_ATOMIC_SIZE_ADD(heap->total_allocated_objects, heap_cache->allocated_objects_count);
-        heap_cache->allocated_objects_count = 0;
-    }
-
     gc_ractor_newobj_cache_clear(cache, NULL);
     free(cache);
 }
@@ -9220,7 +9217,11 @@ gc_malloc_allocations(VALUE self)
 #endif
 
 void rb_gc_impl_before_fork(void *objspace_ptr) { /* no-op */ }
-void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) { /* no-op */ }
+void rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid) {
+    if (pid == 0) { /* child process */
+        rb_gc_ractor_newobj_cache_foreach(gc_ractor_newobj_cache_clear, NULL);
+    }
+}
 
 VALUE rb_ident_hash_new_with_size(st_index_t size);
 

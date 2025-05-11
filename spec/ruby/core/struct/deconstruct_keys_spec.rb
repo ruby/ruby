@@ -80,7 +80,7 @@ describe "Struct#deconstruct_keys" do
     obj.deconstruct_keys(nil).should == {x: 1, y: 2}
   end
 
-  it "raises TypeError if index is not a String, a Symbol and not convertible to Integer " do
+  it "raises TypeError if index is not a String, a Symbol and not convertible to Integer" do
     struct = Struct.new(:x, :y)
     s = struct.new(1, 2)
 

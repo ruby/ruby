@@ -1040,11 +1040,9 @@ describe "C-API String function" do
       @s.rb_sprintf3(true.class).should == s
     end
 
-    ruby_bug "#19167", ""..."3.2" do
-      it "formats a TrueClass VALUE as 'true' if sign specified in format" do
-        s = 'Result: TrueClass.'
-        @s.rb_sprintf4(true.class).should == s
-      end
+    it "formats a TrueClass VALUE as 'true' if sign specified in format" do
+      s = 'Result: TrueClass.'
+      @s.rb_sprintf4(true.class).should == s
     end
 
     it "truncates a string to a supplied precision if that is shorter than the string" do

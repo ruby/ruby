@@ -2259,3 +2259,20 @@ rescue NotImplementedError
   :ok
 end
 }
+
+# Creating classes inside of Ractors
+# [Bug #18119]
+assert_equal 'ok', %q{
+  workers = (0...8).map do
+    Ractor.new do
+      loop do
+        100.times.map { Class.new }
+        Ractor.yield nil
+      end
+    end
+  end
+
+  100.times { Ractor.select(*workers) }
+
+  'ok'
+}

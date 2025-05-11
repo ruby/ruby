@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/each'
+require 'stringio'
 
 describe "StringIO#fileno" do
   it "returns nil" do

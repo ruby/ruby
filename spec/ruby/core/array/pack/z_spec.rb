@@ -26,7 +26,7 @@ describe "Array#pack with format 'Z'" do
     ["abc"].pack("Z*").should == "abc\x00"
   end
 
-  it "padds the output with NULL bytes when the count exceeds the size of the String" do
+  it "pads the output with NULL bytes when the count exceeds the size of the String" do
     ["abc"].pack("Z6").should == "abc\x00\x00\x00"
   end
 

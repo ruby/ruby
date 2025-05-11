@@ -17,7 +17,11 @@ class Gem::UriFormatter
   # Creates a new URI formatter for +uri+.
 
   def initialize(uri)
-    require "cgi/util"
+    begin
+      require "cgi/escape"
+    rescue LoadError
+      require "cgi/util"
+    end
 
     @uri = uri
   end

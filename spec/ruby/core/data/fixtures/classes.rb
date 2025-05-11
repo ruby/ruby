@@ -1,5 +1,5 @@
 module DataSpecs
-  guard -> { ruby_version_is "3.2" and Data.respond_to?(:define) } do
+  if Data.respond_to?(:define)
     Measure = Data.define(:amount, :unit)
 
     class MeasureWithOverriddenName < Measure

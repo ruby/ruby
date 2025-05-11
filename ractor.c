@@ -3374,7 +3374,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         struct gen_fields_tbl *fields_tbl;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
 
-        if (UNLIKELY(rb_shape_obj_too_complex(obj))) {
+        if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
@@ -3412,7 +3412,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
-            if (rb_shape_obj_too_complex(obj)) {
+            if (rb_shape_obj_too_complex_p(obj)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,

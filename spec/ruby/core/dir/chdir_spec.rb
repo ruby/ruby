@@ -177,7 +177,7 @@ ruby_version_is '3.3' do
       dir.close
     end
 
-    guard -> { Dir.respond_to? :fchdir } do
+    platform_is_not :windows do
       it "does not raise an Errno::ENOENT if the original directory no longer exists" do
         dir_name1 = tmp('testdir1')
         dir_name2 = tmp('testdir2')

@@ -170,13 +170,14 @@ rb_imemo_memsize(VALUE obj)
 static enum rb_id_table_iterator_result
 cc_table_mark_i(VALUE ccs_ptr, void *data)
 {
+    // looks duplicate to mark_cc_entry_i (gc.c)
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
 #if VM_CHECK_MODE > 0
     VALUE klass = (VALUE)data;
 
     VALUE lookup_val;
-    VM_ASSERT(rb_id_table_lookup(RCLASS_CC_TBL(klass), ccs->cme->called_id, &lookup_val));
+    VM_ASSERT(rb_id_table_lookup(RCLASS_WRITABLE_CC_TBL(klass), ccs->cme->called_id, &lookup_val));
     VM_ASSERT(lookup_val == ccs_ptr);
 #endif
 
@@ -200,7 +201,8 @@ cc_table_mark_i(VALUE ccs_ptr, void *data)
 void
 rb_cc_table_mark(VALUE klass)
 {
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    // TODO: delete this (and cc_table_mark_i) if it's ok
+    struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     if (cc_tbl) {
         rb_id_table_foreach_values(cc_tbl, cc_table_mark_i, (void *)klass);
     }
@@ -492,12 +494,23 @@ cc_table_free_i(VALUE ccs_ptr, void *data)
 void
 rb_cc_table_free(VALUE klass)
 {
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    // This can be called and work well only for IClass
+    // And classext_iclass_free uses rb_cc_tbl_free now.
+    // TODO: remove this if it's ok
+    struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
 
     if (cc_tbl) {
         rb_id_table_foreach_values(cc_tbl, cc_table_free_i, (void *)klass);
         rb_id_table_free(cc_tbl);
     }
+}
+
+void
+rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass)
+{
+    if (!cc_tbl) return;
+    rb_id_table_foreach_values(cc_tbl, cc_table_free_i, (void *)klass);
+    rb_id_table_free(cc_tbl);
 }
 
 void

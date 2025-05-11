@@ -77,7 +77,8 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
-arch_hdrdir = $(EXTOUT)/include/$(arch)
+ext_hdrdir = $(EXTOUT)/include
+arch_hdrdir = $(ext_hdrdir)/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
 
 empty =
