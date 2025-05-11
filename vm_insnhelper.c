@@ -4788,7 +4788,10 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
             vm_cc_attr_index_initialize(cc, INVALID_SHAPE_ID);
             VM_CALL_METHOD_ATTR(v,
                                 vm_call_attrset_direct(ec, cfp, cc, calling->recv),
-                                CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & aset_mask)));
+                                CC_SET_FASTPATH(cc, vm_call_attrset,
+                                    !(vm_ci_flag(ci) & aset_mask) &&
+                                    !(ruby_vm_event_flags & RUBY_EVENT_IVAR_SET) &&
+                                    !(ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET)));
         }
         else {
             cc = &((struct rb_callcache) {
@@ -4808,7 +4811,10 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
 
             VM_CALL_METHOD_ATTR(v,
                                 vm_call_attrset_direct(ec, cfp, cc, calling->recv),
-                                CC_SET_FASTPATH(cc, vm_call_attrset, !(vm_ci_flag(ci) & aset_mask)));
+                                CC_SET_FASTPATH(cc, vm_call_attrset,
+                                    !(vm_ci_flag(ci) & aset_mask) &&
+                                    !(ruby_vm_event_flags & RUBY_EVENT_IVAR_SET) &&
+                                    !(ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET)));
         }
 
         ID mid = vm_ci_mid(ci);
