@@ -2864,6 +2864,7 @@ autoload_const_compact(void *ptr)
     ac->autoload_data_value = rb_gc_location(ac->autoload_data_value);
     ac->value = rb_gc_location(ac->value);
     ac->file = rb_gc_location(ac->file);
+    ac->namespace = rb_gc_location(ac->namespace);
 }
 
 static void
@@ -2875,6 +2876,7 @@ autoload_const_mark(void *ptr)
     rb_gc_mark_movable(ac->autoload_data_value);
     rb_gc_mark_movable(ac->value);
     rb_gc_mark_movable(ac->file);
+    rb_gc_mark_movable(ac->namespace);
 }
 
 static size_t
