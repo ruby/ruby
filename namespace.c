@@ -378,6 +378,20 @@ rb_current_namespace_details(VALUE opt)
     return str;
 }
 
+static long namespace_id_counter = 0;
+
+static long
+namespace_generate_id(void)
+{
+    long id;
+    RB_VM_LOCK_ENTER();
+    {
+        id = ++namespace_id_counter;
+    }
+    RB_VM_LOCK_LEAVE();
+    return id;
+}
+
 static void
 namespace_entry_initialize(rb_namespace_t *ns)
 {
@@ -527,7 +541,7 @@ namespace_initialize(VALUE namespace)
     ns = get_namespace_struct_internal(entry);
 
     ns->ns_object = namespace;
-    ns->ns_id = NUM2LONG(rb_obj_id(namespace));
+    ns->ns_id = namespace_generate_id();
     ns->load_path = rb_ary_dup(GET_VM()->load_path);
     ns->is_user = true;
     rb_define_singleton_method(ns->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
@@ -981,7 +995,7 @@ rb_initialize_main_namespace(void)
     main_ns = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespace);
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
-    ns->ns_id = NUM2LONG(rb_obj_id(main_ns));
+    ns->ns_id = namespace_generate_id();
     ns->is_builtin = false;
     ns->is_user = true;
     ns->is_optional = false;
