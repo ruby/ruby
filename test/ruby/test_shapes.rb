@@ -681,8 +681,8 @@ class TestShapes < Test::Unit::TestCase
       id_shape = RubyVM::Shape.of(tc)
       refute_equal frozen_shape.id, id_shape.id
       assert_predicate id_shape, :too_complex?
-      assert_predicate id_shape, :shape_frozen?
       assert_predicate id_shape, :has_object_id?
+      assert_predicate id_shape, :shape_frozen?
 
       assert_equal 3, tc.very_unique
       assert_equal 3, Ractor.make_shareable(tc).very_unique
