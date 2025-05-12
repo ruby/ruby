@@ -3778,7 +3778,7 @@ rb_vm_encoded_insn_data_table_init(void)
     const void * const *table = rb_vm_get_insns_address_table();
 #define INSN_CODE(insn) ((VALUE)table[insn])
 #else
-#define INSN_CODE(insn) (insn)
+#define INSN_CODE(insn) ((VALUE)(insn))
 #endif
     encoded_insn_data = st_init_numtable_with_size(VM_BARE_INSTRUCTION_SIZE);
 
