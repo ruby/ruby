@@ -359,9 +359,9 @@ pub enum Insn {
 
     /// Send without block with dynamic dispatch
     /// Ignoring keyword arguments etc for now
-    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
-    Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: CallData, args: Vec<InsnId>, state: InsnId },
+    Send { self_val: InsnId, call_info: CallInfo, cd: CallData, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: CallData, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -2010,7 +2010,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                 YARVINSN_opt_neq => {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
-                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
+                    let cd: CallData = get_arg(pc, 1).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     filter_translatable_calls(unsafe { rb_vm_ci_flag(call_info) })?;
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -2053,7 +2053,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_length |
                 YARVINSN_opt_size |
                 YARVINSN_opt_send_without_block => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let cd: CallData = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     filter_translatable_calls(unsafe { rb_vm_ci_flag(call_info) })?;
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
@@ -2075,7 +2075,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(send);
                 }
                 YARVINSN_send => {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let cd: CallData = get_arg(pc, 0).as_ptr();
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_iseq();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     filter_translatable_calls(unsafe { rb_vm_ci_flag(call_info) })?;

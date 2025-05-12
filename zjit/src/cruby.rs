@@ -259,6 +259,8 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
+pub type CallData = *const rb_call_data;
+
 pub type CmePtr = *const rb_callable_method_entry_t;
 
 // Given an ISEQ pointer, convert PC to insn_idx
