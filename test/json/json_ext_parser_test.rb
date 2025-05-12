@@ -15,15 +15,19 @@ class JSONExtParserTest < Test::Unit::TestCase
 
   def test_error_messages
     ex = assert_raise(ParserError) { parse('Infinity') }
-    assert_equal "unexpected token at 'Infinity'", ex.message
-
     unless RUBY_PLATFORM =~ /java/
-      ex = assert_raise(ParserError) { parse('-Infinity') }
-      assert_equal "unexpected token at '-Infinity'", ex.message
+      assert_equal "unexpected token 'Infinity' at line 1 column 1", ex.message
+    end
+
+    ex = assert_raise(ParserError) { parse('-Infinity') }
+    unless RUBY_PLATFORM =~ /java/
+      assert_equal "unexpected token '-Infinity' at line 1 column 1", ex.message
     end
 
     ex = assert_raise(ParserError) { parse('NaN') }
-    assert_equal "unexpected token at 'NaN'", ex.message
+    unless RUBY_PLATFORM =~ /java/
+      assert_equal "unexpected token 'NaN' at line 1 column 1", ex.message
+    end
   end
 
   if GC.respond_to?(:stress=)

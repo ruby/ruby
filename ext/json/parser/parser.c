@@ -395,6 +395,23 @@ static void raise_parse_error(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
 
+    const char *cursor = state->cursor;
+    long column = 0;
+    long line = 1;
+
+    while (cursor >= state->start) {
+        if (*cursor-- == '\n') {
+            break;
+        }
+        column++;
+    }
+
+    while (cursor >= state->start) {
+        if (*cursor-- == '\n') {
+            line++;
+        }
+    }
+
     const char *ptr = state->cursor;
     size_t len = ptr ? strnlen(ptr, PARSE_ERROR_FRAGMENT_LEN) : 0;
 
@@ -413,7 +430,14 @@ static void raise_parse_error(const char *format, JSON_ParserState *state)
         ptr = (const char *)buffer;
     }
 
-    rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
+    VALUE msg = rb_sprintf(format, ptr);
+    VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
+    RB_GC_GUARD(msg);
+
+    VALUE exc = rb_exc_new_str(rb_path2class("JSON::ParserError"), message);
+    rb_ivar_set(exc, rb_intern("@line"), LONG2NUM(line));
+    rb_ivar_set(exc, rb_intern("@column"), LONG2NUM(column));
+    rb_exc_raise(exc);
 }
 
 #ifdef RBIMPL_ATTR_NORETURN
@@ -508,11 +532,11 @@ json_eat_comments(JSON_ParserState *state)
                 break;
             }
             default:
-                raise_parse_error("unexpected token at '%s'", state);
+                raise_parse_error("unexpected token '%s'", state);
                 break;
         }
     } else {
-        raise_parse_error("unexpected token at '%s'", state);
+        raise_parse_error("unexpected token '%s'", state);
     }
 }
 
@@ -870,7 +894,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qnil);
             }
 
-            raise_parse_error("unexpected token at '%s'", state);
+            raise_parse_error("unexpected token '%s'", state);
             break;
         case 't':
             if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
@@ -878,7 +902,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qtrue);
             }
 
-            raise_parse_error("unexpected token at '%s'", state);
+            raise_parse_error("unexpected token '%s'", state);
             break;
         case 'f':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -887,7 +911,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qfalse);
             }
 
-            raise_parse_error("unexpected token at '%s'", state);
+            raise_parse_error("unexpected token '%s'", state);
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -896,7 +920,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, CNaN);
             }
 
-            raise_parse_error("unexpected token at '%s'", state);
+            raise_parse_error("unexpected token '%s'", state);
             break;
         case 'I':
             if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
@@ -904,7 +928,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, CInfinity);
             }
 
-            raise_parse_error("unexpected token at '%s'", state);
+            raise_parse_error("unexpected token '%s'", state);
             break;
         case '-':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -913,7 +937,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     state->cursor += 9;
                     return json_push_value(state, config, CMinusInfinity);
                 } else {
-                    raise_parse_error("unexpected token at '%s'", state);
+                    raise_parse_error("unexpected token '%s'", state);
                 }
             }
             // Fallthrough
