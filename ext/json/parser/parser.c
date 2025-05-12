@@ -1062,7 +1062,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 }
 
                 if (*state->cursor != '"') {
-                    raise_parse_error("expected object key, got '%s", state);
+                    raise_parse_error("expected object key, got '%s'", state);
                 }
                 json_parse_string(state, config, true);
 
@@ -1103,7 +1103,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         json_eat_whitespace(state);
                         if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                            raise_parse_error("expected ':' after object key, got: '%s", state);
+                            raise_parse_error("expected ':' after object key, got: '%s'", state);
                         }
                         state->cursor++;
 
