@@ -638,7 +638,7 @@ class JSONParserTest < Test::Unit::TestCase
     error = assert_raise(JSON::ParserError) do
       JSON.parse('{"foo": ' + ('A' * 500) + '}')
     end
-    assert_operator 60, :>, error.message.bytesize
+    assert_operator 80, :>, error.message.bytesize
   end
 
   def test_parse_error_incomplete_hash
@@ -646,7 +646,7 @@ class JSONParserTest < Test::Unit::TestCase
       JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
     end
     if RUBY_ENGINE == "ruby"
-      assert_equal %(expected ',' or '}' after object value, got: ''), error.message
+      assert_equal %(expected ',' or '}' after object value, got: '' at line 1 column 72), error.message
     end
   end
 
@@ -654,16 +654,16 @@ class JSONParserTest < Test::Unit::TestCase
     omit "C ext only test" unless RUBY_ENGINE == "ruby"
 
     error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'ああああああああああ'", error.message
+    assert_equal "unexpected character: 'ああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("aあああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'aああああああああああ'", error.message
+    assert_equal "unexpected character: 'aああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'abあああああああああ'", error.message
+    assert_equal "unexpected character: 'abあああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'abcあああああああああ'", error.message
+    assert_equal "unexpected character: 'abcあああああああああ' at line 1 column 1", error.message
   end
 
   def test_parse_leading_slash

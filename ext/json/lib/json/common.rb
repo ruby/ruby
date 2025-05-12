@@ -230,7 +230,9 @@ module JSON
   class JSONError < StandardError; end
 
   # This exception is raised if a parser error occurs.
-  class ParserError < JSONError; end
+  class ParserError < JSONError
+    attr_reader :line, :column
+  end
 
   # This exception is raised if the nesting of parsed data structures is too
   # deep.
