@@ -646,7 +646,7 @@ class JSONParserTest < Test::Unit::TestCase
       JSON.parse('{"input":{"firstName":"Bob","lastName":"Mob","email":"bob@example.com"}')
     end
     if RUBY_ENGINE == "ruby"
-      assert_equal %(expected ',' or '}' after object value, got: '' at line 1 column 72), error.message
+      assert_equal %(expected ',' or '}' after object value, got: EOF at line 1 column 72), error.message
     end
   end
 

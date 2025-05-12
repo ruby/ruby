@@ -14,19 +14,34 @@ class JSONExtParserTest < Test::Unit::TestCase
   end
 
   def test_error_messages
-    ex = assert_raise(ParserError) { parse('Infinity') }
+    ex = assert_raise(ParserError) { parse('Infinity something') }
     unless RUBY_PLATFORM =~ /java/
       assert_equal "unexpected token 'Infinity' at line 1 column 1", ex.message
     end
 
-    ex = assert_raise(ParserError) { parse('-Infinity') }
+    ex = assert_raise(ParserError) { parse('foo bar') }
+    unless RUBY_PLATFORM =~ /java/
+      assert_equal "unexpected token 'foo' at line 1 column 1", ex.message
+    end
+
+    ex = assert_raise(ParserError) { parse('-Infinity something') }
     unless RUBY_PLATFORM =~ /java/
       assert_equal "unexpected token '-Infinity' at line 1 column 1", ex.message
     end
 
-    ex = assert_raise(ParserError) { parse('NaN') }
+    ex = assert_raise(ParserError) { parse('NaN something') }
     unless RUBY_PLATFORM =~ /java/
       assert_equal "unexpected token 'NaN' at line 1 column 1", ex.message
+    end
+
+    ex = assert_raise(ParserError) { parse('   ') }
+    unless RUBY_PLATFORM =~ /java/
+      assert_equal "unexpected end of input at line 1 column 4", ex.message
+    end
+
+    ex = assert_raise(ParserError) { parse('{   ') }
+    unless RUBY_PLATFORM =~ /java/
+      assert_equal "expected object key, got EOF at line 1 column 5", ex.message
     end
   end
 
