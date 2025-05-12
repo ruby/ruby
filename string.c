@@ -4308,37 +4308,34 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> string
+ *    self << object -> self
  *
- *  Concatenates +object+ to +self+ and returns +self+:
+ *  Appends a string representation of +object+ to +self+;
+ *  returns +self+.
+ *
+ *  If +object+ is a string, appends it to +self+:
  *
  *    s = 'foo'
  *    s << 'bar' # => "foobar"
  *    s          # => "foobar"
  *
- *  If +object+ is an Integer,
- *  the value is considered a codepoint and converted to a character before concatenation:
+ *  If +object+ is an integer,
+ *  its value is considered a codepoint;
+ *  converts the value to a character before concatenating:
  *
  *    s = 'foo'
  *    s << 33 # => "foo!"
  *
- *  If that codepoint is not representable in the encoding of
- *  _string_, RangeError is raised.
- *
- *    s = 'foo'
- *    s.encoding              # => <Encoding:UTF-8>
- *    s << 0x00110000         # 1114112 out of char range (RangeError)
- *    s = 'foo'.encode(Encoding::EUC_JP)
- *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
- *
- *  If the encoding is US-ASCII and the codepoint is 0..0xff, _string_
- *  is automatically promoted to ASCII-8BIT.
+ *  Additionally, if the codepoint is in range <tt>0..0xff</tt>
+ *  and the encoding of +self+ is Encoding::US_ASCII,
+ *  changes the encoding to Encoding::ASCII_8BIT:
  *
  *    s = 'foo'.encode(Encoding::US_ASCII)
- *    s << 0xff
- *    s.encoding              # => #<Encoding:BINARY (ASCII-8BIT)>
+ *    s.encoding # => #<Encoding:US-ASCII>
+ *    s << 0xff  # => "foo\xFF"
+ *    s.encoding # => #<Encoding:BINARY (ASCII-8BIT)>
  *
- *  Related: String#concat, which takes multiple arguments.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
