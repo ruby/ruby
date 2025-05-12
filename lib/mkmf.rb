@@ -2594,7 +2594,7 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
           dest = "#{dir}/#{File.basename(f)}"
           mfile.print("do-install-rb#{sfx}: #{dest}\n")
           mfile.print("#{dest}: #{f} #{timestamp_file(dir, target_prefix)}\n")
-          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D)\n")
+          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $@\n")
           if defined?($installed_list) and !$extout
             mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
           end

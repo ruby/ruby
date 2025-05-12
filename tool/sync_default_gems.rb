@@ -236,12 +236,13 @@ module SyncDefaultGems
     when "cgi"
       rm_rf(%w[lib/cgi.rb lib/cgi ext/cgi test/cgi])
       cp_r("#{upstream}/ext/cgi", "ext")
-      cp_r("#{upstream}/lib/cgi", "lib")
-      cp_r("#{upstream}/lib/cgi.rb", "lib")
+      mkdir_p("lib/cgi")
+      cp_r("#{upstream}/lib/cgi/escape.rb", "lib/cgi")
+      mkdir_p("test/cgi")
+      cp_r("#{upstream}/test/cgi/test_cgi_escape.rb", "test/cgi")
+      cp_r("#{upstream}/test/cgi/update_env.rb", "test/cgi")
       rm_rf("lib/cgi/escape.jar")
-      cp_r("#{upstream}/test/cgi", "test")
-      cp_r("#{upstream}/cgi.gemspec", "lib/cgi")
-      `git checkout ext/cgi/escape/depend`
+      `git checkout lib/cgi.rb lib/cgi/util.rb ext/cgi/escape/depend`
     when "openssl"
       rm_rf(%w[ext/openssl test/openssl])
       cp_r("#{upstream}/ext/openssl", "ext")
@@ -364,8 +365,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if gem == "rubygems"
-    return if gem == "mmtk"
+    return if ["rubygems", "mmtk", "cgi"].include?(gem)
 
     gem = gem.downcase
 

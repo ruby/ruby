@@ -260,6 +260,8 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_parser_flag
+    omit if ENV["RUBYOPT"]&.include?("--parser=")
+
     assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), [])
     assert_in_out_err(%w(--parser=prism --dump=parsetree -e _=:hi), "", /"hi"/, [])
 

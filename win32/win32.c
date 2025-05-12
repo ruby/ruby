@@ -4761,7 +4761,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     return 0;
 }
 
-#ifndef HAVE_CLOCK_GETTIME
+#if !defined(__MINGW32__) || !defined(HAVE_CLOCK_GETTIME)
 /* License: Ruby's */
 int
 clock_gettime(clockid_t clock_id, struct timespec *sp)
@@ -4803,7 +4803,7 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
 }
 #endif
 
-#ifndef HAVE_CLOCK_GETRES
+#if !defined(__MINGW32__) || !defined(HAVE_CLOCK_GETRES)
 /* License: Ruby's */
 int
 clock_getres(clockid_t clock_id, struct timespec *sp)

@@ -24,7 +24,7 @@ module Bundler
 
     def dylibs_darwin(path)
       output = `/usr/bin/otool -L #{path.shellescape}`.chomp
-      dylibs = output.split("\n")[1..-1].map {|l| l.match(DARWIN_REGEX).captures[0] }.uniq
+      dylibs = output.split("\n")[1..-1].filter_map {|l| l.match(DARWIN_REGEX)&.match(1) }.uniq
       # ignore @rpath and friends
       dylibs.reject {|dylib| dylib.start_with? "@" }
     end

@@ -134,7 +134,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *cme)
         return TRUE;
     }
     else {
-        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment));
+        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment), "imemo_type:%s", rb_imemo_name(imemo_type((VALUE)cme)));
 
         if (callable_class_p(cme->defined_class)) {
             return TRUE;
@@ -418,7 +418,7 @@ vm_push_frame(rb_execution_context_t *ec,
 #if VM_DEBUG_BP_CHECK
         .bp_check   = sp,
 #endif
-        .jit_return = NULL
+        .jit_return = NULL,
     };
 
     /* Ensure the initialization of `*cfp` above never gets reordered with the update of `ec->cfp` below.
@@ -963,7 +963,7 @@ vm_get_const_key_cref(const VALUE *ep)
 
     while (cref) {
         if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
-                RCLASS_EXT(CREF_CLASS(cref))->cloned) {
+                RCLASS_CLONED_P(CREF_CLASS(cref)) ) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            ivar_list = RCLASS_FIELDS(obj);
+            ivar_list = RCLASS_PRIME_FIELDS(obj);
 
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = RCLASS_SHAPE_ID(obj);
@@ -1335,7 +1335,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = (st_table *)RCLASS_FIELDS(obj);
+                table = (st_table *)RCLASS_FIELDS_HASH(obj);
                 break;
 
               case T_OBJECT:
@@ -2079,7 +2079,7 @@ static const struct rb_callcache *
 vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
 {
     const ID mid = vm_ci_mid(ci);
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     struct rb_class_cc_entries *ccs = NULL;
     VALUE ccs_data;
 
@@ -2125,7 +2125,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
     else {
-        cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
+        cc_tbl = rb_id_table_create(2);
+        RCLASS_WRITE_CC_TBL(klass, cc_tbl);
     }
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
@@ -4123,7 +4124,7 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     VALUE klass = current_class;
 
     /* for prepended Module, then start from cover class */
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+    if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
         klass = RBASIC_CLASS(klass);
     }
@@ -5109,6 +5110,20 @@ block_proc_is_lambda(const VALUE procval)
     }
 }
 
+static inline const rb_namespace_t *
+block_proc_namespace(const VALUE procval)
+{
+    rb_proc_t *proc;
+
+    if (procval) {
+        GetProcPtr(procval, proc);
+        return proc->ns;
+    }
+    else {
+        return NULL;
+    }
+}
+
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
                     const struct rb_captured_block *captured,
@@ -5259,11 +5274,16 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     VALUE * const rsp = GET_SP() - calling->argc;
     VALUE * const argv = rsp;
     int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, is_lambda ? arg_setup_method : arg_setup_block);
+    int frame_flag = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
 
     SET_SP(rsp);
 
+    if (calling->proc_ns) {
+        frame_flag |= VM_FRAME_FLAG_NS_SWITCH;
+    }
+
     vm_push_frame(ec, iseq,
-                  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
+                  frame_flag,
                   captured->self,
                   VM_GUARDED_PREV_EP(captured->ep), 0,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
@@ -5362,6 +5382,9 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
         VALUE proc = VM_BH_TO_PROC(block_handler);
+        if (!calling->proc_ns) {
+            calling->proc_ns = block_proc_namespace(proc);
+        }
         is_lambda = block_proc_is_lambda(proc);
         block_handler = vm_proc_to_block_handler(proc);
     }
@@ -5812,6 +5835,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 
     /* find klass */
     rb_autoload_load(cbase, id);
+
     if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
@@ -5913,8 +5937,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
     if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
-
-        RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
+        RCLASS_WRITE_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
     }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {

@@ -92,7 +92,7 @@ static Fp find_cachedpow10(int exp, int* k)
 {
     const double one_log_ten = 0.30102999566398114;
 
-    int approx = -(exp + npowers) * one_log_ten;
+    int approx = (int)(-(exp + npowers) * one_log_ten);
     int idx = (approx - firstpower) / steppowers;
 
     while(1) {
@@ -340,7 +340,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
     }
 
     /* write decimal w/o scientific notation */
-    if(K < 0 && (K > -7 || exp < 4)) {
+    if(K < 0 && (K > -7 || exp < 10)) {
         int offset = ndigits - absv(K);
         /* fp < 1.0 -> write leading zero */
         if(offset <= 0) {

@@ -3601,6 +3601,8 @@ rb_str_freeze(VALUE str)
  * without warning issuance.
  *
  * Otherwise returns <tt>self.dup</tt>, which is not frozen.
+ *
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
  */
 static VALUE
 str_uplus(VALUE str)

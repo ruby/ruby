@@ -8723,7 +8723,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
- *  - #join: Returns a newsString containing the elements joined by the field separator.
+ *  - #join: Returns a new String containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
  *  - #to_ary: Returns +self+.
  *  - #to_h: Returns a new hash formed from the elements.

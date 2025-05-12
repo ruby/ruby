@@ -1,9 +1,5 @@
 # frozen_string_literal: true
-#--
-# ERB::Escape
-#
-# A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope
-# Rails will not monkey-patch ERB::Escape#html_escape.
+
 begin
   # We don't build the C extension for JRuby, TruffleRuby, and WASM
   if $LOAD_PATH.resolve_feature_path('erb/escape')
@@ -12,6 +8,10 @@ begin
 rescue LoadError # resolve_feature_path raises LoadError on TruffleRuby 22.3.0
 end
 unless defined?(ERB::Escape)
+  # ERB::Escape
+  #
+  # A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope
+  # Rails will not monkey-patch ERB::Escape#html_escape.
   module ERB::Escape
     def html_escape(s)
       CGI.escapeHTML(s.to_s)
@@ -20,7 +20,6 @@ unless defined?(ERB::Escape)
   end
 end
 
-#--
 # ERB::Util
 #
 # A utility module for conversion routines, often handy in HTML generation.
