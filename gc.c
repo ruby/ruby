@@ -1865,7 +1865,6 @@ static VALUE
 object_id(VALUE obj)
 {
     VALUE id = Qfalse;
-    rb_shape_t *shape = rb_obj_shape(obj);
     unsigned int lock_lev;
 
     // We could avoid locking if the object isn't shareable
@@ -1873,16 +1872,17 @@ object_id(VALUE obj)
     // we'd at least need to generate the object_id using atomics.
     lock_lev = rb_gc_vm_lock();
 
-    if (rb_shape_has_object_id(shape)) {
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        id = rb_obj_field_get(obj, object_id_shape);
+    shape_id_t shape_id = rb_obj_shape_id(obj);
+    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+
+    if (shape_id >= object_id_shape_id) {
+        id = rb_obj_field_get(obj, object_id_shape_id);
     }
     else {
         id = ULL2NUM(next_object_id);
         next_object_id += OBJ_ID_INCREMENT;
 
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        rb_obj_field_set(obj, object_id_shape, id);
+        rb_obj_field_set(obj, object_id_shape_id, id);
         if (RB_UNLIKELY(id_to_obj_tbl)) {
             st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         }
