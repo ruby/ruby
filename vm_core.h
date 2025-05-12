@@ -1106,8 +1106,20 @@ typedef struct rb_ractor_struct rb_ractor_t;
 
 struct rb_native_thread;
 
+struct rb_thread_ractor_waiting {
+    //enum rb_ractor_wait_status wait_status;
+    int wait_status;
+    //enum rb_ractor_wakeup_status wakeup_status;
+    int wakeup_status;
+    struct ccan_list_node waiting_node; // the rb_thread_t
+    VALUE receiving_mutex; // protects Ractor.receive_if
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_nativethread_cond_t cond;
+#endif
+};
+
 typedef struct rb_thread_struct {
-    struct ccan_list_node lt_node; // managed by a ractor
+    struct ccan_list_node lt_node; // managed by a ractor (r->threads.set)
     VALUE self;
     rb_ractor_t *ractor;
     rb_vm_t *vm;
@@ -1117,6 +1129,8 @@ typedef struct rb_thread_struct {
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
+
+    struct rb_thread_ractor_waiting ractor_waiting;
 
     VALUE last_status; /* $? */
 
