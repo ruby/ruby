@@ -12,11 +12,7 @@
 #
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-begin
-  require 'cgi/escape'
-rescue LoadError
-  require 'cgi/util'
-end
+require 'cgi/escape'
 require 'erb/version'
 require 'erb/compiler'
 require 'erb/def_method'
