@@ -340,7 +340,7 @@ unblock_function_clear(rb_thread_t *th)
 }
 
 static void
-threadptr_interrupt_locked(rb_thread_t *th, bool trap)
+threadptr_set_interrupt_locked(rb_thread_t *th, bool trap)
 {
     // th->interrupt_lock should be acquired here
 
@@ -362,26 +362,27 @@ threadptr_interrupt_locked(rb_thread_t *th, bool trap)
 }
 
 static void
-threadptr_interrupt(rb_thread_t *th, int trap)
+threadptr_set_interrupt(rb_thread_t *th, int trap)
 {
     rb_native_mutex_lock(&th->interrupt_lock);
     {
-        threadptr_interrupt_locked(th, trap);
+        threadptr_set_interrupt_locked(th, trap);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
+/* Set interrupt flag on another thread or current thread, and call its UBF if it has one set */
 void
 rb_threadptr_interrupt(rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
-    threadptr_interrupt(th, false);
+    threadptr_set_interrupt(th, false);
 }
 
 static void
 threadptr_trap_interrupt(rb_thread_t *th)
 {
-    threadptr_interrupt(th, true);
+    threadptr_set_interrupt(th, true);
 }
 
 static void
@@ -530,6 +531,9 @@ thread_cleanup_func(void *th_ptr, int atfork)
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_native_cond_destroy(&th->ractor_waiting.cond);
+#endif
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
@@ -2426,6 +2430,7 @@ NORETURN(static void rb_threadptr_to_kill(rb_thread_t *th));
 static void
 rb_threadptr_to_kill(rb_thread_t *th)
 {
+    VM_ASSERT(GET_THREAD() == th);
     rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
@@ -2449,12 +2454,19 @@ threadptr_get_interrupts(rb_thread_t *th)
 
 static void threadptr_interrupt_exec_exec(rb_thread_t *th);
 
+// Execute interrupts on currently running thread
+// In certain situations, calling this function will raise an exception. Some examples are:
+//   * during VM shutdown (`rb_ractor_terminate_all`)
+//   * Call to Thread#exit for current thread (`rb_thread_kill`)
+//   * Call to Thread#raise for current thread
 int
 rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 {
     rb_atomic_t interrupt;
     int postponed_job_interrupt = 0;
     int ret = FALSE;
+
+    VM_ASSERT(GET_THREAD() == th);
 
     if (th->ec->raised_flag) return ret;
 
@@ -6027,7 +6039,7 @@ rb_threadptr_interrupt_exec(rb_thread_t *th, rb_interrupt_exec_func_t *func, voi
     rb_native_mutex_lock(&th->interrupt_lock);
     {
         ccan_list_add_tail(&th->interrupt_exec_tasks, &task->node);
-        threadptr_interrupt_locked(th, true);
+        threadptr_set_interrupt_locked(th, true);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }

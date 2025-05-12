@@ -3558,6 +3558,7 @@ thread_mark(void *ptr)
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
+    rb_gc_mark(th->ractor_waiting.receiving_mutex);
 
     rb_gc_mark(th->scheduler);
 
@@ -3719,6 +3720,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    ccan_list_node_init(&th->ractor_waiting.waiting_node);
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_native_cond_initialize(&th->ractor_waiting.cond);
+#endif
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
