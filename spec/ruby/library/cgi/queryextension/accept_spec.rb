@@ -1,22 +1,25 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#accept" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI::QueryExtension#accept" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "returns ENV['HTTP_ACCEPT']" do
-    old_value, ENV['HTTP_ACCEPT'] = ENV['HTTP_ACCEPT'], "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
-    begin
-      @cgi.accept.should == "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
-    ensure
-      ENV['HTTP_ACCEPT'] = old_value
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
+
+    it "returns ENV['HTTP_ACCEPT']" do
+      old_value, ENV['HTTP_ACCEPT'] = ENV['HTTP_ACCEPT'], "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
+      begin
+        @cgi.accept.should == "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5"
+      ensure
+        ENV['HTTP_ACCEPT'] = old_value
+      end
     end
   end
 end

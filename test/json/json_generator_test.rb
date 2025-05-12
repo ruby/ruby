@@ -771,6 +771,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
       values = [-1.0, 1.0, 0.0, 12.2, 7.5 / 3.2, 12.0, 100.0, 1000.0]
       expecteds = ["-1.0", "1.0", "0.0", "12.2", "2.34375", "12.0", "100.0", "1000.0"]
 
+      if RUBY_ENGINE == "jruby"
+        values << 1746861937.7842371
+        expecteds << "1.7468619377842371E9"
+      else
+        values << 1746861937.7842371
+        expecteds << "1746861937.7842371"
+      end
+
       values.zip(expecteds).each do |value, expected|
         assert_equal expected, value.to_json
       end

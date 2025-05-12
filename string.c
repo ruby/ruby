@@ -45,6 +45,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "shape.h"
 #include "vm_sync.h"
 #include "ruby/internal/attr/nonstring.h"
 
@@ -384,7 +385,16 @@ fstring_hash(VALUE str)
 #define fstring_hash rb_str_hash
 #endif
 
-#define BARE_STRING_P(str) (!FL_ANY_RAW(str, FL_EXIVAR) && RBASIC_CLASS(str) == rb_cString)
+static inline bool
+BARE_STRING_P(VALUE str)
+{
+    if (RBASIC_CLASS(str) != rb_cString) return false;
+
+    if (FL_TEST_RAW(str, FL_EXIVAR)) {
+        return rb_ivar_count(str) == 0;
+    }
+    return true;
+}
 
 static inline st_index_t
 str_do_hash(VALUE str)
@@ -873,7 +883,6 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(result));
     RUBY_ASSERT(!FL_TEST_RAW(result, STR_FAKESTR));
-    RUBY_ASSERT(!FL_TEST_RAW(result, FL_EXIVAR));
     RUBY_ASSERT(RBASIC_CLASS(result) == rb_cString);
 
     return result;
@@ -2778,7 +2787,7 @@ rb_str_empty(VALUE str)
  *
  *    'Hello from ' + self.to_s # => "Hello from main"
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 VALUE
@@ -2851,7 +2860,7 @@ rb_str_opt_plus(VALUE str1, VALUE str2)
  *    'Ho!' * 3 # => "Ho!Ho!Ho!"
  *    'No!' * 0 # => ""
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 VALUE
@@ -2929,7 +2938,7 @@ rb_str_times(VALUE str, VALUE times)
  *    'foo = %{foo}' % {foo: 'bar'}                           # => "foo = bar"
  *    'foo = %{foo}, baz = %{baz}' % {foo: 'bar', baz: 'bat'} # => "foo = bar, baz = bat"
  *
- *  Related: see {Methods for Converting to New String}[rdoc-ref:String@Methods+for+Converting+to+New+String].
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -3592,6 +3601,8 @@ rb_str_freeze(VALUE str)
  * without warning issuance.
  *
  * Otherwise returns <tt>self.dup</tt>, which is not frozen.
+ *
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
  */
 static VALUE
 str_uplus(VALUE str)
@@ -3606,24 +3617,37 @@ str_uplus(VALUE str)
 
 /*
  * call-seq:
- *   -string -> frozen_string
- *   dedup -> frozen_string
+ *   -self -> frozen_string
  *
- * Returns a frozen, possibly pre-existing copy of the string.
+ * Returns a frozen string equal to +self+.
  *
- * The returned +String+ will be deduplicated as long as it does not have
- * any instance variables set on it and is not a String subclass.
+ * The returned string is +self+ if and only if all of the following are true:
  *
- * Note that <tt>-string</tt> variant is more convenient for defining
- * constants:
+ * - +self+ is already frozen.
+ * - +self+ is an instance of \String (rather than of a subclass of \String)
+ * - +self+ has no instance variables set on it.
  *
- *    FILENAME = -'config/database.yml'
+ * Otherwise, the returned string is a frozen copy of +self+.
  *
- * while +dedup+ is better suitable for using the method in chains
- * of calculations:
+ * Returning +self+, when possible, saves duplicating +self+;
+ * see {Data deduplication}[https://en.wikipedia.org/wiki/Data_deduplication].
  *
- *    @url_list.concat(urls.map(&:dedup))
+ * It may also save duplicating other, already-existing, strings:
  *
+ *   s0 = 'foo'
+ *   s1 = 'foo'
+ *   s0.object_id == s1.object_id       # => false
+ *   (-s0).object_id == (-s1).object_id # => true
+ *
+ * Note that method #-@ is convenient for defining a constant:
+ *
+ *    FileName = -'config/database.yml'
+ *
+ * While its alias #dedup is better suited for chaining:
+ *
+ *   'foo'.dedup.gsub!('o')
+ *
+ * Related: see {Freezing/Unfreezing}[rdoc-ref:String@Freezing-2FUnfreezing].
  */
 static VALUE
 str_uminus(VALUE str)

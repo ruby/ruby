@@ -2445,6 +2445,11 @@ fn gen_getlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm) {
         // Load the local using SP register
         asm.local_opnd(ep_offset)
@@ -2533,6 +2538,11 @@ fn gen_setlocal_generic(
         asm.stack_pop(1);
 
         return Some(KeepCompiling);
+    }
+
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
     }
 
     let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm) {
@@ -2894,7 +2904,7 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = rb_shape_get_shape_by_id(shape_id);
+        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
         if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
@@ -2909,7 +2919,7 @@ fn gen_get_ivar(
     // Compile time self is embedded and the ivar index lands within the object
     let embed_test_result = unsafe { FL_TEST_RAW(comptime_receiver, VALUE(ROBJECT_EMBED.as_usize())) != VALUE(0) };
 
-    let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
+    let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
     let shape_id_offset = unsafe { rb_shape_id_offset() };
     let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -2938,7 +2948,7 @@ fn gen_get_ivar(
         }
         Some(ivar_index) => {
             if embed_test_result {
-                // See ROBJECT_IVPTR() from include/ruby/internal/core/robject.h
+                // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
 
                 // Load the variable
                 let offs = ROBJECT_OFFSET_AS_ARY as i32 + (ivar_index * SIZEOF_VALUE) as i32;
@@ -2951,7 +2961,7 @@ fn gen_get_ivar(
                 // Compile time value is *not* embedded.
 
                 // Get a pointer to the extended table
-                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR as i32));
+                let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
                 // Read the ivar from the extended table
                 let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
@@ -3020,7 +3030,7 @@ fn gen_write_iv(
         // Compile time value is *not* embedded.
 
         // Get a pointer to the extended table
-        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_IVPTR as i32));
+        let tbl_opnd = asm.load(Opnd::mem(64, recv, ROBJECT_OFFSET_AS_HEAP_FIELDS as i32));
 
         // Write the ivar in to the extended table
         let ivar_opnd = Opnd::mem(64, tbl_opnd, (SIZEOF_VALUE * ivar_index) as i32);
@@ -3097,7 +3107,7 @@ fn gen_set_ivar(
     let shape_too_complex = comptime_receiver.shape_too_complex();
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = unsafe { rb_shape_get_shape_by_id(shape_id) };
+        let shape = unsafe { rb_shape_lookup(shape_id) };
         let mut ivar_index: u32 = 0;
         if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
@@ -3109,14 +3119,16 @@ fn gen_set_ivar(
     };
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
+    let mut new_shape_too_complex = false;
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
-        let next_shape = unsafe { rb_shape_get_next_no_warnings(current_shape, comptime_receiver, ivar_name) };
-        let next_shape_id = unsafe { rb_shape_id(next_shape) };
+        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
+        let next_shape = unsafe { rb_shape_lookup(next_shape_id) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        if next_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape) };
+        if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { (*current_shape).capacity };
@@ -3126,7 +3138,7 @@ fn gen_set_ivar(
             let needs_extension = unsafe { (*current_shape).capacity != (*next_shape).capacity };
 
             // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { (*current_shape).next_iv_index } as usize;
+            let ivar_index = unsafe { (*current_shape).next_field_index } as usize;
 
             let needs_extension = if needs_extension {
                 Some((current_capacity, unsafe { (*next_shape).capacity }))
@@ -3138,7 +3150,6 @@ fn gen_set_ivar(
     } else {
         None
     };
-    let new_shape_too_complex = matches!(new_shape, Some((OBJ_TOO_COMPLEX_SHAPE_ID, _, _)));
 
     // If the receiver isn't a T_OBJECT, or uses a custom allocator,
     // then just write out the IV write as a function call.
@@ -3186,7 +3197,7 @@ fn gen_set_ivar(
         // Upgrade type
         guard_object_is_heap(asm, recv, recv_opnd, Counter::setivar_not_heap);
 
-        let expected_shape = unsafe { rb_shape_get_shape_id(comptime_receiver) };
+        let expected_shape = unsafe { rb_obj_shape_id(comptime_receiver) };
         let shape_id_offset = unsafe { rb_shape_id_offset() };
         let shape_opnd = Opnd::mem(SHAPE_ID_NUM_BITS as u8, recv, shape_id_offset);
 
@@ -3386,7 +3397,7 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let shape = rb_shape_get_shape_by_id(shape_id);
+        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
         rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
     };

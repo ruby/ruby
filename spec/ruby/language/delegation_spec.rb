@@ -87,51 +87,47 @@ describe "delegation with def(x, ...)" do
   end
 end
 
-ruby_version_is "3.2" do
-  describe "delegation with def(*)" do
-    it "delegates rest" do
-      a = Class.new(DelegationSpecs::Target)
-      a.class_eval(<<-RUBY)
-      def delegate(*)
-        target(*)
-      end
-      RUBY
-
-      a.new.delegate(0, 1).should == [[0, 1], {}, nil]
+describe "delegation with def(*)" do
+  it "delegates rest" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+    def delegate(*)
+      target(*)
     end
+    RUBY
 
-    ruby_version_is "3.3" do
-      context "within a block that accepts anonymous rest within a method that accepts anonymous rest" do
-        it "does not allow delegating rest" do
-          -> {
-            eval "def m(*); proc { |*| n(*) } end"
-          }.should raise_error(SyntaxError, /anonymous rest parameter is also used within block/)
-        end
+    a.new.delegate(0, 1).should == [[0, 1], {}, nil]
+  end
+
+  ruby_version_is "3.3" do
+    context "within a block that accepts anonymous rest within a method that accepts anonymous rest" do
+      it "does not allow delegating rest" do
+        -> {
+          eval "def m(*); proc { |*| n(*) } end"
+        }.should raise_error(SyntaxError, /anonymous rest parameter is also used within block/)
       end
     end
   end
 end
 
-ruby_version_is "3.2" do
-  describe "delegation with def(**)" do
-    it "delegates kwargs" do
-      a = Class.new(DelegationSpecs::Target)
-      a.class_eval(<<-RUBY)
-      def delegate(**)
-        target(**)
-      end
-      RUBY
-
-      a.new.delegate(a: 1) { |x| x }.should == [[], {a: 1}, nil]
+describe "delegation with def(**)" do
+  it "delegates kwargs" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+    def delegate(**)
+      target(**)
     end
+    RUBY
 
-    ruby_version_is "3.3" do
-      context "within a block that accepts anonymous kwargs within a method that accepts anonymous kwargs" do
-        it "does not allow delegating kwargs" do
-          -> {
-            eval "def m(**); proc { |**| n(**) } end"
-          }.should raise_error(SyntaxError, /anonymous keyword rest parameter is also used within block/)
-        end
+    a.new.delegate(a: 1) { |x| x }.should == [[], {a: 1}, nil]
+  end
+
+  ruby_version_is "3.3" do
+    context "within a block that accepts anonymous kwargs within a method that accepts anonymous kwargs" do
+      it "does not allow delegating kwargs" do
+        -> {
+          eval "def m(**); proc { |**| n(**) } end"
+        }.should raise_error(SyntaxError, /anonymous keyword rest parameter is also used within block/)
       end
     end
   end

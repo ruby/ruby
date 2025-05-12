@@ -42,10 +42,10 @@
  */
 #define ROBJECT(obj)          RBIMPL_CAST((struct RObject *)(obj))
 /** @cond INTERNAL_MACRO */
-#define ROBJECT_EMBED_LEN_MAX ROBJECT_EMBED_LEN_MAX
-#define ROBJECT_EMBED         ROBJECT_EMBED
-#define ROBJECT_IV_CAPACITY   ROBJECT_IV_CAPACITY
-#define ROBJECT_IVPTR         ROBJECT_IVPTR
+#define ROBJECT_EMBED_LEN_MAX       ROBJECT_EMBED_LEN_MAX
+#define ROBJECT_EMBED               ROBJECT_EMBED
+#define ROBJECT_FIELDS_CAPACITY     ROBJECT_FIELDS_CAPACITY
+#define ROBJECT_FIELDS              ROBJECT_FIELDS
 /** @endcond */
 
 /**
@@ -94,7 +94,7 @@ struct RObject {
          */
         struct {
             /** Pointer to a C array that holds instance variables. */
-            VALUE *ivptr;
+            VALUE *fields;
         } heap;
 
         /* Embedded instance variables. When an object is small enough, it
@@ -123,7 +123,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  * @shyouhei finds no reason for this to be visible from extension libraries.
  */
 static inline VALUE *
-ROBJECT_IVPTR(VALUE obj)
+ROBJECT_FIELDS(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
@@ -133,7 +133,7 @@ ROBJECT_IVPTR(VALUE obj)
         return ptr->as.ary;
     }
     else {
-        return ptr->as.heap.ivptr;
+        return ptr->as.heap.fields;
     }
 }
 

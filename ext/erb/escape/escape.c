@@ -65,9 +65,12 @@ optimized_escape_html(VALUE str)
     return escaped;
 }
 
-// ERB::Util.html_escape is different from CGI.escapeHTML in the following two parts:
-//   * ERB::Util.html_escape converts an argument with #to_s first (only if it's not T_STRING)
-//   * ERB::Util.html_escape does not allocate a new string when nothing needs to be escaped
+/*
+ * ERB::Util.html_escape is similar to CGI.escapeHTML but different in the following two parts:
+ *
+ * * ERB::Util.html_escape converts an argument with #to_s first (only if it's not T_STRING)
+ * * ERB::Util.html_escape does not allocate a new string when nothing needs to be escaped
+ */
 static VALUE
 erb_escape_html(VALUE self, VALUE str)
 {

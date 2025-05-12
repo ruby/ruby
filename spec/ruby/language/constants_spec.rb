@@ -161,34 +161,16 @@ describe "Literal (A::X) constant resolution" do
       ConstantSpecs::ClassB.send(:remove_const, :CS_CONST109)
     end
 
-    ruby_version_is "3.2" do
-      it "evaluates left-to-right" do
-        mod = Module.new
+    it "evaluates left-to-right" do
+      mod = Module.new
 
-        mod.module_eval <<-EOC
-          order = []
-          ConstantSpecsRHS = Module.new
-          (order << :lhs; ConstantSpecsRHS)::B = (order << :rhs)
-        EOC
+      mod.module_eval <<-EOC
+        order = []
+        ConstantSpecsRHS = Module.new
+        (order << :lhs; ConstantSpecsRHS)::B = (order << :rhs)
+      EOC
 
-        mod::ConstantSpecsRHS::B.should == [:lhs, :rhs]
-      end
-    end
-
-    ruby_version_is ""..."3.2" do
-      it "evaluates the right hand side before evaluating a constant path" do
-        mod = Module.new
-
-        mod.module_eval <<-EOC
-          ConstantSpecsRHS::B = begin
-            module ConstantSpecsRHS; end
-
-            "hello"
-          end
-        EOC
-
-        mod::ConstantSpecsRHS::B.should == 'hello'
-      end
+      mod::ConstantSpecsRHS::B.should == [:lhs, :rhs]
     end
   end
 

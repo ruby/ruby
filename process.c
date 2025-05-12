@@ -4132,8 +4132,12 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        child.pid = pid = rb_fork();
-        child.error = err = errno;
+        RB_VM_LOCK_ENTER();
+        {
+            child.pid = pid = rb_fork();
+            child.error = err = errno;
+        }
+        RB_VM_LOCK_LEAVE();
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (

@@ -1595,7 +1595,7 @@ assert_equal "ok", %Q{
   :ok
 }
 
-# Generic ivtbl
+# Generic fields_tbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
   2.times.map{
@@ -2208,5 +2208,71 @@ assert_equal 'ok', %q{
       end
     end
   end
+  'ok'
+}
+
+# fork after creating Ractor
+assert_equal 'ok', %q{
+begin
+  Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork { }
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.take
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.send(123)
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Creating classes inside of Ractors
+# [Bug #18119]
+assert_equal 'ok', %q{
+  workers = (0...8).map do
+    Ractor.new do
+      loop do
+        100.times.map { Class.new }
+        Ractor.yield nil
+      end
+    end
+  end
+
+  100.times { Ractor.select(*workers) }
+
   'ok'
 }

@@ -135,10 +135,8 @@ describe :enumerable_inject, shared: true do
     actual.sort_by(&:to_s).should == expected.sort_by(&:to_s)
   end
 
-  ruby_bug '#18635', ''...'3.2' do
-    it "raises an ArgumentError when no parameters or block is given" do
-      -> { [1,2].send(@method) }.should raise_error(ArgumentError)
-      -> { {one: 1, two: 2}.send(@method) }.should raise_error(ArgumentError)
-    end
+  it "raises an ArgumentError when no parameters or block is given" do
+    -> { [1,2].send(@method) }.should raise_error(ArgumentError)
+    -> { {one: 1, two: 2}.send(@method) }.should raise_error(ArgumentError)
   end
 end

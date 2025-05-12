@@ -106,7 +106,7 @@ describe "Kernel#open" do
       ScratchPad.clear
     end
 
-    it "calls #to_path to covert the argument to a String before calling #to_str" do
+    it "calls #to_path to convert the argument to a String before calling #to_str" do
       obj = mock("open to_path")
       obj.should_receive(:to_path).at_least(1).times.and_return(@name)
       obj.should_not_receive(:to_str)

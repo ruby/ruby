@@ -107,15 +107,14 @@ fn main() {
         .allowlist_function("rb_bug")
 
         // From shape.h
-        .allowlist_function("rb_shape_get_shape_id")
-        .allowlist_function("rb_shape_get_shape_by_id")
+        .allowlist_function("rb_obj_shape_id")
+        .allowlist_function("rb_shape_lookup")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
-        .allowlist_function("rb_shape_get_next_no_warnings")
+        .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_shape_id")
-        .allowlist_function("rb_shape_obj_too_complex")
+        .allowlist_function("rb_shape_obj_too_complex_p")
         .allowlist_var("SHAPE_ID_NUM_BITS")
-        .allowlist_var("OBJ_TOO_COMPLEX_SHAPE_ID")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")

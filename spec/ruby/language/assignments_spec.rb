@@ -23,25 +23,12 @@ describe 'Assignments' do
         ScratchPad.recorded.should == [:receiver, :argument, :rhs]
       end
 
-      # similar tests for evaluation order are located in language/constants_spec.rb
-      ruby_version_is ''...'3.2' do
-        it 'evaluates expressions right to left when assignment with compounded constant' do
-          m = Module.new
-          ScratchPad.record []
+      it 'evaluates expressions left to right when assignment with compounded constant' do
+        m = Module.new
+        ScratchPad.record []
 
-          (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
-          ScratchPad.recorded.should == [:rhs, :module]
-        end
-      end
-
-      ruby_version_is '3.2' do
-        it 'evaluates expressions left to right when assignment with compounded constant' do
-          m = Module.new
-          ScratchPad.record []
-
-          (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
-          ScratchPad.recorded.should == [:module, :rhs]
-        end
+        (ScratchPad << :module; m)::A = (ScratchPad << :rhs; :value)
+        ScratchPad.recorded.should == [:module, :rhs]
       end
 
       it 'raises TypeError after evaluation of right-hand-side when compounded constant module is not a module' do
@@ -345,45 +332,33 @@ describe 'Multiple assignments' do
       ScratchPad.recorded.should == [:ra, :aa, :rb, :ab, :rc, :ac, :rd, :ad, :re, :ae, :rf, :af, :value]
     end
 
-    ruby_version_is ''...'3.2' do
-      it 'evaluates expressions right to left when assignment with compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with compounded constant' do
+      m = Module.new
+      ScratchPad.record []
 
-        (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:c, :d, :a, :b]
-      end
+      (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
+      ScratchPad.recorded.should == [:a, :b, :c, :d]
     end
 
-    ruby_version_is '3.2' do
-      it 'evaluates expressions left to right when assignment with compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with a nested compounded constant' do
+      m = Module.new
+      ScratchPad.record []
 
-        (ScratchPad << :a; m)::A, (ScratchPad << :b; m)::B = (ScratchPad << :c; :c), (ScratchPad << :d; :d)
-        ScratchPad.recorded.should == [:a, :b, :c, :d]
-      end
+      ((ScratchPad << :a; m)::A, foo), bar = [(ScratchPad << :b; :b)]
+      ScratchPad.recorded.should == [:a, :b]
+    end
 
-      it 'evaluates expressions left to right when assignment with a nested compounded constant' do
-        m = Module.new
-        ScratchPad.record []
+    it 'evaluates expressions left to right when assignment with deeply nested compounded constants' do
+      m = Module.new
+      ScratchPad.record []
 
-        ((ScratchPad << :a; m)::A, foo), bar = [(ScratchPad << :b; :b)]
-        ScratchPad.recorded.should == [:a, :b]
-      end
+      (ScratchPad << :a; m)::A,
+        ((ScratchPad << :b; m)::B,
+        ((ScratchPad << :c; m)::C, (ScratchPad << :d; m)::D),
+        (ScratchPad << :e; m)::E),
+      (ScratchPad << :f; m)::F = (ScratchPad << :value; :value)
 
-      it 'evaluates expressions left to right when assignment with deeply nested compounded constants' do
-        m = Module.new
-        ScratchPad.record []
-
-        (ScratchPad << :a; m)::A,
-          ((ScratchPad << :b; m)::B,
-          ((ScratchPad << :c; m)::C, (ScratchPad << :d; m)::D),
-          (ScratchPad << :e; m)::E),
-        (ScratchPad << :f; m)::F = (ScratchPad << :value; :value)
-
-        ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
-      end
+      ScratchPad.recorded.should == [:a, :b, :c, :d, :e, :f, :value]
     end
   end
 
