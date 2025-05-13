@@ -1,3 +1,15 @@
+GIT
+  remote: https://github.com/jruby/warbler.git
+  revision: 3a3a89e9a055ab1badb4e6fee860e8617b4acfe1
+  ref: refs/pull/557/head
+  specs:
+    warbler (2.0.5)
+      jruby-jars (>= 9.0.0)
+      jruby-rack (>= 1.1.1, < 1.3)
+      rake (>= 13.0.3)
+      rexml (~> 3.0)
+      rubyzip (>= 1.0.0)
+
 PATH
   remote: demo
   specs:
@@ -6,15 +18,11 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    jruby-jars (9.4.10.0)
-    jruby-rack (1.1.21)
-    rake (13.0.1)
-    rubyzip (1.3.0)
-    warbler (2.0.5)
-      jruby-jars (>= 9.0.0.0)
-      jruby-rack (>= 1.1.1, < 1.3)
-      rake (>= 10.1.0)
-      rubyzip (~> 1.0, < 1.4)
+    jruby-jars (10.0.0.1)
+    jruby-rack (1.2.2)
+    rake (13.2.1)
+    rexml (3.4.1)
+    rubyzip (2.4.1)
 
 PLATFORMS
   arm64-darwin
@@ -24,8 +32,8 @@ PLATFORMS
 
 DEPENDENCIES
   demo!
-  jruby-jars (~> 9.4)
-  warbler (~> 2.0)
+  jruby-jars (~> 10.0)
+  warbler!
 
 BUNDLED WITH
    2.7.0.dev

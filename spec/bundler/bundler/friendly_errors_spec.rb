@@ -130,17 +130,13 @@ RSpec.describe Bundler, "friendly errors" do
       # Does nothing
     end
 
-    context "Java::JavaLang::OutOfMemoryError" do
-      module Java
-        module JavaLang
-          class OutOfMemoryError < StandardError; end
-        end
-      end
-
+    context "Java::JavaLang::OutOfMemoryError", :jruby_only do
       it "Bundler.ui receive error" do
-        error = Java::JavaLang::OutOfMemoryError.new
-        expect(Bundler.ui).to receive(:error).with(/JVM has run out of memory/)
-        Bundler::FriendlyErrors.log_error(error)
+        install_gemfile <<-G, raise_on_error: false, env: { "JRUBY_OPTS" => "-J-Xmx32M" }, artifice: nil
+          source "https://gem.repo1"
+        G
+
+        expect(err).to include("JVM has run out of memory")
       end
     end
 
