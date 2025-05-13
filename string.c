@@ -5319,30 +5319,30 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string =~ regexp -> integer or nil
- *    string =~ object -> integer or nil
+ *    self =~ regexp -> integer or nil
  *
- *  Returns the Integer index of the first substring that matches
- *  the given +regexp+, or +nil+ if no match found:
+ *  Returns the index of the first matching substring in +self+
+ *  matched by +regexp+,
+ *  or +nil+ if no match is found;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
  *    'foo' =~ /f/ # => 0
+ *    $~           # => #<MatchData "f">
  *    'foo' =~ /o/ # => 1
+ *    $~           # => #<MatchData "o">
  *    'foo' =~ /x/ # => nil
- *
- *  Note: also updates Regexp@Global+Variables.
- *
- *  If the given +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *    $~           # => nil
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
  *  (see Regexp#=~):
  *
- *    number= nil
- *    "no. 9" =~ /(?<number>\d+)/
- *    number # => nil (not assigned)
- *    /(?<number>\d+)/ =~ "no. 9"
- *    number #=> "9"
+ *    number = nil
+ *    'no. 9' =~ /(?<number>\d+)/ # => 4
+ *    number                      # => nil # Not assigned.
+ *    /(?<number>\d+)/ =~ 'no. 9' # => 4
+ *    number                      # => "9" # Assigned.
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
