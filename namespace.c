@@ -570,7 +570,7 @@ namespace_initialize(VALUE namespace)
     // Initialize RubyGems for this new namespace, if gems are not disabled.
     // Check if Gem constant exists in Object in this namespace context, and if so, remove it
     // before initializing a fresh RubyGems environment
-    if (!GET_VM()->ruby_options->disable_gems)
+    if (!ruby_options.disable_gems)
     {
         // First check if we need to remove an inherited Gem constant in this namespace's Object
         VALUE ns_object = rb_const_get(namespace, rb_intern("Object"));
@@ -1027,7 +1027,7 @@ rb_initialize_main_namespace(void)
 
     // If RubyGems was loaded in the root namespace during boot,
     // remove it and load a fresh copy in the main namespace
-    if (!vm->ruby_options->disable_gems)
+    if (!ruby_options.disable_gems)
     {
         // Check if Gem constant exists in Object
         if (rb_const_defined(rb_cObject, rb_intern("Gem")))
