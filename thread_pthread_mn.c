@@ -486,6 +486,9 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
             thread_sched_switch0(th->sched.context, next_th, nt, true);
         }
         else {
+            if (next_th && !next_th->nt) {
+                ractor_sched_enq(next_th->vm, next_th->ractor);
+            }
             // switch to the next Ractor
             th->sched.finished = true;
             coroutine_transfer0(self, nt->nt_context, true);

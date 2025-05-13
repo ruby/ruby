@@ -1140,6 +1140,7 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
+    ccan_list_node_init(&sched->grq_node);
 
 #if USE_MN_THREADS
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
@@ -1221,13 +1222,13 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
     ractor_sched_lock(vm, cr);
     {
-#if VM_CHECK_MODE > 0
-        // check if grq contains r
-        rb_ractor_t *tr;
-        ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
-            VM_ASSERT(r != tr);
+
+        // check if already in queue
+        struct ccan_list_node *node = &r->threads.sched.grq_node;
+        if (node->next != node && node->prev != node) {
+            ractor_sched_unlock(vm, cr);
+            return;
         }
-#endif
 
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
@@ -1294,6 +1295,7 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         if (r) {
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
+            ccan_list_node_init(&r->threads.sched.grq_node);
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
         }
         else {
