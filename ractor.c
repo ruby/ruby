@@ -260,6 +260,12 @@ ractor_free(void *ptr)
     ruby_xfree(r);
 }
 
+static VALUE
+ractor_queue_size(rb_ractor_t *r)
+{
+    return INT2FIX(r->sync.incoming_queue.cnt);
+}
+
 static size_t
 ractor_queue_memsize(const struct rb_ractor_queue *rq)
 {
