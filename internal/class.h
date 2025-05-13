@@ -85,7 +85,6 @@ struct rb_classext_struct {
     struct rb_id_table *callable_m_tbl;
     struct rb_id_table *cc_tbl; /* ID -> [[ci1, cc1], [ci2, cc2] ...] */
     struct rb_id_table *cvc_tbl;
-    size_t superclass_depth;
     VALUE *superclasses;
     /**
      * The head of subclasses is a blank (w/o klass) entry to be referred from anchor (and be never deleted).
@@ -121,6 +120,7 @@ struct rb_classext_struct {
         } iclass;
     } as;
     attr_index_t max_iv_count;
+    uint16_t superclass_depth;
     unsigned char variation_count;
     bool permanent_classpath : 1;
     bool cloned : 1;
@@ -145,13 +145,16 @@ struct RClass {
 };
 
 // Assert that classes can be embedded in heaps[2] (which has 160B slot size)
-// TODO: restore this assertion after removing several fields from rb_classext_t
-// STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE);
+// On 32bit platforms there is no variable width allocation so it doesn't matter.
+// TODO: restore this assertion after shrinking rb_classext_t
+// STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE || SIZEOF_VALUE < SIZEOF_LONG_LONG);
 
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
 };
+
+static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
 
 static inline bool RCLASS_SINGLETON_P(VALUE klass);
 
@@ -712,6 +715,8 @@ RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 static inline void
 RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self)
 {
+    RUBY_ASSERT(depth <= RCLASS_MAX_SUPERCLASS_DEPTH);
+
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
     RCLASSEXT_SUPERCLASS_DEPTH(ext) = depth;
     RCLASSEXT_SUPERCLASSES(ext) = superclasses;

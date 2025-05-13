@@ -827,7 +827,9 @@ rb_class_update_superclasses(VALUE klass)
         superclasses = class_superclasses_including_self(super);
         RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true, true);
     }
-    RCLASS_WRITE_SUPERCLASSES(klass, super_depth + 1, superclasses, false, false);
+
+    size_t depth = super_depth == RCLASS_MAX_SUPERCLASS_DEPTH ? super_depth : super_depth + 1;
+    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false, false);
 }
 
 void
