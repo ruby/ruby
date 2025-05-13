@@ -13,7 +13,7 @@ begin
   if $LOAD_PATH.resolve_feature_path('erb/escape')
     require 'erb/escape'
   end
-rescue LoadError # resolve_feature_path raises LoadError on TruffleRuby 22.3.0
+rescue LoadError # Ruby 3.1+ doesn't raise LoadError on resolve_feature_path, but we may use Ruby 3.0 for BASERUBY here.
 end
 unless defined?(ERB::Escape)
   # ERB::Escape
