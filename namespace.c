@@ -567,10 +567,9 @@ namespace_initialize(VALUE namespace)
 
     setup_pushing_loading_namespace(ns);
 
-    // Initialize RubyGems for this new namespace, if gems are not disabled.
-    // Check if Gem constant exists in Object in this namespace context, and if so, remove it
-    // before initializing a fresh RubyGems environment
-    if (!ruby_options.disable_gems)
+    // Initialize RubyGems for this new namespace, if gems are enabled.
+    // We check if Gem exists in the main namespace as an indicator
+    if (rb_const_defined(rb_cObject, rb_intern("Gem")))
     {
         // First check if we need to remove an inherited Gem constant in this namespace's Object
         VALUE ns_object = rb_const_get(namespace, rb_intern("Object"));
@@ -1027,16 +1026,13 @@ rb_initialize_main_namespace(void)
 
     // If RubyGems was loaded in the root namespace during boot,
     // remove it and load a fresh copy in the main namespace
-    if (!ruby_options.disable_gems)
+    if (rb_const_defined(rb_cObject, rb_intern("Gem")))
     {
-        // Check if Gem constant exists in Object
-        if (rb_const_defined(rb_cObject, rb_intern("Gem")))
-        {
-            // Remove the Gem constant from the root Object
-            rb_const_remove(rb_cObject, rb_intern("Gem"));
-        }
+        // Remove the Gem constant from the root Object
+        rb_const_remove(rb_cObject, rb_intern("Gem"));
 
-        // Now load RubyGems fresh in this namespace
+        // Now load RubyGems fresh in this namespace if it wasn't disabled
+        // (if Gem was defined, then gems must be enabled)
         rb_funcall(ns->ns_object, rb_intern("require"), 1, rb_str_new_cstr("rubygems"));
     }
 }
