@@ -1139,6 +1139,11 @@ set_i_merge(int argc, VALUE *argv, VALUE set)
     if (rb_keyword_given_p()) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
+
+    if (set_iterating_p(set)) {
+        rb_raise(rb_eRuntimeError, "cannot add to set during iteration");
+    }
+
     rb_check_frozen(set);
 
     int i;
