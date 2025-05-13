@@ -2709,7 +2709,7 @@ rb_thread_io_close_wait(struct rb_io* io)
 void
 rb_thread_fd_close(int fd)
 {
-    rb_warn("rb_thread_fd_close is deprecated (and is now a no-op). Use IO with RUBY_IO_MODE_EXTERNAL and rb_io_close instead.");
+    rb_warn("rb_thread_fd_close is deprecated (and is now a no-op).");
 }
 
 /*
