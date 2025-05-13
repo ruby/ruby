@@ -75,7 +75,7 @@ jobs:
 
       - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
 
       - uses: taiki-e/install-action@v2
