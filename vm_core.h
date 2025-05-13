@@ -1178,6 +1178,7 @@ typedef struct rb_thread_struct {
     struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
+    struct rb_waiting_list *ractor_action_list;
 
     union {
         struct {

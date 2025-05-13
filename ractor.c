@@ -8,6 +8,7 @@
 #include "eval_intern.h"
 #include "vm_sync.h"
 #include "ractor_core.h"
+#include "ruby/fiber/scheduler.h"
 #include "internal/complex.h"
 #include "internal/error.h"
 #include "internal/gc.h"
@@ -17,6 +18,7 @@
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/thread.h"
+#include "internal/cont.h"
 #include "variable.h"
 #include "yjit.h"
 
@@ -582,8 +584,28 @@ ractor_wakeup(rb_ractor_t *r, rb_thread_t *th /* can be NULL */, enum rb_ractor_
                    wakeup_status_str(wakeup_status));
 
     if ((th = ractor_sleeping_by(r, th, wait_status)) != NULL) {
+        /*fprintf(stderr, "ractor wakeup\n");*/
         th->ractor_waiting.wakeup_status = wakeup_status;
-        rb_ractor_sched_wakeup(r, th);
+        VALUE scheduler = th->scheduler;
+        bool woken_up = false;
+        if (scheduler != Qnil) {
+            /*fprintf(stderr, "scheduler found\n");*/
+            struct rb_waiting_list *action_list = th->ractor_action_list;
+            while (action_list) {
+                struct rb_fiber_struct *fiber = action_list->fiber;
+                /*fprintf(stderr, "action_list found in r:%d\n", rb_ractor_id(GET_RACTOR()));*/
+                if (fiber) {
+                    /*fprintf(stderr, "fiber found\n");*/
+                    rb_fiber_scheduler_unblock(scheduler, th->self, rb_fiberptr_self(fiber));
+                    woken_up = true;
+                    break;
+                }
+                action_list = action_list->next;
+            }
+        }
+        if (!woken_up) {
+            rb_ractor_sched_wakeup(r, th);
+        }
         return true;
     }
     else {
@@ -731,9 +753,31 @@ ractor_sleep_with_cleanup(rb_execution_context_t *ec, rb_ractor_t *cr, rb_thread
 
     RUBY_DEBUG_LOG("sleep by %s", wait_status_str(wait_status));
 
-    while (cur_th->ractor_waiting.wakeup_status == wakeup_none) {
-        rb_ractor_sched_sleep(ec, cr, ractor_sleep_interrupt);
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+      while (cur_th->ractor_waiting.wakeup_status == wakeup_none) {
+        struct rb_waiting_list waiter;
+        waiter.next = cur_th->ractor_action_list;
+        waiter.fiber = rb_fiberptr_blocking(cur_th->ec->fiber_ptr) ? NULL : cur_th->ec->fiber_ptr;
+        if (waiter.fiber) {
+            fprintf(stderr, "waiter.fiber\n");
+        }
+        cur_th->ractor_action_list = &waiter;
+        fprintf(stderr, "block the fiber scheduler\n");
+        RACTOR_UNLOCK(cr);
+        {
+          rb_fiber_scheduler_block(scheduler, cur_th->self, Qnil);
+        }
+        RACTOR_LOCK(cr);
+        // TODO: use ensure with proper function
+        cur_th->ractor_action_list = cur_th->ractor_action_list->next;
         ractor_check_ints(ec, cr, cur_th, cf_func, cf_data);
+      }
+    } else {
+      while (cur_th->ractor_waiting.wakeup_status == wakeup_none) {
+          rb_ractor_sched_sleep(ec, cr, ractor_sleep_interrupt);
+          ractor_check_ints(ec, cr, cur_th, cf_func, cf_data);
+      }
     }
 
     cur_th->ractor_waiting.wait_status = wait_none;
@@ -1271,6 +1315,7 @@ ractor_wait_take(rb_execution_context_t *ec, rb_ractor_t *cr, rb_thread_t *cur_t
         .tb = take_basket,
     };
 
+    fprintf(stderr, "ractor_wait_take\n");
     RACTOR_LOCK_SELF(cr);
     {
         if (basket_none_p(take_basket) || basket_type_p(take_basket, basket_type_yielding)) {
