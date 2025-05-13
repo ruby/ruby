@@ -13,8 +13,7 @@
 #define HAVE_RB_IO_T
 struct rb_io;
 
-#include "ruby/io.h"
-
+#include "ruby/io.h"            /* for rb_io_t */
 #include "ccan/list/list.h"
 
 #define IO_WITHOUT_GVL(func, arg) rb_nogvl(func, arg, RUBY_UBF_IO, 0, RB_NOGVL_OFFLOAD_SAFE)
