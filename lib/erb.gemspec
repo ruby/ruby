@@ -7,7 +7,7 @@ end
 
 Gem::Specification.new do |spec|
   spec.name          = 'erb'
-  spec.version       = ERB.const_get(:VERSION, false)
+  spec.version       = ERB::VERSION
   spec.authors       = ['Masatoshi SEKI', 'Takashi Kokubun']
   spec.email         = ['seki@ruby-lang.org', 'k0kubun@ruby-lang.org']
 
