@@ -3717,12 +3717,14 @@ update_superclasses(rb_objspace_t *objspace, rb_classext_t *ext)
 }
 
 static void
-update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext)
+update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_iclass)
 {
     UPDATE_IF_MOVED(objspace, RCLASSEXT_ORIGIN(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_REFINED_CLASS(ext));
-    UPDATE_IF_MOVED(objspace, RCLASSEXT_INCLUDER(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CLASSPATH(ext));
+    if (is_iclass) {
+        UPDATE_IF_MOVED(objspace, RCLASSEXT_INCLUDER(ext));
+    }
 }
 
 static void
@@ -3756,7 +3758,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     update_superclasses(objspace, ext);
     update_subclasses(objspace, ext);
 
-    update_classext_values(objspace, ext);
+    update_classext_values(objspace, ext, false);
 }
 
 static void
@@ -3773,7 +3775,7 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void 
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
     update_subclasses(objspace, ext);
 
-    update_classext_values(objspace, ext);
+    update_classext_values(objspace, ext, true);
 }
 
 extern rb_symbols_t ruby_global_symbols;
