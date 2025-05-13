@@ -1923,11 +1923,8 @@ module Gem::Net   #:nodoc:
     private
 
     def unescape(value)
-      begin
-        require "cgi/escape"
-      rescue LoadError
-        require "cgi/util"
-      end
+      require 'cgi/escape'
+      require 'cgi/util' unless defined?(CGI::EscapeExt)
       CGI.unescape(value)
     end
 
