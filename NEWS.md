@@ -113,8 +113,6 @@ The following bundled gems are updated.
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
- [[Feature #18455]]
-
 ## Implementation improvements
 
 ## JIT
