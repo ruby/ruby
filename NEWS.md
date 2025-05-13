@@ -104,13 +104,16 @@ The following bundled gems are updated.
 
 * IO
 
-    * `rb_thread_fd_close` is deprecated and is now a no-op. If you need to
-      expose file descriptors from C extensions to Ruby code, use
-      `RUBY_IO_MODE_EXTERNAL` to create an `IO` instance and `rb_io_close(io)`
-      to close it (and interrupt/wait for all pending operations). The
-      behaviour is equivalent to `rb_thread_fd_close`, except that the list
-      of operations that will be interrupted is per-IO instance rather than
-      global. [[Feature #18455]]
+    * `rb_thread_fd_close` is deprecated and now a no-op. If you need to expose
+      file descriptors from C extensions to Ruby code, create an `IO` instance
+      using `RUBY_IO_MODE_EXTERNAL` and use `rb_io_close(io)` to close it (this
+      also interrupts and waits for all pending operations on the `IO`
+      instance). Directly closing file descriptors does not interrupt pending
+      operations, and may lead to undefined beahviour. In other words, if two
+      `IO` objects share the same file descriptor, closing one does not affect
+      the other. [[Feature #18455]]
+
+ [[Feature #18455]]
 
 ## Implementation improvements
 
