@@ -119,10 +119,11 @@ The following bundled gems are updated.
 
 ## JIT
 
+[Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
+[Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
-[Feature #18455]: https://bugs.ruby-lang.org/issues/18455
