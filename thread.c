@@ -2636,10 +2636,10 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
     return 1;
 }
 
-static VALUE
-thread_io_close_notify_all(VALUE _io)
+static size_t
+thread_io_close_notify_all(struct rb_io *io)
 {
-    struct rb_io *io = (void*)_io;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
     size_t count = 0;
     rb_vm_t *vm = io->closing_ec->thread_ptr->vm;
@@ -2658,7 +2658,9 @@ thread_io_close_notify_all(VALUE _io)
         count += 1;
     }
 
-    return (VALUE)count;
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
+
+    return count;
 }
 
 size_t
@@ -2681,8 +2683,7 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
 
-    size_t count = (size_t)rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
-    return count;
+    return thread_io_close_notify_all(io);
 }
 
 void
