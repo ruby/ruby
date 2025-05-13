@@ -3598,7 +3598,6 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     // Avoid mutations using bind_call, etc.
-    // We keep FL_SEEN_OBJ_ID so GC later clean the obj_id_table.
     MEMZERO((char *)obj + sizeof(struct RBasic), char, size - sizeof(struct RBasic));
     RBASIC(obj)->flags = T_OBJECT | FL_FREEZE;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
