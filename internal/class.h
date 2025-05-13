@@ -116,8 +116,10 @@ struct rb_classext_struct {
         struct {
             VALUE attached_object;
         } singleton_class;
+        struct {
+            const VALUE includer;
+        } iclass;
     } as;
-    const VALUE includer;
     attr_index_t max_iv_count;
     unsigned char variation_count;
     bool permanent_classpath : 1;
@@ -184,7 +186,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_ORIGIN(ext) (ext->origin_)
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
-#define RCLASSEXT_INCLUDER(ext) (ext->includer)
+#define RCLASSEXT_INCLUDER(ext) (ext->as.iclass.includer)
 #define RCLASSEXT_MAX_IV_COUNT(ext) (ext->max_iv_count)
 #define RCLASSEXT_VARIATION_COUNT(ext) (ext->variation_count)
 #define RCLASSEXT_PERMANENT_CLASSPATH(ext) (ext->permanent_classpath)
@@ -237,7 +239,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 // namespaces don't make changes on these refined_class/attached_object/includer
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
-#define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->includer)
+#define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
 
 // Writable classext entries (instead of RCLASS_SET_*) because member data will be operated directly
 #define RCLASS_WRITABLE_M_TBL(c) (RCLASS_EXT_WRITABLE(c)->m_tbl)
@@ -459,6 +461,7 @@ RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE origin)
 static inline void
 RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer)
 {
+    RUBY_ASSERT(RB_TYPE_P(klass, T_ICLASS));
     RB_OBJ_WRITE(klass, &(RCLASSEXT_INCLUDER(ext)), includer);
 }
 
@@ -651,7 +654,7 @@ RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined)
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
-    if (RCLASS_SINGLETON_P(klass)) {
+    if (RCLASS_SINGLETON_P(klass) || RB_TYPE_P(klass, T_ICLASS)) {
         return 0;
     }
     return RCLASS_EXT_PRIME(klass)->as.class.allocator;
@@ -702,6 +705,7 @@ RICLASS_OWNS_M_TBL_P(VALUE iclass)
 static inline void
 RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
     RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
 }
 
