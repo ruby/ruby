@@ -14,7 +14,6 @@ Gem::Specification.new do |spec|
   spec.summary       = %q{An easy to use but powerful templating system for Ruby.}
   spec.description   = %q{An easy to use but powerful templating system for Ruby.}
   spec.homepage      = 'https://github.com/ruby/erb'
-  spec.required_ruby_version = Gem::Requirement.new('>= 2.5.0')
   spec.licenses      = ['Ruby', 'BSD-2-Clause']
 
   spec.metadata['homepage_uri'] = spec.homepage
@@ -27,10 +26,11 @@ Gem::Specification.new do |spec|
   spec.executables   = ['erb']
   spec.require_paths = ['lib']
 
+  spec.required_ruby_version = '>= 3.2.0'
+
   if RUBY_ENGINE == 'jruby'
     spec.platform = 'java'
   else
-    spec.required_ruby_version = '>= 2.7.0'
     spec.extensions = ['ext/erb/escape/extconf.rb']
   end
 end

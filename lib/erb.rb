@@ -12,7 +12,6 @@
 #
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
-require 'cgi/escape'
 require 'erb/version'
 require 'erb/compiler'
 require 'erb/def_method'
