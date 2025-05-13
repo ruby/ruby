@@ -62,7 +62,7 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* json 2.11.3
+* json 2.12.0
 * optparse 0.7.0.dev.2
 * prism 1.4.0
 * psych 5.2.6
