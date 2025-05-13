@@ -70,7 +70,6 @@ jobs:
           ruby-version: '3.1'
           bundler: none
           windows-toolchain: none
-        if: ${{ matrix.os != '11-arm' }}
 
       - name: Install libraries with scoop
         run: |
