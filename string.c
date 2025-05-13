@@ -4551,22 +4551,23 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string == object -> true or false
- *    string === object -> true or false
+ *    self == object -> true or false
  *
- *  Returns +true+ if +object+ has the same length and content;
- *  as +self+; +false+ otherwise:
+ *  Returns whether +object+ has the same length and content as +self+:
  *
  *    s = 'foo'
- *    s == 'foo' # => true
+ *    s == 'foo'  # => true
  *    s == 'food' # => false
- *    s == 'FOO' # => false
+ *    s == 'FOO'  # => false
  *
  *  Returns +false+ if the two strings' encodings are not compatible:
+ *
  *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
- *  If +object+ is not an instance of +String+ but responds to +to_str+, then the
- *  two strings are compared using <code>object.==</code>.
+ *  If +object+ is not a string but responds to method <tt>to_str</tt>,
+ *  the comparison is <tt>self == object.to_str</tt>.
+ *
+ *  Related: {Comparing}[rdoc-ref:String@Comparing].
  */
 
 VALUE
