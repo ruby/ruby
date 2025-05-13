@@ -10,6 +10,14 @@ describe "Set#replace" do
     @set.should == Set[1, 2, 3]
   end
 
+  it "raises RuntimeError when called during iteration" do
+    set = Set[:a, :b, :c, :d, :e, :f]
+    set.each do |_m|
+      -> { set.replace(Set[1, 2, 3]) }.should raise_error(RuntimeError, /iteration/)
+    end
+    set.should == Set[:a, :b, :c, :d, :e, :f]
+  end
+
   it "accepts any enumerable as other" do
     @set.replace([1, 2, 3]).should == Set[1, 2, 3]
   end

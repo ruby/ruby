@@ -745,8 +745,8 @@ rb_shape_has_object_id(rb_shape_t *shape)
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;
 }
 
-rb_shape_t *
-rb_shape_object_id_shape(VALUE obj)
+shape_id_t
+rb_shape_transition_object_id(VALUE obj)
 {
     rb_shape_t* shape = rb_obj_shape(obj);
     RUBY_ASSERT(shape);
@@ -755,13 +755,13 @@ rb_shape_object_id_shape(VALUE obj)
         while (shape->type != SHAPE_OBJ_ID) {
             shape = RSHAPE(shape->parent_id);
         }
-        return shape;
     }
-
-    bool dont_care;
-    rb_shape_t* next_shape = get_next_shape_internal(shape, ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
-    RUBY_ASSERT(next_shape);
-    return next_shape;
+    else {
+        bool dont_care;
+        shape = get_next_shape_internal(shape, ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    }
+    RUBY_ASSERT(shape);
+    return rb_shape_id(shape);
 }
 
 /*

@@ -62,7 +62,8 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* json 2.11.3
+* erb 5.0.0
+* json 2.12.0
 * optparse 0.7.0.dev.2
 * prism 1.4.0
 * psych 5.2.6
@@ -102,11 +103,24 @@ The following bundled gems are updated.
 
 ## C API updates
 
+* IO
+
+    * `rb_thread_fd_close` is deprecated and now a no-op. If you need to expose
+      file descriptors from C extensions to Ruby code, create an `IO` instance
+      using `RUBY_IO_MODE_EXTERNAL` and use `rb_io_close(io)` to close it (this
+      also interrupts and waits for all pending operations on the `IO`
+      instance). Directly closing file descriptors does not interrupt pending
+      operations, and may lead to undefined beahviour. In other words, if two
+      `IO` objects share the same file descriptor, closing one does not affect
+      the other. [[Feature #18455]]
+
 ## Implementation improvements
 
 ## JIT
 
+[Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
+[Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049

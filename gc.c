@@ -1865,7 +1865,6 @@ static VALUE
 object_id(VALUE obj)
 {
     VALUE id = Qfalse;
-    rb_shape_t *shape = rb_obj_shape(obj);
     unsigned int lock_lev;
 
     // We could avoid locking if the object isn't shareable
@@ -1873,16 +1872,17 @@ object_id(VALUE obj)
     // we'd at least need to generate the object_id using atomics.
     lock_lev = rb_gc_vm_lock();
 
-    if (rb_shape_has_object_id(shape)) {
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        id = rb_obj_field_get(obj, object_id_shape);
+    shape_id_t shape_id = rb_obj_shape_id(obj);
+    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+
+    if (shape_id >= object_id_shape_id) {
+        id = rb_obj_field_get(obj, object_id_shape_id);
     }
     else {
         id = ULL2NUM(next_object_id);
         next_object_id += OBJ_ID_INCREMENT;
 
-        rb_shape_t *object_id_shape = rb_shape_object_id_shape(obj);
-        rb_obj_field_set(obj, object_id_shape, id);
+        rb_obj_field_set(obj, object_id_shape_id, id);
         if (RB_UNLIKELY(id_to_obj_tbl)) {
             st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
         }
@@ -3204,6 +3204,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_internal(RFILE(obj)->fptr->encs.ecopts);
             gc_mark_internal(RFILE(obj)->fptr->write_lock);
             gc_mark_internal(RFILE(obj)->fptr->timeout);
+            gc_mark_internal(RFILE(obj)->fptr->wakeup_mutex);
         }
         break;
 
@@ -3717,12 +3718,14 @@ update_superclasses(rb_objspace_t *objspace, rb_classext_t *ext)
 }
 
 static void
-update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext)
+update_classext_values(rb_objspace_t *objspace, rb_classext_t *ext, bool is_iclass)
 {
     UPDATE_IF_MOVED(objspace, RCLASSEXT_ORIGIN(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_REFINED_CLASS(ext));
-    UPDATE_IF_MOVED(objspace, RCLASSEXT_INCLUDER(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CLASSPATH(ext));
+    if (is_iclass) {
+        UPDATE_IF_MOVED(objspace, RCLASSEXT_INCLUDER(ext));
+    }
 }
 
 static void
@@ -3756,7 +3759,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
     update_superclasses(objspace, ext);
     update_subclasses(objspace, ext);
 
-    update_classext_values(objspace, ext);
+    update_classext_values(objspace, ext, false);
 }
 
 static void
@@ -3773,7 +3776,7 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void 
     update_cc_tbl(objspace, RCLASSEXT_CC_TBL(ext));
     update_subclasses(objspace, ext);
 
-    update_classext_values(objspace, ext);
+    update_classext_values(objspace, ext, true);
 }
 
 extern rb_symbols_t ruby_global_symbols;
@@ -4185,6 +4188,8 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->writeconv_pre_ecopts);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->encs.ecopts);
             UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->write_lock);
+            UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->timeout);
+            UPDATE_IF_MOVED(objspace, RFILE(obj)->fptr->wakeup_mutex);
         }
         break;
       case T_REGEXP:

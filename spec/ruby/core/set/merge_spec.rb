@@ -16,6 +16,13 @@ describe "Set#merge" do
     -> { Set[1, 2].merge(Object.new) }.should raise_error(ArgumentError)
   end
 
+  it "raises RuntimeError when called during iteration" do
+    set = Set[:a, :b]
+    set.each do |_m|
+      -> { set.merge([1, 2]) }.should raise_error(RuntimeError, /iteration/)
+    end
+  end
+
   ruby_version_is ""..."3.3" do
     it "accepts only a single argument" do
       -> { Set[].merge([], []) }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 1)")

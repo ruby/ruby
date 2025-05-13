@@ -1,8 +1,5 @@
-begin
-  require "cgi/escape"
-rescue LoadError
-  require "cgi/util"
-end
+require "cgi/escape"
+require "cgi/util" unless defined?(CGI::EscapeExt)
 
 module Prism
   # This visitor provides the ability to call Node#to_dot, which converts a

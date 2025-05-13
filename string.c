@@ -4610,7 +4610,7 @@ rb_str_eql(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string <=> other_string -> -1, 0, 1, or nil
+ *    self <=> other_string -> -1, 0, 1, or nil
  *
  *  Compares +self+ and +other_string+, returning:
  *
@@ -4621,13 +4621,14 @@ rb_str_eql(VALUE str1, VALUE str2)
  *
  *  Examples:
  *
- *    'foo' <=> 'foo' # => 0
+ *    'foo' <=> 'foo'  # => 0
  *    'foo' <=> 'food' # => -1
  *    'food' <=> 'foo' # => 1
- *    'FOO' <=> 'foo' # => -1
- *    'foo' <=> 'FOO' # => 1
- *    'foo' <=> 1 # => nil
+ *    'FOO' <=> 'foo'  # => -1
+ *    'foo' <=> 'FOO'  # => 1
+ *    'foo' <=> 1      # => nil
  *
+ *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
 
 static VALUE

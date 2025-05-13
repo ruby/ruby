@@ -880,7 +880,7 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 return 0;
               case ST_REPLACE:
                 if (replace) {
-                    retval = (*replace)(&key, &val, arg, TRUE);
+                    (*replace)(&key, &val, arg, TRUE);
 
                     // TODO: pair should be same as pair before.
                     pair = RHASH_AR_TABLE_REF(hash, i);
@@ -1404,26 +1404,84 @@ hash_foreach_ensure(VALUE hash)
     return 0;
 }
 
-int
-rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
+struct hash_stlike_foreach_arg {
+    VALUE hash;
+    st_foreach_callback_func *func;
+    VALUE arg;
+};
+
+static VALUE
+hash_stlike_foreach_call(VALUE args)
 {
+    struct hash_stlike_foreach_arg *argp = (void *)args;
+    VALUE hash = argp->hash;
+    st_foreach_callback_func *func = argp->func;
+    VALUE arg = argp->arg;
+    int ret;
+
     if (RHASH_AR_TABLE_P(hash)) {
-        return ar_foreach(hash, func, arg);
+        ret = ar_foreach(hash, func, arg);
     }
     else {
-        return st_foreach(RHASH_ST_TABLE(hash), func, arg);
+        ret = st_foreach(RHASH_ST_TABLE(hash), func, arg);
     }
+    return (VALUE)ret;
 }
 
 int
-rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
+rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
+    struct hash_stlike_foreach_arg args = {
+        .hash = hash,
+        .func = func,
+        .arg = arg,
+    };
+    hash_iter_lev_inc(hash);
+    VALUE ret = rb_ensure(hash_stlike_foreach_call, (VALUE)&args,
+                          hash_foreach_ensure, hash);
+    return (int)ret;
+}
+
+struct hash_stlike_foreach_with_replace_arg {
+    VALUE hash;
+    st_foreach_check_callback_func *func;
+    st_update_callback_func *replace;
+    VALUE arg;
+};
+
+static VALUE
+hash_stlike_foreach_with_replace_call(VALUE args)
+{
+    struct hash_stlike_foreach_with_replace_arg *argp = (void *)args;
+    VALUE hash = argp->hash;
+    st_foreach_check_callback_func *func = argp->func;
+    st_update_callback_func *replace = argp->replace;
+    VALUE arg = argp->arg;
+    int ret;
+
     if (RHASH_AR_TABLE_P(hash)) {
-        return ar_foreach_with_replace(hash, func, replace, arg);
+        ret = ar_foreach_with_replace(hash, func, replace, arg);
     }
     else {
-        return st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
+        ret = st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
     }
+    return (VALUE)ret;
+}
+
+int
+rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func,
+                                    st_update_callback_func *replace, st_data_t arg)
+{
+    struct hash_stlike_foreach_with_replace_arg args = {
+        .hash = hash,
+        .func = func,
+        .replace = replace,
+        .arg = arg,
+    };
+    hash_iter_lev_inc(hash);
+    VALUE ret = rb_ensure(hash_stlike_foreach_with_replace_call, (VALUE)&args,
+                          hash_foreach_ensure, hash);
+    return (int)ret;
 }
 
 static VALUE
