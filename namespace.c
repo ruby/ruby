@@ -1008,7 +1008,7 @@ rb_initialize_main_namespace(void)
     if (!namespace_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Namespace is experimental, and the behavior may change in the future!\n"
-                         "See doc/namespace.md for know issues, etc.");
+                         "See doc/namespace.md for known issues, etc.");
         namespace_experimental_warned = 1;
     }
 
