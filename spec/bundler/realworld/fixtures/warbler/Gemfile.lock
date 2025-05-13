@@ -17,9 +17,10 @@ GEM
       rubyzip (~> 1.0, < 1.4)
 
 PLATFORMS
+  arm64-darwin
   java
   ruby
-  universal-java-11
+  universal-java
 
 DEPENDENCIES
   demo!
