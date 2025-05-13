@@ -749,7 +749,7 @@ class Ractor
   #   # Ractor::ClosedError (The incoming-port is already closed)
   def close_incoming
     __builtin_cexpr! %q{
-      ractor_close_incoming(ec, RACTOR_PTR(self));
+      rb_ractor_close_incoming(ec, RACTOR_PTR(self));
     }
   end
 

@@ -1056,7 +1056,7 @@ ractor_register_take(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *t
         .sender = cr->pub.self,
         .p = {
             .take = {
-                .basket = take_basket,
+                .basket = take_basket, // basket_type_none
                 .config = config,
             },
         },
@@ -1066,6 +1066,7 @@ ractor_register_take(rb_ractor_t *cr, rb_ractor_t *r, struct rb_ractor_basket *t
     RACTOR_LOCK(r);
     {
         if (is_take && ractor_take_will(r, take_basket)) {
+            // take_basket: basket_type_will
             RUBY_DEBUG_LOG("take over a will of r:%d", rb_ractor_id(r));
         }
         else if (!is_take && ractor_take_has_will(r)) {
@@ -1314,12 +1315,25 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
 
     struct rb_ractor_basket b;
 
+retry_deq:
     if (ractor_deq_take_basket(cr, ts, &b)) {
-        VM_ASSERT(basket_type_p(&b, basket_type_take_basket));
-        VM_ASSERT(basket_type_p(b.p.take.basket, basket_type_yielding));
-
         rb_ractor_t *tr = RACTOR_PTR(b.sender);
-        struct rb_ractor_basket *tb = b.p.take.basket;
+        struct rb_ractor_basket *tb;
+        RACTOR_LOCK(tr);
+        {
+            if (tr->sync.incoming_port_closed) {
+                RUBY_DEBUG_LOG("r:%u closed", rb_ractor_id(tr));
+                RACTOR_UNLOCK(tr);
+                goto retry_deq;
+            }
+            tb = b.p.take.basket;
+
+            VM_ASSERT(basket_type_p(&b, basket_type_take_basket));
+            VM_ASSERT(basket_type_p(tb, basket_type_yielding));
+
+        }
+        RACTOR_UNLOCK(tr);
+
         enum rb_ractor_basket_type type;
 
         RUBY_DEBUG_LOG("basket from r:%u", rb_ractor_id(tr));
@@ -1341,28 +1355,39 @@ ractor_try_yield(rb_execution_context_t *ec, rb_ractor_t *cr, struct rb_ractor_q
             if (state) {
                 RACTOR_LOCK_SELF(cr);
                 {
-                    b.p.take.basket->type.e = basket_type_none;
-                    ractor_queue_enq(cr, ts, &b);
+                    if (!tr->sync.incoming_port_closed) {
+                        tb->type.e = basket_type_none;
+                        ractor_queue_enq(cr, ts, &b);
+                    }
                 }
                 RACTOR_UNLOCK_SELF(cr);
                 EC_JUMP_TAG(ec, state);
             }
         }
 
+        bool yielded = false;
         RACTOR_LOCK(tr);
         {
-            VM_ASSERT(basket_type_p(tb, basket_type_yielding));
-            // fill atomic
-            RUBY_DEBUG_LOG("fill %sbasket from r:%u", is_will ? "will " : "", rb_ractor_id(tr));
-            ractor_basket_fill_(cr, tb, obj, exc);
-            if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_yielding, type) != basket_type_yielding) {
-                rb_bug("unreachable");
+            if (tr->sync.incoming_port_closed) {
+                RUBY_DEBUG_LOG("r:%u closed (rare timing)", rb_ractor_id(tr));
+            } else {
+                VM_ASSERT(basket_type_p(tb, basket_type_yielding));
+                // fill atomic
+                RUBY_DEBUG_LOG("fill %sbasket from r:%u", is_will ? "will " : "", rb_ractor_id(tr));
+                ractor_basket_fill_(cr, tb, obj, exc);
+                if (RUBY_ATOMIC_CAS(tb->type.atomic, basket_type_yielding, type) != basket_type_yielding) {
+                    rb_bug("unreachable");
+                }
+                ractor_wakeup(tr, wait_taking, wakeup_by_yield);
+                yielded = true;
             }
-            ractor_wakeup(tr, wait_taking, wakeup_by_yield);
         }
         RACTOR_UNLOCK(tr);
+        if (!yielded) {
+            goto retry_deq;
+        }
 
-        return true;
+        return yielded;
     }
     else if (cr->sync.outgoing_port_closed) {
         rb_raise(rb_eRactorClosedError, "The outgoing-port is already closed");
@@ -1866,8 +1891,8 @@ ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ractors, VA
 
 // Ractor#close_incoming
 
-static VALUE
-ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
+VALUE
+rb_ractor_close_incoming(rb_execution_context_t *ec, rb_ractor_t *r)
 {
     VALUE prev;
 
@@ -2203,7 +2228,6 @@ ractor_yield_atexit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE v, bool e
         RACTOR_LOCK(cr);
         {
             if (!ractor_check_take_basket(cr, ts)) {
-                VM_ASSERT(cr->sync.wait.status == wait_none);
                 RUBY_DEBUG_LOG("leave a will");
                 ractor_basket_fill_will(cr, &cr->sync.will_basket, v, exc);
             }
@@ -2236,7 +2260,7 @@ void
 rb_ractor_teardown(rb_execution_context_t *ec)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    ractor_close_incoming(ec, cr);
+    rb_ractor_close_incoming(ec, cr);
     ractor_close_outgoing(ec, cr);
 
     // sync with rb_ractor_terminate_interrupt_main_thread()
@@ -4028,7 +4052,7 @@ rb_ractor_channel_close(rb_execution_context_t *ec, VALUE vch)
     VM_ASSERT(ec == rb_current_ec_noinline());
     rb_ractor_channel_t *ch = RACTOR_PTR(vch);
 
-    ractor_close_incoming(ec, (rb_ractor_t *)ch);
+    rb_ractor_close_incoming(ec, (rb_ractor_t *)ch);
     return ractor_close_outgoing(ec, (rb_ractor_t *)ch);
 }
 
@@ -4085,30 +4109,36 @@ require_result_copy_body(VALUE data)
 }
 
 static VALUE
-require_result_copy_resuce(VALUE data, VALUE errinfo)
+require_result_copy_rescue(VALUE data, VALUE errinfo)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
     crr->exception = errinfo; // ractor_move(crr->exception);
     return Qnil;
 }
 
+// Gets called by main ractor in helper thread
 static VALUE
 ractor_require_protect(struct cross_ractor_require *crr, VALUE (*func)(VALUE))
 {
+    VALUE feature = crr->feature;
+    VALUE ch = crr->ch;
     // catch any error
     rb_rescue2(func, (VALUE)crr,
                require_rescue, (VALUE)crr, rb_eException, 0);
-
     rb_rescue2(require_result_copy_body, (VALUE)crr,
-               require_result_copy_resuce, (VALUE)crr, rb_eException, 0);
+               require_result_copy_rescue, (VALUE)crr, rb_eException, 0);
 
-    rb_ractor_channel_yield(GET_EC(), crr->ch, Qtrue);
+    rb_ractor_channel_yield(GET_EC(), crr->ch, Qtrue); // require done, yield to ractor channel to inform it
+    // in case taker gets interrupted and raises, we need these on our stack too
+    RB_GC_GUARD(feature);
+    RB_GC_GUARD(ch);
     return Qnil;
 
 }
 
+// Gets called by main ractor in helper thread
 static VALUE
-ractore_require_func(void *data)
+ractor_require_func(void *data)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
     return ractor_require_protect(crr, require_body);
@@ -4118,26 +4148,35 @@ VALUE
 rb_ractor_require(VALUE feature)
 {
     // TODO: make feature shareable
-    struct cross_ractor_require crr = {
-        .feature = feature, // TODO: ractor
-        .ch = rb_ractor_channel_new(),
-        .result = Qundef,
-        .exception = Qundef,
-    };
+    VALUE ch = rb_ractor_channel_new();
+
+    struct cross_ractor_require *crrp = ALLOC(struct cross_ractor_require);
+    crrp->feature = feature;
+    crrp->ch = ch;
+    crrp->result = Qundef;
+    crrp->exception = Qundef;
 
     rb_execution_context_t *ec = GET_EC();
     rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractore_require_func, &crr, 0);
+    rb_ractor_interrupt_exec(main_r, ractor_require_func, crrp, 0);
 
     // wait for require done
-    rb_ractor_channel_take(ec, crr.ch);
-    rb_ractor_channel_close(ec, crr.ch);
+    rb_ractor_channel_take(ec, ch);
+    rb_ractor_channel_close(ec, ch);
+    VALUE exc = crrp->exception;
+    VALUE res = crrp->result;
+    VM_ASSERT(res != Qundef || exc != Qundef);
+    ruby_xfree(crrp);
 
-    if (crr.exception != Qundef) {
-        rb_exc_raise(crr.exception);
+    RB_GC_GUARD(ch);
+    RB_GC_GUARD(feature);
+
+    if (exc != Qundef) {
+        rb_exc_raise(exc);
     }
     else {
-        return crr.result;
+        VM_ASSERT(res != Qundef);
+        return res;
     }
 }
 
@@ -4159,33 +4198,47 @@ static VALUE
 ractor_autoload_load_func(void *data)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
-    return ractor_require_protect(crr, autoload_load_body);
+    VALUE module = crr->module;
+    VALUE ch = crr->ch;
+    VALUE result = ractor_require_protect(crr, autoload_load_body);
+    // in case taker gets interrupted and raises, we need these on our stack too
+    RB_GC_GUARD(module);
+    RB_GC_GUARD(ch);
+    return result;
 }
 
 VALUE
 rb_ractor_autoload_load(VALUE module, ID name)
 {
-    struct cross_ractor_require crr = {
-        .module = module,
-        .name = name,
-        .ch = rb_ractor_channel_new(),
-        .result = Qundef,
-        .exception = Qundef,
-    };
+    VALUE ch = rb_ractor_channel_new();
+    struct cross_ractor_require *crrp = ALLOC(struct cross_ractor_require);
+    crrp->module = module;
+    crrp->name = name;
+    crrp->ch = ch;
+    crrp->result = Qundef;
+    crrp->exception = Qundef;
 
     rb_execution_context_t *ec = GET_EC();
     rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, &crr, 0);
+    rb_ractor_interrupt_exec(main_r, ractor_autoload_load_func, crrp, 0);
 
     // wait for require done
-    rb_ractor_channel_take(ec, crr.ch);
-    rb_ractor_channel_close(ec, crr.ch);
+    rb_ractor_channel_take(ec, ch);
+    rb_ractor_channel_close(ec, ch);
 
-    if (crr.exception != Qundef) {
-        rb_exc_raise(crr.exception);
+    VALUE exc = crrp->exception;
+    VALUE res = crrp->result;
+    ruby_xfree(crrp);
+
+    RB_GC_GUARD(ch);
+    RB_GC_GUARD(module);
+
+    if (exc != Qundef) {
+        rb_exc_raise(exc);
     }
     else {
-        return crr.result;
+        VM_ASSERT(res != Qundef);
+        return res;
     }
 }
 

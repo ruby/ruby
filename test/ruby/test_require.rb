@@ -1011,4 +1011,20 @@ class TestRequire < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_ractor_require_bug_21090
+    omit if windows? # It times out on Windows. Needs investigation
+    assert_ractor <<~RUBY
+      1000.times do
+        # [Bug #21090]
+        Ractor.new do
+          Thread.new {
+            require("rbconfig")
+            # creates a new ractor/channel object and blocks on it
+          }
+          Thread.pass
+        end.take
+      end
+    RUBY
+  end
 end
