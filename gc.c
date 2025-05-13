@@ -1861,9 +1861,42 @@ static const rb_data_type_t id_to_obj_tbl_type = {
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
+
+static VALUE
+class_object_id(VALUE klass)
+{
+    VALUE id = RUBY_ATOMIC_VALUE_LOAD(RCLASS(klass)->object_id);
+    if (!id) {
+        unsigned int lock_lev = rb_gc_vm_lock();
+        id = ULL2NUM(next_object_id);
+        next_object_id += OBJ_ID_INCREMENT;
+        VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
+        if (existing_id) {
+            id = existing_id;
+        }
+        else if (RB_UNLIKELY(id_to_obj_tbl)) {
+            st_insert(id_to_obj_tbl, id, klass);
+        }
+        rb_gc_vm_unlock(lock_lev);
+    }
+    return id;
+}
+
 static VALUE
 object_id(VALUE obj)
 {
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        // With namespaces, classes and modules have different fields
+        // in different namespaces, so we cannot store the object id
+        // in fields.
+        return class_object_id(obj);
+      default:
+        break;
+    }
+
     VALUE id = Qfalse;
     unsigned int lock_lev;
 
@@ -1896,8 +1929,19 @@ static void
 build_id_to_obj_i(VALUE obj, void *data)
 {
     st_table *id_to_obj_tbl = (st_table *)data;
-    if (rb_shape_obj_has_id(obj)) {
-        st_insert(id_to_obj_tbl, rb_obj_id(obj), obj);
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        if (RCLASS(obj)->object_id) {
+            st_insert(id_to_obj_tbl, RCLASS(obj)->object_id, obj);
+        }
+        break;
+      default:
+        if (rb_shape_obj_has_id(obj)) {
+            st_insert(id_to_obj_tbl, rb_obj_id(obj), obj);
+        }
+        break;
     }
 }
 
@@ -1940,16 +1984,30 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 static inline void
 obj_free_object_id(VALUE obj)
 {
+    VALUE obj_id = 0;
     if (RB_UNLIKELY(id_to_obj_tbl)) {
-        if (rb_shape_obj_has_id(obj)) {
-            VALUE obj_id = object_id(obj);
-            RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
+        switch (BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            if (RCLASS(obj)->object_id) {
+                obj_id = RCLASS(obj)->object_id;
+            }
+            break;
+          default:
+            if (rb_shape_obj_has_id(obj)) {
+                obj_id = object_id(obj);
+            }
+            break;
+        }
+    }
 
-            if (!st_delete(id_to_obj_tbl, (st_data_t *)&obj_id, NULL)) {
-                // If we're currently building the table then it's not a bug
-                if (id_to_obj_tbl_built) {
-                    rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
-                }
+    if (RB_UNLIKELY(obj_id)) {
+        RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
+
+        if (!st_delete(id_to_obj_tbl, (st_data_t *)&obj_id, NULL)) {
+            // If we're currently building the table then it's not a bug
+            if (id_to_obj_tbl_built) {
+                rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
             }
         }
     }
