@@ -3826,7 +3826,7 @@ __END__
       end
 
       tempfiles = []
-      (0..fd_setsize+1).map {|i|
+      (0...fd_setsize).map {|i|
         tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
