@@ -307,6 +307,7 @@ rb_current_namespace_details(VALUE opt)
              RSTRING_PTR(part),
              th->namespaces ? RARRAY_LEN(th->namespaces) : 0,
              require_stack ? RARRAY_LEN(require_stack) : 0);
+    RB_GC_GUARD(part);
     rb_str_cat_cstr(str, buf);
 
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
@@ -314,6 +315,7 @@ rb_current_namespace_details(VALUE opt)
             nsobj = RARRAY_AREF(th->namespaces, i);
             part = rb_namespace_inspect(nsobj);
             snprintf(buf, 2048, "  th->nss[%ld] %s\n", i, RSTRING_PTR(part));
+            RB_GC_GUARD(part);
             rb_str_cat_cstr(str, buf);
         }
     }
@@ -331,6 +333,7 @@ rb_current_namespace_details(VALUE opt)
                 if (NAMESPACE_USER_P(ns)) {
                     part = rb_namespace_inspect(proc_ns->ns_object);
                     snprintf(buf, 2048, " cfp->ns:%s", RSTRING_PTR(part));
+                    RB_GC_GUARD(part);
                     calling = 0;
                     break;
                 }
@@ -350,6 +353,7 @@ rb_current_namespace_details(VALUE opt)
                              rb_id2name(cme->def->original_id),
                              RSTRING_PTR(part),
                              path);
+                    RB_GC_GUARD(part);
                     rb_str_cat_cstr(str, buf);
                     calling = 0;
                     break;
@@ -359,6 +363,7 @@ rb_current_namespace_details(VALUE opt)
                              rb_id2name(cme->def->original_id),
                              RSTRING_PTR(part),
                              path);
+                    RB_GC_GUARD(part);
                     rb_str_cat_cstr(str, buf);
                 }
             }
