@@ -1,10 +1,7 @@
 require_relative '../../../../../vendored_net_http'
 require_relative '../../../../../vendored_uri'
-begin
-  require 'cgi/escape'
-rescue LoadError
-  require 'cgi/util' # for escaping
-end
+require 'cgi/escape'
+require 'cgi/util' unless defined?(CGI::EscapeExt)
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
