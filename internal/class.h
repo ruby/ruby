@@ -138,6 +138,7 @@ STATIC_ASSERT(shape_max_variations, SHAPE_MAX_VARIATIONS < (1 << (sizeof(((rb_cl
 struct RClass {
     struct RBasic basic;
     st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
+    VALUE object_id;
     /*
      * If ns_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
      * For the check whether writable or not, check flag RCLASS_PRIME_CLASSEXT_WRITABLE
