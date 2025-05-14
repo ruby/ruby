@@ -50,7 +50,6 @@ jobs:
 
     env:
       enable_install_doc: no
-      CODEQL_ACTION_CLEANUP_TRAP_CACHES: true
 
     strategy:
       fail-fast: false
@@ -81,7 +80,6 @@ jobs:
         uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
           languages: ${{ matrix.language }}
-          dependency-caching: false
           debug: true
 
       - name: Autobuild
@@ -122,3 +120,11 @@ jobs:
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true
+
+      - name: Purge the oldest TRAP cache
+        if: ${{ github.repository == 'ruby/ruby' && matrix.language == 'cpp'}}
+        run: |
+          gh extension install actions/gh-actions-cache
+          gh actions-cache list --key codeql --order asc --limit 1 |  cut -f 1 | xargs -I{} gh actions-cache delete {} --confirm
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
