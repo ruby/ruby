@@ -86,6 +86,8 @@ int rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val);
 VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
+int rb_hash_stlike_foreach_no_ensure(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
+int rb_hash_stlike_foreach_with_replace_no_ensure(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 bool rb_hash_default_unredefined(VALUE hash);
 VALUE rb_ident_hash_new_with_size(st_index_t size);

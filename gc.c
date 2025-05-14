@@ -2675,10 +2675,10 @@ static void
 mark_hash(VALUE hash)
 {
     if (rb_hash_compare_by_id_p(hash)) {
-        rb_hash_stlike_foreach(hash, pin_key_mark_value, 0);
+        rb_hash_stlike_foreach_no_ensure(hash, pin_key_mark_value, 0);
     }
     else {
-        rb_hash_stlike_foreach(hash, mark_keyvalue, 0);
+        rb_hash_stlike_foreach_no_ensure(hash, mark_keyvalue, 0);
     }
 
     gc_mark_internal(RHASH(hash)->ifnone);
@@ -3536,7 +3536,7 @@ rb_gc_update_tbl_refs(st_table *ptr)
 static void
 gc_ref_update_hash(void *objspace, VALUE v)
 {
-    rb_hash_stlike_foreach_with_replace(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
+    rb_hash_stlike_foreach_with_replace_no_ensure(v, hash_foreach_replace, hash_replace_ref, (st_data_t)objspace);
 }
 
 static void

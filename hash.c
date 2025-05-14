@@ -1442,6 +1442,18 @@ rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg
     return (int)ret;
 }
 
+int
+rb_hash_stlike_foreach_no_ensure(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
+{
+    struct hash_stlike_foreach_arg args = {
+        .hash = hash,
+        .func = func,
+        .arg = arg,
+    };
+
+    return (int)hash_stlike_foreach_call((VALUE)&args);
+}
+
 struct hash_stlike_foreach_with_replace_arg {
     VALUE hash;
     st_foreach_check_callback_func *func;
@@ -1483,6 +1495,21 @@ rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *
                           hash_foreach_ensure, hash);
     return (int)ret;
 }
+
+int
+rb_hash_stlike_foreach_with_replace_no_ensure(VALUE hash, st_foreach_check_callback_func *func,
+                                              st_update_callback_func *replace, st_data_t arg)
+{
+    struct hash_stlike_foreach_with_replace_arg args = {
+        .hash = hash,
+        .func = func,
+        .replace = replace,
+        .arg = arg,
+    };
+
+    return (int)hash_stlike_foreach_with_replace_call((VALUE)&args);
+}
+
 
 static VALUE
 hash_foreach_call(VALUE arg)
