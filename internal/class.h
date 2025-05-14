@@ -577,7 +577,7 @@ RCLASS_FIELDS_COUNT(VALUE obj)
         return count;
     }
     else {
-        return RSHAPE(RCLASS_SHAPE_ID(obj))->next_field_index;
+        return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
     }
 }
 

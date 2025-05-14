@@ -28,6 +28,7 @@
 #include "ruby/util.h"
 #include "ruby/vm.h"
 #include "ruby/internal/encoding/string.h"
+#include "internal/object.h"
 #include "ccan/list/list.h"
 #include "darray.h"
 #include "gc/gc.h"
@@ -2123,6 +2124,9 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     RBASIC(obj)->flags = flags;
     *((VALUE *)&RBASIC(obj)->klass) = klass;
+#if RBASIC_SHAPE_ID_FIELD
+    RBASIC(obj)->shape_id = 0;
+#endif
 
     int t = flags & RUBY_T_MASK;
     if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
@@ -2968,7 +2972,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
                 if (RB_BUILTIN_TYPE(vp) != T_NONE) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC(vp)->flags = 0;
+                        RBASIC_RESET_FLAGS(vp);
                     }
                 }
             }
@@ -3042,7 +3046,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
                 if (rb_gc_shutdown_call_finalizer_p(vp)) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC(vp)->flags = 0;
+                        RBASIC_RESET_FLAGS(vp);
                     }
                 }
             }
@@ -9361,6 +9365,7 @@ rb_gc_impl_init(void)
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("DEBUG")), GC_DEBUG ? Qtrue : Qfalse);
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE - RVALUE_OVERHEAD));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_OBJ_LIMIT")), SIZET2NUM(HEAP_PAGE_OBJ_LIMIT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));
