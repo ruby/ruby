@@ -1224,18 +1224,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         return default_value;
     }
 
-#if SHAPE_IN_BASIC_FLAGS
     shape_id = RBASIC_SHAPE_ID(obj);
-#endif
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         ivar_list = ROBJECT_FIELDS(obj);
         VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
-
-#if !SHAPE_IN_BASIC_FLAGS
-        shape_id = ROBJECT_SHAPE_ID(obj);
-#endif
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1257,20 +1251,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             }
 
             ivar_list = RCLASS_PRIME_FIELDS(obj);
-
-#if !SHAPE_IN_BASIC_FLAGS
-            shape_id = RCLASS_SHAPE_ID(obj);
-#endif
-
             break;
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_fields_tbl *fields_tbl;
             rb_gen_fields_tbl_get(obj, id, &fields_tbl);
-#if !SHAPE_IN_BASIC_FLAGS
-            shape_id = fields_tbl->shape_id;
-#endif
             ivar_list = fields_tbl->as.shape.fields;
         }
         else {
@@ -1434,7 +1420,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
         attr_index_t index = rb_obj_ivar_set(obj, id, val);
 
-        shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
+        shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
         if (!rb_shape_id_too_complex_p(next_shape_id)) {
             populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
@@ -1463,11 +1449,7 @@ NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t
 static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
 {
-#if SHAPE_IN_BASIC_FLAGS
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-#else
-    shape_id_t shape_id = rb_generic_shape_id(obj);
-#endif
 
     struct gen_fields_tbl *fields_tbl = 0;
 
@@ -1493,11 +1475,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     rb_gen_fields_tbl_get(obj, 0, &fields_tbl);
 
     if (shape_id != dest_shape_id) {
-#if SHAPE_IN_BASIC_FLAGS
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-#else
-        fields_tbl->shape_id = dest_shape_id;
-#endif
     }
 
     RB_OBJ_WRITE(obj, &fields_tbl->as.shape.fields[index], val);
@@ -1516,7 +1494,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
         {
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
-            shape_id_t shape_id = ROBJECT_SHAPE_ID(obj);
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
             RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_id_too_complex_p(dest_shape_id));
 
             if (LIKELY(shape_id == dest_shape_id)) {
@@ -1531,7 +1509,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 if (shape_id == source_shape_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
 
-                    ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
+                    RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
 
                     RUBY_ASSERT(rb_shape_get_next_iv_shape(source_shape_id, id) == dest_shape_id);
                     RUBY_ASSERT(index < dest_shape->capacity);

@@ -4,6 +4,7 @@
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
+#include "internal/object.h"
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
@@ -453,6 +454,7 @@ rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(640));
     // Pretend we have 5 size pools
@@ -1019,7 +1021,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
         if (rb_gc_shutdown_call_finalizer_p(obj)) {
             rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            RBASIC_RESET_FLAGS(obj);
         }
     }
     mmtk_free_raw_vec_of_obj_ref(registered_candidates);

@@ -42,10 +42,6 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This class's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the class.
- * endif
  */
 
 /* Flags of T_ICLASS
@@ -53,10 +49,6 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID. This is set but not used.
- * endif
  */
 
 /* Flags of T_MODULE
@@ -71,10 +63,6 @@
  *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RMODULE_IS_REFINEMENT
  *           Module is used for refinements.
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the module.
- * endif
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
