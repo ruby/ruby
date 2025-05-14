@@ -829,6 +829,8 @@ shape_i(rb_shape_t *shape, void *data)
         break;
       case SHAPE_OBJ_ID:
         dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
+      case SHAPE_EXTERNAL_OBJ_ID:
+        dump_append(dc, ", \"shape_type\":\"EXTERNAL_OBJ_ID\"");
         break;
     }
 

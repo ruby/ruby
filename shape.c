@@ -47,6 +47,7 @@
 
 static ID id_frozen;
 static ID id_t_object;
+static ID id_external_object_id;
 ID ruby_internal_object_id; // extern
 
 #define LEAF 0
@@ -468,6 +469,10 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
     rb_shape_t *new_shape = rb_shape_alloc(id, shape, shape_type);
 
     switch (shape_type) {
+      case SHAPE_EXTERNAL_OBJ_ID:
+        new_shape->flags |= SHAPE_FL_HAS_OBJECT_ID;
+        new_shape->next_field_index = shape->next_field_index;
+        break;
       case SHAPE_OBJ_ID:
         new_shape->flags |= SHAPE_FL_HAS_OBJECT_ID;
         // fallthrough
@@ -746,13 +751,27 @@ rb_shape_has_object_id(rb_shape_t *shape)
 }
 
 shape_id_t
+rb_shape_object_id(VALUE obj)
+{
+    rb_shape_t *shape = rb_obj_shape(obj);
+    RUBY_ASSERT(shape);
+    RUBY_ASSERT(shape->flags & SHAPE_FL_HAS_OBJECT_ID);
+
+    while (shape->type != SHAPE_OBJ_ID && shape->type != SHAPE_EXTERNAL_OBJ_ID) {
+        shape = RSHAPE(shape->parent_id);
+    }
+    return rb_shape_id(shape);
+}
+
+shape_id_t
 rb_shape_transition_object_id(VALUE obj)
 {
-    rb_shape_t* shape = rb_obj_shape(obj);
+    rb_shape_t *shape = rb_obj_shape(obj);
     RUBY_ASSERT(shape);
 
     if (shape->flags & SHAPE_FL_HAS_OBJECT_ID) {
         while (shape->type != SHAPE_OBJ_ID) {
+            RUBY_ASSERT(shape->type != SHAPE_EXTERNAL_OBJ_ID);
             shape = RSHAPE(shape->parent_id);
         }
     }
@@ -760,7 +779,28 @@ rb_shape_transition_object_id(VALUE obj)
         bool dont_care;
         shape = get_next_shape_internal(shape, ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
     }
+
+    RUBY_ASSERT(shape && shape->type == SHAPE_OBJ_ID);
+    return rb_shape_id(shape);
+}
+
+shape_id_t
+rb_shape_transition_external_object_id(VALUE obj)
+{
+    rb_shape_t* shape = rb_obj_shape(obj);
     RUBY_ASSERT(shape);
+
+    if (shape->flags & SHAPE_FL_HAS_OBJECT_ID) {
+        while (shape->type != SHAPE_EXTERNAL_OBJ_ID) {
+            RUBY_ASSERT(shape->type != SHAPE_OBJ_ID);
+            shape = RSHAPE(shape->parent_id);
+        }
+    }
+    else {
+        bool dont_care;
+        shape = get_next_shape_internal(shape, id_external_object_id, SHAPE_EXTERNAL_OBJ_ID, &dont_care, true);
+    }
+    RUBY_ASSERT(shape && shape->type == SHAPE_EXTERNAL_OBJ_ID);
     return rb_shape_id(shape);
 }
 
@@ -924,6 +964,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
                 return false;
               case SHAPE_OBJ_TOO_COMPLEX:
               case SHAPE_OBJ_ID:
+              case SHAPE_EXTERNAL_OBJ_ID:
               case SHAPE_FROZEN:
                 rb_bug("Ivar should not exist on transition");
             }
@@ -1009,6 +1050,7 @@ shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     switch ((enum shape_type)dest_shape->type) {
       case SHAPE_IVAR:
       case SHAPE_OBJ_ID:
+      case SHAPE_EXTERNAL_OBJ_ID:
       case SHAPE_FROZEN:
         if (!next_shape->edges) {
             return NULL;
@@ -1080,6 +1122,7 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
         midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
         break;
       case SHAPE_OBJ_ID:
+      case SHAPE_EXTERNAL_OBJ_ID:
       case SHAPE_ROOT:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
@@ -1368,6 +1411,7 @@ Init_default_shapes(void)
 
     id_frozen = rb_make_internal_id();
     id_t_object = rb_make_internal_id();
+    id_external_object_id = rb_make_internal_id();
     ruby_internal_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP

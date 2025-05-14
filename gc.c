@@ -1879,6 +1879,61 @@ static const rb_data_type_t id2ref_tbl_type = {
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+static VALUE obj_to_id_value = 0;
+static st_table *obj_to_id_tbl = NULL;
+
+static void mark_hash_values(st_table *tbl);
+
+static void
+obj_to_id_tbl_mark(void *data)
+{
+    st_table *table = (st_table *)data;
+    if (UNLIKELY(!RB_POSFIXABLE(LAST_OBJECT_ID()))) {
+        // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
+        mark_hash_values(table);
+    }
+    // We purposedly don't mark keys, as they are weak references.
+    // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
+}
+
+static size_t
+obj_to_id_tbl_memsize(const void *data)
+{
+    return rb_st_memsize(data);
+}
+
+static void
+obj_to_id_tbl_compact(void *data)
+{
+    st_table *table = (st_table *)data;
+    if (LIKELY(RB_POSFIXABLE(LAST_OBJECT_ID()))) {
+        // We know values are all FIXNUM, so no need to update them.
+        gc_ref_update_table_keys_only(table);
+    }
+    else {
+        gc_update_table_refs(table);
+    }
+}
+
+static void
+obj_to_id_tbl_free(void *data)
+{
+    obj_to_id_tbl = NULL; // clear global ref
+    st_table *table = (st_table *)data;
+    st_free_table(table);
+}
+
+static const rb_data_type_t obj_to_id_tbl_type = {
+    .wrap_struct_name = "VM/obj_to_id_table",
+    .function = {
+        .dmark = obj_to_id_tbl_mark,
+        .dfree = obj_to_id_tbl_free,
+        .dsize = obj_to_id_tbl_memsize,
+        .dcompact = obj_to_id_tbl_compact,
+    },
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+};
+
 #define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
 
 static VALUE
@@ -1901,23 +1956,46 @@ class_object_id(VALUE klass)
 }
 
 static VALUE
-object_id0(VALUE obj)
+object_id0(VALUE obj, bool shareable)
 {
     VALUE id = Qfalse;
 
-    if (rb_shape_has_object_id(rb_obj_shape(obj))) {
-        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
-        id = rb_obj_field_get(obj, object_id_shape_id);
+    rb_shape_t *current_shape = rb_obj_shape(obj);
+
+    if (rb_shape_has_object_id(current_shape)) {
+        shape_id_t object_id_shape_id = rb_shape_object_id(obj);
+
+        if (RB_UNLIKELY(shareable && RSHAPE(object_id_shape_id)->type == SHAPE_EXTERNAL_OBJ_ID)) {
+            RUBY_ASSERT(obj_to_id_tbl);
+            st_lookup(obj_to_id_tbl, obj, &id);
+        }
+        else {
+            id = rb_obj_field_get(obj, object_id_shape_id);
+        }
         RUBY_ASSERT(id, "object_id missing");
         return id;
     }
 
-    // rb_shape_object_id_shape may lock if the current shape has
-    // multiple children.
-    shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
-
     id = generate_next_object_id();
-    rb_obj_field_set(obj, object_id_shape_id, id);
+    // If the object is shareable and doesn't have free capacity we can't safely
+    // resize it. So we have to store the object_id externally.
+    if (shareable && current_shape->capacity && current_shape->next_field_index == current_shape->capacity) {
+        shape_id_t object_id_shape_id = rb_shape_transition_external_object_id(obj);
+
+        if (RB_UNLIKELY(!obj_to_id_tbl)) {
+            obj_to_id_tbl = st_init_numtable();
+            obj_to_id_value = TypedData_Wrap_Struct(0, &obj_to_id_tbl_type, obj_to_id_tbl);
+        }
+        st_insert(obj_to_id_tbl, obj, id);
+        rb_shape_set_shape_id(obj, object_id_shape_id);
+    }
+    else {
+        // rb_shape_object_id_shape may lock if the current shape has
+        // multiple children.
+        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+        rb_obj_field_set(obj, object_id_shape_id, id);
+    }
+
     if (RB_UNLIKELY(id2ref_tbl)) {
         st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
     }
@@ -1941,14 +2019,14 @@ object_id(VALUE obj)
         break;
     }
 
-    if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
+    if (UNLIKELY(rb_gc_multi_ractor_p() && RB_OBJ_SHAREABLE_P(obj))) {
         unsigned int lock_lev = rb_gc_vm_lock();
-        VALUE id = object_id0(obj);
+        VALUE id = object_id0(obj, true);
         rb_gc_vm_unlock(lock_lev);
         return id;
     }
 
-    return object_id0(obj);
+    return object_id0(obj, false);
 }
 
 static void
@@ -2024,23 +2102,35 @@ obj_free_object_id(VALUE obj)
     }
 
     VALUE obj_id = 0;
-    if (RB_UNLIKELY(id2ref_tbl)) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            if (RCLASS(obj)->object_id) {
-                obj_id = RCLASS(obj)->object_id;
-            }
-            break;
-          default:
-            if (rb_shape_obj_has_id(obj)) {
-                obj_id = object_id(obj);
-            }
-            break;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        if (RB_LIKELY(!id2ref_tbl)) return;
+
+        if (RCLASS(obj)->object_id) {
+            obj_id = RCLASS(obj)->object_id;
         }
+        break;
+      default:
+        if (rb_shape_obj_has_id(obj)) {
+            shape_id_t shape_id = rb_shape_object_id(obj);
+            if (RSHAPE(shape_id)->type == SHAPE_EXTERNAL_OBJ_ID) {
+                RUBY_ASSERT(obj_to_id_tbl);
+
+                VALUE key = obj;
+                st_delete(obj_to_id_tbl, &key, &obj_id);
+            }
+            else {
+                if (RB_LIKELY(!id2ref_tbl)) return;
+
+                obj_id = rb_obj_field_get(obj, shape_id);
+            }
+            RUBY_ASSERT(obj_id);
+        }
+        break;
     }
 
-    if (RB_UNLIKELY(obj_id)) {
+    if (RB_UNLIKELY(id2ref_tbl && obj_id)) {
         RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
 
         if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
@@ -2733,12 +2823,28 @@ mark_key(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+mark_value(st_data_t key, st_data_t value, st_data_t data)
+{
+    gc_mark_internal((VALUE)value);
+
+    return ST_CONTINUE;
+}
+
 void
 rb_mark_set(st_table *tbl)
 {
     if (!tbl) return;
 
     st_foreach(tbl, mark_key, (st_data_t)rb_gc_get_objspace());
+}
+
+static void
+mark_hash_values(st_table *tbl)
+{
+    if (!tbl) return;
+
+    st_foreach(tbl, mark_value, 0);
 }
 
 static int
@@ -4148,6 +4254,17 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         }
         break;
       }
+      case RB_GC_VM_OBJ_TO_ID_TABLE: {
+        if (obj_to_id_tbl) {
+            st_foreach_with_replace(
+                obj_to_id_tbl,
+                vm_weak_table_foreach_weak_key,
+                vm_weak_table_foreach_update_weak_key,
+                (st_data_t)&foreach_data
+            );
+        }
+        break;
+      }
       case RB_GC_VM_GENERIC_FIELDS_TABLE: {
         st_table *generic_fields_tbl = rb_generic_fields_tbl_get();
         if (generic_fields_tbl) {
@@ -5528,6 +5645,7 @@ Init_GC(void)
 {
 #undef rb_intern
     rb_gc_register_address(&id2ref_value);
+    rb_gc_register_address(&obj_to_id_value);
 
     malloc_offset = gc_compute_malloc_offset();
 
