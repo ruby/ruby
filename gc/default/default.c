@@ -40,7 +40,19 @@
 # include "debug_counter.h"
 #endif
 
-#include "internal/sanitizers.h"
+#ifdef BUILDING_MODULAR_GC
+# define rb_asan_poison_object(_obj) (0)
+# define rb_asan_unpoison_object(_obj, _newobj_p) (0)
+# define asan_unpoisoning_object(_obj) if (true)
+# define asan_poison_memory_region(_ptr, _size) (0)
+# define asan_unpoison_memory_region(_ptr, _size, _malloc_p) (0)
+# define asan_unpoisoning_memory_region(_ptr, _size) if (true)
+
+# define VALGRIND_MAKE_MEM_DEFINED(_ptr, _size) (0)
+# define VALGRIND_MAKE_MEM_UNDEFINED(_ptr, _size) (0)
+#else
+# include "internal/sanitizers.h"
+#endif
 
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
