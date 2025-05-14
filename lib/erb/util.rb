@@ -8,14 +8,12 @@
 # TruffleRuby: lib/truffle/cgi/escape.rb requires 'cgi/util'.
 require 'cgi/escape'
 
+# Load or define ERB::Escape#html_escape.
+# We don't build the C extention 'cgi/escape' for JRuby, TruffleRuby, and WASM.
+# miniruby (used by CRuby build scripts) also fails to load erb/escape.so.
 begin
-  # We don't build the C extension for JRuby, TruffleRuby, and WASM
-  if $LOAD_PATH.resolve_feature_path('erb/escape')
-    require 'erb/escape'
-  end
-rescue LoadError # Ruby 3.1+ doesn't raise LoadError on resolve_feature_path, but we may use Ruby 3.0 for BASERUBY here.
-end
-unless defined?(ERB::Escape)
+  require 'erb/escape'
+rescue LoadError
   # ERB::Escape
   #
   # A subset of ERB::Util. Unlike ERB::Util#html_escape, we expect/hope

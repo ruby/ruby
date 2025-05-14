@@ -152,6 +152,8 @@ jobs:
 
       - name: Run basictest
         run: wasmtime run ./../build/miniruby --mapdir /::./ -- basictest/test.rb
+        env:
+          WASMTIME_BACKTRACE_DETAILS: '1'
         working-directory: src
 
       - name: Run bootstraptest (no thread)
