@@ -148,7 +148,7 @@ static int hrtime_update_expire(rb_hrtime_t *, const rb_hrtime_t);
 NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 MAYBE_UNUSED(static int consume_communication_pipe(int fd));
 
-static volatile int system_working = 1;
+static rb_atomic_t system_working = 1;
 static rb_internal_thread_specific_key_t specific_key_count;
 
 /********************************************************************************/
