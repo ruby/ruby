@@ -62,61 +62,6 @@ module Gem
     WINDOWS = [MSWIN, MSWIN64, UNIVERSAL_MINGW].flatten.freeze
     X64_LINUX = Gem::Platform.new("x86_64-linux")
     X64_LINUX_MUSL = Gem::Platform.new("x86_64-linux-musl")
-
-    if X64_LINUX === X64_LINUX_MUSL
-      remove_method :===
-
-      def ===(other)
-        return nil unless Gem::Platform === other
-
-        # universal-mingw32 matches x64-mingw-ucrt
-        return true if (@cpu == "universal" || other.cpu == "universal") &&
-                       @os.start_with?("mingw") && other.os.start_with?("mingw")
-
-        # cpu
-        ([nil,"universal"].include?(@cpu) || [nil, "universal"].include?(other.cpu) || @cpu == other.cpu ||
-        (@cpu == "arm" && other.cpu.start_with?("armv"))) &&
-
-          # os
-          @os == other.os &&
-
-          # version
-          (
-            (@os != "linux" && (@version.nil? || other.version.nil?)) ||
-            (@os == "linux" && (normalized_linux_version == other.normalized_linux_version || ["musl#{@version}", "musleabi#{@version}", "musleabihf#{@version}"].include?(other.version))) ||
-            @version == other.version
-          )
-      end
-    end
-  end
-
-  Platform.singleton_class.module_eval do
-    unless Platform.singleton_methods.include?(:match_spec?)
-      def match_spec?(spec)
-        match_gem?(spec.platform, spec.name)
-      end
-
-      def match_gem?(platform, gem_name)
-        match_platforms?(platform, Gem.platforms)
-      end
-    end
-
-    match_platforms_defined = Gem::Platform.respond_to?(:match_platforms?, true)
-
-    if !match_platforms_defined || Gem::Platform.send(:match_platforms?, Gem::Platform::X64_LINUX_MUSL, [Gem::Platform::X64_LINUX])
-
-      private
-
-      remove_method :match_platforms? if match_platforms_defined
-
-      def match_platforms?(platform, platforms)
-        platforms.any? do |local_platform|
-          platform.nil? ||
-            local_platform == platform ||
-            (local_platform != Gem::Platform::RUBY && platform =~ local_platform)
-        end
-      end
-    end
   end
 
   require "rubygems/specification"
