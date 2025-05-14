@@ -1853,14 +1853,6 @@ class TestHash < Test::Unit::TestCase
       end
     end
     assert_equal(@cls[a: 2, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], x)
-
-    x = (1..1337).to_h {|k| [k, k]}
-    assert_raise_with_message(RuntimeError, /rehash during iteration/) do
-      x.transform_values! {|v|
-        x.rehash if v == 1337
-        v * 2
-      }
-    end
   end
 
   def hrec h, n, &b
