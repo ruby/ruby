@@ -123,8 +123,6 @@ jobs:
 
       - name: Purge the oldest TRAP cache
         if: ${{ github.repository == 'ruby/ruby' && matrix.language == 'cpp'}}
-        run: |
-          gh extension install actions/gh-actions-cache
-          gh actions-cache list --key codeql --order asc --limit 1 |  cut -f 1 | xargs -I{} gh actions-cache delete {} --confirm
+        run: gh cache list --key codeql --order asc --limit 1 --json key --jq '.[].key' | xargs -I{} gh cache delete {}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
