@@ -1775,15 +1775,15 @@ rb_gc_pointer_to_heap_p(VALUE obj)
 #define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
 
 static unsigned long long next_object_id = OBJ_ID_INITIAL;
-static VALUE id_to_obj_value = 0;
-static st_table *id_to_obj_tbl = NULL;
-static bool id_to_obj_tbl_built = false;
+static VALUE id2ref_value = 0;
+static st_table *id2ref_tbl = NULL;
+static bool id2ref_tbl_built = false;
 
 void
 rb_gc_obj_id_moved(VALUE obj)
 {
-    if (UNLIKELY(id_to_obj_tbl)) {
-        st_insert(id_to_obj_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
+    if (UNLIKELY(id2ref_tbl)) {
+        st_insert(id2ref_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
     }
 }
 
@@ -1812,7 +1812,7 @@ static const struct st_hash_type object_id_hash_type = {
 static void gc_mark_tbl_no_pin(st_table *table);
 
 static void
-id_to_obj_tbl_mark(void *data)
+id2ref_tbl_mark(void *data)
 {
     st_table *table = (st_table *)data;
     if (UNLIKELY(!RB_POSFIXABLE(next_object_id))) {
@@ -1824,13 +1824,13 @@ id_to_obj_tbl_mark(void *data)
 }
 
 static size_t
-id_to_obj_tbl_memsize(const void *data)
+id2ref_tbl_memsize(const void *data)
 {
     return rb_st_memsize(data);
 }
 
 static void
-id_to_obj_tbl_compact(void *data)
+id2ref_tbl_compact(void *data)
 {
     st_table *table = (st_table *)data;
     if (LIKELY(RB_POSFIXABLE(next_object_id))) {
@@ -1843,20 +1843,20 @@ id_to_obj_tbl_compact(void *data)
 }
 
 static void
-id_to_obj_tbl_free(void *data)
+id2ref_tbl_free(void *data)
 {
-    id_to_obj_tbl = NULL; // clear global ref
+    id2ref_tbl = NULL; // clear global ref
     st_table *table = (st_table *)data;
     st_free_table(table);
 }
 
-static const rb_data_type_t id_to_obj_tbl_type = {
-    .wrap_struct_name = "VM/id_to_obj_table",
+static const rb_data_type_t id2ref_tbl_type = {
+    .wrap_struct_name = "VM/_id2ref_table",
     .function = {
-        .dmark = id_to_obj_tbl_mark,
-        .dfree = id_to_obj_tbl_free,
-        .dsize = id_to_obj_tbl_memsize,
-        .dcompact = id_to_obj_tbl_compact,
+        .dmark = id2ref_tbl_mark,
+        .dfree = id2ref_tbl_free,
+        .dsize = id2ref_tbl_memsize,
+        .dcompact = id2ref_tbl_compact,
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1875,8 +1875,8 @@ class_object_id(VALUE klass)
         if (existing_id) {
             id = existing_id;
         }
-        else if (RB_UNLIKELY(id_to_obj_tbl)) {
-            st_insert(id_to_obj_tbl, id, klass);
+        else if (RB_UNLIKELY(id2ref_tbl)) {
+            st_insert(id2ref_tbl, id, klass);
         }
         rb_gc_vm_unlock(lock_lev);
     }
@@ -1916,8 +1916,8 @@ object_id(VALUE obj)
         next_object_id += OBJ_ID_INCREMENT;
 
         rb_obj_field_set(obj, object_id_shape_id, id);
-        if (RB_UNLIKELY(id_to_obj_tbl)) {
-            st_insert(id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
+        if (RB_UNLIKELY(id2ref_tbl)) {
+            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
         }
     }
 
@@ -1926,20 +1926,20 @@ object_id(VALUE obj)
 }
 
 static void
-build_id_to_obj_i(VALUE obj, void *data)
+build_id2ref_i(VALUE obj, void *data)
 {
-    st_table *id_to_obj_tbl = (st_table *)data;
+    st_table *id2ref_tbl = (st_table *)data;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         if (RCLASS(obj)->object_id) {
-            st_insert(id_to_obj_tbl, RCLASS(obj)->object_id, obj);
+            st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
       default:
         if (rb_shape_obj_has_id(obj)) {
-            st_insert(id_to_obj_tbl, rb_obj_id(obj), obj);
+            st_insert(id2ref_tbl, rb_obj_id(obj), obj);
         }
         break;
     }
@@ -1952,20 +1952,20 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 
     unsigned int lev = rb_gc_vm_lock();
 
-    if (!id_to_obj_tbl) {
+    if (!id2ref_tbl) {
         rb_gc_vm_barrier(); // stop other ractors
 
         // GC Must not trigger while we build the table, otherwise if we end
         // up freeing an object that had an ID, we might try to delete it from
         // the table even though it wasn't inserted yet.
-        id_to_obj_tbl = st_init_table(&object_id_hash_type);
-        id_to_obj_value = TypedData_Wrap_Struct(0, &id_to_obj_tbl_type, id_to_obj_tbl);
-        rb_gc_impl_each_object(objspace, build_id_to_obj_i, (void *)id_to_obj_tbl);
-        id_to_obj_tbl_built = true;
+        id2ref_tbl = st_init_table(&object_id_hash_type);
+        id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
+        rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+        id2ref_tbl_built = true;
     }
 
     VALUE obj;
-    bool found = st_lookup(id_to_obj_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+    bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
 
     rb_gc_vm_unlock(lev);
 
@@ -1985,7 +1985,7 @@ static inline void
 obj_free_object_id(VALUE obj)
 {
     VALUE obj_id = 0;
-    if (RB_UNLIKELY(id_to_obj_tbl)) {
+    if (RB_UNLIKELY(id2ref_tbl)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
@@ -2004,10 +2004,10 @@ obj_free_object_id(VALUE obj)
     if (RB_UNLIKELY(obj_id)) {
         RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
 
-        if (!st_delete(id_to_obj_tbl, (st_data_t *)&obj_id, NULL)) {
+        if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
             // If we're currently building the table then it's not a bug
-            if (id_to_obj_tbl_built) {
-                rb_bug("Object ID seen, but not in id_to_obj table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+            if (id2ref_tbl_built) {
+                rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
             }
         }
     }
@@ -3945,7 +3945,7 @@ vm_weak_table_gen_fields_foreach_too_complex_replace_i(st_data_t *_key, st_data_
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
-vm_weak_table_id_to_obj_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+vm_weak_table_id2ref_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
@@ -3958,7 +3958,7 @@ vm_weak_table_id_to_obj_foreach(st_data_t key, st_data_t value, st_data_t data, 
 }
 
 static int
-vm_weak_table_id_to_obj_foreach_update(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+vm_weak_table_id2ref_foreach_update(st_data_t *key, st_data_t *value, st_data_t data, int existing)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
 
@@ -4098,12 +4098,12 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         }
         break;
       }
-      case RB_GC_VM_ID_TO_OBJ_TABLE: {
-        if (id_to_obj_tbl) {
+      case RB_GC_VM_ID2REF_TABLE: {
+        if (id2ref_tbl) {
             st_foreach_with_replace(
-                id_to_obj_tbl,
-                vm_weak_table_id_to_obj_foreach,
-                vm_weak_table_id_to_obj_foreach_update,
+                id2ref_tbl,
+                vm_weak_table_id2ref_foreach,
+                vm_weak_table_id2ref_foreach_update,
                 (st_data_t)&foreach_data
             );
         }
@@ -5488,7 +5488,7 @@ void
 Init_GC(void)
 {
 #undef rb_intern
-    rb_gc_register_address(&id_to_obj_value);
+    rb_gc_register_address(&id2ref_value);
 
     malloc_offset = gc_compute_malloc_offset();
 
