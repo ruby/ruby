@@ -1875,6 +1875,12 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_too_big_number_for_repeat_range
+    assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
+      eval(%[/|{1000000}/])
+    end
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
