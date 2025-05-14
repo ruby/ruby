@@ -1297,6 +1297,17 @@ class TestHash < Test::Unit::TestCase
     assert_equal(@cls[a: 10, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9, j: 10], h)
   end
 
+  def test_update_modify_in_block
+    a = @cls[]
+    (1..1337).each {|k| a[k] = k}
+    b = {1=>1338}
+    assert_raise_with_message(RuntimeError, /rehash during iteration/) do
+      a.update(b) {|k, o, n|
+        a.rehash
+      }
+    end
+  end
+
   def test_update_on_identhash
     key = +'a'
     i = @cls[].compare_by_identity
