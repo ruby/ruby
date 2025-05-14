@@ -1135,7 +1135,6 @@ impl Function {
         fn reduce_to_ccall(
             fun: &mut Function,
             block: BlockId,
-            payload: &profile::IseqPayload,
             self_type: Type,
             send: Insn,
             send_insn_id: InsnId,
@@ -1147,7 +1146,6 @@ impl Function {
             let call_info = unsafe { (*cd).ci };
             let argc = unsafe { vm_ci_argc(call_info) };
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
-            let iseq_insn_idx = fun.frame_state(state).insn_idx;
 
             // If we have info about the class of the receiver
             //
@@ -1157,10 +1155,10 @@ impl Function {
             let (recv_class, guard_type) = if let Some(klass) = self_type.runtime_exact_ruby_class() {
                 (klass, None)
             } else {
-                payload.get_operand_types(iseq_insn_idx)
-                .and_then(|types| types.get(argc as usize))
-                .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, Some(recv_type.unspecialized())))))
-                .ok_or(())?
+                let iseq_insn_idx = fun.frame_state(state).insn_idx;
+                let Some(recv_type) = fun.profiles.type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
+                let Some(recv_class) = recv_type.exact_ruby_class() else { return Err(()) };
+                (recv_class, Some(recv_type.unspecialized()))
             };
 
             // Do method lookup
@@ -1226,14 +1224,13 @@ impl Function {
             Err(())
         }
 
-        let payload = get_or_create_iseq_payload(self.iseq);
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 if let send @ Insn::SendWithoutBlock { self_val, .. } = self.find(insn_id) {
                     let self_type = self.type_of(self_val);
-                    if reduce_to_ccall(self, block, payload, self_type, send, insn_id).is_ok() {
+                    if reduce_to_ccall(self, block, self_type, send, insn_id).is_ok() {
                         continue;
                     }
                 }
