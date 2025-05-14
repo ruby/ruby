@@ -31,7 +31,6 @@ module Bundler
       @extension = options[:ext]
 
       validate_ext_name if @extension
-      validate_rust_builder_rubygems_version if @extension == "rust"
     end
 
     def run
