@@ -6315,11 +6315,11 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *    string[index] = new_string
- *    string[start, length] = new_string
- *    string[range] = new_string
- *    string[regexp, capture = 0] = new_string
- *    string[substring] = new_string
+ *    self[index] = new_string
+ *    self[start, length] = new_string
+ *    self[range] = new_string
+ *    self[regexp, capture = 0] = new_string
+ *    self[substring] = new_string
  *
  *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
  *  See {String Slices}[rdoc-ref:String@String+Slices].
@@ -6338,6 +6338,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    s['lly'] = 'ncial' # => "ncial"
  *    s                  # => "financial"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
