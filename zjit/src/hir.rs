@@ -1036,7 +1036,6 @@ impl Function {
     /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
     /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
     fn optimize_direct_sends(&mut self) {
-        let payload = get_or_create_iseq_payload(self.iseq);
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
@@ -1071,8 +1070,8 @@ impl Function {
                             (klass, None)
                         } else {
                             // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
-                            match payload.get_operand_types(frame_state.insn_idx) {
-                                Some([self_type, ..]) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
+                            match self.profiles.type_of_at(self_val, frame_state.insn_idx) {
+                                Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
                                 _ => { self.push_insn_id(block, insn_id); continue; }
                             }
                         };
@@ -1730,8 +1729,7 @@ impl ProfileOracle {
     fn profile_stack(&mut self, state: &FrameState) {
         let Some(operand_types) = self.payload.get_operand_types(state.insn_idx) else { return };
         for (idx, &insn) in state.stack.iter().enumerate() {
-            let stack_idx = state.stack.len() - idx - 1;
-            self.types.insert((insn, state.insn_idx), operand_types[stack_idx]);
+            self.types.insert((insn, state.insn_idx), operand_types[idx]);
         }
     }
 
