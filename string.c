@@ -5319,10 +5319,10 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    self =~ regexp -> integer or nil
+ *    self =~ object -> integer or nil
  *
- *  Returns the index of the first matching substring in +self+
- *  matched by +regexp+,
+ *  When +object+ is a Regexp, returns the index of the first substring in +self+
+ *  matched by +object+,
  *  or +nil+ if no match is found;
  *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
@@ -5341,6 +5341,9 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
  *    number                      # => nil # Not assigned.
  *    /(?<number>\d+)/ =~ 'no. 9' # => 4
  *    number                      # => "9" # Assigned.
+ *
+ *  If +object+ is not a Regexp, returns the value
+ *  returned by <tt>object =~ self</tt>.
  *
  *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
