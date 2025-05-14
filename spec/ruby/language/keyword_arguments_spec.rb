@@ -336,61 +336,23 @@ describe "Keyword arguments" do
       end
     end
 
-    ruby_version_is "3.2" do
-      it "does not work with call(*ruby2_keyword_args) with missing ruby2_keywords in between" do
-        class << self
-          def n(*args) # Note the missing ruby2_keywords here
-            target(*args)
-          end
-
-          ruby2_keywords def m(*args)
-            n(*args)
-          end
+    it "does not work with call(*ruby2_keyword_args) with missing ruby2_keywords in between" do
+      class << self
+        def n(*args) # Note the missing ruby2_keywords here
+          target(*args)
         end
 
-        empty = {}
-        m(**empty).should == [[], {}]
-        m(empty).should == [[{}], {}]
-
-        m(a: 1).should == [[{a: 1}], {}]
-        m({a: 1}).should == [[{a: 1}], {}]
-      end
-    end
-
-    ruby_version_is ""..."3.2" do
-      # https://bugs.ruby-lang.org/issues/18625
-      it "works with call(*ruby2_keyword_args) with missing ruby2_keywords in between due to CRuby bug #18625" do
-        class << self
-          def n(*args) # Note the missing ruby2_keywords here
-            target(*args)
-          end
-
-          ruby2_keywords def m(*args)
-            n(*args)
-          end
+        ruby2_keywords def m(*args)
+          n(*args)
         end
-
-        empty = {}
-        m(**empty).should == [[], {}]
-        Hash.ruby2_keywords_hash?(empty).should == false
-        m(empty).should == [[{}], {}]
-        Hash.ruby2_keywords_hash?(empty).should == false
-
-        m(a: 1).should == [[], {a: 1}]
-        m({a: 1}).should == [[{a: 1}], {}]
-
-        kw = {a: 1}
-
-        m(**kw).should == [[], {a: 1}]
-        m(**kw)[1].should == kw
-        m(**kw)[1].should_not.equal?(kw)
-        Hash.ruby2_keywords_hash?(kw).should == false
-        Hash.ruby2_keywords_hash?(m(**kw)[1]).should == false
-
-        m(kw).should == [[{a: 1}], {}]
-        m(kw)[0][0].should.equal?(kw)
-        Hash.ruby2_keywords_hash?(kw).should == false
       end
+
+      empty = {}
+      m(**empty).should == [[], {}]
+      m(empty).should == [[{}], {}]
+
+      m(a: 1).should == [[{a: 1}], {}]
+      m({a: 1}).should == [[{a: 1}], {}]
     end
   end
 

@@ -25,8 +25,14 @@
 /** Wraps (or simulates) `__attribute__((nonstring))` */
 #if RBIMPL_HAS_ATTRIBUTE(nonstring)
 # define RBIMPL_ATTR_NONSTRING() __attribute__((nonstring))
+# if RBIMPL_COMPILER_SINCE(GCC, 15, 0, 0)
+#   define RBIMPL_ATTR_NONSTRING_ARRAY() RBIMPL_ATTR_NONSTRING()
+# else
+#   define RBIMPL_ATTR_NONSTRING_ARRAY() /* void */
+# endif
 #else
 # define RBIMPL_ATTR_NONSTRING() /* void */
+# define RBIMPL_ATTR_NONSTRING_ARRAY() /* void */
 #endif
 
 #endif /* RBIMPL_ATTR_NONSTRING_H */

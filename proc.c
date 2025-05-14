@@ -678,6 +678,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 {
     rb_proc_t *proc;
     cfunc_proc_t *sproc;
+    const rb_namespace_t *ns = rb_current_namespace();
     VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &proc_data_type, sproc);
     VALUE *ep;
 
@@ -692,6 +693,7 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 
     /* self? */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.ifunc, ifunc);
+    proc->ns = ns;
     proc->is_lambda = TRUE;
     return procval;
 }
@@ -727,6 +729,7 @@ sym_proc_new(VALUE klass, VALUE sym)
     GetProcPtr(procval, proc);
 
     vm_block_type_set(&proc->block, block_type_symbol);
+    // No namespace specified: similar to built-in methods
     proc->is_lambda = TRUE;
     RB_OBJ_WRITE(procval, &proc->block.as.symbol, sym);
     return procval;
@@ -2004,6 +2007,21 @@ method_owner(VALUE obj)
     struct METHOD *data;
     TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
     return data->owner;
+}
+
+static VALUE
+method_namespace(VALUE obj)
+{
+    struct METHOD *data;
+    const rb_namespace_t *ns;
+
+    TypedData_Get_Struct(obj, struct METHOD, &method_data_type, data);
+    ns = data->me->def->ns;
+    if (!ns) return Qfalse;
+    if (ns->ns_object) return ns->ns_object;
+    // This should not happen
+    rb_bug("Unexpected namespace on the method definition: %p", (void*) ns);
+    return Qtrue;
 }
 
 void
@@ -4465,6 +4483,8 @@ Init_Proc(void)
     rb_define_method(rb_mKernel, "method", rb_obj_method, 1);
     rb_define_method(rb_mKernel, "public_method", rb_obj_public_method, 1);
     rb_define_method(rb_mKernel, "singleton_method", rb_obj_singleton_method, 1);
+
+    rb_define_method(rb_cMethod, "namespace", method_namespace, 0);
 
     /* UnboundMethod */
     rb_cUnboundMethod = rb_define_class("UnboundMethod", rb_cObject);

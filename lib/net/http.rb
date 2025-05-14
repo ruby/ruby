@@ -1917,7 +1917,8 @@ module Net   #:nodoc:
     private
 
     def unescape(value)
-      require 'cgi/util'
+      require 'cgi/escape'
+      require 'cgi/util' unless defined?(CGI::EscapeExt)
       CGI.unescape(value)
     end
 

@@ -632,6 +632,22 @@ class TC_Set < Test::Unit::TestCase
     }
   end
 
+  def test_merge_mutating_hash_bug_21305
+    a = (1..100).to_a
+    o = Object.new
+    o.define_singleton_method(:hash) do
+      a.clear
+      0
+    end
+    a.unshift o
+    assert_equal([o], Set.new.merge(a).to_a)
+  end
+
+  def test_initialize_mutating_array_bug_21306
+    a = (1..100).to_a
+    assert_equal(Set[0], Set.new(a){a.clear; 0})
+  end
+
   def test_subtract
     set = Set[1,2,3]
 

@@ -133,6 +133,12 @@ struct RData {
      */
     RUBY_DATA_FUNC dmark;
 
+    /** Pointer to the actual C level struct that you want to wrap.
+      * This is in between dmark and dfree to allow DATA_PTR to continue
+      * to work for both RData and non-embedded RTypedData.
+      */
+    void *data;
+
     /**
      * This function is called when the object  is no longer used.  You need to
      * do whatever necessary to avoid memory leaks.
@@ -141,9 +147,6 @@ struct RData {
      *           impossible at that moment (that is why GC runs).
      */
     RUBY_DATA_FUNC dfree;
-
-    /** Pointer to the actual C level struct that you want to wrap. */
-    void *data;
 };
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

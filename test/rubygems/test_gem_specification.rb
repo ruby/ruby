@@ -3664,8 +3664,6 @@ Did you mean 'Ruby'?
   end
 
   def test__load_fixes_Date_objects
-    pend "Marshal.load of links and floats is broken on truffleruby, see https://github.com/oracle/truffleruby/issues/3747" if RUBY_ENGINE == "truffleruby"
-
     spec = util_spec "a", 1
     spec.instance_variable_set :@date, Date.today
 

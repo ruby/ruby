@@ -337,73 +337,6 @@ static size_t strnlen(const char *s, size_t maxlen)
 }
 #endif
 
-#define PARSE_ERROR_FRAGMENT_LEN 32
-#ifdef RBIMPL_ATTR_NORETURN
-RBIMPL_ATTR_NORETURN()
-#endif
-static void raise_parse_error(const char *format, const char *start)
-{
-    unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 1];
-
-    size_t len = start ? strnlen(start, PARSE_ERROR_FRAGMENT_LEN) : 0;
-    const char *ptr = start;
-
-    if (len == PARSE_ERROR_FRAGMENT_LEN) {
-        MEMCPY(buffer, start, char, PARSE_ERROR_FRAGMENT_LEN);
-
-        while (buffer[len - 1] >= 0x80 && buffer[len - 1] < 0xC0) { // Is continuation byte
-            len--;
-        }
-
-        if (buffer[len - 1] >= 0xC0) { // multibyte character start
-            len--;
-        }
-
-        buffer[len] = '\0';
-        ptr = (const char *)buffer;
-    }
-
-    rb_enc_raise(enc_utf8, rb_path2class("JSON::ParserError"), format, ptr);
-}
-
-/* unicode */
-
-static const signed char digit_values[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
-    -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1
-};
-
-static uint32_t unescape_unicode(const unsigned char *p)
-{
-    signed char b;
-    uint32_t result = 0;
-    b = digit_values[p[0]];
-    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[1]];
-    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[2]];
-    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    b = digit_values[p[3]];
-    if (b < 0) raise_parse_error("incomplete unicode character escape sequence at '%s'", (char *)p - 2);
-    result = (result << 4) | (unsigned char)b;
-    return result;
-}
-
 static int convert_UTF32_to_UTF8(char *buf, uint32_t ch)
 {
     int len = 1;
@@ -444,6 +377,7 @@ typedef struct JSON_ParserStruct {
 
 typedef struct JSON_ParserStateStruct {
     VALUE stack_handle;
+    const char *start;
     const char *cursor;
     const char *end;
     rvalue_stack *stack;
@@ -451,6 +385,119 @@ typedef struct JSON_ParserStateStruct {
     int in_array;
     int current_nesting;
 } JSON_ParserState;
+
+
+#define PARSE_ERROR_FRAGMENT_LEN 32
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_parse_error(const char *format, JSON_ParserState *state)
+{
+    unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
+
+    const char *cursor = state->cursor;
+    long column = 0;
+    long line = 1;
+
+    while (cursor >= state->start) {
+        if (*cursor-- == '\n') {
+            break;
+        }
+        column++;
+    }
+
+    while (cursor >= state->start) {
+        if (*cursor-- == '\n') {
+            line++;
+        }
+    }
+
+    const char *ptr = "EOF";
+    if (state->cursor && state->cursor < state->end) {
+        ptr = state->cursor;
+        size_t len = 0;
+        while (len < PARSE_ERROR_FRAGMENT_LEN) {
+            char ch = ptr[len];
+            if (!ch || ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
+                break;
+            }
+            len++;
+        }
+
+        if (len) {
+            buffer[0] = '\'';
+            MEMCPY(buffer + 1, ptr, char, len);
+
+            while (buffer[len] >= 0x80 && buffer[len] < 0xC0) { // Is continuation byte
+                len--;
+            }
+
+            if (buffer[len] >= 0xC0) { // multibyte character start
+                len--;
+            }
+
+            buffer[len + 1] = '\'';
+            buffer[len + 2] = '\0';
+            ptr = (const char *)buffer;
+        }
+    }
+
+    VALUE msg = rb_sprintf(format, ptr);
+    VALUE message = rb_enc_sprintf(enc_utf8, "%s at line %ld column %ld", RSTRING_PTR(msg), line, column);
+    RB_GC_GUARD(msg);
+
+    VALUE exc = rb_exc_new_str(rb_path2class("JSON::ParserError"), message);
+    rb_ivar_set(exc, rb_intern("@line"), LONG2NUM(line));
+    rb_ivar_set(exc, rb_intern("@column"), LONG2NUM(column));
+    rb_exc_raise(exc);
+}
+
+#ifdef RBIMPL_ATTR_NORETURN
+RBIMPL_ATTR_NORETURN()
+#endif
+static void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
+{
+    state->cursor = at;
+    raise_parse_error(format, state);
+}
+
+/* unicode */
+
+static const signed char digit_values[256] = {
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, -1,
+    -1, -1, -1, -1, -1, -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1
+};
+
+static uint32_t unescape_unicode(JSON_ParserState *state, const unsigned char *p)
+{
+    signed char b;
+    uint32_t result = 0;
+    b = digit_values[p[0]];
+    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
+    result = (result << 4) | (unsigned char)b;
+    b = digit_values[p[1]];
+    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
+    result = (result << 4) | (unsigned char)b;
+    b = digit_values[p[2]];
+    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
+    result = (result << 4) | (unsigned char)b;
+    b = digit_values[p[3]];
+    if (b < 0) raise_parse_error_at("incomplete unicode character escape sequence at %s", state, (char *)p - 2);
+    result = (result << 4) | (unsigned char)b;
+    return result;
+}
 
 #define GET_PARSER_CONFIG                          \
     JSON_ParserConfig *config;                      \
@@ -485,8 +532,7 @@ json_eat_comments(JSON_ParserState *state)
                 while (true) {
                     state->cursor = memchr(state->cursor, '*', state->end - state->cursor);
                     if (!state->cursor) {
-                        state->cursor = state->end;
-                        raise_parse_error("unexpected end of input, expected closing '*/'", state->cursor);
+                        raise_parse_error_at("unexpected end of input, expected closing '*/'", state, state->end);
                     } else {
                         state->cursor++;
                         if (state->cursor < state->end && *state->cursor == '/') {
@@ -498,11 +544,11 @@ json_eat_comments(JSON_ParserState *state)
                 break;
             }
             default:
-                raise_parse_error("unexpected token at '%s'", state->cursor);
+                raise_parse_error("unexpected token %s", state);
                 break;
         }
     } else {
-        raise_parse_error("unexpected token at '%s'", state->cursor);
+        raise_parse_error("unexpected token %s", state);
     }
 }
 
@@ -621,9 +667,9 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                 break;
             case 'u':
                 if (pe > stringEnd - 5) {
-                  raise_parse_error("incomplete unicode character escape sequence at '%s'", p);
+                    raise_parse_error_at("incomplete unicode character escape sequence at %s", state, p);
                 } else {
-                    uint32_t ch = unescape_unicode((unsigned char *) ++pe);
+                    uint32_t ch = unescape_unicode(state, (unsigned char *) ++pe);
                     pe += 3;
                     /* To handle values above U+FFFF, we take a sequence of
                      * \uXXXX escapes in the U+D800..U+DBFF then
@@ -638,10 +684,10 @@ static VALUE json_string_unescape(JSON_ParserState *state, const char *string, c
                     if ((ch & 0xFC00) == 0xD800) {
                         pe++;
                         if (pe > stringEnd - 6) {
-                          raise_parse_error("incomplete surrogate pair at '%s'", p);
+                            raise_parse_error_at("incomplete surrogate pair at %s", state, p);
                         }
                         if (pe[0] == '\\' && pe[1] == 'u') {
-                            uint32_t sur = unescape_unicode((unsigned char *) pe + 2);
+                            uint32_t sur = unescape_unicode(state, (unsigned char *) pe + 2);
                             ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16)
                                     | (sur & 0x3FF));
                             pe += 5;
@@ -829,12 +875,12 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
                     state->cursor++;
                     escaped = true;
                     if ((unsigned char)*state->cursor < 0x20) {
-                        raise_parse_error("invalid ASCII control character in string: %s", state->cursor);
+                        raise_parse_error("invalid ASCII control character in string: %s", state);
                     }
                     break;
                 }
                 default:
-                    raise_parse_error("invalid ASCII control character in string: %s", state->cursor);
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
                     break;
             }
         }
@@ -842,7 +888,7 @@ static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig
         state->cursor++;
     }
 
-    raise_parse_error("unexpected end of input, expected closing \"", state->cursor);
+    raise_parse_error("unexpected end of input, expected closing \"", state);
     return Qfalse;
 }
 
@@ -850,7 +896,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     json_eat_whitespace(state);
     if (state->cursor >= state->end) {
-        raise_parse_error("unexpected end of input", state->cursor);
+        raise_parse_error("unexpected end of input", state);
     }
 
     switch (*state->cursor) {
@@ -860,7 +906,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qnil);
             }
 
-            raise_parse_error("unexpected token at '%s'", state->cursor);
+            raise_parse_error("unexpected token %s", state);
             break;
         case 't':
             if ((state->end - state->cursor >= 4) && (memcmp(state->cursor, "true", 4) == 0)) {
@@ -868,7 +914,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qtrue);
             }
 
-            raise_parse_error("unexpected token at '%s'", state->cursor);
+            raise_parse_error("unexpected token %s", state);
             break;
         case 'f':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -877,7 +923,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, Qfalse);
             }
 
-            raise_parse_error("unexpected token at '%s'", state->cursor);
+            raise_parse_error("unexpected token %s", state);
             break;
         case 'N':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -886,7 +932,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, CNaN);
             }
 
-            raise_parse_error("unexpected token at '%s'", state->cursor);
+            raise_parse_error("unexpected token %s", state);
             break;
         case 'I':
             if (config->allow_nan && (state->end - state->cursor >= 8) && (memcmp(state->cursor, "Infinity", 8) == 0)) {
@@ -894,7 +940,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 return json_push_value(state, config, CInfinity);
             }
 
-            raise_parse_error("unexpected token at '%s'", state->cursor);
+            raise_parse_error("unexpected token %s", state);
             break;
         case '-':
             // Note: memcmp with a small power of two compile to an integer comparison
@@ -903,7 +949,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     state->cursor += 9;
                     return json_push_value(state, config, CMinusInfinity);
                 } else {
-                    raise_parse_error("unexpected token at '%s'", state->cursor);
+                    raise_parse_error("unexpected token %s", state);
                 }
             }
             // Fallthrough
@@ -921,11 +967,11 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             long integer_length = state->cursor - start;
 
             if (RB_UNLIKELY(start[0] == '0' && integer_length > 1)) {
-                raise_parse_error("invalid number: %s", start);
+                raise_parse_error_at("invalid number: %s", state, start);
             } else if (RB_UNLIKELY(integer_length > 2 && start[0] == '-' && start[1] == '0')) {
-                raise_parse_error("invalid number: %s", start);
+                raise_parse_error_at("invalid number: %s", state, start);
             } else if (RB_UNLIKELY(integer_length == 1 && start[0] == '-')) {
-                raise_parse_error("invalid number: %s", start);
+                raise_parse_error_at("invalid number: %s", state, start);
             }
 
             if ((state->cursor < state->end) && (*state->cursor == '.')) {
@@ -933,7 +979,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 state->cursor++;
 
                 if (state->cursor == state->end || *state->cursor < '0' || *state->cursor > '9') {
-                    raise_parse_error("invalid number: %s", state->cursor);
+                    raise_parse_error("invalid number: %s", state);
                 }
 
                 while ((state->cursor < state->end) && (*state->cursor >= '0') && (*state->cursor <= '9')) {
@@ -949,7 +995,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 }
 
                 if (state->cursor == state->end || *state->cursor < '0' || *state->cursor > '9') {
-                    raise_parse_error("invalid number: %s", state->cursor);
+                    raise_parse_error("invalid number: %s", state);
                 }
 
                 while ((state->cursor < state->end) && (*state->cursor >= '0') && (*state->cursor <= '9')) {
@@ -1009,7 +1055,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     }
                 }
 
-                raise_parse_error("expected ',' or ']' after array value", state->cursor);
+                raise_parse_error("expected ',' or ']' after array value", state);
             }
             break;
         }
@@ -1028,13 +1074,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 }
 
                 if (*state->cursor != '"') {
-                    raise_parse_error("expected object key, got '%s", state->cursor);
+                    raise_parse_error("expected object key, got %s", state);
                 }
                 json_parse_string(state, config, true);
 
                 json_eat_whitespace(state);
                 if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                    raise_parse_error("expected ':' after object key", state->cursor);
+                    raise_parse_error("expected ':' after object key", state);
                 }
                 state->cursor++;
 
@@ -1063,13 +1109,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                         }
 
                         if (*state->cursor != '"') {
-                            raise_parse_error("expected object key, got: '%s'", state->cursor);
+                            raise_parse_error("expected object key, got: %s", state);
                         }
                         json_parse_string(state, config, true);
 
                         json_eat_whitespace(state);
                         if ((state->cursor >= state->end) || (*state->cursor != ':')) {
-                            raise_parse_error("expected ':' after object key, got: '%s", state->cursor);
+                            raise_parse_error("expected ':' after object key, got: %s", state);
                         }
                         state->cursor++;
 
@@ -1079,24 +1125,24 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     }
                 }
 
-                raise_parse_error("expected ',' or '}' after object value, got: '%s'", state->cursor);
+                raise_parse_error("expected ',' or '}' after object value, got: %s", state);
             }
             break;
         }
 
         default:
-            raise_parse_error("unexpected character: '%s'", state->cursor);
+            raise_parse_error("unexpected character: %s", state);
             break;
     }
 
-    raise_parse_error("unreacheable: '%s'", state->cursor);
+    raise_parse_error("unreacheable: %s", state);
 }
 
 static void json_ensure_eof(JSON_ParserState *state)
 {
     json_eat_whitespace(state);
     if (state->cursor != state->end) {
-        raise_parse_error("unexpected token at end of stream '%s'", state->cursor);
+        raise_parse_error("unexpected token at end of stream %s", state);
     }
 }
 
@@ -1232,9 +1278,14 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
         .capa = RVALUE_STACK_INITIAL_CAPA,
     };
 
+    long len;
+    const char *start;
+    RSTRING_GETMEM(Vsource, start, len);
+
     JSON_ParserState _state = {
-        .cursor = RSTRING_PTR(Vsource),
-        .end = RSTRING_END(Vsource),
+        .start = start,
+        .cursor = start,
+        .end = start + len,
         .stack = &stack,
     };
     JSON_ParserState *state = &_state;

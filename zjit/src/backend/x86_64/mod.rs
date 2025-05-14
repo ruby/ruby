@@ -183,7 +183,7 @@ impl Assembler
                                     *left = asm.load(*left);
                                 },
                                 // The first operand can't be an immediate value
-                                (Opnd::Value(_), _) => {
+                                (Opnd::UImm(_), _) => {
                                     *left = asm.load(*left);
                                 }
                                 _ => {}

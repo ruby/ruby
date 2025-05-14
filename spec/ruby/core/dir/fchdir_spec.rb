@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
 ruby_version_is '3.3' do
-  guard -> { Dir.respond_to? :fchdir } do
+  platform_is_not :windows do
     describe "Dir.fchdir" do
       before :all do
         DirSpecs.create_mock_dirs
@@ -62,7 +62,7 @@ ruby_version_is '3.3' do
     end
   end
 
-  guard_not -> { Dir.respond_to? :fchdir } do
+  platform_is :windows do
     describe "Dir.fchdir" do
       it "raises NotImplementedError" do
         -> { Dir.fchdir 1 }.should raise_error(NotImplementedError)

@@ -84,99 +84,97 @@ describe "Time.now" do
     end
   end
 
-  ruby_version_is '3.1' do # https://bugs.ruby-lang.org/issues/17485
-    describe "Timezone object" do
-      it "raises TypeError if timezone does not implement #utc_to_local method" do
+  describe "Timezone object" do # https://bugs.ruby-lang.org/issues/17485
+    it "raises TypeError if timezone does not implement #utc_to_local method" do
+      zone = Object.new
+      def zone.local_to_utc(time)
+        time
+      end
+
+      -> {
+        Time.now(in: zone)
+      }.should raise_error(TypeError, /can't convert Object into an exact number/)
+    end
+
+    it "does not raise exception if timezone does not implement #local_to_utc method" do
+      zone = Object.new
+      def zone.utc_to_local(time)
+        time
+      end
+
+      Time.now(in: zone).should be_kind_of(Time)
+    end
+
+    # The result also should be a Time or Time-like object (not necessary to be the same class)
+    # or Integer. The zone of the result is just ignored.
+    describe "returned value by #utc_to_local and #local_to_utc methods" do
+      it "could be Time instance" do
         zone = Object.new
-        def zone.local_to_utc(time)
-          time
+        def zone.utc_to_local(t)
+          time = Time.new(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
+          time + 60 * 60 # + 1 hour
+        end
+
+        Time.now(in: zone).should be_kind_of(Time)
+        Time.now(in: zone).utc_offset.should == 3600
+      end
+
+      it "could be Time subclass instance" do
+        zone = Object.new
+        def zone.utc_to_local(t)
+          time = Time.new(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
+          time += 60 * 60 # + 1 hour
+
+          Class.new(Time).new(time.year, time.mon, time.day, time.hour, time.min, time.sec, time.utc_offset)
+        end
+
+        Time.now(in: zone).should be_kind_of(Time)
+        Time.now(in: zone).utc_offset.should == 3600
+      end
+
+      it "could be Integer" do
+        zone = Object.new
+        def zone.utc_to_local(time)
+          time.to_i + 60*60
+        end
+
+        Time.now(in: zone).should be_kind_of(Time)
+        Time.now(in: zone).utc_offset.should == 60*60
+      end
+
+      it "could have any #zone and #utc_offset because they are ignored" do
+        zone = Object.new
+        def zone.utc_to_local(t)
+          Struct.new(:year, :mon, :mday, :hour, :min, :sec, :isdst, :to_i, :zone, :utc_offset) # rubocop:disable Lint/StructNewOverride
+                .new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.isdst, t.to_i, 'America/New_York', -5*60*60)
+        end
+        Time.now(in: zone).utc_offset.should == 0
+
+        zone = Object.new
+        def zone.utc_to_local(t)
+          Struct.new(:year, :mon, :mday, :hour, :min, :sec, :isdst, :to_i, :zone, :utc_offset) # rubocop:disable Lint/StructNewOverride
+                .new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.isdst, t.to_i, 'Asia/Tokyo', 9*60*60)
+        end
+        Time.now(in: zone).utc_offset.should == 0
+
+        zone = Object.new
+        def zone.utc_to_local(t)
+          Time.new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, 9*60*60)
+        end
+        Time.now(in: zone).utc_offset.should == 0
+      end
+
+      it "raises ArgumentError if difference between argument and result is too large" do
+        zone = Object.new
+        def zone.utc_to_local(t)
+          time = Time.utc(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
+          time -= 24 * 60 * 60 # - 1 day
+          Time.utc(time.year, time.mon, time.day, time.hour, time.min, time.sec, time.utc_offset)
         end
 
         -> {
           Time.now(in: zone)
-        }.should raise_error(TypeError, /can't convert Object into an exact number/)
-      end
-
-      it "does not raise exception if timezone does not implement #local_to_utc method" do
-        zone = Object.new
-        def zone.utc_to_local(time)
-          time
-        end
-
-        Time.now(in: zone).should be_kind_of(Time)
-      end
-
-      # The result also should be a Time or Time-like object (not necessary to be the same class)
-      # or Integer. The zone of the result is just ignored.
-      describe "returned value by #utc_to_local and #local_to_utc methods" do
-        it "could be Time instance" do
-          zone = Object.new
-          def zone.utc_to_local(t)
-            time = Time.new(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
-            time + 60 * 60 # + 1 hour
-          end
-
-          Time.now(in: zone).should be_kind_of(Time)
-          Time.now(in: zone).utc_offset.should == 3600
-        end
-
-        it "could be Time subclass instance" do
-          zone = Object.new
-          def zone.utc_to_local(t)
-            time = Time.new(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
-            time += 60 * 60 # + 1 hour
-
-            Class.new(Time).new(time.year, time.mon, time.day, time.hour, time.min, time.sec, time.utc_offset)
-          end
-
-          Time.now(in: zone).should be_kind_of(Time)
-          Time.now(in: zone).utc_offset.should == 3600
-        end
-
-        it "could be Integer" do
-          zone = Object.new
-          def zone.utc_to_local(time)
-            time.to_i + 60*60
-          end
-
-          Time.now(in: zone).should be_kind_of(Time)
-          Time.now(in: zone).utc_offset.should == 60*60
-        end
-
-        it "could have any #zone and #utc_offset because they are ignored" do
-          zone = Object.new
-          def zone.utc_to_local(t)
-            Struct.new(:year, :mon, :mday, :hour, :min, :sec, :isdst, :to_i, :zone, :utc_offset) # rubocop:disable Lint/StructNewOverride
-                  .new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.isdst, t.to_i, 'America/New_York', -5*60*60)
-          end
-          Time.now(in: zone).utc_offset.should == 0
-
-          zone = Object.new
-          def zone.utc_to_local(t)
-            Struct.new(:year, :mon, :mday, :hour, :min, :sec, :isdst, :to_i, :zone, :utc_offset) # rubocop:disable Lint/StructNewOverride
-                  .new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, t.isdst, t.to_i, 'Asia/Tokyo', 9*60*60)
-          end
-          Time.now(in: zone).utc_offset.should == 0
-
-          zone = Object.new
-          def zone.utc_to_local(t)
-            Time.new(t.year, t.mon, t.mday, t.hour, t.min, t.sec, 9*60*60)
-          end
-          Time.now(in: zone).utc_offset.should == 0
-        end
-
-        it "raises ArgumentError if difference between argument and result is too large" do
-          zone = Object.new
-          def zone.utc_to_local(t)
-            time = Time.utc(t.year, t.mon, t.day, t.hour, t.min, t.sec, t.utc_offset)
-            time -= 24 * 60 * 60 # - 1 day
-            Time.utc(time.year, time.mon, time.day, time.hour, time.min, time.sec, time.utc_offset)
-          end
-
-          -> {
-            Time.now(in: zone)
-          }.should raise_error(ArgumentError, "utc_offset out of range")
-        end
+        }.should raise_error(ArgumentError, "utc_offset out of range")
       end
     end
   end

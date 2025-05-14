@@ -676,6 +676,7 @@ signal_ignored(int sig)
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
     func = old.sa_handler;
 #else
+    // TODO: this is not a thread-safe way to do it. Needs lock.
     sighandler_t old = signal(sig, SIG_DFL);
     signal(sig, old);
     func = old;

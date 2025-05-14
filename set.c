@@ -494,18 +494,13 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
 
     if (argc > 0 && (other = argv[0]) != Qnil) {
         if (RB_TYPE_P(other, T_ARRAY)) {
-            long len = RARRAY_LEN(other);
-            if (RARRAY_LEN(other) != 0) {
-                set_table *into = RSET_TABLE(set);
-                VALUE key;
-                int block_given = rb_block_given_p();
-                RARRAY_PTR_USE(other, ptr, {
-                    for(; len > 0; len--, ptr++) {
-                        key = *ptr;
-                        if (block_given) key = rb_yield(key);
-                        set_table_insert_wb(into, set, key, NULL);
-                    }
-                });
+            long i;
+            int block_given = rb_block_given_p();
+            set_table *into = RSET_TABLE(set);
+            for (i=0; i<RARRAY_LEN(other); i++) {
+                VALUE key = RARRAY_AREF(other, i);
+                if (block_given) key = rb_yield(key);
+                set_table_insert_wb(into, set, key, NULL);
             }
         }
         else {
@@ -1120,14 +1115,10 @@ set_merge_enum_into(VALUE set, VALUE arg)
         set_iter(arg, set_merge_i, (st_data_t)&args);
     }
     else if (RB_TYPE_P(arg, T_ARRAY)) {
-        long len = RARRAY_LEN(arg);
-        if (RARRAY_LEN(arg) != 0) {
-            set_table *into = RSET_TABLE(set);
-            RARRAY_PTR_USE(arg, ptr, {
-                for(; len > 0; len--, ptr++) {
-                    set_table_insert_wb(into, set, *ptr, NULL);
-                }
-            });
+        long i;
+        set_table *into = RSET_TABLE(set);
+        for (i=0; i<RARRAY_LEN(arg); i++) {
+            set_table_insert_wb(into, set, RARRAY_AREF(arg, i), NULL);
         }
     }
     else {
@@ -1148,6 +1139,11 @@ set_i_merge(int argc, VALUE *argv, VALUE set)
     if (rb_keyword_given_p()) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
+
+    if (set_iterating_p(set)) {
+        rb_raise(rb_eRuntimeError, "cannot add to set during iteration");
+    }
+
     rb_check_frozen(set);
 
     int i;
@@ -2193,7 +2189,6 @@ Init_Set(void)
     rb_define_method(rb_cSet, "superset?", set_i_superset, 1);
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
-    rb_define_method(rb_cSet, "to_h", set_i_to_h, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
 
     /* :nodoc: */

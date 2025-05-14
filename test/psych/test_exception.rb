@@ -82,6 +82,19 @@ module Psych
       assert_equal 'omg!', ex.file
     end
 
+    def test_safe_load_stream_takes_file
+      ex = assert_raise(Psych::SyntaxError) do
+        Psych.safe_load_stream '--- `'
+      end
+      assert_nil ex.file
+      assert_match '(<unknown>)', ex.message
+
+      ex = assert_raise(Psych::SyntaxError) do
+        Psych.safe_load_stream '--- `', filename: 'omg!'
+      end
+      assert_equal 'omg!', ex.file
+    end
+
     def test_parse_file_exception
       Tempfile.create(['parsefile', 'yml']) {|t|
         t.binmode

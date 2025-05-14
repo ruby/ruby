@@ -62,13 +62,13 @@ The following default gems are updated.
 
 * RubyGems 3.7.0.dev
 * bundler 2.7.0.dev
-* cgi 0.4.2
-* json 2.11.3
+* erb 5.0.0
+* json 2.12.0
 * optparse 0.7.0.dev.2
 * prism 1.4.0
-* psych 5.2.3
+* psych 5.2.6
 * stringio 3.1.8.dev
-* strscan 3.1.4.dev
+* strscan 3.1.5.dev
 * uri 1.0.3
 
 The following bundled gems are added.
@@ -81,7 +81,7 @@ The following bundled gems are updated.
 * rexml 3.4.1
 * net-imap 0.5.8
 * net-smtp 0.5.1
-* rbs 3.9.2
+* rbs 3.9.3
 * bigdecimal 3.1.9
 * syslog 0.3.0
 * csv 3.3.4
@@ -93,14 +93,36 @@ The following bundled gems are updated.
 
 ## Stdlib compatibility issues
 
+* CGI library is removed from the default gems. Now we only provide `cgi/escape` for
+  the following methods:
+  * `CGI.escape` and `CGI.unescape`
+  * `CGI.escapeHTML` and `CGI.unescapeHTML`
+  * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent`
+  * `CGI.escapeElement` and `CGI.unescapeElement`
+  [[Feature #21258]]
+
 ## C API updates
+
+* IO
+
+    * `rb_thread_fd_close` is deprecated and now a no-op. If you need to expose
+      file descriptors from C extensions to Ruby code, create an `IO` instance
+      using `RUBY_IO_MODE_EXTERNAL` and use `rb_io_close(io)` to close it (this
+      also interrupts and waits for all pending operations on the `IO`
+      instance). Directly closing file descriptors does not interrupt pending
+      operations, and may lead to undefined beahviour. In other words, if two
+      `IO` objects share the same file descriptor, closing one does not affect
+      the other. [[Feature #18455]]
 
 ## Implementation improvements
 
 ## JIT
 
+[Feature #18455]: https://bugs.ruby-lang.org/issues/18455
 [Feature #19908]: https://bugs.ruby-lang.org/issues/19908
+[Feature #20610]: https://bugs.ruby-lang.org/issues/20610
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
+[Feature #21258]: https://bugs.ruby-lang.org/issues/21258

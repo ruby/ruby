@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.4.dev"
+#define STRSCAN_VERSION "3.1.5.dev"
 
 /* =======================================================================
                          Data Type Definitions
@@ -2211,7 +2211,10 @@ named_captures_iter(const OnigUChar *name,
     VALUE value = RUBY_Qnil;
     int i;
     for (i = 0; i < back_num; i++) {
-        value = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        VALUE v = strscan_aref(data->self, INT2NUM(back_refs[i]));
+        if (!RB_NIL_P(v)) {
+            value = v;
+        }
     }
     rb_hash_aset(data->captures, key, value);
     return 0;

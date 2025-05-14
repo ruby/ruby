@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
 require 'openssl'
 
-guard -> { OpenSSL::KDF.respond_to?(:scrypt) } do
+# LibreSSL seems not to support scrypt
+guard -> { OpenSSL::OPENSSL_VERSION.start_with?('OpenSSL') and OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000 } do
   describe "OpenSSL::KDF.scrypt" do
     before :each do
       @defaults = {

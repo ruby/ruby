@@ -1,27 +1,30 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#[]" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    ENV['QUERY_STRING'], @old_query_string = "one=a&two=b&two=c", ENV['QUERY_STRING']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-    ENV['QUERY_STRING']   = @old_query_string
-  end
+  describe "CGI::QueryExtension#[]" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      ENV['QUERY_STRING'], @old_query_string = "one=a&two=b&two=c", ENV['QUERY_STRING']
+      @cgi = CGI.new
+    end
 
-  it "it returns the value for the parameter with the given key" do
-    @cgi["one"].should == "a"
-  end
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+      ENV['QUERY_STRING']   = @old_query_string
+    end
 
-  it "only returns the first value for parameters with multiple values" do
-    @cgi["two"].should == "b"
-  end
+    it "it returns the value for the parameter with the given key" do
+      @cgi["one"].should == "a"
+    end
 
-  it "returns a String" do
-    @cgi["one"].should be_kind_of(String)
+    it "only returns the first value for parameters with multiple values" do
+      @cgi["two"].should == "b"
+    end
+
+    it "returns a String" do
+      @cgi["one"].should be_kind_of(String)
+    end
   end
 end

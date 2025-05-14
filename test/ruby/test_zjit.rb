@@ -86,6 +86,14 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_plus_left_imm
+    assert_compiles '3', %q{
+      def test(a) = 1 + a
+      test(1) # profile opt_plus
+      test(2)
+    }, call_threshold: 2
+  end
+
   # Test argument ordering
   def test_opt_minus
     assert_compiles '2', %q{

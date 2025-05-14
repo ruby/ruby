@@ -2175,9 +2175,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         }
     }
 
-    if (offset == -1) {
+    if (offset == 0) {
         /* main executable */
-        offset = 0;
         if (dynsym_shdr && dynstr_shdr) {
             char *strtab = file + dynstr_shdr->sh_offset;
             ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);

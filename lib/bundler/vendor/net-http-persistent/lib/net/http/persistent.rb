@@ -1,6 +1,7 @@
 require_relative '../../../../../vendored_net_http'
 require_relative '../../../../../vendored_uri'
-require 'cgi' # for escaping
+require 'cgi/escape'
+require 'cgi/util' unless defined?(CGI::EscapeExt)
 require_relative '../../../../connection_pool/lib/connection_pool'
 
 autoload :OpenSSL, 'openssl'
@@ -42,9 +43,8 @@ autoload :OpenSSL, 'openssl'
 #   # perform the POST, the Gem::URI is always required
 #   response http.request post_uri, post
 #
-# Note that for GET, HEAD and other requests that do not have a body you want
-# to use Gem::URI#request_uri not Gem::URI#path.  The request_uri contains the query
-# params which are sent in the body for other requests.
+# ⚠ Note that for GET, HEAD and other requests that do not have a body,
+# it uses Gem::URI#request_uri as default to send query params
 #
 # == TLS/SSL
 #
@@ -60,6 +60,7 @@ autoload :OpenSSL, 'openssl'
 # #ca_path            :: Directory with certificate-authorities
 # #cert_store         :: An SSL certificate store
 # #ciphers            :: List of SSl ciphers allowed
+# #extra_chain_cert   :: Extra certificates to be added to the certificate chain
 # #private_key        :: The client's SSL private key
 # #reuse_ssl_sessions :: Reuse a previously opened SSL session for a new
 #                        connection
@@ -176,7 +177,7 @@ class Gem::Net::HTTP::Persistent
   ##
   # The version of Gem::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.4'
+  VERSION = '4.0.6'
 
   ##
   # Error class for errors raised by Gem::Net::HTTP::Persistent.  Various
@@ -266,6 +267,11 @@ class Gem::Net::HTTP::Persistent
   # The ciphers allowed for SSL connections
 
   attr_reader :ciphers
+
+  ##
+  # Extra certificates to be added to the certificate chain
+
+  attr_reader :extra_chain_cert
 
   ##
   # Sends debug_output to this IO via Gem::Net::HTTP#set_debug_output.
@@ -587,6 +593,21 @@ class Gem::Net::HTTP::Persistent
     reconnect_ssl
   end
 
+  if Gem::Net::HTTP.method_defined?(:extra_chain_cert=)
+    ##
+    # Extra certificates to be added to the certificate chain.
+    # It is only supported starting from Gem::Net::HTTP version 0.1.1
+    def extra_chain_cert= extra_chain_cert
+      @extra_chain_cert = extra_chain_cert
+
+      reconnect_ssl
+    end
+  else
+    def extra_chain_cert= _extra_chain_cert
+      raise "extra_chain_cert= is not supported by this version of Gem::Net::HTTP"
+    end
+  end
+
   ##
   # Creates a new connection for +uri+
 
@@ -605,47 +626,49 @@ class Gem::Net::HTTP::Persistent
 
     connection = @pool.checkout net_http_args
 
-    http = connection.http
+    begin
+      http = connection.http
 
-    connection.ressl @ssl_generation if
-      connection.ssl_generation != @ssl_generation
+      connection.ressl @ssl_generation if
+        connection.ssl_generation != @ssl_generation
 
-    if not http.started? then
-      ssl   http if use_ssl
-      start http
-    elsif expired? connection then
-      reset connection
+      if not http.started? then
+        ssl   http if use_ssl
+        start http
+      elsif expired? connection then
+        reset connection
+      end
+
+      http.keep_alive_timeout = @idle_timeout  if @idle_timeout
+      http.max_retries        = @max_retries   if http.respond_to?(:max_retries=)
+      http.read_timeout       = @read_timeout  if @read_timeout
+      http.write_timeout      = @write_timeout if
+        @write_timeout && http.respond_to?(:write_timeout=)
+
+      return yield connection
+    rescue Errno::ECONNREFUSED
+      if http.proxy?
+        address = http.proxy_address
+        port    = http.proxy_port
+      else
+        address = http.address
+        port    = http.port
+      end
+
+      raise Error, "connection refused: #{address}:#{port}"
+    rescue Errno::EHOSTDOWN
+      if http.proxy?
+        address = http.proxy_address
+        port    = http.proxy_port
+      else
+        address = http.address
+        port    = http.port
+      end
+
+      raise Error, "host down: #{address}:#{port}"
+    ensure
+      @pool.checkin net_http_args
     end
-
-    http.keep_alive_timeout = @idle_timeout  if @idle_timeout
-    http.max_retries        = @max_retries   if http.respond_to?(:max_retries=)
-    http.read_timeout       = @read_timeout  if @read_timeout
-    http.write_timeout      = @write_timeout if
-      @write_timeout && http.respond_to?(:write_timeout=)
-
-    return yield connection
-  rescue Errno::ECONNREFUSED
-    if http.proxy?
-      address = http.proxy_address
-      port    = http.proxy_port
-    else
-      address = http.address
-      port    = http.port
-    end
-
-    raise Error, "connection refused: #{address}:#{port}"
-  rescue Errno::EHOSTDOWN
-    if http.proxy?
-      address = http.proxy_address
-      port    = http.proxy_port
-    else
-      address = http.address
-      port    = http.port
-    end
-
-    raise Error, "host down: #{address}:#{port}"
-  ensure
-    @pool.checkin net_http_args
   end
 
   ##
@@ -782,7 +805,7 @@ class Gem::Net::HTTP::Persistent
       @proxy_connection_id = [nil, *@proxy_args].join ':'
 
       if @proxy_uri.query then
-        @no_proxy = CGI.parse(@proxy_uri.query)['no_proxy'].join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
+        @no_proxy = Gem::URI.decode_www_form(@proxy_uri.query).filter_map { |k, v| v if k == 'no_proxy' }.join(',').downcase.split(',').map { |x| x.strip }.reject { |x| x.empty? }
       end
     end
 
@@ -953,7 +976,8 @@ class Gem::Net::HTTP::Persistent
   end
 
   ##
-  # Shuts down all connections
+  # Shuts down all connections. Attempting to checkout a connection after
+  # shutdown will raise an error.
   #
   # *NOTE*: Calling shutdown for can be dangerous!
   #
@@ -962,6 +986,17 @@ class Gem::Net::HTTP::Persistent
 
   def shutdown
     @pool.shutdown { |http| http.finish }
+  end
+
+  ##
+  # Discard all existing connections. Subsequent checkouts will create
+  # new connections as needed.
+  #
+  # If any thread is still using a connection it may cause an error!  Call
+  # #reload when you are completely done making requests!
+
+  def reload
+    @pool.reload { |http| http.finish }
   end
 
   ##
@@ -1019,6 +1054,10 @@ application:
     if @certificate and @private_key then
       connection.cert = @certificate
       connection.key  = @private_key
+    end
+
+    if defined?(@extra_chain_cert) and @extra_chain_cert
+      connection.extra_chain_cert = @extra_chain_cert
     end
 
     connection.cert_store = if @cert_store then

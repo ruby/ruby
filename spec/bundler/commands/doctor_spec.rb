@@ -62,6 +62,12 @@ RSpec.describe "bundle doctor" do
       expect(@stdout.string).to include("No issues")
     end
 
+    it "parses otool output correctly" do
+      doctor = Bundler::CLI::Doctor::Diagnose.new({})
+      expect(doctor).to receive(:`).with("/usr/bin/otool -L fake").and_return("/home/gem/ruby/3.4.3/gems/blake3-rb-1.5.4.4/lib/digest/blake3/blake3_ext.bundle:\n\t (compatibility version 0.0.0, current version 0.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)")
+      expect(doctor.dylibs_darwin("fake")).to eq(["/usr/lib/libSystem.B.dylib"])
+    end
+
     it "exits with a message if one of the linked libraries is missing" do
       doctor = Bundler::CLI::Doctor::Diagnose.new({})
       expect(doctor).to receive(:bundles_for_gem).exactly(2).times.and_return ["/path/to/myrack/myrack.bundle"]

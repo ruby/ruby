@@ -1,22 +1,25 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#query_string" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI::QueryExtension#query_string" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "returns ENV['QUERY_STRING']" do
-    old_value, ENV['QUERY_STRING'] = ENV['QUERY_STRING'], "one=a&two=b"
-    begin
-      @cgi.query_string.should == "one=a&two=b"
-    ensure
-      ENV['QUERY_STRING'] = old_value
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
+
+    it "returns ENV['QUERY_STRING']" do
+      old_value, ENV['QUERY_STRING'] = ENV['QUERY_STRING'], "one=a&two=b"
+      begin
+        @cgi.query_string.should == "one=a&two=b"
+      ensure
+        ENV['QUERY_STRING'] = old_value
+      end
     end
   end
 end

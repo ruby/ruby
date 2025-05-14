@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 #ifndef WASM_SETJMP_STACK_BUFFER_SIZE
-# define WASM_SETJMP_STACK_BUFFER_SIZE 6144
+# define WASM_SETJMP_STACK_BUFFER_SIZE 8192
 #endif
 
 struct __rb_wasm_asyncify_jmp_buf {

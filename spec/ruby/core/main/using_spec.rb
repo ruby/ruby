@@ -142,11 +142,9 @@ describe "main.using" do
     end.should raise_error(RuntimeError)
   end
 
-  ruby_version_is "3.2" do
-    it "does not raise error when wrapped with module" do
-      -> do
-        load File.expand_path('../fixtures/using.rb', __FILE__), true
-      end.should_not raise_error
-    end
+  it "does not raise error when wrapped with module" do
+    -> do
+      load File.expand_path('../fixtures/using.rb', __FILE__), true
+    end.should_not raise_error
   end
 end

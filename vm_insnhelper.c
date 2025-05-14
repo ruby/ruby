@@ -134,7 +134,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *cme)
         return TRUE;
     }
     else {
-        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment));
+        VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment), "imemo_type:%s", rb_imemo_name(imemo_type((VALUE)cme)));
 
         if (callable_class_p(cme->defined_class)) {
             return TRUE;
@@ -418,7 +418,7 @@ vm_push_frame(rb_execution_context_t *ec,
 #if VM_DEBUG_BP_CHECK
         .bp_check   = sp,
 #endif
-        .jit_return = NULL
+        .jit_return = NULL,
     };
 
     /* Ensure the initialization of `*cfp` above never gets reordered with the update of `ec->cfp` below.
@@ -963,7 +963,7 @@ vm_get_const_key_cref(const VALUE *ep)
 
     while (cref) {
         if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
-                RCLASS_EXT(CREF_CLASS(cref))->cloned) {
+                RCLASS_CLONED_P(CREF_CLASS(cref)) ) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
@@ -1230,7 +1230,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        ivar_list = ROBJECT_IVPTR(obj);
+        ivar_list = ROBJECT_FIELDS(obj);
         VM_ASSERT(rb_ractor_shareable_p(obj) ? rb_ractor_shareable_p(val) : true);
 
 #if !SHAPE_IN_BASIC_FLAGS
@@ -1256,7 +1256,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            ivar_list = RCLASS_IVPTR(obj);
+            ivar_list = RCLASS_PRIME_FIELDS(obj);
 
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = RCLASS_SHAPE_ID(obj);
@@ -1266,12 +1266,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
       default:
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-            struct gen_ivtbl *ivtbl;
-            rb_gen_ivtbl_get(obj, id, &ivtbl);
+            struct gen_fields_tbl *fields_tbl;
+            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
 #if !SHAPE_IN_BASIC_FLAGS
-            shape_id = ivtbl->shape_id;
+            shape_id = fields_tbl->shape_id;
 #endif
-            ivar_list = ivtbl->as.shape.ivptr;
+            ivar_list = fields_tbl->as.shape.fields;
         }
         else {
             return default_value;
@@ -1289,7 +1289,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 
     if (LIKELY(cached_id == shape_id)) {
-        RUBY_ASSERT(cached_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+        RUBY_ASSERT(!rb_shape_id_too_complex_p(cached_id));
 
         if (index == ATTR_INDEX_NOT_SET) {
             return default_value;
@@ -1330,22 +1330,22 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
+        if (rb_shape_id_too_complex_p(shape_id)) {
             st_table *table = NULL;
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = (st_table *)RCLASS_IVPTR(obj);
+                table = (st_table *)RCLASS_FIELDS_HASH(obj);
                 break;
 
               case T_OBJECT:
-                table = ROBJECT_IV_HASH(obj);
+                table = ROBJECT_FIELDS_HASH(obj);
                 break;
 
               default: {
-                struct gen_ivtbl *ivtbl;
-                if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-                    table = ivtbl->as.complex.table;
+                struct gen_fields_tbl *fields_tbl;
+                if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
+                    table = fields_tbl->as.complex.table;
                 }
                 break;
               }
@@ -1408,7 +1408,7 @@ general_path:
 static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
-    RUBY_ASSERT(next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(!rb_shape_id_too_complex_p(next_shape_id));
 
     // Cache population code
     if (is_attr) {
@@ -1436,7 +1436,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
         shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-        if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+        if (!rb_shape_id_too_complex_p(next_shape_id)) {
             populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
         }
 
@@ -1469,15 +1469,15 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     shape_id_t shape_id = rb_generic_shape_id(obj);
 #endif
 
-    struct gen_ivtbl *ivtbl = 0;
+    struct gen_fields_tbl *fields_tbl = 0;
 
     // Cache hit case
     if (shape_id == dest_shape_id) {
         RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
     }
     else if (dest_shape_id != INVALID_SHAPE_ID) {
-        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-        rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+        rb_shape_t *shape = RSHAPE(shape_id);
+        rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
 
         if (shape_id == dest_shape->parent_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
             RUBY_ASSERT(index < dest_shape->capacity);
@@ -1490,17 +1490,17 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    rb_gen_ivtbl_get(obj, 0, &ivtbl);
+    rb_gen_fields_tbl_get(obj, 0, &fields_tbl);
 
     if (shape_id != dest_shape_id) {
 #if SHAPE_IN_BASIC_FLAGS
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
 #else
-        ivtbl->shape_id = dest_shape_id;
+        fields_tbl->shape_id = dest_shape_id;
 #endif
     }
 
-    RB_OBJ_WRITE(obj, &ivtbl->as.shape.ivptr[index], val);
+    RB_OBJ_WRITE(obj, &fields_tbl->as.shape.fields[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 
@@ -1517,15 +1517,15 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = ROBJECT_SHAPE_ID(obj);
-            RUBY_ASSERT(dest_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID);
+            RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_id_too_complex_p(dest_shape_id));
 
             if (LIKELY(shape_id == dest_shape_id)) {
                 RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
                 VM_ASSERT(!rb_ractor_shareable_p(obj));
             }
             else if (dest_shape_id != INVALID_SHAPE_ID) {
-                rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-                rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
+                rb_shape_t *shape = RSHAPE(shape_id);
+                rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
 
                 if (shape_id == source_shape_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
@@ -1533,7 +1533,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
 
                     ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);
 
-                    RUBY_ASSERT(rb_shape_get_next_iv_shape(rb_shape_get_shape_by_id(source_shape_id), id) == dest_shape);
+                    RUBY_ASSERT(rb_shape_get_next_iv_shape(source_shape_id, id) == dest_shape_id);
                     RUBY_ASSERT(index < dest_shape->capacity);
                 }
                 else {
@@ -1544,9 +1544,9 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 break;
             }
 
-            VALUE *ptr = ROBJECT_IVPTR(obj);
+            VALUE *ptr = ROBJECT_FIELDS(obj);
 
-            RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+            RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
             RB_OBJ_WRITE(obj, &ptr[index], val);
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -2079,7 +2079,7 @@ static const struct rb_callcache *
 vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
 {
     const ID mid = vm_ci_mid(ci);
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     struct rb_class_cc_entries *ccs = NULL;
     VALUE ccs_data;
 
@@ -2125,7 +2125,8 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
         }
     }
     else {
-        cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
+        cc_tbl = rb_id_table_create(2);
+        RCLASS_WRITE_CC_TBL(klass, cc_tbl);
     }
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
@@ -4123,7 +4124,7 @@ rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner)
     VALUE klass = current_class;
 
     /* for prepended Module, then start from cover class */
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+    if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
         klass = RBASIC_CLASS(klass);
     }
@@ -5109,6 +5110,20 @@ block_proc_is_lambda(const VALUE procval)
     }
 }
 
+static inline const rb_namespace_t *
+block_proc_namespace(const VALUE procval)
+{
+    rb_proc_t *proc;
+
+    if (procval) {
+        GetProcPtr(procval, proc);
+        return proc->ns;
+    }
+    else {
+        return NULL;
+    }
+}
+
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
                     const struct rb_captured_block *captured,
@@ -5259,11 +5274,16 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     VALUE * const rsp = GET_SP() - calling->argc;
     VALUE * const argv = rsp;
     int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, is_lambda ? arg_setup_method : arg_setup_block);
+    int frame_flag = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
 
     SET_SP(rsp);
 
+    if (calling->proc_ns) {
+        frame_flag |= VM_FRAME_FLAG_NS_SWITCH;
+    }
+
     vm_push_frame(ec, iseq,
-                  VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0),
+                  frame_flag,
                   captured->self,
                   VM_GUARDED_PREV_EP(captured->ep), 0,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
@@ -5362,6 +5382,9 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
         VALUE proc = VM_BH_TO_PROC(block_handler);
+        if (!calling->proc_ns) {
+            calling->proc_ns = block_proc_namespace(proc);
+        }
         is_lambda = block_proc_is_lambda(proc);
         block_handler = vm_proc_to_block_handler(proc);
     }
@@ -5812,6 +5835,7 @@ vm_define_class(ID id, rb_num_t flags, VALUE cbase, VALUE super)
 
     /* find klass */
     rb_autoload_load(cbase, id);
+
     if ((klass = vm_const_get_under(id, flags, cbase)) != 0) {
         if (!vm_check_if_class(id, flags, super, klass))
             unmatched_redefinition("class", cbase, id, klass);
@@ -5913,8 +5937,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
     if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
-
-        RCLASS_EXT(klass)->max_iv_count = rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval);
+        RCLASS_WRITE_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
     }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {

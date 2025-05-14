@@ -41,21 +41,11 @@ describe "Struct#initialize" do
     StructClasses::SubclassX.new(:y).new.key.should == :value
   end
 
-  ruby_version_is ""..."3.2" do
-    it "warns about passing only keyword arguments" do
-      -> {
-        StructClasses::Ruby.new(version: "3.1", platform: "OS")
-      }.should complain(/warning: Passing only keyword arguments/)
-    end
-  end
+  it "can be initialized with keyword arguments" do
+    positional_args = StructClasses::Ruby.new("3.2", "OS")
+    keyword_args = StructClasses::Ruby.new(version: "3.2", platform: "OS")
 
-  ruby_version_is "3.2" do
-    it "can be initialized with keyword arguments" do
-      positional_args = StructClasses::Ruby.new("3.2", "OS")
-      keyword_args = StructClasses::Ruby.new(version: "3.2", platform: "OS")
-
-      positional_args.version.should == keyword_args.version
-      positional_args.platform.should == keyword_args.platform
-    end
+    positional_args.version.should == keyword_args.version
+    positional_args.platform.should == keyword_args.platform
   end
 end

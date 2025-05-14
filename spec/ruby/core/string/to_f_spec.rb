@@ -120,11 +120,9 @@ describe "String#to_f" do
     "\3771.2".b.to_f.should == 0
   end
 
-  ruby_version_is "3.2" do
-    it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
-      -> {
-        '1.2'.encode("UTF-16").to_f
-      }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
-    end
+  it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
+    -> {
+      '1.2'.encode("UTF-16").to_f
+    }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
 end

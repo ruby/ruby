@@ -1309,16 +1309,20 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
 void rb_ractor_lock_self(rb_ractor_t *r);
 void rb_ractor_unlock_self(rb_ractor_t *r);
 
+// The current thread for a ractor is put to "sleep" (descheduled in the STOPPED_FOREVER state) waiting for
+// a ractor action to wake it up. See docs for `ractor_sched_sleep_with_cleanup` for more info.
 void
-rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf)
+rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf_schedule_ractor_th)
 {
     // ractor lock of cr is acquired
     // r is sleeping status
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
-    cr->sync.wait.waiting_thread = th; // TODO: multi-thread
+    struct ccan_list_node *waitn = &th->ractor_waiting.waiting_node;
+    VM_ASSERT(waitn->next == waitn->prev && waitn->next == waitn); // it should be unlinked
+    ccan_list_add(&cr->sync.wait.waiting_threads, waitn);
 
-    setup_ubf(th, ubf, (void *)cr);
+    setup_ubf(th, ubf_schedule_ractor_th, (void *)ec);
 
     thread_sched_lock(sched, th);
     {
@@ -1327,8 +1331,8 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
             if (RUBY_VM_INTERRUPTED(th->ec)) {
                 RUBY_DEBUG_LOG("interrupted");
             }
-            else if (cr->sync.wait.wakeup_status != wakeup_none) {
-                RUBY_DEBUG_LOG("awaken:%d", (int)cr->sync.wait.wakeup_status);
+            else if (th->ractor_waiting.wakeup_status != wakeup_none) {
+                RUBY_DEBUG_LOG("awaken:%d", (int)th->ractor_waiting.wakeup_status);
             }
             else {
                 // sleep
@@ -1350,25 +1354,24 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
     setup_ubf(th, NULL, NULL);
 
     rb_ractor_lock_self(cr);
-    cr->sync.wait.waiting_thread = NULL;
+    ccan_list_del_init(waitn);
 }
 
 void
-rb_ractor_sched_wakeup(rb_ractor_t *r)
+rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 {
-    rb_thread_t *r_th = r->sync.wait.waiting_thread;
     // ractor lock of r is acquired
-    struct rb_thread_sched *sched = TH_SCHED(r_th);
+    struct rb_thread_sched *sched = TH_SCHED(th);
 
-    VM_ASSERT(r->sync.wait.wakeup_status != 0);
+    VM_ASSERT(th->ractor_waiting.wakeup_status != 0);
 
-    thread_sched_lock(sched, r_th);
+    thread_sched_lock(sched, th);
     {
-        if (r_th->status == THREAD_STOPPED_FOREVER) {
-            thread_sched_to_ready_common(sched, r_th, true, false);
+        if (th->status == THREAD_STOPPED_FOREVER) {
+            thread_sched_to_ready_common(sched, th, true, false);
         }
     }
-    thread_sched_unlock(sched, r_th);
+    thread_sched_unlock(sched, th);
 }
 
 static bool

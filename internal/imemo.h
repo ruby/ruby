@@ -10,6 +10,7 @@
  */
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
+#include "id_table.h"
 #include "internal/array.h"     /* for rb_ary_hidden_new_fill */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
@@ -24,6 +25,7 @@
 #define IMEMO_FL_USER3 FL_USER7
 #define IMEMO_FL_USER4 FL_USER8
 #define IMEMO_FL_USER5 FL_USER9
+#define IMEMO_FL_USER6 FL_USER10
 
 enum imemo_type {
     imemo_env            =  0,
@@ -149,6 +151,7 @@ size_t rb_imemo_memsize(VALUE obj);
 void rb_cc_table_mark(VALUE klass);
 void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
 void rb_cc_table_free(VALUE klass);
+void rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN

@@ -967,6 +967,12 @@ module StringScannerTests
     assert_equal({}, scan.named_captures)
   end
 
+  def test_named_captures_same_name_union
+    scan = StringScanner.new("123")
+    assert_equal(1, scan.match?(/(?<number>0)|(?<number>1)|(?<number>2)/))
+    assert_equal({"number" => "1"}, scan.named_captures)
+  end
+
   def test_scan_integer
     s = create_string_scanner('abc')
     assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
@@ -995,10 +1001,26 @@ module StringScannerTests
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
+    s = create_string_scanner('-')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
+    s = create_string_scanner('+')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
     huge_integer = '1' * 2_000
     s = create_string_scanner(huge_integer)
     assert_equal(huge_integer.to_i, s.scan_integer)
     assert_equal(2_000, s.pos)
+    assert_predicate(s, :matched?)
+
+    s = create_string_scanner('abc1')
+    s.pos = 3
+    assert_equal(1, s.scan_integer)
+    assert_equal(4, s.pos)
     assert_predicate(s, :matched?)
   end
 

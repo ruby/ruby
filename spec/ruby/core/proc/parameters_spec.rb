@@ -20,29 +20,27 @@ describe "Proc#parameters" do
     proc {|x| }.parameters.first.first.should == :opt
   end
 
-  ruby_version_is "3.2" do
-    it "sets the first element of each sub-Array to :req for required argument if lambda keyword used" do
-      proc {|x| }.parameters(lambda: true).first.first.should == :req
-      proc {|y,*x| }.parameters(lambda: true).first.first.should == :req
-    end
+  it "sets the first element of each sub-Array to :req for required argument if lambda keyword used" do
+    proc {|x| }.parameters(lambda: true).first.first.should == :req
+    proc {|y,*x| }.parameters(lambda: true).first.first.should == :req
+  end
 
-    it "regards named parameters in procs as required if lambda keyword used" do
-      proc {|x| }.parameters(lambda: true).first.first.should == :req
-    end
+  it "regards named parameters in procs as required if lambda keyword used" do
+    proc {|x| }.parameters(lambda: true).first.first.should == :req
+  end
 
-    it "regards named parameters in lambda as optional if lambda: false keyword used" do
-      -> x { }.parameters(lambda: false).first.first.should == :opt
-    end
+  it "regards named parameters in lambda as optional if lambda: false keyword used" do
+    -> x { }.parameters(lambda: false).first.first.should == :opt
+  end
 
-    it "regards named parameters in procs and lambdas as required if lambda keyword is truthy" do
-      proc {|x| }.parameters(lambda: 123).first.first.should == :req
-      -> x { }.parameters(lambda: 123).first.first.should == :req
-    end
+  it "regards named parameters in procs and lambdas as required if lambda keyword is truthy" do
+    proc {|x| }.parameters(lambda: 123).first.first.should == :req
+    -> x { }.parameters(lambda: 123).first.first.should == :req
+  end
 
-    it "ignores the lambda keyword if it is nil" do
-      proc {|x|}.parameters(lambda: nil).first.first.should == :opt
-      -> x { }.parameters(lambda: nil).first.first.should == :req
-    end
+  it "ignores the lambda keyword if it is nil" do
+    proc {|x|}.parameters(lambda: nil).first.first.should == :opt
+    -> x { }.parameters(lambda: nil).first.first.should == :req
   end
 
   it "regards optional keyword parameters in procs as optional" do
@@ -110,24 +108,12 @@ describe "Proc#parameters" do
     -> x { }.parameters.should == [[:req, :x]]
   end
 
-  ruby_version_is '3.2' do
-    it "adds rest arg with name * for \"star\" argument" do
-      -> * {}.parameters.should == [[:rest, :*]]
-    end
-
-    it "adds keyrest arg with ** as a name for \"double star\" argument" do
-      -> ** {}.parameters.should == [[:keyrest, :**]]
-    end
+  it "adds rest arg with name * for \"star\" argument" do
+    -> * {}.parameters.should == [[:rest, :*]]
   end
 
-  ruby_version_is ''...'3.2' do
-    it "adds nameless rest arg for \"star\" argument" do
-      -> * {}.parameters.should == [[:rest]]
-    end
-
-    it "adds nameless keyrest arg for \"double star\" argument" do
-      -> ** {}.parameters.should == [[:keyrest]]
-    end
+  it "adds keyrest arg with ** as a name for \"double star\" argument" do
+    -> ** {}.parameters.should == [[:keyrest, :**]]
   end
 
   it "adds block arg with name & for anonymous block argument" do

@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
-require 'cgi'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 
 describe "CGI.escapeElement when passed String, elements, ..." do
   it "escapes only the tags of the passed elements in the passed String" do
