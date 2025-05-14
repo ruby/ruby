@@ -951,7 +951,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
                 if (pair->key == never) break;
                 ret = ar_find_entry_hint(hash, hint, key);
                 if (ret == RHASH_AR_TABLE_MAX_BOUND) {
-                    retval = (*func)(0, 0, arg, 1);
+                    (*func)(0, 0, arg, 1);
                     return 2;
                 }
               }
@@ -1404,84 +1404,28 @@ hash_foreach_ensure(VALUE hash)
     return 0;
 }
 
-struct hash_stlike_foreach_arg {
-    VALUE hash;
-    st_foreach_callback_func *func;
-    VALUE arg;
-};
-
-static VALUE
-hash_stlike_foreach_call(VALUE args)
-{
-    struct hash_stlike_foreach_arg *argp = (void *)args;
-    VALUE hash = argp->hash;
-    st_foreach_callback_func *func = argp->func;
-    VALUE arg = argp->arg;
-    int ret;
-
-    if (RHASH_AR_TABLE_P(hash)) {
-        ret = ar_foreach(hash, func, arg);
-    }
-    else {
-        ret = st_foreach(RHASH_ST_TABLE(hash), func, arg);
-    }
-    return (VALUE)ret;
-}
-
+/* This does not manage iteration level */
 int
 rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
-    struct hash_stlike_foreach_arg args = {
-        .hash = hash,
-        .func = func,
-        .arg = arg,
-    };
-    hash_iter_lev_inc(hash);
-    VALUE ret = rb_ensure(hash_stlike_foreach_call, (VALUE)&args,
-                          hash_foreach_ensure, hash);
-    return (int)ret;
-}
-
-struct hash_stlike_foreach_with_replace_arg {
-    VALUE hash;
-    st_foreach_check_callback_func *func;
-    st_update_callback_func *replace;
-    VALUE arg;
-};
-
-static VALUE
-hash_stlike_foreach_with_replace_call(VALUE args)
-{
-    struct hash_stlike_foreach_with_replace_arg *argp = (void *)args;
-    VALUE hash = argp->hash;
-    st_foreach_check_callback_func *func = argp->func;
-    st_update_callback_func *replace = argp->replace;
-    VALUE arg = argp->arg;
-    int ret;
-
     if (RHASH_AR_TABLE_P(hash)) {
-        ret = ar_foreach_with_replace(hash, func, replace, arg);
+        return ar_foreach(hash, func, arg);
     }
     else {
-        ret = st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
+        return st_foreach(RHASH_ST_TABLE(hash), func, arg);
     }
-    return (VALUE)ret;
 }
 
+/* This does not manage iteration level */
 int
-rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func,
-                                    st_update_callback_func *replace, st_data_t arg)
+rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
-    struct hash_stlike_foreach_with_replace_arg args = {
-        .hash = hash,
-        .func = func,
-        .replace = replace,
-        .arg = arg,
-    };
-    hash_iter_lev_inc(hash);
-    VALUE ret = rb_ensure(hash_stlike_foreach_with_replace_call, (VALUE)&args,
-                          hash_foreach_ensure, hash);
-    return (int)ret;
+    if (RHASH_AR_TABLE_P(hash)) {
+        return ar_foreach_with_replace(hash, func, replace, arg);
+    }
+    else {
+        return st_foreach_with_replace(RHASH_ST_TABLE(hash), func, replace, arg);
+    }
 }
 
 static VALUE
@@ -3544,6 +3488,20 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
     return ST_CONTINUE;
 }
 
+static VALUE
+transform_values_call(VALUE hash)
+{
+    rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+    return hash;
+}
+
+static void
+transform_values(VALUE hash)
+{
+    hash_iter_lev_inc(hash);
+    rb_ensure(transform_values_call, hash, hash_foreach_ensure, hash);
+}
+
 /*
  *  call-seq:
  *    transform_values {|value| ... } -> new_hash
@@ -3572,7 +3530,7 @@ rb_hash_transform_values(VALUE hash)
     SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
+        transform_values(result);
         compact_after_delete(result);
     }
 
@@ -3607,7 +3565,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+        transform_values(hash);
     }
 
     return hash;

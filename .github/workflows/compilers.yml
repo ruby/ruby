@@ -299,6 +299,8 @@ jobs:
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_BP_CHECK',              with: { cppflags: '-DVM_DEBUG_BP_CHECK' } }
       - { uses: './.github/actions/compilers', name: 'VM_DEBUG_VERIFY_METHOD_CACHE',   with: { cppflags: '-DVM_DEBUG_VERIFY_METHOD_CACHE' } }
       - { uses: './.github/actions/compilers', name: 'enable-yjit',                    with: { append_configure: '--enable-yjit' } }
+      - { uses: './.github/actions/compilers', name: 'enable-{y,z}jit',                with: { append_configure: '--enable-yjit --enable-zjit' } }
+      - { uses: './.github/actions/compilers', name: 'enable-{y,z}jit=dev',            with: { append_configure: '--enable-yjit=dev --enable-zjit' } }
       - { uses: './.github/actions/compilers', name: 'YJIT_FORCE_ENABLE',              with: { cppflags: '-DYJIT_FORCE_ENABLE' } }
       - { uses: './.github/actions/compilers', name: 'UNIVERSAL_PARSER',               with: { cppflags: '-DUNIVERSAL_PARSER' } }
 

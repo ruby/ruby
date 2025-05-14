@@ -1,3 +1,5 @@
+//! High level intermediary representation.
+
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
@@ -6,8 +8,16 @@ use crate::{
     options::{get_option, DumpHIR},
     profile::{self, get_or_create_iseq_payload},
     state::ZJITState,
+    cast::IntoUsize,
 };
-use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet, VecDeque},
+    ffi::{c_int, c_void},
+    mem::{align_of, size_of},
+    ptr,
+    slice::Iter
+};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -653,6 +663,8 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
 pub struct Function {
     // ISEQ this function refers to
     iseq: *const rb_iseq_t,
+    // The types for the parameters of this function
+    param_types: Vec<Type>,
 
     // TODO: get method name and source location from the ISEQ
 
@@ -672,6 +684,7 @@ impl Function {
             union_find: UnionFind::new().into(),
             blocks: vec![Block::default()],
             entry_block: BlockId(0),
+            param_types: vec![],
         }
     }
 
@@ -912,9 +925,18 @@ impl Function {
     fn infer_types(&mut self) {
         // Reset all types
         self.insn_types.fill(types::Empty);
-        for param in &self.blocks[self.entry_block.0].params {
+
+        // Fill parameter types
+        let entry_params = self.blocks[self.entry_block.0].params.iter();
+        let param_types = self.param_types.iter();
+        assert_eq!(
+            entry_params.len(),
+            entry_params.len(),
+            "param types should be initialized before type inference"
+        );
+        for (param, param_type) in std::iter::zip(entry_params, param_types) {
             // We know that function parameters are BasicObject or some subclass
-            self.insn_types[param.0] = types::BasicObject;
+            self.insn_types[param.0] = *param_type;
         }
         let rpo = self.rpo();
         // Walk the graph, computing types until fixpoint
@@ -1674,15 +1696,9 @@ pub enum ParseError {
     UnhandledCallType(CallType),
 }
 
-fn num_lead_params(iseq: *const rb_iseq_t) -> usize {
-    let result = unsafe { rb_get_iseq_body_param_lead_num(iseq) };
-    assert!(result >= 0, "Can't have negative # of parameters");
-    result as usize
-}
-
 /// Return the number of locals in the current ISEQ (includes parameters)
 fn num_locals(iseq: *const rb_iseq_t) -> usize {
-    (unsafe { get_iseq_body_local_table_size(iseq) }) as usize
+    (unsafe { get_iseq_body_local_table_size(iseq) }).as_usize()
 }
 
 /// If we can't handle the type of send (yet), bail out.
@@ -1717,13 +1733,32 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Iteratively fill out basic blocks using a queue
     // TODO(max): Basic block arguments at edges
     let mut queue = std::collections::VecDeque::new();
+    // Index of the rest parameter for comparison below
+    let rest_param_idx = if !iseq.is_null() && unsafe { get_iseq_flags_has_rest(iseq) } {
+        let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
+        let lead_num = unsafe { get_iseq_body_param_lead_num(iseq) };
+        opt_num + lead_num
+    } else {
+        -1
+    };
+    // The HIR function will have the same number of parameter as the iseq so
+    // we properly handle calls from the interpreter. Roughly speaking, each
+    // item between commas in the source increase the parameter count by one,
+    // regardless of parameter kind.
     let mut entry_state = FrameState::new(iseq);
     for idx in 0..num_locals(iseq) {
-        if idx < num_lead_params(iseq) {
+        if idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Param { idx }));
         } else {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
+
+        let mut param_type = types::BasicObject;
+        // Rest parameters are always ArrayExact
+        if let Ok(true) = c_int::try_from(idx).map(|idx| idx == rest_param_idx) {
+            param_type = types::ArrayExact;
+        }
+        fun.param_types.push(param_type);
     }
     queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32));
 
@@ -3109,6 +3144,52 @@ mod opt_tests {
               v7:Fixnum = GuardType v0, Fixnum
               v8:Fixnum = FixnumAdd v7, v2
               Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_param_forms_get_bb_param() {
+        eval("
+            def rest(*array) = array
+            def kw(k:) = k
+            def kw_rest(**k) = k
+            def post(*rest, post) = post
+            def block(&b) = nil
+            def forwardable(...) = nil
+        ");
+
+        assert_optimized_method_hir("rest", expect![[r#"
+            fn rest:
+            bb0(v0:ArrayExact):
+              Return v0
+        "#]]);
+        // extra hidden param for the set of specified keywords
+        assert_optimized_method_hir("kw", expect![[r#"
+            fn kw:
+            bb0(v0:BasicObject, v1:BasicObject):
+              Return v0
+        "#]]);
+        assert_optimized_method_hir("kw_rest", expect![[r#"
+            fn kw_rest:
+            bb0(v0:BasicObject):
+              Return v0
+        "#]]);
+        assert_optimized_method_hir("block", expect![[r#"
+            fn block:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              Return v2
+        "#]]);
+        assert_optimized_method_hir("post", expect![[r#"
+            fn post:
+            bb0(v0:ArrayExact, v1:BasicObject):
+              Return v1
+        "#]]);
+        assert_optimized_method_hir("forwardable", expect![[r#"
+            fn forwardable:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              Return v2
         "#]]);
     }
 

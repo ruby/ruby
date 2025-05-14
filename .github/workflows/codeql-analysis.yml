@@ -50,7 +50,6 @@ jobs:
 
     env:
       enable_install_doc: no
-      CODEQL_ACTION_CLEANUP_TRAP_CACHES: true
 
     strategy:
       fail-fast: false
@@ -121,3 +120,9 @@ jobs:
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true
+
+      - name: Purge the oldest TRAP cache
+        if: ${{ github.repository == 'ruby/ruby' && matrix.language == 'cpp'}}
+        run: gh cache list --key codeql --order asc --limit 1 --json key --jq '.[].key' | xargs -I{} gh cache delete {}
+        env:
+          GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}

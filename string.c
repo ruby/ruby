@@ -4308,22 +4308,34 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string << object -> string
+ *    self << object -> self
  *
- *  Concatenates +object+ to +self+ and returns +self+:
+ *  Appends a string representation of +object+ to +self+;
+ *  returns +self+.
+ *
+ *  If +object+ is a string, appends it to +self+:
  *
  *    s = 'foo'
  *    s << 'bar' # => "foobar"
  *    s          # => "foobar"
  *
- *  If +object+ is an Integer,
- *  the value is considered a codepoint and converted to a character before concatenation:
+ *  If +object+ is an integer,
+ *  its value is considered a codepoint;
+ *  converts the value to a character before concatenating:
  *
  *    s = 'foo'
  *    s << 33 # => "foo!"
  *
- *  If that codepoint is not representable in the encoding of
- *  _string_, RangeError is raised.
+ *  Additionally, if the codepoint is in range <tt>0..0xff</tt>
+ *  and the encoding of +self+ is Encoding::US_ASCII,
+ *  changes the encoding to Encoding::ASCII_8BIT:
+ *
+ *    s = 'foo'.encode(Encoding::US_ASCII)
+ *    s.encoding # => #<Encoding:US-ASCII>
+ *    s << 0xff  # => "foo\xFF"
+ *    s.encoding # => #<Encoding:BINARY (ASCII-8BIT)>
+ *
+ *  Raises RangeError if that codepoint is not representable in the encoding of +self+:
  *
  *    s = 'foo'
  *    s.encoding              # => <Encoding:UTF-8>
@@ -4331,14 +4343,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
  *    s = 'foo'.encode(Encoding::EUC_JP)
  *    s << 0x00800080         # invalid codepoint 0x800080 in EUC-JP (RangeError)
  *
- *  If the encoding is US-ASCII and the codepoint is 0..0xff, _string_
- *  is automatically promoted to ASCII-8BIT.
- *
- *    s = 'foo'.encode(Encoding::US_ASCII)
- *    s << 0xff
- *    s.encoding              # => #<Encoding:BINARY (ASCII-8BIT)>
- *
- *  Related: String#concat, which takes multiple arguments.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 VALUE
 rb_str_concat(VALUE str1, VALUE str2)
@@ -4551,22 +4556,29 @@ rb_str_cmp(VALUE str1, VALUE str2)
 
 /*
  *  call-seq:
- *    string == object -> true or false
- *    string === object -> true or false
+ *    self == object -> true or false
  *
- *  Returns +true+ if +object+ has the same length and content;
- *  as +self+; +false+ otherwise:
+ *  Returns whether +object+ is equal to +self+.
+ *
+ *  When +object+ is a string, returns whether +object+ has the same length and content as +self+:
  *
  *    s = 'foo'
- *    s == 'foo' # => true
+ *    s == 'foo'  # => true
  *    s == 'food' # => false
- *    s == 'FOO' # => false
+ *    s == 'FOO'  # => false
  *
  *  Returns +false+ if the two strings' encodings are not compatible:
+ *
  *    "\u{e4 f6 fc}".encode(Encoding::ISO_8859_1) == ("\u{c4 d6 dc}") # => false
  *
- *  If +object+ is not an instance of +String+ but responds to +to_str+, then the
- *  two strings are compared using <code>object.==</code>.
+ *  When +object+ is not a string:
+ *
+ *  - If +object+ responds to method <tt>to_str</tt>,
+ *    <tt>object == self</tt> is called and its return value is returned.
+ *  - If +object+ does not respond to <tt>to_str</tt>,
+ *    +false+ is returned.
+ *
+ *  Related: {Comparing}[rdoc-ref:String@Comparing].
  */
 
 VALUE
@@ -6092,16 +6104,16 @@ rb_str_aref(VALUE str, VALUE indx)
 
 /*
  *  call-seq:
- *    string[index] -> new_string or nil
- *    string[start, length] -> new_string or nil
- *    string[range] -> new_string or nil
- *    string[regexp, capture = 0] -> new_string or nil
- *    string[substring] -> new_string or nil
+ *    self[index] -> new_string or nil
+ *    self[start, length] -> new_string or nil
+ *    self[range] -> new_string or nil
+ *    self[regexp, capture = 0] -> new_string or nil
+ *    self[substring] -> new_string or nil
  *
  *  Returns the substring of +self+ specified by the arguments.
  *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
  *
- *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
@@ -6315,11 +6327,11 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
 
 /*
  *  call-seq:
- *    string[index] = new_string
- *    string[start, length] = new_string
- *    string[range] = new_string
- *    string[regexp, capture = 0] = new_string
- *    string[substring] = new_string
+ *    self[index] = new_string
+ *    self[start, length] = new_string
+ *    self[range] = new_string
+ *    self[regexp, capture = 0] = new_string
+ *    self[substring] = new_string
  *
  *  Replaces all, some, or none of the contents of +self+; returns +new_string+.
  *  See {String Slices}[rdoc-ref:String@String+Slices].
@@ -6338,6 +6350,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
  *    s['lly'] = 'ncial' # => "ncial"
  *    s                  # => "financial"
  *
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
