@@ -1596,7 +1596,7 @@ impl FrameState {
     }
 
     /// Get a stack operand at idx
-    fn stack_topn(&mut self, idx: usize) -> Result<InsnId, ParseError> {
+    fn stack_topn(&self, idx: usize) -> Result<InsnId, ParseError> {
         let idx = self.stack.len() - idx - 1;
         self.stack.get(idx).ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
@@ -1728,8 +1728,11 @@ impl ProfileOracle {
 
     fn profile_stack(&mut self, state: &FrameState) {
         let Some(operand_types) = self.payload.get_operand_types(state.insn_idx) else { return };
-        for (idx, &insn) in state.stack.iter().enumerate() {
-            self.types.insert((insn, state.insn_idx), operand_types[idx]);
+        // operand_types is always going to be <= stack size (otherwise it would have an underflow
+        // at run-time) so use that to drive iteration.
+        for (idx, &insn_type) in operand_types.iter().rev().enumerate() {
+            let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
+            self.types.insert((insn, state.insn_idx), insn_type);
         }
     }
 
