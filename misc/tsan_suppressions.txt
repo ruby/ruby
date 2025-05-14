@@ -30,9 +30,6 @@ race_top:RUBY_VM_INTERRUPTED_ANY
 race_top:unblock_function_set
 race_top:threadptr_get_interrupts
 
-# system_working needs to be converted to atomic
-race:system_working
-
 # It's already crashing. We're doing our best
 signal:rb_vm_bugreport
 race:check_reserved_signal_

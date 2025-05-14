@@ -2574,7 +2574,7 @@ rb_thread_wakeup_timer_thread(int sig)
     timer_thread_wakeup_force();
 
     // interrupt main thread if main thread is available
-    if (system_working) {
+    if (RUBY_ATOMIC_LOAD(system_working)) {
         rb_vm_t *vm = GET_VM();
         rb_thread_t *main_th = vm->ractor.main_thread;
 
@@ -3005,12 +3005,12 @@ timer_thread_func(void *ptr)
 
     RUBY_DEBUG_LOG("started%s", "");
 
-    while (system_working) {
+    while (RUBY_ATOMIC_LOAD(system_working)) {
         timer_thread_check_signal(vm);
         timer_thread_check_timeout(vm);
         ubf_wakeup_all_threads();
 
-        RUBY_DEBUG_LOG("system_working:%d", system_working);
+        RUBY_DEBUG_LOG("system_working:%d", RUBY_ATOMIC_LOAD(system_working));
         timer_thread_polling(vm);
     }
 
@@ -3124,18 +3124,16 @@ rb_thread_create_timer_thread(void)
 static int
 native_stop_timer_thread(void)
 {
-    int stopped;
-    stopped = --system_working <= 0;
+    RUBY_ATOMIC_SET(system_working, 0);
 
-    if (stopped) {
-        RUBY_DEBUG_LOG("wakeup send %d", timer_th.comm_fds[1]);
-        timer_thread_wakeup_force();
-        RUBY_DEBUG_LOG("wakeup sent");
-        pthread_join(timer_th.pthread_id, NULL);
-    }
+    RUBY_DEBUG_LOG("wakeup send %d", timer_th.comm_fds[1]);
+    timer_thread_wakeup_force();
+    RUBY_DEBUG_LOG("wakeup sent");
+    pthread_join(timer_th.pthread_id, NULL);
 
     if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
-    return stopped;
+
+    return 1;
 }
 
 static void
