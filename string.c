@@ -6099,6 +6099,8 @@ rb_str_aref(VALUE str, VALUE indx)
  *
  *  Returns the substring of +self+ specified by the arguments.
  *  See examples at {String Slices}[rdoc-ref:String@String+Slices].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
