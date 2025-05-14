@@ -1,3 +1,5 @@
+//! High level intermediary representation.
+
 // We use the YARV bytecode constants which have a CRuby-style name
 #![allow(non_upper_case_globals)]
 
@@ -8,7 +10,14 @@ use crate::{
     state::ZJITState,
     cast::IntoUsize,
 };
-use std::{cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::c_void, mem::{align_of, size_of}, ptr, slice::Iter};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, HashSet, VecDeque},
+    ffi::{c_int, c_void},
+    mem::{align_of, size_of},
+    ptr,
+    slice::Iter
+};
 use crate::hir_type::{Type, types};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
