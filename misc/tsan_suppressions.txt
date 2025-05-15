@@ -25,11 +25,6 @@ race:objspace_malloc_increase_body
 race_top:rb_signal_buff_size
 race:unregister_ubf_list
 
-# interrupt flag is set atomically, but read non-atomically
-race_top:RUBY_VM_INTERRUPTED_ANY
-race_top:unblock_function_set
-race_top:threadptr_get_interrupts
-
 # It's already crashing. We're doing our best
 signal:rb_vm_bugreport
 race:check_reserved_signal_

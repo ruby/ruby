@@ -2102,8 +2102,12 @@ enum {
 #define RUBY_VM_SET_TRAP_INTERRUPT(ec)		ATOMIC_OR((ec)->interrupt_flag, TRAP_INTERRUPT_MASK)
 #define RUBY_VM_SET_TERMINATE_INTERRUPT(ec)     ATOMIC_OR((ec)->interrupt_flag, TERMINATE_INTERRUPT_MASK)
 #define RUBY_VM_SET_VM_BARRIER_INTERRUPT(ec)    ATOMIC_OR((ec)->interrupt_flag, VM_BARRIER_INTERRUPT_MASK)
-#define RUBY_VM_INTERRUPTED(ec)			((ec)->interrupt_flag & ~(ec)->interrupt_mask & \
-                                                 (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK))
+
+static inline bool
+RUBY_VM_INTERRUPTED(rb_execution_context_t *ec)
+{
+    return (ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec->interrupt_mask) & (PENDING_INTERRUPT_MASK|TRAP_INTERRUPT_MASK));
+}
 
 static inline bool
 RUBY_VM_INTERRUPTED_ANY(rb_execution_context_t *ec)
@@ -2116,7 +2120,7 @@ RUBY_VM_INTERRUPTED_ANY(rb_execution_context_t *ec)
         RUBY_VM_SET_TIMER_INTERRUPT(ec);
     }
 #endif
-    return ec->interrupt_flag & ~(ec)->interrupt_mask;
+    return ATOMIC_LOAD_RELAXED(ec->interrupt_flag) & ~(ec)->interrupt_mask;
 }
 
 VALUE rb_exc_set_backtrace(VALUE exc, VALUE bt);
