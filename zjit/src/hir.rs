@@ -996,9 +996,9 @@ impl Function {
         }
     }
 
-    fn profiled_type_of_at(&self, insn: InsnId, insn_idx: usize) -> Option<Type> {
+    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<Type> {
         let Some(ref profiles) = self.profiles else { return None };
-        let Some(entries) = profiles.types.get(&insn_idx) else { return None };
+        let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
         for &(entry_insn, entry_type) in entries {
             if self.union_find.borrow().find_const(entry_insn) == self.union_find.borrow().find_const(insn) {
                 return Some(entry_type);
@@ -1018,9 +1018,9 @@ impl Function {
 
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
-        let insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiled_type_of_at(left, insn_idx).unwrap_or(types::BasicObject);
-        let right_profiled_type = self.profiled_type_of_at(right, insn_idx).unwrap_or(types::BasicObject);
+        let iseq_insn_idx = frame_state.insn_idx as usize;
+        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(types::BasicObject);
+        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(types::BasicObject);
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
@@ -1743,8 +1743,9 @@ impl ProfileOracle {
 
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
     fn profile_stack(&mut self, state: &FrameState) {
-        let Some(operand_types) = self.payload.get_operand_types(state.insn_idx) else { return };
-        let entry = self.types.entry(state.insn_idx).or_insert_with(|| vec![]);
+        let iseq_insn_idx = state.insn_idx;
+        let Some(operand_types) = self.payload.get_operand_types(iseq_insn_idx) else { return };
+        let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, &insn_type) in operand_types.iter().rev().enumerate() {
