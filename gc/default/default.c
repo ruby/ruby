@@ -2803,6 +2803,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    int lev = rb_gc_vm_lock();
     if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
         table = (VALUE)data;
         st_insert(finalizer_table, dest, table);
@@ -2811,6 +2812,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
+    rb_gc_vm_unlock(lev);
 }
 
 static VALUE

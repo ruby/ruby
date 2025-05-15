@@ -33,4 +33,25 @@ class TestObjSpaceRactor < Test::Unit::TestCase
       ractors.each(&:take)
     RUBY
   end
+
+  def test_copy_finalizer
+    assert_ractor(<<~'RUBY', require: 'objspace')
+      def fin
+        ->(id) { }
+      end
+      OBJ = Object.new
+      ObjectSpace.define_finalizer(OBJ, fin)
+      OBJ.freeze
+
+      ractors = 5.times.map do
+        Ractor.new do
+          10_000.times do
+            OBJ.clone
+          end
+        end
+      end
+
+      ractors.each(&:take)
+    RUBY
+  end
 end
