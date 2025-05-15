@@ -1817,7 +1817,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let mut elements = vec![];
                     for _ in 0..count {
                         elements.push(state.stack_pop()?);
@@ -1833,7 +1833,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         elements.push(state.stack_pop()?);
                     }
                     elements.reverse();
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
                         VM_OPT_NEWARRAY_SEND_MIN => return Err(ParseError::UnknownNewArraySend("min".into())),
@@ -1847,7 +1847,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_duparray => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -1971,7 +1971,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
@@ -2014,7 +2014,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
                     state.stack_push(send);
                 }
@@ -2036,7 +2036,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     args.reverse();
 
                     let recv = state.stack_pop()?;
-                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
                 }
