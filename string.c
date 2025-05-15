@@ -4181,7 +4181,7 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
  *    s = 'foo'
  *    s.append_as_bytes(" \xE2\x82") # => "foo \xE2\x82"
  *    s.valid_encoding?              # => false
- *    s.append_as_bytes("\xAC 12")   # => "foo € 12"
+ *    s.append_as_bytes("\xAC 12")
  *    s.valid_encoding?              # => true
  *
  *  When a given object is an integer,
