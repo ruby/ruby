@@ -999,6 +999,16 @@ impl Function {
         }
     }
 
+    fn profiled_type_of_at(&self, insn: InsnId, insn_idx: usize) -> Option<Type> {
+        let Some(entries) = self.profiles.types.get(&insn_idx) else { return None };
+        for &(entry_insn, entry_type) in entries {
+            if self.union_find.borrow().find_const(entry_insn) == self.union_find.borrow().find_const(insn) {
+                return Some(entry_type);
+            }
+        }
+        None
+    }
+
     fn likely_is_fixnum(&self, val: InsnId, profiled_type: Type) -> bool {
         return self.is_a(val, types::Fixnum) || profiled_type.is_subtype(types::Fixnum);
     }
@@ -1011,8 +1021,8 @@ impl Function {
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
         let insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiles.type_of_at(left, insn_idx).unwrap_or(types::BasicObject);
-        let right_profiled_type = self.profiles.type_of_at(right, insn_idx).unwrap_or(types::BasicObject);
+        let left_profiled_type = self.profiled_type_of_at(left, insn_idx).unwrap_or(types::BasicObject);
+        let right_profiled_type = self.profiled_type_of_at(right, insn_idx).unwrap_or(types::BasicObject);
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
@@ -1070,7 +1080,7 @@ impl Function {
                             (klass, None)
                         } else {
                             // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
-                            match self.profiles.type_of_at(self_val, frame_state.insn_idx) {
+                            match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
                                 Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
                                 _ => { self.push_insn_id(block, insn_id); continue; }
                             }
@@ -1152,7 +1162,7 @@ impl Function {
                 (klass, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
-                let Some(recv_type) = fun.profiles.type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
+                let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
                 let Some(recv_class) = recv_type.exact_ruby_class() else { return Err(()) };
                 (recv_class, Some(recv_type.unspecialized()))
             };
@@ -1718,8 +1728,8 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
 #[derive(Debug)]
 struct ProfileOracle {
     payload: &'static IseqPayload,
-    // TODO(max): Key first by insn idx, then linear search over InsnId calling find() on the stored HIR insn because it might have been rewritten in the HIR optimizer
-    types: HashMap<(InsnId, usize), Type>,
+    /// types is a map from insn_idx -> profiled type information at that idx
+    types: HashMap<usize, Vec<(InsnId, Type)>>,
 }
 
 impl ProfileOracle {
@@ -1727,18 +1737,16 @@ impl ProfileOracle {
         Self { payload, types: Default::default() }
     }
 
+    /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack
     fn profile_stack(&mut self, state: &FrameState) {
         let Some(operand_types) = self.payload.get_operand_types(state.insn_idx) else { return };
+        let entry = self.types.entry(state.insn_idx).or_insert_with(|| vec![]);
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, &insn_type) in operand_types.iter().rev().enumerate() {
             let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
-            self.types.insert((insn, state.insn_idx), insn_type);
+            entry.push((insn, insn_type))
         }
-    }
-
-    fn type_of_at(&self, insn: InsnId, insn_idx: usize) -> Option<Type> {
-        self.types.get(&(insn, insn_idx)).copied()
     }
 }
 
