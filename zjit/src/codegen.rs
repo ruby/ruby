@@ -126,6 +126,9 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
                 asm.ccall(callee_addr, vec![]);
             });
             branch_iseqs.extend(callee_branch_iseqs);
+        } else {
+            // Failed to compile the callee. Bail out of compiling this graph of ISEQs.
+            return std::ptr::null();
         }
     }
 
