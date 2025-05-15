@@ -3846,4 +3846,41 @@ mod opt_tests {
               Return v6
         "#]]);
     }
+
+    #[test]
+    fn test_opt_fact() {
+        eval("
+            def fact(n)
+              if n == 0
+                return 1
+              end
+              return n * fact(n-1)
+            end
+            fact 1  # profile
+        ");
+        // TODO(max): Make sure SendWithoutBlock :* is rewritten to FixnumMult.
+        assert_optimized_method_hir("fact",  expect![[r#"
+            fn fact:
+            bb0(v0:BasicObject):
+              v2:Fixnum[0] = Const Value(0)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v21:Fixnum = GuardType v0, Fixnum
+              v22:BoolExact = FixnumEq v21, v2
+              v5:CBool = Test v22
+              IfFalse v5, bb1(v0)
+              v7:Fixnum[1] = Const Value(1)
+              Return v7
+            bb1(v9:BasicObject):
+              v11:BasicObject = PutSelf
+              v12:Fixnum[1] = Const Value(1)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v24:Fixnum = GuardType v9, Fixnum
+              v25:Fixnum = FixnumSub v24, v12
+              PatchPoint MethodRedefined(Object@0x1000, fact@0x1008)
+              v27:BasicObject[VALUE(0x1010)] = GuardBitEquals v11, VALUE(0x1010)
+              v28:BasicObject = SendWithoutBlockDirect v27, :fact (0x1018), v25
+              v18:BasicObject = SendWithoutBlock v9, :*, v28
+              Return v18
+        "#]]);
+    }
 }
