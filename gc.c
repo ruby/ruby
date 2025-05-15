@@ -1983,7 +1983,14 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // the table even though it wasn't inserted yet.
         id2ref_tbl = st_init_table(&object_id_hash_type);
         id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
-        rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+
+        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
+        // objects we just added to the table.
+        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        {
+            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+        }
+        if (!gc_disabled) rb_gc_enable();
         id2ref_tbl_built = true;
     }
 
