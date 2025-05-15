@@ -70,6 +70,7 @@ race_top:RVALUE_AGE_SET
 
 # Inline caches
 race_top:vm_cc_call_set
+race_top:vm_cc_class_check
 race_top:vm_search_cc
 race_top:vm_search_method_slowpath0
 race_top:rb_vm_opt_getconstant_path
@@ -105,6 +106,7 @@ race_top:method_definition_addref
 # Switching to setting up tracing. Likely other ractors should be stopped for this.
 race_top:encoded_iseq_trace_instrument
 race:rb_iseq_trace_set_all
+race:rb_tracepoint_enable
 
 # We walk the machine stack looking for markable objects, a thread with the GVL
 # released could by mutating the stack with non-Ruby-objects
