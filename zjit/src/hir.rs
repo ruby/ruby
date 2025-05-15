@@ -1718,6 +1718,7 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
 #[derive(Debug)]
 struct ProfileOracle {
     payload: &'static IseqPayload,
+    // TODO(max): Key first by insn idx, then linear search over InsnId calling find() on the stored HIR insn because it might have been rewritten in the HIR optimizer
     types: HashMap<(InsnId, usize), Type>,
 }
 
