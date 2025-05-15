@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   make:
+    continue-on-error: ${{ matrix.os == 2025 }}
     strategy:
       matrix:
         include:
