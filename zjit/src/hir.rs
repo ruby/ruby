@@ -1727,7 +1727,9 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
 struct ProfileOracle {
     payload: &'static IseqPayload,
     /// types is a map from ISEQ instruction indices -> profiled type information at that ISEQ
-    /// instruction index
+    /// instruction index. At a given ISEQ instruction, the interpreter has profiled the stack
+    /// operands to a given ISEQ instruction, and this list of pairs of (InsnId, Type) map that
+    /// profiling information into HIR instructions.
     types: HashMap<usize, Vec<(InsnId, Type)>>,
 }
 
