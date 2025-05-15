@@ -22,7 +22,6 @@ race_top:push_subclass_entry_to_list
 race:objspace_malloc_increase_body
 
 # Signals and ubf
-race_top:rb_signal_buff_size
 race:unregister_ubf_list
 
 # It's already crashing. We're doing our best

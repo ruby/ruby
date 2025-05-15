@@ -710,7 +710,7 @@ sighandler(int sig)
 int
 rb_signal_buff_size(void)
 {
-    return signal_buff.size;
+    return RUBY_ATOMIC_LOAD(signal_buff.size);
 }
 
 static void
@@ -738,7 +738,7 @@ rb_get_next_signal(void)
 {
     int i, sig = 0;
 
-    if (signal_buff.size != 0) {
+    if (rb_signal_buff_size() != 0) {
         for (i=1; i<RUBY_NSIG; i++) {
             if (signal_buff.cnt[i] > 0) {
                 ATOMIC_DEC(signal_buff.cnt[i]);
