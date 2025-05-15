@@ -4173,25 +4173,27 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    append_as_bytes(*objects) -> string
+ *    append_as_bytes(*objects) -> self
  *
- *  Concatenates each object in +objects+ into +self+ without any encoding
- *  validation or conversion and returns +self+:
+ *  Concatenates each object in +objects+ into +self+; returns +self+;
+ *  performs no encoding validation or conversion:
  *
  *    s = 'foo'
- *    s.append_as_bytes(" \xE2\x82")  # => "foo \xE2\x82"
- *    s.valid_encoding?               # => false
- *    s.append_as_bytes("\xAC 12")
- *    s.valid_encoding?               # => true
+ *    s.append_as_bytes(" \xE2\x82") # => "foo \xE2\x82"
+ *    s.valid_encoding?              # => false
+ *    s.append_as_bytes("\xAC 12")   # => "foo € 12"
+ *    s.valid_encoding?              # => true
  *
- *  For each given object +object+ that is an Integer,
- *  the value is considered a Byte. If the Integer is bigger
- *  than one byte, only the lower byte is considered, similar to String#setbyte:
+ *  When a given object is an integer,
+ *  the value is considered an 8-bit byte;
+ *  if the integer occupies more than one byte (i.e,. is greater than 255),
+ *  appends only the low-order byte (similar to String#setbyte):
  *
  *    s = ""
- *    s.append_as_bytes(0, 257)             # =>  "\u0000\u0001"
+ *    s.append_as_bytes(0, 257) # => "\u0000\u0001"
+ *    s.bytesize                # => 2
  *
- *  Related: String#<<, String#concat, which do an encoding aware concatenation.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 VALUE
