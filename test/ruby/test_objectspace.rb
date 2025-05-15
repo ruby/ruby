@@ -94,7 +94,7 @@ End
   end
 
   def test_finalizer
-    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok :ok), [])
+    assert_in_out_err(["-e", <<-END], "", %w(:ok :ok :ok), [])
       a = []
       ObjectSpace.define_finalizer(a) { p :ok }
       b = a.dup
@@ -135,6 +135,25 @@ End
     assert_raise_with_message(ArgumentError, /C\u{3042}/) {
       ObjectSpace.define_finalizer(o, c)
     }
+  end
+
+  def test_finalizer_copy
+    assert_in_out_err(["-e", <<~'RUBY'], "", %w(:ok), [])
+      def fin
+        ids = Set.new
+        ->(id) { puts "object_id (#{id}) reused" unless ids.add?(id) }
+      end
+
+      OBJ = Object.new
+      ObjectSpace.define_finalizer(OBJ, fin)
+      OBJ.freeze
+
+      10.times do
+        OBJ.clone
+      end
+
+      p :ok
+    RUBY
   end
 
   def test_finalizer_with_super

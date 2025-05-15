@@ -2805,7 +2805,8 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     int lev = rb_gc_vm_lock();
     if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
-        table = (VALUE)data;
+        table = rb_ary_dup((VALUE)data);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         st_insert(finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
     }
