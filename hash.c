@@ -107,6 +107,11 @@ static VALUE rb_hash_s_try_convert(VALUE, VALUE);
 VALUE
 rb_hash_freeze(VALUE hash)
 {
+    if (!RB_OBJ_FROZEN(hash)) {
+        // Drop default and default proc
+        rb_hash_set_default_proc(hash, Qnil);
+    }
+
     return rb_obj_freeze(hash);
 }
 
