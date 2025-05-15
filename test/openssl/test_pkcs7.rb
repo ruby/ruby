@@ -355,8 +355,6 @@ END
   end
 
   def test_decode_ber_constructed_string
-    pend "AWS-LC ASN.1 parsers has no current support for parsing indefinite BER constructed strings" if aws_lc?
-
     p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], "content", "aes-128-cbc")
 
     # Make an equivalent BER to p7.to_der. Here we convert the encryptedContent
