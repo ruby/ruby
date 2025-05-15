@@ -11839,7 +11839,7 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
- *    b -> string
+ *    b -> new_string
  *
  *  :include: doc/string/b.rdoc
  *
