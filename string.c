@@ -11901,12 +11901,12 @@ rb_str_valid_encoding_p(VALUE str)
  *  call-seq:
  *    ascii_only? -> true or false
  *
- *  Returns +true+ if +self+ contains only ASCII characters,
- *  +false+ otherwise:
+ *  Returns whether +self+ contains only ASCII characters:
  *
  *    'abc'.ascii_only?         # => true
  *    "abc\u{6666}".ascii_only? # => false
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
