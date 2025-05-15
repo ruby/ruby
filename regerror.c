@@ -299,7 +299,8 @@ onig_error_code_to_str(UChar* s, OnigPosition code, ...)
     if (q) {
       len = onigenc_str_bytelen_null(ONIG_ENCODING_ASCII, q);
       xmemcpy(s, q, len);
-    } else {
+    }
+    else {
       len = 0;
     }
     s[len] = '\0';

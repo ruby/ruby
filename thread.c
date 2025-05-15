@@ -1708,7 +1708,8 @@ rb_io_blocking_operations(struct rb_io *io)
 }
 
 static void
-rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation) {
+rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+{
     ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
 }
 
@@ -1718,7 +1719,8 @@ struct io_blocking_operation_arguments {
 };
 
 static VALUE
-io_blocking_operation_exit(VALUE _arguments) {
+io_blocking_operation_exit(VALUE _arguments)
+{
     struct io_blocking_operation_arguments *arguments = (void*)_arguments;
     struct rb_io_blocking_operation *blocking_operation = arguments->blocking_operation;
 
@@ -1730,7 +1732,8 @@ io_blocking_operation_exit(VALUE _arguments) {
 
     if (thread->scheduler != Qnil) {
         rb_fiber_scheduler_unblock(thread->scheduler, io->self, rb_fiberptr_self(fiber));
-    } else {
+    }
+    else {
         rb_thread_wakeup(thread->self);
     }
 
@@ -1749,7 +1752,8 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
         };
 
         rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_exit, (VALUE)&arguments);
-    } else {
+    }
+    else {
         ccan_list_del(&blocking_operation->list);
     }
 }
@@ -4594,7 +4598,8 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
         blocking_operation.ec = GET_EC();
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
-    } else {
+    }
+    else {
         args.io = NULL;
         blocking_operation.ec = NULL;
         args.blocking_operation = NULL;
