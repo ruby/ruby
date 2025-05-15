@@ -160,20 +160,22 @@ jobs:
               set dt=%%J
               set tm=%%K
             )
-            set yy=%dt:~0,4%
-            set /a mm=100%dt:~5,2% %% 100
-            set /a dd=100%dt:~8,2% %% 100
+            call set yy=%%dt:~0,4%%
+            call set /a mm=100%%dt:~5,2%% %%%% 100
+            call set /a dd=100%%dt:~8,2%% %%%% 100
+            call set branch=%%GITHUB_REF:refs/heads/=%%
             (
-              echo #define RUBY_REVISION "%rev:~,10%"
-              echo #define RUBY_FULL_REVISION "%rev%"
-              echo #define RUBY_BRANCH_NAME "%GITHUB_REF%"
-              echo #define RUBY_RELEASE_DATETIME "%dt%T%tm%"
-              echo #define RUBY_RELEASE_YEAR %yy%
-              echo #define RUBY_RELEASE_MONTH %mm%
-              echo #define RUBY_RELEASE_DAY %dd%
+              call echo #define RUBY_REVISION "%%rev:~,10%%"
+              call echo #define RUBY_FULL_REVISION "%%rev%%"
+              call echo #define RUBY_BRANCH_NAME "%%branch%%"
+              call echo #define RUBY_RELEASE_DATETIME "%%dt%%T%%tm%%"
+              call echo #define RUBY_RELEASE_YEAR %%yy%%
+              call echo #define RUBY_RELEASE_MONTH %%mm%%
+              call echo #define RUBY_RELEASE_DAY %%dd%%
             ) > revision.h
             copy /y NUL .revision.time
           )
+          type revision.h
         env:
           TZ: UTC
 
