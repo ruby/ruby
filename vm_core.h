@@ -730,7 +730,6 @@ typedef struct rb_vm_struct {
 #endif
 
     rb_serial_t fork_gen;
-    struct ccan_list_head waiting_fds; /* <=> struct waiting_fd */
 
     /* set in single-threaded processes only: */
     volatile int ubf_async_safe;

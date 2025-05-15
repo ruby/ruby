@@ -1693,13 +1693,32 @@ waitfd_to_waiting_flag(int wfd_event)
     return wfd_event << 1;
 }
 
+static struct ccan_list_head *
+rb_io_blocking_operations(struct rb_io *io)
+{
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+
+    // On fork, all existing entries in this list (which are stack allocated) become invalid. Therefore, we re-initialize the list which clears it.
+    if (io->fork_generation != fork_generation) {
+        ccan_list_head_init(&io->blocking_operations);
+        io->fork_generation = fork_generation;
+    }
+
+    return &io->blocking_operations;
+}
+
+static void
+rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation) {
+    ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
+}
+
 struct io_blocking_operation_arguments {
     struct rb_io *io;
     struct rb_io_blocking_operation *blocking_operation;
 };
 
 static VALUE
-io_blocking_operation_release(VALUE _arguments) {
+io_blocking_operation_exit(VALUE _arguments) {
     struct io_blocking_operation_arguments *arguments = (void*)_arguments;
     struct rb_io_blocking_operation *blocking_operation = arguments->blocking_operation;
 
@@ -1719,7 +1738,7 @@ io_blocking_operation_release(VALUE _arguments) {
 }
 
 static void
-rb_io_blocking_operation_release(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
     VALUE wakeup_mutex = io->wakeup_mutex;
 
@@ -1729,7 +1748,7 @@ rb_io_blocking_operation_release(struct rb_io *io, struct rb_io_blocking_operati
             .blocking_operation = blocking_operation
         };
 
-        rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_release, (VALUE)&arguments);
+        rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_exit, (VALUE)&arguments);
     } else {
         ccan_list_del(&blocking_operation->list);
     }
@@ -1824,7 +1843,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
     };
-    ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+    rb_io_blocking_operation_enter(io, &blocking_operation);
 
     {
         EC_PUSH_TAG(ec);
@@ -1851,7 +1870,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         th->mn_schedulable = prev_mn_schedulable;
     }
 
-    rb_io_blocking_operation_release(io, &blocking_operation);
+    rb_io_blocking_operation_exit(io, &blocking_operation);
 
     if (state) {
         EC_JUMP_TAG(ec, state);
@@ -2658,10 +2677,11 @@ thread_io_close_notify_all(struct rb_io *io)
     VALUE error = vm->special_exceptions[ruby_error_stream_closed];
 
     struct rb_io_blocking_operation *blocking_operation;
-    ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+    ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
 
         rb_thread_t *thread = ec->thread_ptr;
+
         rb_threadptr_pending_interrupt_enque(thread, error);
 
         // This operation is slow:
@@ -2684,7 +2704,7 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     }
 
     // If there are no blocking operations, we are done:
-    if (ccan_list_empty(&io->blocking_operations)) {
+    if (ccan_list_empty(rb_io_blocking_operations(io))) {
         return 0;
     }
 
@@ -2709,7 +2729,7 @@ rb_thread_io_close_wait(struct rb_io* io)
     }
 
     rb_mutex_lock(wakeup_mutex);
-    while (!ccan_list_empty(&io->blocking_operations)) {
+    while (!ccan_list_empty(rb_io_blocking_operations(io))) {
         rb_mutex_sleep(wakeup_mutex, Qnil);
     }
     rb_mutex_unlock(wakeup_mutex);
@@ -4435,7 +4455,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 
     if (io) {
         blocking_operation.ec = ec;
-        ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+        rb_io_blocking_operation_enter(io, &blocking_operation);
     }
 
     if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
@@ -4461,7 +4481,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     }
 
     if (io) {
-        rb_io_blocking_operation_release(io, &blocking_operation);
+        rb_io_blocking_operation_exit(io, &blocking_operation);
     }
 
     if (state) {
@@ -4539,7 +4559,7 @@ select_single_cleanup(VALUE ptr)
     struct select_args *args = (struct select_args *)ptr;
 
     if (args->blocking_operation) {
-        rb_io_blocking_operation_release(args->io, args->blocking_operation);
+        rb_io_blocking_operation_exit(args->io, args->blocking_operation);
     }
 
     if (args->read) rb_fd_term(args->read);
@@ -4572,7 +4592,7 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
     if (io) {
         args.io = io;
         blocking_operation.ec = GET_EC();
-        ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+        rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     } else {
         args.io = NULL;
