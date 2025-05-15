@@ -1723,6 +1723,9 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
     Ok(())
 }
 
+/// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
+/// or correct to query from inside the optimizer. Instead, ProfileOracle provides an API to look
+/// up profiled type information by HIR InsnId at a given ISEQ instruction.
 #[derive(Debug)]
 struct ProfileOracle {
     payload: &'static IseqPayload,
