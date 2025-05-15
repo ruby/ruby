@@ -15,7 +15,11 @@
 # include <sys/user.h>
 #endif
 
-#include "internal/bits.h"
+#ifdef BUILDING_MODULAR_GC
+# define nlz_int64(x) (x == 0 ? 64 : (unsigned int)__builtin_clzll((unsigned long long)x))
+#else
+# include "internal/bits.h"
+#endif
 
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
