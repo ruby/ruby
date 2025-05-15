@@ -8570,6 +8570,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     ccan_list_head_init(&fptr->blocking_operations);
     fptr->closing_ec = NULL;
     fptr->wakeup_mutex = Qnil;
+    fptr->fork_generation = GET_VM()->fork_gen;
 
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
@@ -9311,6 +9312,7 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
     ccan_list_head_init(&io->blocking_operations);
     io->closing_ec = NULL;
     io->wakeup_mutex = Qnil;
+    io->fork_generation = GET_VM()->fork_gen;
 
     if (encoding) {
         io->encs = *encoding;
@@ -9454,6 +9456,7 @@ rb_io_fptr_new(void)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     return fp;
 }
 
@@ -9587,6 +9590,7 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     clear_codeconv(fp);
     io_check_tty(fp);
     if (fileno(stdin) == fd)

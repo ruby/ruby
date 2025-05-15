@@ -966,7 +966,11 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     struct objspace *objspace = objspace_ptr;
 
     st_data_t data = obj;
+
+    int lev = rb_gc_vm_lock();
     st_delete(objspace->finalizer_table, &data, 0);
+    rb_gc_vm_unlock(lev);
+
     FL_UNSET(obj, FL_FINALIZE);
 }
 

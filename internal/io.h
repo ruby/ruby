@@ -15,6 +15,7 @@ struct rb_io;
 
 #include "ruby/io.h"            /* for rb_io_t */
 #include "ccan/list/list.h"
+#include "serial.h"
 
 #define IO_WITHOUT_GVL(func, arg) rb_nogvl(func, arg, RUBY_UBF_IO, 0, RB_NOGVL_OFFLOAD_SAFE)
 #define IO_WITHOUT_GVL_INT(func, arg) (int)(VALUE)IO_WITHOUT_GVL(func, arg)
@@ -130,6 +131,9 @@ struct rb_io {
     struct ccan_list_head blocking_operations;
     struct rb_execution_context_struct *closing_ec;
     VALUE wakeup_mutex;
+
+    // The fork generation of the the blocking operations list.
+    rb_serial_t fork_generation;
 };
 
 /* io.c */

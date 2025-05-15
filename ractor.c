@@ -538,7 +538,8 @@ ractor_sleeping_by(const rb_ractor_t *r, rb_thread_t *th, enum rb_ractor_wait_st
         if ((th->ractor_waiting.wait_status & wait_status) && th->ractor_waiting.wakeup_status == wakeup_none) {
             return th;
         }
-    } else {
+    }
+    else {
         // find any thread that has this ractor wait status that is blocked
         ccan_list_for_each(&r->sync.wait.waiting_threads, th, ractor_waiting.waiting_node) {
             if ((th->ractor_waiting.wait_status & wait_status) && th->ractor_waiting.wakeup_status == wakeup_none) {
@@ -679,7 +680,8 @@ ractor_sleep_wo_gvl(void *ptr)
             ractor_cond_wait(cr, cur_th);
             cur_th->status = THREAD_RUNNABLE;
             VM_ASSERT(cur_th->ractor_waiting.wakeup_status != wakeup_none);
-        } else {
+        }
+        else {
             RUBY_DEBUG_LOG("rare timing, no cond wait");
         }
         cur_th->ractor_waiting.wait_status = wait_none;

@@ -6939,6 +6939,12 @@ vm_opt_aset_with(VALUE recv, VALUE key, VALUE val)
     }
 }
 
+VALUE
+rb_vm_opt_aset_with(VALUE recv, VALUE key, VALUE value)
+{
+    return vm_opt_aset_with(recv, key, value);
+}
+
 static VALUE
 vm_opt_length(VALUE recv, int bop)
 {

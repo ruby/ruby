@@ -1934,6 +1934,9 @@ object_id(VALUE obj)
         // in different namespaces, so we cannot store the object id
         // in fields.
         return class_object_id(obj);
+      case T_IMEMO:
+        rb_bug("T_IMEMO can't have an object_id");
+        break;
       default:
         break;
     }
@@ -1960,6 +1963,8 @@ build_id2ref_i(VALUE obj, void *data)
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
+      case T_IMEMO:
+        break;
       default:
         if (rb_shape_obj_has_id(obj)) {
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
@@ -1983,7 +1988,14 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // the table even though it wasn't inserted yet.
         id2ref_tbl = st_init_table(&object_id_hash_type);
         id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
-        rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+
+        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
+        // objects we just added to the table.
+        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        {
+            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+        }
+        if (!gc_disabled) rb_gc_enable();
         id2ref_tbl_built = true;
     }
 
@@ -2007,6 +2019,10 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 static inline void
 obj_free_object_id(VALUE obj)
 {
+    if (RB_BUILTIN_TYPE(obj) == T_IMEMO) {
+        return;
+    }
+
     VALUE obj_id = 0;
     if (RB_UNLIKELY(id2ref_tbl)) {
         switch (BUILTIN_TYPE(obj)) {
@@ -2210,7 +2226,7 @@ rb_obj_id(VALUE obj)
 bool
 rb_obj_id_p(VALUE obj)
 {
-    return rb_shape_obj_has_id(obj);
+    return !RB_TYPE_P(obj, T_IMEMO) && rb_shape_obj_has_id(obj);
 }
 
 static enum rb_id_table_iterator_result

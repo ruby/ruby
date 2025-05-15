@@ -81,7 +81,7 @@ The following bundled gems are updated.
 * rexml 3.4.1
 * net-imap 0.5.8
 * net-smtp 0.5.1
-* rbs 3.9.3
+* rbs 3.9.4
 * bigdecimal 3.1.9
 * syslog 0.3.0
 * csv 3.3.4

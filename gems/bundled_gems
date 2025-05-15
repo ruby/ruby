@@ -7,7 +7,7 @@
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
 minitest            5.25.5  https://github.com/minitest/minitest
-power_assert        2.0.5   https://github.com/ruby/power_assert
+power_assert        2.0.5   https://github.com/ruby/power_assert a7dab941153b233d3412e249d25da52a6c5691de
 rake                13.2.1  https://github.com/ruby/rake
 test-unit           3.6.8   https://github.com/test-unit/test-unit
 rexml               3.4.1   https://github.com/ruby/rexml
@@ -18,7 +18,7 @@ net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.2   https://github.com/ruby/matrix
 prime               0.1.3   https://github.com/ruby/prime
-rbs                 3.9.3   https://github.com/ruby/rbs
+rbs                 3.9.4   https://github.com/ruby/rbs
 typeprof            0.30.1  https://github.com/ruby/typeprof
 debug               1.10.0  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc

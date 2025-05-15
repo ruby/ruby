@@ -414,9 +414,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_obj_shape_id(obj);
-    dump_append(dc, ", \"shape_id\":");
-    dump_append_sizet(dc, shape_id);
+    if (BUILTIN_TYPE(obj) != T_IMEMO) {
+        size_t shape_id = rb_obj_shape_id(obj);
+        dump_append(dc, ", \"shape_id\":");
+        dump_append_sizet(dc, shape_id);
+    }
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
