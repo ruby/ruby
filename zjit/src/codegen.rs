@@ -259,6 +259,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
         Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
+        Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(cb, jit, asm, *cfunc, opnd!(self_val), args)?,
+        Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -470,6 +472,46 @@ fn gen_send_without_block(
     Some(ret)
 }
 
+fn gen_call_cfunc(
+    cb: &mut CodeBlock,
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cfunc: CFuncPtr,
+    recv: Opnd,
+    args: &Vec<InsnId>,
+) -> Option<lir::Opnd> {
+    let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+    // NB: The presence of self is assumed (no need for +1).
+    if (args.len() != cfunc_argc as usize) {
+        // TODO(max): We should check this at compile-time. If we have an arity mismatch at this
+        // point, we should side-exit (we're definitely going to raise) and if we don't, we should
+        // not check anything.
+        todo!("Arity mismatch");
+    }
+
+    // Set up the new frame
+    gen_push_frame(asm, recv);
+
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    // Set up arguments
+    let mut c_args: Vec<Opnd> = vec![recv];
+    for &arg in args.iter() {
+        c_args.push(jit.get_opnd(arg)?);
+    }
+
+    // Make a method call. The target address will be rewritten once compiled.
+    let cfun = unsafe { get_mct_func(cfunc) }.cast();
+    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
+    // the frame's locals
+    let ret = asm.ccall(cfun, c_args);
+    gen_pop_frame(asm);
+    Some(ret)
+}
+
 /// Compile a direct jump to an ISEQ call without block
 fn gen_send_without_block_direct(
     cb: &mut CodeBlock,
@@ -550,14 +592,18 @@ fn gen_new_array(
     new_array
 }
 
-/// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+fn gen_pop_frame(asm: &mut Assembler) {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+}
+
+/// Compile code that exits from JIT code with a return value
+fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+    gen_pop_frame(asm);
 
     asm.frame_teardown();
 
