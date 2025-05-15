@@ -1726,7 +1726,8 @@ fn filter_translatable_calls(flag: u32) -> Result<(), ParseError> {
 #[derive(Debug)]
 struct ProfileOracle {
     payload: &'static IseqPayload,
-    /// types is a map from insn_idx -> profiled type information at that idx
+    /// types is a map from ISEQ instruction indices -> profiled type information at that ISEQ
+    /// instruction index
     types: HashMap<usize, Vec<(InsnId, Type)>>,
 }
 
