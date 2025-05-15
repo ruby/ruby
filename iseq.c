@@ -1530,7 +1530,6 @@ iseqw_new(const rb_iseq_t *iseq)
 
         /* cache a wrapper object */
         RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
-        RB_OBJ_FREEZE((VALUE)iseq);
 
         return obj;
     }
