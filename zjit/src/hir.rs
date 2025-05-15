@@ -996,6 +996,9 @@ impl Function {
         }
     }
 
+    /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
+    /// index, if it is known. This historical type record is not a guarantee and must be checked
+    /// with a GuardType or similar.
     fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<Type> {
         let Some(ref profiles) = self.profiles else { return None };
         let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
