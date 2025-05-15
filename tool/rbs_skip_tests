@@ -75,4 +75,3 @@ test_recurse_proc(JSONSingletonTest)
 
 CGITest CGI is retired
 CGISingletonTest CGI is retired
-test_nph?(CGITest) skipping CGI doesn't work???
