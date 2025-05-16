@@ -3737,6 +3737,18 @@ CODE
     Warning[:deprecated] = deprecated
   end
 
+  def test_string_ensure_suffix
+    s = S("foobar")
+
+    assert_equal("foobarbaz", s.ensure_suffix("baz"))
+    assert_equal("foobar", s.ensure_suffix("bar"))
+    assert_equal("foobarrb", s.ensure_suffix("rb"))
+    assert_equal(false, s.ensure_suffix("bar").equal?(s))
+    assert_equal("foobarBAR", s.ensure_suffix("BAR"))
+    assert_equal("foobar", s.ensure_suffix(""))
+    assert_equal(false, s.ensure_suffix("").equal?(s))
+  end
+
   private
 
   def assert_bytesplice_result(expected, s, *args)

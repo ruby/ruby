@@ -11307,6 +11307,26 @@ rb_str_delete_suffix(VALUE str, VALUE suffix)
     return rb_str_subseq(str, 0, RSTRING_LEN(str) - suffixlen);
 }
 
+/*
+ *  call-seq:
+ *    ensure_suffix(suffix) -> new_string
+ *
+ *  Returns a new string with the given <tt>suffix</tt> appended if not present,
+ *  or a duplicate of <tt>self</tt> if it already ends with <tt>suffix</tt>.
+ *
+ *    "script".ensure_suffix(".rb")   # => "script.rb"
+ *    "script.rb".ensure_suffix(".rb") # => "script.rb"
+ *    "script.r".ensure_suffix(".rb")  # => "script.r.rb"
+ *
+ */
+static VALUE
+rb_str_ensure_suffix(VALUE str, VALUE suffix)
+{
+    if (rb_str_end_with(1, &suffix, str)) return str_duplicate(rb_cString, str);
+
+    return rb_str_plus(str, suffix);
+}
+
 void
 rb_str_setter(VALUE val, ID id, VALUE *var)
 {
@@ -12678,6 +12698,7 @@ Init_String(void)
     rb_define_method(rb_cString, "rstrip", rb_str_rstrip, 0);
     rb_define_method(rb_cString, "delete_prefix", rb_str_delete_prefix, 1);
     rb_define_method(rb_cString, "delete_suffix", rb_str_delete_suffix, 1);
+    rb_define_method(rb_cString, "ensure_suffix", rb_str_ensure_suffix, 1);
 
     rb_define_method(rb_cString, "sub!", rb_str_sub_bang, -1);
     rb_define_method(rb_cString, "gsub!", rb_str_gsub_bang, -1);
