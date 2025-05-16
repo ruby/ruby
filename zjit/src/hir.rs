@@ -1150,6 +1150,9 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
                             let Some(recv_type) = payload_types.get(argc as usize);
+                            let Some(recv_class) = recv_type.exact_ruby_class() else {
+                                self.push_insn_id(block, insn_id); continue;
+                            };
                             let guard_type = recv_type.unspecialized();
                             // let (recv_class, guard_type) = payload.get_operand_types(iseq_insn_idx)
                             //     .and_then(|types| types.get(argc as usize))
@@ -1161,7 +1164,8 @@ impl Function {
                             self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
                             // Guard receiver class
                             self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
-                            self.make_equal_to(send_insn_id, replacement);
+                            let replacement = self.push_insn(block, Insn::Const { val: Const::Value(method.into()) });
+                            self.make_equal_to(insn_id, replacement);
 
                             eprintln!("no class for {self_type} :(");
                             self.push_insn_id(block, insn_id);
