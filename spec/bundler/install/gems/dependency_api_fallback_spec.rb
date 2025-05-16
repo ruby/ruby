@@ -3,7 +3,7 @@
 RSpec.describe "gemcutter's dependency API" do
   context "when Gemcutter API takes too long to respond" do
     before do
-      require_rack
+      require_rack_test
 
       port = find_unused_port
       @server_uri = "http://127.0.0.1:#{port}"

@@ -7,7 +7,7 @@ RSpec.describe "fetching dependencies with a not available mirror" do
   let(:host) { "127.0.0.1" }
 
   before do
-    require_rack
+    require_rack_test
     setup_server
     setup_mirror
   end

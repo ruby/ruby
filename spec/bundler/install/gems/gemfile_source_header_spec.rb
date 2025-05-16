@@ -31,7 +31,7 @@ RSpec.describe "fetching dependencies with a mirrored source" do
   private
 
   def setup_server
-    require_rack
+    require_rack_test
     @port = find_unused_port
     @server_uri = "http://127.0.0.1:#{@port}"
 
