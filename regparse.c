@@ -6721,7 +6721,7 @@ parse_subexp(Node** top, OnigToken* tok, int term,
 	     UChar** src, UChar* end, ScanEnv* env)
 {
   int r;
-  Node *node, **headp;
+  Node *node, *topnode, **headp;
 
   *top = NULL;
   env->parse_depth++;
@@ -6737,26 +6737,29 @@ parse_subexp(Node** top, OnigToken* tok, int term,
     *top = node;
   }
   else if (r == TK_ALT) {
-    *top  = onig_node_new_alt(node, NULL);
-    headp = &(NCDR(*top));
+    topnode = onig_node_new_alt(node, NULL);
+    headp   = &(NCDR(topnode));
     while (r == TK_ALT) {
       r = fetch_token(tok, src, end, env);
       if (r < 0) {
-	onig_node_free(node);
+	onig_node_free(topnode);
 	return r;
       }
       r = parse_branch(&node, tok, term, src, end, env);
       if (r < 0) {
-	onig_node_free(node);
+	onig_node_free(topnode);
 	return r;
       }
 
       *headp = onig_node_new_alt(node, NULL);
-      headp = &(NCDR(*headp));
+      headp  = &(NCDR(*headp));
     }
 
-    if (tok->type != (enum TokenSyms )term)
+    if (tok->type != (enum TokenSyms )term) {
+      onig_node_free(topnode);
       goto err;
+    }
+    *top = topnode;
   }
   else {
     onig_node_free(node);
