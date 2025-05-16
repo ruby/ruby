@@ -5692,8 +5692,13 @@ rb_io_memsize(const rb_io_t *io)
     if (io->writeconv) size += rb_econv_memsize(io->writeconv);
 
     struct rb_io_blocking_operation *blocking_operation = 0;
-    ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
-        size += sizeof(struct rb_io_blocking_operation);
+
+    // Validate the fork generation of the IO object. If the IO object fork generation is different, the list of blocking operations is not valid memory. See `rb_io_blocking_operations` for the exact semantics.
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+    if (io->fork_generation == fork_generation) {
+        ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+            size += sizeof(struct rb_io_blocking_operation);
+        }
     }
 
     return size;
