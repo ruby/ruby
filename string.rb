@@ -342,6 +342,7 @@
 #
 # - #=~: Returns the index of the first substring that matches a given
 #   Regexp or other object; returns +nil+ if no match is found.
+# - #byteindex: Returns the byte indexof the first occurrence of a given substring.
 # - #index: Returns the index of the _first_ occurrence of a given substring;
 #   returns +nil+ if none found.
 # - #rindex: Returns the index of the _last_ occurrence of a given substring;
