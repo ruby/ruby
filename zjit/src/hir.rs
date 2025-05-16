@@ -1136,7 +1136,6 @@ impl Function {
                     Insn::LookupMethod { self_val, method_id, state, .. } => {
                         let self_type = self.type_of(self_val);
                         if let Some(self_class) = self_type.runtime_exact_ruby_class() {
-                            eprintln!("found class {self_class}");
                             let method = unsafe { rb_callable_method_entry(self_class, method_id) };
                             if method.is_null() { self.push_insn_id(block, insn_id); continue; }
                             // TODO(max): Check for overloaded CME?
@@ -1154,9 +1153,6 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
                             let guard_type = recv_type.unspecialized();
-                            // let (recv_class, guard_type) = payload.get_operand_types(iseq_insn_idx)
-                            //     .and_then(|types| types.get(argc as usize))
-                            //     .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type.unspecialized()))));
                             // Do method lookup
                             let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
                             if method.is_null() { self.push_insn_id(block, insn_id); continue; }
@@ -1166,8 +1162,6 @@ impl Function {
                             self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
                             let replacement = self.push_insn(block, Insn::Const { val: Const::Value(method.into()) });
                             self.make_equal_to(insn_id, replacement);
-
-                            eprintln!("no class for {self_type} :(");
                             self.push_insn_id(block, insn_id);
                         }
                     }
