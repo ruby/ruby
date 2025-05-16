@@ -2438,6 +2438,9 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
   clear:
     if (FL_TEST(dest, FL_EXIVAR)) {
+#if SHAPE_IN_BASIC_FLAGS
+        RBASIC_SET_SHAPE_ID(dest, ROOT_SHAPE_ID);
+#endif
         rb_free_generic_ivar(dest);
         FL_UNSET(dest, FL_EXIVAR);
     }
