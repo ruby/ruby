@@ -9620,7 +9620,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // -> { it }
         //      ^^
         if (!popped) {
-            PUSH_GETLOCAL(ret, location, scope_node->local_table_for_iseq_size, 0);
+            pm_scope_node_t *current_scope_node = scope_node;
+            int level = 0;
+
+            while (current_scope_node) {
+                if (current_scope_node->parameters && PM_NODE_TYPE_P(current_scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+                    PUSH_GETLOCAL(ret, location, current_scope_node->local_table_for_iseq_size, level);
+                    return;
+                }
+
+                current_scope_node = current_scope_node->previous;
+                level++;
+            }
+            rb_bug("Local `it` does not exist");
         }
 
         return;
