@@ -1133,7 +1133,7 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::LookupMethod { self_val, method_id, .. } => {
+                    Insn::LookupMethod { self_val, method_id, state, .. } => {
                         let self_type = self.type_of(self_val);
                         if let Some(self_class) = self_type.runtime_exact_ruby_class() {
                             eprintln!("found class {self_class}");
@@ -1145,22 +1145,23 @@ impl Function {
                             self.make_equal_to(insn_id, replacement);
                         } else {
                             // Try checking profiles
-                            let iseq_insn_idx = fun.frame_state(state).insn_idx;
+                            let iseq_insn_idx = self.frame_state(state).insn_idx;
                             let Some(payload_types) = payload.get_operand_types(iseq_insn_idx) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
-                            let Some(recv_type) = types.get(argc as usize)
-                            let (recv_class, guard_type) = payload.get_operand_types(iseq_insn_idx)
-                                .and_then(|types| types.get(argc as usize))
-                                .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type.unspecialized()))));
+                            let Some(recv_type) = payload_types.get(argc as usize);
+                            let guard_type = recv_type.unspecialized();
+                            // let (recv_class, guard_type) = payload.get_operand_types(iseq_insn_idx)
+                            //     .and_then(|types| types.get(argc as usize))
+                            //     .and_then(|recv_type| recv_type.exact_ruby_class().and_then(|class| Some((class, recv_type.unspecialized()))));
                             // Do method lookup
                             let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
                             if method.is_null() { self.push_insn_id(block, insn_id); continue; }
                             // Commit to the replacement. Put PatchPoint.
-                            fun.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
+                            self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
                             // Guard receiver class
-                            fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
-                            fun.make_equal_to(send_insn_id, replacement);
+                            self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
+                            self.make_equal_to(send_insn_id, replacement);
 
                             eprintln!("no class for {self_type} :(");
                             self.push_insn_id(block, insn_id);
