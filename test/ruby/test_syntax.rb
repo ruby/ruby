@@ -1954,6 +1954,7 @@ eom
     assert_equal(6, eval('a = 0; 6.then { begin; nil; rescue; ensure; a = it; end }; a'))
     assert_equal(7, eval('a = 0; 7.then { begin; raise; ensure; a = it; end } rescue a'))
     assert_equal(8, eval('a = 0; 8.then { begin; raise; rescue; ensure; a = it; end }; a'))
+    assert_equal(/9/, eval('9.then { /#{it}/o }'))
   end
 
   def test_value_expr_in_condition
