@@ -1127,7 +1127,6 @@ impl Function {
     }
 
     fn optimize_lookup_method(&mut self) {
-        let payload = get_or_create_iseq_payload(self.iseq);
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
@@ -1145,10 +1144,9 @@ impl Function {
                         } else {
                             // Try checking profiles
                             let iseq_insn_idx = self.frame_state(state).insn_idx;
-                            let Some(payload_types) = payload.get_operand_types(iseq_insn_idx) else {
+                            let Some(recv_type) = self.profiled_type_of_at(self_val, iseq_insn_idx) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
-                            let Some(recv_type) = payload_types.get(argc as usize);
                             let Some(recv_class) = recv_type.exact_ruby_class() else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -1162,7 +1160,6 @@ impl Function {
                             self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
                             let replacement = self.push_insn(block, Insn::Const { val: Const::Value(method.into()) });
                             self.make_equal_to(insn_id, replacement);
-                            self.push_insn_id(block, insn_id);
                         }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
