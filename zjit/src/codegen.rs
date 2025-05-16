@@ -482,7 +482,7 @@ fn gen_call_cfunc(
 ) -> Option<lir::Opnd> {
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
     // NB: The presence of self is assumed (no need for +1).
-    if (args.len() != cfunc_argc as usize) {
+    if args.len() != cfunc_argc as usize {
         // TODO(max): We should check this at compile-time. If we have an arity mismatch at this
         // point, we should side-exit (we're definitely going to raise) and if we don't, we should
         // not check anything.
