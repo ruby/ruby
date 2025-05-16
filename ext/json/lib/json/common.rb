@@ -490,7 +490,7 @@ module JSON
   #   }
   #
   def pretty_generate(obj, opts = nil)
-    return state.generate(obj) if State === opts
+    return opts.generate(obj) if State === opts
 
     options = PRETTY_GENERATE_OPTIONS
 
