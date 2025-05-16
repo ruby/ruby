@@ -21737,6 +21737,7 @@ yjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.c
 yjit.$(OBJEXT): {$(VPATH)}yjit.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.rbinc
+yjit.$(OBJEXT): {$(VPATH)}zjit.h
 zjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 zjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 zjit.$(OBJEXT): $(CCAN_DIR)/list/list.h
