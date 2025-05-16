@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 describe :array_pack_16bit_le, shared: true do
   it "encodes the least significant 16 bits of a positive number" do
