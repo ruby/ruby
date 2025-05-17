@@ -133,7 +133,7 @@
 unsigned int
 rb_gc_vm_lock(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV(&lev);
     return lev;
 }
@@ -1964,6 +1964,7 @@ build_id2ref_i(VALUE obj, void *data)
         }
         break;
       case T_IMEMO:
+      case T_NONE:
         break;
       default:
         if (rb_shape_obj_has_id(obj)) {

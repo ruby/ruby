@@ -3679,8 +3679,9 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     // Avoid mutations using bind_call, etc.
-    MEMZERO((char *)obj + sizeof(struct RBasic), char, size - sizeof(struct RBasic));
-    RBASIC(obj)->flags = T_OBJECT | FL_FREEZE;
+    MEMZERO((char *)obj, char, sizeof(struct RBasic));
+    RBASIC(obj)->flags = T_OBJECT | FL_FREEZE | ROBJECT_EMBED;
+    //RBASIC(obj)->shape_id = 0
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
     return traverse_cont;
 }

@@ -50,10 +50,6 @@
  *           The object has its instance variables embedded (the array of
  *           instance variables directly follow the object, rather than being
  *           on a separately allocated buffer).
- * if !SHAPE_IN_BASIC_FLAGS
- * 4-19: SHAPE_FLAG_MASK
- *           Shape ID for the object.
- * endif
  */
 
 /*!
@@ -134,8 +130,7 @@ rb_class_allocate_instance(VALUE klass)
 
     RUBY_ASSERT(rb_obj_shape(obj)->type == SHAPE_ROOT);
 
-    // Set the shape to the specific T_OBJECT shape.
-    ROBJECT_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
+    RBASIC_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
