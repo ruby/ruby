@@ -199,6 +199,8 @@ VALUE rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout);
 /**
  * Wakes up a fiber previously blocked using rb_fiber_scheduler_block().
  *
+ * This function may be called from a different thread.
+ *
  * @param[in]  scheduler  Target scheduler.
  * @param[in]  blocker    What was awaited for.
  * @param[in]  fiber      What to unblock.
@@ -410,6 +412,14 @@ struct rb_fiber_scheduler_blocking_operation_state {
  * @return     otherwise         What `scheduler.blocking_operation_wait` returns.
  */
 VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_operation_state *state);
+
+/**
+ * Interrupt a fiber by raising an exception. You can construct an exception using `rb_make_exception`.
+ *
+ * This hook may be invoked by a different thread.
+ *
+ */
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception);
 
 /**
  * Create and schedule a non-blocking fiber.
