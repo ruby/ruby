@@ -19,12 +19,12 @@ typedef rb_iseq_t *ISEQ;
 #if VMDEBUG > 0
 #define debugs printf
 #define DEBUG_ENTER_INSN(insn) \
-    rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC());
+    rb_vmdebug_debug_print_pre(ec, GET_CFP(), GET_PC(), stderr);
 
 #define SC_REGS()
 
 #define DEBUG_END_INSN() \
-  rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS());
+  rb_vmdebug_debug_print_post(ec, GET_CFP() SC_REGS(), stderr);
 
 #else
 
