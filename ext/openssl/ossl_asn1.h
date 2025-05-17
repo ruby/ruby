@@ -32,10 +32,14 @@ VALUE asn1integer_to_num(const ASN1_INTEGER *);
 ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
 
 /*
+ * ASN1_OBJECT conversions
+ */
+ASN1_OBJECT *ossl_to_asn1obj(VALUE obj);
+
+/*
  * ASN1 module
  */
 extern VALUE mASN1;
-extern VALUE eASN1Error;
 
 extern VALUE cASN1Data;
 

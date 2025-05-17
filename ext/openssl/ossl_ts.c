@@ -132,23 +132,10 @@ asn1_to_der(void *template, int (*i2d)(void *template, unsigned char **pp))
     return str;
 }
 
-static ASN1_OBJECT*
-obj_to_asn1obj(VALUE obj)
-{
-    ASN1_OBJECT *a1obj;
-
-    StringValue(obj);
-    a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 0);
-    if(!a1obj) a1obj = OBJ_txt2obj(RSTRING_PTR(obj), 1);
-    if(!a1obj) ossl_raise(eASN1Error, "invalid OBJECT ID");
-
-    return a1obj;
-}
-
 static VALUE
 obj_to_asn1obj_i(VALUE obj)
 {
-    return (VALUE)obj_to_asn1obj(obj);
+    return (VALUE)ossl_to_asn1obj(obj);
 }
 
 static VALUE
@@ -264,7 +251,7 @@ ossl_ts_req_set_algorithm(VALUE self, VALUE algo)
     X509_ALGOR *algor;
 
     GetTSRequest(self, req);
-    obj = obj_to_asn1obj(algo);
+    obj = ossl_to_asn1obj(algo);
     mi = TS_REQ_get_msg_imprint(req);
     algor = TS_MSG_IMPRINT_get_algo(mi);
     if (!X509_ALGOR_set0(algor, obj, V_ASN1_NULL, NULL)) {
@@ -394,7 +381,7 @@ ossl_ts_req_set_policy_id(VALUE self, VALUE oid)
     int ok;
 
     GetTSRequest(self, req);
-    obj = obj_to_asn1obj(oid);
+    obj = ossl_to_asn1obj(oid);
     ok = TS_REQ_set_policy_id(req, obj);
     ASN1_OBJECT_free(obj);
     if (!ok)

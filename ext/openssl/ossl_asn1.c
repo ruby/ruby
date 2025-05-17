@@ -160,7 +160,7 @@ asn1integer_to_num_i(VALUE arg)
 #define ossl_asn1_set_indefinite_length(o,v) rb_ivar_set((o),sivINDEFINITE_LENGTH,(v))
 
 VALUE mASN1;
-VALUE eASN1Error;
+static VALUE eASN1Error;
 
 VALUE cASN1Data;
 static VALUE cASN1Primitive;
@@ -247,8 +247,8 @@ obj_to_asn1null(VALUE obj)
     return null;
 }
 
-static ASN1_OBJECT*
-obj_to_asn1obj(VALUE obj)
+ASN1_OBJECT *
+ossl_to_asn1obj(VALUE obj)
 {
     ASN1_OBJECT *a1obj;
 
@@ -544,7 +544,7 @@ ossl_asn1_get_asn1type(VALUE obj)
 	free_func = (free_func_type *)ASN1_STRING_free;
 	break;
     case V_ASN1_OBJECT:
-	ptr = obj_to_asn1obj(value);
+	ptr = ossl_to_asn1obj(value);
 	free_func = (free_func_type *)ASN1_OBJECT_free;
 	break;
     case V_ASN1_UTCTIME:
@@ -1205,7 +1205,7 @@ ossl_asn1obj_get_oid(VALUE self)
     ASN1_OBJECT *a1obj;
     int state;
 
-    a1obj = obj_to_asn1obj(ossl_asn1_get_value(self));
+    a1obj = ossl_to_asn1obj(ossl_asn1_get_value(self));
     str = rb_protect(asn1obj_get_oid_i, (VALUE)a1obj, &state);
     ASN1_OBJECT_free(a1obj);
     if (state)
