@@ -172,7 +172,7 @@ module JSON
         end
       end
       self.state = generator::State
-      const_set :State, self.state
+      const_set :State, state
     ensure
       $VERBOSE = old
     end
