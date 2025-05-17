@@ -2465,8 +2465,9 @@ threadptr_get_interrupts(rb_thread_t *th)
     rb_atomic_t interrupt;
     rb_atomic_t old;
 
+    old = ATOMIC_LOAD_RELAXED(ec->interrupt_flag);
     do {
-        interrupt = ec->interrupt_flag;
+        interrupt = old;
         old = ATOMIC_CAS(ec->interrupt_flag, interrupt, interrupt & ec->interrupt_mask);
     } while (old != interrupt);
     return interrupt & (rb_atomic_t)~ec->interrupt_mask;
