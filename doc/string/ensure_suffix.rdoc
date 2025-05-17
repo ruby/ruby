@@ -1,0 +1,5 @@
+Returns +self+ if it ends with the given +suffix+. Returns a new
+string with the +suffix+ appended, otherwise.
+
+  "Hell".ensure_suffix("o!")   # => "Hello!"
+  "Hello!".ensure_suffix("o!") # => "Hello!"
