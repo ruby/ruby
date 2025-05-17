@@ -1391,6 +1391,7 @@ hash_foreach_ensure(VALUE hash)
     return 0;
 }
 
+/* This does not manage iteration level */
 int
 rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg)
 {
@@ -1402,6 +1403,7 @@ rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg
     }
 }
 
+/* This does not manage iteration level */
 int
 rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
@@ -3326,6 +3328,20 @@ transform_values_foreach_replace(st_data_t *key, st_data_t *value, st_data_t arg
     return ST_CONTINUE;
 }
 
+static VALUE
+transform_values_call(VALUE hash)
+{
+    rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+    return hash;
+}
+
+static void
+transform_values(VALUE hash)
+{
+    hash_iter_lev_inc(hash);
+    rb_ensure(transform_values_call, hash, hash_foreach_ensure, hash);
+}
+
 /*
  *  call-seq:
  *    hash.transform_values {|value| ... } -> new_hash
@@ -3356,7 +3372,7 @@ rb_hash_transform_values(VALUE hash)
     SET_DEFAULT(result, Qnil);
 
     if (!RHASH_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(result, transform_values_foreach_func, transform_values_foreach_replace, result);
+        transform_values(result);
         compact_after_delete(result);
     }
 
@@ -3385,7 +3401,7 @@ rb_hash_transform_values_bang(VALUE hash)
     rb_hash_modify_check(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        rb_hash_stlike_foreach_with_replace(hash, transform_values_foreach_func, transform_values_foreach_replace, hash);
+        transform_values(hash);
     }
 
     return hash;
