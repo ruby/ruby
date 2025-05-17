@@ -1072,7 +1072,7 @@ module ::Kernel
     end
 
     objs.each do |obj|
-      puts JSON::generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
@@ -1087,7 +1087,7 @@ module ::Kernel
     end
 
     objs.each do |obj|
-      puts JSON::pretty_generate(obj, :allow_nan => true, :max_nesting => false)
+      puts JSON.pretty_generate(obj, :allow_nan => true, :max_nesting => false)
     end
     nil
   end
