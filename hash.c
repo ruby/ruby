@@ -860,7 +860,7 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 if (replace) {
                     VALUE key = pair->key;
                     VALUE val = pair->val;
-                    retval = (*replace)(&key, &val, arg, TRUE);
+                    (*replace)(&key, &val, arg, TRUE);
 
                     // TODO: pair should be same as pair before.
                     ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
@@ -931,7 +931,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
                 if (pair->key == never) break;
                 ret = ar_find_entry_hint(hash, hint, key);
                 if (ret == RHASH_AR_TABLE_MAX_BOUND) {
-                    retval = (*func)(0, 0, arg, 1);
+                    (*func)(0, 0, arg, 1);
                     return 2;
                 }
               }
