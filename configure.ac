@@ -1210,8 +1210,6 @@ main()
 		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
-                ac_cv_func_clock_gettime=yes
-                ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
 		ac_cv_type_off_t=yes
 		ac_cv_sizeof_off_t=8

@@ -125,8 +125,15 @@ typedef unsigned int uintptr_t;
 #define O_SHARE_DELETE 0x20000000 /* for rb_w32_open(), rb_w32_wopen() */
 
 typedef int clockid_t;
+#if defined(__MINGW32__)
+#undef CLOCK_PROCESS_CPUTIME_ID
+#undef CLOCK_THREAD_CPUTIME_ID
+#undef CLOCK_REALTIME_COARSE
+#endif
+#if defined(HAVE_CLOCK_GETTIME) && !defined(CLOCK_REALTIME)
 #define CLOCK_REALTIME  0
 #define CLOCK_MONOTONIC 1
+#endif
 
 #undef utime
 #undef lseek
