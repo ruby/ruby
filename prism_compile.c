@@ -2786,7 +2786,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int event = RUBY_EVENT_LINE;
 
         ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
-        if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+        if (lineno > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
             event |= RUBY_EVENT_COVERAGE_LINE;
         }
         ADD_TRACE(ret, event);

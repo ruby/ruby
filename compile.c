@@ -9783,7 +9783,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (nd_fl_newline(node)) {
             int event = RUBY_EVENT_LINE;
             ISEQ_COMPILE_DATA(iseq)->last_line = line;
-            if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+            if (line > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
                 event |= RUBY_EVENT_COVERAGE_LINE;
             }
             ADD_TRACE(ret, event);

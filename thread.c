@@ -5589,6 +5589,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
         VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
         if (lines) {
             long line = rb_sourceline() - 1;
+            VM_ASSERT(line >= 0);
             long count;
             VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
