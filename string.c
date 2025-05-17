@@ -4940,43 +4940,66 @@ str_ensure_byte_pos(VALUE str, long pos)
 
 /*
  *  call-seq:
- *    byteindex(substring, offset = 0) -> integer or nil
- *    byteindex(regexp, offset = 0) -> integer or nil
+ *    byteindex(object, offset = 0) -> integer or nil
  *
- *  Returns the Integer byte-based index of the first occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  Returns the 0-based integer index of a substring of +self+
+ *  specified by +object+ (a string or Regexp) and +offset+,
+ *  or +nil+ if there is no such substring;
+ *  the returned index is the count of _bytes_ (not characters).
  *
- *    'foo'.byteindex('f') # => 0
- *    'foo'.byteindex('o') # => 1
- *    'foo'.byteindex('oo') # => 1
- *    'foo'.byteindex('ooo') # => nil
+ *  When +object+ is a string,
+ *  returns the index of the first found substring equal to +object+:
  *
- *  Returns the Integer byte-based index of the first match for the given Regexp +regexp+,
- *  or +nil+ if none found:
+ *    s = 'foo'          # => "foo"
+ *    s.size             # => 3 # Three 1-byte characters.
+      s.bytesize         # => 3 # Three bytes.
+ *    s.byteindex('f')   # => 0
+ *    s.byteindex('o')   # => 1
+ *    s.byteindex('oo')  # => 1
+ *    s.byteindex('ooo') # => nil
  *
- *    'foo'.byteindex(/f/) # => 0
- *    'foo'.byteindex(/o/) # => 1
- *    'foo'.byteindex(/oo/) # => 1
- *    'foo'.byteindex(/ooo/) # => nil
+ *  When +object+ is a Regexp,
+ *  returns the index of the first found substring matching +object+:
  *
- *  Integer argument +offset+, if given, specifies the byte-based position in the
- *  string to begin the search:
+ *    s = 'foo'
+ *    s.byteindex(/f/)   # => 0
+ *    s.byteindex(/o/)   # => 1
+ *    s.byteindex(/oo/)  # => 1
+ *    s.byteindex(/ooo/) # => nil
  *
- *    'foo'.byteindex('o', 1) # => 1
- *    'foo'.byteindex('o', 2) # => 2
- *    'foo'.byteindex('o', 3) # => nil
+ *  \Integer argument +offset+, if given, specifies the 0-based index
+ *  of the byte where searching is to begin.
  *
- *  If +offset+ is negative, counts backward from the end of +self+:
+ *  When +offset+ is non-negative,
+ *  searching begins at byte position +offset+:
  *
- *    'foo'.byteindex('o', -1) # => 2
- *    'foo'.byteindex('o', -2) # => 1
- *    'foo'.byteindex('o', -3) # => 1
- *    'foo'.byteindex('o', -4) # => nil
+ *    s = 'foo'
+ *    s.byteindex('o', 1) # => 1
+ *    s.byteindex('o', 2) # => 2
+ *    s.byteindex('o', 3) # => nil
  *
- *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
- *  raised.
+ *  When +offset+ is negative, counts backward from the end of +self+:
  *
- *  Related: String#index, String#byterindex.
+ *    s = 'foo'
+ *    s.byteindex('o', -1) # => 2
+ *    s.byteindex('o', -2) # => 1
+ *    s.byteindex('o', -3) # => 1
+ *    s.byteindex('o', -4) # => nil
+ *
+ *  Raises IndexError if +offset+ does not land of a character boundary:
+ *
+ *    s = "\uFFFF\uFFFF"       # => "\uFFFF\uFFFF"
+ *    s.size                   # => 2 # Two 3-byte characters.
+ *    s.bytesize               # => 6 # Six bytes.
+ *    s.byteindex("\uFFFF")    # => 0
+ *    s.byteindex("\uFFFF", 1) # Raises IndexError
+ *    s.byteindex("\uFFFF", 2) # Raises IndexError
+ *    s.byteindex("\uFFFF", 3) # => 3
+ *    s.byteindex("\uFFFF", 4) # Raises IndexError
+ *    s.byteindex("\uFFFF", 5) # Raises IndexError
+ *    s.byteindex("\uFFFF", 6) # => nil
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
