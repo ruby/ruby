@@ -1133,7 +1133,7 @@ values.join
 }
 
 # cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variable @@cv from non-main Ractors', %q{
   class C
     @@cv = 'str'
   end
@@ -1152,7 +1152,7 @@ assert_equal 'can not access class variables from non-main Ractors', %q{
 }
 
 # also cached cvar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access class variables from non-main Ractors', %q{
+assert_equal 'can not access class variable @@cv from non-main Ractors', %q{
   class C
     @@cv = 'str'
     def self.cv
