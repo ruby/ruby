@@ -4667,6 +4667,19 @@ rb_num_pow(VALUE x, VALUE y)
 }
 
 static VALUE
+rb_int_tetrate(VALUE self, VALUE other)
+{
+    long n = NUM2LONG(other);
+    if (n < 0) rb_raise(rb_eArgError, "tetration not defined for negative height");
+
+    VALUE result = INT2FIX(1);
+    while (n-- > 0) {
+        result = rb_funcall(self, rb_intern("**"), 1, result);
+    }
+    return result;
+}
+
+static VALUE
 fix_equal(VALUE x, VALUE y)
 {
     if (x == y) return Qtrue;
@@ -6354,6 +6367,8 @@ Init_Numeric(void)
     rb_define_method(rb_cInteger, "divmod", rb_int_divmod, 1);
     rb_define_method(rb_cInteger, "fdiv", rb_int_fdiv, 1);
     rb_define_method(rb_cInteger, "**", rb_int_pow, 1);
+    rb_define_method(rb_cInteger, "***", rb_int_tetrate, 1);
+    rb_define_method(rb_cInteger, "tetrate", rb_int_tetrate, 1);
 
     rb_define_method(rb_cInteger, "pow", rb_int_powm, -1); /* in bignum.c */
 
