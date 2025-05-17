@@ -67,6 +67,7 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
+    SHAPE_EXTERNAL_OBJ_ID,
     SHAPE_FROZEN,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
@@ -172,6 +173,9 @@ bool rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
+shape_id_t rb_shape_transition_external_object_id(VALUE obj);
+shape_id_t rb_shape_object_id(VALUE obj);
+
 
 bool rb_shape_has_object_id(rb_shape_t *shape);
 void rb_shape_free_all(void);
