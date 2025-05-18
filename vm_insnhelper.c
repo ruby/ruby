@@ -1642,7 +1642,11 @@ vm_setinstancevariable(const rb_iseq_t *iseq, VALUE obj, ID id, VALUE val, IVC i
     attr_index_t index;
     vm_ic_atomic_shape_and_index(ic, &dest_shape_id, &index);
 
-    EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_IVAR_SET, obj, id, 0, 0, val);
+    VALUE pair = rb_ary_new_capa(2);
+    rb_ary_push(pair, rb_id2sym(id));
+    rb_ary_push(pair, val);
+
+    EXEC_EVENT_HOOK(GET_EC(), RUBY_EVENT_IVAR_SET, obj, id, 0, 0, pair);
 
     if (UNLIKELY(UNDEF_P(vm_setivar(obj, id, val, dest_shape_id, index)))) {
         switch (BUILTIN_TYPE(obj)) {
@@ -4789,8 +4793,11 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
                                     !(ruby_vm_event_enabled_global_flags & RUBY_EVENT_IVAR_SET)));
         }
 
-        ID mid = vm_ci_mid(ci);
-        EXEC_EVENT_HOOK(ec, RUBY_EVENT_IVAR_SET, calling->recv, mid, mid, 0, v);
+        ID mid = vm_cc_cme(cc)->def->body.attr.id;
+        VALUE pair = rb_ary_new_capa(2);
+        rb_ary_push(pair, rb_id2sym(mid));
+        rb_ary_push(pair, v);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_IVAR_SET, calling->recv, mid, mid, 0, pair);
 
         return v;
 

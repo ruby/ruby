@@ -959,6 +959,15 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
     return Qnil;
 }
 
+VALUE rb_tracearg_ivar_name(rb_trace_arg_t *trace_arg)
+{
+    if (trace_arg->event == RUBY_EVENT_IVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 0);
+    }
+    return Qnil;
+}
+
 VALUE
 rb_tracearg_method_id(rb_trace_arg_t *trace_arg)
 {
@@ -1122,6 +1131,12 @@ static VALUE
 tracepoint_attr_parameters(rb_execution_context_t *ec, VALUE tpval)
 {
     return rb_tracearg_parameters(get_trace_arg());
+}
+
+static VALUE
+tracepoint_attr_ivar_name(rb_execution_context_t *ec, VALUE tpval)
+{
+    return rb_tracearg_ivar_name(get_trace_arg());
 }
 
 static VALUE
