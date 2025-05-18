@@ -487,7 +487,8 @@ ENCOBJS = dmyenc.$(OBJEXT)
 EXTOBJS = dmyext.$(OBJEXT)
 !endif
 
-arch_hdrdir = $(EXTOUT)/include/$(arch)
+ext_hdrdir = $(EXTOUT)/include
+arch_hdrdir = $(ext_hdrdir)/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 tooldir = $(srcdir)/tool
@@ -1399,8 +1400,6 @@ loadpath: verconf.h
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
 
-RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 RUBYSPEC_CAPIEXT_EXTS =
 
 !if [echo>rubyspec-capiext.mk RUBYSPEC_CAPIEXT_EXTS = \]
