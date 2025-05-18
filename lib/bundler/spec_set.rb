@@ -76,7 +76,7 @@ module Bundler
 
       new_platforms = all_platforms.select do |platform|
         next if platforms.include?(platform)
-        next unless GemHelpers.generic(platform) == Gem::Platform::RUBY
+        next unless Gem::Platform.generic(platform) == Gem::Platform::RUBY
 
         complete_platform(platform)
       end
@@ -183,7 +183,7 @@ module Bundler
     end
 
     def find_by_name_and_platform(name, platform)
-      @specs.detect {|spec| spec.name == name && spec.match_platform(platform) }
+      @specs.detect {|spec| spec.name == name && spec.installable_on_platform?(platform) }
     end
 
     def specs_with_additional_variants_from(other)
@@ -280,7 +280,7 @@ module Bundler
       valid_platform = lookup.all? do |_, specs|
         spec = specs.first
         matching_specs = spec.source.specs.search([spec.name, spec.version])
-        platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find do |s|
+        platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
           valid?(s)
         end
 

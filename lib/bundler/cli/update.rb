@@ -92,7 +92,7 @@ module Bundler
           locked_spec = locked_info[:spec]
           new_spec = Bundler.definition.specs[name].first
           unless new_spec
-            unless locked_spec.match_platform(Bundler.local_platform)
+            unless locked_spec.installable_on_platform?(Bundler.local_platform)
               Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
             end
 
