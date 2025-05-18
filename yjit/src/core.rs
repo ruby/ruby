@@ -3232,7 +3232,23 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
     }
 
     // For each incoming branch
-    for branchref in block.incoming.0.take().iter() {
+    let mut incoming_branches = block.incoming.0.take();
+
+    // An adjacent branch will write into the start of the block being invalidated, possibly
+    // overwriting the block's exit. If we run out of memory after doing this, any subsequent
+    // incoming branches we rewrite won't be able use the block's exit as a fallback when they
+    // are unable to generate a stub. To avoid this, if there's an incoming branch that's
+    // adjacent to the invalidated block, make sure we process it last.
+    let adjacent_branch_idx = incoming_branches.iter().position(|branchref| {
+        let branch = unsafe { branchref.as_ref() };
+        let target_next = block.start_addr == branch.end_addr.get();
+        target_next
+    });
+    if let Some(adjacent_branch_idx) = adjacent_branch_idx {
+        incoming_branches.swap(adjacent_branch_idx, incoming_branches.len() - 1)
+    }
+
+    for (i, branchref) in incoming_branches.iter().enumerate() {
         let branch = unsafe { branchref.as_ref() };
         let target_idx = if branch.get_target_address(0) == Some(block_start) {
             0
@@ -3272,10 +3288,18 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
         let target_next = block.start_addr == branch.end_addr.get();
 
         if target_next {
-            // The new block will no longer be adjacent.
-            // Note that we could be enlarging the branch and writing into the
-            // start of the block being invalidated.
-            branch.gen_fn.set_shape(BranchShape::Default);
+            if stub_addr != block.start_addr {
+                // The new block will no longer be adjacent.
+                // Note that we could be enlarging the branch and writing into the
+                // start of the block being invalidated.
+                branch.gen_fn.set_shape(BranchShape::Default);
+            } else {
+                // The branch target is still adjacent, so the branch must remain
+                // a fallthrough so we don't overwrite the target with a jump.
+                //
+                // This can happen if we're unable to generate a stub and the
+                // target block also exits on entry (block_start == block_entry_exit).
+            }
         }
 
         // Rewrite the branch with the new jump target address
@@ -3284,6 +3308,11 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 
         if target_next && branch.end_addr > block.end_addr {
             panic!("yjit invalidate rewrote branch past end of invalidated block: {:?} (code_size: {})", branch, block.code_size());
+        }
+        let is_last_incoming_branch = i == incoming_branches.len() - 1;
+        if target_next && branch.end_addr.get() > block_entry_exit && !is_last_incoming_branch {
+            // We might still need to jump to this exit if we run out of memory when rewriting another incoming branch.
+            panic!("yjit invalidate rewrote branch over exit of invalidated block: {:?}", branch);
         }
         if !target_next && branch.code_size() > old_branch_size {
             panic!(
