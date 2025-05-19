@@ -17,8 +17,8 @@ Note: We're only listing outstanding class updates.
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
-      Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject to handle numbered parameters.
-      [[Bug #21049]]
+      Also, `Binding#local_variable_get` and `Binding#local_variable_set` reject
+      to handle numbered parameters.  [[Bug #21049]]
 
 * IO
 
@@ -32,8 +32,8 @@ Note: We're only listing outstanding class updates.
 
 * String
 
-    * Update Unicode to Version 16.0.0 and Emoji Version 16.0. [[Feature #19908]][[Feature #20724]]
-        (also applies to Regexp)
+    * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
+      [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
 
 ## Stdlib updates
 
@@ -52,7 +52,9 @@ The following bundled gems are promoted from default gems.
 
 We only list stdlib changes that are notable feature changes.
 
-Other changes are listed in the following sections. We also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
+Other changes are listed in the following sections. We also listed release
+history from the previous bundled version that is Ruby 3.3.0 if it has GitHub
+releases.
 
 The following default gem is added.
 
