@@ -10,7 +10,7 @@ rdoc_include:
 
 exclude:
 - \Alib/irb
-- .gemspec\z
+- \.gemspec\z
 
 autolink_excluded_words:
 - Class
