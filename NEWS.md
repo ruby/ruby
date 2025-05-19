@@ -43,13 +43,14 @@ Note: We're only listing outstanding class updates.
         2.times{ p port2.receive } #=> 11, 12
         ```
 
-      `Ractor::Port` provides the following methods:
+        `Ractor::Port` provides the following methods:
+
         * `Ractor::Port#receive`
         * `Ractor::Port#send` (or `Ractor::Port#<<`)
         * `Ractor::Port#close`
         * `Ractor::Port#closed?`
 
-      As result, `Ractor.yield` and `Ractor#take` were removed.
+        As result, `Ractor.yield` and `Ractor#take` were removed.
 
     * `Ractor#join` and `Ractor#value` were added to wait for the
       termination of a Ractor. These are similar to `Thread#join`
@@ -145,11 +146,13 @@ The following bundled gems are updated.
 ## Compatibility issues
 
 * The following methdos were removed from Ractor due because of `Ractor::Port`:
-  * `Ractor.yield`
-  * `Ractor#take`
-  * `Ractor#close_incoming`
-  * `Ractor#close_outgoging`
-  [[Feature #21262]]
+
+    * `Ractor.yield`
+    * `Ractor#take`
+    * `Ractor#close_incoming`
+    * `Ractor#close_outgoging`
+
+    [[Feature #21262]]
 
 ## Stdlib compatibility issues
 
