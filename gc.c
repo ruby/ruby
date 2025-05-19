@@ -3261,8 +3261,23 @@ rb_gc_mark_children(void *objspace, VALUE obj)
       }
 
       case T_OBJECT: {
+        attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
+
         if (rb_shape_obj_too_complex_p(obj)) {
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
+
+            if (fields_count) {
+                VALUE klass = RBASIC_CLASS(obj);
+
+                // Skip updating max_iv_count if the prime classext is not writable
+                // because GC context doesn't provide information about namespaces.
+                if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass)) {
+                    // Increment max_iv_count if applicable, used to determine size pool allocation
+                    if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
+                        RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
+                    }
+                }
+            }
         }
         else {
             const VALUE * const ptr = ROBJECT_FIELDS(obj);
@@ -3271,16 +3286,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             for (uint32_t i = 0; i < len; i++) {
                 gc_mark_internal(ptr[i]);
             }
-        }
 
-        attr_index_t fields_count = ROBJECT_FIELDS_COUNT(obj);
-        if (fields_count) {
-            VALUE klass = RBASIC_CLASS(obj);
+            if (fields_count) {
+                VALUE klass = RBASIC_CLASS(obj);
 
-            // Skip updating max_iv_count if the prime classext is not writable
-            // because GC context doesn't provide information about namespaces.
-            if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass)) {
-                VM_ASSERT(rb_shape_obj_too_complex_p(klass));
                 // Increment max_iv_count if applicable, used to determine size pool allocation
                 if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
                     RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
