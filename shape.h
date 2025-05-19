@@ -42,7 +42,7 @@ extern ID ruby_internal_object_id;
 typedef struct redblack_node redblack_node_t;
 
 struct rb_shape {
-    struct rb_id_table *edges; // id_table from ID (ivar) to next shape
+    VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
@@ -75,7 +75,7 @@ typedef struct {
     /* object shapes */
     rb_shape_t *shape_list;
     rb_shape_t *root_shape;
-    shape_id_t next_shape_id;
+    rb_atomic_t next_shape_id;
 
     redblack_node_t *shape_cache;
     unsigned int cache_size;
