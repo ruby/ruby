@@ -17,6 +17,16 @@ options.title = options.title.sub(/Ruby \K.*version/) {
     .sort # "MAJOR" < "MINOR", fortunately
     .to_h.values.join(".")
 }
+
+if ARGV.first == "--bundled-gems"
+  _, gems_list, gems_dir = ARGV.shift(3)
+  bundles = File.read(gems_list)
+  bundles.scan(/^([^#\s]+)\s+([^#\s]+)/) do |g, v|
+    d = "#{gems_dir}/#{g}-#{v}/"
+    ARGV << d if Dir.exist?(d)
+  end
+end
+
 options.parse ARGV
 
 options.singleton_class.define_method(:finish) do
