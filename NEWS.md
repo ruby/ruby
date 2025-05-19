@@ -19,20 +19,20 @@ Note: We're only listing outstanding class updates.
     * `Kernel#inspect` now checks for the existence of a `#instance_variables_to_inspect` method,
       allowing control over which instance variables are displayed in the `#inspect` string:
 
-      ```ruby
-      class DatabaseConfig
-        def initialize(host, user, password)
-          @host = host
-          @user = user
-          @password = password
+        ```ruby
+        class DatabaseConfig
+          def initialize(host, user, password)
+            @host = host
+            @user = user
+            @password = password
+          end
+
+          private def instance_variables_to_inspect = [:@host, :@user]
         end
 
-        private def instance_variables_to_inspect = [:@host, :@user]
-      end
-
-      conf = DatabaseConfig.new("localhost", "root", "hunter2")
-      conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
-      ```
+        conf = DatabaseConfig.new("localhost", "root", "hunter2")
+        conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
+        ```
 
 * Binding
 
