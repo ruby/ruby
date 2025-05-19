@@ -97,11 +97,13 @@ The following bundled gems are updated.
 
 * CGI library is removed from the default gems. Now we only provide `cgi/escape` for
   the following methods:
-  * `CGI.escape` and `CGI.unescape`
-  * `CGI.escapeHTML` and `CGI.unescapeHTML`
-  * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent`
-  * `CGI.escapeElement` and `CGI.unescapeElement`
-  [[Feature #21258]]
+
+    * `CGI.escape` and `CGI.unescape`
+    * `CGI.escapeHTML` and `CGI.unescapeHTML`
+    * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent`
+    * `CGI.escapeElement` and `CGI.unescapeElement`
+
+    [[Feature #21258]]
 
 ## C API updates
 
