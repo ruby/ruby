@@ -3162,8 +3162,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
-            rb_shape_free_all();
-
             st_free_table(vm->static_ext_inits);
 
             rb_vm_postponed_job_free();
@@ -3222,11 +3220,12 @@ ruby_vm_destruct(rb_vm_t *vm)
         ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
 
-#if USE_YJIT
         if (rb_free_at_exit) {
+            rb_shape_free_all();
+#if USE_YJIT
             rb_yjit_free_at_exit();
-        }
 #endif
+        }
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
