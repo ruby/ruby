@@ -52,7 +52,7 @@ The following bundled gems are promoted from default gems.
 
 We only list stdlib changes that are notable feature changes.
 
-Other changes are listed in the following sections. we also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
+Other changes are listed in the following sections. We also listed release history from the previous bundled version that is Ruby 3.3.0 if it has GitHub releases.
 
 The following default gem is added.
 
@@ -110,7 +110,7 @@ The following bundled gems are updated.
       using `RUBY_IO_MODE_EXTERNAL` and use `rb_io_close(io)` to close it (this
       also interrupts and waits for all pending operations on the `IO`
       instance). Directly closing file descriptors does not interrupt pending
-      operations, and may lead to undefined beahviour. In other words, if two
+      operations, and may lead to undefined behaviour. In other words, if two
       `IO` objects share the same file descriptor, closing one does not affect
       the other. [[Feature #18455]]
 
