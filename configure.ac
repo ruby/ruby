@@ -3972,6 +3972,7 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     [yes], [
     ],
     [dev], [
+        rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
     ])
