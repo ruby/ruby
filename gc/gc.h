@@ -29,6 +29,7 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_OVERLOADED_CME_TABLE,
     RB_GC_VM_GLOBAL_SYMBOLS_TABLE,
     RB_GC_VM_ID2REF_TABLE,
+    RB_GC_VM_OBJ_TO_ID_TABLE,
     RB_GC_VM_GENERIC_FIELDS_TABLE,
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT
@@ -131,6 +132,34 @@ gc_ref_update_table_values_only(st_table *tbl)
     if (!tbl || tbl->num_entries == 0) return;
 
     if (st_foreach_with_replace(tbl, hash_foreach_replace_value, hash_replace_ref_value, 0)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+}
+
+static int
+hash_foreach_replace_key(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
+        return ST_REPLACE;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+hash_replace_ref_key(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    *key = rb_gc_location((VALUE)*key);
+
+    return ST_CONTINUE;
+}
+
+static void
+gc_ref_update_table_keys_only(st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    // FIXME: this certainly isn't correct. If a key moved, we need to re-hash.
+    if (st_foreach_with_replace(tbl, hash_foreach_replace_key, hash_replace_ref_key, 0)) {
         rb_raise(rb_eRuntimeError, "hash modified during iteration");
     }
 }
