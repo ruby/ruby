@@ -1423,7 +1423,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 shape_id = RCLASS_SHAPE_ID(obj);
 #endif
 
-                if (rb_shape_obj_too_complex_p(obj)) {
+                if (rb_shape_id_too_complex_p(shape_id)) {
                     st_table * iv_table = RCLASS_FIELDS_HASH(obj);
                     if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                         found = true;
@@ -1464,7 +1464,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 #if !SHAPE_IN_BASIC_FLAGS
             shape_id = ROBJECT_SHAPE_ID(obj);
 #endif
-            if (rb_shape_obj_too_complex_p(obj)) {
+            if (rb_shape_id_too_complex_p(shape_id)) {
                 st_table * iv_table = ROBJECT_FIELDS_HASH(obj);
                 VALUE val;
                 if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
