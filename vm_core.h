@@ -313,7 +313,6 @@ struct rb_calling_info {
     int argc;
     bool kw_splat;
     VALUE heap_argv;
-    const rb_namespace_t *proc_ns;
 };
 
 #ifndef VM_ARGC_STACK_MAX
@@ -827,9 +826,6 @@ typedef struct rb_vm_struct {
         size_t fiber_vm_stack_size;
         size_t fiber_machine_stack_size;
     } default_params;
-
-    // TODO: a single require_stack can't support multi-threaded require trees
-    VALUE require_stack;
 } rb_vm_t;
 
 /* default values */
@@ -1131,9 +1127,6 @@ typedef struct rb_thread_struct {
     /* for load(true) */
     VALUE top_self;
     VALUE top_wrapper;
-    /* for namespace */
-    VALUE namespaces; // Stack of namespaces
-    rb_namespace_t *ns; // The current one
 
     /* thread control */
 
@@ -1273,7 +1266,6 @@ RUBY_SYMBOL_EXPORT_END
 
 typedef struct {
     const struct rb_block block;
-    const rb_namespace_t *ns;
     unsigned int is_from_method: 1;	/* bool */
     unsigned int is_lambda: 1;		/* bool */
     unsigned int is_isolated: 1;        /* bool */
@@ -1365,11 +1357,11 @@ typedef rb_control_frame_t *
 
 enum vm_frame_env_flags {
     /* Frame/Environment flag bits:
-     *   MMMM MMMM MMMM MMMM __FF FFFF FFFE EEEX (LSB)
+     *   MMMM MMMM MMMM MMMM ___F FFFF FFFE EEEX (LSB)
      *
      * X   : tag for GC marking (It seems as Fixnum)
      * EEE : 4 bits Env flags
-     * FF..: 9 bits Frame flags
+     * FF..: 8 bits Frame flags
      * MM..: 15 bits frame magic (to check frame corruption)
      */
 
@@ -1392,10 +1384,9 @@ enum vm_frame_env_flags {
     VM_FRAME_FLAG_CFRAME    = 0x0080,
     VM_FRAME_FLAG_LAMBDA    = 0x0100,
     VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM = 0x0200,
-    VM_FRAME_FLAG_CFRAME_KW = 0x0400,
-    VM_FRAME_FLAG_PASSED    = 0x0800,
-    VM_FRAME_FLAG_NS_SWITCH = 0x1000,
-    VM_FRAME_FLAG_LOAD_ISEQ = 0x2000,
+    VM_FRAME_FLAG_CFRAME_KW  = 0x0400,
+    VM_FRAME_FLAG_PASSED     = 0x0800,
+    VM_FRAME_FLAG_NS_REQUIRE = 0x1000,
 
     /* env flag */
     VM_ENV_FLAG_LOCAL       = 0x0002,
@@ -1495,9 +1486,9 @@ VM_FRAME_RUBYFRAME_P(const rb_control_frame_t *cfp)
 }
 
 static inline int
-VM_FRAME_NS_SWITCH_P(const rb_control_frame_t *cfp)
+VM_FRAME_NS_REQUIRE_P(const rb_control_frame_t *cfp)
 {
-    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_SWITCH) != 0;
+    return VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE) != 0;
 }
 
 #define RUBYVM_CFUNC_FRAME_P(cfp) \
@@ -1524,6 +1515,13 @@ VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
     return ep[VM_ENV_DATA_INDEX_SPECVAL];
+}
+
+static inline const rb_namespace_t *
+VM_ENV_TOP_NAMESPACE(const VALUE *ep)
+{
+    VM_ASSERT(VM_FRAME_FLAGS(ep, VM_FRAME_MAGIC_TOP));
+    return (const rb_namespace_t *)ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
 #if VM_CHECK_MODE > 0
@@ -1846,8 +1844,7 @@ NORETURN(void rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int 
 
 /* functions about thread/vm execution */
 RUBY_SYMBOL_EXPORT_BEGIN
-VALUE rb_iseq_eval(const rb_iseq_t *iseq);
-VALUE rb_iseq_eval_with_refinement(const rb_iseq_t *iseq, VALUE mod);
+VALUE rb_iseq_eval(const rb_iseq_t *iseq, const rb_namespace_t *ns);
 VALUE rb_iseq_eval_main(const rb_iseq_t *iseq);
 VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);

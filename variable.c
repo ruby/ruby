@@ -3369,6 +3369,9 @@ autoload_feature_require(VALUE _arguments)
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
+    // TODO: How do we set loading namespace for autoload?
+    // an option is to specify receiver even for the root namespace - but how? instantiate the Namespace object for the root too?
+
     if (NIL_P(autoload_namespace)) {
         rb_namespace_enable_builtin();
         /*
