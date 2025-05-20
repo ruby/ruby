@@ -7,7 +7,7 @@
 RUST_LIB_TOUCH = touch $@
 
 ifneq ($(JIT_CARGO_SUPPORT),no)
-$(RUST_LIB):
+$(RUST_LIB): $(srcdir)/jit.rs
 	$(Q)if [ '$(ZJIT_SUPPORT)' != no -a '$(YJIT_SUPPORT)' != no ]; then \
 	    echo 'building YJIT and ZJIT ($(JIT_CARGO_SUPPORT:yes=release) mode)'; \
 	elif [ '$(ZJIT_SUPPORT)' != no ]; then \
