@@ -183,16 +183,6 @@ duplicate_classext_const_tbl(struct rb_id_table *src, VALUE klass)
     return dst;
 }
 
-static void
-duplicate_classext_superclasses(rb_classext_t *orig, rb_classext_t *copy)
-{
-    RCLASSEXT_SUPERCLASSES(copy) = RCLASSEXT_SUPERCLASSES(orig);
-    RCLASSEXT_SUPERCLASS_DEPTH(copy) = RCLASSEXT_SUPERCLASS_DEPTH(orig);
-    // the copy is always not the owner and the orig (or its parent class) will maintain the superclasses array
-    RCLASSEXT_SUPERCLASSES_OWNER(copy) = false;
-    RCLASSEXT_SUPERCLASSES_WITH_SELF(copy) = RCLASSEXT_SUPERCLASSES_WITH_SELF(orig);
-}
-
 static VALUE
 namespace_subclasses_tbl_key(const rb_namespace_t *ns)
 {
@@ -343,9 +333,6 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
      */
 
     RCLASSEXT_CVC_TBL(ext) = duplicate_classext_id_table(RCLASSEXT_CVC_TBL(orig), dup_iclass);
-
-    // superclass_depth, superclasses
-    duplicate_classext_superclasses(orig, ext);
 
     // subclasses, subclasses_index
     duplicate_classext_subclasses(orig, ext);
@@ -825,11 +812,11 @@ rb_class_update_superclasses(VALUE klass)
     }
     else {
         superclasses = class_superclasses_including_self(super);
-        RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true, true);
+        RCLASS_WRITE_SUPERCLASSES(super, super_depth, superclasses, true);
     }
 
     size_t depth = super_depth == RCLASS_MAX_SUPERCLASS_DEPTH ? super_depth : super_depth + 1;
-    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false, false);
+    RCLASS_WRITE_SUPERCLASSES(klass, depth, superclasses, false);
 }
 
 void
