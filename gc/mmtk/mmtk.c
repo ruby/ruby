@@ -59,7 +59,7 @@ struct MMTk_final_job {
             void *data;
         } dfree;
         struct {
-            VALUE object_id;
+            /* HACK: we store the object ID on the 0th element of this array. */
             VALUE finalizer_array;
         } finalize;
     } as;
@@ -229,7 +229,6 @@ rb_mmtk_scan_objspace(void)
           case MMTK_FINAL_JOB_DFREE:
             break;
           case MMTK_FINAL_JOB_FINALIZE:
-            rb_gc_impl_mark(objspace, job->as.finalize.object_id);
             rb_gc_impl_mark(objspace, job->as.finalize.finalizer_array);
             break;
           default:
@@ -285,7 +284,6 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
     job->kind = MMTK_FINAL_JOB_FINALIZE;
-    job->as.finalize.object_id = rb_obj_id((VALUE)obj);
     job->as.finalize.finalizer_array = table;
 
     objspace->finalizer_jobs = job;
@@ -855,7 +853,7 @@ gc_run_finalizers_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
 }
 
 static void
@@ -874,17 +872,15 @@ gc_run_finalizers(void *data)
             job->as.dfree.func(job->as.dfree.data);
             break;
           case MMTK_FINAL_JOB_FINALIZE: {
-            VALUE object_id = job->as.finalize.object_id;
             VALUE finalizer_array = job->as.finalize.finalizer_array;
 
             rb_gc_run_obj_finalizer(
-                job->as.finalize.object_id,
-                RARRAY_LEN(finalizer_array),
+                RARRAY_AREF(finalizer_array, 0),
+                RARRAY_LEN(finalizer_array) - 1,
                 gc_run_finalizers_get_final,
                 (void *)finalizer_array
             );
 
-            RB_GC_GUARD(object_id);
             RB_GC_GUARD(finalizer_array);
             break;
           }
@@ -950,7 +946,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new3(2, block);
         rb_obj_hide(table);
         st_add_direct(objspace->finalizer_table, obj, table);
     }
