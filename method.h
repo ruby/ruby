@@ -254,6 +254,9 @@ void rb_scope_visibility_set(rb_method_visibility_t);
 
 VALUE rb_unnamed_parameters(int arity);
 
+void rb_vm_insert_cc_refinement(const struct rb_callcache *cc);
+void rb_vm_delete_cc_refinement(const struct rb_callcache *cc);
+
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_all_refinement_method_cache(void);
 void rb_invalidate_method_caches(struct rb_id_table *cm_tbl, struct rb_id_table *cc_tbl);
