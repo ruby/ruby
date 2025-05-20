@@ -224,8 +224,8 @@ class Dir
   end
 
   # call-seq:
-  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) -> array
-  #   Dir.glob(*patterns, flags: 0, base: nil, sort: true) {|entry_name| ... } -> nil
+  #   Dir.glob(patterns, flags: 0, base: nil, sort: true) -> array
+  #   Dir.glob(patterns, flags: 0, base: nil, sort: true) {|entry_name| ... } -> nil
   #
   # Forms an array _entry_names_ of the entry names selected by the arguments.
   #
