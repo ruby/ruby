@@ -33,13 +33,10 @@ jobs:
       matrix:
         include:
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev'
+            configure: '--enable-yjit=dev --enable-zjit'
 
           - test_task: 'ruby' # build test for combo build
             configure: '--enable-yjit --enable-zjit'
-
-          - test_task: 'ruby' # build test for combo build
-            configure: '--enable-yjit --enable-zjit=dev'
 
           - test_task: 'test-all'
             configure: '--enable-zjit=dev'
