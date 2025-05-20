@@ -440,6 +440,7 @@ impl Insn {
             Insn::FixnumLe   { .. } => false,
             Insn::FixnumGt   { .. } => false,
             Insn::FixnumGe   { .. } => false,
+            Insn::LookupMethod { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             _ => true,
         }
