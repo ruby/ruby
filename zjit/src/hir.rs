@@ -365,9 +365,7 @@ pub enum Insn {
     CallIseq { iseq: IseqPtr, cd: CallData, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
     CallCFunc { cfunc: CFuncPtr, cd: CallData, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
 
-    SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: CallData, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, call_info: CallInfo, cd: CallData, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: CallData, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -484,20 +482,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
-            Insn::SendWithoutBlock { self_val, call_info, args, .. } => {
-                write!(f, "SendWithoutBlock {self_val}, :{}", call_info.method_name)?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
-                Ok(())
-            }
-            Insn::SendWithoutBlockDirect { self_val, call_info, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {self_val}, :{} ({:?})", call_info.method_name, self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
-                Ok(())
-            }
             Insn::LookupMethod { self_val, method_id, .. } => {
                 let method_name = method_id.contents_lossy().into_owned();
                 write!(f, "LookupMethod {self_val}, :{method_name}")
@@ -877,21 +861,6 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
-                self_val: find!(*self_val),
-                call_info: call_info.clone(),
-                cd: *cd,
-                args: args.iter().map(|arg| find!(*arg)).collect(),
-                state: *state,
-            },
-            SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state } => SendWithoutBlockDirect {
-                self_val: find!(*self_val),
-                call_info: call_info.clone(),
-                cd: *cd,
-                iseq: *iseq,
-                args: args.iter().map(|arg| find!(*arg)).collect(),
-                state: *state,
-            },
             Send { self_val, call_info, cd, blockiseq, args, state } => Send {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
@@ -992,8 +961,6 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
-            Insn::SendWithoutBlock { .. } => types::BasicObject,
-            Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::PutSelf => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
@@ -1169,8 +1136,8 @@ impl Function {
         self.infer_types();
     }
 
-    /// Rewrite SendWithoutBlock opcodes into SendWithoutBlockDirect opcodes if we know the target
-    /// ISEQ statically. This removes run-time method lookups and opens the door for inlining.
+    /// Rewrite call opcodes into specialized opcodes if we know the target
+    /// ISEQ or CFUNC statically. This removes run-time method lookups and opens the door for inlining.
     fn optimize_direct_sends(&mut self) {
         for block in self.rpo() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -1217,41 +1184,6 @@ impl Function {
                             }
                         }
                         self.push_insn_id(block, insn_id); continue;
-                    }
-                    Insn::SendWithoutBlock { mut self_val, call_info, cd, args, state } => {
-                        let frame_state = self.frame_state(state);
-                        let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
-                            // If we know the class statically, use it to fold the lookup at compile-time.
-                            (klass, None)
-                        } else {
-                            // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
-                            match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
-                                Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
-                                _ => { self.push_insn_id(block, insn_id); continue; }
-                            }
-                        };
-                        let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
-                        let mid = unsafe { vm_ci_mid(ci) };
-                        // Do method lookup
-                        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
-                        if cme.is_null() {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Load an overloaded cme if applicable. See vm_search_cc().
-                        // It allows you to use a faster ISEQ if possible.
-                        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
-                        let def_type = unsafe { get_cme_def_type(cme) };
-                        if def_type != VM_METHOD_TYPE_ISEQ {
-                            // TODO(max): Allow non-iseq; cache cme
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass, method: mid }));
-                        let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                        if let Some(expected) = guard_equal_to {
-                            self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
-                        }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state });
-                        self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
@@ -1452,8 +1384,8 @@ impl Function {
                     worklist.push_back(state);
                 }
                 Insn::Send { self_val, args, state, .. }
-                | Insn::SendWithoutBlock { self_val, args, state, .. }
-                | Insn::SendWithoutBlockDirect { self_val, args, state, .. } => {
+                | Insn::CallIseq { self_val, args, state, .. }
+                | Insn::CallCFunc { self_val, args, state, .. } => {
                     worklist.push_back(self_val);
                     worklist.extend(args);
                     worklist.push_back(state);
@@ -1465,11 +1397,6 @@ impl Function {
                 }
                 Insn::CallMethod { callable, self_val, args, state, .. } => {
                     worklist.push_back(callable);
-                    worklist.push_back(self_val);
-                    worklist.extend(args);
-                    worklist.push_back(state);
-                }
-                Insn::CallIseq { self_val, args, state, .. } | Insn::CallCFunc { self_val, args, state, .. } => {
                     worklist.push_back(self_val);
                     worklist.extend(args);
                     worklist.push_back(state);
