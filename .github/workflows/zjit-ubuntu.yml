@@ -38,7 +38,7 @@ jobs:
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev'
+            configure: '--enable-yjit --enable-zjit=dev'
 
           - test_task: 'test-all'
             configure: '--enable-zjit=dev'
