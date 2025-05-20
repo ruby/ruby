@@ -20,7 +20,11 @@ options.title = options.title.sub(/Ruby \K.*version/) {
 
 if ARGV.first == "--bundled-gems"
   _, gems_list, gems_dir = ARGV.shift(3)
-  bundles = File.read(gems_list)
+  gems_dir or abort "usage: #$0 --bundled-gems gems_list gems_dir rdoc-arguments..."
+  bundles = File.read(gems_list) rescue
+    abort("#$0: cannot read bundled gems list file: #{gems_list}")
+  Dir.exist?(gems_dir) or
+    abort "#$0: extracted gems directory not found: #{gems_dir}"
   bundles.scan(/^([^#\s]+)\s+([^#\s]+)/) do |g, v|
     d = "#{gems_dir}/#{g}-#{v}/"
     ARGV << d if Dir.exist?(d)
