@@ -1177,30 +1177,26 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    // TODO(max): Change this pass to use cruby_methods Annotations, which can store a function to generate an inlined HIR version of the CFunc
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "+" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "-" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "*" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "/" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "%" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "==" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "!=" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == "<=" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state),
-                    // Insn::SendWithoutBlock { self_val, call_info: CallInfo { method_name }, args, state, .. } if method_name == ">=" && args.len() == 1 =>
-                    //     self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state),
                     Insn::CallMethod { callable, cd, self_val, args, state } => {
+                        if args.len() == 1 {
+                            let call_info = unsafe { (*cd).ci };
+                            let method_id = unsafe { rb_vm_ci_mid(call_info) };
+                            // Short-cut iseq/cfunc call for fixnum binary operations
+                            match method_id.contents_lossy().as_ref() {
+                                "+" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumAdd { left, right, state }, BOP_PLUS, self_val, args[0], state); continue; }
+                                "-" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumSub { left, right, state }, BOP_MINUS, self_val, args[0], state); continue; }
+                                "*" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMult { left, right, state }, BOP_MULT, self_val, args[0], state); continue; }
+                                "/" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumDiv { left, right, state }, BOP_DIV, self_val, args[0], state); continue; }
+                                "%" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumMod { left, right, state }, BOP_MOD, self_val, args[0], state); continue; }
+                                "==" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumEq { left, right }, BOP_EQ, self_val, args[0], state); continue; }
+                                "!=" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumNeq { left, right }, BOP_NEQ, self_val, args[0], state); continue; }
+                                "<" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLt { left, right }, BOP_LT, self_val, args[0], state); continue; }
+                                "<=" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumLe { left, right }, BOP_LE, self_val, args[0], state); continue; }
+                                ">" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGt { left, right }, BOP_GT, self_val, args[0], state); continue; }
+                                ">=" => { self.try_rewrite_fixnum_op(block, insn_id, &|left, right| Insn::FixnumGe { left, right }, BOP_GE, self_val, args[0], state); continue; }
+                                _ => {}
+                            }
+                        }
                         let callable_type = self.type_of(callable);
                         if callable_type.is_subtype(types::CallableMethodEntry) {
                             if let Some(value) = callable_type.ruby_object() {
@@ -3166,14 +3162,12 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
-              v13:BasicObject = CallCFunc 0x1010 (:+), v1, v2
-              v6:Fixnum[3] = Const Value(3)
-              v8:BasicObject = LookupMethod v13, :+
-              v9:BasicObject = CallMethod v8 (:+), v13, v6
-              Return v9
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v21:Fixnum[6] = Const Value(6)
+              Return v21
         "#]]);
     }
 
@@ -3192,17 +3186,10 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Integer@0x1000, <@0x1008)
-              v15:BasicObject = CallCFunc 0x1010 (:<), v1, v2
-              v6:CBool = Test v15
-              IfFalse v6, bb1()
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
               v8:Fixnum[3] = Const Value(3)
               Return v8
-            bb1():
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
         "#]]);
     }
 
@@ -3221,14 +3208,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[1] = Const Value(1)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008)
-              v15:BasicObject = CallCFunc 0x1010 (:==), v1, v2
-              v6:CBool = Test v15
-              IfFalse v6, bb1()
-              v8:Fixnum[3] = Const Value(3)
-              Return v8
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              Jump bb1()
             bb1():
               v11:Fixnum[4] = Const Value(4)
               Return v11
@@ -3250,17 +3232,10 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              v1:Fixnum[2] = Const Value(2)
-              v2:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008)
-              v15:BasicObject = CallCFunc 0x1010 (:==), v1, v2
-              v6:CBool = Test v15
-              IfFalse v6, bb1()
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v8:Fixnum[3] = Const Value(3)
               Return v8
-            bb1():
-              v11:Fixnum[4] = Const Value(4)
-              Return v11
         "#]]);
     }
 
@@ -3276,9 +3251,12 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
-              v4:BasicObject = LookupMethod v0, :+
-              v5:BasicObject = CallMethod v4 (:+), v0, v2
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:Fixnum = FixnumAdd v11, v2
+              Return v12
         "#]]);
     }
 
@@ -3342,9 +3320,9 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:BasicObject = LookupMethod v1, :foo
-              v4:BasicObject = CallMethod v3 (:foo), v1
-              Return v4
+              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
+              v9:BasicObject = CallIseq 0x1010 (:foo), v1
+              Return v9
         "#]]);
     }
 
@@ -3384,9 +3362,9 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:BasicObject = LookupMethod v1, :foo
-              v4:BasicObject = CallMethod v3 (:foo), v1
-              Return v4
+              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
+              v9:BasicObject = CallIseq 0x1010 (:foo), v1
+              Return v9
         "#]]);
     }
 
@@ -3403,9 +3381,9 @@ mod opt_tests {
             bb0():
               v1:BasicObject = PutSelf
               v2:Fixnum[3] = Const Value(3)
-              v4:BasicObject = LookupMethod v1, :Integer
-              v5:BasicObject = CallMethod v4 (:Integer), v1, v2
-              Return v5
+              PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008)
+              v10:BasicObject = CallIseq 0x1010 (:Integer), v1, v2
+              Return v10
         "#]]);
     }
 
@@ -3425,9 +3403,9 @@ mod opt_tests {
               v1:BasicObject = PutSelf
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
-              v5:BasicObject = LookupMethod v1, :foo
-              v6:BasicObject = CallMethod v5 (:foo), v1, v2, v3
-              Return v6
+              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
+              v11:BasicObject = CallIseq 0x1010 (:foo), v1, v2, v3
+              Return v11
         "#]]);
     }
 
@@ -3448,12 +3426,12 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:BasicObject = LookupMethod v1, :foo
-              v4:BasicObject = CallMethod v3 (:foo), v1
+              PatchPoint MethodRedefined(Object@0x1000, foo@0x1008)
+              v16:BasicObject = CallIseq 0x1010 (:foo), v1
               v5:BasicObject = PutSelf
-              v7:BasicObject = LookupMethod v5, :bar
-              v8:BasicObject = CallMethod v7 (:bar), v5
-              Return v8
+              PatchPoint MethodRedefined(Object@0x1000, bar@0x1018)
+              v17:BasicObject = CallIseq 0x1010 (:bar), v5
+              Return v17
         "#]]);
     }
 
@@ -3466,9 +3444,13 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :+
-              v5:BasicObject = CallMethod v4 (:+), v0, v1
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:Fixnum = GuardType v1, Fixnum
+              v13:Fixnum = FixnumAdd v11, v12
+              Return v13
         "#]]);
     }
 
@@ -3482,9 +3464,12 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
-              v4:BasicObject = LookupMethod v0, :+
-              v5:BasicObject = CallMethod v4 (:+), v0, v2
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:Fixnum = FixnumAdd v11, v2
+              Return v12
         "#]]);
     }
 
@@ -3499,8 +3484,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
-              v9:BasicObject = CallCFunc 0x1010 (:+), v2, v0
-              Return v9
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v10:Fixnum = GuardType v0, Fixnum
+              v11:Fixnum = FixnumAdd v2, v10
+              Return v11
         "#]]);
     }
 
@@ -3513,9 +3500,13 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :<
-              v5:BasicObject = CallMethod v4 (:<), v0, v1
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, <@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:Fixnum = GuardType v1, Fixnum
+              v13:BoolExact = FixnumLt v11, v12
+              Return v13
         "#]]);
     }
 
@@ -3529,9 +3520,12 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
-              v4:BasicObject = LookupMethod v0, :<
-              v5:BasicObject = CallMethod v4 (:<), v0, v2
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, <@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:BoolExact = FixnumLt v11, v2
+              Return v12
         "#]]);
     }
 
@@ -3546,8 +3540,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
               PatchPoint MethodRedefined(Integer@0x1000, <@0x1008)
-              v9:BasicObject = CallCFunc 0x1010 (:<), v2, v0
-              Return v9
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v10:Fixnum = GuardType v0, Fixnum
+              v11:BoolExact = FixnumLt v2, v10
+              Return v11
         "#]]);
     }
 
@@ -3648,9 +3644,13 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :+
-              v5:BasicObject = CallMethod v4 (:+), v0, v1
-              Return v5
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              v8:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v11:Fixnum = GuardType v0, Fixnum
+              v12:Fixnum = GuardType v1, Fixnum
+              v13:Fixnum = FixnumAdd v11, v12
+              Return v13
         "#]]);
     }
 
@@ -3666,8 +3666,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :+
-              v5:BasicObject = CallMethod v4 (:+), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, +@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3685,8 +3688,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :-
-              v5:BasicObject = CallMethod v4 (:-), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, -@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3704,8 +3710,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :*
-              v5:BasicObject = CallMethod v4 (:*), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, *@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3723,8 +3732,12 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :/
-              v5:BasicObject = CallMethod v4 (:/), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, /@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
+              v14:Fixnum = FixnumDiv v12, v13
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3742,8 +3755,12 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :%
-              v5:BasicObject = CallMethod v4 (:%), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, %@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
+              v14:Fixnum = FixnumMod v12, v13
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3761,8 +3778,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :<
-              v5:BasicObject = CallMethod v4 (:<), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, <@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3780,8 +3800,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :<=
-              v5:BasicObject = CallMethod v4 (:<=), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3799,8 +3822,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :>
-              v5:BasicObject = CallMethod v4 (:>), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, >@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3818,8 +3844,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :>=
-              v5:BasicObject = CallMethod v4 (:>=), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3837,8 +3866,11 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :==
-              v5:BasicObject = CallMethod v4 (:==), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, ==@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              v12:Fixnum = GuardType v0, Fixnum
+              v13:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3856,8 +3888,12 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :!=
-              v5:BasicObject = CallMethod v4 (:!=), v0, v1
+              PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008)
+              v9:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              v13:Fixnum = GuardType v0, Fixnum
+              v14:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -3890,9 +3926,10 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:BasicObject = LookupMethod v0, :itself
-              v4:BasicObject = CallMethod v3 (:itself), v0
-              Return v4
+              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
+              v7:Fixnum = GuardType v0, Fixnum
+              v9:BasicObject = CallCFunc 0x1010 (:itself), v0
+              Return v9
         "#]]);
     }
 
