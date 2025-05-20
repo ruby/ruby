@@ -702,7 +702,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, NAMESPACE_USER_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, (NAMESPACE_USER_P(ns) || !rb_namespace_available()) ? true : false);
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
@@ -857,6 +857,8 @@ rb_class_new(VALUE super)
     if (super != rb_cObject && super != rb_cBasicObject) {
         RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     }
+
+    RUBY_ASSERT(getenv("RUBY_NAMESPACE") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
 
     return klass;
 }
