@@ -273,7 +273,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardType { val, guard_type, state } => gen_guard_type(asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
-        Insn::CCall { cfun, args, name: _, return_type: _ } => gen_ccall(jit, asm, *cfun, args)?,
+        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;

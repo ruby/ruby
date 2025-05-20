@@ -26,6 +26,8 @@ pub struct FnProperties {
     pub leaf: bool,
     /// What Type the C function returns
     pub return_type: Type,
+    /// Whether it's legal to remove the call if the result is unused
+    pub elidable: bool,
 }
 
 impl Annotations {
@@ -64,7 +66,7 @@ pub fn init() -> Annotations {
 
     macro_rules! annotate {
         ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
-            let mut props = FnProperties { no_gc: false, leaf: false, return_type: $return_type };
+            let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
             $(
                 props.$properties = true;
             )+
@@ -72,9 +74,9 @@ pub fn init() -> Annotations {
         }
     }
 
-    annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf);
+    annotate!(rb_mKernel, "itself", types::BasicObject, no_gc, leaf, elidable);
     annotate!(rb_cString, "bytesize", types::Fixnum, no_gc, leaf);
-    annotate!(rb_cModule, "name", types::StringExact.union(types::NilClassExact), no_gc, leaf);
+    annotate!(rb_cModule, "name", types::StringExact.union(types::NilClassExact), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
 
     Annotations {
