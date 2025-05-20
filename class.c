@@ -706,7 +706,6 @@ class_alloc(VALUE flags, VALUE klass)
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
-    RCLASS_SET_ALLOCATOR((VALUE)obj, 0);
 
     RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
 
@@ -1050,7 +1049,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
         rb_singleton_class_attached(METACLASS_OF(clone), (VALUE)clone);
     }
-    RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    if (BUILTIN_TYPE(clone) == T_CLASS) {
+        RCLASS_SET_ALLOCATOR(clone, RCLASS_ALLOCATOR(orig));
+    }
     copy_tables(clone, orig);
     if (RCLASS_M_TBL(orig)) {
         struct clone_method_arg arg;
@@ -1091,7 +1092,6 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             rb_class_set_super(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
             RCLASS_SET_CONST_TBL(clone_p, RCLASS_CONST_TBL(p), false);
-            RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
             if (RB_TYPE_P(clone, T_CLASS)) {
                 RCLASS_SET_INCLUDER(clone_p, clone);
             }
