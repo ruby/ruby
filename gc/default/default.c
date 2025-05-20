@@ -644,7 +644,9 @@ struct rvalue_overhead {
 size_t rb_gc_impl_obj_slot_size(VALUE obj);
 # define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_impl_obj_slot_size(obj)))
 #else
-# define RVALUE_OVERHEAD 0
+# ifndef RVALUE_OVERHEAD
+#  define RVALUE_OVERHEAD 0
+# endif
 #endif
 
 #define BASE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
