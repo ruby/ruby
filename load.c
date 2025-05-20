@@ -58,6 +58,7 @@ typedef struct vm_and_namespace_struct vm_ns_t;
 #define SET_NS_LOAD_PATH_CHECK_CACHE(vm_ns, value) SET_NS_attr(vm_ns, load_path_check_cache, value)
 #define SET_NS_EXPANDED_LOAD_PATH(vm_ns, value)    SET_NS_attr(vm_ns, expanded_load_path, value)
 
+#define CURRENT_NS_TOP_SELF(vm_ns)              CURRENT_NS_attr(vm_ns, top_self)
 #define CURRENT_NS_LOAD_PATH(vm_ns)             CURRENT_NS_attr(vm_ns, load_path)
 #define CURRENT_NS_LOAD_PATH_SNAPSHOT(vm_ns)    CURRENT_NS_attr(vm_ns, load_path_snapshot)
 #define CURRENT_NS_LOAD_PATH_CHECK_CACHE(vm_ns) CURRENT_NS_attr(vm_ns, load_path_check_cache)
@@ -787,28 +788,10 @@ realpath_internal_cached(VALUE hash, VALUE path)
     return realpath;
 }
 
-struct iseq_eval_in_namespace_data {
-    const rb_iseq_t *iseq;
-    bool in_builtin;
-};
-
-static VALUE
-iseq_eval_in_namespace(VALUE arg)
-{
-    struct iseq_eval_in_namespace_data *data = (struct iseq_eval_in_namespace_data *)arg;
-    if (rb_namespace_available() && data->in_builtin) {
-        return rb_iseq_eval_with_refinement(data->iseq, rb_mNamespaceRefiner);
-    }
-    else {
-        return rb_iseq_eval(data->iseq);
-    }
-}
-
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
     GET_loading_vm_ns();
-    const rb_namespace_t *loading_ns = rb_loading_namespace();
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
@@ -860,16 +843,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
 
-    if (loading_ns) {
-        struct iseq_eval_in_namespace_data arg = {
-            .iseq = iseq,
-            .in_builtin = NAMESPACE_BUILTIN_P(loading_ns),
-        };
-        rb_namespace_exec(loading_ns, iseq_eval_in_namespace, (VALUE)&arg);
-    }
-    else {
-        rb_iseq_eval(iseq);
-    }
+    rb_iseq_eval(iseq, vm_ns->ns);
 }
 
 static inline enum ruby_tag_type
@@ -1362,21 +1336,6 @@ rb_ext_ractor_safe(bool flag)
     GET_THREAD()->ext_config.ractor_safe = flag;
 }
 
-struct rb_vm_call_cfunc2_data {
-    VALUE recv;
-    VALUE arg1;
-    VALUE arg2;
-    VALUE block_handler;
-    VALUE filename;
-};
-
-static VALUE
-call_load_ext_in_ns(VALUE data)
-{
-    struct rb_vm_call_cfunc2_data *arg = (struct rb_vm_call_cfunc2_data *)data;
-    return rb_vm_call_cfunc2(arg->recv, load_ext, arg->arg1, arg->arg2, arg->block_handler, arg->filename);
-}
-
 /*
  * returns
  *  0: if already loaded (false)
@@ -1452,17 +1411,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                     break;
 
                   case 's':
-                    // the loading namespace must be set to the current namespace before calling load_ext
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    struct rb_vm_call_cfunc2_data arg = {
-                        .recv = rb_vm_top_self(),
-                        .arg1 = path,
-                        .arg2 = fname,
-                        .block_handler = VM_BLOCK_HANDLER_NONE,
-                        .filename = path,
-                    };
-                    handle = rb_namespace_exec(vm_ns->ns, call_load_ext_in_ns, (VALUE)&arg);
+                    handle = rb_vm_call_cfunc_in_namespace(CURRENT_NS_TOP_SELF(vm_ns), load_ext, path, fname, path, vm_ns->ns);
                     rb_hash_aset(CURRENT_NS_RUBY_DLN_LIBMAP(vm_ns, ruby_dln_libmap), path,
                                  SVALUE2NUM((SIGNED_VALUE)handle));
                     break;
