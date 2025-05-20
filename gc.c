@@ -1238,7 +1238,8 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
         rb_id_table_free(tbl);
     }
     rb_class_classext_free_subclasses(ext, args->klass);
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(is_prime); // superclasses should only be used on prime
         xfree(RCLASSEXT_SUPERCLASSES(ext));
     }
     if (!is_prime) { // the prime classext will be freed with RClass
@@ -2293,10 +2294,9 @@ classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE namespace, v
 {
     size_t *size = (size_t *)arg;
     size_t array_size;
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
-        array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext);
-        if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext))
-            array_size += 1;
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(prime);
+        array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext) + 1;
         *size += array_size * sizeof(VALUE);
     }
 }
@@ -3802,10 +3802,8 @@ update_subclasses(void *objspace, rb_classext_t *ext)
 static void
 update_superclasses(rb_objspace_t *objspace, rb_classext_t *ext)
 {
-    size_t array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext);
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
-        if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext))
-            array_size += 1;
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        size_t array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext) + 1;
         for (size_t i = 0; i < array_size; i++) {
             UPDATE_IF_MOVED(objspace, RCLASSEXT_SUPERCLASSES(ext)[i]);
         }

@@ -127,7 +127,6 @@ struct rb_classext_struct {
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
-    bool superclasses_owner : 1;
     bool superclasses_with_self : 1;
     VALUE classpath;
 };
@@ -198,7 +197,6 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_SHARED_CONST_TBL(ext) (ext->shared_const_tbl)
 #define RCLASSEXT_ICLASS_IS_ORIGIN(ext) (ext->iclass_is_origin)
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
-#define RCLASSEXT_SUPERCLASSES_OWNER(ext) (ext->superclasses_owner)
 #define RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) (ext->superclasses_with_self)
 #define RCLASSEXT_CLASSPATH(ext) (ext->classpath)
 
@@ -227,9 +225,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
  * so always those should be writable.
  */
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT_READABLE(c)->cvc_tbl)
-#define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_READABLE(c)->superclass_depth)
-#define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_READABLE(c)->superclasses)
-#define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_READABLE(c)->superclasses_with_self)
 #define RCLASS_SUBCLASSES_X(c) (RCLASS_EXT_READABLE(c)->subclasses)
 #define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_READABLE(c)->subclasses->head->next)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
@@ -239,6 +234,11 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
 #define RCLASS_CLONED_P(c) (RCLASS_EXT_READABLE(c)->cloned)
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
+
+// Superclasses can't be changed after initialization
+#define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_PRIME(c)->superclass_depth)
+#define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_PRIME(c)->superclasses)
+#define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_PRIME(c)->superclasses_with_self)
 
 // namespaces don't make changes on these refined_class/attached_object/includer
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
@@ -270,7 +270,7 @@ static inline void RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
-static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self);
+static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
 static inline void RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
 static inline void RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
@@ -714,14 +714,13 @@ RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 }
 
 static inline void
-RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self)
+RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self)
 {
     RUBY_ASSERT(depth <= RCLASS_MAX_SUPERCLASS_DEPTH);
 
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
     RCLASSEXT_SUPERCLASS_DEPTH(ext) = depth;
     RCLASSEXT_SUPERCLASSES(ext) = superclasses;
-    RCLASSEXT_SUPERCLASSES_OWNER(ext) = owns_it;
     RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) = with_self;
 }
 
