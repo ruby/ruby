@@ -1515,6 +1515,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     return hash;
 }
 
+static VALUE sym_proc_cache = Qfalse;
 
 /*
  *  call-seq:
@@ -1533,32 +1534,32 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 VALUE
 rb_sym_to_proc(VALUE sym)
 {
-    static VALUE sym_proc_cache = Qfalse;
     enum {SYM_PROC_CACHE_SIZE = 67};
-    VALUE proc;
-    long index;
-    ID id;
-
-    id = SYM2ID(sym);
 
     if (rb_ractor_main_p()) {
-        index = (id % SYM_PROC_CACHE_SIZE) << 1;
         if (!sym_proc_cache) {
-            sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-            rb_vm_register_global_object(sym_proc_cache);
-            rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
+            sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE);
+            rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE - 1, Qnil);
         }
-        if (RARRAY_AREF(sym_proc_cache, index) == sym) {
-            return RARRAY_AREF(sym_proc_cache, index + 1);
+
+        ID id = SYM2ID(sym);
+        long index = (id % SYM_PROC_CACHE_SIZE);
+        VALUE procval = RARRAY_AREF(sym_proc_cache, index);
+        if (RTEST(procval)) {
+            rb_proc_t *proc;
+            GetProcPtr(procval, proc);
+
+            if (proc->block.as.symbol == sym) {
+                return procval;
+            }
         }
-        else {
-            proc = sym_proc_new(rb_cProc, ID2SYM(id));
-            RARRAY_ASET(sym_proc_cache, index, sym);
-            RARRAY_ASET(sym_proc_cache, index + 1, proc);
-            return proc;
-        }
+
+        procval = sym_proc_new(rb_cProc, sym);
+        RARRAY_ASET(sym_proc_cache, index, procval);
+
+        return RB_GC_GUARD(procval);
     } else {
-        return sym_proc_new(rb_cProc, ID2SYM(id));
+        return sym_proc_new(rb_cProc, sym);
     }
 }
 
@@ -4575,6 +4576,8 @@ Init_Proc(void)
 void
 Init_Binding(void)
 {
+    rb_gc_register_address(&sym_proc_cache);
+
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
