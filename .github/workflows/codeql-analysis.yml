@@ -63,6 +63,7 @@ jobs:
       uses: github/codeql-action/init@959cbb7472c4d4ad70cdfe6f4976053fe48ab394 # v2.1.37
       with:
         config-file: ./.github/codeql/codeql-config.yml
+        trap-caching: false
 
     - name: Set ENV
       run: echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
