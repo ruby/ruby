@@ -507,7 +507,7 @@ bind_local_variables(VALUE bindval)
 int
 rb_numparam_id_p(ID id)
 {
-    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT);
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 9) << ID_SCOPE_SHIFT);
 }
 
 /*
