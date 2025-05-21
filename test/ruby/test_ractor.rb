@@ -60,6 +60,14 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
   end
 
+  def test_shareability_error_uses_inspect
+    x = (+"").instance_exec { method(:to_s) }
+    def x.to_s
+      raise "this should not be called"
+    end
+    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+  end
+
   def test_default_thread_group
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
