@@ -702,7 +702,7 @@ class_alloc(VALUE flags, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, (NAMESPACE_USER_P(ns) || !rb_namespace_available()) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !rb_namespace_available() || NAMESPACE_USER_P(ns) ? true : false);
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
