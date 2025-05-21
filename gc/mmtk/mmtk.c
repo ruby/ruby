@@ -1019,7 +1019,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
         if (rb_gc_shutdown_call_finalizer_p(obj)) {
             rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            RBASIC_RESET_FLAGS(obj);
         }
     }
     mmtk_free_raw_vec_of_obj_ref(registered_candidates);
