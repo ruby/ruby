@@ -352,15 +352,11 @@ pub enum Insn {
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
-    // TODO(max): Add CallMethodWithBlock
-    /// Send without block with dynamic dispatch
-    /// Ignoring keyword arguments etc for now
     LookupMethod { self_val: InsnId, method_id: ID, state: InsnId },
     CallMethod { callable: InsnId, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
+    CallMethodWithBlock { callable: InsnId, blockiseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
     CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
     CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
-
-    Send { self_val: InsnId, cd: CallDataPtr, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -494,6 +490,19 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
+            Insn::CallMethodWithBlock { self_val, callable, cd, args, blockiseq, .. } => {
+                let call_info = unsafe { (**cd).ci };
+                let method_id = unsafe { rb_vm_ci_mid(call_info) };
+                let method_name = method_id.contents_lossy().into_owned();
+                // For tests, we want to check HIR snippets textually. Addresses change
+                // between runs, making tests fail. Instead, pick an arbitrary hex value to
+                // use as a "pointer" so we can check the rest of the HIR.
+                write!(f, "CallMethodWithBlock {callable} (:{method_name}), {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                for arg in [*self_val].iter().chain(args) {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
             Insn::CallIseq { iseq, cd, self_val, args, .. } => {
                 let call_info = unsafe { (**cd).ci };
                 let method_id = unsafe { rb_vm_ci_mid(call_info) };
@@ -510,19 +519,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let method_name = method_id.contents_lossy().into_owned();
                 write!(f, "CallCFunc {:p} (:{method_name})", self.ptr_map.map_ptr(cfunc))?;
                 for arg in [*self_val].iter().chain(args) {
-                    write!(f, ", {arg}")?;
-                }
-                Ok(())
-            }
-            Insn::Send { self_val, cd, args, blockiseq, .. } => {
-                let call_info = unsafe { (**cd).ci };
-                let method_id = unsafe { rb_vm_ci_mid(call_info) };
-                let method_name = method_id.contents_lossy().into_owned();
-                // For tests, we want to check HIR snippets textually. Addresses change
-                // between runs, making tests fail. Instead, pick an arbitrary hex value to
-                // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), method_name)?;
-                for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
@@ -862,13 +858,6 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            Send { self_val, cd, blockiseq, args, state } => Send {
-                self_val: find!(*self_val),
-                cd: *cd,
-                blockiseq: *blockiseq,
-                args: args.iter().map(|arg| find!(*arg)).collect(),
-                state: *state,
-            },
             LookupMethod { self_val, method_id, state } => LookupMethod {
                 self_val: find!(*self_val),
                 method_id: *method_id,
@@ -876,6 +865,14 @@ impl Function {
             },
             CallMethod { callable, self_val, cd, args, state } => CallMethod {
                 callable: find!(*callable),
+                self_val: find!(*self_val),
+                cd: *cd,
+                args: args.iter().map(|arg| find!(*arg)).collect(),
+                state: find!(*state),
+            },
+            CallMethodWithBlock { callable, blockiseq, self_val, cd, args, state } => CallMethodWithBlock {
+                callable: find!(*callable),
+                blockiseq: *blockiseq,
                 self_val: find!(*self_val),
                 cd: *cd,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
@@ -967,13 +964,13 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
-            Insn::Send { .. } => types::BasicObject,
             Insn::PutSelf => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::LookupMethod { .. } => types::CallableMethodEntry,
             Insn::CallMethod { .. } => types::BasicObject,
+            Insn::CallMethodWithBlock { .. } => types::BasicObject,
         }
     }
 
@@ -1391,8 +1388,7 @@ impl Function {
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
-                Insn::Send { self_val, args, state, .. }
-                | Insn::CallIseq { self_val, args, state, .. }
+                Insn::CallIseq { self_val, args, state, .. }
                 | Insn::CallCFunc { self_val, args, state, .. } => {
                     worklist.push_back(self_val);
                     worklist.extend(args);
@@ -1403,7 +1399,8 @@ impl Function {
                     worklist.push_back(self_val);
                     worklist.push_back(state);
                 }
-                Insn::CallMethod { callable, self_val, args, state, .. } => {
+                Insn::CallMethod { callable, self_val, args, state, .. }
+                | Insn::CallMethodWithBlock { callable, self_val, args, state, .. } => {
                     worklist.push_back(callable);
                     worklist.push_back(self_val);
                     worklist.extend(args);
@@ -2044,6 +2041,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
                     filter_translatable_calls(unsafe { rb_vm_ci_flag(call_info) })?;
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
                     let mut args = vec![];
                     for _ in 0..argc {
@@ -2053,7 +2051,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
+                    let lookup = fun.push_insn(block, Insn::LookupMethod { self_val: recv, method_id, state: exit_id });
+                    let send = fun.push_insn(block, Insn::CallMethodWithBlock { self_val: recv, callable: lookup, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
@@ -2831,8 +2830,9 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:BasicObject = Send v0, 0x1000, :each
-              Return v3
+              v3:CallableMethodEntry = LookupMethod v0, :each
+              v4:BasicObject = CallMethodWithBlock v3 (:each), 0x1000, v0
+              Return v4
         "#]]);
     }
 
