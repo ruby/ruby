@@ -3163,7 +3163,7 @@ make_shareable_check_shareable(VALUE obj)
             return traverse_cont;
         }
         else {
-            rb_raise(rb_eRactorError, "can not make shareable object for %"PRIsVALUE, obj);
+            rb_raise(rb_eRactorError, "can not make shareable object for %+"PRIsVALUE, obj);
         }
     }
 
