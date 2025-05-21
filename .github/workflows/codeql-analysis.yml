@@ -70,6 +70,7 @@ jobs:
         uses: github/codeql-action/init@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
         with:
           languages: ${{ matrix.language }}
+          trap-caching: false
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@cdcdbb579706841c47f7063dda365e292e5cad7a # v2.13.4
