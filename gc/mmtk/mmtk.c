@@ -946,7 +946,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(2, block);
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         st_add_direct(objspace->finalizer_table, obj, table);
     }
