@@ -257,6 +257,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
+        Insn::LookupMethod { self_val, method_id, state } => gen_lookup_method(asm, opnd!(self_val), *method_id, &function.frame_state(*state))?,
         Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(cb, jit, asm, *cfunc, opnd!(self_val), args)?,
         Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
@@ -437,37 +438,21 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
 }
 
 /// Compile a dynamic dispatch without block
-fn gen_send_without_block(
-    jit: &mut JITState,
+fn gen_lookup_method(
     asm: &mut Assembler,
-    call_info: &CallInfo,
-    cd: *const rb_call_data,
+    recv: Opnd,
+    method_id: ID,
     state: &FrameState,
 ) -> Option<lir::Opnd> {
-    // Spill the virtual stack onto the stack. They need to be marked by GC and may be caller-saved registers.
-    // TODO: Avoid spilling operands that have been spilled before.
-    for (idx, &insn_id) in state.stack().enumerate() {
-        // Currently, we don't move the SP register. So it's equal to the base pointer.
-        let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
-        asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
-    }
-
-    // Save PC and SP
-    gen_save_pc(asm, state);
-    gen_save_sp(asm, state);
-
-    asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
-    unsafe extern "C" {
-        fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
-    }
-    let ret = asm.ccall(
-        rb_vm_opt_send_without_block as *const u8,
-        vec![EC, CFP, (cd as usize).into()],
+    // TODO(max): Figure out if we need to do anything here to save state to CFP
+    let method_opnd = Opnd::UImm(method_id.0.into());
+    let result = asm.ccall(
+        rb_callable_method_entry as *const u8,
+        vec![recv, method_opnd],
     );
-    // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
-    // the frame's locals
-
-    Some(ret)
+    asm.test(result, result);
+    asm.jz(Target::SideExit(state.clone()));
+    Some(result)
 }
 
 fn gen_call_cfunc(
