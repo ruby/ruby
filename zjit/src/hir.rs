@@ -1165,24 +1165,23 @@ impl Function {
                                 _ => {}
                             }
                         }
-                        let callable_type = self.type_of(callable);
-                        if callable_type.is_subtype(types::CallableMethodEntry) {
-                            if let Some(value) = callable_type.ruby_object() {
-                                let cme: CmePtr = value.as_cme();
-                                let def_type = unsafe { get_cme_def_type(cme) };
-                                if def_type == VM_METHOD_TYPE_ISEQ {
-                                    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                                    let replacement = self.push_insn(block, Insn::CallIseq { iseq, cd, self_val, args, state });
-                                    self.make_equal_to(insn_id, replacement);
-                                    continue;
-                                }
-                                if def_type == VM_METHOD_TYPE_CFUNC {
-                                    let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-                                    let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cd, self_val, args, state });
-                                    self.make_equal_to(insn_id, replacement);
-                                    continue;
-                                }
+                        if let Some(value) = self.type_of(callable).ruby_object() {
+                            assert!(self.type_of(callable).is_subtype(types::CallableMethodEntry), "LookupMethod should return CME");
+                            let cme: CmePtr = value.as_cme();
+                            let def_type = unsafe { get_cme_def_type(cme) };
+                            if def_type == VM_METHOD_TYPE_ISEQ {
+                                let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
+                                let replacement = self.push_insn(block, Insn::CallIseq { iseq, cd, self_val, args, state });
+                                self.make_equal_to(insn_id, replacement);
+                                continue;
                             }
+                            if def_type == VM_METHOD_TYPE_CFUNC {
+                                let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
+                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cd, self_val, args, state });
+                                self.make_equal_to(insn_id, replacement);
+                                continue;
+                            }
+                            // Fall through for cases we don't currently optimize
                         }
                         self.push_insn_id(block, insn_id); continue;
                     }
@@ -2484,7 +2483,7 @@ mod tests {
             bb0():
               v1:Fixnum[1] = Const Value(1)
               v2:Fixnum[2] = Const Value(2)
-              v4:BasicObject = LookupMethod v1, :+
+              v4:CallableMethodEntry = LookupMethod v1, :+
               v5:BasicObject = CallMethod v4 (:+), v1, v2
               Return v5
         "#]]);
@@ -2568,7 +2567,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :+
+              v4:CallableMethodEntry = LookupMethod v0, :+
               v5:BasicObject = CallMethod v4 (:+), v0, v1
               Return v5
         "#]]);
@@ -2583,7 +2582,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :-
+              v4:CallableMethodEntry = LookupMethod v0, :-
               v5:BasicObject = CallMethod v4 (:-), v0, v1
               Return v5
         "#]]);
@@ -2598,7 +2597,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :*
+              v4:CallableMethodEntry = LookupMethod v0, :*
               v5:BasicObject = CallMethod v4 (:*), v0, v1
               Return v5
         "#]]);
@@ -2613,7 +2612,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :/
+              v4:CallableMethodEntry = LookupMethod v0, :/
               v5:BasicObject = CallMethod v4 (:/), v0, v1
               Return v5
         "#]]);
@@ -2628,7 +2627,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :%
+              v4:CallableMethodEntry = LookupMethod v0, :%
               v5:BasicObject = CallMethod v4 (:%), v0, v1
               Return v5
         "#]]);
@@ -2643,7 +2642,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :==
+              v4:CallableMethodEntry = LookupMethod v0, :==
               v5:BasicObject = CallMethod v4 (:==), v0, v1
               Return v5
         "#]]);
@@ -2658,7 +2657,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :!=
+              v4:CallableMethodEntry = LookupMethod v0, :!=
               v5:BasicObject = CallMethod v4 (:!=), v0, v1
               Return v5
         "#]]);
@@ -2673,7 +2672,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :<
+              v4:CallableMethodEntry = LookupMethod v0, :<
               v5:BasicObject = CallMethod v4 (:<), v0, v1
               Return v5
         "#]]);
@@ -2703,7 +2702,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :>
+              v4:CallableMethodEntry = LookupMethod v0, :>
               v5:BasicObject = CallMethod v4 (:>), v0, v1
               Return v5
         "#]]);
@@ -2733,7 +2732,7 @@ mod tests {
               Jump bb2(v3, v4)
             bb2(v6:BasicObject, v7:BasicObject):
               v9:Fixnum[0] = Const Value(0)
-              v11:BasicObject = LookupMethod v7, :>
+              v11:CallableMethodEntry = LookupMethod v7, :>
               v12:BasicObject = CallMethod v11 (:>), v7, v9
               v13:CBool = Test v12
               IfTrue v13, bb1(v6, v7)
@@ -2741,10 +2740,10 @@ mod tests {
               Return v6
             bb1(v17:BasicObject, v18:BasicObject):
               v20:Fixnum[1] = Const Value(1)
-              v22:BasicObject = LookupMethod v17, :+
+              v22:CallableMethodEntry = LookupMethod v17, :+
               v23:BasicObject = CallMethod v22 (:+), v17, v20
               v24:Fixnum[1] = Const Value(1)
-              v26:BasicObject = LookupMethod v18, :-
+              v26:CallableMethodEntry = LookupMethod v18, :-
               v27:BasicObject = CallMethod v26 (:-), v18, v24
               Jump bb2(v23, v27)
         "#]]);
@@ -2759,7 +2758,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :>=
+              v4:CallableMethodEntry = LookupMethod v0, :>=
               v5:BasicObject = CallMethod v4 (:>=), v0, v1
               Return v5
         "#]]);
@@ -2809,7 +2808,7 @@ mod tests {
               v1:BasicObject = PutSelf
               v2:Fixnum[2] = Const Value(2)
               v3:Fixnum[3] = Const Value(3)
-              v5:BasicObject = LookupMethod v1, :bar
+              v5:CallableMethodEntry = LookupMethod v1, :bar
               v6:BasicObject = CallMethod v5 (:bar), v1, v2, v3
               Return v6
         "#]]);
@@ -2850,7 +2849,7 @@ mod tests {
               v9:StringExact = StringCopy v8
               v10:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
               v11:StringExact = StringCopy v10
-              v13:BasicObject = LookupMethod v1, :unknown_method
+              v13:CallableMethodEntry = LookupMethod v1, :unknown_method
               v14:BasicObject = CallMethod v13 (:unknown_method), v1, v4, v7, v9, v11
               Return v14
         "#]]);
@@ -2953,7 +2952,7 @@ mod tests {
               v2:NilClassExact = Const Value(nil)
               Jump bb1(v2, v1)
             bb1(v4:NilClassExact, v5:BasicObject):
-              v8:BasicObject = LookupMethod v5, :new
+              v8:CallableMethodEntry = LookupMethod v5, :new
               v9:BasicObject = CallMethod v8 (:new), v5
               Jump bb2(v9, v4)
             bb2(v11:BasicObject, v12:NilClassExact):
@@ -2999,7 +2998,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = LookupMethod v4, :length
+              v6:CallableMethodEntry = LookupMethod v4, :length
               v7:BasicObject = CallMethod v6 (:length), v4
               Return v7
         "#]]);
@@ -3014,7 +3013,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = LookupMethod v4, :size
+              v6:CallableMethodEntry = LookupMethod v4, :size
               v7:BasicObject = CallMethod v6 (:size), v4
               Return v7
         "#]]);
@@ -3269,7 +3268,7 @@ mod opt_tests {
             fn test:
             bb0():
               v1:BasicObject = PutSelf
-              v3:BasicObject = LookupMethod v1, :foo
+              v3:CallableMethodEntry = LookupMethod v1, :foo
               v4:BasicObject = CallMethod v3 (:foo), v1
               Return v4
         "#]]);
@@ -4068,7 +4067,7 @@ mod opt_tests {
               v2:NilClassExact = Const Value(nil)
               Jump bb1(v2, v17)
             bb1(v4:NilClassExact, v5:BasicObject[VALUE(0x1008)]):
-              v8:BasicObject = LookupMethod v5, :new
+              v8:CallableMethodEntry = LookupMethod v5, :new
               v9:BasicObject = CallMethod v8 (:new), v5
               Jump bb2(v9, v4)
             bb2(v11:BasicObject, v12:NilClassExact):
@@ -4097,7 +4096,7 @@ mod opt_tests {
               v3:Fixnum[1] = Const Value(1)
               Jump bb1(v2, v19, v3)
             bb1(v5:NilClassExact, v6:BasicObject[VALUE(0x1008)], v7:Fixnum[1]):
-              v10:BasicObject = LookupMethod v6, :new
+              v10:CallableMethodEntry = LookupMethod v6, :new
               v11:BasicObject = CallMethod v10 (:new), v6, v7
               Jump bb2(v11, v5)
             bb2(v13:BasicObject, v14:NilClassExact):
