@@ -362,8 +362,8 @@ pub enum Insn {
     /// Ignoring keyword arguments etc for now
     LookupMethod { self_val: InsnId, method_id: ID, state: InsnId },
     CallMethod { callable: InsnId, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
-    CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
-    CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
+    CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
+    CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
 
     Send { self_val: InsnId, call_info: CallInfo, cd: CallDataPtr, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
@@ -442,6 +442,8 @@ impl Insn {
             Insn::FixnumGe   { .. } => false,
             Insn::LookupMethod { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
+            Insn::CallCFunc { elidable, .. } => !elidable,
+            Insn::CallIseq { elidable, .. } => !elidable,
             _ => true,
         }
     }
@@ -882,19 +884,23 @@ impl Function {
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: find!(*state),
             },
-            CallIseq { iseq, self_val, cd, args, state } => CallIseq {
-                iseq: *iseq,
-                self_val: find!(*self_val),
-                cd: *cd,
+            &CallIseq { iseq, self_val, cd, ref args, return_type, elidable, state } => CallIseq {
+                iseq,
+                self_val: find!(self_val),
+                cd,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
-                state: find!(*state),
+                return_type,
+                elidable,
+                state: find!(state),
             },
-            CallCFunc { cfunc, self_val, cd, args, state } => CallCFunc {
-                cfunc: *cfunc,
-                self_val: find!(*self_val),
-                cd: *cd,
+            &CallCFunc { cfunc, self_val, cd, ref args, return_type, elidable, state } => CallCFunc {
+                cfunc,
+                self_val: find!(self_val),
+                cd,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
-                state: find!(*state),
+                return_type,
+                elidable,
+                state: find!(state),
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
@@ -949,6 +955,8 @@ impl Function {
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::CCall { return_type, .. } => *return_type,
+            Insn::CallCFunc { return_type, .. } => *return_type,
+            Insn::CallIseq { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -969,8 +977,6 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::LookupMethod { .. } => types::CallableMethodEntry,
             Insn::CallMethod { .. } => types::BasicObject,
-            Insn::CallIseq { .. } => types::BasicObject,
-            Insn::CallCFunc { .. } => types::BasicObject,
         }
     }
 
@@ -1171,16 +1177,18 @@ impl Function {
                         if let Some(value) = self.type_of(callable).ruby_object() {
                             assert!(self.type_of(callable).is_subtype(types::CallableMethodEntry), "LookupMethod should return CME");
                             let cme: CmePtr = value.as_cme();
+                            let properties = ZJITState::get_method_annotations().get_cfunc_properties(cme);
+                            let (return_type, elidable) = properties.map(|p| (p.return_type, p.elidable)).unwrap_or((types::BasicObject, false));
                             let def_type = unsafe { get_cme_def_type(cme) };
                             if def_type == VM_METHOD_TYPE_ISEQ {
                                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                                let replacement = self.push_insn(block, Insn::CallIseq { iseq, cd, self_val, args, state });
+                                let replacement = self.push_insn(block, Insn::CallIseq { iseq, cd, self_val, args, return_type, elidable, state });
                                 self.make_equal_to(insn_id, replacement);
                                 continue;
                             }
                             if def_type == VM_METHOD_TYPE_CFUNC {
                                 let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cd, self_val, args, state });
+                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cd, self_val, args, return_type, elidable, state });
                                 self.make_equal_to(insn_id, replacement);
                                 continue;
                             }
@@ -2690,7 +2698,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = LookupMethod v0, :<=
+              v4:CallableMethodEntry = LookupMethod v0, :<=
               v5:BasicObject = CallMethod v4 (:<=), v0, v1
               Return v5
         "#]]);
@@ -3890,8 +3898,8 @@ mod opt_tests {
             fn test:
             bb0():
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
-              v6:Fixnum[1] = Const Value(1)
-              Return v6
+              v7:Fixnum[1] = Const Value(1)
+              Return v7
         "#]]);
     }
 
@@ -3911,8 +3919,8 @@ mod opt_tests {
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, M)
               PatchPoint MethodRedefined(Module@0x1008, name@0x1010)
-              v5:Fixnum[1] = Const Value(1)
-              Return v5
+              v6:Fixnum[1] = Const Value(1)
+              Return v6
         "#]]);
     }
 
@@ -3983,7 +3991,7 @@ mod opt_tests {
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v2:StringExact = StringCopy v1
               PatchPoint MethodRedefined(String@0x1008, bytesize@0x1010)
-              v9:BasicObject = CallCFunc 0x1018 (:bytesize), v2
+              v9:Fixnum = CallCFunc 0x1018 (:bytesize), v2
               Return v9
         "#]]);
     }
