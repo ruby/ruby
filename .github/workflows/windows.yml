@@ -139,6 +139,7 @@ jobs:
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
@@ -164,7 +165,7 @@ jobs:
       - name: Configure
         run: >-
           ../src/win32/configure.bat --disable-install-doc
-          --with-opt-dir=D:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
+          --with-opt-dir=%RUBY_OPT_DIR%
 
       - run: nmake prepare-vcpkg
 
