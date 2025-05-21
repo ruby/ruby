@@ -85,6 +85,7 @@ The following bundled gems are updated.
 * net-smtp 0.5.1
 * rbs 3.9.4
 * bigdecimal 3.1.9
+* drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.4
 * repl_type_completor 0.1.11
