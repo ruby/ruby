@@ -258,7 +258,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::LookupMethod { self_val, method_id, state } => gen_lookup_method(asm, opnd!(self_val), *method_id, &function.frame_state(*state))?,
-        Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(cb, jit, asm, *cfunc, opnd!(self_val), args)?,
+        Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(jit, asm, *cfunc, opnd!(self_val), args)?,
         Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -456,7 +456,6 @@ fn gen_lookup_method(
 }
 
 fn gen_call_cfunc(
-    cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
     cfunc: CFuncPtr,
