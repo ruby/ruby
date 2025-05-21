@@ -1273,15 +1273,19 @@ rb_free_generic_ivar(VALUE obj)
 
     bool too_complex = rb_shape_obj_too_complex_p(obj);
 
-    if (st_delete(generic_fields_tbl_no_ractor_check(obj), &key, &value)) {
-        struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
+    RB_VM_LOCK_ENTER();
+    {
+        if (st_delete(generic_fields_tbl_no_ractor_check(obj), &key, &value)) {
+            struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
 
-        if (UNLIKELY(too_complex)) {
-            st_free_table(fields_tbl->as.complex.table);
+            if (UNLIKELY(too_complex)) {
+                st_free_table(fields_tbl->as.complex.table);
+            }
+
+            xfree(fields_tbl);
         }
-
-        xfree(fields_tbl);
     }
+    RB_VM_LOCK_LEAVE();
 }
 
 size_t

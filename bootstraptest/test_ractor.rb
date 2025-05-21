@@ -2319,6 +2319,16 @@ assert_equal 'ok', %q{
   'ok'
 }
 
+# take vm lock when deleting generic ivars from the global table
+assert_equal 'ok', %q{
+  Ractor.new do
+    a = [1, 2, 3]
+    a.object_id
+    a.dup # this deletes generic ivar on dupped object
+    'ok'
+  end.take
+}
+
 # There are some bugs in Windows with multiple threads in same ractor calling ractor actions
 # Ex: https://github.com/ruby/ruby/actions/runs/14998660285/job/42139383905
 unless /mswin/ =~ RUBY_PLATFORM
