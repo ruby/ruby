@@ -106,11 +106,6 @@ impl std::fmt::Display for BranchEdge {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct CallInfo {
-    pub method_name: String,
-}
-
 /// Invalidation reasons
 #[derive(Debug, Clone, Copy)]
 pub enum Invariant {
@@ -365,7 +360,7 @@ pub enum Insn {
     CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
     CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
 
-    Send { self_val: InsnId, call_info: CallInfo, cd: CallDataPtr, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    Send { self_val: InsnId, cd: CallDataPtr, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -519,11 +514,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::Send { self_val, call_info, args, blockiseq, .. } => {
+            Insn::Send { self_val, cd, args, blockiseq, .. } => {
+                let call_info = unsafe { (**cd).ci };
+                let method_id = unsafe { rb_vm_ci_mid(call_info) };
+                let method_name = method_id.contents_lossy().into_owned();
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
-                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
+                write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), method_name)?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -864,9 +862,8 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            Send { self_val, call_info, cd, blockiseq, args, state } => Send {
+            Send { self_val, cd, blockiseq, args, state } => Send {
                 self_val: find!(*self_val),
-                call_info: call_info.clone(),
                 cd: *cd,
                 blockiseq: *blockiseq,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
@@ -2048,10 +2045,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     filter_translatable_calls(unsafe { rb_vm_ci_flag(call_info) })?;
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
-                    let method_name = unsafe {
-                        let mid = rb_vm_ci_mid(call_info);
-                        mid.contents_lossy().into_owned()
-                    };
                     let mut args = vec![];
                     for _ in 0..argc {
                         args.push(state.stack_pop()?);
@@ -2060,7 +2053,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     let recv = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
+                    let send = fun.push_insn(block, Insn::Send { self_val: recv, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
