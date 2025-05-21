@@ -1954,7 +1954,14 @@ object_id(VALUE obj)
 static void
 build_id2ref_i(VALUE obj, void *data)
 {
+    rb_objspace_t *objspace = rb_gc_get_objspace();
     st_table *id2ref_tbl = (st_table *)data;
+
+    if (rb_gc_impl_garbage_object_p(objspace, obj)) {
+        return;
+    }
+
+    GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
