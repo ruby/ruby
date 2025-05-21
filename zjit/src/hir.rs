@@ -1106,6 +1106,7 @@ impl Function {
                             let method = unsafe { rb_callable_method_entry(self_class, method_id) };
                             if method.is_null() { self.push_insn_id(block, insn_id); continue; }
                             // TODO(max): Check for overloaded CME?
+                            // TODO(max): Convert MethodRedefined into BOP check for internal methods
                             self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: self_class, method: method_id }));
                             let replacement = self.push_insn(block, Insn::Const { val: Const::Value(method.into()) });
                             self.make_equal_to(insn_id, replacement);
@@ -1122,7 +1123,9 @@ impl Function {
                             // Do method lookup
                             let method = unsafe { rb_callable_method_entry(recv_class, method_id) };
                             if method.is_null() { self.push_insn_id(block, insn_id); continue; }
+                            // TODO(max): Check for overloaded CME?
                             // Commit to the replacement. Put PatchPoint.
+                            // TODO(max): Convert MethodRedefined into BOP check for internal methods
                             self.push_insn(block, Insn::PatchPoint(Invariant::MethodRedefined { klass: recv_class, method: method_id }));
                             // Guard receiver class
                             self.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
