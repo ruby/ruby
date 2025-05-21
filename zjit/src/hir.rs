@@ -352,10 +352,15 @@ pub enum Insn {
     /// `name` is for printing purposes only
     CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
+    /// Look up the given method (CME) on the receiver, side-exiting if the method is not found.
     LookupMethod { self_val: InsnId, method_id: ID, state: InsnId },
+    /// Call a CME.
     CallMethod { callable: InsnId, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
+    /// Call a CME with a block.
     CallMethodWithBlock { callable: InsnId, blockiseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, state: InsnId },
+    /// Call the given ISEQ.
     CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
+    /// Call the given CFunc.
     CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
 
     /// Control flow instructions
