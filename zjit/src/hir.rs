@@ -967,7 +967,7 @@ impl Function {
             Insn::Defined { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
-            Insn::LookupMethod { .. } => types::BasicObject,
+            Insn::LookupMethod { .. } => types::CallableMethodEntry,
             Insn::CallMethod { .. } => types::BasicObject,
             Insn::CallIseq { .. } => types::BasicObject,
             Insn::CallCFunc { .. } => types::BasicObject,
