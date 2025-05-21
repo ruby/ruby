@@ -348,7 +348,7 @@ pub enum Insn {
 
     // Call a C function
     // `name` is for printing purposes only
-    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type },
+    CCall { cfun: *const u8, args: Vec<InsnId>, name: ID, return_type: Type, elidable: bool },
 
     // Send without block with dynamic dispatch
     // Ignoring keyword arguments etc for now
@@ -429,6 +429,7 @@ impl Insn {
             Insn::FixnumLe   { .. } => false,
             Insn::FixnumGt   { .. } => false,
             Insn::FixnumGe   { .. } => false,
+            Insn::CCall { elidable, .. } => !elidable,
             _ => true,
         }
     }
@@ -510,7 +511,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
-            Insn::CCall { cfun, args, name, return_type: _ } => {
+            Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
@@ -850,7 +851,7 @@ impl Function {
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
-            CCall { cfun, args, name, return_type } => CCall { cfun: *cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: *name, return_type: *return_type },
+            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
             Defined { .. } => todo!("find(Defined)"),
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
@@ -1194,7 +1195,7 @@ impl Function {
 
                     // Filter for a leaf and GC free function
                     use crate::cruby_methods::FnProperties;
-                    let Some(FnProperties { leaf: true, no_gc: true, return_type }) =
+                    let Some(FnProperties { leaf: true, no_gc: true, return_type, elidable }) =
                         ZJITState::get_method_annotations().get_cfunc_properties(method)
                     else {
                         return Err(());
@@ -1212,7 +1213,7 @@ impl Function {
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
                         cfunc_args.append(&mut args);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type });
+                        let ccall = fun.push_insn(block, Insn::CCall { cfun, args: cfunc_args, name: method_id, return_type, elidable });
                         fun.make_equal_to(send_insn_id, ccall);
                         return Ok(());
                     }
@@ -3829,6 +3830,44 @@ mod opt_tests {
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
               v7:BasicObject = CCall itself@0x1010, v2
               Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn eliminate_kernel_itself() {
+        eval("
+            def test
+              x = [].itself
+              1
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
+              v6:Fixnum[1] = Const Value(1)
+              Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn eliminate_module_name() {
+        eval("
+            module M; end
+            def test
+              x = M.name
+              1
+            end
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, M)
+              PatchPoint MethodRedefined(Module@0x1008, name@0x1010)
+              v5:Fixnum[1] = Const Value(1)
+              Return v5
         "#]]);
     }
 
