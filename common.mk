@@ -14101,6 +14101,7 @@ ractor.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/object.h
+ractor.$(OBJEXT): $(top_srcdir)/internal/proc.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/ractor.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
