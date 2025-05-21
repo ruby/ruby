@@ -1599,14 +1599,14 @@ class TestProc < Test::Unit::TestCase
     assert_normal_exit('def proc; end; ->{}.curry', bug8345)
   end
 
-  def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5
+  def get_binding if: 1, case: 2, when: 3, begin: 4, end: 5, default: 6
     a ||= 0
     binding
   end
 
   def test_local_variables
     b = get_binding
-    assert_equal(%i'if case when begin end a', b.local_variables)
+    assert_equal(%i'if case when begin end default a', b.local_variables)
     a = tap {|;x, y| x = y = x; break binding.local_variables}
     assert_equal(%i[a b x y], a.sort)
   end
@@ -1637,6 +1637,7 @@ class TestProc < Test::Unit::TestCase
     assert_equal(3, b.local_variable_get(:when))
     assert_equal(4, b.local_variable_get(:begin))
     assert_equal(5, b.local_variable_get(:end))
+    assert_equal(6, b.local_variable_get(:default)) # [Bug #21356]
   end
 
   def test_local_variable_set
