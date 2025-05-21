@@ -3284,9 +3284,6 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                     RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
                 }
             }
-            else {
-                VM_ASSERT(rb_shape_obj_too_complex_p(klass));
-            }
         }
 
         break;
