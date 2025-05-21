@@ -80,6 +80,7 @@ jobs:
         uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
           languages: ${{ matrix.language }}
+          trap-caching: false
           debug: true
 
       - name: Autobuild
@@ -120,9 +121,3 @@ jobs:
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true
-
-      - name: Purge the oldest TRAP cache
-        if: ${{ github.repository == 'ruby/ruby' && matrix.language == 'cpp'}}
-        run: gh cache list --key codeql --order asc --limit 1 --json key --jq '.[].key' | xargs -I{} gh cache delete {}
-        env:
-          GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_WORKFLOW_TOKEN }}
