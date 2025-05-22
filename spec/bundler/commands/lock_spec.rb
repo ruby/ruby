@@ -2361,4 +2361,220 @@ RSpec.describe "bundle lock" do
       L
     end
   end
+
+  describe "--normalize-platforms on linux" do
+    let(:normalized_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            irb (1.0.0)
+            irb (1.0.0-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          irb
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "irb", "1.0.0"
+
+        build_gem "irb", "1.0.0" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "irb"
+      G
+    end
+
+    context "when already normalized" do
+      before do
+        lockfile normalized_lockfile
+      end
+
+      it "is a noop" do
+        simulate_platform "x86_64-linux" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when not already normalized" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0)
+
+          PLATFORMS
+             ruby
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms and native gems in the lockfile" do
+        simulate_platform "x86_64-linux" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+  end
+
+  describe "--normalize-platforms on darwin" do
+    let(:normalized_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            irb (1.0.0)
+            irb (1.0.0-arm64-darwin)
+
+        PLATFORMS
+          arm64-darwin
+          ruby
+
+        DEPENDENCIES
+          irb
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "irb", "1.0.0"
+
+        build_gem "irb", "1.0.0" do |s|
+          s.platform = "arm64-darwin"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "irb"
+      G
+    end
+
+    context "when already normalized" do
+      before do
+        lockfile normalized_lockfile
+      end
+
+      it "is a noop" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having only ruby" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0)
+
+          PLATFORMS
+             ruby
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms and native gems in the lockfile" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having only the current platform with version" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0-arm64-darwin)
+
+          PLATFORMS
+             arm64-darwin-23
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms by removing version" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+
+    context "when having other platforms with version" do
+      before do
+        lockfile <<~L
+          GEM
+            remote: https://gem.repo4/
+            specs:
+              irb (1.0.0-arm64-darwin)
+
+          PLATFORMS
+             arm64-darwin-22
+
+          DEPENDENCIES
+            irb
+
+          BUNDLED WITH
+             #{Bundler::VERSION}
+        L
+      end
+
+      it "normalizes the list of platforms by removing version" do
+        simulate_platform "arm64-darwin-23" do
+          bundle "lock --normalize-platforms"
+        end
+
+        expect(lockfile).to eq(normalized_lockfile)
+      end
+    end
+  end
 end

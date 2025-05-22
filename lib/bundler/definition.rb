@@ -337,11 +337,7 @@ module Bundler
           end
         end
       else
-        if lockfile_exists?
-          Bundler.ui.debug "Found changes from the lockfile, re-resolving dependencies because #{change_reason}"
-        else
-          Bundler.ui.debug "Resolving dependencies because there's no lockfile"
-        end
+        Bundler.ui.debug resolve_needed_reason
 
         start_resolution
       end
@@ -465,7 +461,7 @@ module Bundler
     end
 
     def normalize_platforms
-      @platforms = resolve.normalize_platforms!(current_dependencies, platforms)
+      resolve.normalize_platforms!(current_dependencies, platforms)
 
       @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
     end
@@ -537,9 +533,7 @@ module Bundler
 
       return unless added.any? || deleted.any? || changed.any? || resolve_needed?
 
-      reason = resolve_needed? ? change_reason : "some dependencies were deleted from your gemfile"
-
-      msg = String.new("#{reason.capitalize.strip}, but ")
+      msg = String.new("#{change_reason.capitalize.strip}, but ")
       msg << "the lockfile " unless msg.start_with?("Your lockfile")
       msg << "can't be updated because #{update_refused_reason}"
       msg << "\n\nYou have added to the Gemfile:\n" << added.join("\n") if added.any?
@@ -796,22 +790,47 @@ module Bundler
       @most_specific_locked_platform
     end
 
-    def change_reason
-      if unlocking?
-        unlock_targets = if @gems_to_unlock.any?
-          ["gems", @gems_to_unlock]
-        elsif @sources_to_unlock.any?
-          ["sources", @sources_to_unlock]
-        end
-
-        unlock_reason = if unlock_targets
-          "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
+    def resolve_needed_reason
+      if lockfile_exists?
+        if unlocking?
+          "Re-resolving dependencies because #{unlocking_reason}"
         else
-          @unlocking_ruby ? "ruby" : ""
+          "Found changes from the lockfile, re-resolving dependencies because #{lockfile_changed_reason}"
         end
-
-        return "bundler is unlocking #{unlock_reason}"
+      else
+        "Resolving dependencies because there's no lockfile"
       end
+    end
+
+    def change_reason
+      if resolve_needed?
+        if unlocking?
+          unlocking_reason
+        else
+          lockfile_changed_reason
+        end
+      else
+        "some dependencies were deleted from your gemfile"
+      end
+    end
+
+    def unlocking_reason
+      unlock_targets = if @gems_to_unlock.any?
+        ["gems", @gems_to_unlock]
+      elsif @sources_to_unlock.any?
+        ["sources", @sources_to_unlock]
+      end
+
+      unlock_reason = if unlock_targets
+        "#{unlock_targets.first}: (#{unlock_targets.last.join(", ")})"
+      else
+        @unlocking_ruby ? "ruby" : ""
+      end
+
+      "bundler is unlocking #{unlock_reason}"
+    end
+
+    def lockfile_changed_reason
       [
         [@source_changes, "the list of sources changed"],
         [@dependency_changes, "the dependencies in your gemfile changed"],

@@ -173,15 +173,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
       bundle "config set --local path #{bundled_app("bundle")}"
 
-      # Make sure rubyinstaller2 does not activate the etc gem in its
-      # `operating_system.rb` file, but completely disable that since it's not
-      # really needed here
-      if Gem.win_platform?
-        FileUtils.mkdir_p bundled_app("rubygems/defaults")
-        FileUtils.touch bundled_app("rubygems/defaults/operating_system.rb")
-      end
-
-      bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, load_path: bundled_app
+      bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
 
       load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
 
@@ -212,15 +204,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
         bundle "lock", dir: cwd
 
-        # Make sure rubyinstaller2 does not activate the etc gem in its
-        # `operating_system.rb` file, but completely disable that since it's not
-        # really needed here
-        if Gem.win_platform?
-          FileUtils.mkdir_p bundled_app("rubygems/defaults")
-          FileUtils.touch bundled_app("rubygems/defaults/operating_system.rb")
-        end
-
-        bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }, load_path: bundled_app
+        bundle :install, standalone: true, dir: cwd, env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       end
 
       load_path_lines = bundled_app("bundle/bundler/setup.rb").read.split("\n").select {|line| line.start_with?("$:.unshift") }
