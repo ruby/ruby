@@ -278,9 +278,11 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
     else {
         RCLASSEXT_M_TBL(ext) = RCLASSEXT_M_TBL(mod_ext);
     }
-    RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
+
     RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(mod_ext);
     RCLASSEXT_CVC_TBL(ext) = RCLASSEXT_CVC_TBL(mod_ext);
+
+    RUBY_ASSERT(!RCLASSEXT_FIELDS(mod_ext));
 
     // Those are cache and should be recreated when methods are called
     // RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
