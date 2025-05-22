@@ -327,6 +327,8 @@ pub enum Insn {
     StringIntern { val: InsnId },
 
     NewArray { elements: Vec<InsnId>, state: InsnId },
+    /// NewHash contains a vec of (key, value) pairs
+    NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
@@ -425,6 +427,7 @@ impl Insn {
             Insn::Param { .. } => false,
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
+            Insn::NewHash { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -463,6 +466,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let mut prefix = " ";
                 for element in elements {
                     write!(f, "{prefix}{element}")?;
+                    prefix = ", ";
+                }
+                Ok(())
+            }
+            Insn::NewHash { elements, .. } => {
+                write!(f, "NewHash")?;
+                let mut prefix = " ";
+                for (key, value) in elements {
+                    write!(f, "{prefix}{key}: {value}")?;
                     prefix = ", ";
                 }
                 Ok(())
@@ -874,6 +886,13 @@ impl Function {
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
             Defined { .. } => todo!("find(Defined)"),
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
+            &NewHash { ref elements, state } => {
+                let mut found_elements = vec![];
+                for &(key, value) in elements {
+                    found_elements.push((find!(key), find!(value)));
+                }
+                NewHash { elements: found_elements, state: find!(state) }
+            }
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
@@ -923,6 +942,7 @@ impl Function {
             Insn::StringIntern { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
+            Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
@@ -1394,6 +1414,13 @@ impl Function {
                 Insn::ArrayMax { elements, state }
                 | Insn::NewArray { elements, state } => {
                     worklist.extend(elements);
+                    worklist.push_back(state);
+                }
+                Insn::NewHash { elements, state } => {
+                    for (key, value) in elements {
+                        worklist.push_back(key);
+                        worklist.push_back(value);
+                    }
                     worklist.push_back(state);
                 }
                 Insn::StringCopy { val }
@@ -1928,6 +1955,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
                     state.stack_push(insn_id);
+                }
+                YARVINSN_newhash => {
+                    let count = get_arg(pc, 0).as_usize();
+                    assert!(count % 2 == 0, "newhash count should be even");
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let mut elements = vec![];
+                    for _ in 0..(count/2) {
+                        let value = state.stack_pop()?;
+                        let key = state.stack_pop()?;
+                        elements.push((key, value));
+                    }
+                    elements.reverse();
+                    state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
                 }
                 YARVINSN_duphash => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -2517,7 +2557,29 @@ mod tests {
         "#]]);
     }
 
-    // TODO(max): Test newhash when we have it
+    #[test]
+    fn test_new_hash_empty() {
+        eval("def test = {}");
+        assert_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v2:HashExact = NewHash
+              Return v2
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_hash_with_elements() {
+        eval("def test(aval, bval) = {a: aval, b: bval}");
+        assert_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v3:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v4:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v6:HashExact = NewHash v3: v0, v4: v1
+              Return v6
+        "#]]);
+    }
 
     #[test]
     fn test_string_copy() {
@@ -3573,7 +3635,6 @@ mod opt_tests {
         "#]]);
     }
 
-
     #[test]
     fn test_eliminate_new_array() {
         eval("
@@ -3605,6 +3666,38 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_new_hash() {
+        eval("
+            def test()
+              c = {}
+              5
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_new_hash_with_elements() {
+        eval("
+            def test(aval, bval)
+              c = {a: aval, b: bval}
+              5
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v8:Fixnum[5] = Const Value(5)
+              Return v8
         "#]]);
     }
 
