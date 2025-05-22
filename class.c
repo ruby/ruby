@@ -256,6 +256,8 @@ duplicate_classext_subclasses(rb_classext_t *orig, rb_classext_t *copy)
 static void
 class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_namespace_t *ns)
 {
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+
     rb_classext_t *src = RCLASS_EXT_PRIME(iclass);
     rb_classext_t *ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(iclass, ns);
     int first_set = 0;
@@ -281,8 +283,6 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_n
 
     RCLASSEXT_CONST_TBL(ext) = RCLASSEXT_CONST_TBL(mod_ext);
     RCLASSEXT_CVC_TBL(ext) = RCLASSEXT_CVC_TBL(mod_ext);
-
-    RUBY_ASSERT(!RCLASSEXT_FIELDS(mod_ext));
 
     // Those are cache and should be recreated when methods are called
     // RCLASSEXT_CALLABLE_M_TBL(ext) = NULL;
@@ -319,11 +319,14 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     // TODO: consider shapes for performance
     if (RCLASSEXT_FIELDS(orig)) {
+        RUBY_ASSERT(!RB_TYPE_P(klass, T_ICLASS));
         RCLASSEXT_FIELDS(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_FIELDS(orig));
         rb_autoload_copy_table_for_namespace((st_table *)RCLASSEXT_FIELDS(ext), ns);
     }
     else {
-        RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
+        if (!RB_TYPE_P(klass, T_ICLASS)) {
+            RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
+        }
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
@@ -380,6 +383,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
             if (subclass_entry->klass && RB_TYPE_P(subclass_entry->klass, T_ICLASS)) {
                 iclass = subclass_entry->klass;
                 if (RBASIC_CLASS(iclass) == klass) {
+                    // Is the subclass an ICLASS including this module into another class
+                    // If so we need to re-associate it under our namespace with the new ext
                     class_duplicate_iclass_classext(iclass, ext, ns);
                 }
             }
