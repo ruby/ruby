@@ -1212,7 +1212,6 @@ rb_data_free(void *objspace, VALUE obj)
 
 struct classext_foreach_args {
     VALUE klass;
-    bool obj_too_complex;
     rb_objspace_t *objspace; // used for update_*
 };
 
@@ -1224,12 +1223,6 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 
     rb_id_table_free(RCLASSEXT_M_TBL(ext));
     rb_cc_tbl_free(RCLASSEXT_CC_TBL(ext), args->klass);
-    if (args->obj_too_complex) {
-        st_free_table((st_table *)RCLASSEXT_FIELDS(ext));
-    }
-    else {
-        xfree(RCLASSEXT_FIELDS(ext));
-    }
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
         rb_free_const_table(tbl);
     }
@@ -1303,8 +1296,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
         args.klass = obj;
-        args.obj_too_complex = rb_shape_obj_too_complex_p(obj) ? true : false;
-
         rb_class_classext_foreach(obj, classext_free, (void *)&args);
         if (RCLASS(obj)->ns_classext_tbl) {
             st_free_table(RCLASS(obj)->ns_classext_tbl);
@@ -1499,6 +1490,8 @@ internal_object_p(VALUE obj)
                 return rb_singleton_class_internal_p(obj);
             }
             return 0;
+          case T_OBJECT:
+            if (FL_TEST_RAW(obj, ROBJECT_HIDDEN)) break;
           default:
             if (!RBASIC(obj)->klass) break;
             return 0;
@@ -2268,18 +2261,6 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
 }
 
 static void
-classext_fields_hash_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
-{
-    size_t *size = (size_t *)arg;
-    size_t count;
-    RB_VM_LOCKING() {
-        count = rb_st_table_size((st_table *)RCLASSEXT_FIELDS(ext));
-    }
-    // class IV sizes are allocated as powers of two
-    *size += SIZEOF_VALUE << bit_length(count);
-}
-
-static void
 classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE namespace, void *arg)
 {
     size_t *size = (size_t *)arg;
@@ -2316,15 +2297,6 @@ rb_obj_memsize_of(VALUE obj)
       case T_MODULE:
       case T_CLASS:
         rb_class_classext_foreach(obj, classext_memsize, (void *)&size);
-
-        if (rb_shape_obj_too_complex_p(obj)) {
-            rb_class_classext_foreach(obj, classext_fields_hash_memsize, (void *)&size);
-        }
-        else {
-            // class IV sizes are allocated as powers of two
-            size += SIZEOF_VALUE << bit_length(RCLASS_FIELDS_COUNT(obj));
-        }
-
         rb_class_classext_foreach(obj, classext_superclasses_memsize, (void *)&size);
         break;
       case T_ICLASS:
@@ -3097,10 +3069,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE namespace, void *a
         gc_mark_internal(RCLASSEXT_SUPER(ext));
     }
     mark_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
-    if (rb_shape_obj_too_complex_p(obj)) {
-        gc_mark_tbl_no_pin((st_table *)RCLASSEXT_FIELDS(ext));
-        // for the case ELSE is written in rb_gc_mark_children() because it's per RClass, not classext
-    }
+    gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && RCLASSEXT_CONST_TBL(ext)) {
         mark_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
@@ -3181,11 +3150,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         foreach_args.obj = obj;
         rb_class_classext_foreach(obj, gc_mark_classext_module, (void *)&foreach_args);
 
-        if (!rb_shape_obj_too_complex_p(obj)) {
-            for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(obj); i++) {
-                gc_mark_internal(RCLASS_PRIME_FIELDS(obj)[i]);
-            }
-        }
+        gc_mark_internal(RCLASS_PRIME_FIELDS_OBJ(obj));
         break;
 
       case T_ICLASS:
@@ -3811,7 +3776,6 @@ static void
 update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 {
     struct classext_foreach_args *args = (struct classext_foreach_args *)arg;
-    VALUE klass = args->klass;
     rb_objspace_t *objspace = args->objspace;
 
     if (RCLASSEXT_SUPER(ext)) {
@@ -3820,16 +3784,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
 
     update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
 
-    if (args->obj_too_complex) {
-        gc_ref_update_table_values_only((st_table *)RCLASSEXT_FIELDS(ext));
-    }
-    else {
-        // Classext is not copied in this case
-        for (attr_index_t i = 0; i < RCLASS_FIELDS_COUNT(klass); i++) {
-            UPDATE_IF_MOVED(objspace, RCLASSEXT_FIELDS(RCLASS_EXT_PRIME(klass))[i]);
-        }
-    }
-
+    UPDATE_IF_MOVED(objspace, ext->fields_obj);
     if (!RCLASSEXT_SHARED_CONST_TBL(ext)) {
         update_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
@@ -4186,7 +4141,6 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         // Continue to the shared T_CLASS/T_MODULE
       case T_MODULE:
         args.klass = obj;
-        args.obj_too_complex = rb_shape_obj_too_complex_p(obj);
         args.objspace = objspace;
         rb_class_classext_foreach(obj, update_classext, (void *)&args);
         break;

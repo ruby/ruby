@@ -71,7 +71,9 @@ enum ruby_robject_flags {
      * 3rd parties must  not be aware that  there even is more than  one way to
      * store instance variables.  Might better be hidden.
      */
-    ROBJECT_EMBED = RUBY_FL_USER1
+    ROBJECT_EMBED = RUBY_FL_USER1,
+
+    ROBJECT_HIDDEN = RUBY_FL_USER2, // HACK
 };
 
 struct st_table;

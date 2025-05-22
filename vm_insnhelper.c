@@ -1247,7 +1247,10 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            ivar_list = RCLASS_PRIME_FIELDS(obj);
+            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+            ivar_list = fields_obj ? ROBJECT_FIELDS(fields_obj) : NULL;
+            shape_id = fields_obj ? RBASIC_SHAPE_ID(fields_obj) : ROOT_SHAPE_ID;
+
             break;
         }
       default:
@@ -1318,7 +1321,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = (st_table *)RCLASS_FIELDS_HASH(obj);
+                table = ROBJECT_FIELDS_HASH(RCLASS_FIELDS_OBJ(obj));
                 break;
 
               case T_OBJECT:

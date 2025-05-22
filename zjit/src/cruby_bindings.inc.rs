@@ -155,6 +155,7 @@ pub type ruby_rarray_consts = u32;
 pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
+pub const ROBJECT_HIDDEN: ruby_robject_flags = 16384;
 pub type ruby_robject_flags = u32;
 pub const RUBY_ENCODING_INLINE_MAX: ruby_encoding_consts = 127;
 pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
