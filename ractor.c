@@ -3678,9 +3678,11 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
+    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
+
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj + sizeof(struct RBasic), char, size - sizeof(struct RBasic));
-    RBASIC(obj)->flags = T_OBJECT | FL_FREEZE;
+    RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
     return traverse_cont;
 }
