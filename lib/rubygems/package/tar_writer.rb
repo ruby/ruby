@@ -95,10 +95,11 @@ class Gem::Package::TarWriter
   end
 
   ##
-  # Adds file +name+ with permissions +mode+, and yields an IO for writing the
-  # file to
+  # Adds file +name+ with permissions +mode+ and mtime +mtime+ (sets
+  # Gem.source_date_epoch if not specified), and yields an IO for
+  # writing the file to
 
-  def add_file(name, mode) # :yields: io
+  def add_file(name, mode, mtime=nil) # :yields: io
     check_closed
 
     name, prefix = split_name name
@@ -118,7 +119,7 @@ class Gem::Package::TarWriter
 
     header = Gem::Package::TarHeader.new name: name, mode: mode,
                                          size: size, prefix: prefix,
-                                         mtime: Gem.source_date_epoch
+                                         mtime: mtime || Gem.source_date_epoch
 
     @io.write header
     @io.pos = final_pos

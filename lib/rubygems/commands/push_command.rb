@@ -92,7 +92,8 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   private
 
   def send_push_request(name, args)
-    rubygems_api_request(*args, scope: get_push_scope) do |request|
+    scope = get_push_scope
+    rubygems_api_request(*args, scope: scope) do |request|
       body = Gem.read_binary name
       if options[:attestations].any?
         request.set_form([

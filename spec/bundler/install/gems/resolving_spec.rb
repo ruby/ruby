@@ -305,11 +305,10 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         it "gives a meaningful error if we're in frozen mode" do
           expect do
-            bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+            bundle "install", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
           end.not_to change { lockfile }
 
-          expect(err).to include("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}")
-          expect(err).not_to include("That means the author of parallel_tests (3.8.0) has removed it.")
+          expect(err).to eq("parallel_tests-3.8.0 requires ruby version >= #{next_ruby_minor}, which is incompatible with the current version, #{Gem.ruby_version}")
         end
       end
 
