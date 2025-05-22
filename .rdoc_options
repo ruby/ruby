@@ -11,3 +11,13 @@ rdoc_include:
 exclude:
 - lib/irb
 - .gemspec
+
+autolink_excluded_words:
+- Class
+- Method
+- Module
+- Process
+- RDoc
+- Set
+
+canonical_root: https://docs.ruby-lang.org/en/3.4
