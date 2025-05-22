@@ -133,7 +133,7 @@
 unsigned int
 rb_gc_vm_lock(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV(&lev);
     return lev;
 }
