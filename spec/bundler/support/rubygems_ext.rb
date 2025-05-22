@@ -10,6 +10,10 @@ module Spec
   module Rubygems
     extend self
 
+    def dev_setup
+      install_gems(dev_gemfile)
+    end
+
     def gem_load(gem_name, bin_container)
       require_relative "switch_rubygems"
 
@@ -46,19 +50,41 @@ module Spec
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
     end
 
+    def install_parallel_test_deps
+      Gem.clear_paths
+
+      require "parallel"
+      require "fileutils"
+
+      install_test_deps
+
+      (2..Parallel.processor_count).each do |n|
+        source = Path.tmp_root("1")
+        destination = Path.tmp_root(n.to_s)
+
+        FileUtils.cp_r source, destination, remove_destination: true
+      end
+    end
+
     def setup_test_paths
+      Gem.clear_paths
+
       ENV["BUNDLE_PATH"] = nil
+      ENV["GEM_HOME"] = ENV["GEM_PATH"] = Path.base_system_gem_path.to_s
       ENV["PATH"] = [Path.system_gem_path("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
       ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
     def install_test_deps
-      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gems.to_s)
-      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gems.to_s)
-      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gems.to_s)
+      Gem.clear_paths
 
-      require_relative "helpers"
-      Helpers.install_dev_bundler
+      install_gems(test_gemfile, Path.base_system_gems.to_s)
+      install_gems(rubocop_gemfile, Path.rubocop_gems.to_s)
+      install_gems(standard_gemfile, Path.standard_gems.to_s)
+
+      # For some reason, doing this here crashes on JRuby + Windows. So defer to
+      # when the test suite is running in that case.
+      Helpers.install_dev_bundler unless Gem.win_platform? && RUBY_ENGINE == "jruby"
     end
 
     def check_source_control_changes(success_message:, error_message:)
@@ -79,36 +105,6 @@ module Spec
 
         exit(1)
       end
-    end
-
-    def dev_bundle(*args, gemfile: dev_gemfile, path: nil)
-      old_gemfile = ENV["BUNDLE_GEMFILE"]
-      old_orig_gemfile = ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"]
-      ENV["BUNDLE_GEMFILE"] = gemfile.to_s
-      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = nil
-
-      if path
-        old_path = ENV["BUNDLE_PATH"]
-        ENV["BUNDLE_PATH"] = path
-      else
-        old_path__system = ENV["BUNDLE_PATH__SYSTEM"]
-        ENV["BUNDLE_PATH__SYSTEM"] = "true"
-      end
-
-      require "shellwords"
-      # We don't use `Open3` here because it does not work on JRuby + Windows
-      output = `ruby #{File.expand_path("support/bundle.rb", Path.spec_dir)} #{args.shelljoin}`
-      raise output unless $?.success?
-      output
-    ensure
-      if path
-        ENV["BUNDLE_PATH"] = old_path
-      else
-        ENV["BUNDLE_PATH__SYSTEM"] = old_path__system
-      end
-
-      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = old_orig_gemfile
-      ENV["BUNDLE_GEMFILE"] = old_gemfile
     end
 
     private
@@ -137,6 +133,34 @@ module Spec
       require "bundler"
       gem_requirement = Bundler::LockfileParser.new(File.read(dev_lockfile)).specs.find {|spec| spec.name == gem_name }.version
       gem gem_name, gem_requirement
+    end
+
+    def install_gems(gemfile, path = nil)
+      old_gemfile = ENV["BUNDLE_GEMFILE"]
+      old_orig_gemfile = ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"]
+      ENV["BUNDLE_GEMFILE"] = gemfile.to_s
+      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = nil
+
+      if path
+        old_path = ENV["BUNDLE_PATH"]
+        ENV["BUNDLE_PATH"] = path
+      else
+        old_path__system = ENV["BUNDLE_PATH__SYSTEM"]
+        ENV["BUNDLE_PATH__SYSTEM"] = "true"
+      end
+
+      # We don't use `Open3` here because it does not work on JRuby + Windows
+      output = `#{Gem.ruby} #{File.expand_path("support/bundle.rb", Path.spec_dir)} install`
+      raise output unless $?.success?
+    ensure
+      if path
+        ENV["BUNDLE_PATH"] = old_path
+      else
+        ENV["BUNDLE_PATH__SYSTEM"] = old_path__system
+      end
+
+      ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = old_orig_gemfile
+      ENV["BUNDLE_GEMFILE"] = old_gemfile
     end
 
     def test_gemfile

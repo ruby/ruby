@@ -95,6 +95,8 @@ RSpec.configure do |config|
 
     extend(Spec::Builders)
 
+    check_test_gems!
+
     build_repo1
 
     reset_paths!
@@ -116,5 +118,9 @@ RSpec.configure do |config|
     end
   ensure
     reset!
+  end
+
+  config.after :suite do
+    FileUtils.rm_r Spec::Path.pristine_system_gem_path
   end
 end
