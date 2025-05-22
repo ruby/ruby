@@ -165,7 +165,8 @@ RSpec.describe "The library itself" do
         line.scan(/Bundler\.settings\[:#{key_pattern}\]/).flatten.each {|s| all_settings[s] << "referenced at `#{filename}:#{number.succ}`" }
       end
     end
-    documented_settings = File.read("lib/bundler/man/bundle-config.1.ronn")[/LIST OF AVAILABLE KEYS.*/m].scan(/^\* `#{key_pattern}`/).flatten
+    settings_section = File.read("lib/bundler/man/bundle-config.1.ronn").split(/^## /).find {|section| section.start_with?("LIST OF AVAILABLE KEYS") }
+    documented_settings = settings_section.scan(/^\* `#{key_pattern}`/).flatten
 
     documented_settings.each do |s|
       all_settings.delete(s)

@@ -42,48 +42,6 @@ Executing \fBbundle config unset \-\-global <name>\fR will delete the configurat
 Executing \fBbundle config unset \-\-local <name>\fR will delete the configuration only from the local application\.
 .P
 Executing bundle with the \fBBUNDLE_IGNORE_CONFIG\fR environment variable set will cause it to ignore all configuration\.
-.SH "REMEMBERING OPTIONS"
-Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application's configuration (normally, \fB\./\.bundle/config\fR)\.
-.P
-However, this will be changed in bundler 3, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
-.P
-The options that can be configured are:
-.TP
-\fBbin\fR
-Creates a directory (defaults to \fB~/bin\fR) and place any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
-.TP
-\fBdeployment\fR
-In deployment mode, Bundler will 'roll\-out' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
-.TP
-\fBonly\fR
-A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, cause they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
-.TP
-\fBpath\fR
-The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
-.TP
-\fBwithout\fR
-A space\-separated or \fB:\fR\-separated list of groups referencing gems to skip during installation\.
-.TP
-\fBwith\fR
-A space\-separated or \fB:\fR\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
-.SH "BUILD OPTIONS"
-You can use \fBbundle config\fR to give Bundler the flags to pass to the gem installer every time bundler tries to install a particular gem\.
-.P
-A very common example, the \fBmysql\fR gem, requires Snow Leopard users to pass configuration flags to \fBgem install\fR to specify where to find the \fBmysql_config\fR executable\.
-.IP "" 4
-.nf
-gem install mysql \-\- \-\-with\-mysql\-config=/usr/local/mysql/bin/mysql_config
-.fi
-.IP "" 0
-.P
-Since the specific location of that executable can change from machine to machine, you can specify these flags on a per\-machine basis\.
-.IP "" 4
-.nf
-bundle config set \-\-global build\.mysql \-\-with\-mysql\-config=/usr/local/mysql/bin/mysql_config
-.fi
-.IP "" 0
-.P
-After running this command, every time bundler needs to install the \fBmysql\fR gem, it will pass along the flags you specified\.
 .SH "CONFIGURATION KEYS"
 Configuration keys in bundler have two forms: the canonical form and the environment variable form\.
 .P
@@ -201,6 +159,48 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBwithout\fR (\fBBUNDLE_WITHOUT\fR): A space\-separated or \fB:\fR\-separated list of groups whose gems bundler should not install\.
 .IP "" 0
+.SH "REMEMBERING OPTIONS"
+Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application's configuration (normally, \fB\./\.bundle/config\fR)\.
+.P
+However, this will be changed in bundler 3, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
+.P
+The flags that can be configured are:
+.TP
+\fB\-\-bin\fR
+Creates a directory (defaults to \fB~/bin\fR) and place any executables from the gem there\. These executables run in Bundler's context\. If used, you might add this directory to your environment's \fBPATH\fR variable\. For instance, if the \fBrails\fR gem comes with a \fBrails\fR executable, this flag will create a \fBbin/rails\fR executable that ensures that all referred dependencies will be resolved using the bundled gems\.
+.TP
+\fB\-\-deployment\fR
+In deployment mode, Bundler will 'roll\-out' the bundle for \fBproduction\fR use\. Please check carefully if you want to have this option enabled in \fBdevelopment\fR or \fBtest\fR environments\.
+.TP
+\fB\-\-only\fR
+A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, cause they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
+.TP
+\fB\-\-path\fR
+The location to install the specified gems to\. This defaults to Rubygems' setting\. Bundler shares this location with Rubygems, \fBgem install \|\.\|\.\|\.\fR will have gem installed there, too\. Therefore, gems installed without a \fB\-\-path \|\.\|\.\|\.\fR setting will show up by calling \fBgem list\fR\. Accordingly, gems installed to other locations will not get listed\.
+.TP
+\fB\-\-without\fR
+A space\-separated or \fB:\fR\-separated list of groups referencing gems to skip during installation\.
+.TP
+\fB\-\-with\fR
+A space\-separated or \fB:\fR\-separated list of \fBoptional\fR groups referencing gems to include during installation\.
+.SH "BUILD OPTIONS"
+You can use \fBbundle config\fR to give Bundler the flags to pass to the gem installer every time bundler tries to install a particular gem\.
+.P
+A very common example, the \fBmysql\fR gem, requires Snow Leopard users to pass configuration flags to \fBgem install\fR to specify where to find the \fBmysql_config\fR executable\.
+.IP "" 4
+.nf
+gem install mysql \-\- \-\-with\-mysql\-config=/usr/local/mysql/bin/mysql_config
+.fi
+.IP "" 0
+.P
+Since the specific location of that executable can change from machine to machine, you can specify these flags on a per\-machine basis\.
+.IP "" 4
+.nf
+bundle config set \-\-global build\.mysql \-\-with\-mysql\-config=/usr/local/mysql/bin/mysql_config
+.fi
+.IP "" 0
+.P
+After running this command, every time bundler needs to install the \fBmysql\fR gem, it will pass along the flags you specified\.
 .SH "LOCAL GIT REPOS"
 Bundler also allows you to work against a git repository locally instead of using the remote version\. This can be achieved by setting up a local override:
 .IP "" 4

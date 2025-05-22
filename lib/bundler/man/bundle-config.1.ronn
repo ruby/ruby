@@ -52,71 +52,6 @@ only from the local application.
 Executing bundle with the `BUNDLE_IGNORE_CONFIG` environment variable set will
 cause it to ignore all configuration.
 
-## REMEMBERING OPTIONS
-
-Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
-`--without production`, are remembered between commands and saved to your local
-application's configuration (normally, `./.bundle/config`).
-
-However, this will be changed in bundler 3, so it's better not to rely on this
-behavior. If these options must be remembered, it's better to set them using
-`bundle config` (e.g., `bundle config set --local path foo`).
-
-The options that can be configured are:
-
-* `bin`:
-   Creates a directory (defaults to `~/bin`) and place any executables from the
-   gem there. These executables run in Bundler's context. If used, you might add
-   this directory to your environment's `PATH` variable. For instance, if the
-   `rails` gem comes with a `rails` executable, this flag will create a
-   `bin/rails` executable that ensures that all referred dependencies will be
-   resolved using the bundled gems.
-
-* `deployment`:
-   In deployment mode, Bundler will 'roll-out' the bundle for
-   `production` use. Please check carefully if you want to have this option
-   enabled in `development` or `test` environments.
-
-* `only`:
-   A space-separated list of groups to install only gems of the specified groups.
-   Please check carefully if you want to install also gems without a group, cause
-   they get put inside `default` group. For example `only test:default` will install
-   all gems specified in test group and without one.
-
-* `path`:
-   The location to install the specified gems to. This defaults to Rubygems'
-   setting. Bundler shares this location with Rubygems, `gem install ...` will
-   have gem installed there, too. Therefore, gems installed without a
-   `--path ...` setting will show up by calling `gem list`. Accordingly, gems
-   installed to other locations will not get listed.
-
-* `without`:
-   A space-separated or `:`-separated list of groups referencing gems to skip during
-   installation.
-
-* `with`:
-   A space-separated or `:`-separated list of **optional** groups referencing gems to
-   include during installation.
-
-## BUILD OPTIONS
-
-You can use `bundle config` to give Bundler the flags to pass to the gem
-installer every time bundler tries to install a particular gem.
-
-A very common example, the `mysql` gem, requires Snow Leopard users to
-pass configuration flags to `gem install` to specify where to find the
-`mysql_config` executable.
-
-    gem install mysql -- --with-mysql-config=/usr/local/mysql/bin/mysql_config
-
-Since the specific location of that executable can change from machine
-to machine, you can specify these flags on a per-machine basis.
-
-    bundle config set --global build.mysql --with-mysql-config=/usr/local/mysql/bin/mysql_config
-
-After running this command, every time bundler needs to install the
-`mysql` gem, it will pass along the flags you specified.
-
 ## CONFIGURATION KEYS
 
 Configuration keys in bundler have two forms: the canonical form and the
@@ -287,6 +222,71 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    A space-separated or `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):
    A space-separated or `:`-separated list of groups whose gems bundler should not install.
+
+## REMEMBERING OPTIONS
+
+Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
+`--without production`, are remembered between commands and saved to your local
+application's configuration (normally, `./.bundle/config`).
+
+However, this will be changed in bundler 3, so it's better not to rely on this
+behavior. If these options must be remembered, it's better to set them using
+`bundle config` (e.g., `bundle config set --local path foo`).
+
+The flags that can be configured are:
+
+* `--bin`:
+   Creates a directory (defaults to `~/bin`) and place any executables from the
+   gem there. These executables run in Bundler's context. If used, you might add
+   this directory to your environment's `PATH` variable. For instance, if the
+   `rails` gem comes with a `rails` executable, this flag will create a
+   `bin/rails` executable that ensures that all referred dependencies will be
+   resolved using the bundled gems.
+
+* `--deployment`:
+   In deployment mode, Bundler will 'roll-out' the bundle for
+   `production` use. Please check carefully if you want to have this option
+   enabled in `development` or `test` environments.
+
+* `--only`:
+   A space-separated list of groups to install only gems of the specified groups.
+   Please check carefully if you want to install also gems without a group, cause
+   they get put inside `default` group. For example `only test:default` will install
+   all gems specified in test group and without one.
+
+* `--path`:
+   The location to install the specified gems to. This defaults to Rubygems'
+   setting. Bundler shares this location with Rubygems, `gem install ...` will
+   have gem installed there, too. Therefore, gems installed without a
+   `--path ...` setting will show up by calling `gem list`. Accordingly, gems
+   installed to other locations will not get listed.
+
+* `--without`:
+   A space-separated or `:`-separated list of groups referencing gems to skip during
+   installation.
+
+* `--with`:
+   A space-separated or `:`-separated list of **optional** groups referencing gems to
+   include during installation.
+
+## BUILD OPTIONS
+
+You can use `bundle config` to give Bundler the flags to pass to the gem
+installer every time bundler tries to install a particular gem.
+
+A very common example, the `mysql` gem, requires Snow Leopard users to
+pass configuration flags to `gem install` to specify where to find the
+`mysql_config` executable.
+
+    gem install mysql -- --with-mysql-config=/usr/local/mysql/bin/mysql_config
+
+Since the specific location of that executable can change from machine
+to machine, you can specify these flags on a per-machine basis.
+
+    bundle config set --global build.mysql --with-mysql-config=/usr/local/mysql/bin/mysql_config
+
+After running this command, every time bundler needs to install the
+`mysql` gem, it will pass along the flags you specified.
 
 ## LOCAL GIT REPOS
 
