@@ -2400,3 +2400,18 @@ unless /mswin/ =~ RUBY_PLATFORM
   r1.take.sort
   }
 end
+
+# Moving an old object
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    o = Ractor.receive
+    GC.start
+    o
+  end
+
+  o = "ok"
+  # Make o an old object
+  3.times { GC.start }
+  r.send(o, move: true)
+  r.take
+}
