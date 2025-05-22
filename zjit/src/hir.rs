@@ -338,8 +338,10 @@ pub enum Insn {
     GetConstantPath { ic: *const iseq_inline_constant_cache },
 
     //NewObject?
-    //SetIvar {},
-    //GetIvar {},
+    /// Get an instance variable `id` from `self_val`
+    GetIvar { self_val: InsnId, id: ID, state: InsnId },
+    /// Set `self_val`'s instance variable `id` to `val`
+    SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -395,7 +397,7 @@ impl Insn {
         match self {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
-            | Insn::PatchPoint { .. } => false,
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } => false,
             _ => true,
         }
     }
@@ -526,6 +528,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
+            Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -866,6 +870,8 @@ impl Function {
             Defined { .. } => todo!("find(Defined)"),
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
+            &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
+            &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
         }
     }
 
@@ -891,7 +897,7 @@ impl Function {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
-            | Insn::PatchPoint { .. } =>
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } =>
                 panic!("Cannot infer type of instruction with no output"),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -933,6 +939,7 @@ impl Function {
             Insn::Defined { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
+            Insn::GetIvar { .. } => types::BasicObject,
         }
     }
 
@@ -1439,6 +1446,15 @@ impl Function {
                     worklist.push_back(state);
                 }
                 Insn::CCall { args, .. } => worklist.extend(args),
+                Insn::GetIvar { self_val, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.push_back(state);
+                }
+                Insn::SetIvar { self_val, val, state, .. } => {
+                    worklist.push_back(self_val);
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
             }
         }
         // Now remove all unnecessary instructions
@@ -2095,6 +2111,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
+                }
+                YARVINSN_getinstancevariable => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    // ic is in arg 1
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let self_val = fun.push_insn(block, Insn::PutSelf);
+                    let result = fun.push_insn(block, Insn::GetIvar { self_val, id, state: exit_id });
+                    state.stack_push(result);
+                }
+                YARVINSN_setinstancevariable => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    // ic is in arg 1
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let self_val = fun.push_insn(block, Insn::PutSelf);
+                    let val = state.stack_pop()?;
+                    fun.push_insn(block, Insn::SetIvar { self_val, id, val, state: exit_id });
                 }
                 _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
             }
@@ -3040,6 +3072,37 @@ mod tests {
               v4:ArrayExact = NewArray v0, v1
               v6:BasicObject = SendWithoutBlock v4, :size
               Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_getinstancevariable() {
+        eval("
+            def test = @foo
+            test
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v2:BasicObject = PutSelf
+              v3:BasicObject = GetIvar v2, :@foo
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_setinstancevariable() {
+        eval("
+            def test = @foo = 1
+            test
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v3:BasicObject = PutSelf
+              SetIvar v3, :@foo, v1
+              Return v1
         "#]]);
     }
 }
@@ -4095,6 +4158,35 @@ mod opt_tests {
               v4:ArrayExact = NewArray v0, v1
               v6:BasicObject = SendWithoutBlock v4, :size
               Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_getinstancevariable() {
+        eval("
+            def test = @foo
+        ");
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v2:BasicObject = PutSelf
+              v3:BasicObject = GetIvar v2, :@foo
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_setinstancevariable() {
+        eval("
+            def test = @foo = 1
+        ");
+        assert_optimized_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v1:Fixnum[1] = Const Value(1)
+              v3:BasicObject = PutSelf
+              SetIvar v3, :@foo, v1
+              Return v1
         "#]]);
     }
 }
