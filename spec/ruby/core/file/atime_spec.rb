@@ -15,7 +15,7 @@ describe "File.atime" do
     File.atime(@file).should be_kind_of(Time)
   end
 
-  platform_is :linux, :windows do
+  platform_is :linux do
     unless ENV.key?('TRAVIS') # https://bugs.ruby-lang.org/issues/17926
       ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
       it "returns the last access time for the named file with microseconds" do

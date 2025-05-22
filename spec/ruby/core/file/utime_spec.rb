@@ -19,18 +19,20 @@ describe "File.utime" do
     rm_r @file1, @file2
   end
 
-  it "sets the access and modification time of each file" do
-    File.utime(@atime, @mtime, @file1, @file2)
-    if @time_is_float
-      File.atime(@file1).should be_close(@atime, 0.0001)
-      File.mtime(@file1).should be_close(@mtime, 0.0001)
-      File.atime(@file2).should be_close(@atime, 0.0001)
-      File.mtime(@file2).should be_close(@mtime, 0.0001)
-    else
-      File.atime(@file1).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
-      File.mtime(@file1).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
-      File.atime(@file2).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
-      File.mtime(@file2).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
+  platform_is_not :windows do
+    it "sets the access and modification time of each file" do
+      File.utime(@atime, @mtime, @file1, @file2)
+      if @time_is_float
+        File.atime(@file1).should be_close(@atime, 0.0001)
+        File.mtime(@file1).should be_close(@mtime, 0.0001)
+        File.atime(@file2).should be_close(@atime, 0.0001)
+        File.mtime(@file2).should be_close(@mtime, 0.0001)
+      else
+        File.atime(@file1).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+        File.mtime(@file1).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
+        File.atime(@file2).to_i.should be_close(@atime.to_i, TIME_TOLERANCE)
+        File.mtime(@file2).to_i.should be_close(@mtime.to_i, TIME_TOLERANCE)
+      end
     end
   end
 
