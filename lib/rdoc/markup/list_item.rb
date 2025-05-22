@@ -33,11 +33,11 @@ class RDoc::Markup::ListItem
   ##
   # Appends +part+ to the ListItem
 
-  def << part
+  def <<(part)
     @parts << part
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class == other.class and
       @label == other.label and
       @parts == other.parts
@@ -46,7 +46,7 @@ class RDoc::Markup::ListItem
   ##
   # Runs this list item and all its #parts through +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_list_item_start self
 
     @parts.each do |part|
@@ -70,7 +70,7 @@ class RDoc::Markup::ListItem
     @parts.length
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[item: ', ']' do
       case @label
       when Array then

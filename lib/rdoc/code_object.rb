@@ -21,9 +21,10 @@
 #     * RDoc::MetaMethod
 # * RDoc::Alias
 # * RDoc::Constant
+# * RDoc::Require
 # * RDoc::Mixin
-#   * RDoc::Require
 #   * RDoc::Include
+#   * RDoc::Extend
 
 class RDoc::CodeObject
 
@@ -90,13 +91,6 @@ class RDoc::CodeObject
   attr_reader :store
 
   ##
-  # We are the model of the code, but we know that at some point we will be
-  # worked on by viewers. By implementing the Viewable protocol, viewers can
-  # associated themselves with these objects.
-
-  attr_accessor :viewer
-
-  ##
   # When mixed-in to a class, this points to the Context in which it was originally defined.
 
   attr_accessor :mixin_from
@@ -141,7 +135,6 @@ class RDoc::CodeObject
   def comment=(comment)
     @comment = case comment
                when NilClass               then ''
-               when RDoc::Markup::Document then comment
                when RDoc::Comment          then comment.normalize
                else
                  if comment and not comment.empty? then
@@ -218,20 +211,6 @@ class RDoc::CodeObject
   end
 
   ##
-  # Yields each parent of this CodeObject.  See also
-  # RDoc::ClassModule#each_ancestor
-
-  def each_parent
-    code_object = self
-
-    while code_object = code_object.parent do
-      yield code_object
-    end
-
-    self
-  end
-
-  ##
   # File name where this CodeObject was found.
   #
   # See also RDoc::Context#in_files
@@ -257,7 +236,7 @@ class RDoc::CodeObject
   #
   # Set to +nil+ to clear RDoc's cached value
 
-  def full_name= full_name
+  def full_name=(full_name)
     @full_name = full_name
   end
 
@@ -301,11 +280,7 @@ class RDoc::CodeObject
   # This is used by Text#snippet
 
   def options
-    if @store and @store.rdoc then
-      @store.rdoc.options
-    else
-      RDoc::Options.new
-    end
+    @store&.options || RDoc::Options.new
   end
 
   ##
@@ -332,13 +307,6 @@ class RDoc::CodeObject
   end
 
   ##
-  # File name of our parent
-
-  def parent_file_name
-    @parent ? @parent.base_name : '(unknown)'
-  end
-
-  ##
   # Name of our parent
 
   def parent_name
@@ -348,7 +316,7 @@ class RDoc::CodeObject
   ##
   # Records the RDoc::TopLevel (file) where this code object was defined
 
-  def record_location top_level
+  def record_location(top_level)
     @ignored    = false
     @suppressed = false
     @file       = top_level
@@ -390,7 +358,7 @@ class RDoc::CodeObject
   ##
   # Sets the +store+ that contains this CodeObject
 
-  def store= store
+  def store=(store)
     @store = store
 
     return unless @track_visibility

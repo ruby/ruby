@@ -52,7 +52,7 @@ module RDoc::Text
   ##
   # Transcodes +character+ to +encoding+ with a +fallback+ character.
 
-  def self.encode_fallback character, encoding, fallback
+  def self.encode_fallback(character, encoding, fallback)
     character.encode(encoding, :fallback => { character => fallback },
                      :undef => :replace, :replace => fallback)
   end
@@ -60,7 +60,7 @@ module RDoc::Text
   ##
   # Expands tab characters in +text+ to eight spaces
 
-  def expand_tabs text
+  def expand_tabs(text)
     expanded = []
 
     text.each_line do |line|
@@ -79,7 +79,7 @@ module RDoc::Text
   ##
   # Flush +text+ left based on the shortest line
 
-  def flush_left text
+  def flush_left(text)
     indent = 9999
 
     text.each_line do |line|
@@ -98,9 +98,9 @@ module RDoc::Text
   #
   # Requires the including class to implement #formatter
 
-  def markup text
-    if @store.rdoc.options
-      locale = @store.rdoc.options.locale
+  def markup(text)
+    if @store.options
+      locale = @store.options.locale
     else
       locale = nil
     end
@@ -114,7 +114,7 @@ module RDoc::Text
   ##
   # Strips hashes, expands tabs then flushes +text+ to the left
 
-  def normalize_comment text
+  def normalize_comment(text)
     return text if text.empty?
 
     case language
@@ -132,7 +132,7 @@ module RDoc::Text
   ##
   # Normalizes +text+ then builds a RDoc::Markup::Document from it
 
-  def parse text, format = 'rdoc'
+  def parse(text, format = 'rdoc')
     return text if RDoc::Markup::Document === text
     return text.parse if RDoc::Comment === text
 
@@ -146,7 +146,7 @@ module RDoc::Text
   ##
   # The first +limit+ characters of +text+ as HTML
 
-  def snippet text, limit = 100
+  def snippet(text, limit = 100)
     document = parse text
 
     RDoc::Markup::ToHtmlSnippet.new(options, limit).convert document
@@ -155,7 +155,7 @@ module RDoc::Text
   ##
   # Strips leading # characters from +text+
 
-  def strip_hashes text
+  def strip_hashes(text)
     return text if text =~ /^(?>\s*)[^\#]/
 
     empty = ''
@@ -167,14 +167,14 @@ module RDoc::Text
   ##
   # Strips leading and trailing \n characters from +text+
 
-  def strip_newlines text
+  def strip_newlines(text)
     text.gsub(/\A\n*(.*?)\n*\z/m) do $1 end # block preserves String encoding
   end
 
   ##
   # Strips /* */ style comments
 
-  def strip_stars text
+  def strip_stars(text)
     return text unless text =~ %r%/\*.*\*/%m
 
     encoding = text.encoding
@@ -197,7 +197,7 @@ module RDoc::Text
   # Converts ampersand, dashes, ellipsis, quotes, copyright and registered
   # trademark symbols in +text+ to properly encoded characters.
 
-  def to_html text
+  def to_html(text)
     html = (''.encode text.encoding).dup
 
     encoded = RDoc::Text::TO_HTML_CHARACTERS[text.encoding]

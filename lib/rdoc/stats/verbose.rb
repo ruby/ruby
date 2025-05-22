@@ -8,15 +8,15 @@ class RDoc::Stats::Verbose < RDoc::Stats::Normal
   ##
   # Returns a marker for RDoc::CodeObject +co+ being undocumented
 
-  def nodoc co
+  def nodoc(co)
     " (undocumented)" unless co.documented?
   end
 
-  def print_alias as # :nodoc:
+  def print_alias(as) # :nodoc:
     puts "    alias #{as.new_name} #{as.old_name}#{nodoc as}"
   end
 
-  def print_attribute attribute # :nodoc:
+  def print_attribute(attribute) # :nodoc:
     puts "    #{attribute.definition} #{attribute.name}#{nodoc attribute}"
   end
 

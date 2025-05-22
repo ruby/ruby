@@ -24,7 +24,7 @@ class RDoc::Require < RDoc::CodeObject
       self.class,
       object_id,
       @name,
-      parent_file_name,
+      @parent ? @parent.base_name : '(unknown)'
     ]
   end
 

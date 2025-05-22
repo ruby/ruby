@@ -65,7 +65,7 @@ class RDoc::Generator::POT
   ##
   # Set up a new .pot generator
 
-  def initialize store, options #:not-new:
+  def initialize(store, options) #:not-new:
     @options    = options
     @store      = store
   end
@@ -79,11 +79,6 @@ class RDoc::Generator::POT
     File.open(pot_path, "w") do |pot|
       pot.print(po.to_s)
     end
-  end
-
-  # :nodoc:
-  def class_dir
-    nil
   end
 
   private

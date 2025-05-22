@@ -15,14 +15,14 @@ class RDoc::Markup::Verbatim < RDoc::Markup::Raw
     @format = nil
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     super and @format == other.format
   end
 
   ##
   # Calls #accept_verbatim on +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_verbatim self
   end
 
@@ -50,7 +50,7 @@ class RDoc::Markup::Verbatim < RDoc::Markup::Raw
     @parts = parts
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     self.class.name =~ /.*::(\w{1,4})/i
 
     q.group 2, "[#{$1.downcase}: ", ']' do

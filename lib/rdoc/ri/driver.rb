@@ -96,7 +96,7 @@ class RDoc::RI::Driver
   ##
   # Dump +data_path+ using pp
 
-  def self.dump data_path
+  def self.dump(data_path)
     require 'pp'
 
     File.open data_path, 'rb' do |io|
@@ -107,7 +107,7 @@ class RDoc::RI::Driver
   ##
   # Parses +argv+ and returns a Hash of options
 
-  def self.process_args argv
+  def self.process_args(argv)
     options = default_options
 
     opts = OptionParser.new do |opt|
@@ -384,7 +384,7 @@ or the PAGER environment variable.
   ##
   # Runs the ri command line executable using +argv+
 
-  def self.run argv = ARGV
+  def self.run(argv = ARGV)
     options = process_args argv
 
     if options[:dump_path] then
@@ -399,7 +399,7 @@ or the PAGER environment variable.
   ##
   # Creates a new driver using +initial_options+ from ::process_args
 
-  def initialize initial_options = {}
+  def initialize(initial_options = {})
     @paging = false
     @classes = nil
 
@@ -420,7 +420,7 @@ or the PAGER environment variable.
                          *options[:extra_doc_dirs]) do |path, type|
       @doc_dirs << path
 
-      store = RDoc::RI::Store.new path, type
+      store = RDoc::RI::Store.new(RDoc::Options.new, path: path, type: type)
       store.load_cache
       @stores << store
     end
@@ -438,7 +438,7 @@ or the PAGER environment variable.
   ##
   # Adds paths for undocumented classes +also_in+ to +out+
 
-  def add_also_in out, also_in
+  def add_also_in(out, also_in)
     return if also_in.empty?
 
     out << RDoc::Markup::Rule.new(1)
@@ -455,7 +455,7 @@ or the PAGER environment variable.
   # Adds a class header to +out+ for class +name+ which is described in
   # +classes+.
 
-  def add_class out, name, classes
+  def add_class(out, name, classes)
     heading = if classes.all? { |klass| klass.module? } then
                 name
               else
@@ -475,14 +475,14 @@ or the PAGER environment variable.
   ##
   # Adds "(from ...)" to +out+ for +store+
 
-  def add_from out, store
+  def add_from(out, store)
     out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
   end
 
   ##
   # Adds +extends+ to +out+
 
-  def add_extends out, extends
+  def add_extends(out, extends)
     add_extension_modules out, 'Extended by', extends
   end
 
@@ -490,7 +490,7 @@ or the PAGER environment variable.
   # Adds a list of +extensions+ to this module of the given +type+ to +out+.
   # add_includes and add_extends call this, so you should use those directly.
 
-  def add_extension_modules out, type, extensions
+  def add_extension_modules(out, type, extensions)
     return if extensions.empty?
 
     out << RDoc::Markup::Rule.new(1)
@@ -508,7 +508,7 @@ or the PAGER environment variable.
   ##
   # Renders multiple included +modules+ from +store+ to +out+.
 
-  def add_extension_modules_multiple out, store, modules # :nodoc:
+  def add_extension_modules_multiple(out, store, modules) # :nodoc:
     out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
 
     wout, with = modules.partition { |incl| incl.comment.empty? }
@@ -518,7 +518,7 @@ or the PAGER environment variable.
     with.each do |incl|
       out << RDoc::Markup::Paragraph.new(incl.name)
       out << RDoc::Markup::BlankLine.new
-      out << incl.comment
+      out << incl.comment.parse
     end
 
     unless wout.empty? then
@@ -535,28 +535,28 @@ or the PAGER environment variable.
   ##
   # Adds a single extension module +include+ from +store+ to +out+
 
-  def add_extension_modules_single out, store, include # :nodoc:
+  def add_extension_modules_single(out, store, include) # :nodoc:
     name = include.name
     path = store.friendly_path
     out << RDoc::Markup::Paragraph.new("#{name} (from #{path})")
 
     if include.comment then
       out << RDoc::Markup::BlankLine.new
-      out << include.comment
+      out << include.comment.parse
     end
   end
 
   ##
   # Adds +includes+ to +out+
 
-  def add_includes out, includes
+  def add_includes(out, includes)
     add_extension_modules out, 'Includes', includes
   end
 
   ##
   # Looks up the method +name+ and adds it to +out+
 
-  def add_method out, name
+  def add_method(out, name)
     filtered = lookup_method name
     method_document out, name, filtered
   end
@@ -564,7 +564,7 @@ or the PAGER environment variable.
   ##
   # Adds documentation for all methods in +klass+ to +out+
 
-  def add_method_documentation out, klass
+  def add_method_documentation(out, klass)
     klass.method_list.each do |method|
       begin
         add_method out, method.full_name
@@ -577,7 +577,7 @@ or the PAGER environment variable.
   ##
   # Adds a list of +methods+ to +out+ with a heading of +name+
 
-  def add_method_list out, methods, name
+  def add_method_list(out, methods, name)
     return if methods.empty?
 
     out << RDoc::Markup::Heading.new(1, "#{name}:")
@@ -597,7 +597,7 @@ or the PAGER environment variable.
   ##
   # Returns ancestor classes of +klass+
 
-  def ancestors_of klass
+  def ancestors_of(klass)
     ancestors = []
 
     unexamined = [klass]
@@ -634,7 +634,7 @@ or the PAGER environment variable.
   ##
   # Builds a RDoc::Markup::Document from +found+, +klasess+ and +includes+
 
-  def class_document name, found, klasses, includes, extends
+  def class_document(name, found, klasses, includes, extends)
     also_in = []
 
     out = RDoc::Markup::Document.new
@@ -657,12 +657,12 @@ or the PAGER environment variable.
   ##
   # Adds the class +comment+ to +out+.
 
-  def class_document_comment out, comment # :nodoc:
-    unless comment.empty? then
+  def class_document_comment(out, document) # :nodoc:
+    unless document.empty? then
       out << RDoc::Markup::Rule.new(1)
 
-      if comment.merged? then
-        parts = comment.parts
+      if document.merged? then
+        parts = document.parts
         parts = parts.zip [RDoc::Markup::BlankLine.new] * parts.length
         parts.flatten!
         parts.pop
@@ -677,7 +677,7 @@ or the PAGER environment variable.
   ##
   # Adds the constants from +klass+ to the Document +out+.
 
-  def class_document_constants out, klass # :nodoc:
+  def class_document_constants(out, klass) # :nodoc:
     return if klass.constants.empty?
 
     out << RDoc::Markup::Heading.new(1, "Constants:")
@@ -687,7 +687,7 @@ or the PAGER environment variable.
     constants = klass.constants.sort_by { |constant| constant.name }
 
     list.items.concat constants.map { |constant|
-      parts = constant.comment.parts if constant.comment
+      parts = constant.comment.parse.parts
       parts << RDoc::Markup::Paragraph.new('[not documented]') if
         parts.empty?
 
@@ -721,7 +721,7 @@ or the PAGER environment variable.
   # Returns the stores wherein +name+ is found along with the classes,
   # extends and includes that match it
 
-  def classes_and_includes_and_extends_for name
+  def classes_and_includes_and_extends_for(name)
     klasses = []
     extends = []
     includes = []
@@ -746,7 +746,7 @@ or the PAGER environment variable.
   ##
   # Completes +name+ based on the caches.  For Readline
 
-  def complete name
+  def complete(name)
     completions = []
 
     klass, selector, method = parse_name name
@@ -754,10 +754,10 @@ or the PAGER environment variable.
     complete_klass  name, klass, selector, method, completions
     complete_method name, klass, selector,         completions
 
-    completions.sort.uniq
+    completions.uniq.select {|s| s.start_with? name }.sort
   end
 
-  def complete_klass name, klass, selector, method, completions # :nodoc:
+  def complete_klass(name, klass, selector, method, completions) # :nodoc:
     klasses = classes.keys
 
     # may need to include Foo when given Foo::
@@ -776,7 +776,7 @@ or the PAGER environment variable.
     end
   end
 
-  def complete_method name, klass, selector, completions # :nodoc:
+  def complete_method(name, klass, selector, completions) # :nodoc:
     if completions.include? klass and name =~ /#|\.|::/ then
       methods = list_methods_matching name
 
@@ -789,14 +789,22 @@ or the PAGER environment variable.
         completions << "#{klass}#{selector}"
       end
 
-      completions.concat methods
+      methods.each do |klass_sel_method|
+        match = klass_sel_method.match(/^(.+)(#|\.|::)([^#.:]+)$/)
+        # match[2] is `::` for class method and `#` for instance method.
+        # To be consistent with old completion that completes `['Foo#i', 'Foo::c']` for `Foo.`,
+        # `.` should be a wildcard for both `#` and `::` here.
+        if match && match[2] == selector || selector == '.'
+          completions << match[1] + selector + match[3]
+        end
+      end
     end
   end
 
   ##
   # Converts +document+ to text and writes it to the pager
 
-  def display document
+  def display(document)
     page do |io|
       f = formatter(io)
       f.width = @width if @width and f.respond_to?(:width)
@@ -809,7 +817,7 @@ or the PAGER environment variable.
   ##
   # Outputs formatted RI data for class +name+.  Groups undocumented classes
 
-  def display_class name
+  def display_class(name)
     return if name =~ /#|\./
 
     found, klasses, includes, extends =
@@ -825,7 +833,7 @@ or the PAGER environment variable.
   ##
   # Outputs formatted RI data for method +name+
 
-  def display_method name
+  def display_method(name)
     out = RDoc::Markup::Document.new
 
     add_method out, name
@@ -841,7 +849,7 @@ or the PAGER environment variable.
   # Returns true if +name+ was found, false if it was not an alternative could
   # be guessed, raises an error if +name+ couldn't be guessed.
 
-  def display_name name
+  def display_name(name)
     if name =~ /\w:(\w|$)/ then
       display_page name
       return true
@@ -870,7 +878,7 @@ or the PAGER environment variable.
   ##
   # Displays each name in +name+
 
-  def display_names names
+  def display_names(names)
     names.each do |name|
       name = expand_name name
 
@@ -881,7 +889,7 @@ or the PAGER environment variable.
   ##
   # Outputs formatted RI data for page +name+.
 
-  def display_page name
+  def display_page(name)
     store_name, page_name = name.split ':', 2
 
     store = @stores.find { |s| s.source == store_name }
@@ -906,13 +914,13 @@ or the PAGER environment variable.
 
     page = store.load_page page_name
 
-    display page.comment
+    display page.comment.parse
   end
 
   ##
   # Outputs a formatted RI page list for the pages in +store+.
 
-  def display_page_list store, pages = store.cache[:pages], search = nil
+  def display_page_list(store, pages = store.cache[:pages], search = nil)
     out = RDoc::Markup::Document.new
 
     title = if search then
@@ -956,7 +964,7 @@ or the PAGER environment variable.
   # Expands abbreviated klass +klass+ into a fully-qualified class.  "Zl::Da"
   # will be expanded to Zlib::DataError.
 
-  def expand_class klass
+  def expand_class(klass)
     class_names = classes.keys
     ary = class_names.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
     if ary.length != 1 && ary.first != klass
@@ -974,7 +982,7 @@ or the PAGER environment variable.
   # Expands the class portion of +name+ into a fully-qualified class.  See
   # #expand_class.
 
-  def expand_name name
+  def expand_name(name)
     klass, selector, method = parse_name name
 
     return [selector, method].join if klass.empty?
@@ -990,7 +998,7 @@ or the PAGER environment variable.
   ##
   # Filters the methods in +found+ trying to find a match for +name+.
 
-  def filter_methods found, name
+  def filter_methods(found, name)
     regexp = name_regexp name
 
     filtered = found.find_all do |store, methods|
@@ -1008,7 +1016,7 @@ or the PAGER environment variable.
   # types of methods to look up (from #method_type), and the method name being
   # searched for
 
-  def find_methods name
+  def find_methods(name)
     klass, selector, method = parse_name name
 
     types = method_type selector
@@ -1054,7 +1062,7 @@ or the PAGER environment variable.
   #
   # See also RDoc::Store#source
 
-  def find_store name
+  def find_store(name)
     @stores.each do |store|
       source = store.source
 
@@ -1123,7 +1131,7 @@ or the PAGER environment variable.
   # Lists classes known to ri starting with +names+.  If +names+ is empty all
   # known classes are shown.
 
-  def list_known_classes names = []
+  def list_known_classes(names = [])
     classes = []
 
     stores.each do |store|
@@ -1155,7 +1163,7 @@ or the PAGER environment variable.
   ##
   # Returns an Array of methods matching +name+
 
-  def list_methods_matching name
+  def list_methods_matching(name)
     found = []
 
     find_methods name do |store, klass, ancestor, types, method|
@@ -1194,7 +1202,7 @@ or the PAGER environment variable.
   # Loads RI data for method +name+ on +klass+ from +store+.  +type+ and
   # +cache+ indicate if it is a class or instance method.
 
-  def load_method store, cache, klass, type, name
+  def load_method(store, cache, klass, type, name)
     methods = store.public_send(cache)[klass]
 
     return unless methods
@@ -1207,7 +1215,8 @@ or the PAGER environment variable.
 
     store.load_method klass, "#{type}#{method}"
   rescue RDoc::Store::MissingFileError => e
-    comment = RDoc::Comment.new("missing documentation at #{e.file}").parse
+    comment = RDoc::Comment.new("missing documentation at #{e.file}")
+    comment.parse
 
     method = RDoc::AnyMethod.new nil, name
     method.comment = comment
@@ -1217,7 +1226,7 @@ or the PAGER environment variable.
   ##
   # Returns an Array of RI data for methods matching +name+
 
-  def load_methods_matching name
+  def load_methods_matching(name)
     found = []
 
     find_methods name do |store, klass, ancestor, types, method|
@@ -1238,7 +1247,7 @@ or the PAGER environment variable.
   ##
   # Returns a filtered list of methods matching +name+
 
-  def lookup_method name
+  def lookup_method(name)
     found = load_methods_matching name
 
     if found.empty?
@@ -1263,7 +1272,7 @@ or the PAGER environment variable.
   ##
   # Builds a RDoc::Markup::Document from +found+, +klasses+ and +includes+
 
-  def method_document out, name, filtered
+  def method_document(out, name, filtered)
     out << RDoc::Markup::Heading.new(1, name)
     out << RDoc::Markup::BlankLine.new
 
@@ -1279,7 +1288,7 @@ or the PAGER environment variable.
   ##
   # Returns the type of method (:both, :instance, :class) for +selector+
 
-  def method_type selector
+  def method_type(selector)
     case selector
     when '.', nil then :both
     when '#'      then :instance
@@ -1291,7 +1300,7 @@ or the PAGER environment variable.
   # Returns a regular expression for +name+ that will match an
   # RDoc::AnyMethod's name.
 
-  def name_regexp name
+  def name_regexp(name)
     klass, type, name = parse_name name
 
     case type
@@ -1334,7 +1343,7 @@ or the PAGER environment variable.
   # NOTE: Given Foo::Bar, Bar is considered a class even though it may be a
   # method
 
-  def parse_name name
+  def parse_name(name)
     parts = name.split(/(::?|#|\.)/)
 
     if parts.length == 1 then
@@ -1366,14 +1375,14 @@ or the PAGER environment variable.
   # Renders the +klass+ from +store+ to +out+.  If the klass has no
   # documentable items the class is added to +also_in+ instead.
 
-  def render_class out, store, klass, also_in # :nodoc:
-    comment = klass.comment
+  def render_class(out, store, klass, also_in) # :nodoc:
+    document = klass.comment.parse
     # TODO the store's cache should always return an empty Array
     class_methods    = store.class_methods[klass.full_name]    || []
     instance_methods = store.instance_methods[klass.full_name] || []
     attributes       = store.attributes[klass.full_name]       || []
 
-    if comment.empty? and
+    if document.empty? and
        instance_methods.empty? and class_methods.empty? then
       also_in << store
       return
@@ -1381,7 +1390,7 @@ or the PAGER environment variable.
 
     add_from out, store
 
-    class_document_comment out, comment
+    class_document_comment out, document
 
     if class_methods or instance_methods or not klass.constants.empty? then
       out << RDoc::Markup::Rule.new(1)
@@ -1396,7 +1405,7 @@ or the PAGER environment variable.
     add_method_documentation out, klass if @show_all
   end
 
-  def render_method out, store, method, name # :nodoc:
+  def render_method(out, store, method, name) # :nodoc:
     out << RDoc::Markup::Paragraph.new("(from #{store.friendly_path})")
 
     unless name =~ /^#{Regexp.escape method.parent_name}/ then
@@ -1416,7 +1425,7 @@ or the PAGER environment variable.
     end
   end
 
-  def render_method_arguments out, arglists # :nodoc:
+  def render_method_arguments(out, arglists) # :nodoc:
     return unless arglists
 
     arglists = arglists.chomp.split "\n"
@@ -1425,25 +1434,25 @@ or the PAGER environment variable.
     out << RDoc::Markup::Rule.new(1)
   end
 
-  def render_method_comment out, method, alias_for = nil# :nodoc:
+  def render_method_comment(out, method, alias_for = nil)# :nodoc:
     if alias_for
       unless method.comment.nil? or method.comment.empty?
         out << RDoc::Markup::BlankLine.new
-        out << method.comment
+        out << method.comment.parse
       end
       out << RDoc::Markup::BlankLine.new
       out << RDoc::Markup::Paragraph.new("(This method is an alias for #{alias_for.full_name}.)")
       out << RDoc::Markup::BlankLine.new
-      out << alias_for.comment
+      out << alias_for.comment.parse
       out << RDoc::Markup::BlankLine.new
     else
       out << RDoc::Markup::BlankLine.new
-      out << method.comment
+      out << method.comment.parse
       out << RDoc::Markup::BlankLine.new
     end
   end
 
-  def render_method_superclass out, method # :nodoc:
+  def render_method_superclass(out, method) # :nodoc:
     return unless
       method.respond_to?(:superclass_method) and method.superclass_method
 
@@ -1551,7 +1560,7 @@ or the PAGER environment variable.
     found_pages.each do |page|
       out << RDoc::Markup::Heading.new(4, "Expanded from #{page.full_name}")
       out << RDoc::Markup::BlankLine.new
-      out << page.comment
+      out << page.comment.parse
     end
   end
 end

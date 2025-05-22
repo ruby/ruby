@@ -64,18 +64,12 @@ class RDoc::MethodAttr < RDoc::CodeObject
   attr_reader :arglists
 
   ##
-  # Pretty parameter list for this method
-
-  attr_reader :param_seq
-
-
-  ##
   # Creates a new MethodAttr from token stream +text+ and method or attribute
   # name +name+.
   #
   # Usually this is called by super from a subclass.
 
-  def initialize text, name
+  def initialize(text, name, singleton: false)
     super()
 
     @text = text
@@ -84,21 +78,20 @@ class RDoc::MethodAttr < RDoc::CodeObject
     @aliases      = []
     @is_alias_for = nil
     @parent_name  = nil
-    @singleton    = nil
+    @singleton    = singleton
     @visibility   = :public
     @see = false
 
     @arglists     = nil
     @block_params = nil
     @call_seq     = nil
-    @param_seq    = nil
     @params       = nil
   end
 
   ##
   # Resets cached data for the object so it can be rebuilt by accessor methods
 
-  def initialize_copy other # :nodoc:
+  def initialize_copy(other) # :nodoc:
     @full_name = nil
   end
 
@@ -118,7 +111,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
     [other.singleton ? 0 : 1, other.name_ord_range, other.name]
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     equal?(other) or self.class == other.class and full_name == other.full_name
   end
 
@@ -157,7 +150,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
   ##
   # Sets the store for this class or module and its contained code objects.
 
-  def store= store
+  def store=(store)
     super
 
     @file = @store.add_file @file.full_name if @file
@@ -175,7 +168,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
     return find_method_or_attribute name[0..-2]
   end
 
-  def find_method_or_attribute name # :nodoc:
+  def find_method_or_attribute(name) # :nodoc:
     return nil unless parent.respond_to? :ancestors
 
     searched = parent.ancestors
@@ -289,7 +282,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
   # HTML id-friendly method/attribute name
 
   def html_name
-    require 'cgi/util'
+    require 'cgi/escape'
 
     CGI.escape(@name.gsub('-', '-2D')).gsub('%', '-').sub(/^-/, '')
   end
@@ -321,19 +314,6 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
   ##
-  # Name for output to HTML.  For class methods the full name with a "." is
-  # used like +SomeClass.method_name+.  For instance methods the class name is
-  # used if +context+ does not match the parent.
-  #
-  # This is to help prevent people from using :: to call class methods.
-
-  def output_name context
-    return "#{name_prefix}#{@name}" if context == parent
-
-    "#{parent_name}#{@singleton ? '.' : '#'}#{@name}"
-  end
-
-  ##
   # Method/attribute name with class/instance indicator
 
   def pretty_name
@@ -361,7 +341,7 @@ class RDoc::MethodAttr < RDoc::CodeObject
     @parent_name || super
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     alias_for =
       if @is_alias_for.respond_to? :name then
         "alias for #{@is_alias_for.name}"

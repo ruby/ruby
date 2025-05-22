@@ -53,7 +53,7 @@ class RDoc::Comment
   # Creates a new comment with +text+ that is found in the RDoc::TopLevel
   # +location+.
 
-  def initialize text = nil, location = nil, language = nil
+  def initialize(text = nil, location = nil, language = nil)
     @location = location
     @text     = text.nil? ? nil : text.dup
     @language = language
@@ -67,11 +67,11 @@ class RDoc::Comment
   #--
   # TODO deep copy @document
 
-  def initialize_copy copy # :nodoc:
+  def initialize_copy(copy) # :nodoc:
     @text = copy.text.dup
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       other.text == @text and other.location == @location
   end
@@ -92,7 +92,7 @@ class RDoc::Comment
   #   #   ARGF.to_a(limit)      -> array
   #   #   ARGF.to_a(sep, limit) -> array
 
-  def extract_call_seq method
+  def extract_call_seq
     # we must handle situations like the above followed by an unindented first
     # comment.  The difficulty is to make sure not to match lines starting
     # with ARGF at the same indent, but that are after the first description
@@ -116,23 +116,20 @@ class RDoc::Comment
       @text.slice! all_start...all_stop
 
       seq.gsub!(/^\s*/, '')
-      method.call_seq = seq
     end
-
-    method
   end
 
   ##
   # A comment is empty if its text String is empty.
 
   def empty?
-    @text.empty?
+    @text.empty? && (@document.nil? || @document.empty?)
   end
 
   ##
   # HACK dubious
 
-  def encode! encoding
+  def encode!(encoding)
     @text = String.new @text, encoding: encoding
     self
   end
@@ -140,7 +137,7 @@ class RDoc::Comment
   ##
   # Sets the format of this comment and resets any parsed document
 
-  def format= format
+  def format=(format)
     @format = format
     @document = nil
   end
@@ -211,7 +208,7 @@ class RDoc::Comment
   #
   # An error is raised if the comment contains a document but no text.
 
-  def text= text
+  def text=(text)
     raise RDoc::Error, 'replacing document-only comment is not allowed' if
       @text.nil? and @document
 
@@ -224,6 +221,16 @@ class RDoc::Comment
 
   def tomdoc?
     @format == 'tomdoc'
+  end
+
+  ##
+  # Create a new parsed comment from a document
+
+  def self.from_document(document) # :nodoc:
+    comment = RDoc::Comment.new('')
+    comment.document = document
+    comment.location = RDoc::TopLevel.new(document.file) if document.file
+    comment
   end
 
 end

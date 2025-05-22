@@ -33,7 +33,7 @@ class RDoc::Markup::ToTableOfContents < RDoc::Markup::Formatter
   ##
   # Adds +document+ to the output, using its heading cutoff if present
 
-  def accept_document document
+  def accept_document(document)
     @omit_headings_below = document.omit_headings_below
 
     super
@@ -42,7 +42,7 @@ class RDoc::Markup::ToTableOfContents < RDoc::Markup::Formatter
   ##
   # Adds +heading+ to the table of contents
 
-  def accept_heading heading
+  def accept_heading(heading)
     @res << heading unless suppressed? heading
   end
 
@@ -64,7 +64,7 @@ class RDoc::Markup::ToTableOfContents < RDoc::Markup::Formatter
   ##
   # Returns true if +heading+ is below the display threshold
 
-  def suppressed? heading
+  def suppressed?(heading)
     return false unless @omit_headings_below
 
     heading.level > @omit_headings_below

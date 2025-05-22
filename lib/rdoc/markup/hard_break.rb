@@ -16,15 +16,15 @@ class RDoc::Markup::HardBreak
   ##
   # Calls #accept_hard_break on +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_hard_break self
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.text "[break]"
   end
 

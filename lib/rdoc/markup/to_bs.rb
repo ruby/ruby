@@ -10,7 +10,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   ##
   # Returns a new ToBs that is ready for hot backspace action!
 
-  def initialize markup = nil
+  def initialize(markup = nil)
     super
 
     @in_b  = false
@@ -30,7 +30,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   ##
   # Makes heading text bold.
 
-  def accept_heading heading
+  def accept_heading(heading)
     use_prefix or @res << ' ' * @indent
     @res << @headings[heading.level][0]
     @in_b = true
@@ -43,7 +43,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   ##
   # Prepares the visitor for consuming +list_item+
 
-  def accept_list_item_start list_item
+  def accept_list_item_start(list_item)
     type = @list_type.last
 
     case type
@@ -68,7 +68,7 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   ##
   # Turns on or off regexp handling for +convert_string+
 
-  def annotate tag
+  def annotate(tag)
     case tag
     when '+b' then @in_b = true
     when '-b' then @in_b = false
@@ -81,14 +81,14 @@ class RDoc::Markup::ToBs < RDoc::Markup::ToRdoc
   ##
   # Calls convert_string on the result of convert_regexp_handling
 
-  def convert_regexp_handling target
+  def convert_regexp_handling(target)
     convert_string super
   end
 
   ##
   # Adds bold or underline mixed with backspaces
 
-  def convert_string string
+  def convert_string(string)
     return string unless @in_b or @in_em
     chars = if @in_b then
               string.chars.map do |char| "#{char}\b#{char}" end

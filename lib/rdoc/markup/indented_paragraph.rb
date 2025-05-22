@@ -19,14 +19,14 @@ class RDoc::Markup::IndentedParagraph < RDoc::Markup::Raw
     super(*parts)
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     super and indent == other.indent
   end
 
   ##
   # Calls #accept_indented_paragraph on +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_indented_paragraph self
   end
 
@@ -34,7 +34,7 @@ class RDoc::Markup::IndentedParagraph < RDoc::Markup::Raw
   # Joins the raw paragraph text and converts inline HardBreaks to the
   # +hard_break+ text followed by the indent.
 
-  def text hard_break = nil
+  def text(hard_break = nil)
     @parts.map do |part|
       if RDoc::Markup::HardBreak === part then
         '%1$s%3$*2$s' % [hard_break, @indent, ' '] if hard_break

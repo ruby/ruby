@@ -124,7 +124,7 @@ class RDoc::CrossReference
   # Allows cross-references to be created based on the given +context+
   # (RDoc::Context).
 
-  def initialize context
+  def initialize(context)
     @context = context
     @store   = context.store
 
@@ -134,7 +134,7 @@ class RDoc::CrossReference
   ##
   # Returns a method reference to +name+.
 
-  def resolve_method name
+  def resolve_method(name)
     ref = nil
 
     if /#{CLASS_REGEXP_STR}([.#]|::)#{METHOD_REGEXP_STR}/o =~ name then
@@ -187,7 +187,7 @@ class RDoc::CrossReference
   # returned.  If +name+ is escaped +name+ is returned.  If +name+ is not
   # found +text+ is returned.
 
-  def resolve name, text
+  def resolve(name, text)
     return @seen[name] if @seen.include? name
 
     ref = case name

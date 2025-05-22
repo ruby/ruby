@@ -3,7 +3,7 @@
   <h3>Extended With Modules</h3>
 
   <ul class="link-list">
-    <%- klass.each_extend do |ext| -%>
+    <%- klass.extends.each do |ext| -%>
   <%- unless String === ext.module then -%>
     <li><a class="extend" href="<%= klass.aref_to ext.module.path %>"><%= ext.module.full_name %></a>
   <%- else -%>

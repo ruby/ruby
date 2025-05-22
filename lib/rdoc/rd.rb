@@ -75,7 +75,7 @@ class RDoc::RD
   # Parses +rd+ source and returns an RDoc::Markup::Document.  If the
   # <tt>=begin</tt> or <tt>=end</tt> lines are missing they will be added.
 
-  def self.parse rd
+  def self.parse(rd)
     rd = rd.lines.to_a
 
     if rd.find { |i| /\S/ === i } and !rd.find{|i| /^=begin\b/ === i } then

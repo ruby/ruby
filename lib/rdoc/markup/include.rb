@@ -20,17 +20,17 @@ class RDoc::Markup::Include
   ##
   # Creates a new include that will import +file+ from +include_path+
 
-  def initialize file, include_path
+  def initialize(file, include_path)
     @file = file
     @include_path = include_path
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @file == other.file and @include_path == other.include_path
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, '[incl ', ']' do
       q.text file
       q.breakable

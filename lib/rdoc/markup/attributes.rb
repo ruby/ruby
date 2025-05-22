@@ -26,7 +26,7 @@ class RDoc::Markup::Attributes
   ##
   # Returns a unique bit for +name+
 
-  def bitmap_for name
+  def bitmap_for(name)
     bitmap = @name_to_bitmap.assoc name
 
     unless bitmap then
@@ -43,7 +43,7 @@ class RDoc::Markup::Attributes
   ##
   # Returns a string representation of +bitmap+
 
-  def as_string bitmap
+  def as_string(bitmap)
     return 'none' if bitmap.zero?
     res = []
 
@@ -57,7 +57,7 @@ class RDoc::Markup::Attributes
   ##
   # yields each attribute name in +bitmap+
 
-  def each_name_of bitmap
+  def each_name_of(bitmap)
     return enum_for __method__, bitmap unless block_given?
 
     @name_to_bitmap.each do |name, bit|

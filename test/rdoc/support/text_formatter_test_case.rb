@@ -7,7 +7,7 @@
 #
 # Example:
 #
-#  class TestRDocMarkupToNewTextFormat < RDoc::Markup::TextFormatterTestCase
+#  class RDocMarkupToNewTextFormatTest < RDoc::Markup::TextFormatterTestCase
 #
 #    add_visitor_tests
 #    add_text_tests

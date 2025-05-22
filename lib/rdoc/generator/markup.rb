@@ -34,7 +34,7 @@ module RDoc::Generator::Markup
   def formatter
     return @formatter if defined? @formatter
 
-    options = @store.rdoc.options
+    options = @store.options
     this = RDoc::Context === self ? self : @parent
 
     @formatter = RDoc::Markup::ToHtmlCrossref.new options, this.path, this
@@ -52,6 +52,18 @@ module RDoc::Generator::Markup
       sprintf url, full_path
     else
       url + full_path
+    end
+  end
+
+  ##
+  # The preferred URL for this object.
+
+  def canonical_url
+    options = @store.options
+    if path
+      File.join(options.canonical_root, path.to_s)
+    else
+      options.canonical_root
     end
   end
 
@@ -147,7 +159,7 @@ class RDoc::TopLevel
   # command line option to set.
 
   def cvs_url
-    url = @store.rdoc.options.webcvs
+    url = @store.options.webcvs
 
     if /%s/ =~ url then
       url % @relative_name

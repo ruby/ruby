@@ -54,7 +54,7 @@ class RDoc::Store
     # Creates a new MissingFileError for the missing +file+ for the given
     # +name+ that should have been in the +store+.
 
-    def initialize store, file, name
+    def initialize(store, file, name)
       @store = store
       @file  = file
       @name  = name
@@ -94,11 +94,7 @@ class RDoc::Store
 
   attr_accessor :path
 
-  ##
-  # The RDoc::RDoc driver for this parse tree.  This allows classes consulting
-  # the documentation tree to access user-set options, for example.
-
-  attr_accessor :rdoc
+  attr_reader :options
 
   ##
   # Type of ri datastore this was loaded from.  See RDoc::RI::Driver,
@@ -124,11 +120,11 @@ class RDoc::Store
   ##
   # Creates a new Store of +type+ that will load or save to +path+
 
-  def initialize path = nil, type = nil
-    @dry_run  = false
-    @encoding = nil
-    @path     = path
-    @rdoc     = nil
+  def initialize(options, path: nil, type: nil)
+    @options  = options
+    @dry_run  = options.dry_run
+    @encoding = options.encoding
+    @path     = path || options.op_dir
     @type     = type
 
     @cache = {
@@ -139,10 +135,10 @@ class RDoc::Store
       :c_singleton_class_variables => {},
       :encoding                    => @encoding,
       :instance_methods            => {},
-      :main                        => nil,
+      :main                        => options.main_page,
       :modules                     => [],
       :pages                       => [],
-      :title                       => nil,
+      :title                       => options.title,
     }
 
     @classes_hash = {}
@@ -166,14 +162,14 @@ class RDoc::Store
   # Adds +module+ as an enclosure (namespace) for the given +variable+ for C
   # files.
 
-  def add_c_enclosure variable, namespace
+  def add_c_enclosure(variable, namespace)
     @c_enclosure_classes[variable] = namespace
   end
 
   ##
   # Adds C variables from an RDoc::Parser::C
 
-  def add_c_variables c_parser
+  def add_c_variables(c_parser)
     filename = c_parser.top_level.relative_name
 
     @c_class_variables[filename] = make_variable_map c_parser.classes
@@ -185,7 +181,7 @@ class RDoc::Store
   # Adds the file with +name+ as an RDoc::TopLevel to the store.  Returns the
   # created RDoc::TopLevel.
 
-  def add_file absolute_name, relative_name: absolute_name, parser: nil
+  def add_file(absolute_name, relative_name: absolute_name, parser: nil)
     unless top_level = @files_hash[relative_name] then
       top_level = RDoc::TopLevel.new absolute_name, relative_name
       top_level.parser = parser if parser
@@ -272,7 +268,7 @@ class RDoc::Store
   ##
   # Path to the ri data for +klass_name+
 
-  def class_file klass_name
+  def class_file(klass_name)
     name = klass_name.split('::').last
     File.join class_path(klass_name), "cdesc-#{name}.ri"
   end
@@ -288,7 +284,7 @@ class RDoc::Store
   ##
   # Path where data for +klass_name+ will be stored (methods or class data)
 
-  def class_path klass_name
+  def class_path(klass_name)
     File.join @path, *klass_name.split('::')
   end
 
@@ -303,7 +299,7 @@ class RDoc::Store
   # Removes empty items and ensures item in each collection are unique and
   # sorted
 
-  def clean_cache_collection collection # :nodoc:
+  def clean_cache_collection(collection) # :nodoc:
     collection.each do |name, item|
       if item.empty? then
         collection.delete name
@@ -331,7 +327,7 @@ class RDoc::Store
   #
   # See also RDoc::Context#remove_from_documentation?
 
-  def complete min_visibility
+  def complete(min_visibility)
     fix_basic_object_inheritance
 
     # cache included modules before they are removed from the documentation
@@ -378,7 +374,7 @@ class RDoc::Store
   ##
   # Finds the enclosure (namespace) for the given C +variable+.
 
-  def find_c_enclosure variable
+  def find_c_enclosure(variable)
     @c_enclosure_classes.fetch variable do
       break unless name = @c_enclosure_names[variable]
 
@@ -403,14 +399,14 @@ class RDoc::Store
   ##
   # Finds the class with +name+ in all discovered classes
 
-  def find_class_named name
+  def find_class_named(name)
     @classes_hash[name]
   end
 
   ##
   # Finds the class with +name+ starting in namespace +from+
 
-  def find_class_named_from name, from
+  def find_class_named_from(name, from)
     from = find_class_named from unless RDoc::Context === from
 
     until RDoc::TopLevel === from do
@@ -428,7 +424,7 @@ class RDoc::Store
   ##
   # Finds the class or module with +name+
 
-  def find_class_or_module name
+  def find_class_or_module(name)
     name = $' if name =~ /^::/
     @classes_hash[name] || @modules_hash[name]
   end
@@ -436,14 +432,14 @@ class RDoc::Store
   ##
   # Finds the file with +name+ in all discovered files
 
-  def find_file_named name
+  def find_file_named(name)
     @files_hash[name]
   end
 
   ##
   # Finds the module with +name+ in all discovered modules
 
-  def find_module_named name
+  def find_module_named(name)
     @modules_hash[name]
   end
 
@@ -451,7 +447,7 @@ class RDoc::Store
   # Returns the RDoc::TopLevel that is a text file and has the given
   # +file_name+
 
-  def find_text_page file_name
+  def find_text_page(file_name)
     @text_files_hash.each_value.find do |file|
       file.full_name == file_name
     end
@@ -464,7 +460,7 @@ class RDoc::Store
   #--
   # TODO  aliases should be registered by Context#add_module_alias
 
-  def find_unique all_hash
+  def find_unique(all_hash)
     unique = []
 
     all_hash.each_pair do |full_name, cm|
@@ -607,7 +603,7 @@ class RDoc::Store
   ##
   # Loads ri data for +klass_name+ and hooks it up to this store.
 
-  def load_class klass_name
+  def load_class(klass_name)
     obj = load_class_data klass_name
 
     obj.store = self
@@ -625,7 +621,7 @@ class RDoc::Store
   ##
   # Loads ri data for +klass_name+
 
-  def load_class_data klass_name
+  def load_class_data(klass_name)
     file = class_file klass_name
 
     marshal_load(file)
@@ -638,7 +634,7 @@ class RDoc::Store
   ##
   # Loads ri data for +method_name+ in +klass_name+
 
-  def load_method klass_name, method_name
+  def load_method(klass_name, method_name)
     file = method_file klass_name, method_name
 
     obj = marshal_load(file)
@@ -654,7 +650,7 @@ class RDoc::Store
   ##
   # Loads ri data for +page_name+
 
-  def load_page page_name
+  def load_page(page_name)
     file = page_file page_name
 
     obj = marshal_load(file)
@@ -677,7 +673,7 @@ class RDoc::Store
   ##
   # Sets the main page for this RDoc store.
 
-  def main= page
+  def main=(page)
     @cache[:main] = page
   end
 
@@ -685,7 +681,7 @@ class RDoc::Store
   # Converts the variable => ClassModule map +variables+ from a C parser into
   # a variable => class name map.
 
-  def make_variable_map variables
+  def make_variable_map(variables)
     map = {}
 
     variables.each { |variable, class_module|
@@ -698,7 +694,7 @@ class RDoc::Store
   ##
   # Path to the ri data for +method_name+ in +klass_name+
 
-  def method_file klass_name, method_name
+  def method_file(klass_name, method_name)
     method_name = method_name.split('::').last
     method_name =~ /#(.*)/
     method_type = $1 ? 'i' : 'c'
@@ -726,7 +722,7 @@ class RDoc::Store
   ##
   # Returns the RDoc::TopLevel that is a text file and has the given +name+
 
-  def page name
+  def page(name)
     @text_files_hash.each_value.find do |file|
       file.page_name == name or file.base_name == name
     end
@@ -735,7 +731,7 @@ class RDoc::Store
   ##
   # Path to the ri data for +page_name+
 
-  def page_file page_name
+  def page_file(page_name)
     file_name = File.basename(page_name).gsub('.', '_')
 
     File.join @path, File.dirname(page_name), "page-#{file_name}.ri"
@@ -746,7 +742,7 @@ class RDoc::Store
   #
   # See RDoc::Context#remove_from_documentation?
 
-  def remove_nodoc all_hash
+  def remove_nodoc(all_hash)
     all_hash.keys.each do |name|
       context = all_hash[name]
       all_hash.delete(name) if context.remove_from_documentation?
@@ -766,7 +762,7 @@ class RDoc::Store
         save_method klass, method
       end
 
-      klass.each_attribute do |attribute|
+      klass.attributes.each do |attribute|
         save_method klass, attribute
       end
     end
@@ -808,7 +804,7 @@ class RDoc::Store
   ##
   # Writes the ri data for +klass+ (or module)
 
-  def save_class klass
+  def save_class(klass)
     full_name = klass.full_name
 
     FileUtils.mkdir_p class_path(full_name) unless @dry_run
@@ -882,7 +878,7 @@ class RDoc::Store
   ##
   # Writes the ri data for +method+ on +klass+
 
-  def save_method klass, method
+  def save_method(klass, method)
     full_name = klass.full_name
 
     FileUtils.mkdir_p class_path(full_name) unless @dry_run
@@ -905,7 +901,7 @@ class RDoc::Store
   ##
   # Writes the ri data for +page+
 
-  def save_page page
+  def save_page(page)
     return unless page.text?
 
     path = page_file page.full_name
@@ -952,7 +948,7 @@ class RDoc::Store
   ##
   # Sets the title page for this RDoc store.
 
-  def title= title
+  def title=(title)
     @cache[:title] = title
   end
 

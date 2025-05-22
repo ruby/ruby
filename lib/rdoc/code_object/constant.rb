@@ -44,7 +44,7 @@ class RDoc::Constant < RDoc::CodeObject
   ##
   # Constants are ordered by name
 
-  def <=> other
+  def <=>(other)
     return unless self.class === other
 
     [parent_name, name] <=> [other.parent_name, other.name]
@@ -53,7 +53,7 @@ class RDoc::Constant < RDoc::CodeObject
   ##
   # Constants are equal when their #parent and #name is the same
 
-  def == other
+  def ==(other)
     self.class == other.class and
       @parent == other.parent and
       @name == other.name
@@ -132,8 +132,8 @@ class RDoc::Constant < RDoc::CodeObject
   # * #full_name
   # * #parent_name
 
-  def marshal_load array
-    initialize array[1], nil, array[5]
+  def marshal_load(array)
+    initialize array[1], nil, RDoc::Comment.from_document(array[5])
 
     @full_name     = array[2]
     @visibility    = array[3] || :public
@@ -154,7 +154,7 @@ class RDoc::Constant < RDoc::CodeObject
     "#{@parent.path}##{@name}"
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, "[#{self.class.name} #{full_name}", "]" do
       unless comment.empty? then
         q.breakable
@@ -168,7 +168,7 @@ class RDoc::Constant < RDoc::CodeObject
   ##
   # Sets the store for this class or module and its contained code objects.
 
-  def store= store
+  def store=(store)
     super
 
     @file = @store.add_file @file.full_name if @file

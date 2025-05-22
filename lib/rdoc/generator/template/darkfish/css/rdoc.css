@@ -96,6 +96,8 @@ main .anchor-link:target {
 a {
   color: var(--link-color);
   transition: color 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 0.2em; /* Make sure it doesn't overlap with underscores in a method name. */
 }
 
 a:hover {
@@ -197,6 +199,19 @@ nav h2 {
 nav h3,
 #table-of-contents-navigation {
   font-size: 1em;
+}
+
+ol.breadcrumb {
+  display: flex;
+
+  padding: 0;
+  margin: 0 0 1em;
+}
+
+ol.breadcrumb li {
+  display: block;
+  list-style: none;
+  font-size: 125%;
 }
 
 nav ul,

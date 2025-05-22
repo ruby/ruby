@@ -15,7 +15,7 @@ class RDoc::Generator::POT::PO
   ##
   # Adds a PO entry to the PO.
 
-  def add entry
+  def add(entry)
     existing_entry = @entries[entry.msgid]
     if existing_entry
       entry = existing_entry.merge(entry)

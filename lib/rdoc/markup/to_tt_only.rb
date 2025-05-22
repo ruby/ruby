@@ -18,7 +18,7 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   ##
   # Creates a new tt-only formatter.
 
-  def initialize markup = nil
+  def initialize(markup = nil)
     super nil, markup
 
     add_tag :TT, nil, nil
@@ -27,28 +27,28 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   ##
   # Adds tts from +block_quote+ to the output
 
-  def accept_block_quote block_quote
+  def accept_block_quote(block_quote)
     tt_sections block_quote.text
   end
 
   ##
   # Pops the list type for +list+ from #list_type
 
-  def accept_list_end list
+  def accept_list_end(list)
     @list_type.pop
   end
 
   ##
   # Pushes the list type for +list+ onto #list_type
 
-  def accept_list_start list
+  def accept_list_start(list)
     @list_type << list.type
   end
 
   ##
   # Prepares the visitor for consuming +list_item+
 
-  def accept_list_item_start list_item
+  def accept_list_item_start(list_item)
     case @list_type.last
     when :NOTE, :LABEL then
       Array(list_item.label).map do |label|
@@ -60,7 +60,7 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   ##
   # Adds +paragraph+ to the output
 
-  def accept_paragraph paragraph
+  def accept_paragraph(paragraph)
     tt_sections(paragraph.text)
   end
 
@@ -68,7 +68,7 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   # Does nothing to +markup_item+ because it doesn't have any user-built
   # content
 
-  def do_nothing markup_item
+  def do_nothing(markup_item)
   end
 
   alias accept_blank_line    do_nothing # :nodoc:
@@ -81,7 +81,7 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   ##
   # Extracts tt sections from +text+
 
-  def tt_sections text
+  def tt_sections(text)
     flow = @am.flow text.dup
 
     flow.each do |item|

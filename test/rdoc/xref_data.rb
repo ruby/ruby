@@ -110,6 +110,7 @@ end
 
 class C8
   class << self
+    # This is C8.singleton_class::S1. C8::S1 does not exist.
     class S1
     end
   end

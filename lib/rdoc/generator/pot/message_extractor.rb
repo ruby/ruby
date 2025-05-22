@@ -7,7 +7,7 @@ class RDoc::Generator::POT::MessageExtractor
   ##
   # Creates a message extractor for +store+.
 
-  def initialize store
+  def initialize(store)
     @store = store
     @po = RDoc::Generator::POT::PO.new
   end
@@ -25,7 +25,7 @@ class RDoc::Generator::POT::MessageExtractor
 
   private
 
-  def extract_from_klass klass
+  def extract_from_klass(klass)
     extract_text(klass.comment_location, klass.full_name)
 
     klass.each_section do |section, constants, attributes|
@@ -35,11 +35,11 @@ class RDoc::Generator::POT::MessageExtractor
       end
     end
 
-    klass.each_constant do |constant|
+    klass.constants.each do |constant|
       extract_text(constant.comment, constant.full_name)
     end
 
-    klass.each_attribute do |attribute|
+    klass.attributes.each do |attribute|
       extract_text(attribute.comment, attribute.full_name)
     end
 
@@ -48,7 +48,7 @@ class RDoc::Generator::POT::MessageExtractor
     end
   end
 
-  def extract_text text, comment, location = nil
+  def extract_text(text, comment, location = nil)
     return if text.nil?
 
     options = {
@@ -61,7 +61,7 @@ class RDoc::Generator::POT::MessageExtractor
     end
   end
 
-  def entry msgid, options
+  def entry(msgid, options)
     RDoc::Generator::POT::POEntry.new(msgid, options)
   end
 

@@ -7,7 +7,7 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
   ##
   # Creates a new ToAnsi visitor that is ready to output vibrant ANSI color!
 
-  def initialize markup = nil
+  def initialize(markup = nil)
     super
 
     @headings.clear
@@ -28,7 +28,7 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
   ##
   # Overrides indent width to ensure output lines up correctly.
 
-  def accept_list_item_end list_item
+  def accept_list_item_end(list_item)
     width = case @list_type.last
             when :BULLET then
               2
@@ -52,7 +52,7 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
   ##
   # Adds coloring to note and label list items
 
-  def accept_list_item_start list_item
+  def accept_list_item_start(list_item)
     bullet = case @list_type.last
              when :BULLET then
                '*'

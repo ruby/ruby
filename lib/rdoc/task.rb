@@ -154,7 +154,7 @@ class RDoc::Task < Rake::TaskLib
   # Create an RDoc task with the given name. See the RDoc::Task class overview
   # for documentation.
 
-  def initialize name = :rdoc # :yield: self
+  def initialize(name = :rdoc) # :yield: self
     defaults
 
     check_names name
@@ -170,7 +170,7 @@ class RDoc::Task < Rake::TaskLib
   # Ensures that +names+ only includes names for the :rdoc, :clobber_rdoc and
   # :rerdoc.  If other names are given an ArgumentError is raised.
 
-  def check_names names
+  def check_names(names)
     return unless Hash === names
 
     invalid_options =

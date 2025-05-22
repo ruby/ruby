@@ -9,10 +9,7 @@ class XrefTestCase < RDoc::TestCase
   def setup
     super
 
-    @options = RDoc::Options.new
     @options.quiet = true
-
-    @rdoc.options = @options
 
     @file_name = 'xref_data.rb'
     @xref_data = @store.add_file @file_name
@@ -20,8 +17,7 @@ class XrefTestCase < RDoc::TestCase
 
     stats = RDoc::Stats.new @store, 0
 
-    parser = RDoc::Parser::Ruby.new @xref_data, @file_name, XREF_DATA, @options,
-                                    stats
+    parser = RDoc::Parser::Ruby.new @xref_data, XREF_DATA, @options, stats
 
     @example_md = @store.add_file 'EXAMPLE.md'
     @example_md.parser = RDoc::Parser::Markdown
@@ -31,9 +27,6 @@ class XrefTestCase < RDoc::TestCase
     @top_levels.push @example_md
 
     generator = Object.new
-    def generator.class_dir() nil end
-    def generator.file_dir() nil end
-    @rdoc.options = @options
     @rdoc.generator = generator
 
     @c1       = @xref_data.find_module_named 'C1'

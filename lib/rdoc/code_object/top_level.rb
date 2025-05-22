@@ -7,11 +7,6 @@ class RDoc::TopLevel < RDoc::Context
   MARSHAL_VERSION = 0 # :nodoc:
 
   ##
-  # This TopLevel's File::Stat struct
-
-  attr_accessor :file_stat
-
-  ##
   # Relative name of this file
 
   attr_accessor :relative_name
@@ -28,8 +23,6 @@ class RDoc::TopLevel < RDoc::Context
 
   attr_reader :classes_or_modules
 
-  attr_accessor :diagram # :nodoc:
-
   ##
   # The parser class that processed this file
 
@@ -40,13 +33,11 @@ class RDoc::TopLevel < RDoc::Context
   # is being generated outside the source dir +relative_name+ is relative to
   # the source directory.
 
-  def initialize absolute_name, relative_name = absolute_name
+  def initialize(absolute_name, relative_name = absolute_name)
     super()
     @name = nil
     @absolute_name = absolute_name
     @relative_name = relative_name
-    @file_stat     = File.stat(absolute_name) rescue nil # HACK for testing
-    @diagram       = nil
     @parser        = nil
 
     @classes_or_modules = []
@@ -64,7 +55,7 @@ class RDoc::TopLevel < RDoc::Context
   ##
   # An RDoc::TopLevel is equal to another with the same relative_name
 
-  def == other
+  def ==(other)
     self.class === other and @relative_name == other.relative_name
   end
 
@@ -82,7 +73,7 @@ class RDoc::TopLevel < RDoc::Context
   ##
   # Adds +constant+ to +Object+ instead of +self+.
 
-  def add_constant constant
+  def add_constant(constant)
     object_class.record_location self
     return constant unless @document_self
     object_class.add_constant constant
@@ -110,7 +101,7 @@ class RDoc::TopLevel < RDoc::Context
   # Adds class or module +mod+. Used in the building phase
   # by the Ruby parser.
 
-  def add_to_classes_or_modules mod
+  def add_to_classes_or_modules(mod)
     @classes_or_modules << mod
   end
 
@@ -137,7 +128,7 @@ class RDoc::TopLevel < RDoc::Context
   # TODO Why do we search through all classes/modules found, not just the
   #       ones of this instance?
 
-  def find_class_or_module name
+  def find_class_or_module(name)
     @store.find_class_or_module name
   end
 
@@ -173,10 +164,8 @@ class RDoc::TopLevel < RDoc::Context
   ##
   # URL for this with a +prefix+
 
-  def http_url(prefix)
-    path = [prefix, @relative_name.tr('.', '_')]
-
-    File.join(*path.compact) + '.html'
+  def http_url
+    @relative_name.tr('.', '_') + '.html'
   end
 
   def inspect # :nodoc:
@@ -186,13 +175,6 @@ class RDoc::TopLevel < RDoc::Context
       @modules.map { |n, m| m },
       @classes.map { |n, c| c }
     ]
-  end
-
-  ##
-  # Time this file was last modified, if known
-
-  def last_modified
-    @file_stat ? file_stat.mtime : nil
   end
 
   ##
@@ -210,13 +192,11 @@ class RDoc::TopLevel < RDoc::Context
   ##
   # Loads this TopLevel from +array+.
 
-  def marshal_load array # :nodoc:
+  def marshal_load(array) # :nodoc:
     initialize array[1]
 
     @parser  = array[2]
-    @comment = array[3]
-
-    @file_stat          = nil
+    @comment = RDoc::Comment.from_document array[3]
   end
 
   ##
@@ -246,10 +226,12 @@ class RDoc::TopLevel < RDoc::Context
   # Path to this file for use with HTML generator output.
 
   def path
-    http_url @store.rdoc.generator.file_dir
+    prefix = options.file_path_prefix
+    return http_url unless prefix
+    File.join(prefix, http_url)
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, "[#{self.class}: ", "]" do
       q.text "base name: #{base_name.inspect}"
       q.breakable
