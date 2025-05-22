@@ -2355,6 +2355,11 @@ class TestHashOnly < Test::Unit::TestCase
     end
   end
 
+  def test_bug_21357
+    h = {x: []}.merge(x: nil) { |_k, v1, _v2| v1 }
+    assert_equal({x: []}, h)
+  end
+
   def test_any_hash_fixable
     20.times do
       assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
