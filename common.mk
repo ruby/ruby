@@ -8117,6 +8117,7 @@ imemo.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/serial.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/st.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/variable.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/vm.h

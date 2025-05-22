@@ -396,6 +396,13 @@ rb_obj_shape_id(VALUE obj)
         return SPECIAL_CONST_SHAPE_ID;
     }
 
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
+        VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+        if (fields_obj) {
+            return RBASIC_SHAPE_ID(fields_obj);
+        }
+        return ROOT_SHAPE_ID;
+    }
     return RBASIC_SHAPE_ID(obj);
 }
 
@@ -881,14 +888,11 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        klass = rb_singleton_class(obj);
-        break;
-      default:
+    if (IMEMO_TYPE_P(obj, imemo_class_fields)) { // HACK
+        klass = CLASS_OF(obj);
+    }
+    else {
         klass = rb_obj_class(obj);
-        break;
     }
 
     bool allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;

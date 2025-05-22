@@ -297,16 +297,8 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
 
     RCLASSEXT_M_TBL(ext) = duplicate_classext_m_tbl(RCLASSEXT_M_TBL(orig), klass, dup_iclass);
 
-    // TODO: consider shapes for performance
-    if (RCLASSEXT_FIELDS(orig)) {
-        RUBY_ASSERT(!RB_TYPE_P(klass, T_ICLASS));
-        RCLASSEXT_FIELDS(ext) = (VALUE *)st_copy((st_table *)RCLASSEXT_FIELDS(orig));
-        rb_autoload_copy_table_for_namespace((st_table *)RCLASSEXT_FIELDS(ext), ns);
-    }
-    else {
-        if (!RB_TYPE_P(klass, T_ICLASS)) {
-            RCLASSEXT_FIELDS(ext) = (VALUE *)st_init_numtable();
-        }
+    if (orig->fields_obj) {
+        RB_OBJ_WRITE(klass, &ext->fields_obj, rb_imemo_class_fields_clone(orig->fields_obj));
     }
 
     if (RCLASSEXT_SHARED_CONST_TBL(orig)) {
