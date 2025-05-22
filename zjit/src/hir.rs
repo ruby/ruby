@@ -331,6 +331,8 @@ pub enum Insn {
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
 
+    HashDup { val: InsnId, state: InsnId },
+
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
@@ -424,6 +426,7 @@ impl Insn {
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
             Insn::ArrayDup { .. } => false,
+            Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
             Insn::Snapshot { .. } => false,
             Insn::FixnumAdd  { .. } => false,
@@ -475,6 +478,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
+            Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
@@ -866,6 +870,7 @@ impl Function {
             },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
+            &HashDup { val , state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
             Defined { .. } => todo!("find(Defined)"),
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
@@ -918,6 +923,7 @@ impl Function {
             Insn::StringIntern { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
+            Insn::HashDup { .. } => types::HashExact,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -1434,7 +1440,7 @@ impl Function {
                     worklist.push_back(val);
                     worklist.extend(args);
                 }
-                Insn::ArrayDup { val , state } => {
+                Insn::ArrayDup { val, state } | Insn::HashDup { val, state } => {
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
@@ -1921,6 +1927,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_duphash => {
+                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::HashDup { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
@@ -2489,6 +2501,18 @@ mod tests {
             bb0():
               v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:ArrayExact = ArrayDup v1
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_hash_dup() {
+        eval("def test = {a: 1, b: 2}");
+        assert_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v1:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v3:HashExact = HashDup v1
               Return v3
         "#]]);
     }
@@ -3592,6 +3616,22 @@ mod opt_tests {
               5
             end
             test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v5:Fixnum[5] = Const Value(5)
+              Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_hash_dup() {
+        eval("
+            def test
+              c = {a: 1, b: 2}
+              5
+            end
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
