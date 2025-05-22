@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "March 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "May 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -115,7 +115,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBdefault_install_uses_path\fR (\fBBUNDLE_DEFAULT_INSTALL_USES_PATH\fR): Whether a \fBbundle install\fR without an explicit \fB\-\-path\fR argument defaults to installing gems in \fB\.bundle\fR\.
 .IP "\(bu" 4
-\fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\.
+\fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR): Equivalent to setting \fBfrozen\fR to \fBtrue\fR and \fBpath\fR to \fBvendor/bundle\fR\.
 .IP "\(bu" 4
 \fBdisable_checksum_validation\fR (\fBBUNDLE_DISABLE_CHECKSUM_VALIDATION\fR): Allow installing gems even if they do not match the checksum provided by RubyGems\.
 .IP "\(bu" 4
@@ -131,7 +131,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBforce_ruby_platform\fR (\fBBUNDLE_FORCE_RUBY_PLATFORM\fR): Ignore the current machine's platform and install only \fBruby\fR platform gems\. As a result, gems with native extensions will be compiled from source\.
 .IP "\(bu" 4
-\fBfrozen\fR (\fBBUNDLE_FROZEN\fR): Disallow changes to the \fBGemfile\fR\. When the \fBGemfile\fR is changed and the lockfile has not been updated, running Bundler commands will be blocked\. Defaults to \fBtrue\fR when \fB\-\-deployment\fR is used\.
+\fBfrozen\fR (\fBBUNDLE_FROZEN\fR): Disallow any automatic changes to \fBGemfile\.lock\fR\. Bundler commands will be blocked unless the lockfile can be installed exactly as written\. Usually this will happen when changing the \fBGemfile\fR manually and forgetting to update the lockfile through \fBbundle lock\fR or \fBbundle install\fR\.
 .IP "\(bu" 4
 \fBgem\.github_username\fR (\fBBUNDLE_GEM__GITHUB_USERNAME\fR): Sets a GitHub username or organization to be used in \fBREADME\fR file when you create a new gem via \fBbundle gem\fR command\. It can be overridden by passing an explicit \fB\-\-github\-username\fR flag to \fBbundle gem\fR\.
 .IP "\(bu" 4
@@ -157,7 +157,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\.
 .IP "\(bu" 4
-\fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\. When \-\-deployment is used, defaults to vendor/bundle\.
+\fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\.
 .IP "\(bu" 4
 \fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR): Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
 .IP "\(bu" 4

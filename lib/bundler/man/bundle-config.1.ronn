@@ -170,8 +170,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether a `bundle install` without an explicit `--path` argument defaults
    to installing gems in `.bundle`.
 * `deployment` (`BUNDLE_DEPLOYMENT`):
-   Disallow changes to the `Gemfile`. When the `Gemfile` is changed and the
-   lockfile has not been updated, running Bundler commands will be blocked.
+   Equivalent to setting `frozen` to `true` and `path` to `vendor/bundle`.
 * `disable_checksum_validation` (`BUNDLE_DISABLE_CHECKSUM_VALIDATION`):
    Allow installing gems even if they do not match the checksum provided by
    RubyGems.
@@ -193,9 +192,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Ignore the current machine's platform and install only `ruby` platform gems.
    As a result, gems with native extensions will be compiled from source.
 * `frozen` (`BUNDLE_FROZEN`):
-   Disallow changes to the `Gemfile`. When the `Gemfile` is changed and the
-   lockfile has not been updated, running Bundler commands will be blocked.
-   Defaults to `true` when `--deployment` is used.
+   Disallow any automatic changes to `Gemfile.lock`. Bundler commands will
+   be blocked unless the lockfile can be installed exactly as written.
+   Usually this will happen when changing the `Gemfile` manually and forgetting
+   to update the lockfile through `bundle lock` or `bundle install`.
 * `gem.github_username` (`BUNDLE_GEM__GITHUB_USERNAME`):
    Sets a GitHub username or organization to be used in `README` file when you
    create a new gem via `bundle gem` command. It can be overridden by passing an
@@ -233,8 +233,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
-   will be installed by `bundle install`. Defaults to `Gem.dir`. When --deployment
-   is used, defaults to vendor/bundle.
+   will be installed by `bundle install`. Defaults to `Gem.dir`.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `path_relative_to_cwd` (`BUNDLE_PATH_RELATIVE_TO_CWD`)
