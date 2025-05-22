@@ -4832,10 +4832,11 @@ waitpid(rb_pid_t pid, int *stat_loc, int options)
 
 static int have_precisetime = -1;
 
-static void
-get_systemtime(FILETIME *ft)
+typedef void (WINAPI *get_time_func)(FILETIME *ft);
+
+static get_time_func
+get_systemtime_func(void)
 {
-    typedef void (WINAPI *get_time_func)(FILETIME *ft);
     static get_time_func func = (get_time_func)-1;
 
     if (func == (get_time_func)-1) {
@@ -4848,8 +4849,14 @@ get_systemtime(FILETIME *ft)
         else
             have_precisetime = 1;
     }
+    return func;
+}
+
+static void
+get_systemtime(FILETIME *ft)
+{
     if (!ft) return;
-    func(ft);
+    get_systemtime_func()(ft);
 }
 
 /* License: Ruby's */
@@ -5770,6 +5777,7 @@ stati128_handle(HANDLE h, struct stati128 *st)
 
     if (GetFileInformationByHandle(h, &info)) {
         FILE_ID_INFO fii;
+        get_systemtime_func();
         st->st_size = ((__int64)info.nFileSizeHigh << 32) | info.nFileSizeLow;
         st->st_atime = filetime_to_unixtime(&info.ftLastAccessTime);
         st->st_atimensec = filetime_to_nsec(&info.ftLastAccessTime);
@@ -5915,6 +5923,7 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
         return -1;
     }
     FindClose(h);
+    get_systemtime_func();
     st->st_mode  = fileattr_to_unixmode(wfd.dwFileAttributes, path, 0);
     st->st_atime = filetime_to_unixtime(&wfd.ftLastAccessTime);
     st->st_atimensec = filetime_to_nsec(&wfd.ftLastAccessTime);
