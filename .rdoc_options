@@ -20,3 +20,5 @@ autolink_excluded_words:
 - RDoc
 - Ruby
 - Set
+
+canonical_root: https://docs.ruby-lang.org/en/master
