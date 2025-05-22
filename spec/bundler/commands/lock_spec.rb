@@ -1346,6 +1346,48 @@ RSpec.describe "bundle lock" do
     L
   end
 
+  it "refuses to add platforms incompatible with the lockfile" do
+    build_repo4 do
+      build_gem "sorbet-static", "0.5.11989" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "sorbet-static"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          sorbet-static (0.5.11989-x86_64-linux)
+
+      PLATFORMS
+        x86_64-linux
+
+      DEPENDENCIES
+        sorbet-static
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "lock --add-platform ruby", raise_on_error: false
+    end
+
+    nice_error = <<~E.strip
+      Could not find gems matching 'sorbet-static' valid for all resolution platforms (x86_64-linux, ruby) in rubygems repository https://gem.repo4/ or installed locally.
+
+      The source contains the following gems matching 'sorbet-static':
+        * sorbet-static-0.5.11989-x86_64-linux
+    E
+    expect(err).to include(nice_error)
+  end
+
   it "does not crash on conflicting ruby requirements between platform versions in two different gems" do
     build_repo4 do
       build_gem "unf_ext", "0.0.8.2"
@@ -2575,6 +2617,51 @@ RSpec.describe "bundle lock" do
 
         expect(lockfile).to eq(normalized_lockfile)
       end
+    end
+  end
+
+  describe "--normalize-platforms with gems without generic variant" do
+    let(:original_lockfile) do
+      <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            sorbet-static (1.0-x86_64-linux)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          sorbet-static
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+
+    before do
+      build_repo4 do
+        build_gem "sorbet-static" do |s|
+          s.platform = "x86_64-linux"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "sorbet-static"
+      G
+
+      lockfile original_lockfile
+    end
+
+    it "removes invalid platforms" do
+      simulate_platform "x86_64-linux" do
+        bundle "lock --normalize-platforms"
+      end
+
+      expect(lockfile).to eq(original_lockfile.gsub(/^  ruby\n/m, ""))
     end
   end
 end
