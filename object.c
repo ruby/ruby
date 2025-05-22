@@ -2259,23 +2259,22 @@ rb_class_superclass(VALUE klass)
 {
     RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
 
-    VALUE super = RCLASS_SUPER(klass);
-    VALUE *superclasses;
-    size_t superclasses_depth;
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t superclasses_depth = RCLASS_SUPERCLASS_DEPTH(klass);
 
-    if (!super) {
-        if (klass == rb_cBasicObject) return Qnil;
+    if (klass == rb_cBasicObject) return Qnil;
+
+    if (!superclasses) {
+        RUBY_ASSERT(!RCLASS_SUPER(klass));
         rb_raise(rb_eTypeError, "uninitialized class");
     }
 
-    superclasses_depth = RCLASS_SUPERCLASS_DEPTH(klass);
     if (!superclasses_depth) {
         return Qnil;
     }
     else {
-        superclasses = RCLASS_SUPERCLASSES(klass);
-        super = superclasses[superclasses_depth - 1];
-        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE super = superclasses[superclasses_depth - 1];
+        RUBY_ASSERT(RB_TYPE_P(super, T_CLASS));
         return super;
     }
 }
