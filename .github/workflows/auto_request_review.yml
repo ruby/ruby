@@ -2,6 +2,7 @@ name: Auto Request Review
 on:
   pull_request_target:
     types: [opened, ready_for_review, reopened]
+    branches: [master]
 
 permissions:
   contents: read

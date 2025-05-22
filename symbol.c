@@ -22,6 +22,7 @@
 #include "symbol.h"
 #include "vm_sync.h"
 #include "builtin.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
 # undef USE_SYMBOL_GC
@@ -95,15 +96,31 @@ Init_sym(void)
 
     VALUE dsym_fstrs = rb_ident_hash_new();
     symbols->dsymbol_fstr_hash = dsym_fstrs;
-    rb_vm_register_global_object(dsym_fstrs);
     rb_obj_hide(dsym_fstrs);
 
     symbols->str_sym = st_init_table_with_size(&symhash, 1000);
     symbols->ids = rb_ary_hidden_new(0);
-    rb_vm_register_global_object(symbols->ids);
 
     Init_op_tbl();
     Init_id();
+}
+
+void
+rb_sym_global_symbols_mark(void)
+{
+    rb_symbols_t *symbols = &ruby_global_symbols;
+
+    rb_gc_mark_movable(symbols->ids);
+    rb_gc_mark_movable(symbols->dsymbol_fstr_hash);
+}
+
+void
+rb_sym_global_symbols_update_references(void)
+{
+    rb_symbols_t *symbols = &ruby_global_symbols;
+
+    symbols->ids = rb_gc_location(symbols->ids);
+    symbols->dsymbol_fstr_hash = rb_gc_location(symbols->dsymbol_fstr_hash);
 }
 
 WARN_UNUSED_RESULT(static VALUE dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_encoding *const enc, const ID type));
@@ -155,7 +172,7 @@ rb_id_attrset(ID id)
 
     /* make new symbol and ID */
     if (!(str = lookup_id_str(id))) {
-        static const char id_types[][8] = {
+        RBIMPL_ATTR_NONSTRING_ARRAY() static const char id_types[][8] = {
             "local",
             "instance",
             "invalid",

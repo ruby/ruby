@@ -110,7 +110,6 @@ int initgroups(const char *, rb_gid_t);
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
-#include "rjit.h"
 #include "ruby/io.h"
 #include "ruby/st.h"
 #include "ruby/thread.h"
@@ -4099,7 +4098,7 @@ fork_check_err(struct rb_process_status *status, int (*chfunc)(void*, char *, si
  * The "async_signal_safe" name is a lie, but it is used by pty.c and
  * maybe other exts.  fork() is not async-signal-safe due to pthread_atfork
  * and future POSIX revisions will remove it from a list of signal-safe
- * functions.  rb_waitpid is not async-signal-safe since RJIT, either.
+ * functions.  rb_waitpid is not async-signal-safe.
  * For our purposes, we do not need async-signal-safety, here
  */
 rb_pid_t
@@ -4133,8 +4132,12 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        child.pid = pid = rb_fork();
-        child.error = err = errno;
+        RB_VM_LOCK_ENTER();
+        {
+            child.pid = pid = rb_fork();
+            child.error = err = errno;
+        }
+        RB_VM_LOCK_LEAVE();
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (

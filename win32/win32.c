@@ -1309,46 +1309,6 @@ is_batch(const char *cmd)
 #define utf8_to_wstr(str, plen) mbstr_to_wstr(CP_UTF8, str, -1, plen)
 #define wstr_to_utf8(str, plen) wstr_to_mbstr(CP_UTF8, str, -1, plen)
 
-/* License: Ruby's */
-HANDLE
-rb_w32_start_process(const char *abspath, char *const *argv, int out_fd)
-{
-    /* NOTE: This function is used by RJIT worker, so it can be used parallelly with
-       Ruby's main thread. So functions touching things shared with main thread can't
-       be used, like `ALLOCV` that may trigger GC or `FindFreeChildSlot` that finds
-       a slot from shared memory without atomic locks. */
-    struct ChildRecord child;
-    char *cmd;
-    size_t len;
-    WCHAR *wcmd = NULL, *wprog = NULL;
-    HANDLE outHandle = NULL;
-
-    if (out_fd) {
-        outHandle = (HANDLE)rb_w32_get_osfhandle(out_fd);
-    }
-
-    len = join_argv(NULL, argv, FALSE, filecp(), 1);
-    cmd = alloca(sizeof(char) * len);
-    join_argv(cmd, argv, FALSE, filecp(), 1);
-
-    if (!(wcmd = mbstr_to_wstr(filecp(), cmd, -1, NULL))) {
-        errno = E2BIG;
-        return NULL;
-    }
-    if (!(wprog = mbstr_to_wstr(filecp(), abspath, -1, NULL))) {
-        errno = E2BIG;
-        return NULL;
-    }
-
-    if (!CreateChild(&child, wcmd, wprog, NULL, outHandle, outHandle, 0)) {
-        return NULL;
-    }
-
-    free(wcmd);
-    free(wprog);
-    return child.hProcess;
-}
-
 /* License: Artistic or GPL */
 static rb_pid_t
 w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
@@ -2007,14 +1967,28 @@ open_special(const WCHAR *path, DWORD access, DWORD flags)
 
 static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
 
-enum {FINAL_PATH_MAX = PATH_MAX + numberof(namespace_prefix)};
+/* License: Ruby's */
+/* returns 0 on failure, otherwise stores tha path in `*pathptr` and
+ * returns the length of that path.  The path must be freed. */
+static DWORD
+get_handle_pathname(HANDLE fh, WCHAR **pathptr, DWORD add)
+{
+    DWORD len = GetFinalPathNameByHandleW(fh, NULL, 0, 0);
+    if (!len) return 0;
+    WCHAR *path = malloc((len + add + 1) * sizeof(WCHAR));
+    if (!(*pathptr = path)) return 0;
+    len = GetFinalPathNameByHandleW(fh, path, len + 1, 0);
+    if (!len) free(path);
+    return len;
+}
 
 /* License: Artistic or GPL */
 static HANDLE
 open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 {
     HANDLE fh;
-    WCHAR fullname[FINAL_PATH_MAX + rb_strlen_lit("\\*")];
+    int wildcard_len = rb_strlen_lit("\\*");
+    WCHAR *fullname = 0;
     WCHAR *p;
     int len = 0;
 
@@ -2024,20 +1998,17 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
 
     fh = open_special(filename, 0, 0);
     if (fh != INVALID_HANDLE_VALUE) {
-        len = GetFinalPathNameByHandleW(fh, fullname, FINAL_PATH_MAX, 0);
+        len = get_handle_pathname(fh, &fullname, wildcard_len);
         CloseHandle(fh);
-        if (len >= FINAL_PATH_MAX) {
-            errno = ENAMETOOLONG;
-            return INVALID_HANDLE_VALUE;
-        }
     }
     if (!len) {
         len = lstrlenW(filename);
-        if (len >= PATH_MAX) {
-            errno = ENAMETOOLONG;
-            return INVALID_HANDLE_VALUE;
-        }
+        fullname = malloc((len + wildcard_len + 1) * sizeof(WCHAR));
+        if (!fullname) return INVALID_HANDLE_VALUE;
         MEMCPY(fullname, filename, WCHAR, len);
+    }
+    else {
+        RUBY_ASSERT(fullname);
     }
     p = &fullname[len-1];
     if (!(isdirsep(*p) || *p == L':')) *++p = L'\\';
@@ -2051,6 +2022,7 @@ open_dir_handle(const WCHAR *filename, WIN32_FIND_DATAW *fd)
     if (fh == INVALID_HANDLE_VALUE) {
         errno = map_errno(GetLastError());
     }
+    free(fullname);
     return fh;
 }
 
@@ -2179,7 +2151,6 @@ rb_w32_wstr_to_mbstr(UINT cp, const WCHAR *wstr, int clen, long *plen)
 WCHAR *
 rb_w32_mbstr_to_wstr(UINT cp, const char *str, int clen, long *plen)
 {
-    /* This is used by RJIT worker. Do not trigger GC or call Ruby method here. */
     WCHAR *ptr;
     int len = MultiByteToWideChar(cp, 0, str, clen, NULL, 0);
     if (!(ptr = malloc(sizeof(WCHAR) * len))) return 0;
@@ -2834,11 +2805,11 @@ rb_w32_strerror(int e)
     DWORD source = 0;
     char *p;
 
-    if (e < 0 || e > sys_nerr) {
-        if (e < 0)
-            e = GetLastError();
+    if (e < 0)
+        strlcpy(buffer, "Unknown Error", sizeof(buffer));
+    else if (e > sys_nerr) {
 #if WSAEWOULDBLOCK != EWOULDBLOCK
-        else if (e >= EADDRINUSE && e <= EWOULDBLOCK) {
+        if (e >= EADDRINUSE && e <= EWOULDBLOCK) {
             static int s = -1;
             int i;
             if (s < 0)
@@ -4790,6 +4761,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
     return 0;
 }
 
+#ifdef NEED_CLOCK_GETTIME
 /* License: Ruby's */
 int
 clock_gettime(clockid_t clock_id, struct timespec *sp)
@@ -4829,7 +4801,9 @@ clock_gettime(clockid_t clock_id, struct timespec *sp)
         return -1;
     }
 }
+#endif
 
+#ifdef NEED_CLOCK_GETRES
 /* License: Ruby's */
 int
 clock_getres(clockid_t clock_id, struct timespec *sp)
@@ -4857,6 +4831,7 @@ clock_getres(clockid_t clock_id, struct timespec *sp)
         return -1;
     }
 }
+#endif
 
 /* License: Ruby's */
 static char *
@@ -5738,7 +5713,6 @@ check_valid_dir(const WCHAR *path)
     WIN32_FIND_DATAW fd;
     HANDLE fh;
     WCHAR full[PATH_MAX];
-    WCHAR *dmy;
     WCHAR *p, *q;
 
     /* GetFileAttributes() determines "..." as directory. */
@@ -5754,12 +5728,20 @@ check_valid_dir(const WCHAR *path)
 
     /* if the specified path is the root of a drive and the drive is empty, */
     /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
-    if (!GetFullPathNameW(path, sizeof(full) / sizeof(WCHAR), full, &dmy)) {
+    DWORD len = GetFullPathNameW(path, numberof(full), full, NULL);
+    if (len >= numberof(full)) {
+        WCHAR *fullpath = malloc(len * sizeof(WCHAR));
+        if (!fullpath) return -1;
+        len = GetFullPathNameW(path, len, fullpath, NULL);
+        if (len == 3) MEMCPY(full, fullpath, WCHAR, len+1);
+        free(fullpath);
+    }
+    if (!len) {
         errno = map_errno(GetLastError());
         return -1;
     }
-    if (full[1] == L':' && !full[3] && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
-        return 0;
+    if (len == 3 && full[1] == L':' && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
+        return 0;               /* x:\ only */
 
     fh = open_dir_handle(path, &fd);
     if (fh == INVALID_HANDLE_VALUE)
@@ -5798,8 +5780,11 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 static int
 path_drive(const WCHAR *path)
 {
-    return (iswalpha(path[0]) && path[1] == L':') ?
-        towupper(path[0]) - L'A' : _getdrive() - 1;
+    if (path[0] && path[1] == L':') {
+        if (iswalpha(path[0])) return towupper(path[0]) - L'A';
+        return (int)path[0];
+    }
+    return _getdrive() - 1;
 }
 
 /* License: Ruby's */
@@ -5808,7 +5793,7 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 {
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
-    WCHAR finalname[PATH_MAX];
+    WCHAR *finalname = 0;
     int open_error;
 
     memset(st, 0, sizeof(*st));
@@ -5829,7 +5814,6 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     }
     if (f != INVALID_HANDLE_VALUE) {
         DWORD attr = stati128_handle(f, st);
-        const DWORD len = GetFinalPathNameByHandleW(f, finalname, numberof(finalname), 0);
         unsigned mode = 0;
         switch (GetFileType(f)) {
           case FILE_TYPE_CHAR:
@@ -5839,6 +5823,9 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
             mode = S_IFIFO;
             break;
           default:
+            if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+                if (check_valid_dir(path)) return -1;
+            }
             if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
                 FILE_ATTRIBUTE_TAG_INFO attr_info;
                 DWORD e;
@@ -5859,13 +5846,10 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
                 }
             }
         }
+        const DWORD len = get_handle_pathname(f, &finalname, 0);
         CloseHandle(f);
-        if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-            if (check_valid_dir(path)) return -1;
-        }
         st->st_mode = fileattr_to_unixmode(attr, path, mode);
         if (len) {
-            finalname[min(len, numberof(finalname)-1)] = L'\0';
             path = finalname;
             if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
                 path += numberof(namespace_prefix);
@@ -5882,6 +5866,7 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
     }
 
     st->st_dev = st->st_rdev = path_drive(path);
+    if (finalname) free(finalname);
 
     return 0;
 }

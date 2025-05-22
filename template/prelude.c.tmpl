@@ -88,6 +88,7 @@ Prelude.new(output, ARGV, vpath).instance_eval do
 #include "internal/ruby_parser.h"
 #include "internal/warnings.h"
 #include "iseq.h"
+#include "ruby/internal/attr/nonstring.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
 
@@ -107,12 +108,12 @@ static const struct {
 %       size += line.size
 %       next
 %     end
-    char L<%=beg%><%=%>[<%=size%><%=%>]; /* <%=beg+1%>..<%=n%> */
+    RBIMPL_ATTR_NONSTRING() char L<%=beg%><%=%>[<%=size%><%=%>]; /* <%=beg+1%>..<%=n%> */
 %     size = line.size
 %     beg = n
 %   }
 %   if size > 0
-    char L<%=beg%><%=%>[<%=size%><%=%>]; /* <%=beg+1%>..<%=lines.size+1%> */
+    RBIMPL_ATTR_NONSTRING() char L<%=beg%><%=%>[<%=size%><%=%>]; /* <%=beg+1%>..<%=lines.size+1%> */
 %   end
 } prelude_code<%=i%><%=%> = {
 %   size = 0

@@ -15,31 +15,31 @@ When +field_sep+ is <tt>$;</tt>:
 When +field_sep+ is <tt>' '</tt> and +limit+ is +0+ (its default value),
 the split occurs at each sequence of whitespace:
 
-  'abc def ghi'.split(' ')         => ["abc", "def", "ghi"]
+  'abc def ghi'.split(' ')          # => ["abc", "def", "ghi"]
   "abc \n\tdef\t\n  ghi".split(' ') # => ["abc", "def", "ghi"]
-  'abc  def   ghi'.split(' ')      => ["abc", "def", "ghi"]
-  ''.split(' ')                    => []
+  'abc  def   ghi'.split(' ')       # => ["abc", "def", "ghi"]
+  ''.split(' ')                     # => []
 
 When +field_sep+ is a string different from <tt>' '</tt>
 and +limit+ is +0+,
 the split occurs at each occurrence of +field_sep+;
 trailing empty substrings are not returned:
 
-  'abracadabra'.split('ab')  => ["", "racad", "ra"]
-  'aaabcdaaa'.split('a')     => ["", "", "", "bcd"]
-  ''.split('a')              => []
-  '3.14159'.split('1')       => ["3.", "4", "59"]
+  'abracadabra'.split('ab')   # => ["", "racad", "ra"]
+  'aaabcdaaa'.split('a')      # => ["", "", "", "bcd"]
+  ''.split('a')               # => []
+  '3.14159'.split('1')        # => ["3.", "4", "59"]
   '!@#$%^$&*($)_+'.split('$') # => ["!@#", "%^", "&*(", ")_+"]
-  'тест'.split('т')          => ["", "ес"]
-  'こんにちは'.split('に')     => ["こん", "ちは"]
+  'тест'.split('т')           # => ["", "ес"]
+  'こんにちは'.split('に')      # => ["こん", "ちは"]
 
 When +field_sep+ is a Regexp and +limit+ is +0+,
 the split occurs at each occurrence of a match;
 trailing empty substrings are not returned:
 
   'abracadabra'.split(/ab/) # => ["", "racad", "ra"]
-  'aaabcdaaa'.split(/a/)   => ["", "", "", "bcd"]
-  'aaabcdaaa'.split(//)    => ["a", "a", "a", "b", "c", "d", "a", "a", "a"]
+  'aaabcdaaa'.split(/a/)    # => ["", "", "", "bcd"]
+  'aaabcdaaa'.split(//)     # => ["a", "a", "a", "b", "c", "d", "a", "a", "a"]
   '1 + 1 == 2'.split(/\W+/) # => ["1", "1", "2"]
 
 If the \Regexp contains groups, their matches are also included
@@ -50,7 +50,7 @@ in the returned array:
 As seen above, if +limit+ is +0+,
 trailing empty substrings are not returned:
 
-  'aaabcdaaa'.split('a')   => ["", "", "", "bcd"]
+  'aaabcdaaa'.split('a')    # => ["", "", "", "bcd"]
 
 If +limit+ is positive integer +n+, no more than <tt>n - 1-</tt>
 splits occur, so that at most +n+ substrings are returned,
@@ -71,7 +71,7 @@ and trailing empty substrings are included:
 
   'aaabcdaaa'.split('a', -1) # => ["", "", "", "bcd", "", "", ""]
 
-If a block is given, it is called with each substring:
+If a block is given, it is called with each substring and returns +self+:
 
   'abc def ghi'.split(' ') {|substring| p substring }
 
@@ -80,5 +80,20 @@ Output:
   "abc"
   "def"
   "ghi"
+  => "abc def ghi"
+
+Note that the above example is functionally the same as calling +#each+ after
++#split+ and giving the same block. However, the above example has better
+performance because it avoids the creation of an intermediate array. Also,
+note the different return values.
+
+  'abc def ghi'.split(' ').each {|substring| p substring }
+
+Output:
+
+  "abc"
+  "def"
+  "ghi"
+  => ["abc", "def", "ghi"]
 
 Related: String#partition, String#rpartition.

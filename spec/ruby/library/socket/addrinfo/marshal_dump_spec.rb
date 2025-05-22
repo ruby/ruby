@@ -32,10 +32,8 @@ describe 'Addrinfo#marshal_dump' do
         @array[3].should == 'SOCK_STREAM'
       end
 
-      platform_is_not :'solaris2.10' do # i386-solaris
-        it 'includes the protocol as the 5th value' do
-          @array[4].should == 'IPPROTO_TCP'
-        end
+      it 'includes the protocol as the 5th value' do
+        @array[4].should == 'IPPROTO_TCP'
       end
 
       it 'includes the canonical name as the 6th value' do

@@ -430,8 +430,9 @@ ossl_sslctx_add_extra_chain_cert_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, arg))
 
     GetSSLCTX(arg, ctx);
     x509 = DupX509CertPtr(i);
-    if(!SSL_CTX_add_extra_chain_cert(ctx, x509)){
-	ossl_raise(eSSLError, NULL);
+    if (!SSL_CTX_add_extra_chain_cert(ctx, x509)) {
+        X509_free(x509);
+        ossl_raise(eSSLError, "SSL_CTX_add_extra_chain_cert");
     }
 
     return i;
@@ -705,7 +706,9 @@ ossl_sslctx_setup(VALUE self)
     SSL_CTX_set_tmp_dh_callback(ctx, ossl_tmp_dh_callback);
 #endif
 
+#if !defined(OPENSSL_IS_AWSLC) /* AWS-LC has no support for TLS 1.3 PHA. */
     SSL_CTX_set_post_handshake_auth(ctx, 1);
+#endif
 
     val = rb_attr_get(self, id_i_cert_store);
     if (!NIL_P(val)) {
@@ -2078,14 +2081,13 @@ ossl_ssl_write_internal_safe(VALUE _args)
 static VALUE
 ossl_ssl_write_internal(VALUE self, VALUE str, VALUE opts)
 {
-    VALUE args[3] = {self, str, opts};
-    int state;
-    str = StringValue(str);
-
+    StringValue(str);
     int frozen = RB_OBJ_FROZEN(str);
     if (!frozen) {
-        str = rb_str_locktmp(str);
+        rb_str_locktmp(str);
     }
+    int state;
+    VALUE args[3] = {self, str, opts};
     VALUE result = rb_protect(ossl_ssl_write_internal_safe, (VALUE)args, &state);
     if (!frozen) {
         rb_str_unlocktmp(str);
@@ -2448,7 +2450,7 @@ ossl_ssl_get_peer_finished(VALUE self)
 
 /*
  * call-seq:
- *    ssl.client_ca => [x509name, ...]
+ *    ssl.client_ca => [x509name, ...] or nil
  *
  * Returns the list of client CAs. Please note that in contrast to
  * SSLContext#client_ca= no array of X509::Certificate is returned but
@@ -2466,6 +2468,8 @@ ossl_ssl_get_client_ca_list(VALUE self)
     GetSSL(self, ssl);
 
     ca = SSL_get_client_CA_list(ssl);
+    if (!ca)
+        return Qnil;
     return ossl_x509name_sk2ary(ca);
 }
 

@@ -9,9 +9,6 @@ edition = "2021"        # Rust 2021 edition to compile with
 rust-version = "1.58.0" # Minimally supported rust version
 publish = false         # Don't publish to crates.io
 
-[lib]
-crate-type = ["staticlib"]
-
 [dependencies]
 # No required dependencies to simplify build process. TODO: Link to yet to be
 # written rationale. Optional For development and testing purposes
@@ -27,27 +24,3 @@ disasm = ["capstone"]
 # from cfg!(debug_assertions) so that we can see disasm of the code
 # that would run in the release mode.
 runtime_checks = []
-
-[profile.dev]
-opt-level = 0
-debug = true
-debug-assertions = true
-overflow-checks = true
-
-[profile.dev_nodebug]
-inherits = "dev"
-
-[profile.stats]
-inherits = "release"
-
-[profile.release]
-# NOTE: --enable-yjit builds use `rustc` without going through Cargo. You
-# might want to update the `rustc` invocation if you change this profile.
-opt-level = 3
-# The extra robustness that comes from checking for arithmetic overflow is
-# worth the performance cost for the compiler.
-overflow-checks = true
-# Generate debug info
-debug = true
-# Use ThinLTO. Much smaller output for a small amount of build time increase.
-lto = "thin"

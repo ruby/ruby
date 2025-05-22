@@ -527,6 +527,8 @@ module RbInstall
         const_set(:FileUtils, fu::NoWrite)
         fu
       end
+      # RubyGems 3.0.0 or later supports `dir_mode`, but it uses
+      # `File` method to apply it, not `FileUtils`.
       dir_mode = options.delete(:dir_mode) if options
     end
     yield
@@ -806,6 +808,7 @@ def install_default_gem(dir, srcdir, bindir)
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
   RbInstall.no_write do
+    # Record making directories
     makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
   end
 
@@ -941,8 +944,6 @@ end
 install?(:ext, :arch, :hdr, :'arch-hdr', :'hdr-arch') do
   prepare "extension headers", archhdrdir
   install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "*.h", :mode => $data_mode)
-  install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "rb_rjit_header-*.obj", :mode => $data_mode)
-  install_recursive("#{$extout}/include/#{CONFIG['arch']}", archhdrdir, :glob => "rb_rjit_header-*.pch", :mode => $data_mode)
 end
 
 install?(:ext, :comm, :'ext-comm') do
@@ -1105,6 +1106,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
   RbInstall.no_write do
+    # Record making directories
     makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
   end
 

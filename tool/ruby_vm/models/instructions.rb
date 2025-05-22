@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -19,4 +18,5 @@ RubyVM::Instructions = RubyVM::BareInstructions.to_a + \
                        RubyVM::InstructionsUnifications.to_a
 
 require_relative 'trace_instructions'
+require_relative 'zjit_instructions'
 RubyVM::Instructions.freeze

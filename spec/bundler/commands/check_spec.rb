@@ -95,7 +95,7 @@ RSpec.describe "bundle check" do
       gem "foo", git: "#{lib_path("foo")}"
     G
 
-    FileUtils.rm_rf bundled_app("vendor/bundle")
+    FileUtils.rm_r bundled_app("vendor/bundle")
     bundle :check, raise_on_error: false
     expect(exitstatus).to eq 1
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
@@ -258,7 +258,7 @@ RSpec.describe "bundle check" do
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
 
-  it "fails when there's no lock file and frozen is set" do
+  it "fails when there's no lockfile and frozen is set" do
     install_gemfile <<-G
       source "https://gem.repo1"
       gem "foo"
@@ -281,7 +281,7 @@ RSpec.describe "bundle check" do
         G
         bundle "install --path vendor/bundle"
 
-        FileUtils.rm_rf(bundled_app(".bundle"))
+        FileUtils.rm_r(bundled_app(".bundle"))
       end
 
       it "returns success" do
@@ -328,7 +328,8 @@ RSpec.describe "bundle check" do
     end
 
     it "shows what is missing with the current Gemfile if it is not satisfied" do
-      simulate_new_machine
+      FileUtils.rm_r default_bundle_path
+      system_gems :bundler
       bundle :check, raise_on_error: false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* myrack (1.0")

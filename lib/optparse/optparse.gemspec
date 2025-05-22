@@ -14,7 +14,10 @@ Gem::Specification.new do |spec|
   spec.email         = ["nobu@ruby-lang.org"]
 
   spec.summary       = %q{OptionParser is a class for command-line option analysis.}
-  spec.description   = %q{OptionParser is a class for command-line option analysis.}
+  spec.description   = File.open(File.join(__dir__, "README.md")) do |readme|
+    readme.gets("") # heading
+    readme.gets("").chomp
+  end rescue spec.summary
   spec.homepage      = "https://github.com/ruby/optparse"
   spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
@@ -24,7 +27,6 @@ Gem::Specification.new do |spec|
 
   spec.files         = Dir["{doc,lib,misc}/**/{*,.document}"] +
                        %w[README.md ChangeLog COPYING .document .rdoc_options]
-  spec.rdoc_options  = ["--main=README.md", "--op=rdoc", "--page-dir=doc"]
   spec.bindir        = "exe"
   spec.executables   = []
   spec.require_paths = ["lib"]

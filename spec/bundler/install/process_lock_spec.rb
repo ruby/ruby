@@ -21,19 +21,36 @@ RSpec.describe "process lock spec" do
       expect(the_bundle).to include_gems "myrack 1.0"
     end
 
+    context "when creating a lock raises Errno::ENOTSUP" do
+      before { allow(File).to receive(:open).and_raise(Errno::ENOTSUP) }
+
+      it "skips creating the lockfile and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
+      end
+    end
+
     context "when creating a lock raises Errno::EPERM" do
       before { allow(File).to receive(:open).and_raise(Errno::EPERM) }
 
-      it "raises a friendly error" do
-        expect { Bundler::ProcessLock.lock(default_bundle_path) }.to raise_error(Bundler::GenericSystemCallError)
+      it "skips creating the lockfile and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
       end
     end
 
     context "when creating a lock raises Errno::EROFS" do
       before { allow(File).to receive(:open).and_raise(Errno::EROFS) }
 
-      it "raises a friendly error" do
-        expect { Bundler::ProcessLock.lock(default_bundle_path) }.to raise_error(Bundler::GenericSystemCallError)
+      it "skips creating the lockfile and yields" do
+        processed = false
+        Bundler::ProcessLock.lock(default_bundle_path) { processed = true }
+
+        expect(processed).to eq true
       end
     end
   end

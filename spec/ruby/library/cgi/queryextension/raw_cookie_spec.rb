@@ -1,22 +1,25 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#raw_cookie" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI::QueryExtension#raw_cookie" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "returns ENV['HTTP_COOKIE']" do
-    old_value, ENV['HTTP_COOKIE'] = ENV['HTTP_COOKIE'], "some_cookie=data"
-    begin
-      @cgi.raw_cookie.should == "some_cookie=data"
-    ensure
-      ENV['HTTP_COOKIE'] = old_value
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
+
+    it "returns ENV['HTTP_COOKIE']" do
+      old_value, ENV['HTTP_COOKIE'] = ENV['HTTP_COOKIE'], "some_cookie=data"
+      begin
+        @cgi.raw_cookie.should == "some_cookie=data"
+      ensure
+        ENV['HTTP_COOKIE'] = old_value
+      end
     end
   end
 end

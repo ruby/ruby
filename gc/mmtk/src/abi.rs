@@ -10,7 +10,7 @@ pub const MIN_OBJ_ALIGN: usize = 8; // Even on 32-bit machine.  A Ruby object is
 
 pub const GC_THREAD_KIND_WORKER: libc::c_int = 1;
 
-const HAS_MOVED_GIVTBL: usize = 1 << 63;
+const HAS_MOVED_GFIELDSTBL: usize = 1 << 63;
 const HIDDEN_SIZE_MASK: usize = 0x0000FFFFFFFFFFFF;
 
 // Should keep in sync with C code.
@@ -87,16 +87,16 @@ impl RubyObjectAccess {
         (self.load_flags() & RUBY_FL_EXIVAR) != 0
     }
 
-    pub fn has_moved_givtbl(&self) -> bool {
-        (self.load_hidden_field() & HAS_MOVED_GIVTBL) != 0
+    pub fn has_moved_gfields_tbl(&self) -> bool {
+        (self.load_hidden_field() & HAS_MOVED_GFIELDSTBL) != 0
     }
 
-    pub fn set_has_moved_givtbl(&self) {
-        self.update_hidden_field(|old| old | HAS_MOVED_GIVTBL)
+    pub fn set_has_moved_gfields_tbl(&self) {
+        self.update_hidden_field(|old| old | HAS_MOVED_GFIELDSTBL)
     }
 
-    pub fn clear_has_moved_givtbl(&self) {
-        self.update_hidden_field(|old| old & !HAS_MOVED_GIVTBL)
+    pub fn clear_has_moved_gfields_tbl(&self) {
+        self.update_hidden_field(|old| old & !HAS_MOVED_GFIELDSTBL)
     }
 
     pub fn prefix_size() -> usize {
@@ -163,7 +163,7 @@ impl ObjectClosure {
         F2: 'env + FnOnce() -> T,
     {
         debug_assert!(
-            self.c_function == THE_UNREGISTERED_CLOSURE_FUNC,
+            std::ptr::fn_addr_eq(self.c_function, THE_UNREGISTERED_CLOSURE_FUNC),
             "set_temporarily_and_run_code is recursively called."
         );
         self.c_function = Self::c_function_registered::<F1>;
@@ -315,8 +315,6 @@ pub struct RubyUpcalls {
     ),
     pub scan_gc_roots: extern "C" fn(),
     pub scan_objspace: extern "C" fn(),
-    pub scan_roots_in_mutator_thread:
-        extern "C" fn(mutator_tls: VMMutatorThread, worker_tls: VMWorkerThread),
     pub scan_object_ruby_style: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
@@ -324,7 +322,6 @@ pub struct RubyUpcalls {
     pub update_global_tables: extern "C" fn(tbl_idx: c_int),
     pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
-    pub update_obj_id_tables: extern "C" fn(),
 }
 
 unsafe impl Sync for RubyUpcalls {}

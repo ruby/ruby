@@ -544,7 +544,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   }.sort
 }
 
-# an exception in a Ractor will be re-raised at Ractor#receive
+# an exception in a Ractor main thread will be re-raised at Ractor#receive
 assert_equal '[RuntimeError, "ok", true]', %q{
   r = Ractor.new do
     raise 'ok' # exception will be transferred receiver
@@ -556,6 +556,18 @@ assert_equal '[RuntimeError, "ok", true]', %q{
      e.cause.message, #=> 'ok'
      e.ractor == r]   #=> true
   end
+}
+
+# an exception in a Ractor non-main thread will not be re-raised at Ractor#receive
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Thread.new do
+      raise 'ng'
+    end
+    sleep 0.1
+    'ok'
+  end
+  r.take
 }
 
 # threads in a ractor will killed
@@ -1361,6 +1373,28 @@ assert_equal 'true', %q{
   Ractor.shareable?(pr)
 }
 
+# Ractor.make_shareable(a_proc) makes inner structure shareable and freezes it
+assert_equal 'true,true,true,true', %q{
+  class Proc
+    attr_reader :obj
+    def initialize
+      @obj = Object.new
+    end
+  end
+
+  pr = Ractor.current.instance_eval do
+    Proc.new {}
+  end
+
+  results = []
+  Ractor.make_shareable(pr)
+  results << Ractor.shareable?(pr)
+  results << pr.frozen?
+  results << Ractor.shareable?(pr.obj)
+  results << pr.obj.frozen?
+  results.map(&:to_s).join(',')
+}
+
 # Ractor.shareable?(recursive_objects)
 assert_equal '[false, false]', %q{
   y = []
@@ -1387,6 +1421,21 @@ assert_equal '[C, M]', %q{
   module M; end
 
   Ractor.make_shareable(ary = [C, M])
+}
+
+# Ractor.make_shareable with curried proc checks isolation of original proc
+assert_equal 'isolation error', %q{
+  a = Object.new
+  orig = proc { a }
+  curried = orig.curry
+
+  begin
+    Ractor.make_shareable(curried)
+  rescue Ractor::IsolationError
+    'isolation error'
+  else
+    'no error'
+  end
 }
 
 # define_method() can invoke different Ractor's proc if the proc is shareable.
@@ -1527,6 +1576,24 @@ assert_equal '1', %q{
   }.take
 }
 
+# Ractor-local storage
+assert_equal '2', %q{
+  Ractor.new {
+    fails = 0
+    begin
+      Ractor.main[:key] # cannot get ractor local storage from non-main ractor
+    rescue => e
+      fails += 1 if e.message =~ /Cannot get ractor local/
+    end
+    begin
+      Ractor.main[:key] = 'val'
+    rescue => e
+      fails += 1 if e.message =~ /Cannot set ractor local/
+    end
+    fails
+  }.take
+}
+
 ###
 ### Synchronization tests
 ###
@@ -1543,7 +1610,22 @@ assert_equal "#{N}#{N}", %Q{
   }.map{|r| r.take}.join
 }
 
-# Generic ivtbl
+assert_equal "ok", %Q{
+  N = #{N}
+  a, b = 2.times.map{
+    Ractor.new{
+      N.times.map{|i| -(i.to_s)}
+    }
+  }.map{|r| r.take}
+  N.times do |i|
+    unless a[i].equal?(b[i])
+      raise [a[i], b[i]].inspect
+    end
+  end
+  :ok
+}
+
+# Generic fields_tbl
 n = N/2
 assert_equal "#{n}#{n}", %Q{
   2.times.map{
@@ -1599,7 +1681,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} unless yjit_enabled? || rjit_enabled? # flaky
+} if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
@@ -1937,3 +2019,396 @@ assert_equal 'LoadError', %q{
   end
   r.take
 }
+
+# bind_call in Ractor [Bug #20934]
+assert_equal 'ok', %q{
+  2.times.map do
+    Ractor.new do
+      1000.times do
+        Object.instance_method(:itself).bind_call(self)
+      end
+    end
+  end.each(&:take)
+  GC.start
+  :ok.itself
+}
+
+# moved objects being corrupted if embeded (String)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "foobarbazfoobarbazfoobarbazfoobarbaz"
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Array)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Hash)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = { foo: 1, bar: 2 }
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (MatchData)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "foo".match(/o/)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Struct)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Struct.new(:a, :b, :c, :d, :e, :f).new(1, 2, 3, 4, 5, 6)
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved objects being corrupted if embeded (Object)
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  class SomeObject
+    attr_reader :a, :b, :c, :d, :e, :f
+    def initialize
+      @a = @b = @c = @d = @e = @f = 1
+    end
+
+    def ==(o)
+      @a == o.a &&
+      @b == o.b &&
+      @c == o.c &&
+      @d == o.d &&
+      @e == o.e &&
+      @f == o.f
+    end
+  end
+
+  SomeObject.new # initial non-embeded
+
+  obj = SomeObject.new
+  ractor.send(obj.dup, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj == obj ? :ok : roundtripped_obj
+}
+
+# moved arrays can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = [1]
+  ractor.send(obj, move: true)
+  begin
+    [].concat(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# moved strings can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = "hello"
+  ractor.send(obj, move: true)
+  begin
+    "".replace(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# moved hashes can't be used
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = { a: 1 }
+  ractor.send(obj, move: true)
+  begin
+    {}.merge(obj)
+  rescue TypeError
+    :ok
+  else
+    :fail
+  end
+}
+
+# move objects inside frozen containers
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  original = obj.dup
+  ractor.send([obj].freeze, move: true)
+  roundtripped_obj = ractor.take[0]
+  roundtripped_obj == original ? :ok : roundtripped_obj
+}
+
+# move object with generic ivar
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array, [1])
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.take
+  roundtripped_obj.instance_variable_get(:@array) == [1] ? :ok : roundtripped_obj
+}
+
+# moved composite types move their non-shareable parts properly
+assert_equal 'ok', %q{
+  k, v = String.new("key"), String.new("value")
+  h = { k => v }
+  h.instance_variable_set("@b", String.new("b"))
+  a = [k,v]
+  o_singleton = Object.new
+  def o_singleton.a
+    @a
+  end
+  o_singleton.instance_variable_set("@a", String.new("a"))
+  class MyObject
+    attr_reader :a
+    def initialize(a)
+      @a = a
+    end
+  end
+  struct_class = Struct.new(:a)
+  struct = struct_class.new(String.new('a'))
+  o = MyObject.new(String.new('a'))
+  r = Ractor.new do
+    loop do
+      obj = Ractor.receive
+      val = case obj
+      when Hash
+        obj['key'] == 'value' && obj.instance_variable_get("@b") == 'b'
+      when Array
+        obj[0] == 'key'
+      when Struct
+        obj.a == 'a'
+      when Object
+        obj.a == 'a'
+      end
+      Ractor.yield val
+    end
+  end
+
+  objs = [h, a, o_singleton, o, struct]
+  objs.each_with_index do |obj, i|
+    klass = obj.class
+    parts_moved = {}
+    case obj
+    when Hash
+      parts_moved[klass] = [obj['key'], obj.instance_variable_get("@b")]
+    when Array
+      parts_moved[klass] = obj.dup # the contents
+    when Struct, Object
+      parts_moved[klass] = [obj.a]
+    end
+    r.send(obj, move: true)
+    val = r.take
+    if val != true
+      raise "bad val in ractor for obj at i:#{i}"
+    end
+    begin
+      p obj
+    rescue
+    else
+      raise "should be moved"
+    end
+    parts_moved.each do |klass, parts|
+      parts.each_with_index do |part, j|
+        case part
+        when Ractor::MovedObject
+        else
+          raise "part for class #{klass} at i:#{j} should be moved"
+        end
+      end
+    end
+  end
+  'ok'
+}
+
+# fork after creating Ractor
+assert_equal 'ok', %q{
+begin
+  Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork { }
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.take
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Ractors should be terminated after fork
+assert_equal 'ok', %q{
+begin
+  r = Ractor.new { Ractor.receive }
+  _, status = Process.waitpid2 fork {
+    begin
+      r.send(123)
+      raise "ng"
+    rescue Ractor::ClosedError
+    end
+  }
+  r.send(123)
+  raise unless r.take == 123
+  status.success? ? "ok" : status
+rescue NotImplementedError
+  :ok
+end
+}
+
+# Creating classes inside of Ractors
+# [Bug #18119]
+assert_equal 'ok', %q{
+  workers = (0...8).map do
+    Ractor.new do
+      loop do
+        100.times.map { Class.new }
+        Ractor.yield nil
+      end
+    end
+  end
+
+  100.times { Ractor.select(*workers) }
+
+  'ok'
+}
+
+# Using Symbol#to_proc inside ractors
+# [Bug #21354]
+assert_equal 'ok', %q{
+  :inspect.to_proc
+  Ractor.new do
+    # It should not use this cached proc, it should create a new one. If it used
+    # the cached proc, we would get a ractor_confirm_belonging error here.
+    :inspect.to_proc
+  end.take
+  'ok'
+}
+
+# There are some bugs in Windows with multiple threads in same ractor calling ractor actions
+# Ex: https://github.com/ruby/ruby/actions/runs/14998660285/job/42139383905
+unless /mswin/ =~ RUBY_PLATFORM
+  # r.send and r.take from multiple threads
+  # [Bug #21037]
+  assert_equal '[true, true]', %q{
+  class Map
+    def initialize
+      @r = Ractor.new {
+        loop do
+          key = Ractor.receive
+          Ractor.yield key
+        end
+      }
+    end
+
+    def fetch(key)
+      @r.send key
+      @r.take
+    end
+  end
+
+  tm = Map.new
+  t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+  t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+  vals = t1.value + t2.value
+  [
+    vals.first(10).all? { |v| v == "t1" },
+    vals.last(10).all? { |v| v == "t2" }
+  ]
+  }
+
+  # r.send and Ractor.select from multiple threads
+  assert_equal '[true, true]', %q{
+  class Map
+    def initialize
+      @r = Ractor.new {
+        loop do
+          key = Ractor.receive
+          Ractor.yield key
+        end
+      }
+    end
+
+    def fetch(key)
+      @r.send key
+      _r, val = Ractor.select(@r)
+      val
+    end
+  end
+
+  tm = Map.new
+  t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+  t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+  vals = t1.value + t2.value
+  [
+    vals.first(10).all? { |v| v == "t1" },
+    vals.last(10).all? { |v| v == "t2" }
+  ]
+  }
+
+  # Ractor.receive in multiple threads in same ractor
+  # [Bug #17624]
+  assert_equal '["T1 received", "T2 received"]', %q{
+  r1 = Ractor.new do
+    output = []
+    m = Mutex.new
+    # Start two listener threads
+    t1 = Thread.new do
+      Ractor.receive
+      m.synchronize do
+        output << "T1 received"
+      end
+    end
+    t2 = Thread.new do
+      Ractor.receive
+      m.synchronize do
+        output << "T2 received"
+      end
+    end
+    sleep 0.1 until [t1,t2].all? { |t| t.status == "sleep" }
+    Ractor.main.send(:both_blocking)
+
+    [t1, t2].each(&:join)
+    output
+  end
+
+  Ractor.receive # wait until both threads have blocked
+  r1.send(1)
+  r1.send(2)
+  r1.take.sort
+  }
+end

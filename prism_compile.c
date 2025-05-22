@@ -3620,6 +3620,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     if (message_loc->start == NULL) message_loc = &call_node->base.location;
 
     const pm_node_location_t location = PM_LOCATION_START_LOCATION(scope_node->parser, message_loc, call_node->base.node_id);
+
     LABEL *else_label = NEW_LABEL(location.line);
     LABEL *end_label = NEW_LABEL(location.line);
     LABEL *retry_end_l = NEW_LABEL(location.line);
@@ -3657,6 +3658,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         add_trace_branch_coverage(iseq, ret, &code_location, node_id, 0, "then", branches);
     }
+
+    LINK_ELEMENT *opt_new_prelude = LAST_ELEMENT(ret);
 
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
@@ -3714,7 +3717,50 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, splatkw);
     }
 
-    PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    LABEL *not_basic_new = NEW_LABEL(location.line);
+    LABEL *not_basic_new_finish = NEW_LABEL(location.line);
+
+    bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        method_id == rb_intern("new") &&
+        call_node->block == NULL &&
+        (flags & VM_CALL_ARGS_BLOCKARG) == 0;
+
+    if (inline_new) {
+        if (LAST_ELEMENT(ret) == opt_new_prelude) {
+            PUSH_INSN(ret, location, putnil);
+            PUSH_INSN(ret, location, swap);
+        }
+        else {
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(swap), 0)->link);
+            ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
+        }
+
+        // Jump unless the receiver uses the "basic" implementation of "new"
+        VALUE ci;
+        if (flags & VM_CALL_FORWARDING) {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc + 1, flags, kw_arg, 0);
+        }
+        else {
+            ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
+        }
+
+        PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        LABEL_REF(not_basic_new);
+        // optimized path
+        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        PUSH_INSNL(ret, location, jump, not_basic_new_finish);
+
+        PUSH_LABEL(ret, not_basic_new);
+        // Fall back to normal send
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+        PUSH_INSN(ret, location, swap);
+
+        PUSH_LABEL(ret, not_basic_new_finish);
+        PUSH_INSN(ret, location, pop);
+    }
+    else {
+        PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    }
 
     if (block_iseq && ISEQ_BODY(block_iseq)->catch_table) {
         pm_compile_retry_end_label(iseq, ret, retry_end_l);
@@ -4213,7 +4259,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             // If we have empty parentheses, then we want to return "nil".
             dtype = DEFINED_NIL;
         }
-        else if (PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && ((const pm_statements_node_t *) cast->body)->body.size == 1) {
+        else if (PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && !PM_NODE_FLAG_P(cast, PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS)) {
             // If we have a parentheses node that is wrapping a single statement
             // then we want to recurse down to that statement and compile it.
             pm_compile_defined_expr0(iseq, ((const pm_statements_node_t *) cast->body)->body.nodes[0], node_location, ret, popped, scope_node, in_condition, lfinish, false);
@@ -8597,7 +8643,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int event = RUBY_EVENT_LINE;
 
         ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
-        if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+        if (lineno > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
             event |= RUBY_EVENT_COVERAGE_LINE;
         }
         PUSH_TRACE(ret, event);
@@ -9594,7 +9640,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // -> { it }
         //      ^^
         if (!popped) {
-            PUSH_GETLOCAL(ret, location, scope_node->local_table_for_iseq_size, 0);
+            pm_scope_node_t *current_scope_node = scope_node;
+            int level = 0;
+
+            while (current_scope_node) {
+                if (current_scope_node->parameters && PM_NODE_TYPE_P(current_scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+                    PUSH_GETLOCAL(ret, location, current_scope_node->local_table_for_iseq_size, level);
+                    return;
+                }
+
+                current_scope_node = current_scope_node->previous;
+                level++;
+            }
+            rb_bug("Local `it` does not exist");
         }
 
         return;
@@ -11053,7 +11111,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
     scope_node->parser = parser;
-    scope_node->constants = xcalloc(parser->constant_pool.size, sizeof(ID));
+    scope_node->constants = parser->constant_pool.size ? xcalloc(parser->constant_pool.size, sizeof(ID)) : NULL;
 
     for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
         pm_constant_t *constant = &parser->constant_pool.constants[index];

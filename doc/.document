@@ -8,6 +8,5 @@ optparse
 date
 rdoc
 regexp
-rjit
 yjit
 ruby

@@ -228,11 +228,9 @@ describe "Rational#**" do
     -> { Rational(0, 1) ** Rational(-3, 2) }.should raise_error(ZeroDivisionError, "divided by 0")
   end
 
-  platform_is_not :solaris do # See https://github.com/ruby/spec/issues/134
-    it "returns Infinity for Rational(0, 1) passed a negative Float" do
-      [-1.0, -3.0, -3.14].each do |exponent|
-        (Rational(0, 1) ** exponent).infinite?.should == 1
-      end
+  it "returns Infinity for Rational(0, 1) passed a negative Float" do
+    [-1.0, -3.0, -3.14].each do |exponent|
+      (Rational(0, 1) ** exponent).infinite?.should == 1
     end
   end
 end

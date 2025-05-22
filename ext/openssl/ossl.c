@@ -69,16 +69,9 @@ ossl_##name##_sk2ary(const STACK_OF(type) *sk)	\
     int i, num;					\
     VALUE ary;					\
 						\
-    if (!sk) {					\
-	OSSL_Debug("empty sk!");		\
-	return Qnil;				\
-    }						\
+    RUBY_ASSERT(sk != NULL);			\
     num = sk_##type##_num(sk);			\
-    if (num < 0) {				\
-	OSSL_Debug("items in sk < -1???");	\
-	return rb_ary_new();			\
-    }						\
-    ary = rb_ary_new2(num);			\
+    ary = rb_ary_new_capa(num);			\
 						\
     for (i=0; i<num; i++) {			\
 	t = sk_##type##_value(sk, i);		\
@@ -404,7 +397,7 @@ ossl_fips_mode_get(VALUE self)
     VALUE enabled;
     enabled = EVP_default_properties_is_fips_enabled(NULL) ? Qtrue : Qfalse;
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     VALUE enabled;
     enabled = FIPS_mode() ? Qtrue : Qfalse;
     return enabled;
@@ -439,7 +432,7 @@ ossl_fips_mode_set(VALUE self, VALUE enabled)
         }
     }
     return enabled;
-#elif defined(OPENSSL_FIPS)
+#elif defined(OPENSSL_FIPS) || defined(OPENSSL_IS_AWSLC)
     if (RTEST(enabled)) {
 	int mode = FIPS_mode();
 	if(!mode && !FIPS_mode_set(1)) /* turning on twice leads to an error */
@@ -1004,6 +997,8 @@ Init_openssl(void)
                     Qtrue
 #elif defined(OPENSSL_FIPS)
 		    Qtrue
+#elif defined(OPENSSL_IS_AWSLC) // AWS-LC FIPS can only be enabled during compile time.
+            FIPS_mode() ? Qtrue : Qfalse
 #else
 		    Qfalse
 #endif

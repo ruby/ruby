@@ -1,4 +1,5 @@
 import lldb
+import math
 from lldb_rb.lldb_interface import LLDBInterface
 from lldb_rb.constants import *
 
@@ -50,8 +51,7 @@ class RbObject(LLDBInterface):
         self.flUser9 = self.ruby_globals["RUBY_FL_USER9"]
         self.flUshift = self.ruby_globals["RUBY_FL_USHIFT"]
 
-        self.tRBasic = self.target.FindFirstType("struct RBasic").GetPointerType()
-        self.tRValue = self.target.FindFirstType("struct RVALUE")
+        self.tRBasic = self.target.FindFirstType("::RBasic").GetPointerType()
 
         self.val = ptr.Cast(self.tRBasic)
         self.page = HeapPage(self.debugger, self.val)
@@ -70,10 +70,12 @@ class RbObject(LLDBInterface):
             return ' '
 
     def dump_bits(self, result, end = "\n"):
-        tRValue = self.target.FindFirstType("struct RVALUE")
         tUintPtr = self.target.FindFirstType("uintptr_t") # bits_t
 
-        num_in_page = (self.val.GetValueAsUnsigned() & HEAP_PAGE_ALIGN_MASK) // tRValue.GetByteSize();
+        slot_size = self.page.to_heap_page_struct().GetChildMemberWithName("heap").GetChildMemberWithName("slot_size").unsigned
+        byte_size = 40 ** math.floor(math.log(slot_size, 40))
+
+        num_in_page = (self.val.GetValueAsUnsigned() & HEAP_PAGE_ALIGN_MASK) // byte_size;
         bits_bitlength = tUintPtr.GetByteSize() * 8
         bitmap_index = num_in_page // bits_bitlength
         bitmap_offset = num_in_page & (bits_bitlength - 1)
@@ -109,7 +111,14 @@ class RbObject(LLDBInterface):
             return False
 
     def as_type(self, type_name):
-        return self.val.Cast(self.tRValue.GetPointerType()).GetValueForExpressionPath("->as."+type_name)
+        if type_name == "array":
+            tRarray = self.target.FindFirstType("struct RArray")
+            return self.val.Cast(tRarray.GetPointerType())
+        elif type_name == "bignum":
+            tRbignum = self.target.FindFirstType("struct RBignum")
+            return self.val.Cast(tRbignum.GetPointerType())
+        else:
+            print("as_type is not implemented for:", type_name)
 
     def ary_ptr(self):
         rval = self.as_type("array")

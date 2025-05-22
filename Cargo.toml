@@ -1,0 +1,51 @@
+# Using Cargo's workspace feature to build all the Rust code in
+# into a single package.
+# TODO(alan) notes about rust version requirements. Undecided yet.
+
+[workspace]
+members = ["zjit", "yjit"]
+
+[package]
+name = "jit"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85.0"
+publish = false # Don't publish to crates.io
+
+[dependencies]
+yjit = { path = "yjit", optional = true }
+zjit = { path = "zjit", optional = true }
+
+[lib]
+crate-type = ["staticlib"]
+path = "jit.rs"
+
+[features]
+disasm = ["yjit?/disasm", "zjit?/disasm"]
+runtime_checks = []
+yjit = [ "dep:yjit" ]
+zjit = [ "dep:zjit" ]
+
+[profile.dev]
+opt-level = 0
+debug = true
+debug-assertions = true
+overflow-checks = true
+
+[profile.dev_nodebug]
+inherits = "dev"
+
+[profile.stats]
+inherits = "release"
+
+[profile.release]
+# NOTE: --enable-yjit and zjit builds use `rustc` without going through Cargo. You
+# might want to update the `rustc` invocation if you change this profile.
+opt-level = 3
+# The extra robustness that comes from checking for arithmetic overflow is
+# worth the performance cost for the compiler.
+overflow-checks = true
+# Generate debug info
+debug = true
+# Use ThinLTO. Much smaller output for a small amount of build time increase.
+lto = "thin"

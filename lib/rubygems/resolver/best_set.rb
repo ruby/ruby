@@ -21,7 +21,7 @@ class Gem::Resolver::BestSet < Gem::Resolver::ComposedSet
 
   def pick_sets # :nodoc:
     @sources.each_source do |source|
-      @sets << source.dependency_resolver_set
+      @sets << source.dependency_resolver_set(@prerelease)
     end
   end
 

@@ -211,12 +211,12 @@ RSpec.describe "Resolving" do
 
     it "resolves all gems to latest patch" do
       # strict is not set, so bar goes up a minor version due to dependency from foo 1.4.5
-      should_conservative_resolve_and_include :patch, [], %w[foo-1.4.5 bar-2.1.1]
+      should_conservative_resolve_and_include :patch, true, %w[foo-1.4.5 bar-2.1.1]
     end
 
     it "resolves all gems to latest patch strict" do
       # strict is set, so foo can only go up to 1.4.4 to avoid bar going up a minor version, and bar can go up to 2.0.5
-      should_conservative_resolve_and_include [:patch, :strict], [], %w[foo-1.4.4 bar-2.0.5]
+      should_conservative_resolve_and_include [:patch, :strict], true, %w[foo-1.4.4 bar-2.0.5]
     end
 
     it "resolves foo only to latest patch - same dependency case" do
@@ -256,20 +256,20 @@ RSpec.describe "Resolving" do
 
     it "resolves all gems to latest minor" do
       # strict is not set, so bar goes up a major version due to dependency from foo 1.4.5
-      should_conservative_resolve_and_include :minor, [], %w[foo-1.5.1 bar-3.0.0]
+      should_conservative_resolve_and_include :minor, true, %w[foo-1.5.1 bar-3.0.0]
     end
 
     it "resolves all gems to latest minor strict" do
       # strict is set, so foo can only go up to 1.5.0 to avoid bar going up a major version
-      should_conservative_resolve_and_include [:minor, :strict], [], %w[foo-1.5.0 bar-2.1.1]
+      should_conservative_resolve_and_include [:minor, :strict], true, %w[foo-1.5.0 bar-2.1.1]
     end
 
     it "resolves all gems to latest major" do
-      should_conservative_resolve_and_include :major, [], %w[foo-2.0.0 bar-3.0.0]
+      should_conservative_resolve_and_include :major, true, %w[foo-2.0.0 bar-3.0.0]
     end
 
     it "resolves all gems to latest major strict" do
-      should_conservative_resolve_and_include [:major, :strict], [], %w[foo-2.0.0 bar-3.0.0]
+      should_conservative_resolve_and_include [:major, :strict], true, %w[foo-2.0.0 bar-3.0.0]
     end
 
     # Why would this happen in real life? If bar 2.2 has a bug that the author of foo wants to bypass
@@ -292,21 +292,21 @@ RSpec.describe "Resolving" do
       end
 
       it "could revert to a previous version level patch" do
-        should_conservative_resolve_and_include :patch, [], %w[foo-1.4.4 bar-2.1.1]
+        should_conservative_resolve_and_include :patch, true, %w[foo-1.4.4 bar-2.1.1]
       end
 
       it "cannot revert to a previous version in strict mode level patch" do
         # fall back to the locked resolution since strict means we can't regress either version
-        should_conservative_resolve_and_include [:patch, :strict], [], %w[foo-1.4.3 bar-2.2.3]
+        should_conservative_resolve_and_include [:patch, :strict], true, %w[foo-1.4.3 bar-2.2.3]
       end
 
       it "could revert to a previous version level minor" do
-        should_conservative_resolve_and_include :minor, [], %w[foo-1.5.0 bar-2.0.5]
+        should_conservative_resolve_and_include :minor, true, %w[foo-1.5.0 bar-2.0.5]
       end
 
       it "cannot revert to a previous version in strict mode level minor" do
         # fall back to the locked resolution since strict means we can't regress either version
-        should_conservative_resolve_and_include [:minor, :strict], [], %w[foo-1.4.3 bar-2.2.3]
+        should_conservative_resolve_and_include [:minor, :strict], true, %w[foo-1.4.3 bar-2.2.3]
       end
     end
   end
@@ -378,5 +378,45 @@ RSpec.describe "Resolving" do
     dep "standalone_migrations"
 
     should_resolve_without_dependency_api %w[myrack-3.0.0 standalone_migrations-2.0.4]
+  end
+
+  it "resolves fine cases that need joining unbounded disjoint ranges" do
+    @index = build_index do
+      gem "inspec", "5.22.3" do
+        dep "ruby", ">= 3.2.2"
+        dep "train-kubernetes", ">= 0.1.7"
+      end
+
+      gem "ruby", "3.2.2"
+
+      gem "train-kubernetes", "0.1.12" do
+        dep "k8s-ruby", ">= 0.14.0"
+      end
+
+      gem "train-kubernetes", "0.1.10" do
+        dep "k8s-ruby", "= 0.10.5"
+      end
+
+      gem "train-kubernetes", "0.1.7" do
+        dep "k8s-ruby", ">= 0.10.5"
+      end
+
+      gem "k8s-ruby", "0.10.5" do
+        dep "ruby","< 3.2.2"
+      end
+
+      gem "k8s-ruby", "0.11.0" do
+        dep "ruby", ">= 3.2.2"
+      end
+
+      gem "k8s-ruby", "0.14.0" do
+        dep "ruby", "< 3.2.2"
+      end
+    end
+
+    dep "inspec", "5.22.3"
+    dep "ruby", "3.2.2"
+
+    should_resolve_as %w[inspec-5.22.3 ruby-3.2.2 train-kubernetes-0.1.7 k8s-ruby-0.11.0]
   end
 end

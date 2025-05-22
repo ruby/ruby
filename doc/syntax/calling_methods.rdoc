@@ -291,14 +291,14 @@ override local arguments outside the block in the caller's scope:
 This prints:
 
   hello main this is block
-  place is world
+  place is: world
 
 So the +place+ variable in the block is not the same +place+ variable as
 outside the block.  Removing <code>; place</code> from the block arguments
 gives this result:
 
   hello main this is block
-  place is block
+  place is: block
 
 === Unpacking Positional Arguments
 

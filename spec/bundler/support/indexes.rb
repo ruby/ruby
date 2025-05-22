@@ -66,7 +66,6 @@ module Spec
     end
 
     def should_conservative_resolve_and_include(opts, unlock, specs)
-      # empty unlock means unlock all
       opts = Array(opts)
       search = Bundler::GemVersionPromoter.new.tap do |s|
         s.level = opts.first

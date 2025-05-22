@@ -184,4 +184,12 @@ describe "C-API Thread function" do
       thr.value.should be_true
     end
   end
+
+  ruby_version_is "3.5" do
+    describe "ruby_thread_has_gvl_p" do
+      it "returns true if the current thread has the GVL" do
+        @t.ruby_thread_has_gvl_p.should be_true
+      end
+    end
+  end
 end

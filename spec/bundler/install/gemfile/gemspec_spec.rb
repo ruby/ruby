@@ -420,6 +420,7 @@ RSpec.describe "bundle install from an existing gemspec" do
 
         simulate_new_machine
         simulate_platform("jruby") { bundle "install" }
+        expect(lockfile).to include("platform_specific (1.0-java)")
         simulate_platform("x64-mingw32") { bundle "install" }
       end
 

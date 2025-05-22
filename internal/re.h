@@ -14,12 +14,12 @@
 /* re.c */
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
-long rb_reg_search0(VALUE, VALUE, long, int, int);
+long rb_reg_search0(VALUE, VALUE, long, int, int, VALUE *);
 VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 VALUE rb_reg_hash(VALUE re);
 VALUE rb_reg_equal(VALUE re1, VALUE re2);
-void rb_backref_set_string(VALUE string, long pos, long len);
+VALUE rb_backref_set_string(VALUE string, long pos, long len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);

@@ -301,6 +301,11 @@ sequence containing the user-defined representation of the object.
 The class method +_load+ is called on the class with a string created from the
 byte-sequence.
 
+This type is not recommended for newly created classes, because of some
+restrictions:
+
+- cannot have recursive reference
+
 === User Marshal
 
 "U" represents an object with a user-defined serialization format using the

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-return if RUBY_VERSION < "3.3"
+return if RUBY_VERSION < "3.3" || RUBY_ENGINE == "truffleruby"
 
 require_relative "../test_helper"
 
@@ -32,6 +32,7 @@ module Prism
     # Skip these tests that we haven't implemented yet.
     omitted = [
       "dos_endings.txt",
+      "heredocs_with_fake_newlines.txt",
       "heredocs_with_ignored_newlines.txt",
       "seattlerb/block_call_dot_op2_brace_block.txt",
       "seattlerb/block_command_operation_colon.txt",

@@ -122,6 +122,22 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '666', pretty_generate(666)
   end
 
+  def test_generate_pretty_custom
+    state = State.new(:space_before => "<psb>", :space => "<ps>", :indent => "<pi>", :object_nl => "\n<po_nl>\n", :array_nl => "<pa_nl>")
+    json = pretty_generate({1=>{}, 2=>['a','b'], 3=>4}, state)
+    assert_equal(<<~'JSON'.chomp, json)
+      {
+      <po_nl>
+      <pi>"1"<psb>:<ps>{},
+      <po_nl>
+      <pi>"2"<psb>:<ps>[<pa_nl><pi><pi>"a",<pa_nl><pi><pi>"b"<pa_nl><pi>],
+      <po_nl>
+      <pi>"3"<psb>:<ps>4
+      <po_nl>
+      }
+    JSON
+  end
+
   def test_generate_custom
     state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)
@@ -136,15 +152,17 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_fast_generate
-    json = fast_generate(@hash)
-    assert_equal(parse(@json2), parse(json))
-    parsed_json = parse(json)
-    assert_equal(@hash, parsed_json)
-    json = fast_generate({1=>2})
-    assert_equal('{"1":2}', json)
-    parsed_json = parse(json)
-    assert_equal({"1"=>2}, parsed_json)
-    assert_equal '666', fast_generate(666)
+    assert_deprecated_warning(/fast_generate/) do
+      json = fast_generate(@hash)
+      assert_equal(parse(@json2), parse(json))
+      parsed_json = parse(json)
+      assert_equal(@hash, parsed_json)
+      json = fast_generate({1=>2})
+      assert_equal('{"1":2}', json)
+      parsed_json = parse(json)
+      assert_equal({"1"=>2}, parsed_json)
+      assert_equal '666', fast_generate(666)
+    end
   end
 
   def test_own_state
@@ -199,26 +217,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
     )
   end
 
-  def test_pretty_state
-    state = JSON.create_pretty_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "\n",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "  ",
-      :max_nesting           => 100,
-      :object_nl             => "\n",
-      :space                 => " ",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
-  def test_safe_state
+  def test_state_defaults
     state = JSON::State.new
     assert_equal({
       :allow_nan             => false,
@@ -237,44 +236,27 @@ class JSONGeneratorTest < Test::Unit::TestCase
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
-  def test_fast_state
-    state = JSON.create_fast_state
-    assert_equal({
-      :allow_nan             => false,
-      :array_nl              => "",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "",
-      :max_nesting           => 0,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
-    }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
-  end
-
   def test_allow_nan
-    error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
-    assert_same JSON::NaN, error.invalid_object
-    assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
-    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
-    error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
-    assert_same JSON::Infinity, error.invalid_object
-    assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
-    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
-    error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
-    assert_same JSON::MinusInfinity, error.invalid_object
-    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
-    assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
-    assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
-    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_deprecated_warning(/fast_generate/) do
+      error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
+      assert_same JSON::NaN, error.invalid_object
+      assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::NaN]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
+      assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
+      error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
+      assert_same JSON::Infinity, error.invalid_object
+      assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::Infinity]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
+      assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
+      error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
+      assert_same JSON::MinusInfinity, error.invalid_object
+      assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
+      assert_raise(GeneratorError) { fast_generate([JSON::MinusInfinity]) }
+      assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
+      assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    end
   end
 
   def test_depth
@@ -399,10 +381,23 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal :bar, state_hash[:foo]
   end
 
+  def test_json_state_to_h_roundtrip
+    state = JSON.state.new
+    assert_equal state.to_h, JSON.state.new(state.to_h).to_h
+  end
+
   def test_json_generate
     assert_raise JSON::GeneratorError do
       generate(["\xea"])
     end
+  end
+
+  def test_json_generate_error_detailed_message
+    error = assert_raise JSON::GeneratorError do
+      generate(["\xea"])
+    end
+
+    assert_not_nil(error.detailed_message)
   end
 
   def test_json_generate_unsupported_types
@@ -431,16 +426,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '["\\\\.(?i:gif|jpe?g|png)$"]'
     assert_equal json, generate(data)
     #
-    data = [ '\\"' ]
-    json = '["\\\\\""]'
+    data = [ '\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$\\.(?i:gif|jpe?g|png)$' ]
+    json = '["\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$\\\\.(?i:gif|jpe?g|png)$"]'
+    assert_equal json, generate(data)
+    #
+    data = [ '\\"\\"\\"\\"\\"\\"\\"\\"\\"\\"\\"' ]
+    json = '["\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\"\\\\\""]'
     assert_equal json, generate(data)
     #
     data = [ '/' ]
     json = '["/"]'
     assert_equal json, generate(data)
     #
+    data = [ '////////////////////////////////////////////////////////////////////////////////////' ]
+    json = '["////////////////////////////////////////////////////////////////////////////////////"]'
+    assert_equal json, generate(data)
+    #
     data = [ '/' ]
     json = '["\/"]'
+    assert_equal json, generate(data, :script_safe => true)
+    #
+    data = [ '///////////' ]
+    json = '["\/\/\/\/\/\/\/\/\/\/\/"]'
+    assert_equal json, generate(data, :script_safe => true)
+    #
+    data = [ '///////////////////////////////////////////////////////' ]
+    json = '["\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/"]'
     assert_equal json, generate(data, :script_safe => true)
     #
     data = [ "\u2028\u2029" ]
@@ -459,6 +470,10 @@ class JSONGeneratorTest < Test::Unit::TestCase
     json = '["\""]'
     assert_equal json, generate(data)
     #
+    data = ['"""""""""""""""""""""""""']
+    json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
+    assert_equal json, generate(data)
+    #
     data = ["'"]
     json = '["\\\'"]'
     assert_equal '["\'"]', generate(data)
@@ -466,6 +481,72 @@ class JSONGeneratorTest < Test::Unit::TestCase
     data = ["倩", "瀨"]
     json = '["倩","瀨"]'
     assert_equal json, generate(data, script_safe: true)
+    #
+    data = '["This is a "test" of the emergency broadcast system."]'
+    json = "\"[\\\"This is a \\\"test\\\" of the emergency broadcast system.\\\"]\""
+    assert_equal json, generate(data)
+    #
+    data = '\tThis is a test of the emergency broadcast system.'
+    json = "\"\\\\tThis is a test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This\tis a test of the emergency broadcast system.'
+    json = "\"This\\\\tis a test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is\ta test of the emergency broadcast system.'
+    json = "\"This is\\\\ta test of the emergency broadcast system.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is a test of the emergency broadcast\tsystem.'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\""
+    assert_equal json, generate(data)
+    #
+    data = 'This is a test of the emergency broadcast\tsystem.\n'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\\\\n\""
+    assert_equal json, generate(data)
+    data = '"' * 15
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\""
+    assert_equal json, generate(data)
+    data = "\"\"\"\"\"\"\"\"\"\"\"\"\"\"a"
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"a\""
+    assert_equal json, generate(data)
+    data = "\u0001\u0001\u0001\u0001"
+    json = "\"\\u0001\\u0001\\u0001\\u0001\""
+    assert_equal json, generate(data)
+    data = "\u0001a\u0001a\u0001a\u0001a"
+    json = "\"\\u0001a\\u0001a\\u0001a\\u0001a\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal json, generate(data)
+    data = "\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002"
+    json = "\"\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\""
+    assert_equal json, generate(data)
+    data = "ab\u0002c"
+    json = "\"ab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal json, generate(data)
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\""
+    assert_equal json, generate(data)
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f\b"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\""
+    assert_equal json, generate(data)
+    data = "a\n\t\f\b\n\t\f\b\n\t\f\b\n\t"
+    json = "\"a\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\""
+    assert_equal json, generate(data)
   end
 
   def test_string_subclass
@@ -626,6 +707,22 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '{"JSONGeneratorTest::StringWithToS#to_s":1}', JSON.generate(StringWithToS.new => 1)
   end
 
+  def test_string_subclass_with_broken_to_s
+    klass = Class.new(String) do
+      def to_s
+        false
+      end
+    end
+    s = klass.new("test")
+    assert_equal '["test"]', JSON.generate([s])
+
+    omit("Can't figure out how to match behavior in java code") if RUBY_PLATFORM == "java"
+
+    assert_raise TypeError do
+      JSON.generate(s => 1)
+    end
+  end
+
   if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
     def test_valid_utf8_in_different_encoding
       utf8_string = "€™"
@@ -684,5 +781,34 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_json_generate_as_json_convert_to_proc
     object = Object.new
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: :object_id)
+  end
+
+  def test_json_generate_float
+      values = [-1.0, 1.0, 0.0, 12.2, 7.5 / 3.2, 12.0, 100.0, 1000.0]
+      expecteds = ["-1.0", "1.0", "0.0", "12.2", "2.34375", "12.0", "100.0", "1000.0"]
+
+      if RUBY_ENGINE == "jruby"
+        values << 1746861937.7842371
+        expecteds << "1.7468619377842371E9"
+      else
+        values << 1746861937.7842371
+        expecteds << "1746861937.7842371"
+      end
+
+      values.zip(expecteds).each do |value, expected|
+        assert_equal expected, value.to_json
+      end
+  end
+
+  def test_numbers_of_various_sizes
+    numbers = [
+      0, 1, -1, 9, -9, 13, -13, 91, -91, 513, -513, 7513, -7513,
+      17591, -17591, -4611686018427387904, 4611686018427387903,
+      2**62, 2**63, 2**64, -(2**62), -(2**63), -(2**64)
+    ]
+
+    numbers.each do |number|
+      assert_equal "[#{number}]", JSON.generate([number])
+    end
   end
 end

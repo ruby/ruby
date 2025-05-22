@@ -27,6 +27,7 @@
 #include "probes.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
+#include "ruby/thread.h"
 #include "ruby/util.h"
 #include "vm_core.h"
 #include "builtin.h"
@@ -521,6 +522,8 @@ rb_ary_set_shared(VALUE ary, VALUE shared_root)
 static inline void
 rb_ary_modify_check(VALUE ary)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     rb_check_frozen(ary);
     ary_verify(ary);
 }
@@ -705,6 +708,8 @@ empty_ary_alloc(VALUE klass)
 static VALUE
 ary_new(VALUE klass, long capa)
 {
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
+
     VALUE ary;
 
     if (capa < 0) {
@@ -2753,7 +2758,7 @@ rb_ary_length(VALUE ary)
 
 /*
  *  call-seq:
- *    array.empty?  -> true or false
+ *    empty?  -> true or false
  *
  *  Returns +true+ if the count of elements in +self+ is zero,
  *  +false+ otherwise.
@@ -2922,7 +2927,7 @@ rb_ary_join(VALUE ary, VALUE sep)
 
 /*
  *  call-seq:
- *    array.join(separator = $,) -> new_string
+ *    join(separator = $,) -> new_string
  *
  *  Returns the new string formed by joining the converted elements of +self+;
  *  for each element +element+:
@@ -3088,7 +3093,7 @@ rb_ary_to_h(VALUE ary)
 
 /*
  *  call-seq:
- *    array.to_ary -> self
+ *    to_ary -> self
  *
  *  Returns +self+.
  */
@@ -3474,6 +3479,9 @@ rb_ary_sort_bang(VALUE ary)
  *  When the block returns zero, the order for +a+ and +b+ is indeterminate,
  *  and may be unstable.
  *
+ *  See an example in Numeric#nonzero? for the idiom to sort more
+ *  complex structure.
+ *
  *  Related: see {Methods for Fetching}[rdoc-ref:Array@Methods+for+Fetching].
  */
 
@@ -3607,8 +3615,10 @@ rb_ary_sort_by_bang(VALUE ary)
 
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
     rb_ary_modify(ary);
-    sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
-    rb_ary_replace(ary, sorted);
+    if (RARRAY_LEN(ary) > 1) {
+        sorted = rb_block_call(ary, rb_intern("sort_by"), 0, 0, sort_by_i, 0);
+        rb_ary_replace(ary, sorted);
+    }
     return ary;
 }
 
@@ -5311,8 +5321,8 @@ rb_ary_eql(VALUE ary1, VALUE ary2)
     return rb_exec_recursive_paired(recursive_eql, ary1, ary2, ary2);
 }
 
-VALUE
-rb_ary_hash_values(long len, const VALUE *elements)
+static VALUE
+ary_hash_values(long len, const VALUE *elements, const VALUE ary)
 {
     long i;
     st_index_t h;
@@ -5323,9 +5333,19 @@ rb_ary_hash_values(long len, const VALUE *elements)
     for (i=0; i<len; i++) {
         n = rb_hash(elements[i]);
         h = rb_hash_uint(h, NUM2LONG(n));
+        if (ary) {
+            len = RARRAY_LEN(ary);
+            elements = RARRAY_CONST_PTR(ary);
+        }
     }
     h = rb_hash_end(h);
     return ST2FIX(h);
+}
+
+VALUE
+rb_ary_hash_values(long len, const VALUE *elements)
+{
+    return ary_hash_values(len, elements, 0);
 }
 
 /*
@@ -5346,7 +5366,8 @@ rb_ary_hash_values(long len, const VALUE *elements)
 static VALUE
 rb_ary_hash(VALUE ary)
 {
-    return rb_ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary));
+    RBIMPL_ASSERT_OR_ASSUME(ary);
+    return ary_hash_values(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), ary);
 }
 
 /*
@@ -5603,7 +5624,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
         VALUE elt = rb_ary_elt(ary, i);
         for (j = 0; j < argc; j++) {
             if (is_hash[j]) {
-                if (rb_hash_stlike_lookup(argv[j], RARRAY_AREF(ary, i), NULL))
+                if (rb_hash_stlike_lookup(argv[j], elt, NULL))
                     break;
             }
             else {
@@ -8012,7 +8033,7 @@ rb_ary_one_p(int argc, VALUE *argv, VALUE ary)
 
 /*
  *  call-seq:
- *    array.dig(index, *identifiers) -> object
+ *    dig(index, *identifiers) -> object
  *
  *  Finds and returns the object in nested object
  *  specified by +index+ and +identifiers+;
@@ -8702,7 +8723,7 @@ rb_ary_deconstruct(VALUE ary)
  *  - #collect! (aliased as #map!): Replaces each element with a block return-value.
  *  - #flatten: Returns an array that is a recursive flattening of +self+.
  *  - #inspect (aliased as #to_s): Returns a new String containing the elements.
- *  - #join: Returns a newsString containing the elements joined by the field separator.
+ *  - #join: Returns a new String containing the elements joined by the field separator.
  *  - #to_a: Returns +self+ or a new array containing all elements.
  *  - #to_ary: Returns +self+.
  *  - #to_h: Returns a new hash formed from the elements.

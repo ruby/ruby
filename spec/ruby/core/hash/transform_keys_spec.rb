@@ -76,24 +76,12 @@ describe "Hash#transform_keys!" do
     @hash.should == { b: 1, c: 2, d: 3, e: 4 }
   end
 
-  ruby_version_is ""..."3.0.2" do # https://bugs.ruby-lang.org/issues/17735
-    it "returns the processed keys if we break from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
-      end
-      @hash.should == { b: 1, c: 2 }
+  it "returns the processed keys and non evaluated keys if we break from the block" do
+    @hash.transform_keys! do |v|
+      break if v == :c
+      v.succ
     end
-  end
-
-  ruby_version_is "3.0.2" do
-    it "returns the processed keys and non evaluated keys if we break from the block" do
-      @hash.transform_keys! do |v|
-        break if v == :c
-        v.succ
-      end
-      @hash.should == { b: 1, c: 2, d: 4 }
-    end
+    @hash.should == { b: 1, c: 2, d: 4 }
   end
 
   it "keeps later pair if new keys conflict" do
@@ -129,7 +117,7 @@ describe "Hash#transform_keys!" do
     end
 
     it "raises a FrozenError on hash argument" do
-     ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
+      ->{ @hash.transform_keys!({ a: :A, b: :B, c: :C }) }.should raise_error(FrozenError)
     end
 
     context "when no block is given" do

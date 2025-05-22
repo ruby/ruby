@@ -130,11 +130,14 @@ module Bundler
 
       specs_to_cache.each do |spec|
         next if spec.name == "bundler"
-        next if spec.source.is_a?(Source::Gemspec)
-        if spec.source.respond_to?(:migrate_cache)
-          spec.source.migrate_cache(custom_path, local: local)
-        elsif spec.source.respond_to?(:cache)
-          spec.source.cache(spec, custom_path)
+
+        source = spec.source
+        next if source.is_a?(Source::Gemspec)
+
+        if source.respond_to?(:migrate_cache)
+          source.migrate_cache(custom_path, local: local)
+        elsif source.respond_to?(:cache)
+          source.cache(spec, custom_path)
         end
       end
 

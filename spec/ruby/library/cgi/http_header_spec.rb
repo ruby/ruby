@@ -1,8 +1,11 @@
 require_relative '../../spec_helper'
-require 'cgi'
 
-require_relative 'shared/http_header'
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-describe "CGI#http_header" do
-  it_behaves_like :cgi_http_header, :http_header
+  require_relative 'shared/http_header'
+
+  describe "CGI#http_header" do
+    it_behaves_like :cgi_http_header, :http_header
+  end
 end

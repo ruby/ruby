@@ -121,13 +121,10 @@ module Bundler
       out
     end
 
-    def materialize_strictly
-      source.local!
+    def materialize_for_cache
+      source.remote!
 
-      matching_specs = source.specs.search(self)
-      return self if matching_specs.empty?
-
-      __materialize__(matching_specs)
+      materialize(self, &:first)
     end
 
     def materialized_for_installation
@@ -140,53 +137,25 @@ module Bundler
       source.local!
 
       if use_exact_resolved_specifications?
-        materialize_strictly
-      else
-        matching_specs = source.specs.search([name, version])
-        return self if matching_specs.empty?
-
-        target_platform = source.is_a?(Source::Path) ? platform : local_platform
-
-        installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
-
-        specification = __materialize__(installable_candidates, fallback_to_non_installable: false)
-        return specification unless specification.nil?
-
-        if target_platform != platform
-          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+        materialize(self) do |matching_specs|
+          choose_compatible(matching_specs)
         end
+      else
+        materialize([name, version]) do |matching_specs|
+          target_platform = source.is_a?(Source::Path) ? platform : local_platform
 
-        __materialize__(installable_candidates)
-      end
-    end
+          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
 
-    # If in frozen mode, we fallback to a non-installable candidate because by
-    # doing this we avoid re-resolving and potentially end up changing the
-    # lock file, which is not allowed. In that case, we will give a proper error
-    # about the mismatch higher up the stack, right before trying to install the
-    # bad gem.
-    def __materialize__(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
-      search = candidates.reverse.find do |spec|
-        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
-      end
-      if search.nil? && fallback_to_non_installable
-        search = candidates.last
-      elsif search && search.full_name == full_name
-        # We don't validate locally installed dependencies but accept what's in
-        # the lockfile instead for performance, since loading locally installed
-        # dependencies would mean evaluating all gemspecs, which would affect
-        # `bundler/setup` performance
-        if search.is_a?(StubSpecification)
-          search.dependencies = dependencies
-        else
-          if !source.is_a?(Source::Path) && search.runtime_dependencies.sort != dependencies.sort
-            raise IncorrectLockfileDependencies.new(self)
+          specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
+          return specification unless specification.nil?
+
+          if target_platform != platform
+            installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
           end
 
-          search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
+          choose_compatible(installable_candidates)
         end
       end
-      search
     end
 
     def inspect
@@ -206,6 +175,14 @@ module Bundler
       @force_ruby_platform = true
     end
 
+    def replace_source_with!(gemfile_source)
+      return unless gemfile_source.can_lock?(self)
+
+      @source = gemfile_source
+
+      true
+    end
+
     private
 
     def use_exact_resolved_specifications?
@@ -216,6 +193,51 @@ module Bundler
       generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
 
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
+    end
+
+    def materialize(query)
+      matching_specs = source.specs.search(query)
+      return self if matching_specs.empty?
+
+      yield matching_specs
+    end
+
+    # If in frozen mode, we fallback to a non-installable candidate because by
+    # doing this we avoid re-resolving and potentially end up changing the
+    # lockfile, which is not allowed. In that case, we will give a proper error
+    # about the mismatch higher up the stack, right before trying to install the
+    # bad gem.
+    def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
+      search = candidates.reverse.find do |spec|
+        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
+      end
+      if search.nil? && fallback_to_non_installable
+        search = candidates.last
+      end
+
+      if search
+        validate_dependencies(search) if search.platform == platform
+
+        search.locked_platform = platform if search.instance_of?(RemoteSpecification) || search.instance_of?(EndpointSpecification)
+      end
+      search
+    end
+
+    # Validate dependencies of this locked spec are consistent with dependencies
+    # of the actual spec that was materialized.
+    #
+    # Note that we don't validate dependencies of locally installed gems but
+    # accept what's in the lockfile instead for performance, since loading
+    # dependencies of locally installed gems would mean evaluating all gemspecs,
+    # which would affect `bundler/setup` performance.
+    def validate_dependencies(spec)
+      if spec.is_a?(StubSpecification)
+        spec.dependencies = dependencies
+      else
+        if !source.is_a?(Source::Path) && spec.runtime_dependencies.sort != dependencies.sort
+          raise IncorrectLockfileDependencies.new(self)
+        end
+      end
     end
   end
 end

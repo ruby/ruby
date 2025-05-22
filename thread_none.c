@@ -276,7 +276,8 @@ th_has_dedicated_nt(const rb_thread_t *th)
 }
 
 void
-rb_add_running_thread(rb_thread_t *th){
+rb_add_running_thread(rb_thread_t *th)
+{
     // do nothing
 }
 

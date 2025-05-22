@@ -139,6 +139,19 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
   end
 
+  def test_iseq_compile_under_gc_stress_bug_21180
+    Thread.new do
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        EnvUtil.under_gc_stress do
+          RubyVM::InstructionSequence.compile_file(File::NULL)
+        end
+      end
+    end.join
+  end
+
   def test_deadlock
     mutex = Thread::Mutex.new
     condition = Thread::ConditionVariable.new

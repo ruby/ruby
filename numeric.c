@@ -829,7 +829,7 @@ rb_int_zero_p(VALUE num)
  *  Of the Core and Standard Library classes,
  *  Integer, Float, Rational, and Complex use this implementation.
  *
- * Related: #zero?
+ *  Related: #zero?
  *
  */
 
@@ -5978,7 +5978,11 @@ prefix##_isqrt(argtype n) \
         while ((t = n/x) < (argtype)x) x = (rettype)((x + t) >> 1); \
         return x; \
     } \
-    return (rettype)sqrt(argtype##_TO_DOUBLE(n)); \
+    rettype x = (rettype)sqrt(argtype##_TO_DOUBLE(n)); \
+    /* libm sqrt may returns a larger approximation than actual. */ \
+    /* Our isqrt always returns a smaller approximation. */ \
+    if (x * x > n) x--; \
+    return x; \
 }
 
 #if SIZEOF_LONG*CHAR_BIT > DBL_MANT_DIG

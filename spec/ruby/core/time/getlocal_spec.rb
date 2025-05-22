@@ -14,6 +14,7 @@ describe "Time#getlocal" do
     t = Time.gm(2007, 1, 9, 12, 0, 0).getlocal(3630)
     t.should == Time.new(2007, 1, 9, 13, 0, 30, 3630)
     t.utc_offset.should == 3630
+    t.zone.should be_nil
   end
 
   platform_is_not :windows do
@@ -110,39 +111,19 @@ describe "Time#getlocal" do
   end
 
   it "raises ArgumentError if String argument and hours greater than 23" do
-    ruby_version_is ""..."3.1" do
-      -> { Time.now.getlocal("+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.now.getlocal("+2400") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
+    -> { Time.now.getlocal("+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+    -> { Time.now.getlocal("+2400") }.should raise_error(ArgumentError, "utc_offset out of range")
 
-      -> { Time.now.getlocal("+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.now.getlocal("+9900") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
-    end
-
-    ruby_version_is "3.1" do
-      -> { Time.now.getlocal("+24:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.now.getlocal("+2400") }.should raise_error(ArgumentError, "utc_offset out of range")
-
-      -> { Time.now.getlocal("+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
-      -> { Time.now.getlocal("+9900") }.should raise_error(ArgumentError, "utc_offset out of range")
-    end
+    -> { Time.now.getlocal("+99:00") }.should raise_error(ArgumentError, "utc_offset out of range")
+    -> { Time.now.getlocal("+9900") }.should raise_error(ArgumentError, "utc_offset out of range")
   end
 
   it "raises ArgumentError if String argument and minutes greater than 59" do
-    ruby_version_is ""..."3.1" do
-      -> { Time.now.getlocal("+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
-      -> { Time.now.getlocal("+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
+    -> { Time.now.getlocal("+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
+    -> { Time.now.getlocal("+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
 
-      -> { Time.now.getlocal("+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
-      -> { Time.now.getlocal("+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset')
-    end
-
-    ruby_version_is "3.1" do
-      -> { Time.now.getlocal("+00:60") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:60')
-      -> { Time.now.getlocal("+0060") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0060')
-
-      -> { Time.now.getlocal("+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
-      -> { Time.now.getlocal("+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
-    end
+    -> { Time.now.getlocal("+00:99") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +00:99')
+    -> { Time.now.getlocal("+0099") }.should raise_error(ArgumentError, '"+HH:MM", "-HH:MM", "UTC" or "A".."I","K".."Z" expected for utc_offset: +0099')
   end
 
   ruby_bug '#20797', ''...'3.4' do

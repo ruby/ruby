@@ -15,6 +15,7 @@
 #include "internal/imemo.h"
 #include "internal/compilers.h"
 #include "internal/static_assert.h"
+#include "ruby/atomic.h"
 
 #ifndef END_OF_ENUMERATION
 # if defined(__GNUC__) &&! defined(__STRICT_ANSI__)
@@ -181,7 +182,8 @@ struct rb_method_definition_struct {
     unsigned int iseq_overload: 1;
     unsigned int no_redef_warning: 1;
     unsigned int aliased : 1;
-    int reference_count : 28;
+
+    rb_atomic_t reference_count;
 
     union {
         rb_method_iseq_t iseq;
@@ -195,6 +197,7 @@ struct rb_method_definition_struct {
 
     ID original_id;
     uintptr_t method_serial;
+    const rb_namespace_t *ns;
 };
 
 struct rb_id_table;
@@ -245,6 +248,7 @@ const rb_callable_method_entry_t *rb_method_entry_complement_defined_class(const
 void rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src);
 
 void rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me);
+void rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl);
 
 void rb_scope_visibility_set(rb_method_visibility_t);
 
@@ -252,5 +256,6 @@ VALUE rb_unnamed_parameters(int arity);
 
 void rb_clear_method_cache(VALUE klass_or_module, ID mid);
 void rb_clear_all_refinement_method_cache(void);
+void rb_invalidate_method_caches(struct rb_id_table *cm_tbl, struct rb_id_table *cc_tbl);
 
 #endif /* RUBY_METHOD_H */

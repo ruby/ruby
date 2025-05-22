@@ -114,7 +114,7 @@ assert_equal '[:ae, :ae]', %q{
   end
 
   [test(Array.new 5), test([])]
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # regression test for arity check with splat and send
 assert_equal '[:ae, :ae]', %q{
@@ -174,7 +174,7 @@ assert_equal 'ok', %q{
     GC.compact
   end
   :ok
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
@@ -311,7 +311,7 @@ assert_equal '[:ok]', %q{
   # Used to crash due to GC run in rb_ensure_iv_list_size()
   # not marking the newly allocated [:ok].
   RegressionTest.new.extender.itself
-} unless rjit_enabled? # Skip on RJIT since this uncovers a crash
+}
 
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
@@ -2065,7 +2065,7 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   getbyte("a", 0)
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # Basic test for String#setbyte
 assert_equal 'AoZ', %q{
@@ -2763,7 +2763,7 @@ assert_equal '[1, 2]', %q{
 
   expandarray_redefined_nilclass
   expandarray_redefined_nilclass
-} unless rjit_enabled?
+}
 
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
@@ -2875,7 +2875,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2957,7 +2957,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2972,7 +2972,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless rjit_enabled? # RJIT calls extra Ruby methods
+}
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -3665,6 +3665,74 @@ assert_equal 'new', %q{
   end
 
   test
+}
+
+# Bug #21257 (infinite jmp)
+assert_equal 'ok', %q{
+  Good = :ok
+
+  def first
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  first
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `first` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  first
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  first
+  first
+}
+
+assert_equal 'ok', %q{
+  # Multiple incoming branches into second
+  Good = :ok
+
+  def incoming_one
+    second
+  end
+
+  def incoming_two
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  incoming_one
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `incoming_one` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  incoming_one
+  incoming_two
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  incoming_one
 }
 
 assert_equal 'ok', %q{
@@ -4494,7 +4562,7 @@ assert_equal 'true', %q{
   rescue ArgumentError
     true
   end
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # Regression test: register allocator on expandarray
 assert_equal '[]', %q{
@@ -4909,7 +4977,7 @@ assert_equal '0', %q{
   end
 
   foo # try again
-} unless rjit_enabled? # doesn't work on RJIT
+}
 
 # test integer left shift with constant rhs
 assert_equal [0x80000000000, 'a+', :ok].inspect, %q{
@@ -5017,7 +5085,7 @@ assert_equal '[[true, false, false], [true, true, false], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test FalseClass#=== before and after redefining FalseClass#==
 assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
@@ -5052,7 +5120,7 @@ assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test NilClass#=== before and after redefining NilClass#==
 assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]]', %q{
@@ -5087,7 +5155,7 @@ assert_equal '[[true, false, false], [true, false, true], [true, :error, :error]
   end
 
   results << test
-} unless rjit_enabled? # Not yet working on RJIT
+}
 
 # test struct accessors fire c_call events
 assert_equal '[[:c_call, :x=], [:c_call, :x]]', %q{

@@ -164,16 +164,8 @@ describe "Pattern matching" do
         @src = '[0, 1] => [a, b]'
       end
 
-      ruby_version_is ""..."3.1" do
-        it "warns about pattern matching is experimental feature" do
-          -> { eval @src }.should complain(/pattern matching is experimental, and the behavior may change in future versions of Ruby!/i)
-        end
-      end
-
-      ruby_version_is "3.1" do
-        it "does not warn about pattern matching is experimental feature" do
-          -> { eval @src }.should_not complain
-        end
+      it "does not warn about pattern matching is experimental feature" do
+        -> { eval @src }.should_not complain
       end
     end
   end
@@ -1220,8 +1212,99 @@ describe "Pattern matching" do
       result.should == true
     end
   end
-end
 
-ruby_version_is "3.1" do
-  require_relative 'pattern_matching/3.1'
+  describe "Ruby 3.1 improvements" do
+    it "can omit parentheses in one line pattern matching" do
+      [1, 2] => a, b
+      [a, b].should == [1, 2]
+
+      {a: 1} => a:
+      a.should == 1
+    end
+
+    it "supports pinning instance variables" do
+      @a = /a/
+      case 'abc'
+      in ^@a
+        true
+      end.should == true
+    end
+
+    it "supports pinning class variables" do
+      result = nil
+      Module.new do
+        # avoid "class variable access from toplevel" runtime error with #module_eval
+        result = module_eval(<<~RUBY)
+          @@a = 0..10
+
+          case 2
+          in ^@@a
+            true
+          end
+        RUBY
+      end
+
+      result.should == true
+    end
+
+    it "supports pinning global variables" do
+      $a = /a/
+      case 'abc'
+      in ^$a
+        true
+      end.should == true
+    end
+
+    it "supports pinning expressions" do
+      case 'abc'
+      in ^(/a/)
+        true
+      end.should == true
+
+      case 0
+      in ^(0 + 0)
+        true
+      end.should == true
+    end
+
+    it "supports pinning expressions in array pattern" do
+      case [3]
+      in [^(1 + 2)]
+        true
+      end.should == true
+    end
+
+    it "supports pinning expressions in hash pattern" do
+      case {name: '2.6', released_at: Time.new(2018, 12, 25)}
+      in {released_at: ^(Time.new(2010)..Time.new(2020))}
+        true
+      end.should == true
+    end
+  end
+
+  describe "value in pattern" do
+    it "returns true if the pattern matches" do
+      (1 in 1).should == true
+
+      (1 in Integer).should == true
+
+      e = nil
+      ([1, 2] in [1, e]).should == true
+      e.should == 2
+
+      k = nil
+      ({k: 1} in {k:}).should == true
+      k.should == 1
+    end
+
+    it "returns false if the pattern does not match" do
+      (1 in 2).should == false
+
+      (1 in Float).should == false
+
+      ([1, 2] in [2, e]).should == false
+
+      ({k: 1} in {k: 2}).should == false
+    end
+  end
 end

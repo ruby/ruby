@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require 'fiber'
 
 describe "Fiber#inspect" do
   describe "status" do

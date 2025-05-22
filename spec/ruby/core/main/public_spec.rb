@@ -30,16 +30,8 @@ describe "main#public" do
     end
   end
 
-  ruby_version_is ''...'3.1' do
-    it "returns Object" do
-      eval("public :main_private_method", TOPLEVEL_BINDING).should equal(Object)
-    end
-  end
-
-  ruby_version_is '3.1' do
-    it "returns argument" do
-      eval("public :main_private_method", TOPLEVEL_BINDING).should equal(:main_private_method)
-    end
+  it "returns argument" do
+    eval("public :main_private_method", TOPLEVEL_BINDING).should equal(:main_private_method)
   end
 
 

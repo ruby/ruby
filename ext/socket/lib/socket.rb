@@ -693,6 +693,7 @@ class Socket < BasicSocket
     connection_attempt_delay_expires_at = nil
     user_specified_connect_timeout_at = nil
     last_error = nil
+    last_error_from_thread = false
 
     if resolving_family_names.size == 1
       family_name = resolving_family_names.first
@@ -865,6 +866,7 @@ class Socket < BasicSocket
               other = family_name == :ipv6 ? :ipv4 : :ipv6
               if !resolution_store.resolved?(other) || !resolution_store.resolved_successfully?(other)
                 last_error = result
+                last_error_from_thread = true
               end
             end
           else
@@ -885,7 +887,11 @@ class Socket < BasicSocket
 
       if resolution_store.empty_addrinfos?
         if connecting_sockets.empty? && resolution_store.resolved_all_families?
-          raise last_error
+          if last_error_from_thread
+            raise last_error.class, last_error.message, cause: last_error
+          else
+            raise last_error
+          end
         end
 
         if (expired?(now, user_specified_resolv_timeout_at) || resolution_store.resolved_all_families?) &&
@@ -1021,8 +1027,8 @@ class Socket < BasicSocket
   private_constant :HostnameResolutionResult
 
   class HostnameResolutionStore
-    PRIORITY_ON_V6 = [:ipv6, :ipv4]
-    PRIORITY_ON_V4 = [:ipv4, :ipv6]
+    PRIORITY_ON_V6 = [:ipv6, :ipv4].freeze
+    PRIORITY_ON_V4 = [:ipv4, :ipv6].freeze
 
     def initialize(family_names)
       @family_names = family_names

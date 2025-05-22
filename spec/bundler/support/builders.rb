@@ -187,30 +187,35 @@ module Spec
     end
 
     def build_repo2(**kwargs, &blk)
-      FileUtils.rm_rf gem_repo2
-      FileUtils.cp_r gem_repo1, gem_repo2
+      FileUtils.cp_r gem_repo1, gem_repo2, remove_destination: true
       update_repo2(**kwargs, &blk) if block_given?
     end
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
     def build_repo3(**kwargs, &blk)
-      build_empty_repo gem_repo3, **kwargs, &blk
+      raise "gem_repo3 already exists -- use update_repo3 instead" if File.exist?(gem_repo3)
+      build_repo gem_repo3, **kwargs, &blk
     end
 
     # Like build_repo3, this is a repo that has no pre-installed gems included.
     # We have two different methods for situations where two different empty
     # sources are needed.
     def build_repo4(**kwargs, &blk)
-      build_empty_repo gem_repo4, **kwargs, &blk
-    end
-
-    def update_repo4(&blk)
-      update_repo(gem_repo4, &blk)
+      raise "gem_repo4 already exists -- use update_repo4 instead" if File.exist?(gem_repo4)
+      build_repo gem_repo4, **kwargs, &blk
     end
 
     def update_repo2(**kwargs, &blk)
       update_repo(gem_repo2, **kwargs, &blk)
+    end
+
+    def update_repo3(&blk)
+      update_repo(gem_repo3, &blk)
+    end
+
+    def update_repo4(&blk)
+      update_repo(gem_repo4, &blk)
     end
 
     def build_security_repo
@@ -228,6 +233,41 @@ module Spec
       end
     end
 
+    # A minimal fake irb console
+    def build_dummy_irb(version = "9.9.9")
+      build_gem "irb", version do |s|
+        s.write "lib/irb.rb", <<-RUBY
+          class IRB
+            class << self
+              def toplevel_binding
+                unless defined?(@toplevel_binding) && @toplevel_binding
+                  TOPLEVEL_BINDING.eval %{
+                    def self.__irb__; binding; end
+                    IRB.instance_variable_set(:@toplevel_binding, __irb__)
+                    class << self; undef __irb__; end
+                  }
+                end
+                @toplevel_binding.eval('private')
+                @toplevel_binding
+              end
+
+              def __irb__
+                while line = gets
+                  begin
+                    puts eval(line, toplevel_binding).inspect.sub(/^"(.*)"$/, '=> \\1')
+                  rescue Exception => e
+                    puts "\#{e.class}: \#{e.message}"
+                    puts e.backtrace.first
+                  end
+                end
+              end
+              alias start __irb__
+            end
+          end
+        RUBY
+      end
+    end
+
     def build_repo(path, **kwargs, &blk)
       return if File.directory?(path)
 
@@ -236,17 +276,8 @@ module Spec
       update_repo(path,**kwargs, &blk)
     end
 
-    def check_test_gems!
-      if rake_path.nil?
-        FileUtils.rm_rf(base_system_gems)
-        Spec::Rubygems.install_test_deps
-      end
-
-      Helpers.install_dev_bundler unless pristine_system_gem_path.exist?
-    end
-
     def update_repo(path, build_compact_index: true)
-      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") && RUBY_ENGINE != "jruby" ? "#{Module.nesting.first}#build_repo" : "build_repo"
       if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
@@ -316,11 +347,6 @@ module Spec
     end
 
     private
-
-    def build_empty_repo(gem_repo, **kwargs, &blk)
-      FileUtils.rm_rf gem_repo
-      build_repo(gem_repo, **kwargs, &blk)
-    end
 
     def build_with(builder, name, args, &blk)
       @_build_path ||= nil
@@ -419,6 +445,7 @@ module Spec
         build_path = @context.tmp + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
+        require "fileutils"
         FileUtils.mkdir_p build_path
 
         @context.shipped_files.each do |shipped_file|
@@ -427,7 +454,7 @@ module Spec
           target_shipped_file = build_path + target_shipped_file
           target_shipped_dir = File.dirname(target_shipped_file)
           FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
-          FileUtils.cp shipped_file, target_shipped_file, preserve: true
+          FileUtils.cp File.expand_path(shipped_file, @context.source_root), target_shipped_file, preserve: true
         end
 
         @context.replace_version_file(@version, dir: build_path)
@@ -530,10 +557,8 @@ module Spec
         when false
           # do nothing
         when :yaml
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_yaml
         else
-          @spec.files << "#{name}.gemspec"
           @files["#{name}.gemspec"] = @spec.to_ruby
         end
 
@@ -634,14 +659,14 @@ module Spec
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
-        if opts[:gemspec] == :yaml || opts[:gemspec] == false
+        if [:yaml, false].include?(opts[:gemspec])
           Dir.chdir(lib_path) do
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
         elsif opts[:skip_validation]
           @context.gem_command "build --force #{@spec.name}", dir: lib_path
         else
-          @context.gem_command "build #{@spec.name}", dir: lib_path
+          @context.gem_command "build #{@spec.name}", dir: lib_path, allowed_warning: opts[:allowed_warning]
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)

@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-
@@ -56,6 +55,10 @@ class RubyVM::TraceInstructions
   end
 
   def has_attribute? *;
+    return false
+  end
+
+  def zjit_profile?
     return false
   end
 

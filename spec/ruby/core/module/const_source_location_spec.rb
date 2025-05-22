@@ -19,40 +19,60 @@ describe "Module#const_source_location" do
 
       ConstantSpecs::ContainerA::ChildA::CSL_CONST301 = :const301_5
       ConstantSpecs::ContainerA::ChildA.const_source_location(:CSL_CONST301).should == [__FILE__, __LINE__ - 1]
+    ensure
+      ConstantSpecs::ClassA.send(:remove_const, :CSL_CONST301)
+      ConstantSpecs::ModuleA.send(:remove_const, :CSL_CONST301)
+      ConstantSpecs::ParentA.send(:remove_const, :CSL_CONST301)
+      ConstantSpecs::ContainerA::ChildA.send(:remove_const, :CSL_CONST301)
     end
 
     it "searches a path in a module included in the immediate class before the superclass" do
       ConstantSpecs::ParentB::CSL_CONST302 = :const302_1
       ConstantSpecs::ModuleF::CSL_CONST302 = :const302_2
       ConstantSpecs::ContainerB::ChildB.const_source_location(:CSL_CONST302).should == [__FILE__, __LINE__ - 1]
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CSL_CONST302)
+      ConstantSpecs::ModuleF.send(:remove_const, :CSL_CONST302)
     end
 
     it "searches a path in the superclass before a module included in the superclass" do
       ConstantSpecs::ModuleE::CSL_CONST303 = :const303_1
       ConstantSpecs::ParentB::CSL_CONST303 = :const303_2
       ConstantSpecs::ContainerB::ChildB.const_source_location(:CSL_CONST303).should == [__FILE__, __LINE__ - 1]
+    ensure
+      ConstantSpecs::ModuleE.send(:remove_const, :CSL_CONST303)
+      ConstantSpecs::ParentB.send(:remove_const, :CSL_CONST303)
     end
 
     it "searches a path in a module included in the superclass" do
       ConstantSpecs::ModuleA::CSL_CONST304 = :const304_1
       ConstantSpecs::ModuleE::CSL_CONST304 = :const304_2
       ConstantSpecs::ContainerB::ChildB.const_source_location(:CSL_CONST304).should == [__FILE__, __LINE__ - 1]
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CSL_CONST304)
+      ConstantSpecs::ModuleE.send(:remove_const, :CSL_CONST304)
     end
 
     it "searches a path in the superclass chain" do
       ConstantSpecs::ModuleA::CSL_CONST305 = :const305
       ConstantSpecs::ContainerB::ChildB.const_source_location(:CSL_CONST305).should == [__FILE__, __LINE__ - 1]
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CSL_CONST305)
     end
 
     it "returns path to a toplevel constant when the receiver is a Class" do
       Object::CSL_CONST306 = :const306
       ConstantSpecs::ContainerB::ChildB.const_source_location(:CSL_CONST306).should == [__FILE__, __LINE__ - 1]
+    ensure
+      Object.send(:remove_const, :CSL_CONST306)
     end
 
     it "returns path to a toplevel constant when the receiver is a Module" do
       Object::CSL_CONST308 = :const308
       ConstantSpecs.const_source_location(:CSL_CONST308).should == [__FILE__, __LINE__ - 1]
       ConstantSpecs::ModuleA.const_source_location(:CSL_CONST308).should == [__FILE__, __LINE__ - 2]
+    ensure
+      Object.send(:remove_const, :CSL_CONST308)
     end
 
     it "returns path to the updated value of a constant" do
@@ -63,6 +83,8 @@ describe "Module#const_source_location" do
         ConstantSpecs::ClassB::CSL_CONST309 = :const309_2
       }.should complain(/already initialized constant/)
       ConstantSpecs::ClassB.const_source_location(:CSL_CONST309).should == [__FILE__, __LINE__ - 2]
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CSL_CONST309)
     end
   end
 
@@ -207,7 +229,7 @@ describe "Module#const_source_location" do
   end
 
   it "does search private constants path" do
-     ConstantSpecs.const_source_location(:CS_PRIVATE).should == [@constants_fixture_path, ConstantSpecs::CS_PRIVATE_LINE]
+    ConstantSpecs.const_source_location(:CS_PRIVATE).should == [@constants_fixture_path, ConstantSpecs::CS_PRIVATE_LINE]
   end
 
   it "works for eval with a given line" do

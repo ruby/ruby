@@ -140,6 +140,7 @@ ossl_dsa_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 #ifndef HAVE_EVP_PKEY_DUP
+/* :nodoc: */
 static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {

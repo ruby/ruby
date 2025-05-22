@@ -10,13 +10,7 @@ static VALUE define_finalizer(VALUE self, VALUE obj, VALUE finalizer) {
 }
 
 static VALUE undefine_finalizer(VALUE self, VALUE obj) {
-// Ruby 3.4.0 and 3.4.1 have a bug where rb_undefine_finalizer is missing
-// See: https://bugs.ruby-lang.org/issues/20981
-#if RUBY_API_VERSION_CODE == 30400 && (RUBY_VERSION_TEENY == 0 || RUBY_VERSION_TEENY == 1)
-  return Qnil;
-#else
   return rb_undefine_finalizer(obj);
-#endif
 }
 
 void Init_finalizer_spec(void) {

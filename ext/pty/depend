@@ -172,6 +172,7 @@ pty.o: $(hdrdir)/ruby/ruby.h
 pty.o: $(hdrdir)/ruby/st.h
 pty.o: $(hdrdir)/ruby/subst.h
 pty.o: $(hdrdir)/ruby/util.h
+pty.o: $(top_srcdir)/id_table.h
 pty.o: $(top_srcdir)/internal.h
 pty.o: $(top_srcdir)/internal/array.h
 pty.o: $(top_srcdir)/internal/compilers.h

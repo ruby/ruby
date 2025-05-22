@@ -888,7 +888,7 @@ describe "CApiObject" do
       end
     end
 
-    # The `generic_iv_tbl` table and `*_generic_ivar` functions are for mutable
+    # The `generic_fields_tbl` table and `*_generic_ivar` functions are for mutable
     # objects which do not store ivars directly in MRI such as RString, because
     # there is no member iv_index_tbl (ivar table) such as in RObject and RClass.
 

@@ -307,7 +307,7 @@ module GC
   #
   #   A flag will be set to notify that a full mark has been
   #   requested. This flag is accessible using
-  #   <code>GC.latest_gc_info(:needs_major_by)</code>
+  #   <code>GC.latest_gc_info(:need_major_by)</code>
   #
   #   The user can trigger a major collection at any time using
   #   <code>GC.start(full_mark: true)</code>

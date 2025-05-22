@@ -34,17 +34,15 @@ describe "Matrix#**" do
       end
     end
 
-    ruby_version_is '3.1.0' do # https://bugs.ruby-lang.org/issues/17521
-      describe "that is 0" do
-        it "returns the identity for square matrices" do
-          m = Matrix[ [1, 1], [1, 1] ]
-          (m ** 0).should == Matrix.identity(2)
-        end
+    describe "that is 0" do
+      it "returns the identity for square matrices" do
+        m = Matrix[ [1, 1], [1, 1] ]
+        (m ** 0).should == Matrix.identity(2)
+      end
 
-        it "raises an ErrDimensionMismatch for non-square matrices" do
-          m = Matrix[ [1, 1] ]
-          -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
-        end
+      it "raises an ErrDimensionMismatch for non-square matrices" do
+        m = Matrix[ [1, 1] ]
+        -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
       end
     end
   end

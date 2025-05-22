@@ -16,11 +16,18 @@
 #define id_status ruby_static_id_status
 
 /* eval.c */
+struct rb_refinements_data {
+    VALUE refinement;
+    VALUE refinements;
+};
+
 extern ID ruby_static_id_signo;
 extern ID ruby_static_id_status;
 VALUE rb_refinement_module_get_refined_class(VALUE module);
 void rb_class_modify_check(VALUE);
 NORETURN(VALUE rb_f_raise(int argc, VALUE *argv));
+void rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass);
+void rb_vm_using_module(VALUE module);
 VALUE rb_top_main_class(const char *method);
 
 /* eval_error.c */

@@ -92,9 +92,9 @@ of each.
 
 - [minitest]: A test library supporting TDD, BDD, mocking, and benchmarking
 - [power_assert]: Power Assert for Ruby
-- [rake]: Ruby build program with capabilities similar to make
+- [rake][rake-doc] ([GitHub][rake]): Ruby build program with capabilities similar to make
 - [test-unit]: A compatibility layer for MiniTest
-- [rexml]: An XML toolkit for Ruby
+- [rexml][rexml-doc] ([GitHub][rexml]): An XML toolkit for Ruby
 - [rss]: A family of libraries supporting various XML-based "feeds"
 - [net-ftp]: Support for the File Transfer Protocol
 - [net-imap]: Ruby client API for the Internet Message Access Protocol
@@ -105,7 +105,7 @@ of each.
 - [rbs]: RBS is a language to describe the structure of Ruby programs
 - [typeprof]: A type analysis tool for Ruby code based on abstract interpretation
 - [debug]: Debugging functionality for Ruby
-- [racc]: A LALR(1) parser generator written in Ruby
+- [racc][racc-doc] ([GitHub][racc]): A LALR(1) parser generator written in Ruby
 - [mutex_m]: Mixin to extend objects to be handled like a Mutex
 - [getoptlong]: Parse command line options similar to the GNU C getopt_long()
 - [base64]: Support for encoding and decoding binary data using a Base64 representation
@@ -117,13 +117,13 @@ of each.
 - [drb]: Distributed object system for Ruby
 - [nkf]: Ruby extension for the Network Kanji Filter
 - [syslog]: Ruby interface for the POSIX system logging facility
-- [csv]: Provides an interface to read and write CSV files and data
+- [csv][csv-doc] ([GitHub][csv]): Provides an interface to read and write CSV files and data
 - [ostruct]: A class to build custom data structures, similar to a Hash
 - [benchmark]: Provides methods to measure and report the time used to execute code
-- [logger]: Provides a simple logging utility for outputting messages
+- [logger][logger-doc] ([GitHub][logger]): Provides a simple logging utility for outputting messages
 - [pstore]: Implements a file-based persistence mechanism based on a Hash
 - [win32ole]: Provides an interface for OLE Automation in Ruby
-- [reline]: GNU Readline and Editline in a pure Ruby implementation
+- [reline][reline-doc] ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
 
@@ -215,5 +215,11 @@ of each.
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
 
+[reline-doc]: https://ruby.github.io/reline/
+[rake-doc]: https://ruby.github.io/rake/
 [irb-doc]: https://ruby.github.io/irb/
 [rdoc-doc]: https://ruby.github.io/rdoc/
+[logger-doc]: https://ruby.github.io/logger/
+[racc-doc]: https://ruby.github.io/racc/
+[csv-doc]: https://ruby.github.io/csv/
+[rexml-doc]: https://ruby.github.io/rexml/

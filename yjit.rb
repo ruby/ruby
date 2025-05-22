@@ -33,8 +33,9 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `compilation_log` decides
-  # whether to enable \YJIT compilation logging or not.
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not. `log` decides
+  # whether to enable \YJIT compilation logging or not. Optional `mem_size` and `call_threshold` can be
+  # provided to override default configuration.
   #
   # * `stats`:
   #     * `false`: Don't enable stats.
@@ -44,11 +45,27 @@ module RubyVM::YJIT
   #     * `false`: Don't enable the log.
   #     * `true`: Enable the log. Print log at exit.
   #     * `:quiet`: Enable the log. Do not print log at exit.
-  def self.enable(stats: false, log: false)
+  def self.enable(stats: false, log: false, mem_size: nil, call_threshold: nil)
     return false if enabled?
+
+    if Primitive.cexpr! 'RBOOL(rb_zjit_enabled_p)'
+      warn("Only one JIT can be enabled at the same time.")
+      return false
+    end
+
+    if mem_size
+      raise ArgumentError, "mem_size must be a Integer" unless mem_size.is_a?(Integer)
+      raise ArgumentError, "mem_size must be between 1 and 2048 MB" unless (1..2048).include?(mem_size)
+    end
+
+    if call_threshold
+      raise ArgumentError, "call_threshold must be a Integer" unless call_threshold.is_a?(Integer)
+      raise ArgumentError, "call_threshold must be a positive integer" unless call_threshold.positive?
+    end
+
     at_exit { print_and_dump_stats } if stats
     call_yjit_hooks
-    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet)
+    Primitive.rb_yjit_enable(stats, stats != :quiet, log, log != :quiet, mem_size, call_threshold)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -422,10 +439,10 @@ module RubyVM::YJIT
       out.puts "object_shape_count:    " + format_number(13, stats[:object_shape_count])
       out.puts "side_exit_count:       " + format_number(13, stats[:side_exit_count])
       out.puts "total_exit_count:      " + format_number(13, stats[:total_exit_count])
-      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count])
-      out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count])
+      out.puts "total_insns_count:     " + format_number(13, stats[:total_insns_count]) if stats[:total_insns_count]
+      out.puts "vm_insns_count:        " + format_number(13, stats[:vm_insns_count]) if stats[:vm_insns_count]
       out.puts "yjit_insns_count:      " + format_number(13, stats[:yjit_insns_count])
-      out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%"
+      out.puts "ratio_in_yjit:         " + ("%12.1f" % stats[:ratio_in_yjit]) + "%" if stats[:ratio_in_yjit]
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, out: out, prefix: "exit_")

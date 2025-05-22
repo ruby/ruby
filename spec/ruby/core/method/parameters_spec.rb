@@ -233,54 +233,27 @@ describe "Method#parameters" do
     m.method(:handled_via_method_missing).parameters.should == [[:rest]]
   end
 
-  ruby_version_is '3.2' do
-    it "adds rest arg with name * for \"star\" argument" do
-      m = MethodSpecs::Methods.new
-      m.method(:one_unnamed_splat).parameters.should == [[:rest, :*]]
-    end
-
-    it "adds keyrest arg with ** as a name for \"double star\" argument" do
-      m = MethodSpecs::Methods.new
-      m.method(:one_unnamed_keyrest).parameters.should == [[:keyrest, :**]]
-    end
+  it "adds rest arg with name * for \"star\" argument" do
+    m = MethodSpecs::Methods.new
+    m.method(:one_unnamed_splat).parameters.should == [[:rest, :*]]
   end
 
-  ruby_version_is ''...'3.2' do
-    it "adds nameless rest arg for \"star\" argument" do
-      m = MethodSpecs::Methods.new
-      m.method(:one_unnamed_splat).parameters.should == [[:rest]]
-    end
-
-    it "adds nameless keyrest arg for \"double star\" argument" do
-      m = MethodSpecs::Methods.new
-      m.method(:one_unnamed_keyrest).parameters.should == [[:keyrest]]
-    end
+  it "adds keyrest arg with ** as a name for \"double star\" argument" do
+    m = MethodSpecs::Methods.new
+    m.method(:one_unnamed_keyrest).parameters.should == [[:keyrest, :**]]
   end
 
-  ruby_version_is '3.1' do
-    it "adds block arg with name & for anonymous block argument" do
-      object = Object.new
-
-      eval(<<~RUBY).should == [[:block, :&]]
-        def object.foo(&)
-        end
-        object.method(:foo).parameters
-      RUBY
+  it "adds block arg with name & for anonymous block argument" do
+    object = Object.new
+    def object.foo(&)
     end
+
+    object.method(:foo).parameters.should == [[:block, :&]]
   end
 
-  ruby_version_is ""..."3.1" do
-    it "returns [:rest, :*], [:block, :&] for forward parameters operator" do
-      m = MethodSpecs::Methods.new
-      m.method(:forward_parameters).parameters.should == [[:rest, :*], [:block, :&]]
-    end
-  end
-
-  ruby_version_is "3.1" do
-    it "returns [:rest, :*], [:keyrest, :**], [:block, :&] for forward parameters operator" do
-      m = MethodSpecs::Methods.new
-      m.method(:forward_parameters).parameters.should == [[:rest, :*], [:keyrest, :**], [:block, :&]]
-    end
+  it "returns [:rest, :*], [:keyrest, :**], [:block, :&] for forward parameters operator" do
+    m = MethodSpecs::Methods.new
+    m.method(:forward_parameters).parameters.should == [[:rest, :*], [:keyrest, :**], [:block, :&]]
   end
 
   it "returns the args and block for a splat and block argument" do

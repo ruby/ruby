@@ -79,29 +79,17 @@ module Bundler::PubGrub
       dependencies_for(@root_package, @root_version)
     end
 
-    # Override me (maybe)
-    #
-    # If not overridden, the order returned by all_versions_for will be used
-    #
-    # Returns: Array of versions in preferred order
-    def sort_versions_by_preferred(package, sorted_versions)
-      indexes = @version_indexes[package]
-      sorted_versions.sort_by { |version| indexes[version] }
-    end
-
     def initialize
       @root_package = Package.root
       @root_version = Package.root_version
 
-      @cached_versions = Hash.new do |h,k|
+      @sorted_versions = Hash.new do |h,k|
         if k == @root_package
           h[k] = [@root_version]
         else
-          h[k] = all_versions_for(k)
+          h[k] = all_versions_for(k).sort
         end
       end
-      @sorted_versions = Hash.new { |h,k| h[k] = @cached_versions[k].sort }
-      @version_indexes = Hash.new { |h,k| h[k] = @cached_versions[k].each.with_index.to_h }
 
       @cached_dependencies = Hash.new do |packages, package|
         if package == @root_package
@@ -117,15 +105,7 @@ module Bundler::PubGrub
     end
 
     def versions_for(package, range=VersionRange.any)
-      versions = range.select_versions(@sorted_versions[package])
-
-      # Conditional avoids (among other things) calling
-      # sort_versions_by_preferred with the root package
-      if versions.size > 1
-        sort_versions_by_preferred(package, versions)
-      else
-        versions
-      end
+      range.select_versions(@sorted_versions[package])
     end
 
     def no_versions_incompatibility_for(_package, unsatisfied_term)
@@ -164,7 +144,7 @@ module Bundler::PubGrub
             sorted_versions[high]
           end
 
-        range = VersionRange.new(min: low, max: high, include_min: true)
+        range = VersionRange.new(min: low, max: high, include_min: !low.nil?)
 
         self_constraint = VersionConstraint.new(package, range: range)
 

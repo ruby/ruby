@@ -798,14 +798,14 @@ rb_thread_create_timer_thread(void)
 static int
 native_stop_timer_thread(void)
 {
-    int stopped = --system_working <= 0;
-    if (stopped) {
-        SetEvent(timer_thread.lock);
-        native_thread_join(timer_thread.id);
-        CloseHandle(timer_thread.lock);
-        timer_thread.lock = 0;
-    }
-    return stopped;
+    RUBY_ATOMIC_SET(system_working, 0);
+
+    SetEvent(timer_thread.lock);
+    native_thread_join(timer_thread.id);
+    CloseHandle(timer_thread.lock);
+    timer_thread.lock = 0;
+
+    return 1;
 }
 
 static void
@@ -875,7 +875,8 @@ native_thread_native_thread_id(rb_thread_t *th)
 #define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
 
 void
-rb_add_running_thread(rb_thread_t *th){
+rb_add_running_thread(rb_thread_t *th)
+{
     // do nothing
 }
 

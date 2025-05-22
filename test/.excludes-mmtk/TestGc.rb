@@ -7,6 +7,7 @@ exclude(:test_gc_config_setting_returns_updated_config_hash, "testing behaviour 
 exclude(:test_gc_internals, "testing behaviour specific to default GC")
 exclude(:test_gc_parameter, "testing behaviour specific to default GC")
 exclude(:test_gc_parameter_init_slots, "testing behaviour specific to default GC")
+exclude(:test_heaps_grow_independently, "testing behaviour specific to default GC")
 exclude(:test_latest_gc_info, "testing behaviour specific to default GC")
 exclude(:test_latest_gc_info_argument, "testing behaviour specific to default GC")
 exclude(:test_latest_gc_info_need_major_by, "testing behaviour specific to default GC")

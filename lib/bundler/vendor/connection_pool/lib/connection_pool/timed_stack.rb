@@ -41,6 +41,7 @@ class Bundler::ConnectionPool::TimedStack
   def push(obj, options = {})
     @mutex.synchronize do
       if @shutdown_block
+        @created -= 1 unless @created == 0
         @shutdown_block.call(obj)
       else
         store_connection obj, options
@@ -99,6 +100,26 @@ class Bundler::ConnectionPool::TimedStack
   end
 
   ##
+  # Reaps connections that were checked in more than +idle_seconds+ ago.
+  def reap(idle_seconds, &block)
+    raise ArgumentError, "reap must receive a block" unless block
+    raise ArgumentError, "idle_seconds must be a number" unless idle_seconds.is_a?(Numeric)
+    raise Bundler::ConnectionPool::PoolShuttingDownError if @shutdown_block
+
+    idle.times do
+      conn =
+        @mutex.synchronize do
+          raise Bundler::ConnectionPool::PoolShuttingDownError if @shutdown_block
+
+          reserve_idle_connection(idle_seconds)
+        end
+      break unless conn
+
+      block.call(conn)
+    end
+  end
+
+  ##
   # Returns +true+ if there are no available connections.
 
   def empty?
@@ -110,6 +131,12 @@ class Bundler::ConnectionPool::TimedStack
 
   def length
     @max - @created + @que.length
+  end
+
+  ##
+  # The number of connections created and available on the stack.
+  def idle
+    @que.length
   end
 
   private
@@ -133,7 +160,7 @@ class Bundler::ConnectionPool::TimedStack
   # This method must return a connection from the stack.
 
   def fetch_connection(options = nil)
-    @que.pop
+    @que.pop&.first
   end
 
   ##
@@ -144,9 +171,32 @@ class Bundler::ConnectionPool::TimedStack
   def shutdown_connections(options = nil)
     while connection_stored?(options)
       conn = fetch_connection(options)
+      @created -= 1 unless @created == 0
       @shutdown_block.call(conn)
     end
-    @created = 0
+  end
+
+  ##
+  # This is an extension point for TimedStack and is called with a mutex.
+  #
+  # This method returns the oldest idle connection if it has been idle for more than idle_seconds.
+  # This requires that the stack is kept in order of checked in time (oldest first).
+
+  def reserve_idle_connection(idle_seconds)
+    return unless idle_connections?(idle_seconds)
+
+    @created -= 1 unless @created == 0
+
+    @que.shift.first
+  end
+
+  ##
+  # This is an extension point for TimedStack and is called with a mutex.
+  #
+  # Returns true if the first connection in the stack has been idle for more than idle_seconds
+
+  def idle_connections?(idle_seconds)
+    connection_stored? && (current_time - @que.first.last > idle_seconds)
   end
 
   ##
@@ -155,7 +205,7 @@ class Bundler::ConnectionPool::TimedStack
   # This method must return +obj+ to the stack.
 
   def store_connection(obj, options = nil)
-    @que.push obj
+    @que.push [obj, current_time]
   end
 
   ##

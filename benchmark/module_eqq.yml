@@ -1,4 +1,5 @@
 prelude: |
+  module SomeModule; end
   class SimpleClass; end
   class MediumClass
     10.times { include Module.new }
@@ -24,4 +25,8 @@ benchmark:
     SimpleClass === LargeObj
   simple_class_eqq_huge_obj: |
     SimpleClass === HugeObj
-loop_count: 20000000
+  simple_class_eqq_module: |
+    SimpleClass === HugeObj
+  module_eqq_module: |
+    SomeModule === HugeObj
+loop_count: 10000000

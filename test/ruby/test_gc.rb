@@ -211,7 +211,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_allocated_pages], stat[:heap_allocated_pages] + stat[:total_freed_pages]
     assert_equal stat[:heap_available_slots], stat[:heap_live_slots] + stat[:heap_free_slots] + stat[:heap_final_slots]
     assert_equal stat[:heap_live_slots], stat[:total_allocated_objects] - stat[:total_freed_objects] - stat[:heap_final_slots]
-    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages]
+    assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages] + stat[:heap_empty_pages]
 
     if use_rgengc?
       assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count]
@@ -253,7 +253,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap_all
-    omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
     # Initialize to prevent GC in future calls
@@ -357,13 +356,14 @@ class TestGc < Test::Unit::TestCase
     3.times { GC.start }
     assert_nil GC.latest_gc_info(:need_major_by)
 
-    # allocate objects until need_major_by is set or major GC happens
-    objects = []
-    while GC.latest_gc_info(:need_major_by).nil?
-      objects.append(100.times.map { '*' })
-    end
-
     EnvUtil.without_gc do
+      # allocate objects until need_major_by is set or major GC happens
+      objects = []
+      while GC.latest_gc_info(:need_major_by).nil?
+        objects.append(100.times.map { '*' })
+        GC.start(full_mark: false)
+      end
+
       # We need to ensure that no GC gets ran before the call to GC.start since
       # it would trigger a major GC. Assertions could allocate objects and
       # trigger a GC so we don't run assertions until we perform the major GC.
@@ -411,6 +411,8 @@ class TestGc < Test::Unit::TestCase
       before_weak_references_count = GC.latest_gc_info(:weak_references_count)
       before_retained_weak_references_count = GC.latest_gc_info(:retained_weak_references_count)
 
+      # Clear ary, so if ary itself is somewhere on the stack, it won't hold all references
+      ary.clear
       ary = nil
 
       # Free ary, which should empty out the wmap
@@ -418,8 +420,8 @@ class TestGc < Test::Unit::TestCase
       # Run full GC again to collect stats about weak references
       GC.start
 
-      # Sometimes the WeakMap has one element, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 1)
+      # Sometimes the WeakMap has a few elements, which might be held on by registers.
+      assert_operator(wmap.size, :<=, 2)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
@@ -533,6 +535,8 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_parameter_init_slots
+    omit "[Bug #21203] This test is flaky and intermittently failing now"
+
     assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
       # Constant from gc.c.
       GC_HEAP_INIT_SLOTS = 10_000
@@ -677,10 +681,29 @@ class TestGc < Test::Unit::TestCase
 
       # Should not be thrashing in page creation
       assert_equal before_stats[:heap_allocated_pages], after_stats[:heap_allocated_pages], debug_msg
-      assert_equal 0, after_stats[:heap_empty_pages], debug_msg
       assert_equal 0, after_stats[:total_freed_pages], debug_msg
       # Only young objects, so should not trigger major GC
       assert_equal before_stats[:major_gc_count], after_stats[:major_gc_count], debug_msg
+    RUBY
+  end
+
+  def test_heaps_grow_independently
+    # [Bug #21214]
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY', timeout: 60)
+      COUNT = 1_000_000
+
+      def allocate_small_object = []
+      def allocate_large_object = Array.new(10)
+
+      @arys = Array.new(COUNT) do
+        # Allocate 10 small transient objects
+        10.times { allocate_small_object }
+        # Allocate 1 large object that is persistent
+        allocate_large_object
+      end
+
+      assert_operator(GC.stat(:heap_available_slots), :<, COUNT * 2)
     RUBY
   end
 

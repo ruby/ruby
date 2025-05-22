@@ -377,4 +377,4 @@ Executions:
   $ ruby match_converter.rb --capitalize foo
   ["Foo", String]
   $ ruby match_converter.rb --capitalize "foo bar"
-  match_converter.rb:9:in `<main>': invalid argument: --capitalize foo bar (OptionParser::InvalidArgument)
+  match_converter.rb:9:in '<main>': invalid argument: --capitalize foo bar (OptionParser::InvalidArgument)

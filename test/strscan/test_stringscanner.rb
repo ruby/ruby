@@ -9,7 +9,6 @@ require 'test/unit'
 
 module StringScannerTests
   def test_peek_byte
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
     assert_equal(97, s.peek_byte)
     assert_equal(97, s.scan_byte)
@@ -20,9 +19,10 @@ module StringScannerTests
   end
 
   def test_scan_byte
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner('ab')
+    assert_equal(2, s.match?(/(?<a>ab)/)) # set named_captures
     assert_equal(97, s.scan_byte)
+    assert_equal({}, s.named_captures)
     assert_equal(98, s.scan_byte)
     assert_nil(s.scan_byte)
 
@@ -178,9 +178,10 @@ module StringScannerTests
   def test_string
     s = create_string_scanner('test string')
     assert_equal('test string', s.string)
-    s.scan(/test/)
+    s.scan(/(?<t>test)/) # set named_captures
     assert_equal('test string', s.string)
     s.string = 'a'
+    assert_equal({}, s.named_captures)
     assert_equal('a', s.string)
     s.scan(/a/)
     s.string = 'b'
@@ -367,7 +368,9 @@ module StringScannerTests
 
   def test_getch
     s = create_string_scanner('abcde')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.getch)
+    assert_equal({}, s.named_captures)
     assert_equal('b', s.getch)
     assert_equal('c', s.getch)
     assert_equal('d', s.getch)
@@ -386,7 +389,9 @@ module StringScannerTests
 
   def test_get_byte
     s = create_string_scanner('abcde')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal('a', s.get_byte)
+    assert_equal({}, s.named_captures)
     assert_equal('b', s.get_byte)
     assert_equal('c', s.get_byte)
     assert_equal('d', s.get_byte)
@@ -409,12 +414,8 @@ module StringScannerTests
     s = create_string_scanner('stra strb strc')
     s.scan(/\w+/)
     assert_equal('stra', s.matched)
-    s.scan(/\s+/)
-    assert_equal(' ', s.matched)
-    s.scan('st')
-    assert_equal('st', s.matched)
-    s.scan(/\w+/)
-    assert_equal('rb', s.matched)
+    s.scan_until(/\w+/)
+    assert_equal('strb', s.matched)
     s.scan(/\s+/)
     assert_equal(' ', s.matched)
     s.scan(/\w+/)
@@ -432,10 +433,50 @@ module StringScannerTests
     assert_equal('t', s.matched)
   end
 
+  def test_matched_string
+    s = create_string_scanner('stra strb strc')
+    s.scan('stra')
+    assert_equal('stra', s.matched)
+    s.scan_until('strb')
+    assert_equal('strb', s.matched)
+    s.scan(' ')
+    assert_equal(' ', s.matched)
+    s.scan('strc')
+    assert_equal('strc', s.matched)
+    s.scan('c')
+    assert_nil(s.matched)
+    s.getch
+    assert_nil(s.matched)
+  end
+
   def test_AREF
     s = create_string_scanner('stra strb strc')
 
-    s.scan(/\w+/)
+    s.scan(/\s+/)
+    assert_nil(          s[-2])
+    assert_nil(          s[-1])
+    assert_nil(          s[0])
+    assert_nil(          s[1])
+    assert_nil(          s[:c])
+    assert_nil(          s['c'])
+
+    s.scan("not match")
+    assert_nil(          s[-2])
+    assert_nil(          s[-1])
+    assert_nil(          s[0])
+    assert_nil(          s[1])
+    assert_nil(          s[:c])
+    assert_nil(          s['c'])
+
+    s.check(/\w+/)
+    assert_nil(          s[-2])
+    assert_equal('stra', s[-1])
+    assert_equal('stra', s[0])
+    assert_nil(          s[1])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
+
+    s.scan("stra")
     assert_nil(          s[-2])
     assert_equal('stra', s[-1])
     assert_equal('stra', s[0])
@@ -522,6 +563,26 @@ module StringScannerTests
     assert_nil(s.pre_match)
   end
 
+  def test_pre_match_string
+    s = create_string_scanner('a b c d e')
+    s.scan('a')
+    assert_equal('', s.pre_match)
+    s.skip(' ')
+    assert_equal('a', s.pre_match)
+    s.scan('b')
+    assert_equal('a ', s.pre_match)
+    s.scan_until('c')
+    assert_equal('a b ', s.pre_match)
+    s.getch
+    assert_equal('a b c', s.pre_match)
+    s.get_byte
+    assert_equal('a b c ', s.pre_match)
+    s.get_byte
+    assert_equal('a b c d', s.pre_match)
+    s.scan('never match')
+    assert_nil(s.pre_match)
+  end
+
   def test_post_match
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)
@@ -546,19 +607,41 @@ module StringScannerTests
     assert_nil(s.post_match)
   end
 
-  def test_terminate
-    s = create_string_scanner('ssss')
+  def test_post_match_string
+    s = create_string_scanner('a b c d e')
+    s.scan('a')
+    assert_equal(' b c d e', s.post_match)
+    s.skip(' ')
+    assert_equal('b c d e', s.post_match)
+    s.scan('b')
+    assert_equal(' c d e', s.post_match)
+    s.scan_until('c')
+    assert_equal(' d e', s.post_match)
     s.getch
+    assert_equal('d e', s.post_match)
+    s.get_byte
+    assert_equal(' e', s.post_match)
+    s.get_byte
+    assert_equal('e', s.post_match)
+    s.scan('never match')
+    assert_nil(s.post_match)
+  end
+
+  def test_terminate
+    s = create_string_scanner('abcd')
+    s.scan(/(?<a>ab)/) # set named_captures
     s.terminate
+    assert_equal({}, s.named_captures)
     assert_equal(true, s.eos?)
     s.terminate
     assert_equal(true, s.eos?)
   end
 
   def test_reset
-    s = create_string_scanner('ssss')
-    s.getch
+    s = create_string_scanner('abcd')
+    s.scan(/(?<a>ab)/) # set named_captures
     s.reset
+    assert_equal({}, s.named_captures)
     assert_equal(0, s.pos)
     s.scan(/\w+/)
     s.reset
@@ -611,8 +694,6 @@ module StringScannerTests
   end
 
   def test_invalid_encoding_string
-    omit("no encoding check on TruffleRuby for scan(String)") if RUBY_ENGINE == "truffleruby"
-
     str = "\xA1\xA2".dup.force_encoding("euc-jp")
     ss = create_string_scanner(str)
     assert_raise(Encoding::CompatibilityError) do
@@ -682,7 +763,6 @@ module StringScannerTests
   end
 
   def test_exist_p_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("test string")
     assert_equal(3, s.exist?("s"))
     assert_equal(0, s.pos)
@@ -704,7 +784,6 @@ module StringScannerTests
   end
 
   def test_scan_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar\0Baz")
     assert_equal("Foo", s.scan_until("Foo"))
     assert_equal(3, s.pos)
@@ -728,7 +807,6 @@ module StringScannerTests
   end
 
   def test_skip_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal(3, s.skip_until("Foo"))
     assert_equal(3, s.pos)
@@ -747,7 +825,6 @@ module StringScannerTests
   end
 
   def test_check_until_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal("Foo", s.check_until("Foo"))
     assert_equal(0, s.pos)
@@ -769,7 +846,6 @@ module StringScannerTests
   end
 
   def test_search_full_string
-    omit("not implemented on TruffleRuby") if RUBY_ENGINE == "truffleruby"
     s = create_string_scanner("Foo Bar Baz")
     assert_equal(8, s.search_full("Bar ", false, false))
     assert_equal(0, s.pos)
@@ -794,8 +870,9 @@ module StringScannerTests
 
   def test_unscan
     s = create_string_scanner('test string')
-    assert_equal("test", s.scan(/\w+/))
+    assert_equal(4, s.skip(/(?<t>test)/)) # set named_captures
     s.unscan
+    assert_equal({}, s.named_captures)
     assert_equal("te", s.scan(/../))
     assert_equal(nil, s.scan(/\d/))
     assert_raise(ScanError) { s.unscan }
@@ -828,15 +905,13 @@ module StringScannerTests
   end
 
   def test_aref_without_regex
-    omit "#[:missing] always raises on TruffleRuby if matched" if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('abc')
     s.get_byte
-    assert_nil(s[:c])
-    assert_nil(s["c"])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
     s.getch
-    assert_nil(s[:c])
-    assert_nil(s["c"])
+    assert_raise(IndexError) { s[:c] }
+    assert_raise(IndexError) { s['c'] }
   end
 
   def test_size
@@ -884,18 +959,25 @@ module StringScannerTests
   end
 
   def test_named_captures
-    omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
     scan = StringScanner.new("foobarbaz")
     assert_equal({}, scan.named_captures)
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
     assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
+    assert_equal(9, scan.match?("foobarbaz"))
+    assert_equal({}, scan.named_captures)
+  end
+
+  def test_named_captures_same_name_union
+    scan = StringScanner.new("123")
+    assert_equal(1, scan.match?(/(?<number>0)|(?<number>1)|(?<number>2)/))
+    assert_equal({"number" => "1"}, scan.named_captures)
   end
 
   def test_scan_integer
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('abc')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_nil(s.scan_integer)
+    assert_equal({}, s.named_captures)
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
@@ -919,16 +1001,30 @@ module StringScannerTests
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
+    s = create_string_scanner('-')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
+    s = create_string_scanner('+')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
     huge_integer = '1' * 2_000
     s = create_string_scanner(huge_integer)
     assert_equal(huge_integer.to_i, s.scan_integer)
     assert_equal(2_000, s.pos)
     assert_predicate(s, :matched?)
+
+    s = create_string_scanner('abc1')
+    s.pos = 3
+    assert_equal(1, s.scan_integer)
+    assert_equal(4, s.pos)
+    assert_predicate(s, :matched?)
   end
 
   def test_scan_integer_unmatch
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('123abc')
     assert_equal(123, s.scan_integer)
     assert_equal(3, s.pos)
@@ -938,24 +1034,32 @@ module StringScannerTests
   end
 
   def test_scan_integer_encoding
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
-
     s = create_string_scanner('123abc'.encode(Encoding::UTF_32LE))
     assert_raise(Encoding::CompatibilityError) do
       s.scan_integer
     end
   end
 
-  def test_scan_integer_base_16
-    omit("scan_integer isn't implemented on TruffleRuby yet") if RUBY_ENGINE == "truffleruby"
+  def test_scan_integer_matched
+    s = create_string_scanner("42abc")
+    assert_equal(42, s.scan_integer)
+    assert_equal("42", s.matched)
 
+    s = create_string_scanner("42abc")
+    assert_equal(0x42abc, s.scan_integer(base: 16))
+    assert_equal("42abc", s.matched)
+  end
+
+  def test_scan_integer_base_16
     s = create_string_scanner('0')
     assert_equal(0x0, s.scan_integer(base: 16))
     assert_equal(1, s.pos)
     assert_predicate(s, :matched?)
 
     s = create_string_scanner('abc')
+    assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
     assert_equal(0xabc, s.scan_integer(base: 16))
+    assert_equal({}, s.named_captures)
     assert_equal(3, s.pos)
     assert_predicate(s, :matched?)
 
@@ -985,19 +1089,24 @@ module StringScannerTests
     assert_predicate(s, :matched?)
 
     s = create_string_scanner('0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(1, s.pos)
+    assert_predicate(s, :matched?)
+
+    s = create_string_scanner('0xyz')
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(1, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('-0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(2, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('+0x')
-    assert_nil(s.scan_integer(base: 16))
-    assert_equal(0, s.pos)
-    refute_predicate(s, :matched?)
+    assert_equal(0, s.scan_integer(base: 16))
+    assert_equal(2, s.pos)
+    assert_predicate(s, :matched?)
 
     s = create_string_scanner('-123abc')
     assert_equal(-0x123abc, s.scan_integer(base: 16))

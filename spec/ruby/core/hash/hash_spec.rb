@@ -42,12 +42,10 @@ describe "Hash#hash" do
     # Like above, because h.eql?(x: [h])
   end
 
-  ruby_version_is "3.1" do
-    it "allows omitting values" do
-      a = 1
-      b = 2
+  it "allows omitting values" do
+    a = 1
+    b = 2
 
-      eval('{a:, b:}.should == { a: 1, b: 2 }')
-    end
+    {a:, b:}.should == { a: 1, b: 2 }
   end
 end

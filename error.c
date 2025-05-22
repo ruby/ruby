@@ -4195,7 +4195,8 @@ rb_warn_unchilled_literal(VALUE obj)
         VALUE created = get_created_info(str, &line);
         if (NIL_P(created)) {
             rb_str_cat2(mesg, " (run with --debug-frozen-string-literal for more information)\n");
-        } else {
+        }
+        else {
             rb_str_cat2(mesg, "\n");
             rb_str_append(mesg, created);
             if (line) rb_str_catf(mesg, ":%d", line);

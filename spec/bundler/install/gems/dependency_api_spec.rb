@@ -61,7 +61,6 @@ RSpec.describe "gemcutter's dependency API" do
     bundle :install, artifice: "endpoint"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -260,7 +259,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -278,7 +277,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -343,7 +342,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -366,7 +365,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "endpoint_extra_missing"
@@ -385,7 +384,7 @@ RSpec.describe "gemcutter's dependency API" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "endpoint_extra_missing"
@@ -403,7 +402,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -423,7 +422,7 @@ RSpec.describe "gemcutter's dependency API" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G

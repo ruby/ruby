@@ -1,22 +1,25 @@
 require_relative '../../../spec_helper'
-require 'cgi'
 
-describe "CGI::QueryExtension#pragma" do
-  before :each do
-    ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
-    @cgi = CGI.new
-  end
+ruby_version_is ""..."3.5" do
+  require 'cgi'
 
-  after :each do
-    ENV['REQUEST_METHOD'] = @old_request_method
-  end
+  describe "CGI::QueryExtension#pragma" do
+    before :each do
+      ENV['REQUEST_METHOD'], @old_request_method = "GET", ENV['REQUEST_METHOD']
+      @cgi = CGI.new
+    end
 
-  it "returns ENV['HTTP_PRAGMA']" do
-    old_value, ENV['HTTP_PRAGMA'] = ENV['HTTP_PRAGMA'], "no-cache"
-    begin
-      @cgi.pragma.should == "no-cache"
-    ensure
-      ENV['HTTP_PRAGMA'] = old_value
+    after :each do
+      ENV['REQUEST_METHOD'] = @old_request_method
+    end
+
+    it "returns ENV['HTTP_PRAGMA']" do
+      old_value, ENV['HTTP_PRAGMA'] = ENV['HTTP_PRAGMA'], "no-cache"
+      begin
+        @cgi.pragma.should == "no-cache"
+      ensure
+        ENV['HTTP_PRAGMA'] = old_value
+      end
     end
   end
 end

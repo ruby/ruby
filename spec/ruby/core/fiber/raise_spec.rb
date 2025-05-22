@@ -130,7 +130,6 @@ end
 
 describe "Fiber#raise" do
   it "transfers and raises on a transferring fiber" do
-    require "fiber"
     root = Fiber.current
     fiber = Fiber.new { root.transfer }
     fiber.transfer

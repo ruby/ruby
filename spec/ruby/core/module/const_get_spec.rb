@@ -131,7 +131,7 @@ describe "Module#const_get" do
   end
 
   it "does read private constants" do
-     ConstantSpecs.const_get(:CS_PRIVATE).should == :cs_private
+    ConstantSpecs.const_get(:CS_PRIVATE).should == :cs_private
   end
 
   it 'does autoload a constant' do
@@ -202,40 +202,60 @@ describe "Module#const_get" do
 
       ConstantSpecs::ContainerA::ChildA::CS_CONST301 = :const301_5
       ConstantSpecs::ContainerA::ChildA.const_get(:CS_CONST301).should == :const301_5
+    ensure
+      ConstantSpecs::ClassA.send(:remove_const, :CS_CONST301)
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST301)
+      ConstantSpecs::ParentA.send(:remove_const, :CS_CONST301)
+      ConstantSpecs::ContainerA::ChildA.send(:remove_const, :CS_CONST301)
     end
 
     it "searches a module included in the immediate class before the superclass" do
       ConstantSpecs::ParentB::CS_CONST302 = :const302_1
       ConstantSpecs::ModuleF::CS_CONST302 = :const302_2
       ConstantSpecs::ContainerB::ChildB.const_get(:CS_CONST302).should == :const302_2
+    ensure
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST302)
+      ConstantSpecs::ModuleF.send(:remove_const, :CS_CONST302)
     end
 
     it "searches the superclass before a module included in the superclass" do
       ConstantSpecs::ModuleE::CS_CONST303 = :const303_1
       ConstantSpecs::ParentB::CS_CONST303 = :const303_2
       ConstantSpecs::ContainerB::ChildB.const_get(:CS_CONST303).should == :const303_2
+    ensure
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST303)
+      ConstantSpecs::ParentB.send(:remove_const, :CS_CONST303)
     end
 
     it "searches a module included in the superclass" do
       ConstantSpecs::ModuleA::CS_CONST304 = :const304_1
       ConstantSpecs::ModuleE::CS_CONST304 = :const304_2
       ConstantSpecs::ContainerB::ChildB.const_get(:CS_CONST304).should == :const304_2
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST304)
+      ConstantSpecs::ModuleE.send(:remove_const, :CS_CONST304)
     end
 
     it "searches the superclass chain" do
       ConstantSpecs::ModuleA::CS_CONST305 = :const305
       ConstantSpecs::ContainerB::ChildB.const_get(:CS_CONST305).should == :const305
+    ensure
+      ConstantSpecs::ModuleA.send(:remove_const, :CS_CONST305)
     end
 
     it "returns a toplevel constant when the receiver is a Class" do
       Object::CS_CONST306 = :const306
       ConstantSpecs::ContainerB::ChildB.const_get(:CS_CONST306).should == :const306
+    ensure
+      Object.send(:remove_const, :CS_CONST306)
     end
 
     it "returns a toplevel constant when the receiver is a Module" do
       Object::CS_CONST308 = :const308
       ConstantSpecs.const_get(:CS_CONST308).should == :const308
       ConstantSpecs::ModuleA.const_get(:CS_CONST308).should == :const308
+    ensure
+      Object.send(:remove_const, :CS_CONST308)
     end
 
     it "returns the updated value of a constant" do
@@ -246,6 +266,8 @@ describe "Module#const_get" do
         ConstantSpecs::ClassB::CS_CONST309 = :const309_2
       }.should complain(/already initialized constant/)
       ConstantSpecs::ClassB.const_get(:CS_CONST309).should == :const309_2
+    ensure
+      ConstantSpecs::ClassB.send(:remove_const, :CS_CONST309)
     end
   end
 end

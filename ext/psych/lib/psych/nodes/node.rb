@@ -55,7 +55,8 @@ module Psych
       #
       # See also Psych::Visitors::Emitter
       def yaml io = nil, options = {}
-        require "stringio"
+        require "stringio" unless defined?(StringIO)
+
         real_io = io || StringIO.new(''.encode('utf-8'))
 
         Visitors::Emitter.new(real_io, options).accept self

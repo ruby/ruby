@@ -147,7 +147,6 @@
 #define rb_enc_get              p->config->enc_get
 #define rb_enc_asciicompat      p->config->enc_asciicompat
 #define rb_utf8_encoding        p->config->utf8_encoding
-#define rb_enc_associate        p->config->enc_associate
 #define rb_ascii8bit_encoding   p->config->ascii8bit_encoding
 #define rb_enc_codelen          p->config->enc_codelen
 #define rb_enc_mbcput           p->config->enc_mbcput

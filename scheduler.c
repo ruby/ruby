@@ -271,7 +271,7 @@ VALUE
 rb_fiber_scheduler_make_timeout(struct timeval *timeout)
 {
     if (timeout) {
-        return rb_float_new((double)timeout->tv_sec + (0.000001f * timeout->tv_usec));
+        return rb_float_new((double)timeout->tv_sec + (0.000001 * timeout->tv_usec));
     }
 
     return Qnil;

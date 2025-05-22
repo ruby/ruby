@@ -124,10 +124,10 @@ describe "Regexps with anchors" do
     /foo\b/.match("foo").to_a.should == ["foo"]
     /foo\b/.match("foo\n").to_a.should == ["foo"]
     LanguageSpecs.white_spaces.scan(/./).each do |c|
-    /foo\b/.match("foo" + c).to_a.should == ["foo"]
+      /foo\b/.match("foo" + c).to_a.should == ["foo"]
     end
     LanguageSpecs.non_alphanum_non_space.scan(/./).each do |c|
-    /foo\b/.match("foo" + c).to_a.should == ["foo"]
+      /foo\b/.match("foo" + c).to_a.should == ["foo"]
     end
     /foo\b/.match("foo\0").to_a.should == ["foo"]
     # Basic non-matching
@@ -145,10 +145,10 @@ describe "Regexps with anchors" do
     /foo\B/.match("foo").should be_nil
     /foo\B/.match("foo\n").should be_nil
     LanguageSpecs.white_spaces.scan(/./).each do |c|
-    /foo\B/.match("foo" + c).should be_nil
+      /foo\B/.match("foo" + c).should be_nil
     end
     LanguageSpecs.non_alphanum_non_space.scan(/./).each do |c|
-    /foo\B/.match("foo" + c).should be_nil
+      /foo\B/.match("foo" + c).should be_nil
     end
     /foo\B/.match("foo\0").should be_nil
   end

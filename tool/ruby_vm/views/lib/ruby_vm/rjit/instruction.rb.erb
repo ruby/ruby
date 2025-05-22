@@ -7,7 +7,7 @@ module RubyVM::RJIT # :nodoc: all
       name: :<%= insn.name %>,
       bin: <%= i %>, # BIN(<%= insn.name %>)
       len: <%= insn.width %>, # insn_len
-      operands: <%= (insn.operands unless insn.name.start_with?('trace_')).inspect %>,
+      operands: <%= (insn.operands unless insn.name.start_with?(/trace_|zjit_/)).inspect %>,
     ),
 % end
   }

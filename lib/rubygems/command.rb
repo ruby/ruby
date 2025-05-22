@@ -650,9 +650,6 @@ RubyGems is a package manager for Ruby.
     gem help platforms           gem platforms guide
     gem help <COMMAND>           show help on COMMAND
                                    (e.g. 'gem help install')
-    gem server                   present a web page at
-                                 http://localhost:8808/
-                                 with info about installed gems
   Further information:
     https://guides.rubygems.org
   HELP

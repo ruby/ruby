@@ -349,7 +349,7 @@ COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS)
+XCFLAGS = -DRUBY_EXPORT $(INCFLAGS) $(XCFLAGS) $(XINCFLAGS)
 !if $(MSC_VER) >= 1800
 LDFLAGS = $(LDFLAGS) -manifest:embed,ID=2
 !elseif $(MSC_VER) >= 1400
@@ -362,9 +362,6 @@ LDSHARED_2 = @if exist $(@).manifest @$(RM) $(@:/=\).manifest
 CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
-!endif
-!ifndef RJIT_SUPPORT
-RJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -496,7 +493,8 @@ ENCOBJS = dmyenc.$(OBJEXT)
 EXTOBJS = dmyext.$(OBJEXT)
 !endif
 
-arch_hdrdir = $(EXTOUT)/include/$(arch)
+ext_hdrdir = $(EXTOUT)/include
+arch_hdrdir = $(ext_hdrdir)/$(arch)
 top_srcdir = $(srcdir)
 hdrdir = $(srcdir)/include
 VPATH = $(arch_hdrdir)/ruby;$(hdrdir)/ruby;$(srcdir);$(srcdir)/missing;$(win_srcdir)
@@ -966,7 +964,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define USE_RJIT 0
 #endif /* $(guard) */
 <<
 
@@ -1166,7 +1163,6 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
-s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
@@ -1473,8 +1469,6 @@ loadpath: verconf.h
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
 
-RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
 RUBYSPEC_CAPIEXT_EXTS =
 
 !if [echo>rubyspec-capiext.mk RUBYSPEC_CAPIEXT_EXTS = \]
@@ -1494,14 +1488,14 @@ rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
 {$(RUBYSPEC_CAPIEXT_SRCDIR)}.c{$(RUBYSPEC_CAPIEXT)}.so:
 	$(ECHO) building $(@F)
 	$(Q)$(MAKEDIRS) $(@D)
-	$(Q)echo> $*.def EXPORTS
-	$(Q)echo>> $*.def Init_$(*F)
-	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)(echo EXPORTS&&echo Init_$(*F))> $*.def
+	$(Q)$(LDSHARED) -Fe$(@) -Fo$(*).obj $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(XLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
 !if defined(LDSHARED_0)
 	$(Q)$(LDSHARED_0)
 	$(Q)$(LDSHARED_1)
 	$(Q)$(LDSHARED_2)
 !endif
+	$(Q)$(RM) $*.def $*.exp $*.lib $*.obj $*.pdb
 
 exts: rubyspec-capiext
 

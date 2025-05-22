@@ -161,7 +161,7 @@ RSpec.describe "bundle install across platforms" do
 
       expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
-      simulate_new_machine
+      pristine_system_gems :bundler
       bundle "config set --local force_ruby_platform true"
       bundle "install"
 
@@ -570,7 +570,7 @@ RSpec.describe "bundle install with platform conditionals" do
     gemfile <<-G
       source "https://gem.repo1"
 
-      gem "myrack", :platform => [:windows, :mswin, :mswin64, :mingw, :x64_mingw, :jruby]
+      gem "myrack", :platform => [:windows, :jruby]
     G
 
     bundle "install"

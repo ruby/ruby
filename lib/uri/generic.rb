@@ -73,7 +73,7 @@ module URI
     #
     # At first, tries to create a new URI::Generic instance using
     # URI::Generic::build. But, if exception URI::InvalidComponentError is raised,
-    # then it does URI::Escape.escape all URI components and tries again.
+    # then it does URI::RFC2396_PARSER.escape all URI components and tries again.
     #
     def self.build2(args)
       begin
@@ -1133,17 +1133,16 @@ module URI
       base.fragment=(nil)
 
       # RFC2396, Section 5.2, 4)
-      if !authority
-        base.set_path(merge_path(base.path, rel.path)) if base.path && rel.path
-      else
-        # RFC2396, Section 5.2, 4)
-        base.set_path(rel.path) if rel.path
+      if authority
+        base.set_userinfo(rel.userinfo)
+        base.set_host(rel.host)
+        base.set_port(rel.port || base.default_port)
+        base.set_path(rel.path)
+      elsif base.path && rel.path
+        base.set_path(merge_path(base.path, rel.path))
       end
 
       # RFC2396, Section 5.2, 7)
-      base.set_userinfo(rel.userinfo) if rel.userinfo
-      base.set_host(rel.host)         if rel.host
-      base.set_port(rel.port)         if rel.port
       base.query = rel.query       if rel.query
       base.fragment=(rel.fragment) if rel.fragment
 

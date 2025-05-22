@@ -121,13 +121,6 @@ umask(rb_mode_t mask)
 
 WASM_MISSING_LIBC_FUNC
 int
-mprotect(const void *addr, size_t len, int prot)
-{
-    return 0;
-}
-
-WASM_MISSING_LIBC_FUNC
-int
 pclose(FILE *stream)
 {
     errno = ENOTSUP;

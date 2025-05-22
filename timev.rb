@@ -47,24 +47,30 @@
 #
 # == \Time Internal Representation
 #
-# Time implementation uses a signed 63 bit integer, Integer, or
-# Rational.
-# It is a number of nanoseconds since the _Epoch_.
-# The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
-# When Integer or Rational is used (before 1823, after 2116, under
-# nanosecond), Time works slower than when the signed 63 bit integer is used.
-#
-# Ruby uses the C function +localtime+ and +gmtime+ to map between the number
-# and 6-tuple (year,month,day,hour,minute,second).
-# +localtime+ is used for local time and "gmtime" is used for UTC.
-#
-# Integer and Rational has no range limit, but the localtime and
-# gmtime has range limits due to the C types +time_t+ and <tt>struct tm</tt>.
-# If that limit is exceeded, Ruby extrapolates the localtime function.
+# Conceptually, Time class uses a rational value to represent the number of
+# seconds from _Epoch_, 1970-01-01 00:00:00 UTC.
+# There are no boundary or resolution limitations.
+# The value can be obtained using Time#to_r.
 #
 # The Time class always uses the Gregorian calendar.
 # I.e. the proleptic Gregorian calendar is used.
 # Other calendars, such as Julian calendar, are not supported.
+#
+# The implementation uses a signed 63 bit integer, Integer (Bignum) object or
+# Ratoinal object to represent a rational value.
+# (The signed 63 bit integer is used regardless of 32 and 64 bit environments.)
+# The value represents the number of nanoseconds from _Epoch_.
+# The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
+# When Integer or Rational object is used (before 1823, after 2116, under
+# nanosecond), Time works slower than when the signed 63 bit integer is used.
+#
+# Ruby uses the C function +localtime+ and +gmtime+ to map between the number
+# and 6-tuple (year,month,day,hour,minute,second).
+# +localtime+ is used for local time and +gmtime+ is used for UTC.
+#
+# Integer and Rational has no range limit, but the localtime and
+# gmtime has range limits due to the C types +time_t+ and <tt>struct tm</tt>.
+# If that limit is exceeded, Ruby extrapolates the localtime function.
 #
 # +time_t+ can represent 1901-12-14 to 2038-01-19 if it is 32 bit signed integer,
 # -292277022657-01-27 to 292277026596-12-05 if it is 64 bit signed integer.
@@ -73,7 +79,7 @@
 # <tt>struct tm</tt> has _tm_year_ member to represent years.
 # (<tt>tm_year = 0</tt> means the year 1900.)
 # It is defined as +int+ in the C standard.
-# _tm_year_ can represent between -2147481748 to 2147485547 if +int+ is 32 bit.
+# _tm_year_ can represent years between -2147481748 to 2147485547 if +int+ is 32 bit.
 #
 # Ruby supports leap seconds as far as if the C function +localtime+ and
 # +gmtime+ supports it.

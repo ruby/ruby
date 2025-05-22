@@ -65,6 +65,8 @@ describe "Object#to_yaml" do
   it "returns the YAML representation of a Struct object" do
     Person = Struct.new(:name, :gender)
     Person.new("Jane", "female").to_yaml.should match_yaml("--- !ruby/struct:Person\nname: Jane\ngender: female\n")
+  ensure
+    Object.send(:remove_const, :Person)
   end
 
   it "returns the YAML representation of an unnamed Struct object" do

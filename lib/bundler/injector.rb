@@ -108,17 +108,17 @@ module Bundler
         end
 
         if d.groups != Array(:default)
-          group = d.groups.size == 1 ? ", :group => #{d.groups.first.inspect}" : ", :groups => #{d.groups.inspect}"
+          group = d.groups.size == 1 ? ", group: #{d.groups.first.inspect}" : ", groups: #{d.groups.inspect}"
         end
 
-        source = ", :source => \"#{d.source}\"" unless d.source.nil?
-        path = ", :path => \"#{d.path}\"" unless d.path.nil?
-        git = ", :git => \"#{d.git}\"" unless d.git.nil?
-        github = ", :github => \"#{d.github}\"" unless d.github.nil?
-        branch = ", :branch => \"#{d.branch}\"" unless d.branch.nil?
-        ref = ", :ref => \"#{d.ref}\"" unless d.ref.nil?
-        glob = ", :glob => \"#{d.glob}\"" unless d.glob.nil?
-        require_path = ", :require => #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
+        source = ", source: \"#{d.source}\"" unless d.source.nil?
+        path = ", path: \"#{d.path}\"" unless d.path.nil?
+        git = ", git: \"#{d.git}\"" unless d.git.nil?
+        github = ", github: \"#{d.github}\"" unless d.github.nil?
+        branch = ", branch: \"#{d.branch}\"" unless d.branch.nil?
+        ref = ", ref: \"#{d.ref}\"" unless d.ref.nil?
+        glob = ", glob: \"#{d.glob}\"" unless d.glob.nil?
+        require_path = ", require: #{convert_autorequire(d.autorequire)}" unless d.autorequire.nil?
 
         %(gem #{name}#{requirement}#{group}#{source}#{path}#{git}#{github}#{branch}#{ref}#{glob}#{require_path})
       end.join("\n")

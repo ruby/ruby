@@ -61,6 +61,7 @@ size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
+VALUE rb_str_frozen_bare_string(VALUE);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
@@ -82,6 +83,9 @@ VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
+void rb_gc_free_fstring(VALUE obj);
+bool rb_obj_is_fstring_table(VALUE obj);
+void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);

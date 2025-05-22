@@ -414,8 +414,8 @@ ssize_t rsock_recvmsg(int socket, struct msghdr *message, int flags);
 void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 #endif
 
-char *host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr);
-char *port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
+char *raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr);
+char *raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
 
 #ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
 #  if !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)

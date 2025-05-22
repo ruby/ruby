@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 require_relative '../../spec_helper'
 
@@ -171,7 +171,7 @@ describe "Encoding.compatible? String, String" do
 #     Use the following script to regenerate the matrix:
 #
 #     ```
-#       # -*- encoding: binary -*-
+#       # encoding: binary
 #
 #       ENCODINGS = [
 #         "US-ASCII",

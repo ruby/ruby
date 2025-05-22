@@ -16,6 +16,8 @@ describe "SystemCallError" do
     exc = ExceptionSpecs::SCESub.new
     ScratchPad.recorded.should equal(:initialize)
     exc.should be_an_instance_of(ExceptionSpecs::SCESub)
+  ensure
+    ExceptionSpecs.send(:remove_const, :SCESub)
   end
 end
 
@@ -25,6 +27,7 @@ describe "SystemCallError.new" do
     @example_errno_class = Errno::EINVAL
     @last_known_errno = Errno.constants.size - 1
     @unknown_errno = Errno.constants.size
+    @some_human_readable = /[[:graph:]]+/
   end
 
   it "requires at least one argument" do
@@ -96,23 +99,11 @@ describe "SystemCallError.new" do
   end
 
   it "sets an 'unknown error' message when an unknown error number" do
-    platform_is_not :windows do
-      SystemCallError.new(-1).message.should =~ /Unknown error(:)? -1/
-    end
-
-    platform_is :windows do
-      SystemCallError.new(-1).message.should == "The operation completed successfully."
-    end
+    SystemCallError.new(-1).message.should =~ @some_human_readable
   end
 
   it "adds a custom error message to an 'unknown error' message when an unknown error number and a custom message specified" do
-    platform_is_not :windows do
-      SystemCallError.new("custom message", -1).message.should =~ /Unknown error(:)? -1 - custom message/
-    end
-
-    platform_is :windows do
-      SystemCallError.new("custom message", -1).message.should == "The operation completed successfully. - custom message"
-    end
+    SystemCallError.new("custom message", -1).message.should =~ /#{@some_human_readable}.* - custom message/
   end
 
   it "converts to Integer if errno is a Complex convertible to Integer" do
@@ -149,12 +140,7 @@ end
 
 describe "SystemCallError#message" do
   it "returns the default message when no message is given" do
-    platform_is :aix do
-      SystemCallError.new(2**28).message.should =~ /Error .*occurred/i
-    end
-    platform_is_not :aix do
-      SystemCallError.new(2**28).message.should =~ /Unknown error/i
-    end
+    SystemCallError.new(2**28).message.should =~ @some_human_readable
   end
 
   it "returns the message given as an argument to new" do

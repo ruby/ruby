@@ -293,6 +293,7 @@ pub const DEFAULT_COUNTERS: &'static [Counter] = &[
     Counter::invalidate_constant_ic_fill,
     Counter::invalidate_no_singleton_class,
     Counter::invalidate_ep_escape,
+    Counter::invalidate_everything,
 ];
 
 /// Macro to increase a counter by name and count
@@ -519,6 +520,7 @@ make_counters! {
     opt_aset_not_hash,
 
     opt_aref_with_qundef,
+    opt_aset_with_qundef,
 
     opt_case_dispatch_megamorphic,
 
@@ -589,6 +591,7 @@ make_counters! {
     invalidate_constant_ic_fill,
     invalidate_no_singleton_class,
     invalidate_ep_escape,
+    invalidate_everything,
 
     // Currently, it's out of the ordinary (might be impossible) for YJIT to leave gaps in
     // executable memory, so this should be 0.
@@ -789,7 +792,9 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_usize!(hash, "context_cache_bytes", crate::core::CTX_ENCODE_CACHE_BYTES + crate::core::CTX_DECODE_CACHE_BYTES);
 
         // VM instructions count
-        set_stat_usize!(hash, "vm_insns_count", rb_yjit_vm_insns_count() as usize);
+        if rb_vm_insns_count > 0 {
+            set_stat_usize!(hash, "vm_insns_count", rb_vm_insns_count as usize);
+        }
 
         set_stat_usize!(hash, "live_iseq_count", rb_yjit_live_iseq_count as usize);
         set_stat_usize!(hash, "iseq_alloc_count", rb_yjit_iseq_alloc_count as usize);
@@ -859,11 +864,13 @@ fn rb_yjit_gen_stats_dict(key: VALUE) -> VALUE {
         set_stat_double!(hash, "avg_len_in_yjit", avg_len_in_yjit);
 
         // Proportion of instructions that retire in YJIT
-        let total_insns_count = retired_in_yjit + rb_yjit_vm_insns_count();
-        set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
+        if rb_vm_insns_count > 0 {
+            let total_insns_count = retired_in_yjit + rb_vm_insns_count;
+            set_stat_usize!(hash, "total_insns_count", total_insns_count as usize);
 
-        let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
-        set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+            let ratio_in_yjit: f64 = 100.0 * retired_in_yjit as f64 / total_insns_count as f64;
+            set_stat_double!(hash, "ratio_in_yjit", ratio_in_yjit);
+        }
 
         // Set method call counts in a Ruby dict
         fn set_call_counts(

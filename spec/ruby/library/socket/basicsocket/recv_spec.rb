@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
@@ -32,28 +32,26 @@ describe "BasicSocket#recv" do
     ScratchPad.recorded.should == 'hello'
   end
 
-  platform_is_not :solaris do
-    it "accepts flags to specify unusual receiving behaviour" do
-      t = Thread.new do
-        client = @server.accept
+  it "accepts flags to specify unusual receiving behaviour" do
+    t = Thread.new do
+      client = @server.accept
 
-        # in-band data (TCP), doesn't receive the flag.
-        ScratchPad.record client.recv(10)
+      # in-band data (TCP), doesn't receive the flag.
+      ScratchPad.record client.recv(10)
 
-        # this recv is important (TODO: explain)
-        client.recv(10)
-        client.close
-      end
-      Thread.pass while t.status and t.status != "sleep"
-      t.status.should_not be_nil
-
-      socket = TCPSocket.new('127.0.0.1', @port)
-      socket.send('helloU', Socket::MSG_OOB)
-      socket.shutdown(1)
-      t.join
-      socket.close
-      ScratchPad.recorded.should == 'hello'
+      # this recv is important (TODO: explain)
+      client.recv(10)
+      client.close
     end
+    Thread.pass while t.status and t.status != "sleep"
+    t.status.should_not be_nil
+
+    socket = TCPSocket.new('127.0.0.1', @port)
+    socket.send('helloU', Socket::MSG_OOB)
+    socket.shutdown(1)
+    t.join
+    socket.close
+    ScratchPad.recorded.should == 'hello'
   end
 
   it "gets lines delimited with a custom separator"  do

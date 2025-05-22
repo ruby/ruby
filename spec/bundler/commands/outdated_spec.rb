@@ -417,7 +417,7 @@ RSpec.describe "bundle outdated" do
     end
 
     it "doesn't hit repo2" do
-      FileUtils.rm_rf(gem_repo2)
+      FileUtils.rm_r(gem_repo2)
 
       bundle "outdated --local"
       expect(out).not_to match(/Fetching (gem|version|dependency) metadata from/)
@@ -974,7 +974,7 @@ RSpec.describe "bundle outdated" do
         gem "terranova", '8'
       G
 
-      simulate_new_machine
+      pristine_system_gems :bundler
 
       update_git "foo", path: lib_path("foo")
       update_repo2 do

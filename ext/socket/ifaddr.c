@@ -177,6 +177,8 @@ ifaddr_ifindex(VALUE self)
  *   ifaddr.flags => integer
  *
  * Returns the flags of _ifaddr_.
+ *
+ * The value is bitwise-or of Socket::IFF_* constants such as Socket::IFF_LOOPBACK.
  */
 
 static VALUE

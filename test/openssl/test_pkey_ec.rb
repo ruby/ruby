@@ -89,14 +89,19 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
 
     # Behavior of EVP_PKEY_public_check changes between OpenSSL 1.1.1 and 3.0
     # The public key does not match the private key
-    key4 = OpenSSL::PKey.read(<<~EOF)
+    ec_key_data = <<~EOF
     -----BEGIN EC PRIVATE KEY-----
     MHcCAQEEIP+TT0V8Fndsnacji9tyf6hmhHywcOWTee9XkiBeJoVloAoGCCqGSM49
     AwEHoUQDQgAEBkhhJIU/2/YdPSlY2I1k25xjK4trr5OXSgXvBC21PtY0HQ7lor7A
     jzT0giJITqmcd81fwGw5+96zLcdxTF1hVQ==
     -----END EC PRIVATE KEY-----
     EOF
-    assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+    if aws_lc? # AWS-LC automatically does key checks on the parsed key.
+      assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(ec_key_data) }
+    else
+      key4 = OpenSSL::PKey.read(ec_key_data)
+      assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+    end
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)
@@ -147,19 +152,19 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     sig = key.dsa_sign_asn1(data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error { key.verify_raw(nil, malformed_sig, data1) }
 
     # Sign by #sign_raw
     sig = key.sign_raw(nil, data1)
     assert_equal true, key.dsa_verify_asn1(data1, sig)
     assert_equal false, key.dsa_verify_asn1(data2, sig)
-    assert_raise(OpenSSL::PKey::ECError) { key.dsa_verify_asn1(data1, malformed_sig) }
+    assert_sign_verify_false_or_error { key.dsa_verify_asn1(data1, malformed_sig) }
     assert_equal true, key.verify_raw(nil, sig, data1)
     assert_equal false, key.verify_raw(nil, sig, data2)
-    assert_raise(OpenSSL::PKey::PKeyError) { key.verify_raw(nil, malformed_sig, data1) }
+    assert_sign_verify_false_or_error{ key.verify_raw(nil, malformed_sig, data1) }
   end
 
   def test_dsa_sign_asn1_FIPS186_3
@@ -304,7 +309,10 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.to_der, group2.to_der
     assert_equal group1, group2
     group2.asn1_flag ^=OpenSSL::PKey::EC::NAMED_CURVE
-    assert_not_equal group1.to_der, group2.to_der
+    # AWS-LC does not support serializing explicit curves.
+    unless aws_lc?
+      assert_not_equal group1.to_der, group2.to_der
+    end
     assert_equal group1, group2
 
     group3 = group1.dup

@@ -65,11 +65,9 @@ static VALUE class_spec_rb_class_new_instance(VALUE self, VALUE args, VALUE klas
   return rb_class_new_instance(RARRAY_LENINT(args), RARRAY_PTR(args), klass);
 }
 
-#ifdef RUBY_VERSION_IS_3_0
 static VALUE class_spec_rb_class_new_instance_kw(VALUE self, VALUE args, VALUE klass) {
   return rb_class_new_instance_kw(RARRAY_LENINT(args), RARRAY_PTR(args), klass, RB_PASS_KEYWORDS);
 }
-#endif
 
 static VALUE class_spec_rb_class_real(VALUE self, VALUE object) {
   if (rb_type_p(object, T_FIXNUM)) {
@@ -160,9 +158,7 @@ void Init_class_spec(void) {
   rb_define_method(cls, "rb_class_private_instance_methods", class_spec_rb_class_private_instance_methods, -1);
   rb_define_method(cls, "rb_class_new", class_spec_rb_class_new, 1);
   rb_define_method(cls, "rb_class_new_instance", class_spec_rb_class_new_instance, 2);
-#ifdef RUBY_VERSION_IS_3_0
   rb_define_method(cls, "rb_class_new_instance_kw", class_spec_rb_class_new_instance_kw, 2);
-#endif
   rb_define_method(cls, "rb_class_real", class_spec_rb_class_real, 1);
   rb_define_method(cls, "rb_class_get_superclass", class_spec_rb_class_get_superclass, 1);
   rb_define_method(cls, "rb_class_superclass", class_spec_rb_class_superclass, 1);

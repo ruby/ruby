@@ -173,37 +173,55 @@ module Bundler
 
     def map_sources(replacement_sources)
       rubygems = @rubygems_sources.map do |source|
-        replace_rubygems_source(replacement_sources, source) || source
+        replace_rubygems_source(replacement_sources, source)
       end
 
       git, plugin = [@git_sources, @plugin_sources].map do |sources|
         sources.map do |source|
-          replacement_sources.find {|s| s == source } || source
+          replace_source(replacement_sources, source)
         end
       end
 
       path = @path_sources.map do |source|
-        replacement_sources.find {|s| s == (source.is_a?(Source::Gemspec) ? source.as_path_source : source) } || source
+        replace_path_source(replacement_sources, source)
       end
 
       [rubygems, path, git, plugin]
     end
 
     def global_replacement_source(replacement_sources)
-      replacement_source = replace_rubygems_source(replacement_sources, global_rubygems_source)
-      return global_rubygems_source unless replacement_source
-
-      replacement_source.local!
-      replacement_source
+      replace_rubygems_source(replacement_sources, global_rubygems_source, &:local!)
     end
 
     def replace_rubygems_source(replacement_sources, gemfile_source)
-      replacement_source = replacement_sources.find {|s| s == gemfile_source }
-      return unless replacement_source
+      replace_source(replacement_sources, gemfile_source) do |replacement_source|
+        # locked sources never include credentials so always prefer remotes from the gemfile
+        replacement_source.remotes = gemfile_source.remotes
 
-      # locked sources never include credentials so always prefer remotes from the gemfile
-      replacement_source.remotes = gemfile_source.remotes
+        yield replacement_source if block_given?
+
+        replacement_source
+      end
+    end
+
+    def replace_source(replacement_sources, gemfile_source)
+      replacement_source = replacement_sources.find {|s| s == gemfile_source }
+      return gemfile_source unless replacement_source
+
+      replacement_source = yield(replacement_source) if block_given?
+
       replacement_source
+    end
+
+    def replace_path_source(replacement_sources, gemfile_source)
+      replace_source(replacement_sources, gemfile_source) do |replacement_source|
+        if gemfile_source.is_a?(Source::Gemspec)
+          gemfile_source.checksum_store = replacement_source.checksum_store
+          gemfile_source
+        else
+          replacement_source
+        end
+      end
     end
 
     def different_sources?(lock_sources, replacement_sources)

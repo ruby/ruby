@@ -139,13 +139,15 @@ define rp
   if ($flags & RUBY_T_MASK) == RUBY_T_HASH
     printf "%sT_HASH%s: ", $color_type, $color_end,
     if (((struct RHash *)($arg0))->basic.flags & RHASH_ST_TABLE_FLAG)
-      printf "st len=%ld ", ((struct RHash *)($arg0))->as.st->num_entries
+      set $st = (struct st_table *)((uintptr_t)($arg0) + sizeof(struct RHash))
+      printf "st len=%ld ", $st->num_entries
+      print $st
     else
       printf "li len=%ld bound=%ld ", \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_SIZE_MASK) >> RHASH_AR_TABLE_SIZE_SHIFT), \
         ((((struct RHash *)($arg0))->basic.flags & RHASH_AR_TABLE_BOUND_MASK) >> RHASH_AR_TABLE_BOUND_SHIFT)
+	print (struct ar_table_struct *)((uintptr_t)($arg0) + sizeof(struct RHash))
     end
-    print (struct RHash *)($arg0)
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_STRUCT
     set $len = (($flags & (RUBY_FL_USER1|RUBY_FL_USER2)) ? \
@@ -521,14 +523,14 @@ document rp_bignum
 end
 
 define rp_class
+  set $class_and_classext = (struct RClass_and_rb_classext_t *)($arg0)
   printf "(struct RClass *) %p", (void*)$arg0
-  if RCLASS_ORIGIN((struct RClass *)($arg0)) != $arg0
-    printf " -> %p", RCLASS_ORIGIN((struct RClass *)($arg0))
+  if $class_and_classext->classext->origin_ != (VALUE)$arg0
+    printf " -> %p", $class_and_classext->classext->origin_
   end
   printf "\n"
   rb_classname $arg0
-  print/x *(struct RClass *)($arg0)
-  print *RCLASS_EXT((struct RClass *)($arg0))
+  print/x *$class_and_classext
 end
 document rp_class
   Print the content of a Class/Module.
@@ -894,10 +896,10 @@ document rb_method_entry
 end
 
 define rb_classname
-  # up to 128bit int
-  set $rb_classname = rb_mod_name($arg0)
-  if $rb_classname != RUBY_Qnil
-    rp $rb_classname
+  set $rb_classname = ((struct RClass_and_rb_classext_t*)$arg0)->classext->classpath
+  if $rb_classname != RUBY_Qfalse
+    print_string $rb_classname
+    printf "\n"
   else
     echo anonymous class/module\n
   end
@@ -1294,8 +1296,7 @@ end
 
 define print_flags
   printf "RUBY_FL_WB_PROTECTED: %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_WB_PROTECTED ? "1" : "0"
-  printf "RUBY_FL_PROMOTED0   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED0 ? "1" : "0"
-  printf "RUBY_FL_PROMOTED1   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED1 ? "1" : "0"
+  printf "RUBY_FL_PROMOTED    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_PROMOTED ? "1" : "0"
   printf "RUBY_FL_FINALIZE    : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_FINALIZE ? "1" : "0"
   printf "RUBY_FL_SHAREABLE   : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_SHAREABLE ? "1" : "0"
   printf "RUBY_FL_EXIVAR      : %s\n", ((struct RBasic*)($arg0))->flags & RUBY_FL_EXIVAR ? "1" : "0"

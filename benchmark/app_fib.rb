@@ -1,4 +1,4 @@
-def fib n
+def fib(n)
   if n < 3
     1
   else

@@ -67,7 +67,7 @@ module Bundler
         # to check out same version of gem later.
         #
         # There options are passed when the source plugin is created from the
-        # lock file.
+        # lockfile.
         #
         # @return [Hash]
         def options_to_lock

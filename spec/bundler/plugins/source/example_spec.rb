@@ -67,7 +67,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("a-path-gem 1.0")
     end
 
-    it "writes to lock file" do
+    it "writes to lockfile" do
       bundle "install"
 
       checksums = checksums_section_when_enabled do |c|
@@ -131,7 +131,7 @@ RSpec.describe "real source plugins" do
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}/.git")).not_to exist
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}/.bundlecache")).to be_file
 
-        FileUtils.rm_rf lib_path("a-path-gem-1.0")
+        FileUtils.rm_r lib_path("a-path-gem-1.0")
         expect(the_bundle).to include_gems("a-path-gem 1.0")
       end
 
@@ -143,7 +143,7 @@ RSpec.describe "real source plugins" do
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
 
-        FileUtils.rm_rf lib_path("a-path-gem-1.0")
+        FileUtils.rm_r lib_path("a-path-gem-1.0")
         expect(the_bundle).to include_gems("a-path-gem 1.0")
       end
 
@@ -155,7 +155,7 @@ RSpec.describe "real source plugins" do
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
 
-        FileUtils.rm_rf lib_path("a-path-gem-1.0")
+        FileUtils.rm_r lib_path("a-path-gem-1.0")
         expect(the_bundle).to include_gems("a-path-gem 1.0")
       end
     end
@@ -336,7 +336,7 @@ RSpec.describe "real source plugins" do
       expect(the_bundle).to include_gems("ma-gitp-gem 1.0")
     end
 
-    it "writes to lock file" do
+    it "writes to lockfile" do
       revision = revision_for(lib_path("ma-gitp-gem-1.0"))
       bundle "install"
 
@@ -452,7 +452,7 @@ RSpec.describe "real source plugins" do
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.bundlecache")).to be_file
 
-        FileUtils.rm_rf lib_path("foo-1.0")
+        FileUtils.rm_r lib_path("foo-1.0")
         expect(the_bundle).to include_gems "foo 1.0"
       end
     end

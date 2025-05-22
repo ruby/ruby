@@ -131,9 +131,7 @@ describe "IO#sysread" do
     @read.sysread(3).should == "ab"
   end
 
-  guard_not -> { platform_is :windows and ruby_version_is ""..."3.2" } do # https://bugs.ruby-lang.org/issues/18880
-    it "raises ArgumentError when length is less than 0" do
-      -> { @read.sysread(-1) }.should raise_error(ArgumentError)
-    end
+  it "raises ArgumentError when length is less than 0" do
+    -> { @read.sysread(-1) }.should raise_error(ArgumentError)
   end
 end

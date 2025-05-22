@@ -47,7 +47,7 @@ describe "ENV.fetch" do
 
   it "warns on block and default parameter given" do
     -> do
-       ENV.fetch("foo", "default") { "bar" }.should == "bar"
+      ENV.fetch("foo", "default") { "bar" }.should == "bar"
     end.should complain(/block supersedes default value argument/)
   end
 

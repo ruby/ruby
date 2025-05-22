@@ -8,16 +8,23 @@ describe "Module#const_set" do
 
     ConstantSpecs.const_set "CS_CONST402", :const402
     ConstantSpecs.const_get(:CS_CONST402).should == :const402
+  ensure
+    ConstantSpecs.send(:remove_const, :CS_CONST401)
+    ConstantSpecs.send(:remove_const, :CS_CONST402)
   end
 
   it "returns the value set" do
     ConstantSpecs.const_set(:CS_CONST403, :const403).should == :const403
+  ensure
+    ConstantSpecs.send(:remove_const, :CS_CONST403)
   end
 
   it "sets the name of an anonymous module" do
     m = Module.new
     ConstantSpecs.const_set(:CS_CONST1000, m)
     m.name.should == "ConstantSpecs::CS_CONST1000"
+  ensure
+    ConstantSpecs.send(:remove_const, :CS_CONST1000)
   end
 
   it "sets the name of a module scoped by an anonymous module" do
@@ -38,6 +45,8 @@ describe "Module#const_set" do
     b.name.should == "ModuleSpecs_CS3::B"
     c.name.should == "ModuleSpecs_CS3::B::C"
     d.name.should == "ModuleSpecs_CS3::D"
+  ensure
+    Object.send(:remove_const, :ModuleSpecs_CS3)
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
@@ -55,6 +64,8 @@ describe "Module#const_set" do
     ConstantSpecs.const_set("CS_CONST404", :const404).should == :const404
     -> { ConstantSpecs.const_set "Name=", 1 }.should raise_error(NameError)
     -> { ConstantSpecs.const_set "Name?", 1 }.should raise_error(NameError)
+  ensure
+    ConstantSpecs.send(:remove_const, :CS_CONST404)
   end
 
   it "calls #to_str to convert the given name to a String" do
@@ -62,6 +73,8 @@ describe "Module#const_set" do
     name.should_receive(:to_str).and_return("CS_CONST405")
     ConstantSpecs.const_set(name, :const405).should == :const405
     ConstantSpecs::CS_CONST405.should == :const405
+  ensure
+    ConstantSpecs.send(:remove_const, :CS_CONST405)
   end
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do

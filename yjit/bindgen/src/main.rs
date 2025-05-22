@@ -47,6 +47,7 @@ fn main() {
 
         // Our C file for glue code
         .header(src_root.join("yjit.c").to_str().unwrap())
+        .header(src_root.join("jit.c").to_str().unwrap())
 
         // Don't want to copy over C comment
         .generate_comments(false)
@@ -93,15 +94,15 @@ fn main() {
         .allowlist_function("rb_bug")
 
         // From shape.h
-        .allowlist_function("rb_shape_get_shape_id")
-        .allowlist_function("rb_shape_get_shape_by_id")
+        .allowlist_function("rb_obj_shape_id")
+        .allowlist_function("rb_shape_lookup")
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
-        .allowlist_function("rb_shape_get_next_no_warnings")
+        .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
         .allowlist_function("rb_shape_id")
-        .allowlist_function("rb_shape_obj_too_complex")
+        .allowlist_function("rb_shape_obj_too_complex_p")
+        .allowlist_function("rb_shape_too_complex_p")
         .allowlist_var("SHAPE_ID_NUM_BITS")
-        .allowlist_var("OBJ_TOO_COMPLEX_SHAPE_ID")
 
         // From ruby/internal/intern/object.h
         .allowlist_function("rb_obj_is_kind_of")
@@ -317,7 +318,6 @@ fn main() {
         .allowlist_function("rb_yjit_get_page_size")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
         .allowlist_function("rb_yjit_iseq_inspect")
-        .allowlist_function("rb_yjit_vm_insns_count")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -381,12 +381,17 @@ fn main() {
         .allowlist_function("rb_ivar_get")
         .allowlist_function("rb_mod_name")
 
+        // From internal/vm.h
+        .allowlist_var("rb_vm_insns_count")
+
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")
 
         // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_equal")
+        .allowlist_function("rb_class_new_instance_pass_kw")
+        .allowlist_function("rb_obj_alloc")
 
         // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")
@@ -419,7 +424,6 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_iseq_encoded_size")
-        .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
         .allowlist_function("rb_get_iseq_body_parent_iseq")
         .allowlist_function("rb_get_iseq_body_iseq_encoded")

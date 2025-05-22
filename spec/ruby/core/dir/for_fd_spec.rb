@@ -3,7 +3,7 @@ require_relative 'fixtures/common'
 
 quarantine! do # leads to "Errno::EBADF: Bad file descriptor - closedir" in DirSpecs.delete_mock_dirs
 ruby_version_is '3.3' do
-  guard -> { Dir.respond_to? :for_fd } do
+  platform_is_not :windows do
     describe "Dir.for_fd" do
       before :all do
         DirSpecs.create_mock_dirs
@@ -68,7 +68,7 @@ ruby_version_is '3.3' do
     end
   end
 
-  guard_not -> { Dir.respond_to? :for_fd } do
+  platform_is :windows do
     describe "Dir.for_fd" do
       it "raises NotImplementedError" do
         -> { Dir.for_fd 1 }.should raise_error(NotImplementedError)

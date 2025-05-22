@@ -845,6 +845,9 @@ CODE
     args = nil
     trace = TracePoint.trace(:call){|tp|
       next if !target_thread?
+      # In parallel testing, unexpected events like IO operations may be traced,
+      # so we filter out events here.
+      next unless [TracePoint, TestSetTraceFunc].include?(tp.defined_class)
       ary << tp.method_id
     }
     foo
@@ -1996,7 +1999,7 @@ CODE
     TracePoint.new(:c_call, &capture_events).enable{
       c.new
     }
-    assert_equal [:c_call, :itself, :initialize], events[1]
+    assert_equal [:c_call, :itself, :initialize], events[0]
     events.clear
 
     o = Class.new{
@@ -2262,9 +2265,6 @@ CODE
     }
     # it is dirty hack. usually we shouldn't use such technique
     Thread.pass until t.status == 'sleep'
-    # When RJIT thread exists, t.status becomes 'sleep' even if it does not reach m2t_q.pop.
-    # This sleep forces it to reach m2t_q.pop for --jit-wait.
-    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     t.add_trace_func proc{|ev, file, line, *args|
       if file == __FILE__

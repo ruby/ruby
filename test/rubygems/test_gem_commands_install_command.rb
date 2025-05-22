@@ -1214,6 +1214,30 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "Installing a (2)", @ui.output
   end
 
+  def test_execute_installs_from_a_gemdeps_with_prerelease
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 1
+      fetcher.download "a", "2.a"
+    end
+
+    File.open @gemdeps, "w" do |f|
+      f << "gem 'a'"
+    end
+
+    @cmd.handle_options %w[--prerelease]
+    @cmd.options[:gemdeps] = @gemdeps
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2.a], @cmd.installed_specs.map(&:full_name)
+
+    assert_match "Installing a (2.a)", @ui.output
+  end
+
   def test_execute_installs_deps_a_gemdeps
     spec_fetcher do |fetcher|
       fetcher.download "q", "1.0"

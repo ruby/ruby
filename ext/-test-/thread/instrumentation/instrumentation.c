@@ -6,7 +6,6 @@
 #  define RB_THREAD_LOCAL_SPECIFIER
 #endif
 
-static VALUE last_thread = Qnil;
 static VALUE timeline_value = Qnil;
 
 struct thread_event {
@@ -211,9 +210,8 @@ Init_instrumentation(void)
     VALUE mBug = rb_define_module("Bug");
     VALUE klass = rb_define_module_under(mBug, "ThreadInstrumentation");
     rb_global_variable(&timeline_value);
-    timeline_value = TypedData_Wrap_Struct(0, &event_timeline_type, 0);
+    timeline_value = TypedData_Wrap_Struct(0, &event_timeline_type, (void *)1);
 
-    rb_global_variable(&last_thread);
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 1);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);

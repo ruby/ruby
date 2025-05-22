@@ -787,7 +787,6 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_BLOCK_PASS(node)->operator_loc));
-
       case NODE_BREAK:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
@@ -807,6 +806,12 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_CASE3(node)->case_keyword_loc),
                                     location_new(&RNODE_CASE3(node)->end_keyword_loc));
+      case NODE_CLASS:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_CLASS(node)->class_keyword_loc),
+                                    location_new(&RNODE_CLASS(node)->inheritance_operator_loc),
+                                    location_new(&RNODE_CLASS(node)->end_keyword_loc));
       case NODE_DOT2:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
@@ -868,6 +873,12 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_OP_ASGN2(node)->call_operator_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->message_loc),
                                     location_new(&RNODE_OP_ASGN2(node)->binary_operator_loc));
+      case NODE_POSTEXE:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_POSTEXE(node)->keyword_loc),
+                                    location_new(&RNODE_POSTEXE(node)->opening_loc),
+                                    location_new(&RNODE_POSTEXE(node)->closing_loc));
       case NODE_REDO:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),

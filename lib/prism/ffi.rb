@@ -7,6 +7,10 @@
 require "rbconfig"
 require "ffi"
 
+# We want to eagerly load this file if there are Ractors so that it does not get
+# autoloaded from within a non-main Ractor.
+require "prism/serialize" if defined?(Ractor)
+
 module Prism
   module LibRubyParser # :nodoc:
     extend FFI::Library
@@ -159,6 +163,9 @@ module Prism
     class PrismString # :nodoc:
       SIZEOF = LibRubyParser.pm_string_sizeof
 
+      PLATFORM_EXPECTS_UTF8 =
+        RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i)
+
       attr_reader :pointer, :length
 
       def initialize(pointer, length, from_string)
@@ -193,8 +200,7 @@ module Prism
         # On Windows and Mac, it's expected that filepaths will be encoded in
         # UTF-8. If they are not, we need to convert them to UTF-8 before
         # passing them into pm_string_mapped_init.
-        if RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i) &&
-           (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
+        if PLATFORM_EXPECTS_UTF8 && (encoding = filepath.encoding) != Encoding::ASCII_8BIT && encoding != Encoding::UTF_8
           filepath = filepath.encode(Encoding::UTF_8)
         end
 
@@ -223,7 +229,7 @@ module Prism
   private_constant :LibRubyParser
 
   # The version constant is set by reading the result of calling pm_version.
-  VERSION = LibRubyParser.pm_version.read_string
+  VERSION = LibRubyParser.pm_version.read_string.freeze
 
   class << self
     # Mirror the Prism.dump API by using the serialization API.

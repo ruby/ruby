@@ -27,20 +27,11 @@ describe 'Thread::Backtrace::Location#absolute_path' do
   end
 
   context "when used in eval with a given filename" do
-    code = "caller_locations(0)[0].absolute_path"
+    it "returns nil with absolute_path" do
+      code = "caller_locations(0)[0].absolute_path"
 
-    ruby_version_is ""..."3.1" do
-      it "returns filename with absolute_path" do
-        eval(code, nil, "foo.rb").should == "foo.rb"
-        eval(code, nil, "foo/bar.rb").should == "foo/bar.rb"
-      end
-    end
-
-    ruby_version_is "3.1" do
-      it "returns nil with absolute_path" do
-        eval(code, nil, "foo.rb").should == nil
-        eval(code, nil, "foo/bar.rb").should == nil
-      end
+      eval(code, nil, "foo.rb").should == nil
+      eval(code, nil, "foo/bar.rb").should == nil
     end
   end
 

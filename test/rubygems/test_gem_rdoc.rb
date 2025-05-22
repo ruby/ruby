@@ -18,19 +18,7 @@ class TestGemRDoc < Gem::TestCase
 
     install_gem @a
 
-    hook_class = if defined?(RDoc::RubyGemsHook)
-      RDoc::RubyGemsHook
-    else
-      Gem::RDoc
-    end
-
-    @hook = hook_class.new @a
-
-    begin
-      hook_class.load_rdoc
-    rescue Gem::DocumentError => e
-      pend e.message
-    end
+    @hook = Gem::RDoc.new @a
 
     Gem.configuration[:rdoc] = nil
   end

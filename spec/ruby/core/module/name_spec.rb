@@ -30,6 +30,8 @@ describe "Module#name" do
     m::N.name.should =~ /\A#<Module:0x\h+>::N\z/
     ModuleSpecs::Anonymous::WasAnnon = m::N
     m::N.name.should == "ModuleSpecs::Anonymous::WasAnnon"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :WasAnnon)
   end
 
   it "may be the repeated in different module objects" do
@@ -76,12 +78,16 @@ describe "Module#name" do
     m = Module.new
     ModuleSpecs::Anonymous::A = m
     m.name.should == "ModuleSpecs::Anonymous::A"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :A)
   end
 
   it "is set when assigning to a constant (constant path does not match outer module name)" do
     m = Module.new
     ModuleSpecs::Anonymous::SameChild::A = m
     m.name.should == "ModuleSpecs::Anonymous::Child::A"
+  ensure
+    ModuleSpecs::Anonymous::SameChild.send(:remove_const, :A)
   end
 
   it "is not modified when assigning to a new constant after it has been accessed" do
@@ -90,6 +96,9 @@ describe "Module#name" do
     m.name.should == "ModuleSpecs::Anonymous::B"
     ModuleSpecs::Anonymous::C = m
     m.name.should == "ModuleSpecs::Anonymous::B"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :B)
+    ModuleSpecs::Anonymous.send(:remove_const, :C)
   end
 
   it "is not modified when assigned to a different anonymous module" do
@@ -125,6 +134,8 @@ describe "Module#name" do
     m::N = Module.new
     ModuleSpecs::Anonymous::E = m
     m::N.name.should == "ModuleSpecs::Anonymous::E::N"
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :E)
   end
 
   # https://bugs.ruby-lang.org/issues/19681
@@ -138,47 +149,47 @@ describe "Module#name" do
       "ModuleSpecs::Anonymous::StoredInMultiplePlaces::O"
     ]
     valid_names.should include(m::N.name) # You get one of the two, but you don't know which one.
+  ensure
+    ModuleSpecs::Anonymous.send(:remove_const, :StoredInMultiplePlaces)
   end
 
-  ruby_version_is "3.2" do
-    it "is set in #const_added callback when a module defined in the top-level scope" do
-      ruby_exe(<<~RUBY, args: "2>&1").chomp.should == "TEST1\nTEST2"
-        class Module
-          def const_added(name)
-            puts const_get(name).name
-          end
+  it "is set in #const_added callback when a module defined in the top-level scope" do
+    ruby_exe(<<~RUBY, args: "2>&1").chomp.should == "TEST1\nTEST2"
+      class Module
+        def const_added(name)
+          puts const_get(name).name
         end
+      end
 
-        # module with name
-        module TEST1
-        end
+      # module with name
+      module TEST1
+      end
 
-        # anonymous module
-        TEST2 = Module.new
-      RUBY
-    end
+      # anonymous module
+      TEST2 = Module.new
+    RUBY
+  end
 
-    it "is set in #const_added callback for a nested module when an outer module defined in the top-level scope" do
-      ScratchPad.record []
+  it "is set in #const_added callback for a nested module when an outer module defined in the top-level scope" do
+    ScratchPad.record []
 
-      ModuleSpecs::NameSpecs::NamedModule = Module.new do
+    ModuleSpecs::NameSpecs::NamedModule = Module.new do
+      def self.const_added(name)
+        ScratchPad << const_get(name).name
+      end
+
+      module self::A
         def self.const_added(name)
           ScratchPad << const_get(name).name
         end
 
-        module self::A
-          def self.const_added(name)
-            ScratchPad << const_get(name).name
-          end
-
-          module self::B
-          end
+        module self::B
         end
       end
-
-      ScratchPad.recorded.should.one?(/#<Module.+>::A$/)
-      ScratchPad.recorded.should.one?(/#<Module.+>::A::B$/)
     end
+
+    ScratchPad.recorded.should.one?(/#<Module.+>::A$/)
+    ScratchPad.recorded.should.one?(/#<Module.+>::A::B$/)
   end
 
   it "returns a frozen String" do

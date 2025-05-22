@@ -34,7 +34,6 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers
-    omit 'This is unstable on GitHub Actions --jit-wait. TODO: debug it' if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     max = 1000
     assert_equal(max, max.times{
       Fiber.new{}
@@ -50,7 +49,7 @@ class TestFiber < Test::Unit::TestCase
   end
 
   def test_many_fibers_with_threads
-    assert_normal_exit <<-SRC, timeout: (/solaris/i =~ RUBY_PLATFORM ? 1000 : 60)
+    assert_normal_exit <<-SRC, timeout: 60
       max = 1000
       @cnt = 0
       (1..100).map{|ti|

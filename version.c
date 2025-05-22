@@ -15,7 +15,6 @@
 #include "ruby/ruby.h"
 #include "version.h"
 #include "vm_core.h"
-#include "rjit.h"
 #include "yjit.h"
 #include <stdio.h>
 
@@ -61,6 +60,16 @@ const int ruby_api_version[] = {
 #define YJIT_DESCRIPTION " +YJIT " STRINGIZE(YJIT_SUPPORT)
 #else
 #define YJIT_DESCRIPTION " +YJIT"
+#endif
+#ifdef ZJIT_SUPPORT
+#define ZJIT_DESCRIPTION " +ZJIT " STRINGIZE(ZJIT_SUPPORT)
+#else
+#define ZJIT_DESCRIPTION " +ZJIT"
+#endif
+#if USE_ZJIT
+#define JIT_DESCRIPTION ZJIT_DESCRIPTION
+#else
+#define JIT_DESCRIPTION YJIT_DESCRIPTION
 #endif
 #if USE_MODULAR_GC
 #define GC_DESCRIPTION " +GC"
@@ -157,16 +166,16 @@ Init_version(void)
     rb_provide("ruby2_keywords.rb");
 }
 
-#if USE_RJIT
-#define RJIT_OPTS_ON opt->rjit.on
-#else
-#define RJIT_OPTS_ON 0
-#endif
-
 #if USE_YJIT
 #define YJIT_OPTS_ON opt->yjit
 #else
 #define YJIT_OPTS_ON 0
+#endif
+
+#if USE_ZJIT
+#define ZJIT_OPTS_ON opt->zjit
+#else
+#define ZJIT_OPTS_ON 0
 #endif
 
 int ruby_mn_threads_enabled;
@@ -193,7 +202,7 @@ define_ruby_description(const char *const jit_opt)
 {
     static char desc[
         sizeof(ruby_description)
-        + rb_strlen_lit(YJIT_DESCRIPTION)
+        + rb_strlen_lit(JIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
 #if USE_MODULAR_GC
@@ -210,7 +219,7 @@ define_ruby_description(const char *const jit_opt)
     memcpy(desc, ruby_description, n);
 # define append(s) (n += (int)strlcpy(desc + n, s, sizeof(desc) - n))
     if (*jit_opt) append(jit_opt);
-    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(YJIT_DESCRIPTION));
+    RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(JIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
 #if USE_MODULAR_GC
@@ -238,8 +247,8 @@ void
 Init_ruby_description(ruby_cmdline_options_t *opt)
 {
     const char *const jit_opt =
-        RJIT_OPTS_ON ? " +RJIT" :
         YJIT_OPTS_ON ? YJIT_DESCRIPTION :
+        ZJIT_OPTS_ON ? ZJIT_DESCRIPTION :
         "";
     define_ruby_description(jit_opt);
 }

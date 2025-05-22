@@ -21,6 +21,7 @@
 #include "internal/gc.h"
 #include "internal/inits.h"
 #include "internal/missing.h"
+#include "internal/namespace.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/re.h"
@@ -32,7 +33,6 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "symbol.h" // This includes a macro for a more performant rb_id2sym.
 #include "yjit.h"
 #include "ruby/st.h"
@@ -45,6 +45,8 @@
 #include "ractor_core.h"
 #include "vm_sync.h"
 #include "shape.h"
+#include "insns.inc"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -420,7 +422,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
 #define rb_yjit_threshold_hit(iseq, entry_calls) false
 #endif
 
-#if USE_RJIT || USE_YJIT
+#if USE_YJIT || USE_ZJIT
 // Generate JIT code that supports the following kinds of ISEQ entries:
 //   * The first ISEQ on vm_exec (e.g. <main>, or Ruby methods/blocks
 //     called by a C method). The current frame has VM_FRAME_FLAG_FINISH.
@@ -434,23 +436,33 @@ jit_compile(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    bool yjit_enabled = rb_yjit_enabled_p;
-    if (!(yjit_enabled || rb_rjit_call_p)) {
-        return NULL;
-    }
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_entry == NULL) {
+#if USE_ZJIT
+    if (body->jit_entry == NULL && rb_zjit_enabled_p) {
         body->jit_entry_calls++;
-        if (yjit_enabled) {
-            if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
-                rb_yjit_compile_iseq(iseq, ec, false);
-            }
+
+        // At profile-threshold, rewrite some of the YARV instructions
+        // to zjit_* instructions to profile these instructions.
+        if (body->jit_entry_calls == rb_zjit_profile_threshold) {
+            rb_zjit_profile_enable(iseq);
         }
-        else if (body->jit_entry_calls == rb_rjit_call_threshold()) {
-            rb_rjit_compile(iseq);
+
+        // At call-threshold, compile the ISEQ with ZJIT.
+        if (body->jit_entry_calls == rb_zjit_call_threshold) {
+            rb_zjit_compile_iseq(iseq, ec, false);
         }
     }
+#endif
+
+#if USE_YJIT
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
+    if (body->jit_entry == NULL && rb_yjit_enabled_p) {
+        body->jit_entry_calls++;
+        if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
+            rb_yjit_compile_iseq(iseq, ec, false);
+        }
+    }
+#endif
     return body->jit_entry;
 }
 
@@ -484,18 +496,16 @@ jit_compile_exception(rb_execution_context_t *ec)
 {
     const rb_iseq_t *iseq = ec->cfp->iseq;
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
-    if (!rb_yjit_enabled_p) {
-        return NULL;
-    }
 
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_exception == NULL) {
+#if USE_YJIT
+    if (body->jit_exception == NULL && rb_yjit_enabled_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
-
+#endif
     return body->jit_exception;
 }
 
@@ -1038,6 +1048,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     // Invalidate JIT code that assumes cfp->ep == vm_base_ptr(cfp).
     if (env->iseq) {
         rb_yjit_invalidate_ep_is_bp(env->iseq);
+        rb_zjit_invalidate_ep_is_bp(env->iseq);
     }
 
     return (VALUE)env;
@@ -1121,6 +1132,21 @@ rb_vm_env_local_variables(const rb_env_t *env)
 }
 
 VALUE
+rb_vm_env_numbered_parameters(const rb_env_t *env)
+{
+    struct local_var_list vars;
+    local_var_list_init(&vars);
+    // if (VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_ISOLATED)) break; // TODO: is this needed?
+    const rb_iseq_t *iseq = env->iseq;
+    unsigned int i;
+    if (!iseq) return 0;
+    for (i = 0; i < ISEQ_BODY(iseq)->local_table_size; i++) {
+        numparam_list_add(&vars, ISEQ_BODY(iseq)->local_table[i]);
+    }
+    return local_var_list_finish(&vars);
+}
+
+VALUE
 rb_iseq_local_variables(const rb_iseq_t *iseq)
 {
     struct local_var_list vars;
@@ -1141,6 +1167,7 @@ vm_proc_create_from_captured(VALUE klass,
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
@@ -1150,6 +1177,7 @@ vm_proc_create_from_captured(VALUE klass,
     rb_vm_block_ep_update(procval, &proc->block, captured->ep);
 
     vm_block_type_set(&proc->block, block_type);
+    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -1181,10 +1209,12 @@ proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, in
 {
     VALUE procval = rb_proc_alloc(klass);
     rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    const rb_namespace_t *ns = rb_current_namespace();
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
     vm_block_type_set(&proc->block, block->type);
+    proc->ns = ns;
     proc->is_from_method = is_from_method;
     proc->is_lambda = is_lambda;
 
@@ -1414,7 +1444,7 @@ rb_proc_ractor_make_shareable(VALUE self)
         proc->is_isolated = TRUE;
     }
 
-    FL_SET_RAW(self, RUBY_FL_SHAREABLE);
+    rb_obj_freeze(self);
     return self;
 }
 
@@ -2159,7 +2189,7 @@ static void
 rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
 {
     st_data_t bop;
-    if (RB_TYPE_P(klass, T_ICLASS) && FL_TEST(klass, RICLASS_IS_ORIGIN) &&
+    if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
             RB_TYPE_P(RBASIC_CLASS(klass), T_CLASS)) {
        klass = RBASIC_CLASS(klass);
     }
@@ -2174,7 +2204,7 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
                     rb_id2name(me->called_id)
                 );
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
-                rb_rjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
+                rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
             }
         }
@@ -2829,6 +2859,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             if (VM_FRAME_FINISHED_P(ec->cfp)) {
                 rb_vm_pop_frame(ec);
                 ec->errinfo = (VALUE)err;
+                rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
                 ec->tag = ec->tag->prev;
                 EC_JUMP_TAG(ec, state);
             }
@@ -2847,6 +2878,19 @@ rb_iseq_eval(const rb_iseq_t *iseq)
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
     vm_set_top_stack(ec, iseq);
+    // TODO: set the namespace frame like require/load
+    val = vm_exec(ec);
+    return val;
+}
+
+VALUE
+rb_iseq_eval_with_refinement(const rb_iseq_t *iseq, VALUE mod)
+{
+    rb_execution_context_t *ec = GET_EC();
+    VALUE val;
+    vm_set_top_stack(ec, iseq);
+    rb_vm_using_module(mod);
+    // TODO: set the namespace frame like require/load
     val = vm_exec(ec);
     return val;
 }
@@ -2856,8 +2900,8 @@ rb_iseq_eval_main(const rb_iseq_t *iseq)
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE val;
-
     vm_set_main_stack(ec, iseq);
+    // TODO: set the namespace frame like require/load
     val = vm_exec(ec);
     return val;
 }
@@ -2910,6 +2954,26 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
     return val;
 }
 
+VALUE
+rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
+                 VALUE block_handler, VALUE filename)
+{
+    rb_execution_context_t *ec = GET_EC();
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    VALUE val;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+                  recv, block_handler,
+                  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
+                  0, reg_cfp->sp, 0, 0);
+
+    val = (*func)(arg1, arg2);
+
+    rb_vm_pop_frame(ec);
+    return val;
+}
+
 /* vm */
 
 void
@@ -2932,6 +2996,7 @@ rb_vm_update_references(void *ptr)
         vm->loaded_features_realpaths = rb_gc_location(vm->loaded_features_realpaths);
         vm->loaded_features_realpath_map = rb_gc_location(vm->loaded_features_realpath_map);
         vm->top_self = rb_gc_location(vm->top_self);
+        vm->require_stack = rb_gc_location(vm->require_stack);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
 
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
@@ -3003,6 +3068,10 @@ rb_vm_mark(void *ptr)
             rb_gc_mark_maybe(*list->varptr);
         }
 
+        if (vm->main_namespace) {
+            rb_namespace_entry_mark((void *)vm->main_namespace);
+        }
+
         rb_gc_mark_movable(vm->mark_object_ary);
         rb_gc_mark_movable(vm->load_path);
         rb_gc_mark_movable(vm->load_path_snapshot);
@@ -3012,6 +3081,7 @@ rb_vm_mark(void *ptr)
         rb_gc_mark_movable(vm->loaded_features_snapshot);
         rb_gc_mark_movable(vm->loaded_features_realpaths);
         rb_gc_mark_movable(vm->loaded_features_realpath_map);
+        rb_gc_mark_movable(vm->require_stack);
         rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
@@ -3039,7 +3109,6 @@ rb_vm_mark(void *ptr)
         }
 
         rb_thread_sched_mark_zombies(vm);
-        rb_rjit_mark();
     }
 
     RUBY_MARK_LEAVE("vm");
@@ -3090,25 +3159,15 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_id_table_free(vm->negative_cme_table);
             st_free_table(vm->overloaded_cme_table);
 
-            rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
-
-            rb_shape_t *cursor = rb_shape_get_root_shape();
-            rb_shape_t *end = rb_shape_get_shape_by_id(GET_SHAPE_TREE()->next_shape_id);
-            while (cursor < end) {
-                // 0x1 == SINGLE_CHILD_P
-                if (cursor->edges && !(((uintptr_t)cursor->edges) & 0x1))
-                    rb_id_table_free(cursor->edges);
-                cursor += 1;
-            }
-
-            xfree(GET_SHAPE_TREE());
+            // TODO: Is this ignorable for classext->m_tbl ?
+            // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
 
             st_free_table(vm->static_ext_inits);
 
             rb_vm_postponed_job_free();
 
             rb_id_table_free(vm->constant_cache);
-            st_free_table(vm->unused_block_warning_table);
+            set_free_table(vm->unused_block_warning_table);
 
             xfree(th->nt);
             th->nt = NULL;
@@ -3135,10 +3194,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
         }
-        if (vm->frozen_strings) {
-            st_free_table(vm->frozen_strings);
-            vm->frozen_strings = 0;
-        }
         RB_ALTSTACK_FREE(vm->main_altstack);
 
         struct global_object_list *next;
@@ -3150,7 +3205,7 @@ ruby_vm_destruct(rb_vm_t *vm)
         if (objspace) {
             if (rb_free_at_exit) {
                 rb_objspace_free_objects(objspace);
-                rb_free_generic_iv_tbl_();
+                rb_free_generic_fields_tbl_();
                 rb_free_default_rand_key();
                 if (th && vm->fork_gen == 0) {
                     /* If we have forked, main_thread may not be the initial thread */
@@ -3165,17 +3220,17 @@ ruby_vm_destruct(rb_vm_t *vm)
         ruby_mimfree(vm);
         ruby_current_vm_ptr = NULL;
 
-#if USE_YJIT
         if (rb_free_at_exit) {
+            rb_shape_free_all();
+#if USE_YJIT
             rb_yjit_free_at_exit();
-        }
 #endif
+        }
     }
     RUBY_FREE_LEAVE("vm");
     return 0;
 }
 
-size_t rb_vm_memsize_waiting_fds(struct ccan_list_head *waiting_fds); // thread.c
 size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
@@ -3230,14 +3285,12 @@ vm_memsize(const void *ptr)
 
     return (
         sizeof(rb_vm_t) +
-        rb_vm_memsize_waiting_fds(&vm->waiting_fds) +
         rb_st_memsize(vm->loaded_features_index) +
         rb_st_memsize(vm->loading_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
         rb_st_memsize(vm->ci_table) +
-        rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
@@ -3363,22 +3416,20 @@ rb_execution_context_update(rb_execution_context_t *ec)
         }
 
         while (cfp != limit_cfp) {
-            if (VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-                const VALUE *ep = cfp->ep;
-                cfp->self = rb_gc_location(cfp->self);
-                cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
-                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+            const VALUE *ep = cfp->ep;
+            cfp->self = rb_gc_location(cfp->self);
+            cfp->iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->iseq);
+            cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
 
-                if (!VM_ENV_LOCAL_P(ep)) {
-                    const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-                    if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                        VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
-                    }
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                }
 
-                    if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                        VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
-                        VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
-                    }
+                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
+                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
                 }
             }
 
@@ -3414,21 +3465,19 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
-            if (VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-                rb_gc_mark_movable(cfp->self);
-                rb_gc_mark_movable((VALUE)cfp->iseq);
-                rb_gc_mark_movable((VALUE)cfp->block_code);
+            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable((VALUE)cfp->iseq);
+            rb_gc_mark_movable((VALUE)cfp->block_code);
 
-                if (!VM_ENV_LOCAL_P(ep)) {
-                    const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
-                    if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                        rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
-                    }
+            if (!VM_ENV_LOCAL_P(ep)) {
+                const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
+                if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                }
 
-                    if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                        rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
-                        rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
-                    }
+                if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
+                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 
@@ -3500,13 +3549,15 @@ thread_mark(void *ptr)
     rb_gc_mark(th->pending_interrupt_mask_stack);
     rb_gc_mark(th->top_self);
     rb_gc_mark(th->top_wrapper);
+    rb_gc_mark(th->namespaces);
+    if (NAMESPACE_USER_P(th->ns)) rb_namespace_entry_mark(th->ns);
     if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
 
     RUBY_ASSERT(th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
-    rb_gc_mark(th->stat_insn_usage);
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
+    rb_gc_mark(th->ractor_waiting.receiving_mutex);
 
     rb_gc_mark(th->scheduler);
 
@@ -3649,6 +3700,8 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->last_status = Qnil;
     th->top_wrapper = 0;
     th->top_self = vm->top_self; // 0 while self == 0
+    th->namespaces = 0;
+    th->ns = 0;
     th->value = Qundef;
 
     th->ec->errinfo = Qnil;
@@ -3666,6 +3719,10 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    ccan_list_node_init(&th->ractor_waiting.waiting_node);
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_native_cond_initialize(&th->ractor_waiting.cond);
+#endif
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
@@ -3678,10 +3735,16 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 VALUE
 rb_thread_alloc(VALUE klass)
 {
+    rb_namespace_t *ns;
+    rb_execution_context_t *ec = GET_EC();
     VALUE self = thread_alloc(klass);
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
+    if ((ns = rb_ec_thread_ptr(ec)->ns) == 0) {
+        ns = rb_main_namespace();
+    }
+    target_th->ns = ns;
     return self;
 }
 
@@ -4230,6 +4293,8 @@ Init_VM(void)
         th->vm = vm;
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
+        th->namespaces = 0;
+        th->ns = 0;
 
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->iseq = iseq;
@@ -4293,7 +4358,7 @@ Init_BareVM(void)
     vm->negative_cme_table = rb_id_table_create(16);
     vm->overloaded_cme_table = st_init_numtable();
     vm->constant_cache = rb_id_table_create(0);
-    vm->unused_block_warning_table = st_init_numtable();
+    vm->unused_block_warning_table = set_init_numtable();
 
     // setup main thread
     th->nt = ZALLOC(struct rb_native_thread);
@@ -4447,7 +4512,6 @@ Init_vm_objects(void)
     vm->mark_object_ary = pin_array_list_new(Qnil);
     vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
-    vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 
 // Stub for builtin function when not building YJIT units
@@ -4458,10 +4522,9 @@ void Init_builtin_yjit(void) {}
 // Whether YJIT is enabled or not, we load yjit_hook.rb to remove Kernel#with_yjit.
 #include "yjit_hook.rbinc"
 
-// Stub for builtin function when not building RJIT units
-#if !USE_RJIT
-void Init_builtin_rjit(void) {}
-void Init_builtin_rjit_c(void) {}
+// Stub for builtin function when not building ZJIT units
+#if !USE_ZJIT
+void Init_builtin_zjit(void) {}
 #endif
 
 /* top self */
@@ -4514,12 +4577,6 @@ ruby_free_at_exit_p(void)
 VALUE rb_insn_operand_intern(const rb_iseq_t *iseq,
                              VALUE insn, int op_no, VALUE op,
                              int len, size_t pos, VALUE *pnop, VALUE child);
-
-st_table *
-rb_vm_fstring_table(void)
-{
-    return GET_VM()->frozen_strings;
-}
 
 #if VM_COLLECT_USAGE_DETAILS
 

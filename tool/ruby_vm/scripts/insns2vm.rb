@@ -1,4 +1,3 @@
-#! /your/favourite/path/to/ruby
 # -*- Ruby -*-
 # -*- frozen_string_literal: true; -*-
 # -*- warn_indent: true; -*-

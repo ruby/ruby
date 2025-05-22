@@ -1637,6 +1637,10 @@ class TestProc < Test::Unit::TestCase
     assert_equal(3, b.local_variable_get(:when))
     assert_equal(4, b.local_variable_get(:begin))
     assert_equal(5, b.local_variable_get(:end))
+
+    assert_raise_with_message(NameError, /local variable \Wdefault\W/) {
+      binding.local_variable_get(:default)
+    }
   end
 
   def test_local_variable_set
@@ -1647,6 +1651,71 @@ class TestProc < Test::Unit::TestCase
     assert_equal(20, b.local_variable_get(:b))
     assert_equal(10, b.eval("a"))
     assert_equal(20, b.eval("b"))
+  end
+
+  def test_numparam_is_not_local_variables
+    "foo".tap do
+      _9
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      "bar".tap do
+        _9
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:_9) }
+        assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:_9) }
+      assert_raise(NameError) { binding.local_variable_set(:_9, 1) }
+    end
+  end
+
+  def test_it_is_not_local_variable
+    "foo".tap do
+      it
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+    end
+
+    "foo".tap do
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+      "bar".tap do
+        it
+        assert_equal([], binding.local_variables)
+        assert_raise(NameError) { binding.local_variable_get(:it) }
+      end
+      assert_equal([], binding.local_variables)
+      assert_raise(NameError) { binding.local_variable_get(:it) }
+    end
   end
 
   def test_local_variable_set_wb

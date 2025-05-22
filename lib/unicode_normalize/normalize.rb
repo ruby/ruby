@@ -114,6 +114,7 @@ module UnicodeNormalize  # :nodoc:
         last_class = accent_class
       end
     end
+    accents = nfc_one(accents) if accents.length>1 # TODO: change from recursion to loop
     hangul_comp_one(start+accents)
   end
 

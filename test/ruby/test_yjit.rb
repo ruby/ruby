@@ -142,6 +142,36 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_with_valid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e',
+                       'RubyVM::YJIT.enable(call_threshold: 1); puts RubyVM::YJIT.enabled?']) do |stdout, stderr, _status|
+      assert_empty stderr
+      assert_include stdout.join, "true"
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_call_threshold_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+  def test_yjit_enable_with_invalid_runtime_mem_size_option
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+      assert_not_empty stderr
+      assert_match(/ArgumentError/, stderr.join)
+      assert_equal 1, status.exitstatus
+    end
+  end
+
+  if JITSupport.zjit_supported?
+    def test_yjit_enable_with_zjit_enabled
+      assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
+    end
+  end
+
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
     refute_includes(stderr, "NoMethodError")
@@ -1316,7 +1346,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_tracing_str_uplus
-    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1, definemethod: 1 })
+    assert_compiles(<<~RUBY, frozen_string_literal: true, result: :ok, exits: { putspecialobject: 1 })
       def str_uplus
         _ = 1
         _ = 2
@@ -1637,7 +1667,7 @@ class TestYJIT < Test::Unit::TestCase
 
       [
         stats[:object_shape_count].is_a?(Integer),
-        stats[:ratio_in_yjit].is_a?(Float),
+        stats[:ratio_in_yjit].nil? || stats[:ratio_in_yjit].is_a?(Float),
       ].all?
     RUBY
   end
@@ -1648,7 +1678,7 @@ class TestYJIT < Test::Unit::TestCase
       3.times { test }
 
       # Collect single stat.
-      stat = RubyVM::YJIT.runtime_stats(:ratio_in_yjit)
+      stat = RubyVM::YJIT.runtime_stats(:yjit_alloc_size)
 
       # Ensure this invocation had stats.
       return true unless RubyVM::YJIT.runtime_stats[:all_stats]

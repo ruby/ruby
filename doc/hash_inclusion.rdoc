@@ -1,0 +1,31 @@
+== \Hash Inclusion
+
+A hash is set-like in that it cannot have duplicate entries
+(or even duplicate keys).
+\Hash inclusion can therefore based on the idea of
+{subset and superset}[https://en.wikipedia.org/wiki/Subset].
+
+Two hashes may be tested for inclusion,
+based on comparisons of their entries.
+
+An entry <tt>h0[k0]</tt> in one hash
+is equal to an entry <tt>h1[k1]</tt> in another hash
+if and only if the two keys are equal (<tt>k0 == k1</tt>)
+and their two values are equal (<tt>h0[k0] == h1[h1]</tt>).
+
+A hash may be a subset or a superset of another hash:
+
+- Subset (included in or equal to another):
+
+  - \Hash +h0+ is a _subset_ of hash +h1+ (see Hash#<=)
+    if each entry in +h0+ is equal to an entry in +h1+.
+  - Further, +h0+ is a <i>proper subset</i> of +h1+ (see Hash#<)
+    if +h1+ is larger than +h0+.
+
+- Superset (including or equal to another):
+
+  - \Hash +h0+ is a _superset_ of hash +h1+ (see Hash#>=)
+    if each entry in +h1+ is equal to an entry in +h0+.
+  - Further, +h0+ is a <i>proper superset</i> of +h1+ (see Hash#>)
+    if +h0+ is larger than +h1+.
+

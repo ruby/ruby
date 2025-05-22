@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 require 'digest/sha1'
 

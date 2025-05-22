@@ -1,0 +1,55 @@
+<<-RUBY
+  \n
+  \n
+  exit
+  \\n
+  \n\n\n\n
+  argh
+  \\
+  \\\
+  foo\nbar
+  \f
+  ok
+RUBY
+
+<<~RUBY
+  \n
+  \n
+  exit
+  \\n
+  \n\n\n\n
+  argh
+  \\
+  \\\
+  foo\nbar
+  \f
+  ok
+RUBY
+
+<<~RUBY
+  #{123}\n
+  \n
+  exit
+  \\#{123}n
+  \n#{123}\n\n\n
+  argh
+  \\#{123}baz
+  \\\
+  foo\nbar
+  \f
+  ok
+RUBY
+
+<<'RUBY'
+  \n
+  \n
+  exit
+  \n
+  \n\n\n\n
+  argh
+  \
+  \
+  foo\nbar
+  \f
+  ok
+RUBY

@@ -96,7 +96,6 @@ RSpec.describe "compact index api" do
     bundle :install, artifice: "compact_index"
 
     bundle "config set --local deployment true"
-    bundle "config set --local path vendor/bundle"
     bundle :install, artifice: "compact_index"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -183,8 +182,7 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -323,7 +321,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -341,7 +339,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra", verbose: true
@@ -406,7 +404,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -429,7 +427,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_missing"
@@ -449,7 +447,7 @@ RSpec.describe "compact index api" do
       end
       build_gem "missing"
 
-      FileUtils.rm_rf Dir[gem_repo4("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo4("gems/foo-*.gem")]
     end
 
     install_gemfile <<-G, artifice: "compact_index_extra_api_missing"
@@ -478,7 +476,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -498,7 +496,7 @@ RSpec.describe "compact index api" do
       build_gem "back_deps" do |s|
         s.add_dependency "foo"
       end
-      FileUtils.rm_rf Dir[gem_repo2("gems/foo-*.gem")]
+      FileUtils.rm_r Dir[gem_repo2("gems/foo-*.gem")]
     end
 
     gemfile <<-G
@@ -789,8 +787,7 @@ RSpec.describe "compact index api" do
   end
 
   it "performs update with etag not-modified" do
-    versions_etag = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions_etag = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions.etag"
     )
     expect(versions_etag.file?).to eq(false)
@@ -833,8 +830,7 @@ RSpec.describe "compact index api" do
       gem 'myrack', '1.0.0'
     G
 
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     # Modify the cached file. The ranged request will be based on this but,
@@ -876,8 +872,7 @@ RSpec.describe "compact index api" do
     G
 
     # Create a partial cache versions file
-    versions = Pathname.new(Bundler.rubygems.user_home).join(
-      ".bundle", "cache", "compact_index",
+    versions = compact_index_cache_path.join(
       "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "versions"
     )
     versions.dirname.mkpath
@@ -941,7 +936,7 @@ RSpec.describe "compact index api" do
 
     bundle :install, artifice: "compact_index"
 
-    cache_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
+    cache_path = compact_index_cache_path.join("localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5")
 
     # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
     myrack_info_etag_path = File.join(cache_path, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
@@ -1093,5 +1088,12 @@ Running `bundle update rails` should fix the problem.
     bundle "update rails", artifice: "compact_index"
     count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
     expect(lockfile.scan(/activemerchant \(/).size).to eq(count)
+  end
+
+  it "handles an API that does not provide checksums info (undocumented, support may get removed)" do
+    install_gemfile <<-G, artifice: "compact_index_no_checksums"
+      source "https://gem.repo1"
+      gem "rake"
+    G
   end
 end

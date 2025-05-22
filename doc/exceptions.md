@@ -181,7 +181,7 @@ divided by 0
 
 Two read-only global variables always have `nil` value
 except in a rescue clause;
-there:
+they're:
 
 - `$!`: contains the rescued exception.
 - `$@`: contains its backtrace.

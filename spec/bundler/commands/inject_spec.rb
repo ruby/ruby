@@ -55,7 +55,7 @@ Usage: "bundle inject GEM VERSION"
     it "add gem with source option in gemfile" do
       bundle "inject 'foo' '>0' --source https://gem.repo1"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"foo\", \"> 0\", :source => \"https://gem.repo1\""
+      str = "gem \"foo\", \"> 0\", source: \"https://gem.repo1\""
       expect(gemfile).to include str
     end
   end
@@ -64,14 +64,14 @@ Usage: "bundle inject GEM VERSION"
     it "add gem with group option in gemfile" do
       bundle "inject 'myrack-obama' '>0' --group=development"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"myrack-obama\", \"> 0\", :group => :development"
+      str = "gem \"myrack-obama\", \"> 0\", group: :development"
       expect(gemfile).to include str
     end
 
     it "add gem with multiple groups in gemfile" do
       bundle "inject 'myrack-obama' '>0' --group=development,test"
       gemfile = bundled_app_gemfile.read
-      str = "gem \"myrack-obama\", \"> 0\", :groups => [:development, :test]"
+      str = "gem \"myrack-obama\", \"> 0\", groups: [:development, :test]"
       expect(gemfile).to include str
     end
   end

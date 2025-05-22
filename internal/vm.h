@@ -56,7 +56,6 @@ void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
 VALUE ruby_vm_special_exception_copy(VALUE);
-PUREFUNC(st_table *rb_vm_fstring_table(void));
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
 
@@ -78,10 +77,11 @@ void rb_check_stack_overflow(void);
 #define RB_BLOCK_NO_USE_PACKED_ARGS 2
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
+VALUE rb_gccct_clear_table(VALUE);
 
 #if USE_YJIT
 /* vm_exec.c */
-extern RB_THREAD_LOCAL_SPECIFIER uint64_t rb_vm_insns_count;
+extern uint64_t rb_vm_insns_count;
 #endif
 
 extern bool rb_free_at_exit;

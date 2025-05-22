@@ -126,7 +126,7 @@ module Bundler
       end
 
       def removable?
-        type == :lock || type == :gem
+        [:lock, :gem].include?(type)
       end
 
       def ==(other)
@@ -190,7 +190,7 @@ module Bundler
       def replace(spec, checksum)
         return unless checksum
 
-        lock_name = spec.name_tuple.lock_name
+        lock_name = spec.lock_name
         @store_mutex.synchronize do
           existing = fetch_checksum(lock_name, checksum.algo)
           if !existing || existing.same_source?(checksum)
@@ -201,10 +201,12 @@ module Bundler
         end
       end
 
-      def register(spec, checksum)
-        return unless checksum
+      def missing?(spec)
+        @store[spec.lock_name].nil?
+      end
 
-        register_checksum(spec.name_tuple.lock_name, checksum)
+      def register(spec, checksum)
+        register_checksum(spec.lock_name, checksum)
       end
 
       def merge!(other)
@@ -216,9 +218,9 @@ module Bundler
       end
 
       def to_lock(spec)
-        lock_name = spec.name_tuple.lock_name
+        lock_name = spec.lock_name
         checksums = @store[lock_name]
-        if checksums
+        if checksums&.any?
           "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
         else
           lock_name
@@ -229,11 +231,15 @@ module Bundler
 
       def register_checksum(lock_name, checksum)
         @store_mutex.synchronize do
-          existing = fetch_checksum(lock_name, checksum.algo)
-          if existing
-            merge_checksum(lock_name, checksum, existing)
+          if checksum
+            existing = fetch_checksum(lock_name, checksum.algo)
+            if existing
+              merge_checksum(lock_name, checksum, existing)
+            else
+              store_checksum(lock_name, checksum)
+            end
           else
-            store_checksum(lock_name, checksum)
+            init_checksum(lock_name)
           end
         end
       end
@@ -243,7 +249,11 @@ module Bundler
       end
 
       def store_checksum(lock_name, checksum)
-        (@store[lock_name] ||= {})[checksum.algo] = checksum
+        init_checksum(lock_name)[checksum.algo] = checksum
+      end
+
+      def init_checksum(lock_name)
+        @store[lock_name] ||= {}
       end
 
       def fetch_checksum(lock_name, algo)

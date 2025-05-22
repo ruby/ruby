@@ -191,6 +191,7 @@ static VALUE ossl_ec_key_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 #ifndef HAVE_EVP_PKEY_DUP
+/* :nodoc: */
 static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
@@ -657,8 +658,11 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 		ossl_clear_error(); /* ignore errors in d2i_ECPKParameters_bio() */
                 if (nid == NID_undef)
                     ossl_raise(eEC_GROUP, "unknown curve name (%"PRIsVALUE")", arg1);
-
+#if !defined(OPENSSL_IS_AWSLC)
                 group = EC_GROUP_new_by_curve_name(nid);
+#else /* EC_GROUPs are static and immutable by default in AWS-LC. */
+                group = EC_GROUP_new_by_curve_name_mutable(nid);
+#endif
                 if (group == NULL)
                     ossl_raise(eEC_GROUP, "unable to create curve (%"PRIsVALUE")", arg1);
 
@@ -703,6 +707,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ec_group_initialize_copy(VALUE self, VALUE other)
 {
@@ -1258,6 +1263,7 @@ static VALUE ossl_ec_point_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/* :nodoc: */
 static VALUE
 ossl_ec_point_initialize_copy(VALUE self, VALUE other)
 {
@@ -1367,7 +1373,7 @@ static VALUE ossl_ec_point_make_affine(VALUE self)
     GetECPointGroup(self, group);
 
     rb_warn("OpenSSL::PKey::EC::Point#make_affine! is deprecated");
-#if !OSSL_OPENSSL_PREREQ(3, 0, 0)
+#if !OSSL_OPENSSL_PREREQ(3, 0, 0) && !defined(OPENSSL_IS_AWSLC)
     if (EC_POINT_make_affine(group, point, ossl_bn_ctx) != 1)
         ossl_raise(eEC_POINT, "EC_POINT_make_affine");
 #endif

@@ -823,7 +823,7 @@ str_is_number(const char *p)
      rb_strlen_lit(name) == (len) && memcmp(ptr, name, len) == 0)
 
 char*
-host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
+raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 {
     if (NIL_P(host)) {
         return NULL;
@@ -862,7 +862,7 @@ host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr)
 }
 
 char*
-port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
+raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 {
     if (NIL_P(port)) {
         return 0;
@@ -914,7 +914,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
 
     for(i=0; i<len; i++) {
         ip_address = rb_ary_entry(ip_addresses_array, i);
-        hostp = host_str(ip_address, _hbuf, sizeof(_hbuf), &_additional_flags);
+        hostp = raddrinfo_host_str(ip_address, _hbuf, sizeof(_hbuf), &_additional_flags);
         error = numeric_getaddrinfo(hostp, service, hints, &ai);
         if (error == 0) {
             if (!res_allocated) {
@@ -950,8 +950,8 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
     int additional_flags = 0;
 
-    hostp = host_str(host, hbuf, sizeof(hbuf), &additional_flags);
-    portp = port_str(port, pbuf, sizeof(pbuf), &additional_flags);
+    hostp = raddrinfo_host_str(host, hbuf, sizeof(hbuf), &additional_flags);
+    portp = raddrinfo_port_str(port, pbuf, sizeof(pbuf), &additional_flags);
 
     if (socktype_hack && hints->ai_socktype == 0 && str_is_number(portp)) {
         hints->ai_socktype = SOCK_DGRAM;
@@ -1137,7 +1137,7 @@ make_hostent_internal(VALUE v)
         hostp = addr->ai_canonname;
     }
     else {
-        hostp = host_str(host, hbuf, sizeof(hbuf), NULL);
+        hostp = raddrinfo_host_str(host, hbuf, sizeof(hbuf), NULL);
     }
     rb_ary_push(ary, rb_str_new2(hostp));
 
@@ -1211,6 +1211,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE
@@ -3038,22 +3039,13 @@ free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **
     *shared = NULL;
 }
 
-void
-free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry)
-{
-    if ((*entry)->ai) {
-        freeaddrinfo((*entry)->ai);
-        (*entry)->ai = NULL;
-    }
-    *entry = NULL;
-}
-
 static void *
 do_fast_fallback_getaddrinfo(void *ptr)
 {
     struct fast_fallback_getaddrinfo_entry *entry = (struct fast_fallback_getaddrinfo_entry *)ptr;
     struct fast_fallback_getaddrinfo_shared *shared = entry->shared;
-    int err = 0, need_free = 0, shared_need_free = 0;
+    int err = 0, shared_need_free = 0;
+    struct addrinfo *ai = NULL;
 
     sigset_t set;
     sigemptyset(&set);
@@ -3102,14 +3094,15 @@ do_fast_fallback_getaddrinfo(void *ptr)
             entry->err = errno;
             entry->has_syserr = true;
         }
-        if (--(entry->refcount) == 0) need_free = 1;
+        if (--(entry->refcount) == 0) {
+            ai = entry->ai;
+            entry->ai = NULL;
+        }
         if (--(shared->refcount) == 0) shared_need_free = 1;
     }
     rb_nativethread_lock_unlock(&shared->lock);
 
-    if (need_free && entry) {
-        free_fast_fallback_getaddrinfo_entry(&entry);
-    }
+    if (ai) freeaddrinfo(ai);
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }

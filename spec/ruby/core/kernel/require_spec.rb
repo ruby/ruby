@@ -16,9 +16,9 @@ describe "Kernel#require" do
     Kernel.should have_private_instance_method(:require)
   end
 
-  provided = %w[complex enumerator rational thread ruby2_keywords]
-  ruby_version_is "3.1" do
-    provided << "fiber"
+  provided = %w[complex enumerator fiber rational thread ruby2_keywords]
+  ruby_version_is "3.5" do
+    provided << "set"
   end
 
   it "#{provided.join(', ')} are already required" do

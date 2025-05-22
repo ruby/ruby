@@ -34,7 +34,7 @@ describe "The private keyword" do
   it "changes visibility of previously called method" do
     klass = Class.new do
       def foo
-       "foo"
+        "foo"
       end
     end
     f = klass.new

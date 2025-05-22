@@ -2144,11 +2144,11 @@ class Gem::Specification < Gem::BasicSpecification
       @files.concat(@extra_rdoc_files)
     end
 
-    @files            = @files.uniq if @files
-    @extensions       = @extensions.uniq if @extensions
-    @test_files       = @test_files.uniq if @test_files
-    @executables      = @executables.uniq if @executables
-    @extra_rdoc_files = @extra_rdoc_files.uniq if @extra_rdoc_files
+    @files            = @files.uniq.sort if @files
+    @extensions       = @extensions.uniq.sort if @extensions
+    @test_files       = @test_files.uniq.sort if @test_files
+    @executables      = @executables.uniq.sort if @executables
+    @extra_rdoc_files = @extra_rdoc_files.uniq.sort if @extra_rdoc_files
   end
 
   ##

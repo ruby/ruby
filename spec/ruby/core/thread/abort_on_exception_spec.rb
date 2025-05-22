@@ -72,7 +72,7 @@ describe "Thread.abort_on_exception" do
   end
 
   after do
-     Thread.abort_on_exception = @abort_on_exception
+    Thread.abort_on_exception = @abort_on_exception
   end
 
   it "is false by default" do

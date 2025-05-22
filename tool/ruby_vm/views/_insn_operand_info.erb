@@ -6,10 +6,16 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %
-% a = RubyVM::Instructions.map {|i| i.operands_info }
-% b = (0...a.size)
-% c = a.inject([0]) {|r, i| r << (r[-1] + i.length + 1) }
-% c.pop
+% zjit_insns, insns = RubyVM::Instructions.partition { |i| i.name.start_with?('zjit_') }
+%
+% operands_info = proc { |i| sprintf("%-6s", cstr(i.operands_info)) }
+%
+% next_offset = 0
+% op_offset = proc do |i|
+%   offset = sprintf("%3d", next_offset)
+%   next_offset += i.operands_info.length + 1 # insn.operands_info + \0
+%   offset
+% end
 %
 CONSTFUNC(MAYBE_UNUSED(static const char *insn_op_types(VALUE insn)));
 CONSTFUNC(MAYBE_UNUSED(static int insn_op_type(VALUE insn, long pos)));
@@ -21,15 +27,25 @@ RUBY_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
 const char rb_vm_insn_op_base[] =
-% a.each_slice 5 do |d|
-    <%= d.map {|i| sprintf("%-6s", cstr(i)) }.join(' "\0" ') %> "\0"
+% insns.each_slice(5) do |row|
+    <%= row.map(&operands_info).join(' "\0" ') %> "\0"
 % end
+#if USE_ZJIT
+% zjit_insns.each_slice(5) do |row|
+    <%= row.map(&operands_info).join(' "\0" ') %> "\0"
+% end
+#endif
     ;
 
 const unsigned short rb_vm_insn_op_offset[] = {
-% c.each_slice 12 do |d|
-    <%= d.map {|i| sprintf("%3d", i) }.join(', ') %>,
+% insns.each_slice(12) do |row|
+    <%= row.map(&op_offset).join(', ') %>,
 % end
+#if USE_ZJIT
+% zjit_insns.each_slice(12) do |row|
+    <%= row.map(&op_offset).join(', ') %>,
+% end
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_op_offset);

@@ -1375,7 +1375,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 }
 
 static void
-iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE data)
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
 {
     const char *types = insn_op_types(insn->insn_id);
     for (int j = 0; types[j]; j++) {
@@ -1386,7 +1386,7 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE dat
           case TS_VALUE:
           case TS_IC: // constant path array
           case TS_CALLDATA: // ci is stored.
-            func(OPERAND_AT(insn, j), data);
+            func(&OPERAND_AT(insn, j), data);
             break;
           default:
             break;
@@ -1395,9 +1395,9 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE dat
 }
 
 static void
-iseq_insn_each_object_write_barrier(VALUE obj, VALUE iseq)
+iseq_insn_each_object_write_barrier(VALUE * obj, VALUE iseq)
 {
-    RB_OBJ_WRITTEN(iseq, Qundef, obj);
+    RB_OBJ_WRITTEN(iseq, Qundef, *obj);
 }
 
 static INSN *
@@ -2014,7 +2014,7 @@ iseq_set_use_block(rb_iseq_t *iseq)
 
         if (!rb_warning_category_enabled_p(RB_WARN_CATEGORY_STRICT_UNUSED_BLOCK)) {
             st_data_t key = (st_data_t)rb_intern_str(body->location.label); // String -> ID
-            st_insert(vm->unused_block_warning_table, key, 1);
+            set_insert(vm->unused_block_warning_table, key);
         }
     }
 }
@@ -2596,7 +2596,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     else {
         body->is_entries = NULL;
     }
-    body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
+
+    if (body->ci_size) {
+        body->call_data = ZALLOC_N(struct rb_call_data, body->ci_size);
+    }
+    else {
+        body->call_data = NULL;
+    }
     ISEQ_COMPILE_DATA(iseq)->ci_index = 0;
 
     // Calculate the bitmask buffer size.
@@ -2607,15 +2613,20 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     iseq_bits_t * mark_offset_bits;
     int code_size = code_index;
 
-    iseq_bits_t tmp[1] = {0};
     bool needs_bitmap = false;
 
     if (ISEQ_MBITS_BUFLEN(code_index) == 1) {
-        mark_offset_bits = tmp;
+        mark_offset_bits = &ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = true;
     }
     else {
         mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(code_index));
+        ISEQ_COMPILE_DATA(iseq)->mark_bits.list = mark_offset_bits;
+        ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit = false;
     }
+
+    ISEQ_COMPILE_DATA(iseq)->iseq_encoded = (void *)generated_iseq;
+    ISEQ_COMPILE_DATA(iseq)->iseq_size = code_index;
 
     list = FIRST_ELEMENT(anchor);
     insns_info_index = code_index = sp = 0;
@@ -2827,15 +2838,16 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     body->iseq_size = code_index;
     body->stack_max = stack_max;
 
-    if (ISEQ_MBITS_BUFLEN(body->iseq_size) == 1) {
-        body->mark_bits.single = mark_offset_bits[0];
+    if (ISEQ_COMPILE_DATA(iseq)->is_single_mark_bit) {
+        body->mark_bits.single = ISEQ_COMPILE_DATA(iseq)->mark_bits.single;
     }
     else {
         if (needs_bitmap) {
             body->mark_bits.list = mark_offset_bits;
         }
         else {
-            body->mark_bits.list = 0;
+            body->mark_bits.list = NULL;
+            ISEQ_COMPILE_DATA(iseq)->mark_bits.list = NULL;
             ruby_xfree(mark_offset_bits);
         }
     }
@@ -4361,9 +4373,18 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     list = FIRST_ELEMENT(anchor);
 
     int do_block_optimization = 0;
+    LABEL * block_loop_label = NULL;
 
-    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK && !ISEQ_COMPILE_DATA(iseq)->catch_except_p) {
+    // If we're optimizing a block
+    if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
         do_block_optimization = 1;
+
+        // If the block starts with a nop and a label,
+        // record the label so we can detect if it's a jump target
+        LINK_ELEMENT * le = FIRST_ELEMENT(anchor)->next;
+        if (IS_INSN(le) && IS_INSN_ID((INSN *)le, nop) && IS_LABEL(le->next)) {
+            block_loop_label = (LABEL *)le->next;
+        }
     }
 
     while (list) {
@@ -4380,8 +4401,26 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
             if (do_block_optimization) {
                 INSN * item = (INSN *)list;
-                if (IS_INSN_ID(item, jump)) {
+                // Give up if there is a throw
+                if (IS_INSN_ID(item, throw)) {
                     do_block_optimization = 0;
+                }
+                else {
+                    // If the instruction has a jump target, check if the
+                    // jump target is the block loop label
+                    const char *types = insn_op_types(item->insn_id);
+                    for (int j = 0; types[j]; j++) {
+                        if (types[j] == TS_OFFSET) {
+                            // If the jump target is equal to the block loop
+                            // label, then we can't do the optimization because
+                            // the leading `nop` instruction fires the block
+                            // entry tracepoint
+                            LABEL * target = (LABEL *)OPERAND_AT(item, j);
+                            if (target == block_loop_label) {
+                                do_block_optimization = 0;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -9341,6 +9380,7 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
     INIT_ANCHOR(recv);
     INIT_ANCHOR(args);
+
 #if OPT_SUPPORT_JOKE
     if (nd_type_p(node, NODE_VCALL)) {
         ID id_bitblt;
@@ -9436,6 +9476,17 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     }
 
     ADD_SEQ(ret, recv);
+
+    bool inline_new = ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction &&
+        mid == rb_intern("new") &&
+        parent_block == NULL &&
+        !(flag & VM_CALL_ARGS_BLOCKARG);
+
+    if (inline_new) {
+        ADD_INSN(ret, node, putnil);
+        ADD_INSN(ret, node, swap);
+    }
+
     ADD_SEQ(ret, args);
 
     debugp_param("call args argc", argc);
@@ -9452,7 +9503,37 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
         ADD_INSN(ret, line_node, splatkw);
     }
-    ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
+
+    LABEL *not_basic_new = NEW_LABEL(nd_line(node));
+    LABEL *not_basic_new_finish = NEW_LABEL(nd_line(node));
+
+    if (inline_new) {
+        // Jump unless the receiver uses the "basic" implementation of "new"
+        VALUE ci;
+        if (flag & VM_CALL_FORWARDING) {
+            ci = (VALUE)new_callinfo(iseq, mid, NUM2INT(argc) + 1, flag, keywords, 0);
+        }
+        else {
+            ci = (VALUE)new_callinfo(iseq, mid, NUM2INT(argc), flag, keywords, 0);
+        }
+        ADD_INSN2(ret, node, opt_new, ci, not_basic_new);
+        LABEL_REF(not_basic_new);
+
+        // optimized path
+        ADD_SEND_R(ret, line_node, rb_intern("initialize"), argc, parent_block, INT2FIX(flag | VM_CALL_FCALL), keywords);
+        ADD_INSNL(ret, line_node, jump, not_basic_new_finish);
+
+        ADD_LABEL(ret, not_basic_new);
+        // Fall back to normal send
+        ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
+        ADD_INSN(ret, line_node, swap);
+
+        ADD_LABEL(ret, not_basic_new_finish);
+        ADD_INSN(ret, line_node, pop);
+    }
+    else {
+        ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
+    }
 
     qcall_branch_end(iseq, ret, else_label, branches, node, line_node);
     if (popped) {
@@ -10707,7 +10788,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (nd_fl_newline(node)) {
             int event = RUBY_EVENT_LINE;
             ISEQ_COMPILE_DATA(iseq)->last_line = line;
-            if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+            if (line > 0 && ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
                 event |= RUBY_EVENT_COVERAGE_LINE;
             }
             ADD_TRACE(ret, event);
@@ -12128,13 +12209,13 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 static void
-iseq_insn_each_object_mark_and_pin(VALUE obj, VALUE _)
+iseq_insn_each_object_mark_and_move(VALUE * obj, VALUE _)
 {
-    rb_gc_mark(obj);
+    rb_gc_mark_and_move(obj);
 }
 
 void
-rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
@@ -12159,7 +12240,7 @@ rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_pin, (VALUE)0);
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_move, (VALUE)0);
             }
             pos += (int)size;
         }
@@ -13337,6 +13418,11 @@ ibf_load_ci_entries(const struct ibf_load *load,
                     unsigned int ci_size,
                     struct rb_call_data **cd_ptr)
 {
+    if (!ci_size) {
+        *cd_ptr = NULL;
+        return;
+    }
+
     ibf_offset_t reading_pos = ci_entries_offset;
 
     unsigned int i;

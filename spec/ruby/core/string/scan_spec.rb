@@ -103,11 +103,11 @@ describe "String#scan with pattern and block" do
     offsets = []
 
     str.scan(/([aeiou])/) do
-       md = $~
-       md.string.should == str
-       matches << md.to_a
-       offsets << md.offset(0)
-       str
+      md = $~
+      md.string.should == str
+      matches << md.to_a
+      offsets << md.offset(0)
+      str
     end
 
     matches.should == [["e", "e"], ["o", "o"]]
@@ -117,11 +117,11 @@ describe "String#scan with pattern and block" do
     offsets = []
 
     str.scan("l") do
-       md = $~
-       md.string.should == str
-       matches << md.to_a
-       offsets << md.offset(0)
-       str
+      md = $~
+      md.string.should == str
+      matches << md.to_a
+      offsets << md.offset(0)
+      str
     end
 
     matches.should == [["l"], ["l"]]

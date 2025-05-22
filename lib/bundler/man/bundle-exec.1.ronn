@@ -108,8 +108,8 @@ need to use `with_unbundled_env`.
 Bundler provides convenience helpers that wrap `system` and `exec`, and they
 can be used like this:
 
-    Bundler.clean_system('brew install wget')
-    Bundler.clean_exec('brew install wget')
+    Bundler.unbundled_system('brew install wget')
+    Bundler.unbundled_exec('brew install wget')
 
 
 ## RUBYGEMS PLUGINS

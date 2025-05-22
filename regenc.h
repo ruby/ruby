@@ -118,6 +118,11 @@ typedef struct {
 
 typedef struct {
   short int len;
+#if defined(__has_attribute)
+# if __has_attribute(nonstring)
+  __attribute__((nonstring))
+# endif
+#endif
   const UChar name[6];
   int       ctype;
 } PosixBracketEntryType;

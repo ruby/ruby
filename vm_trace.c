@@ -30,7 +30,6 @@
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "iseq.h"
-#include "rjit.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
 #include "vm_core.h"
@@ -136,7 +135,6 @@ update_global_event_hook(rb_event_flag_t prev_events, rb_event_flag_t new_events
         // Do this after event flags updates so other ractors see updated vm events
         // when they wake up.
         rb_yjit_tracing_invalidate_all();
-        rb_rjit_tracing_invalidate_all(new_iseq_events);
     }
 }
 
@@ -455,6 +453,7 @@ rb_exec_event_hooks(rb_trace_arg_t *trace_arg, rb_hook_list_t *hooks, int pop_p)
             if (state) {
                 if (pop_p) {
                     if (VM_FRAME_FINISHED_P(ec->cfp)) {
+                        rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
                         ec->tag = ec->tag->prev;
                     }
                     rb_vm_pop_frame(ec);
@@ -1286,7 +1285,6 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     }
 
     rb_yjit_tracing_invalidate_all();
-    rb_rjit_tracing_invalidate_all(tp->events);
 
     ruby_vm_event_local_num++;
 

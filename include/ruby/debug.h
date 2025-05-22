@@ -479,7 +479,7 @@ RBIMPL_ATTR_RETURNS_NONNULL()
  */
 rb_trace_arg_t *rb_tracearg_from_tracepoint(VALUE tpval);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the event of the passed trace.
  *
@@ -488,7 +488,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 rb_event_flag_t rb_tracearg_event_flag(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Identical to  rb_tracearg_event_flag(), except  it returns  the name  of the
  * event in Ruby's symbol.
@@ -498,7 +498,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_event(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the line of the point where the trace is at.
  *
@@ -508,7 +508,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_lineno(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the file name of the point where the trace is at.
  *
@@ -518,7 +518,19 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_path(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
+/**
+ *
+ * Queries the parameters passed on a call or return event.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event does not support querying parameters.
+ * @return     Array of parameters in the format of `Method#parameters`.
+ *
+ */
+VALUE rb_tracearg_parameters(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the method name of the point where the trace is at.
  *
@@ -528,7 +540,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_method_id(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Identical  to  rb_tracearg_method_id(), except  it  returns  callee id  like
  * rb_frame_callee().
@@ -539,7 +551,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_callee_id(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the class that defines the method that the passed trace is at.  This
  * can be different from the class of rb_tracearg_self()'s return value because
@@ -551,7 +563,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_defined_class(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Creates a binding object of the point where the trace is at.
  *
@@ -566,7 +578,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_binding(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the receiver of the point trace is at.
  *
@@ -575,7 +587,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_self(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the return value that the trace represents.
  *
@@ -585,7 +597,7 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_return_value(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the raised exception that the trace represents.
  *
@@ -595,7 +607,33 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg);
 
-RBIMPL_ATTR_NONNULL(())
+RBIMPL_ATTR_NONNULL((1))
+/**
+ * Queries the compiled source code of the 'script_compiled' event.
+ * If loaded from a file, it will return nil.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event is not 'script_compiled'.
+ * @retval     RUBY_Qnil         The script was loaded from a file.
+ * @retval     otherwise         The compiled source code.
+ *
+ */
+VALUE rb_tracearg_eval_script(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL((1))
+/**
+ *
+ * Queries the compiled instruction sequence on a 'script_compiled' event.
+ * Note that this method is MRI specific.
+ *
+ * @param[in]  trace_arg         A trace instance
+ * @exception  rb_eRuntimeError  The tracing event is not 'script_compiled'.
+ * @return     The `RubyVM::InstructionSequence` object representing the instruction sequence.
+ *
+ */
+VALUE rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg);
+
+RBIMPL_ATTR_NONNULL((1))
 /**
  * Queries the allocated/deallocated object that the trace represents.
  *

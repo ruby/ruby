@@ -259,7 +259,11 @@ module Gem
     end
 
     def installation_missing?
-      !default_gem? && (!Dir.exist?(full_gem_path) || Dir.empty?(full_gem_path))
+      !default_gem? && !File.directory?(full_gem_path)
+    end
+
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
     end
 
     unless VALIDATES_FOR_RESOLUTION
@@ -441,6 +445,17 @@ module Gem
         end
       end
     end
+  end
+
+  unless Gem.rubygems_version >= Gem::Version.new("3.6.7")
+    module UnfreezeCompactIndexParsedResponse
+      def parse(line)
+        version, platform, dependencies, requirements = super
+        [version, platform, dependencies.frozen? ? dependencies.dup : dependencies, requirements.frozen? ? requirements.dup : requirements]
+      end
+    end
+
+    Resolver::APISet::GemParser.prepend(UnfreezeCompactIndexParsedResponse)
   end
 
   if Gem.rubygems_version < Gem::Version.new("3.6.0")

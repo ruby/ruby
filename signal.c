@@ -45,6 +45,7 @@
 #include "ruby_atomic.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "ruby/internal/attr/nonstring.h"
 
 #ifdef NEED_RUBY_ATOMIC_OPS
 rb_atomic_t
@@ -675,6 +676,7 @@ signal_ignored(int sig)
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
     func = old.sa_handler;
 #else
+    // TODO: this is not a thread-safe way to do it. Needs lock.
     sighandler_t old = signal(sig, SIG_DFL);
     signal(sig, old);
     func = old;
@@ -708,7 +710,7 @@ sighandler(int sig)
 int
 rb_signal_buff_size(void)
 {
-    return signal_buff.size;
+    return RUBY_ATOMIC_LOAD(signal_buff.size);
 }
 
 static void
@@ -736,7 +738,7 @@ rb_get_next_signal(void)
 {
     int i, sig = 0;
 
-    if (signal_buff.size != 0) {
+    if (rb_signal_buff_size() != 0) {
         for (i=1; i<RUBY_NSIG; i++) {
             if (signal_buff.cnt[i] > 0) {
                 ATOMIC_DEC(signal_buff.cnt[i]);
@@ -853,10 +855,11 @@ check_stack_overflow(int sig, const uintptr_t addr, const ucontext_t *ctx)
              * otherwise it can cause stack overflow again at the same
              * place. */
             if ((crit = (!ec->tag->prev || !--uplevel)) != FALSE) break;
+            rb_vm_tag_jmpbuf_deinit(&ec->tag->buf);
             ec->tag = ec->tag->prev;
         }
         reset_sigmask(sig);
-        rb_ec_stack_overflow(ec, crit);
+        rb_ec_stack_overflow(ec, crit + 1);
     }
 }
 # else
@@ -867,7 +870,7 @@ check_stack_overflow(int sig, const void *addr)
     rb_thread_t *th = GET_THREAD();
     if (ruby_stack_overflowed_p(th, addr)) {
         reset_sigmask(sig);
-        rb_ec_stack_overflow(th->ec, FALSE);
+        rb_ec_stack_overflow(th->ec, 1);
     }
 }
 # endif
@@ -975,7 +978,7 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
     if (prev) {
         ssize_t RB_UNUSED_VAR(err);
         static const int stderr_fd = 2;
-#define NOZ(name, str) name[sizeof(str)-1] = str
+#define NOZ(name, str) RBIMPL_ATTR_NONSTRING() name[sizeof(str)-1] = str
         static const char NOZ(msg1, " received in ");
         static const char NOZ(msg2, " handler\n");
 

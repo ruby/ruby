@@ -22,10 +22,8 @@ describe "Time#utc?" do
     Time.now.localtime("UTC").utc?.should == true
     Time.at(Time.now, in: 'UTC').utc?.should == true
 
-    ruby_version_is "3.1" do
-      Time.new(2022, 1, 1, 0, 0, 0, in: "UTC").utc?.should == true
-      Time.now(in: "UTC").utc?.should == true
-    end
+    Time.new(2022, 1, 1, 0, 0, 0, in: "UTC").utc?.should == true
+    Time.now(in: "UTC").utc?.should == true
   end
 
   it "does treat time with Z offset as UTC" do
@@ -33,18 +31,14 @@ describe "Time#utc?" do
     Time.now.localtime("Z").utc?.should == true
     Time.at(Time.now, in: 'Z').utc?.should == true
 
-    ruby_version_is "3.1" do
-      Time.new(2022, 1, 1, 0, 0, 0, in: "Z").utc?.should == true
-      Time.now(in: "Z").utc?.should == true
-    end
+    Time.new(2022, 1, 1, 0, 0, 0, in: "Z").utc?.should == true
+    Time.now(in: "Z").utc?.should == true
   end
 
-  ruby_version_is "3.1" do
-    it "does treat time with -00:00 offset as UTC" do
-      Time.new(2022, 1, 1, 0, 0, 0, "-00:00").utc?.should == true
-      Time.now.localtime("-00:00").utc?.should == true
-      Time.at(Time.now, in: '-00:00').utc?.should == true
-    end
+  it "does treat time with -00:00 offset as UTC" do
+    Time.new(2022, 1, 1, 0, 0, 0, "-00:00").utc?.should == true
+    Time.now.localtime("-00:00").utc?.should == true
+    Time.at(Time.now, in: '-00:00').utc?.should == true
   end
 
   it "does not treat time with +00:00 offset as UTC" do

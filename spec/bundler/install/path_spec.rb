@@ -52,7 +52,7 @@ RSpec.describe "bundle install" do
 
     it "remembers to disable system gems after the first time with bundle --path vendor/bundle", bundler: "< 3" do
       bundle "install --path vendor/bundle"
-      FileUtils.rm_rf bundled_app("vendor")
+      FileUtils.rm_r bundled_app("vendor")
       bundle "install"
 
       expect(vendored_gems("gems/myrack-1.0.0")).to be_directory

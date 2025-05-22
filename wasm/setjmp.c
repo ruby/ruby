@@ -143,9 +143,11 @@ rb_wasm_try_catch_init(struct rb_wasm_try_catch *try_catch,
     try_catch->try_f = try_f;
     try_catch->catch_f = catch_f;
     try_catch->context = context;
+    try_catch->stack_pointer = NULL;
 }
 
 // NOTE: This function is not processed by Asyncify due to a call of asyncify_stop_rewind
+__attribute__((noinline))
 void
 rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf *target)
 {
@@ -153,6 +155,10 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
     extern rb_wasm_jmp_buf *_rb_wasm_active_jmpbuf;
 
     target->state = JMP_BUF_STATE_CAPTURED;
+
+    if (try_catch->stack_pointer == NULL) {
+        try_catch->stack_pointer = rb_wasm_get_stack_pointer();
+    }
 
     switch ((enum try_catch_phase)try_catch->state) {
     case TRY_CATCH_PHASE_MAIN:
@@ -175,6 +181,8 @@ rb_wasm_try_catch_loop_run(struct rb_wasm_try_catch *try_catch, rb_wasm_jmp_buf 
             // stop unwinding
             // (but call stop_rewind to update the asyncify state to "normal" from "unwind")
             asyncify_stop_rewind();
+            // reset the stack pointer to what it was before the most recent call to try_f or catch_f
+            rb_wasm_set_stack_pointer(try_catch->stack_pointer);
             // clear the active jmpbuf because it's already stopped
             _rb_wasm_active_jmpbuf = NULL;
             // reset jmpbuf state to be able to unwind again

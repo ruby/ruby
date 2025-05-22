@@ -32,7 +32,7 @@ class TestObjSpace < Test::Unit::TestCase
     a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
     b = a.dup
     c = nil
-    ObjectSpace.each_object(String) {|x| break c = x if x == a and x.frozen?}
+    ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
     rv_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
     assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
@@ -203,8 +203,9 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(line1,    ObjectSpace.allocation_sourceline(o1))
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
       assert_equal(c1,       ObjectSpace.allocation_generation(o1))
-      assert_equal(Class.name, ObjectSpace.allocation_class_path(o1))
-      assert_equal(:new,       ObjectSpace.allocation_method_id(o1))
+      # These assertions fail under coverage measurement: https://bugs.ruby-lang.org/issues/21298
+      #assert_equal(self.class.name, ObjectSpace.allocation_class_path(o1))
+      #assert_equal(__method__,       ObjectSpace.allocation_method_id(o1))
 
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o2))
       assert_equal(line2,    ObjectSpace.allocation_sourceline(o2))
@@ -332,9 +333,23 @@ class TestObjSpace < Test::Unit::TestCase
     # Ensure that the fstring is promoted to old generation
     4.times { GC.start }
     info = ObjectSpace.dump("foo".freeze)
-    assert_match(/"wb_protected":true, "old":true/, info)
+    assert_include(info, '"wb_protected":true')
+    assert_include(info, '"age":3')
+    assert_include(info, '"old":true')
     assert_match(/"fstring":true/, info)
     JSON.parse(info) if defined?(JSON)
+  end
+
+  def test_dump_flag_age
+    EnvUtil.without_gc do
+      o = Object.new
+
+      assert_include(ObjectSpace.dump(o), '"age":0')
+
+      GC.start
+
+      assert_include(ObjectSpace.dump(o), '"age":1')
+    end
   end
 
   if defined?(RubyVM::Shape)
@@ -961,6 +976,13 @@ class TestObjSpace < Test::Unit::TestCase
     class_name = '" little boby table [Bug #20892]'
     json = ObjectSpace.dump(Class.new.tap { |c| c.set_temporary_name(class_name) })
     assert_equal class_name, JSON.parse(json)["name"]
+  end
+
+  def test_dump_include_shareable
+    omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+
+    assert_include(ObjectSpace.dump(ENV), '"shareable":true')
+    assert_not_include(ObjectSpace.dump([]), '"shareable":true')
   end
 
   def test_utf8_method_names

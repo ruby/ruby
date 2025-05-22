@@ -77,7 +77,8 @@ DOCTARGETS = @RDOCTARGET@ @CAPITARGET@
 
 EXTOUT = @EXTOUT@
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
-arch_hdrdir = $(EXTOUT)/include/$(arch)
+ext_hdrdir = $(EXTOUT)/include
+arch_hdrdir = $(ext_hdrdir)/$(arch)
 VPATH = $(arch_hdrdir)/ruby:$(hdrdir)/ruby:$(srcdir):$(srcdir)/missing
 
 empty =
@@ -101,13 +102,19 @@ XCFLAGS = @XCFLAGS@ $(INCFLAGS) $(_RUBY_DEVEL_enabled:yes=-DRUBY_DEVEL=1) -Dmodu
 USE_RUBYGEMS = @USE_RUBYGEMS@
 USE_RUBYGEMS_ = $(USE_RUBYGEMS:yes=)
 CPPFLAGS = @CPPFLAGS@ $(USE_RUBYGEMS_:no=-DDISABLE_RUBYGEMS=1)
-RJIT_SUPPORT = @RJIT_SUPPORT@
+TOP_BUILD_DIR=@abs_top_builddir@
+JIT_OBJ=@JIT_OBJ@
 YJIT_SUPPORT=@YJIT_SUPPORT@
 YJIT_LIBS=@YJIT_LIBS@
 YJIT_OBJ=@YJIT_OBJ@
-YJIT_LIBOBJ = $(YJIT_LIBS:.a=.@OBJEXT@)
-CARGO_TARGET_DIR=@abs_top_builddir@/yjit/target
+ZJIT_SUPPORT=@ZJIT_SUPPORT@
+ZJIT_LIBS=@ZJIT_LIBS@
+ZJIT_OBJ=@ZJIT_OBJ@
+JIT_CARGO_SUPPORT=@JIT_CARGO_SUPPORT@
+CARGO_TARGET_DIR=@abs_top_builddir@/target
 CARGO_BUILD_ARGS=@CARGO_BUILD_ARGS@
+RUST_LIB=@RUST_LIB@
+RUST_LIBOBJ = $(RUST_LIB:.a=.@OBJEXT@)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXE_LDFLAGS = $(LDFLAGS)
 EXTLDFLAGS = @EXTLDFLAGS@
@@ -202,7 +209,8 @@ DTRACE_DEPENDENT_OBJS = array.$(OBJEXT) \
 			string.$(OBJEXT) \
 			symbol.$(OBJEXT) \
 			vm.$(OBJEXT) \
-			$(YJIT_OBJ)
+			$(YJIT_OBJ) \
+			$(ZJIT_OBJ)
 
 THREAD_MODEL  = @THREAD_MODEL@
 
@@ -310,8 +318,6 @@ PRE_LIBRUBY_UPDATE = [ -n "$(LIBRUBY_SO_UPDATE)" ] || $(gnumake:yes=exec) $(RM) 
 # We must `rm' the library each time this rule is invoked because "updating" a
 # MAB library on Apple/NeXT (see --enable-fat-binary in configure) is not
 # supported.
-#
-# In YJIT builds, merge libyjit.a with libruby_static.a
 $(LIBRUBY_A):
 		@$(RM) $@
 		@-[ -z "$(EXTSTATIC)" ] || $(PRE_LIBRUBY_UPDATE)
@@ -564,10 +570,10 @@ ext/distclean ext/realclean .bundle/distclean .bundle/realclean::
 	@$(RMALL) $(tooldir)/bunlder/*.lock $(srcdir)/.bundle
 
 gc/clean gc/distclean gc/realclean::
-	- for gc in gc/*/; do ($(CHDIR) $$gc && exec $(MAKE) TARGET_SO_DIR=./ $(@F)); done || $(NULLCMD)
+	- $(CHDIR) gc 2> /dev/null && for gc in */; do ($(CHDIR) $$gc && exec $(MAKE) TARGET_SO_DIR=./ $(@F)); done || $(NULLCMD)
 
 gc/distclean gc/realclean::
-	- for gc in gc/*/; do $(RMDIR) $$gc; done || $(NULLCMD)
+	- $(CHDIR) gc 2> /dev/null && for gc in */; do $(RMDIR) $$gc; done || $(NULLCMD)
 
 clean-enc distclean-enc realclean-enc:
 	@test -f "$(ENC_MK)" || exit 0; \
@@ -635,6 +641,7 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/models/operands_unifications.rb \
 	  $(tooldir)/ruby_vm/models/trace_instructions.rb \
 	  $(tooldir)/ruby_vm/models/typemap.rb \
+	  $(tooldir)/ruby_vm/models/zjit_instructions.rb \
 	  $(tooldir)/ruby_vm/scripts/converter.rb \
 	  $(tooldir)/ruby_vm/scripts/insns2vm.rb \
 	  $(tooldir)/ruby_vm/views/_attributes.erb \
@@ -645,12 +652,12 @@ $(INSNS): $(srcdir)/insns.def vm_opts.h \
 	  $(tooldir)/ruby_vm/views/_insn_len_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_name_info.erb \
 	  $(tooldir)/ruby_vm/views/_insn_operand_info.erb \
-	  $(tooldir)/ruby_vm/views/_insn_sp_pc_dependency.erb \
 	  $(tooldir)/ruby_vm/views/_insn_type_chars.erb \
 	  $(tooldir)/ruby_vm/views/_leaf_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_notice.erb \
 	  $(tooldir)/ruby_vm/views/_sp_inc_helpers.erb \
 	  $(tooldir)/ruby_vm/views/_trace_instruction.erb \
+	  $(tooldir)/ruby_vm/views/_zjit_instruction.erb \
 	  $(tooldir)/ruby_vm/views/insns.inc.erb \
 	  $(tooldir)/ruby_vm/views/insns_info.inc.erb \
 	  $(tooldir)/ruby_vm/views/optinsn.inc.erb \

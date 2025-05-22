@@ -93,7 +93,7 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
 
 fn mmtk_builder_default_parse_plan() -> PlanSelector {
     let plan_str = std::env::var("MMTK_PLAN")
-        .unwrap_or("MarkSweep".to_string());
+        .unwrap_or("Immix".to_string());
 
     match plan_str.as_str() {
         "NoGC" => PlanSelector::NoGC,
@@ -174,8 +174,12 @@ pub extern "C" fn mmtk_destroy_mutator(mutator: *mut RubyMutator) {
 // =============== GC ===============
 
 #[no_mangle]
-pub extern "C" fn mmtk_handle_user_collection_request(tls: VMMutatorThread) {
-    memory_manager::handle_user_collection_request::<Ruby>(mmtk(), tls);
+pub extern "C" fn mmtk_handle_user_collection_request(
+    tls: VMMutatorThread,
+    force: bool,
+    exhaustive: bool,
+) {
+    crate::mmtk().handle_user_collection_request(tls, force, exhaustive);
 }
 
 #[no_mangle]

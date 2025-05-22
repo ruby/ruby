@@ -140,18 +140,16 @@ END
   end
 
   describe "warning about arguments" do
-    version_is ERB.version, "2.2.1" do #ruby_version_is "3.1" do
-      it "warns when passed safe_level and later arguments" do
-        -> {
-          ERB.new(@eruby_str, nil, '%')
-        }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
-      end
+    it "warns when passed safe_level and later arguments" do
+      -> {
+        ERB.new(@eruby_str, nil, '%')
+      }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+    end
 
-      it "does not warn when passed arguments as keyword argument" do
-        -> {
-          ERB.new(@eruby_str, trim_mode: '%')
-        }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
-      end
+    it "does not warn when passed arguments as keyword argument" do
+      -> {
+        ERB.new(@eruby_str, trim_mode: '%')
+      }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
     end
   end
 end

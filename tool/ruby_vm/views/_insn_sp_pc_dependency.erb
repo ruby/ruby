@@ -16,7 +16,7 @@ insn_may_depend_on_sp_or_pc(int insn, const VALUE *opes)
 %   # handles_sp?:  If true, it requires to move sp in JIT
 %   # always_leaf?: If false, it may call an arbitrary method. pc should be moved
 %   #               before the call, and the method may refer to caller's pc (lineno).
-%   unless !insn.is_a?(RubyVM::TraceInstructions) && !insn.handles_sp? && insn.always_leaf?
+%   unless !insn.is_a?(RubyVM::TraceInstructions) && !insn.is_a?(RubyVM::ZJITInstructions) && !insn.handles_sp? && insn.always_leaf?
       case <%= insn.bin %>:
 %   end
 % end

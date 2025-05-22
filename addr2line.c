@@ -296,9 +296,11 @@ fill_filename(int file, uint8_t format, uint16_t version, const char *include_di
         for (i = 1; i <= file; i++) {
             filename = p;
             if (!*p) {
+#ifndef __APPLE__
                 /* Need to output binary file name? */
                 kprintf("Unexpected file number %d in %s at %tx\n",
                         file, binary_filename, filenames - obj->mapped);
+#endif
                 return;
             }
             while (*p) p++;
@@ -2173,9 +2175,8 @@ fill_lines(int num_traces, void **traces, int check_debuglink,
         }
     }
 
-    if (offset == -1) {
+    if (offset == 0) {
         /* main executable */
-        offset = 0;
         if (dynsym_shdr && dynstr_shdr) {
             char *strtab = file + dynstr_shdr->sh_offset;
             ElfW(Sym) *symtab = (ElfW(Sym) *)(file + dynsym_shdr->sh_offset);

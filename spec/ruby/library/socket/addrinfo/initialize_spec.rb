@@ -362,7 +362,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows, :aix, :solaris do
+        platform_is_not :windows, :aix do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
@@ -390,7 +390,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows, :aix, :solaris do
+        platform_is_not :windows, :aix do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)
@@ -495,7 +495,7 @@ describe "Addrinfo#initialize" do
           end
         end
 
-        platform_is_not :windows, :aix, :solaris do
+        platform_is_not :windows, :aix do
           (Socket.constants.grep(/^IPPROTO/) - valid).each do |type|
             it "raises SocketError when using #{type}" do
               value = Socket.const_get(type)

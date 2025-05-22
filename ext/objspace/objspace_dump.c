@@ -385,8 +385,6 @@ dump_object(VALUE obj, struct dump_config *dc)
     size_t memsize;
     struct allocation_info *ainfo = objspace_lookup_allocation_info(obj);
     rb_io_t *fptr;
-    ID flags[RB_OBJ_GC_FLAGS_MAX];
-    size_t n, i;
     ID mid;
 
     if (SPECIAL_CONST_P(obj)) {
@@ -416,9 +414,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_shape_get_shape_id(obj);
-    dump_append(dc, ", \"shape_id\":");
-    dump_append_sizet(dc, shape_id);
+    if (BUILTIN_TYPE(obj) != T_IMEMO) {
+        size_t shape_id = rb_obj_shape_id(obj);
+        dump_append(dc, ", \"shape_id\":");
+        dump_append_sizet(dc, shape_id);
+    }
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
@@ -539,7 +539,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
       case T_CLASS:
         dump_append(dc, ", \"variation_count\":");
-        dump_append_d(dc, RCLASS_EXT(obj)->variation_count);
+        dump_append_d(dc, rb_class_variation_count(obj));
 
       case T_MODULE:
         if (rb_class_get_superclass(obj)) {
@@ -562,7 +562,7 @@ dump_object(VALUE obj, struct dump_config *dc)
                 }
             }
 
-            if (RCLASS_SINGLETON_P(obj)) {
+            if (rb_class_singleton_p(obj)) {
                 dump_append(dc, ", \"singleton\":true");
             }
         }
@@ -588,8 +588,8 @@ dump_object(VALUE obj, struct dump_config *dc)
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
-        if (rb_shape_obj_too_complex(obj)) {
+        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
+        if (rb_shape_obj_too_complex_p(obj)) {
             dump_append(dc, ", \"too_complex_shape\":true");
         }
         break;
@@ -638,19 +638,24 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append_sizet(dc, memsize);
     }
 
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        dump_append(dc, ", \"object_id\":");
-        dump_append_lu(dc, RB_NUM2ULONG(rb_obj_id(obj)));
+    struct rb_gc_object_metadata_entry *gc_metadata = rb_gc_object_metadata(obj);
+    for (int i = 0; gc_metadata[i].name != 0; i++) {
+        if (i == 0) {
+            dump_append(dc, ", \"flags\":{");
+        }
+        else {
+            dump_append(dc, ", ");
+        }
+
+        dump_append(dc, "\"");
+        dump_append(dc, rb_id2name(gc_metadata[i].name));
+        dump_append(dc, "\":");
+        dump_append_special_const(dc, gc_metadata[i].val);
     }
 
-    if ((n = rb_obj_gc_flags(obj, flags, sizeof(flags))) > 0) {
-        dump_append(dc, ", \"flags\":{");
-        for (i=0; i<n; i++) {
-            dump_append(dc, "\"");
-            dump_append(dc, rb_id2name(flags[i]));
-            dump_append(dc, "\":true");
-            if (i != n-1) dump_append(dc, ", ");
-        }
+    /* If rb_gc_object_metadata had any entries, we need to close the opening
+     * `"flags":{`. */
+    if (gc_metadata[0].name != 0) {
         dump_append(dc, "}");
     }
 
@@ -783,7 +788,7 @@ shape_i(rb_shape_t *shape, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    size_t shape_id = rb_shape_id(shape);
+    shape_id_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
@@ -800,38 +805,38 @@ shape_i(rb_shape_t *shape, void *data)
     }
 
     dump_append(dc, ", \"depth\":");
-    dump_append_sizet(dc, rb_shape_depth(shape));
+    dump_append_sizet(dc, rb_shape_depth(shape_id));
 
-    dump_append(dc, ", \"shape_type\":");
     switch((enum shape_type)shape->type) {
       case SHAPE_ROOT:
-        dump_append(dc, "\"ROOT\"");
+        dump_append(dc, ", \"shape_type\":\"ROOT\"");
         break;
       case SHAPE_IVAR:
-        dump_append(dc, "\"IVAR\"");
+        dump_append(dc, ", \"shape_type\":\"IVAR\"");
 
         dump_append(dc, ",\"edge_name\":");
         dump_append_id(dc, shape->edge_name);
 
         break;
       case SHAPE_FROZEN:
-        dump_append(dc, "\"FROZEN\"");
+        dump_append(dc, ", \"shape_type\":\"FROZEN\"");
         break;
       case SHAPE_T_OBJECT:
-        dump_append(dc, "\"T_OBJECT\"");
+        dump_append(dc, ", \"shape_type\":\"T_OBJECT\"");
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
-        dump_append(dc, "\"OBJ_TOO_COMPLEX\"");
+        dump_append(dc, ", \"shape_type\":\"OBJ_TOO_COMPLEX\"");
         break;
-      default:
-        rb_bug("[objspace] unexpected shape type");
+      case SHAPE_OBJ_ID:
+        dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
+        break;
     }
 
     dump_append(dc, ", \"edges\":");
-    dump_append_sizet(dc, rb_shape_edges_count(shape));
+    dump_append_sizet(dc, rb_shape_edges_count(shape_id));
 
     dump_append(dc, ", \"memsize\":");
-    dump_append_sizet(dc, rb_shape_memsize(shape));
+    dump_append_sizet(dc, rb_shape_memsize(shape_id));
 
     dump_append(dc, "}\n");
 }
@@ -883,7 +888,4 @@ Init_objspace_dump(VALUE rb_mObjSpace)
     rb_define_module_function(rb_mObjSpace, "_dump", objspace_dump, 2);
     rb_define_module_function(rb_mObjSpace, "_dump_all", objspace_dump_all, 4);
     rb_define_module_function(rb_mObjSpace, "_dump_shapes", objspace_dump_shapes, 2);
-
-    /* force create static IDs */
-    rb_obj_gc_flags(rb_mObjSpace, 0, 0);
 }

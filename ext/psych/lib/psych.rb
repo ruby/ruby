@@ -23,7 +23,6 @@ require_relative 'psych/parser'
 require_relative 'psych/omap'
 require_relative 'psych/set'
 require_relative 'psych/coder'
-require_relative 'psych/core_ext'
 require_relative 'psych/stream'
 require_relative 'psych/json/tree_builder'
 require_relative 'psych/json/stream'
@@ -655,6 +654,35 @@ module Psych
   end
 
   ###
+  # Load multiple documents given in +yaml+. Returns the parsed documents
+  # as a list.
+  #
+  # Example:
+  #
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") # => ['foo', 'bar']
+  #
+  #   list = []
+  #   Psych.safe_load_stream("--- foo\n...\n--- bar\n...") do |ruby|
+  #     list << ruby
+  #   end
+  #   list # => ['foo', 'bar']
+  #
+  def self.safe_load_stream yaml, filename: nil, permitted_classes: [], aliases: false
+    documents = parse_stream(yaml, filename: filename).children.map do |child|
+      stream = Psych::Nodes::Stream.new
+      stream.children << child
+      safe_load(stream.to_yaml, permitted_classes: permitted_classes, aliases: aliases)
+    end
+
+    if block_given?
+      documents.each { |doc| yield doc }
+      nil
+    else
+      documents
+    end
+  end
+
+  ###
   # Load the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
   # the specified +fallback+ return value, which defaults to +false+.
@@ -761,3 +789,5 @@ module Psych
   self.domain_types = {}
   # :startdoc:
 end
+
+require_relative 'psych/core_ext'

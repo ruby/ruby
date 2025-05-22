@@ -96,6 +96,8 @@ describe "BasicObject#singleton_method_added" do
           end
         }.should raise_error(NoMethodError, /undefined method [`']singleton_method_added' for/)
       end
+    ensure
+      BasicObjectSpecs.send(:remove_const, :NoSingletonMethodAdded)
     end
 
     it "raises NoMethodError for a singleton instance" do

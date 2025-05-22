@@ -134,7 +134,7 @@ module Win32
             ""
           end
         else
-          cmd = "Get-ItemProperty -Path 'HKLM:\\#{path}' -Name '#{name}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty #{name}"
+          cmd = "Get-ItemProperty -Path 'HKLM:\\#{path}' -Name '#{name}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty '#{name}'"
           output, _ = Open3.capture2('powershell', '-Command', cmd)
           output.strip
         end

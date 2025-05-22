@@ -30,6 +30,11 @@ describe "Float#round" do
     12.345678.round(3.999).should == 12.346
   end
 
+  it "correctly rounds exact floats with a numerous digits in a fraction part" do
+    0.8241000000000004.round(10).should == 0.8241
+    0.8241000000000002.round(10).should == 0.8241
+  end
+
   it "returns zero when passed a negative argument with magnitude greater than magnitude of the whole number portion of the Float" do
     0.8346268.round(-1).should eql(0)
   end
@@ -66,6 +71,10 @@ describe "Float#round" do
   # redmine:5271
   it "returns rounded values for big argument" do
     0.42.round(2.0**30).should == 0.42
+  end
+
+  it "returns rounded values for not so big argument" do
+    0.42.round(2.0**23).should == 0.42
   end
 
   it "returns big values rounded to nearest" do

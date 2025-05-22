@@ -15,7 +15,11 @@ module Prism
       # the heredoc are combined into a single token. See
       # https://bugs.ruby-lang.org/issues/19838.
       "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt"
+      "spanning_heredoc_newlines.txt",
+      # Prism emits a single :on_tstring_content in <<- style heredocs when there
+      # is a line continuation preceeded by escaped backslashes. It should emit two, same
+      # as if the backslashes are not present.
+      "heredocs_with_fake_newlines.txt",
     ]
 
     if RUBY_VERSION < "3.3.0"

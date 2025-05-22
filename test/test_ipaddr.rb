@@ -399,6 +399,46 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal("::", @in6_addr_any.to_s)
   end
 
+  def test_plus
+    a = IPAddr.new("192.168.1.10")
+    assert_equal("192.168.1.20", (a + 10).to_s)
+
+    a = IPAddr.new("0.0.0.0")
+    assert_equal("0.0.0.10", (a + 10).to_s)
+
+    a = IPAddr.new("255.255.255.255")
+    assert_raise(IPAddr::InvalidAddressError) { a + 10 }
+
+    a = IPAddr.new("3ffe:505:2::a")
+    assert_equal("3ffe:505:2::14", (a + 10).to_s)
+
+    a = IPAddr.new("::")
+    assert_equal("::a", (a + 10).to_s)
+
+    a = IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+    assert_raise(IPAddr::InvalidAddressError) { a + 10 }
+  end
+
+  def test_minus
+    a = IPAddr.new("192.168.1.10")
+    assert_equal("192.168.1.0", (a - 10).to_s)
+
+    a = IPAddr.new("0.0.0.0")
+    assert_raise(IPAddr::InvalidAddressError) { a - 10 }
+
+    a = IPAddr.new("255.255.255.255")
+    assert_equal("255.255.255.245", (a - 10).to_s)
+
+    a = IPAddr.new("3ffe:505:2::a")
+    assert_equal("3ffe:505:2::", (a - 10).to_s)
+
+    a = IPAddr.new("::")
+    assert_raise(IPAddr::InvalidAddressError) { a - 10 }
+
+    a = IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")
+    assert_equal("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fff5", (a - 10).to_s)
+  end
+
   def test_equal
     assert_equal(true, @a == IPAddr.new("3FFE:505:2::"))
     assert_equal(true, @a == IPAddr.new("3ffe:0505:0002::"))

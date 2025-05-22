@@ -2,7 +2,6 @@
 
 require_relative "vendored_persistent"
 require_relative "vendored_timeout"
-require "cgi"
 require_relative "vendored_securerandom"
 require "zlib"
 

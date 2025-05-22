@@ -891,6 +891,9 @@ typedef struct RNode_CLASS {
     struct RNode *nd_cpath;
     struct RNode *nd_body;
     struct RNode *nd_super;
+    rb_code_location_t class_keyword_loc;
+    rb_code_location_t inheritance_operator_loc;
+    rb_code_location_t end_keyword_loc;
 } rb_node_class_t;
 
 typedef struct RNode_MODULE {
@@ -961,6 +964,9 @@ typedef struct RNode_POSTEXE {
     NODE node;
 
     struct RNode *nd_body;
+    rb_code_location_t keyword_loc;
+    rb_code_location_t opening_loc;
+    rb_code_location_t closing_loc;
 } rb_node_postexe_t;
 
 typedef struct RNode_SYM {
@@ -1286,7 +1292,6 @@ typedef struct rb_parser_config_struct {
     rb_encoding* (*enc_get)(VALUE obj);
     int (*enc_asciicompat)(rb_encoding *enc);
     rb_encoding *(*utf8_encoding)(void);
-    VALUE (*enc_associate)(VALUE obj, rb_encoding *enc);
     rb_encoding *(*ascii8bit_encoding)(void);
     int (*enc_codelen)(int c, rb_encoding *enc);
     int (*enc_mbcput)(unsigned int c, void *buf, rb_encoding *enc);

@@ -84,4 +84,10 @@ describe :hash_to_s, shared: true do
     expected = ruby_version_is("3.4") ? "{true => false}" : "{true=>false}"
     { true => false }.to_s.should == expected
   end
+
+  ruby_version_is "3.4" do
+    it "adds quotes to symbol keys that are not valid symbol literals" do
+      { "needs-quotes": 1 }.send(@method).should == '{"needs-quotes": 1}'
+    end
+  end
 end

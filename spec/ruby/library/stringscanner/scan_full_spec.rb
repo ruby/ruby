@@ -27,4 +27,18 @@ describe "StringScanner#scan_full" do
     @s.scan_full(/This/, true, true).should == "This"
     @s.pos.should == 4
   end
+
+  describe "#[] successive call with a capture group name" do
+    it "returns matched substring when matching succeeded" do
+      @s.scan_full(/(?<a>This)/, false, false)
+      @s.should.matched?
+      @s[:a].should == "This"
+    end
+
+    it "returns nil when matching failed" do
+      @s.scan_full(/(?<a>2008)/, false, false)
+      @s.should_not.matched?
+      @s[:a].should be_nil
+    end
+  end
 end

@@ -113,7 +113,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alnum:]]" do
-    "\u{36F}".match(/[[:alnum:]]/).should be_nil
+    "\u{3099}".match(/[[:alnum:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alnum:]]" do
@@ -133,7 +133,7 @@ describe "Regexp with character classes" do
   end
 
   it "doesn't matches Unicode marks with [[:alpha:]]" do
-    "\u{36F}".match(/[[:alpha:]]/).should be_nil
+    "\u{3099}".match(/[[:alpha:]]/).should be_nil
   end
 
   it "doesn't match Unicode control characters with [[:alpha:]]" do
@@ -226,7 +226,7 @@ describe "Regexp with character classes" do
   end
 
   it "matches Unicode letter characters with [[:graph:]]" do
-      "à".match(/[[:graph:]]/).to_a.should == ["à"]
+    "à".match(/[[:graph:]]/).to_a.should == ["à"]
   end
 
   it "matches Unicode digits with [[:graph:]]" do

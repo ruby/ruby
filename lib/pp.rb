@@ -183,6 +183,24 @@ class PP < PrettyPrint
       Thread.current[:__recursive_key__][:inspect].delete id
     end
 
+    private def guard_inspect(object)
+      recursive_state = Thread.current[:__recursive_key__]
+
+      if recursive_state && recursive_state.key?(:inspect)
+        begin
+          push_inspect_key(object)
+          yield
+        ensure
+          pop_inspect_key(object) unless PP.sharing_detection
+        end
+      else
+        guard_inspect_key do
+          push_inspect_key(object)
+          yield
+        end
+      end
+    end
+
     # Adds +obj+ to the pretty printing buffer
     # using Object#pretty_print or Object#pretty_print_cycle.
     #
@@ -198,15 +216,12 @@ class PP < PrettyPrint
         return
       end
 
-      begin
-        push_inspect_key(obj)
+      guard_inspect(obj) do
         group do
           obj.pretty_print self
         rescue NoMethodError
           text Kernel.instance_method(:inspect).bind_call(obj)
         end
-      ensure
-        pop_inspect_key(obj) unless PP.sharing_detection
       end
     end
 
@@ -261,15 +276,20 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
+      kwsplat = EMPTY_KWHASH
       list.__send__(iter_method) {|*v|
         if first
           first = false
         else
           sep.call
         end
-        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
+        kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0"
+      {}.freeze
+    end
+    private_constant :EMPTY_KWHASH
 
     # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
@@ -419,6 +439,23 @@ class Hash # :nodoc:
 
   def pretty_print_cycle(q) # :nodoc:
     q.text(empty? ? '{}' : '{...}')
+  end
+end
+
+class Set # :nodoc:
+  def pretty_print(pp)  # :nodoc:
+    pp.group(1, '#<Set:', '>') {
+      pp.breakable
+      pp.group(1, '{', '}') {
+        pp.seplist(self) { |o|
+          pp.pp o
+        }
+      }
+    }
+  end
+
+  def pretty_print_cycle(pp)    # :nodoc:
+    pp.text sprintf('#<Set: {%s}>', empty? ? '' : '...')
   end
 end
 

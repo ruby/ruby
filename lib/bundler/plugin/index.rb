@@ -31,7 +31,7 @@ module Bundler
 
         begin
           load_index(global_index_file, true)
-        rescue GenericSystemCallError
+        rescue PermissionError
           # no need to fail when on a read-only FS, for example
           nil
         rescue ArgumentError => e

@@ -14,7 +14,7 @@ describe "Dir#close" do
     dir.close.should == nil
     dir.close.should == nil
 
-    guard -> { dir.respond_to? :fileno } do
+    platform_is_not :windows do
       -> { dir.fileno }.should raise_error(IOError, /closed directory/)
     end
   end
@@ -25,7 +25,7 @@ describe "Dir#close" do
   end
 
   ruby_version_is '3.3'...'3.4' do
-    guard -> { Dir.respond_to? :for_fd } do
+    platform_is_not :windows do
       it "does not raise an error even if the file descriptor is closed with another Dir instance" do
         dir = Dir.open DirSpecs.mock_dir
         dir_new = Dir.for_fd(dir.fileno)
@@ -40,7 +40,7 @@ describe "Dir#close" do
   end
 
   ruby_version_is '3.4' do
-    guard -> { Dir.respond_to? :for_fd } do
+    platform_is_not :windows do
       it "raises an error if the file descriptor is closed with another Dir instance" do
         dir = Dir.open DirSpecs.mock_dir
         dir_new = Dir.for_fd(dir.fileno)

@@ -13,13 +13,14 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.1.3.dev";
+STRINGIO_VERSION = "3.1.8.dev";
 
 #include <stdbool.h>
 
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
+#include "ruby/version.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -35,12 +36,16 @@ STRINGIO_VERSION = "3.1.3.dev";
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
+#ifndef HAVE_TYPE_RB_IO_MODE_T
+typedef int rb_io_mode_t;
+#endif
+
 struct StringIO {
     VALUE string;
     rb_encoding *enc;
     long pos;
     long lineno;
-    int flags;
+    rb_io_mode_t flags;
     int count;
 };
 
@@ -179,6 +184,9 @@ check_modifiable(struct StringIO *ptr)
     }
     else if (OBJ_FROZEN_RAW(ptr->string)) {
 	rb_raise(rb_eIOError, "not modifiable string");
+    }
+    else {
+	rb_str_modify(ptr->string);
     }
 }
 
@@ -1849,14 +1857,22 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	enc = rb_find_encoding(ext_enc);
 	if (!enc) {
 	    rb_io_enc_t convconfig;
-	    int oflags, fmode;
+	    int oflags;
+	    rb_io_mode_t fmode;
 	    VALUE vmode = rb_str_append(rb_str_new_cstr("r:"), ext_enc);
 	    rb_io_extract_modeenc(&vmode, 0, Qnil, &oflags, &fmode, &convconfig);
 	    enc = convconfig.enc2;
 	}
     }
     ptr->enc = enc;
-    if (!NIL_P(ptr->string) && WRITABLE(self)) {
+    if (!NIL_P(ptr->string) && WRITABLE(self)
+#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+            // Do not attempt to modify chilled strings on Ruby 3.4+
+            // RUBY_FL_USER2 == STR_CHILLED_LITERAL
+            // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
+            && !FL_TEST_RAW(ptr->string, RUBY_FL_USER2 | RUBY_FL_USER3)
+#endif
+            ) {
 	rb_enc_associate(ptr->string, enc);
     }
 

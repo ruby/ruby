@@ -77,40 +77,16 @@ describe "IPAddr#new" do
     a.family.should == Socket::AF_INET6
   end
 
-  ipaddr_version = if defined?(IPAddr::VERSION) #ruby_version_is ""..."3.1" do
-    IPAddr::VERSION
-  else
-    "1.2.2"
-  end
-
-  version_is ipaddr_version, ""..."1.2.3" do #ruby_version_is ""..."3.1" do
-    it "raises on incorrect IPAddr strings" do
-      [
-        ["fe80::1%fxp0"],
-        ["::1/255.255.255.0"],
-        [IPAddr.new("::1").to_i],
-        ["::ffff:192.168.1.2/120", Socket::AF_INET],
-        ["[192.168.1.2]/120"],
-      ].each { |args|
-        ->{
-          IPAddr.new(*args)
-        }.should raise_error(ArgumentError)
-      }
-    end
-  end
-
-  version_is ipaddr_version, "1.2.3" do #ruby_version_is "3.1" do
-    it "raises on incorrect IPAddr strings" do
-      [
-        ["::1/255.255.255.0"],
-        [IPAddr.new("::1").to_i],
-        ["::ffff:192.168.1.2/120", Socket::AF_INET],
-        ["[192.168.1.2]/120"],
-      ].each { |args|
-        ->{
-          IPAddr.new(*args)
-        }.should raise_error(ArgumentError)
-      }
-    end
+  it "raises on incorrect IPAddr strings" do
+    [
+      ["::1/255.255.255.0"],
+      [IPAddr.new("::1").to_i],
+      ["::ffff:192.168.1.2/120", Socket::AF_INET],
+      ["[192.168.1.2]/120"],
+    ].each { |args|
+      ->{
+        IPAddr.new(*args)
+      }.should raise_error(ArgumentError)
+    }
   end
 end
