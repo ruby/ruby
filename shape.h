@@ -113,7 +113,7 @@ static inline shape_id_t
 RBASIC_SHAPE_ID(VALUE obj)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_class_fields));
 #if RBASIC_SHAPE_ID_FIELD
     return (shape_id_t)((RBASIC(obj)->shape_id));
 #else
@@ -137,8 +137,9 @@ static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO));
+    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_class_fields));
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
+
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
