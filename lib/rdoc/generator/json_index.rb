@@ -86,12 +86,10 @@ class RDoc::Generator::JsonIndex
   attr_reader :index # :nodoc:
 
   ##
-  # Creates a new generator.  +parent_generator+ is used to determine the
-  # class_dir and file_dir of links in the output index.
-  #
+  # Creates a new generator.
   # +options+ are the same options passed to the parent generator.
 
-  def initialize parent_generator, options
+  def initialize(parent_generator, options)
     @parent_generator = parent_generator
     @store            = parent_generator.store
     @options          = options
@@ -265,21 +263,7 @@ class RDoc::Generator::JsonIndex
     end
   end
 
-  ##
-  # The directory classes are written to
-
-  def class_dir
-    @parent_generator.class_dir
-  end
-
-  ##
-  # The directory files are written to
-
-  def file_dir
-    @parent_generator.file_dir
-  end
-
-  def reset files, classes # :nodoc:
+  def reset(files, classes) # :nodoc:
     @files   = files
     @classes = classes
 
@@ -293,7 +277,7 @@ class RDoc::Generator::JsonIndex
   ##
   # Removes whitespace and downcases +string+
 
-  def search_string string
+  def search_string(string)
     string.downcase.gsub(/\s/, '')
   end
 

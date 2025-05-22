@@ -58,7 +58,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates a link to the reference +name+ if the name exists.  If +text+ is
   # given it is used as the link text, otherwise +name+ is used.
 
-  def cross_reference name, text = nil, code = true, rdoc_ref: false
+  def cross_reference(name, text = nil, code = true, rdoc_ref: false)
     lookup = name
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
@@ -83,6 +83,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   def handle_regexp_CROSSREF(target)
     name = target.text
 
+    return name if @options.autolink_excluded_words&.include?(name)
+
     return name if name =~ /@[\w-]+\.[\w-]/ # labels that look like emails
 
     unless @hyperlink_all then
@@ -99,7 +101,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Handles <tt>rdoc-ref:</tt> scheme links and allows RDoc::Markup::ToHtml to
   # handle other schemes.
 
-  def handle_regexp_HYPERLINK target
+  def handle_regexp_HYPERLINK(target)
     url = target.text
 
     case url
@@ -118,7 +120,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # All other contents are handled by
   # {the superclass}[rdoc-ref:RDoc::Markup::ToHtml#handle_regexp_RDOCLINK]
 
-  def handle_regexp_RDOCLINK target
+  def handle_regexp_RDOCLINK(target)
     url = target.text
 
     case url
@@ -133,7 +135,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Generates links for <tt>rdoc-ref:</tt> scheme URLs and allows
   # RDoc::Markup::ToHtml to handle other schemes.
 
-  def gen_url url, text
+  def gen_url(url, text)
     if url =~ /\Ardoc-ref:/
       name = $'
       cross_reference name, text, name == text, rdoc_ref: true
@@ -145,7 +147,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   ##
   # Creates an HTML link to +name+ with the given +text+.
 
-  def link name, text, code = true, rdoc_ref: false
+  def link(name, text, code = true, rdoc_ref: false)
     if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])?@/
       name = $1
       label = $'

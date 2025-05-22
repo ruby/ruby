@@ -22,7 +22,7 @@ class RDoc::Markup::ToTest < RDoc::Markup::Formatter
     @res << convert_flow(@am.flow(paragraph.text))
   end
 
-  def accept_raw raw
+  def accept_raw(raw)
     @res << raw.parts.join
   end
 

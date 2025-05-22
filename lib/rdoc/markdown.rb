@@ -10978,7 +10978,7 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # Image = "!" (ExplicitLink | ReferenceLink):a { "rdoc-image:#{a[/\[(.*)\]/, 1]}" }
+  # Image = "!" ExplicitLinkWithLabel:a { "rdoc-image:#{a[:link]}:#{a[:label]}" }
   def _Image
 
     _save = self.pos
@@ -10988,24 +10988,13 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-
-      _save1 = self.pos
-      while true # choice
-        _tmp = apply(:_ExplicitLink)
-        break if _tmp
-        self.pos = _save1
-        _tmp = apply(:_ReferenceLink)
-        break if _tmp
-        self.pos = _save1
-        break
-      end # end choice
-
+      _tmp = apply(:_ExplicitLinkWithLabel)
       a = @result
       unless _tmp
         self.pos = _save
         break
       end
-      @result = begin;  "rdoc-image:#{a[/\[(.*)\]/, 1]}" ; end
+      @result = begin;  "rdoc-image:#{a[:link]}:#{a[:label]}" ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -11153,13 +11142,36 @@ class RDoc::Markdown
     return _tmp
   end
 
-  # ExplicitLink = Label:l "(" @Sp Source:s Spnl Title @Sp ")" { "{#{l}}[#{s}]" }
+  # ExplicitLink = ExplicitLinkWithLabel:a { "{#{a[:label]}}[#{a[:link]}]" }
   def _ExplicitLink
 
     _save = self.pos
     while true # sequence
+      _tmp = apply(:_ExplicitLinkWithLabel)
+      a = @result
+      unless _tmp
+        self.pos = _save
+        break
+      end
+      @result = begin;  "{#{a[:label]}}[#{a[:link]}]" ; end
+      _tmp = true
+      unless _tmp
+        self.pos = _save
+      end
+      break
+    end # end sequence
+
+    set_failed_rule :_ExplicitLink unless _tmp
+    return _tmp
+  end
+
+  # ExplicitLinkWithLabel = Label:label "(" @Sp Source:link Spnl Title @Sp ")" { { label: label, link: link } }
+  def _ExplicitLinkWithLabel
+
+    _save = self.pos
+    while true # sequence
       _tmp = apply(:_Label)
-      l = @result
+      label = @result
       unless _tmp
         self.pos = _save
         break
@@ -11175,7 +11187,7 @@ class RDoc::Markdown
         break
       end
       _tmp = apply(:_Source)
-      s = @result
+      link = @result
       unless _tmp
         self.pos = _save
         break
@@ -11200,7 +11212,7 @@ class RDoc::Markdown
         self.pos = _save
         break
       end
-      @result = begin;  "{#{l}}[#{s}]" ; end
+      @result = begin;  { label: label, link: link } ; end
       _tmp = true
       unless _tmp
         self.pos = _save
@@ -11208,7 +11220,7 @@ class RDoc::Markdown
       break
     end # end sequence
 
-    set_failed_rule :_ExplicitLink unless _tmp
+    set_failed_rule :_ExplicitLinkWithLabel unless _tmp
     return _tmp
   end
 
@@ -16711,12 +16723,13 @@ class RDoc::Markdown
   Rules[:_StrongStar] = rule_info("StrongStar", "\"**\" !@Whitespace @StartList:a (!\"**\" Inline:b { a << b })+ \"**\" { strong a.join }")
   Rules[:_StrongUl] = rule_info("StrongUl", "\"__\" !@Whitespace @StartList:a (!\"__\" Inline:b { a << b })+ \"__\" { strong a.join }")
   Rules[:_Strike] = rule_info("Strike", "&{ strike? } \"~~\" !@Whitespace @StartList:a (!\"~~\" Inline:b { a << b })+ \"~~\" { strike a.join }")
-  Rules[:_Image] = rule_info("Image", "\"!\" (ExplicitLink | ReferenceLink):a { \"rdoc-image:\#{a[/\\[(.*)\\]/, 1]}\" }")
+  Rules[:_Image] = rule_info("Image", "\"!\" ExplicitLinkWithLabel:a { \"rdoc-image:\#{a[:link]}:\#{a[:label]}\" }")
   Rules[:_Link] = rule_info("Link", "(ExplicitLink | ReferenceLink | AutoLink)")
   Rules[:_ReferenceLink] = rule_info("ReferenceLink", "(ReferenceLinkDouble | ReferenceLinkSingle)")
   Rules[:_ReferenceLinkDouble] = rule_info("ReferenceLinkDouble", "Label:content < Spnl > !\"[]\" Label:label { link_to content, label, text }")
   Rules[:_ReferenceLinkSingle] = rule_info("ReferenceLinkSingle", "Label:content < (Spnl \"[]\")? > { link_to content, content, text }")
-  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "Label:l \"(\" @Sp Source:s Spnl Title @Sp \")\" { \"{\#{l}}[\#{s}]\" }")
+  Rules[:_ExplicitLink] = rule_info("ExplicitLink", "ExplicitLinkWithLabel:a { \"{\#{a[:label]}}[\#{a[:link]}]\" }")
+  Rules[:_ExplicitLinkWithLabel] = rule_info("ExplicitLinkWithLabel", "Label:label \"(\" @Sp Source:link Spnl Title @Sp \")\" { { label: label, link: link } }")
   Rules[:_Source] = rule_info("Source", "(\"<\" < SourceContents > \">\" | < SourceContents >) { text }")
   Rules[:_SourceContents] = rule_info("SourceContents", "((!\"(\" !\")\" !\">\" Nonspacechar)+ | \"(\" SourceContents \")\")*")
   Rules[:_Title] = rule_info("Title", "(TitleSingle | TitleDouble | \"\"):a { a }")

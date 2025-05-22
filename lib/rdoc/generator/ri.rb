@@ -14,7 +14,7 @@ class RDoc::Generator::RI
   ##
   # Set up a new ri generator
 
-  def initialize store, options #:not-new:
+  def initialize(store, options) #:not-new:
     @options    = options
     @store      = store
     @store.path = '.'

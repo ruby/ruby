@@ -1,5 +1,5 @@
 # frozen_string_literal: true
-require 'cgi/util'
+require 'cgi/escape'
 
 ##
 # Creates HTML-safe labels suitable for use in id attributes.  Tidylinks are
@@ -13,7 +13,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   ##
   # Creates a new formatter that will output HTML-safe labels
 
-  def initialize markup = nil
+  def initialize(markup = nil)
     super nil, markup
 
     @markup.add_regexp_handling RDoc::CrossReference::CROSSREF_REGEXP, :CROSSREF
@@ -29,7 +29,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   ##
   # Converts +text+ to an HTML-safe label
 
-  def convert text
+  def convert(text)
     label = convert_flow @am.flow text
 
     CGI.escape(label).gsub('%', '-').sub(/^-/, '')
@@ -39,7 +39,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   # Converts the CROSSREF +target+ to plain text, removing the suppression
   # marker, if any
 
-  def handle_regexp_CROSSREF target
+  def handle_regexp_CROSSREF(target)
     text = target.text
 
     text.sub(/^\\/, '')
@@ -48,7 +48,7 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   ##
   # Converts the TIDYLINK +target+ to just the text part
 
-  def handle_regexp_TIDYLINK target
+  def handle_regexp_TIDYLINK(target)
     text = target.text
 
     return text unless text =~ /\{(.*?)\}\[(.*?)\]/ or text =~ /(\S+)\[(.*?)\]/

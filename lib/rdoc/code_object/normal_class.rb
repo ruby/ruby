@@ -53,7 +53,7 @@ class RDoc::NormalClass < RDoc::ClassModule
     display
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     superclass = @superclass ? " < #{@superclass}" : nil
 
     q.group 2, "[class #{full_name}#{superclass}", "]" do

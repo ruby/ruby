@@ -22,18 +22,17 @@ class RDoc::Attr < RDoc::MethodAttr
   # Creates a new Attr with body +text+, +name+, read/write status +rw+ and
   # +comment+.  +singleton+ marks this as a class attribute.
 
-  def initialize(text, name, rw, comment, singleton = false)
-    super text, name
+  def initialize(text, name, rw, comment, singleton: false)
+    super(text, name, singleton: singleton)
 
     @rw = rw
-    @singleton = singleton
     self.comment = comment
   end
 
   ##
   # Attributes are equal when their names, singleton and rw are identical
 
-  def == other
+  def ==(other)
     self.class == other.class and
       self.name == other.name and
       self.rw == other.rw and
@@ -44,9 +43,7 @@ class RDoc::Attr < RDoc::MethodAttr
   # Add +an_alias+ as an attribute in +context+.
 
   def add_alias(an_alias, context)
-    new_attr = self.class.new(self.text, an_alias.new_name, self.rw,
-                              self.comment, self.singleton)
-
+    new_attr = self.class.new(text, an_alias.new_name, rw, comment, singleton: singleton)
     new_attr.record_location an_alias.file
     new_attr.visibility = self.visibility
     new_attr.is_alias_for = self
@@ -121,7 +118,7 @@ class RDoc::Attr < RDoc::MethodAttr
   # * #full_name
   # * #parent_name
 
-  def marshal_load array
+  def marshal_load(array)
     initialize_visibility
 
     @aliases      = []
@@ -136,7 +133,7 @@ class RDoc::Attr < RDoc::MethodAttr
     @full_name     = array[2]
     @rw            = array[3]
     @visibility    = array[4]
-    @comment       = array[5]
+    @comment       = RDoc::Comment.from_document array[5]
     @singleton     = array[6] || false # MARSHAL_VERSION == 0
     #                      7 handled below
     @parent_name   = array[8]
@@ -148,7 +145,7 @@ class RDoc::Attr < RDoc::MethodAttr
     @parent_name ||= @full_name.split('#', 2).first
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, "[#{self.class.name} #{full_name} #{rw} #{visibility}", "]" do
       unless comment.empty? then
         q.breakable

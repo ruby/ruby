@@ -13,7 +13,7 @@ module RDoc::TokenStream
   # <tt><span></tt> elements. Some tokens types are wrapped in spans
   # with the given class names. Other token types are not wrapped in spans.
 
-  def self.to_html token_stream
+  def self.to_html(token_stream)
     starting_title = false
 
     token_stream.map do |t|

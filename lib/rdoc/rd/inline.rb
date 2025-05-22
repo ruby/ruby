@@ -20,7 +20,7 @@ class RDoc::RD::Inline
   # +rdoc+ may be another Inline or a String.  If +reference+ is not given it
   # will use the text from +rdoc+.
 
-  def self.new rdoc, reference = rdoc
+  def self.new(rdoc, reference = rdoc)
     if self === rdoc and reference.equal? rdoc then
       rdoc
     else
@@ -31,7 +31,7 @@ class RDoc::RD::Inline
   ##
   # Initializes the Inline with +rdoc+ and +inline+
 
-  def initialize rdoc, reference # :not-new:
+  def initialize(rdoc, reference) # :not-new:
     @reference = reference.equal?(rdoc) ? reference.dup : reference
 
     # unpack
@@ -39,7 +39,7 @@ class RDoc::RD::Inline
     @rdoc      = rdoc
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and
       @reference == other.reference and @rdoc == other.rdoc
   end
@@ -47,7 +47,7 @@ class RDoc::RD::Inline
   ##
   # Appends +more+ to this inline.  +more+ may be a String or another Inline.
 
-  def append more
+  def append(more)
     case more
     when String then
       @reference += more

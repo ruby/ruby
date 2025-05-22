@@ -107,7 +107,7 @@ class RDoc::Markup::AttributeManager
   ##
   # Changes the current attribute from +current+ to +new+
 
-  def change_attribute current, new
+  def change_attribute(current, new)
     diff = current ^ new
     attribute(new & diff, current & diff)
   end
@@ -116,7 +116,7 @@ class RDoc::Markup::AttributeManager
   # Used by the tests to change attributes by name from +current_set+ to
   # +new_set+
 
-  def changed_attribute_by_name current_set, new_set
+  def changed_attribute_by_name(current_set, new_set)
     current = new = 0
     current_set.each do |name|
       current |= @attributes.bitmap_for(name)
@@ -220,7 +220,7 @@ class RDoc::Markup::AttributeManager
   ##
   # Converts regexp handling sequences to RDoc attributes
 
-  def convert_regexp_handlings str, attrs, exclusive = false
+  def convert_regexp_handlings(str, attrs, exclusive = false)
     @regexp_handlings.each do |regexp, attribute|
       next unless exclusive == exclusive?(attribute)
       str.scan(regexp) do
@@ -295,7 +295,7 @@ class RDoc::Markup::AttributeManager
   #
   #   @am.add_regexp_handling(/((https?:)\S+\w)/, :HYPERLINK)
 
-  def add_regexp_handling pattern, name, exclusive = false
+  def add_regexp_handling(pattern, name, exclusive = false)
     bitmap = @attributes.bitmap_for(name)
     @regexp_handlings << [pattern, bitmap]
     @exclusive_bitmap |= bitmap if exclusive
@@ -304,7 +304,7 @@ class RDoc::Markup::AttributeManager
   ##
   # Processes +str+ converting attributes, HTML and regexp handlings
 
-  def flow str
+  def flow(str)
     @str = str.dup
 
     mask_protected_sequences

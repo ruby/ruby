@@ -13,6 +13,7 @@ require 'tempfile'
 require 'tmpdir'
 require 'stringio'
 
+require_relative '../../lib/helper'
 require_relative '../../../lib/rdoc'
 
 ##
@@ -46,16 +47,14 @@ class RDoc::TestCase < Test::Unit::TestCase
 
     @pwd = Dir.pwd
 
-    @store = RDoc::Store.new
+    @options = RDoc::Options.new
+    @store = RDoc::Store.new(@options)
 
     @rdoc = RDoc::RDoc.new
     @rdoc.store = @store
-    @rdoc.options = RDoc::Options.new
+    @rdoc.options = @options
 
-    g = Object.new
-    def g.class_dir() end
-    def g.file_dir() end
-    @rdoc.generator = g
+    @rdoc.generator = Object.new
 
     RDoc::Markup::PreProcess.reset
   end
@@ -73,21 +72,21 @@ class RDoc::TestCase < Test::Unit::TestCase
   ##
   # Asserts +path+ is a file
 
-  def assert_file path
+  def assert_file(path)
     assert File.file?(path), "#{path} is not a file"
   end
 
   ##
   # Asserts +path+ is a directory
 
-  def assert_directory path
+  def assert_directory(path)
     assert File.directory?(path), "#{path} is not a directory"
   end
 
   ##
   # Refutes +path+ exists
 
-  def refute_file path
+  def refute_file(path)
     refute File.exist?(path), "#{path} exists"
   end
 
@@ -109,7 +108,7 @@ class RDoc::TestCase < Test::Unit::TestCase
   # Creates an RDoc::Comment with +text+ which was defined on +top_level+.
   # By default the comment has the 'rdoc' format.
 
-  def comment text, top_level = @top_level, language = nil
+  def comment(text, top_level = @top_level, language = nil)
     comment = RDoc::Comment.new text, top_level, language
     comment
   end
@@ -131,7 +130,7 @@ class RDoc::TestCase < Test::Unit::TestCase
   ##
   # Shortcut for RDoc::Markup::Heading.new with +level+ and +text+
 
-  def head level, text
+  def head(level, text)
     @RM::Heading.new level, text
   end
 
@@ -152,7 +151,7 @@ class RDoc::TestCase < Test::Unit::TestCase
   ##
   # Enables pretty-print output
 
-  def mu_pp obj # :nodoc:
+  def mu_pp(obj) # :nodoc:
     s = obj.pretty_inspect
     s = RDoc::Encoding.change_encoding s, Encoding.default_external
     s.chomp
@@ -168,7 +167,7 @@ class RDoc::TestCase < Test::Unit::TestCase
   ##
   # Shortcut for RDoc::Markup::Rule.new with +weight+
 
-  def rule weight
+  def rule(weight)
     @RM::Rule.new weight
   end
 

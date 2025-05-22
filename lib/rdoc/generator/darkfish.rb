@@ -74,12 +74,6 @@ class RDoc::Generator::Darkfish
   ]
 
   ##
-  # Path to this file's parent directory. Used to find templates and other
-  # resources.
-
-  GENERATOR_DIR = File.join 'rdoc', 'generator'
-
-  ##
   # Release Version
 
   VERSION = '3'
@@ -156,7 +150,7 @@ class RDoc::Generator::Darkfish
   ##
   # Initialize a few instance variables before we start
 
-  def initialize store, options
+  def initialize(store, options)
     @store   = store
     @options = options
 
@@ -182,22 +176,6 @@ class RDoc::Generator::Darkfish
   def debug_msg *msg
     return unless $DEBUG_RDOC
     $stderr.puts(*msg)
-  end
-
-  ##
-  # Directory where generated class HTML files live relative to the output
-  # dir.
-
-  def class_dir
-    nil
-  end
-
-  ##
-  # Directory where generated class HTML files live relative to the output
-  # dir.
-
-  def file_dir
-    nil
   end
 
   ##
@@ -291,7 +269,7 @@ class RDoc::Generator::Darkfish
   # Return a list of the documented modules sorted by salience first, then
   # by name.
 
-  def get_sorted_module_list classes
+  def get_sorted_module_list(classes)
     classes.select do |klass|
       klass.display?
     end.sort
@@ -301,8 +279,6 @@ class RDoc::Generator::Darkfish
   # Generate an index page which lists all the classes which are documented.
 
   def generate_index
-    setup
-
     template_file = @template_dir + 'index.rhtml'
     return unless template_file.exist?
 
@@ -316,11 +292,14 @@ class RDoc::Generator::Darkfish
     asset_rel_prefix = rel_prefix + @asset_rel_path
 
     @title = @options.title
+    @main_page = @files.find { |f| f.full_name == @options.main_page }
 
     render_template template_file, out_file do |io|
       here = binding
       # suppress 1.9.3 warning
       here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
+      # some partials rely on the presence of current variable to render
+      here.local_variable_set(:current, @main_page) if @main_page
       here
     end
   rescue => e
@@ -334,9 +313,7 @@ class RDoc::Generator::Darkfish
   ##
   # Generates a class file for +klass+
 
-  def generate_class klass, template_file = nil
-    setup
-
+  def generate_class(klass, template_file = nil)
     current = klass
 
     template_file ||= @template_dir + 'class.rhtml'
@@ -348,7 +325,9 @@ class RDoc::Generator::Darkfish
     search_index_rel_prefix += @asset_rel_path if @file_output
 
     asset_rel_prefix = rel_prefix + @asset_rel_path
-    svninfo          = get_svninfo(current)
+
+    breadcrumb = # used in templates
+    breadcrumb = generate_nesting_namespaces_breadcrumb(current, rel_prefix)
 
     @title = "#{klass.type} #{klass.full_name} - #{@options.title}"
 
@@ -357,7 +336,6 @@ class RDoc::Generator::Darkfish
       here = binding
       # suppress 1.9.3 warning
       here.local_variable_set(:asset_rel_prefix, asset_rel_prefix)
-      here.local_variable_set(:svninfo, svninfo)
       here
     end
   end
@@ -366,8 +344,6 @@ class RDoc::Generator::Darkfish
   # Generate a documentation file for each class and module
 
   def generate_class_files
-    setup
-
     template_file = @template_dir + 'class.rhtml'
     template_file = @template_dir + 'classpage.rhtml' unless
       template_file.exist?
@@ -393,8 +369,6 @@ class RDoc::Generator::Darkfish
   # Generate a documentation file for each file
 
   def generate_file_files
-    setup
-
     page_file     = @template_dir + 'page.rhtml'
     fileinfo_file = @template_dir + 'fileinfo.rhtml'
 
@@ -461,9 +435,7 @@ class RDoc::Generator::Darkfish
   ##
   # Generate a page file for +file+
 
-  def generate_page file
-    setup
-
+  def generate_page(file)
     template_file = @template_dir + 'page.rhtml'
 
     out_file = @outputdir + file.path
@@ -490,9 +462,7 @@ class RDoc::Generator::Darkfish
   ##
   # Generates the 404 page for the RDoc servlet
 
-  def generate_servlet_not_found message
-    setup
-
+  def generate_servlet_not_found(message)
     template_file = @template_dir + 'servlet_not_found.rhtml'
     return unless template_file.exist?
 
@@ -523,9 +493,7 @@ class RDoc::Generator::Darkfish
   ##
   # Generates the servlet root page for the RDoc servlet
 
-  def generate_servlet_root installed
-    setup
-
+  def generate_servlet_root(installed)
     template_file = @template_dir + 'servlet_root.rhtml'
     return unless template_file.exist?
 
@@ -551,8 +519,6 @@ class RDoc::Generator::Darkfish
   # Generate an index page which lists all the classes which are documented.
 
   def generate_table_of_contents
-    setup
-
     template_file = @template_dir + 'table_of_contents.rhtml'
     return unless template_file.exist?
 
@@ -581,7 +547,7 @@ class RDoc::Generator::Darkfish
     raise error
   end
 
-  def install_rdoc_static_file source, destination, options # :nodoc:
+  def install_rdoc_static_file(source, destination, options) # :nodoc:
     return unless source.exist?
 
     begin
@@ -615,64 +581,12 @@ class RDoc::Generator::Darkfish
   end
 
   ##
-  # Return a string describing the amount of time in the given number of
-  # seconds in terms a human can understand easily.
-
-  def time_delta_string seconds
-    return 'less than a minute'          if seconds < 60
-    return "#{seconds / 60} minute#{seconds / 60 == 1 ? '' : 's'}" if
-                                            seconds < 3000     # 50 minutes
-    return 'about one hour'              if seconds < 5400     # 90 minutes
-    return "#{seconds / 3600} hours"     if seconds < 64800    # 18 hours
-    return 'one day'                     if seconds < 86400    #  1 day
-    return 'about one day'               if seconds < 172800   #  2 days
-    return "#{seconds / 86400} days"     if seconds < 604800   #  1 week
-    return 'about one week'              if seconds < 1209600  #  2 week
-    return "#{seconds / 604800} weeks"   if seconds < 7257600  #  3 months
-    return "#{seconds / 2419200} months" if seconds < 31536000 #  1 year
-    return "#{seconds / 31536000} years"
-  end
-
-  # %q$Id: darkfish.rb 52 2009-01-07 02:08:11Z deveiant $"
-  SVNID_PATTERN = /
-    \$Id:\s
-    (\S+)\s                # filename
-    (\d+)\s                # rev
-    (\d{4}-\d{2}-\d{2})\s  # Date (YYYY-MM-DD)
-    (\d{2}:\d{2}:\d{2}Z)\s # Time (HH:MM:SSZ)
-    (\w+)\s                # committer
-    \$$
-  /x
-
-  ##
-  # Try to extract Subversion information out of the first constant whose
-  # value looks like a subversion Id tag. If no matching constant is found,
-  # and empty hash is returned.
-
-  def get_svninfo klass
-    constants = klass.constants or return {}
-
-    constants.find { |c| c.value =~ SVNID_PATTERN } or return {}
-
-    filename, rev, date, time, committer = $~.captures
-    commitdate = Time.parse "#{date} #{time}"
-
-    return {
-      :filename    => filename,
-      :rev         => Integer(rev),
-      :commitdate  => commitdate,
-      :commitdelta => time_delta_string(Time.now - commitdate),
-      :committer   => committer,
-    }
-  end
-
-  ##
   # Creates a template from its components and the +body_file+.
   #
   # For backwards compatibility, if +body_file+ contains "<html" the body is
   # used directly.
 
-  def assemble_template body_file
+  def assemble_template(body_file)
     body = body_file.read
     return body if body =~ /<html/
 
@@ -681,7 +595,7 @@ class RDoc::Generator::Darkfish
     <<-TEMPLATE
 <!DOCTYPE html>
 
-<html>
+<html lang="#{@options.locale&.name || 'en'}">
 <head>
 #{head_file.read}
 
@@ -693,7 +607,7 @@ class RDoc::Generator::Darkfish
   # Renders the ERb contained in +file_name+ relative to the template
   # directory and returns the result based on the current context.
 
-  def render file_name
+  def render(file_name)
     template_file = @template_dir + file_name
 
     template = template_for template_file, false, RDoc::ERBPartial
@@ -711,7 +625,7 @@ class RDoc::Generator::Darkfish
   #
   # An io will be yielded which must be captured by binding in the caller.
 
-  def render_template template_file, out_file = nil # :yield: io
+  def render_template(template_file, out_file = nil) # :yield: io
     io_output = out_file && !@dry_run && @file_output
     erb_klass = io_output ? RDoc::ERBIO : ERB
 
@@ -745,7 +659,7 @@ class RDoc::Generator::Darkfish
   # Creates the result for +template+ with +context+.  If an error is raised a
   # Pathname +template_file+ will indicate the file where the error occurred.
 
-  def template_result template, context, template_file
+  def template_result(template, context, template_file)
     template.filename = template_file.to_s
     template.result context
   rescue NoMethodError => e
@@ -758,7 +672,7 @@ class RDoc::Generator::Darkfish
   ##
   # Retrieves a cache template for +file+, if present, or fills the cache.
 
-  def template_for file, page = true, klass = ERB
+  def template_for(file, page = true, klass = ERB)
     template = @template_cache[file]
 
     return template if template
@@ -780,32 +694,39 @@ class RDoc::Generator::Darkfish
     template
   end
 
-  # Returns an excerpt of the content for usage in meta description tags
-  def excerpt(content)
-    text = case content
+  # :stopdoc:
+  ParagraphExcerptRegexpOther = %r[\b\w[^./:]++\.]
+  # use \p/\P{letter} instead of \w/\W in Unicode
+  ParagraphExcerptRegexpUnicode = %r[\b\p{letter}[^./:]++\.]
+  # :startdoc:
+
+  # Returns an excerpt of the comment for usage in meta description tags
+  def excerpt(comment)
+    text = case comment
     when RDoc::Comment
-      content.text
-    when RDoc::Markup::Document
-      # This case is for page files that are not markdown nor rdoc
-      # We convert them to markdown for now as it's easier to extract the text
-      formatter = RDoc::Markup::ToMarkdown.new
-      formatter.start_accepting
-      formatter.accept_document(content)
-      formatter.end_accepting
+      comment.text
     else
-      content
+      comment
     end
 
     # Match from a capital letter to the first period, discarding any links, so
     # that we don't end up matching badges in the README
-    first_paragraph_match = text.match(/[A-Z][^\.:\/]+\./)
-    return text[0...150].gsub(/\n/, " ").squeeze(" ") unless first_paragraph_match
+    pattern = ParagraphExcerptRegexpUnicode
+    begin
+      first_paragraph_match = text.match(pattern)
+    rescue Encoding::CompatibilityError
+      # The doc is non-ASCII text and encoded in other than Unicode base encodings.
+      raise if pattern == ParagraphExcerptRegexpOther
+      pattern = ParagraphExcerptRegexpOther
+      retry
+    end
+    return text[0...150].tr_s("\n", " ").squeeze(" ") unless first_paragraph_match
 
     extracted_text = first_paragraph_match[0]
-    second_paragraph = first_paragraph_match.post_match.match(/[A-Z][^\.:\/]+\./)
+    second_paragraph = text.match(pattern, first_paragraph_match.end(0))
     extracted_text << " " << second_paragraph[0] if second_paragraph
 
-    extracted_text[0...150].gsub(/\n/, " ").squeeze(" ")
+    extracted_text[0...150].tr_s("\n", " ").squeeze(" ")
   end
 
   def generate_ancestor_list(ancestors, klass)
@@ -824,5 +745,68 @@ class RDoc::Generator::Darkfish
     content << generate_ancestor_list(ancestors, klass)
 
     content << '</li></ul>'
+  end
+
+  def generate_class_link(klass, rel_prefix)
+    if klass.display?
+      %(<code><a href="#{rel_prefix}/#{klass.path}">#{klass.name}</a></code>)
+    else
+      %(<code>#{klass.name}</code>)
+    end
+  end
+
+  def generate_class_index_content(classes, rel_prefix)
+    grouped_classes = group_classes_by_namespace_for_sidebar(classes)
+    return '' unless top = grouped_classes[nil]
+
+    solo = top.one? { |klass| klass.display? }
+    traverse_classes(top, grouped_classes, rel_prefix, solo)
+  end
+
+  def traverse_classes(klasses, grouped_classes, rel_prefix, solo = false)
+    content = +'<ul class="link-list">'
+
+    klasses.each do |index_klass|
+      if children = grouped_classes[index_klass.full_name]
+        content << %(<li><details#{solo ? ' open' : ''}><summary>#{generate_class_link(index_klass, rel_prefix)}</summary>)
+        content << traverse_classes(children, grouped_classes, rel_prefix)
+        content << '</details></li>'
+        solo = false
+      elsif index_klass.display?
+        content << %(<li>#{generate_class_link(index_klass, rel_prefix)}</li>)
+      end
+    end
+
+    "#{content}</ul>"
+  end
+
+  def group_classes_by_namespace_for_sidebar(classes)
+    grouped_classes = classes.group_by do |klass|
+      klass.full_name[/\A[^:]++(?:::[^:]++(?=::))*+(?=::[^:]*+\z)/]
+    end.select do |_, klasses|
+      klasses.any?(&:display?)
+    end
+
+    grouped_classes.values.each(&:uniq!)
+    grouped_classes
+  end
+
+  private
+
+  def nesting_namespaces_to_class_modules(klass)
+    tree = {}
+
+    klass.nesting_namespaces.zip(klass.fully_qualified_nesting_namespaces) do |ns, fqns|
+      tree[ns] = @store.classes_hash[fqns] || @store.modules_hash[fqns]
+    end
+
+    tree
+  end
+
+  def generate_nesting_namespaces_breadcrumb(klass, rel_prefix)
+    nesting_namespaces_to_class_modules(klass).map do |namespace, class_module|
+      path = class_module ? (rel_prefix + class_module.path).to_s : ""
+      { name: namespace, path: path, self: klass.full_name == class_module&.full_name }
+    end
   end
 end

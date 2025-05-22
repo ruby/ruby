@@ -9,7 +9,7 @@ class RDoc::ERBPartial < ERB
   # Overrides +compiler+ startup to set the +eoutvar+ to an empty string only
   # if it isn't already set.
 
-  def set_eoutvar compiler, eoutvar = '_erbout'
+  def set_eoutvar(compiler, eoutvar = '_erbout')
     super
 
     compiler.pre_cmd = ["#{eoutvar} ||= +''"]

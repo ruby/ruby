@@ -17,7 +17,7 @@ require 'test/unit'
 #
 # Example:
 #
-#  class TestRDocMarkupToNewFormat < RDoc::Markup::FormatterTestCase
+#  class RDocMarkupToNewFormatTest < RDoc::Markup::FormatterTestCase
 #
 #    add_visitor_tests
 #

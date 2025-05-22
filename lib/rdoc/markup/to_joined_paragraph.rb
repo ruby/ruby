@@ -22,7 +22,7 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   ##
   # Converts the parts of +paragraph+ to a single entry.
 
-  def accept_paragraph paragraph
+  def accept_paragraph(paragraph)
     parts = paragraph.parts.chunk do |part|
       String === part
     end.flat_map do |string, chunk|

@@ -23,13 +23,13 @@ class RDoc::Mixin < RDoc::CodeObject
   ##
   # Mixins are sorted by name
 
-  def <=> other
+  def <=>(other)
     return unless self.class === other
 
     name <=> other.name
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class === other and @name == other.name
   end
 
@@ -107,7 +107,7 @@ class RDoc::Mixin < RDoc::CodeObject
   ##
   # Sets the store for this class or module and its contained code objects.
 
-  def store= store
+  def store=(store)
     super
 
     @file = @store.add_file @file.full_name if @file

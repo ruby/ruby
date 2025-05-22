@@ -51,7 +51,7 @@ class RDoc::RubyGemsHook
   # Post installs hook that generates documentation for each specification in
   # +specs+
 
-  def self.generate installer, specs
+  def self.generate(installer, specs)
     start = Time.now
     types = installer.document
 
@@ -70,7 +70,7 @@ class RDoc::RubyGemsHook
     say "Done installing documentation for #{names} after #{duration} seconds"
   end
 
-  def self.remove uninstaller
+  def self.remove(uninstaller)
     new(uninstaller.spec).remove
   end
 
@@ -92,7 +92,7 @@ class RDoc::RubyGemsHook
   #
   # Only +generate_ri+ is enabled by default.
 
-  def initialize spec, generate_rdoc = false, generate_ri = true
+  def initialize(spec, generate_rdoc = false, generate_ri = true)
     @doc_dir   = spec.doc_dir
     @force     = false
     @rdoc      = nil
@@ -110,7 +110,7 @@ class RDoc::RubyGemsHook
   #--
   # TODO move to RDoc::Options
 
-  def delete_legacy_args args
+  def delete_legacy_args(args)
     args.delete '--inline-source'
     args.delete '--promiscuous'
     args.delete '-p'
@@ -123,7 +123,7 @@ class RDoc::RubyGemsHook
   #
   # Documentation will be generated into +destination+
 
-  def document generator, options, destination
+  def document(generator, options, destination)
     generator_name = generator
 
     options = options.dup
@@ -181,25 +181,22 @@ class RDoc::RubyGemsHook
       options = ::RDoc::Options.new
       options.default_title = "#{@spec.full_name} Documentation"
       options.parse args
+      options.quiet = !Gem.configuration.really_verbose
     end
 
-    options.quiet = !Gem.configuration.really_verbose
-
     @rdoc = new_rdoc
-    @rdoc.options = options
-
-    store = RDoc::Store.new
-    store.encoding = options.encoding
-    store.dry_run  = options.dry_run
-    store.main     = options.main_page
-    store.title    = options.title
-
-    @rdoc.store = store
 
     say "Parsing documentation for #{@spec.full_name}"
 
     Dir.chdir @spec.full_gem_path do
-      @rdoc.parse_files options.files
+      # RDoc::Options#finish must be called before parse_files.
+      # RDoc::Options#finish is also called after ri/darkfish generator setup.
+      # We need to dup the options to avoid modifying it after finish is called.
+      parse_options = options.dup
+      parse_options.finish
+      @rdoc.options = parse_options
+      @rdoc.store = RDoc::Store.new(parse_options)
+      @rdoc.parse_files parse_options.files
     end
 
     document 'ri',       options, @ri_dir if
@@ -303,12 +300,28 @@ module RDoc
       RubyGemsHook.new(@spec).remove
     end
 
-    def self.generation_hook installer, specs
+    def self.generation_hook(installer, specs)
       # Do nothing if this is NOT a default gem.
       return unless default_gem?
 
       # Generate document for compatibility if this is a default gem.
       RubyGemsHook.generate(installer, specs)
+    end
+
+    def self.load_rdoc
+      RubyGemsHook.load_rdoc
+    end
+
+    def self.rdoc_version
+      RubyGemsHook.rdoc_version
+    end
+
+    def rdoc_installed?
+      RubyGemsHook.new(@spec).rdoc_installed?
+    end
+
+    def ri_installed?
+      RubyGemsHook.new(@spec).ri_installed?
     end
   end
 end

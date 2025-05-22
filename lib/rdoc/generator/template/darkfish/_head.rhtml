@@ -25,6 +25,11 @@
   <%- end -%>
 <%- end -%>
 
+<%- if canonical_url = @options.canonical_root -%>
+<% canonical_url = current.canonical_url if defined?(current) %>
+<link rel="canonical" href="<%= canonical_url %>">
+<%- end -%>
+
 <script type="text/javascript">
   var rdoc_rel_prefix = "<%= h asset_rel_prefix %>/";
   var index_rel_prefix = "<%= h rel_prefix %>/";

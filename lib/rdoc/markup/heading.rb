@@ -27,7 +27,7 @@ RDoc::Markup::Heading =
 
     @to_html = RDoc::Markup::ToHtml.new nil
 
-    def @to_html.handle_regexp_CROSSREF target
+    def @to_html.handle_regexp_CROSSREF(target)
       target.text.sub(/^\\/, '')
     end
 
@@ -37,7 +37,7 @@ RDoc::Markup::Heading =
   ##
   # Calls #accept_heading on +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_heading self
   end
 
@@ -52,7 +52,7 @@ RDoc::Markup::Heading =
   # Creates a fully-qualified label which will include the label from
   # +context+.  This helps keep ids unique in HTML.
 
-  def label context = nil
+  def label(context = nil)
     label = aref
 
     label = [context.aref, label].compact.join '-' if
@@ -66,10 +66,16 @@ RDoc::Markup::Heading =
   # element.
 
   def plain_html
-    self.class.to_html.to_html(text.dup)
+    text = self.text.dup
+
+    if matched = text.match(/rdoc-image:[^:]+:(.*)/)
+      text = matched[1]
+    end
+
+    self.class.to_html.to_html(text)
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, "[head: #{level} ", ']' do
       q.pp text
     end

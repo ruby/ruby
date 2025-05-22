@@ -44,7 +44,7 @@ class RDoc::RI::Task < RDoc::Task
   # Create an ri task with the given name. See RDoc::Task for documentation on
   # setting names.
 
-  def initialize name = DEFAULT_NAMES # :yield: self
+  def initialize(name = DEFAULT_NAMES) # :yield: self
     super
   end
 

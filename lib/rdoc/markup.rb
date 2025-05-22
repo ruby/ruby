@@ -118,7 +118,7 @@ class RDoc::Markup
   ##
   # Parses +str+ into an RDoc::Markup::Document.
 
-  def self.parse str
+  def self.parse(str)
     RDoc::Markup::Parser.parse str
   rescue RDoc::Markup::Parser::Error => e
     $stderr.puts <<-EOF
@@ -148,7 +148,7 @@ https://github.com/ruby/rdoc/issues
   # structure (paragraphs, lists, and so on).  Invoke an event handler as we
   # identify significant chunks.
 
-  def initialize attribute_manager = nil
+  def initialize(attribute_manager = nil)
     @attribute_manager = attribute_manager || RDoc::Markup::AttributeManager.new
     @output = nil
   end
@@ -185,7 +185,7 @@ https://github.com/ruby/rdoc/issues
   # We take +input+, parse it if necessary, then invoke the output +formatter+
   # using a Visitor to render the result.
 
-  def convert input, formatter
+  def convert(input, formatter)
     document = case input
                when RDoc::Markup::Document then
                  input

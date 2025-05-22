@@ -168,7 +168,7 @@ class RDoc::Parser::C < RDoc::Parser
   # Prepares for parsing a C file.  See RDoc::Parser#initialize for details on
   # the arguments.
 
-  def initialize top_level, file_name, content, options, stats
+  def initialize(top_level, content, options, stats)
     super
 
     @known_classes = RDoc::KNOWN_CLASSES.dup
@@ -193,7 +193,7 @@ class RDoc::Parser::C < RDoc::Parser
 
     @enclosure_dependencies.extend TSort
 
-    def @enclosure_dependencies.tsort_each_node &block
+    def @enclosure_dependencies.tsort_each_node(&block)
       each_key(&block)
     rescue TSort::Cyclic => e
       cycle_vars = e.message.scan(/"(.*?)"/).flatten
@@ -211,7 +211,7 @@ class RDoc::Parser::C < RDoc::Parser
       retry
     end
 
-    def @enclosure_dependencies.tsort_each_child node, &block
+    def @enclosure_dependencies.tsort_each_child(node, &block)
       fetch(node, []).each(&block)
     end
   end
@@ -248,9 +248,7 @@ class RDoc::Parser::C < RDoc::Parser
   # method that reference the same function.
 
   def add_alias(var_name, class_obj, old_name, new_name, comment)
-    al = RDoc::Alias.new '', old_name, new_name, ''
-    al.singleton = @singleton_classes.key? var_name
-    al.comment = comment
+    al = RDoc::Alias.new '', old_name, new_name, comment, singleton: @singleton_classes.key?(var_name)
     al.record_location @top_level
     class_obj.add_alias al
     @stats.add_alias al
@@ -521,7 +519,7 @@ class RDoc::Parser::C < RDoc::Parser
   # Finds the comment for an alias on +class_name+ from +new_name+ to
   # +old_name+
 
-  def find_alias_comment class_name, new_name, old_name
+  def find_alias_comment(class_name, new_name, old_name)
     content =~ %r%((?>/\*.*?\*/\s+))
                   rb_define_alias\(\s*#{Regexp.escape class_name}\s*,
                                    \s*"#{Regexp.escape new_name}"\s*,
@@ -539,7 +537,7 @@ class RDoc::Parser::C < RDoc::Parser
   # +read+ and +write+ are the read/write flags ('1' or '0').  Either both or
   # neither must be provided.
 
-  def find_attr_comment var_name, attr_name, read = nil, write = nil
+  def find_attr_comment(var_name, attr_name, read = nil, write = nil)
     attr_name = Regexp.escape attr_name
 
     rw = if read and write then
@@ -572,7 +570,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Generate a Ruby-method table
 
-  def gen_body_table file_content
+  def gen_body_table(file_content)
     table = {}
     file_content.scan(%r{
       ((?>/\*.*?\*/\s*)?)
@@ -596,7 +594,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Find the C code corresponding to a Ruby method
 
-  def find_body class_name, meth_name, meth_obj, file_content, quiet = false
+  def find_body(class_name, meth_name, meth_obj, file_content, quiet = false)
     if file_content
       @body_table ||= {}
       @body_table[file_content] ||= gen_body_table file_content
@@ -721,7 +719,7 @@ class RDoc::Parser::C < RDoc::Parser
   #    */
   #   VALUE cFoo = rb_define_class("Foo", rb_cObject);
 
-  def find_class_comment class_name, class_mod
+  def find_class_comment(class_name, class_mod)
     comment = nil
 
     if @content =~ %r%
@@ -754,7 +752,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Generate a const table
 
-  def gen_const_table file_content
+  def gen_const_table(file_content)
     table = {}
     @content.scan(%r{
       (?<doc>(?>^\s*/\*.*?\*/\s+))
@@ -808,9 +806,9 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Handles modifiers in +comment+ and updates +meth_obj+ as appropriate.
 
-  def find_modifiers comment, meth_obj
+  def find_modifiers(comment, meth_obj)
     comment.normalize
-    comment.extract_call_seq meth_obj
+    meth_obj.call_seq = comment.extract_call_seq
 
     look_for_directives_in meth_obj, comment
   end
@@ -818,7 +816,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Finds a <tt>Document-method</tt> override for +meth_obj+ on +class_name+
 
-  def find_override_comment class_name, meth_obj
+  def find_override_comment(class_name, meth_obj)
     name = Regexp.escape meth_obj.name
     prefix = Regexp.escape meth_obj.name_prefix
 
@@ -1015,10 +1013,9 @@ class RDoc::Parser::C < RDoc::Parser
         type = 'method' # force public
       end
 
-      meth_obj = RDoc::AnyMethod.new '', meth_name
+      singleton = singleton || %w[singleton_method module_function].include?(type)
+      meth_obj = RDoc::AnyMethod.new '', meth_name, singleton: singleton
       meth_obj.c_function = function
-      meth_obj.singleton =
-        singleton || %w[singleton_method module_function].include?(type)
 
       p_count = Integer(param_count) rescue -1
 
@@ -1063,7 +1060,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Registers a singleton class +sclass_var+ as a singleton of +class_var+
 
-  def handle_singleton sclass_var, class_var
+  def handle_singleton(sclass_var, class_var)
     class_name = @known_classes[class_var]
 
     @known_classes[sclass_var]     = class_name
@@ -1074,7 +1071,7 @@ class RDoc::Parser::C < RDoc::Parser
   # Loads the variable map with the given +name+ from the RDoc::Store, if
   # present.
 
-  def load_variable_map map_name
+  def load_variable_map(map_name)
     return {} unless files = @store.cache[map_name]
     return {} unless name_map = files[@file_name]
 
@@ -1104,7 +1101,7 @@ class RDoc::Parser::C < RDoc::Parser
   # This method modifies the +comment+
   # Both :main: and :title: directives are deprecated and will be removed in RDoc 7.
 
-  def look_for_directives_in context, comment
+  def look_for_directives_in(context, comment)
     @preprocess.handle comment, context do |directive, param|
       case directive
       when 'main' then
@@ -1141,7 +1138,7 @@ class RDoc::Parser::C < RDoc::Parser
   # Extracts parameters from the +method_body+ and returns a method
   # parameter string.  Follows 1.9.3dev's scan-arg-spec, see README.EXT
 
-  def rb_scan_args method_body
+  def rb_scan_args(method_body)
     method_body =~ /rb_scan_args\((.*?)\)/m
     return '(*args)' unless $1
 
@@ -1252,7 +1249,7 @@ class RDoc::Parser::C < RDoc::Parser
   ##
   # Creates a RDoc::Comment instance.
 
-  def new_comment text = nil, location = nil, language = nil
+  def new_comment(text = nil, location = nil, language = nil)
     RDoc::Comment.new(text, location, language).tap do |comment|
       comment.format = @markup
     end

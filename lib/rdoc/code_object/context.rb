@@ -180,7 +180,7 @@ class RDoc::Context < RDoc::CodeObject
   #
   # Currently only RDoc::Extend and RDoc::Include are supported.
 
-  def add klass, name, comment
+  def add(klass, name, comment)
     if RDoc::Extend == klass then
       ext = RDoc::Extend.new name, comment
       add_extend ext
@@ -195,7 +195,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Adds +an_alias+ that is automatically resolved
 
-  def add_alias an_alias
+  def add_alias(an_alias)
     return an_alias unless @document_self
 
     method_attr = find_method(an_alias.old_name, an_alias.singleton) ||
@@ -222,7 +222,7 @@ class RDoc::Context < RDoc::CodeObject
   # if method +foo+ exists, but <tt>attr_accessor :foo</tt> will be registered
   # if method +foo+ exists, but <tt>foo=</tt> does not.
 
-  def add_attribute attribute
+  def add_attribute(attribute)
     return attribute unless @document_self
 
     # mainly to check for redefinition of an attribute as a method
@@ -285,7 +285,7 @@ class RDoc::Context < RDoc::CodeObject
   # unless it later sees <tt>class Container</tt>.  +add_class+ automatically
   # upgrades +given_name+ to a class in this case.
 
-  def add_class class_type, given_name, superclass = '::Object'
+  def add_class(class_type, given_name, superclass = '::Object')
     # superclass +nil+ is passed by the C parser in the following cases:
     # - registering Object in 1.8 (correct)
     # - registering BasicObject in 1.9 (correct)
@@ -401,7 +401,7 @@ class RDoc::Context < RDoc::CodeObject
   # unless #done_documenting is +true+. Sets the #parent of +mod+
   # to +self+, and its #section to #current_section. Returns +mod+.
 
-  def add_class_or_module mod, self_hash, all_hash
+  def add_class_or_module(mod, self_hash, all_hash)
     mod.section = current_section # TODO declaring context? something is
                                   # wrong here...
     mod.parent = self
@@ -426,7 +426,7 @@ class RDoc::Context < RDoc::CodeObject
   # Adds +constant+ if not already there. If it is, updates the comment,
   # value and/or is_alias_for of the known constant if they were empty/nil.
 
-  def add_constant constant
+  def add_constant(constant)
     return constant unless @document_self
 
     # HACK: avoid duplicate 'PI' & 'E' in math.c (1.8.7 source code)
@@ -451,7 +451,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Adds included module +include+ which should be an RDoc::Include
 
-  def add_include include
+  def add_include(include)
     add_to @includes, include
 
     include
@@ -460,7 +460,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Adds extension module +ext+ which should be an RDoc::Extend
 
-  def add_extend ext
+  def add_extend(ext)
     add_to @extends, ext
 
     ext
@@ -470,7 +470,7 @@ class RDoc::Context < RDoc::CodeObject
   # Adds +method+ if not already there. If it is (as method or attribute),
   # updates the comment if it was empty.
 
-  def add_method method
+  def add_method(method)
     return method unless @document_self
 
     # HACK: avoid duplicate 'new' in io.c & struct.c (1.8.7 source code)
@@ -482,7 +482,7 @@ class RDoc::Context < RDoc::CodeObject
         known.comment = method.comment if known.comment.empty?
         previously = ", previously in #{known.file}" unless
           method.file == known.file
-        @store.rdoc.options.warn \
+        @store.options.warn \
           "Duplicate method #{known.full_name} in #{method.file}#{previously}"
       end
     else
@@ -524,7 +524,7 @@ class RDoc::Context < RDoc::CodeObject
   # Adds an alias from +from+ (a class or module) to +name+ which was defined
   # in +file+.
 
-  def add_module_alias from, from_name, to, file
+  def add_module_alias(from, from_name, to, file)
     return from if @done_documenting
 
     to_full_name = child_name to.name
@@ -583,7 +583,7 @@ class RDoc::Context < RDoc::CodeObject
   #
   # See also RDoc::Context::Section
 
-  def add_section title, comment = nil
+  def add_section(title, comment = nil)
     if section = @sections[title] then
       section.add_comment comment if comment
     else
@@ -597,7 +597,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Adds +thing+ to the collection +array+
 
-  def add_to array, thing
+  def add_to(array, thing)
     array << thing if @document_self
 
     thing.parent  = self
@@ -629,7 +629,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Creates the full name for a child with +name+
 
-  def child_name name
+  def child_name(name)
     if name =~ /^:+/
       $'  #'
     elsif RDoc::TopLevel === self then
@@ -688,13 +688,6 @@ class RDoc::Context < RDoc::CodeObject
     section
   end
 
-  ##
-  # Is part of this thing was defined in +file+?
-
-  def defined_in?(file)
-    @in_files.include?(file)
-  end
-
   def display(method_attr) # :nodoc:
     if method_attr.is_a? RDoc::Attr
       "#{method_attr.definition} #{method_attr.pretty_name}"
@@ -714,38 +707,10 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
-  # Iterator for attributes
-
-  def each_attribute # :yields: attribute
-    @attributes.each { |a| yield a }
-  end
-
-  ##
   # Iterator for classes and modules
 
   def each_classmodule(&block) # :yields: module
     classes_and_modules.sort.each(&block)
-  end
-
-  ##
-  # Iterator for constants
-
-  def each_constant # :yields: constant
-    @constants.each {|c| yield c}
-  end
-
-  ##
-  # Iterator for included modules
-
-  def each_include # :yields: include
-    @includes.each do |i| yield i end
-  end
-
-  ##
-  # Iterator for extension modules
-
-  def each_extend # :yields: extend
-    @extends.each do |e| yield e end
   end
 
   ##
@@ -848,13 +813,6 @@ class RDoc::Context < RDoc::CodeObject
   end
 
   ##
-  # Finds a file with +name+ in this context
-
-  def find_file_named name
-    @store.find_file_named name
-  end
-
-  ##
   # Finds an instance method with +name+ in this context
 
   def find_instance_method_named(name)
@@ -871,7 +829,7 @@ class RDoc::Context < RDoc::CodeObject
     find_attribute_named(symbol) or
     find_external_alias_named(symbol) or
     find_module_named(symbol) or
-    find_file_named(symbol)
+    @store.find_file_named(symbol)
   end
 
   ##
@@ -973,10 +931,10 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # URL for this with a +prefix+
 
-  def http_url(prefix)
+  def http_url
     path = name_for_path
     path = path.gsub(/<<\s*(\w*)/, 'from-\1') if path =~ /<</
-    path = [prefix] + path.split('::')
+    path = path.split('::')
 
     File.join(*path.compact) + '.html'
   end
@@ -1012,7 +970,7 @@ class RDoc::Context < RDoc::CodeObject
   # If +section+ is provided only methods in that RDoc::Context::Section will
   # be returned.
 
-  def methods_by_type section = nil
+  def methods_by_type(section = nil)
     methods = {}
 
     TYPES.each do |type|
@@ -1104,7 +1062,7 @@ class RDoc::Context < RDoc::CodeObject
   #--
   # TODO mark the visibility of attributes in the template (if not public?)
 
-  def remove_invisible min_visibility
+  def remove_invisible(min_visibility)
     return if [:private, :nodoc].include? min_visibility
     remove_invisible_in @method_list, min_visibility
     remove_invisible_in @attributes, min_visibility
@@ -1114,7 +1072,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Only called when min_visibility == :public or :private
 
-  def remove_invisible_in array, min_visibility # :nodoc:
+  def remove_invisible_in(array, min_visibility) # :nodoc:
     if min_visibility == :public then
       array.reject! { |e|
         e.visibility != :public and not e.force_documentation
@@ -1130,7 +1088,7 @@ class RDoc::Context < RDoc::CodeObject
   # Tries to resolve unmatched aliases when a method or attribute has just
   # been added.
 
-  def resolve_aliases added
+  def resolve_aliases(added)
     # resolve any pending unmatched aliases
     key = added.pretty_name
     unmatched_alias_list = @unmatched_alias_lists[key]
@@ -1181,7 +1139,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Sets the current section to a section with +title+.  See also #add_section
 
-  def set_current_section title, comment
+  def set_current_section(title, comment)
     @current_section = add_section title, comment
   end
 
@@ -1246,7 +1204,7 @@ class RDoc::Context < RDoc::CodeObject
   ##
   # Upgrades NormalModule +mod+ in +enclosing+ to a +class_type+
 
-  def upgrade_to_class mod, class_type, enclosing
+  def upgrade_to_class(mod, class_type, enclosing)
     enclosing.modules_hash.delete mod.name
 
     klass = RDoc::ClassModule.from_module class_type, mod

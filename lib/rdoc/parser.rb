@@ -91,7 +91,7 @@ class RDoc::Parser
   # Checks if +file+ is a zip file in disguise.  Signatures from
   # http://www.garykessler.net/library/file_sigs.html
 
-  def self.zip? file
+  def self.zip?(file)
     zip_signature = File.read file, 4
 
     zip_signature == "PK\x03\x04" or
@@ -104,7 +104,7 @@ class RDoc::Parser
   ##
   # Return a parser that can handle a particular extension
 
-  def self.can_parse file_name
+  def self.can_parse(file_name)
     parser = can_parse_by_name file_name
 
     # HACK Selenium hides a jar file using a .txt extension
@@ -117,7 +117,7 @@ class RDoc::Parser
   # Returns a parser that can handle the extension for +file_name+.  This does
   # not depend upon the file being readable.
 
-  def self.can_parse_by_name file_name
+  def self.can_parse_by_name(file_name)
     _, parser = RDoc::Parser.parsers.find { |regexp,| regexp =~ file_name }
 
     # The default parser must not parse binary files
@@ -140,7 +140,7 @@ class RDoc::Parser
   ##
   # Returns the file type from the modeline in +file_name+
 
-  def self.check_modeline file_name
+  def self.check_modeline(file_name)
     line = File.open file_name do |io|
       io.gets
     end
@@ -166,7 +166,7 @@ class RDoc::Parser
   # Finds and instantiates the correct parser for the given +file_name+ and
   # +content+.
 
-  def self.for top_level, content, options, stats
+  def self.for(top_level, content, options, stats)
     file_name = top_level.absolute_name
     return if binary? file_name
 
@@ -191,7 +191,7 @@ class RDoc::Parser
 
     content = remove_modeline content
 
-    parser.new top_level, file_name, content, options, stats
+    parser.new top_level, content, options, stats
   rescue SystemCallError
     nil
   end
@@ -208,7 +208,7 @@ class RDoc::Parser
   ##
   # Removes an emacs-style modeline from the first line of the document
 
-  def self.remove_modeline content
+  def self.remove_modeline(content)
     content.sub(/\A.*-\*-\s*(.*?\S)\s*-\*-.*\r?\n/, '')
   end
 
@@ -229,7 +229,7 @@ class RDoc::Parser
   #
   # Any comment style may be used to hide the markup comment.
 
-  def self.use_markup content
+  def self.use_markup(content)
     markup = content.lines.first(3).grep(/markup:\s+(\w+)/) { $1 }.first
 
     return unless markup
@@ -252,12 +252,12 @@ class RDoc::Parser
   # RDoc::Markup::PreProcess object is created which allows processing of
   # directives.
 
-  def initialize top_level, file_name, content, options, stats
+  def initialize(top_level, content, options, stats)
     @top_level = top_level
     @top_level.parser = self.class
     @store = @top_level.store
 
-    @file_name = file_name
+    @file_name = top_level.absolute_name
     @content = content
     @options = options
     @stats = stats

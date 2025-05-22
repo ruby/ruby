@@ -52,7 +52,7 @@ module RDoc::RI::Paths
   ##
   # The ri directory for the gem with +gem_name+.
 
-  def self.gem_dir name, version
+  def self.gem_dir(name, version)
     req = Gem::Requirement.new "= #{version}"
 
     spec = Gem::Specification.find_by_name name, req
@@ -67,7 +67,7 @@ module RDoc::RI::Paths
   # A +filter+ :all includes all versions of gems and includes gems without
   # ri documentation.
 
-  def self.gemdirs filter = :latest
+  def self.gemdirs(filter = :latest)
     ri_paths = {}
 
     all = Gem::Specification.map do |spec|

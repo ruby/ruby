@@ -1,5 +1,7 @@
 # frozen_string_literal: true
-require 'cgi/util'
+require 'cgi/escape'
+# For CGI.unescape on earlier rubies
+require 'cgi/util' if RUBY_VERSION < '3.5'
 
 ##
 # Outputs RDoc markup as HTML.
@@ -42,7 +44,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Creates a new formatter that will output HTML
 
-  def initialize options, markup = nil
+  def initialize(options, markup = nil)
     super
 
     @code_object = nil
@@ -82,7 +84,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
     add_regexp_handling_TIDYLINK
   end
 
-  def handle_RDOCLINK url # :nodoc:
+  def handle_RDOCLINK(url) # :nodoc:
     case url
     when /^rdoc-ref:/
       CGI.escapeHTML($')
@@ -98,7 +100,15 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
       gen_url CGI.escapeHTML(url), CGI.escapeHTML(text)
     when /^rdoc-image:/
-      %[<img src=\"#{CGI.escapeHTML($')}\">]
+      # Split the string after "rdoc-image:" into url and alt.
+      #   "path/to/image.jpg:alt text" => ["path/to/image.jpg", "alt text"]
+      #   "http://example.com/path/to/image.jpg:alt text" => ["http://example.com/path/to/image.jpg", "alt text"]
+      url, alt = $'.split(/:(?!\/)/, 2)
+      if alt && !alt.empty?
+        %[<img src="#{CGI.escapeHTML(url)}" alt="#{CGI.escapeHTML(alt)}">]
+      else
+        %[<img src="#{CGI.escapeHTML(url)}">]
+      end
     when /\Ardoc-[a-z]+:/
       CGI.escapeHTML($')
     end
@@ -107,7 +117,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # +target+ is a <code><br></code>
 
-  def handle_regexp_HARD_BREAK target
+  def handle_regexp_HARD_BREAK(target)
     '<br>'
   end
 
@@ -138,7 +148,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # For the +rdoc-label+ scheme the footnote and label prefixes are stripped
   # when creating a link.  All other contents will be linked verbatim.
 
-  def handle_regexp_RDOCLINK target
+  def handle_regexp_RDOCLINK(target)
     handle_RDOCLINK target.text
   end
 
@@ -187,7 +197,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Adds +block_quote+ to the output
 
-  def accept_block_quote block_quote
+  def accept_block_quote(block_quote)
     @res << "\n<blockquote>"
 
     block_quote.parts.each do |part|
@@ -200,7 +210,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Adds +paragraph+ to the output
 
-  def accept_paragraph paragraph
+  def accept_paragraph(paragraph)
     @res << "\n<p>"
     text = paragraph.text @hard_break
     text = text.gsub(/(#{SPACE_SEPARATED_LETTER_CLASS})?\K\r?\n(?=(?(1)(#{SPACE_SEPARATED_LETTER_CLASS})?))/o) {
@@ -213,7 +223,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Adds +verbatim+ to the output
 
-  def accept_verbatim verbatim
+  def accept_verbatim(verbatim)
     text = verbatim.text.rstrip
 
     klass = nil
@@ -243,7 +253,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Adds +rule+ to the output
 
-  def accept_rule rule
+  def accept_rule(rule)
     @res << "<hr>\n"
   end
 
@@ -296,7 +306,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # Adds +heading+ to the output.  The headings greater than 6 are trimmed to
   # level 6.
 
-  def accept_heading heading
+  def accept_heading(heading)
     level = [6, heading.level].min
 
     label = heading.label @code_object
@@ -317,14 +327,14 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Adds +raw+ to the output
 
-  def accept_raw raw
+  def accept_raw(raw)
     @res << raw.parts.join("\n")
   end
 
   ##
   # Adds +table+ to the output
 
-  def accept_table header, body, aligns
+  def accept_table(header, body, aligns)
     @res << "\n<table role=\"table\">\n<thead>\n<tr>\n"
     header.zip(aligns) do |text, align|
       @res << '<th'
@@ -357,7 +367,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   # Generate a link to +url+ with content +text+.  Handles the special cases
   # for img: and link: described under handle_regexp_HYPERLINK
 
-  def gen_url url, text
+  def gen_url(url, text)
     scheme, url, id = parse_url url
 
     if %w[http https link].include?(scheme) and
@@ -431,7 +441,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Returns true if text is valid ruby syntax
 
-  def parseable? text
+  def parseable?(text)
     verbose, $VERBOSE = $VERBOSE, nil
     catch(:valid) do
       eval("BEGIN { throw :valid, true }\n#{text}")
@@ -445,7 +455,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   ##
   # Converts +item+ to HTML using RDoc::Text#to_html
 
-  def to_html item
+  def to_html(item)
     super convert_flow @am.flow item
   end
 

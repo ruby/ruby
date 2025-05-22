@@ -26,7 +26,7 @@ class RDoc::Stats
   # Creates a new Stats that will have +num_files+.  +verbosity+ defaults to 1
   # which will create an RDoc::Stats::Normal outputter.
 
-  def initialize store, num_files, verbosity = 1
+  def initialize(store, num_files, verbosity = 1)
     @num_files = num_files
     @store     = store
 
@@ -49,28 +49,28 @@ class RDoc::Stats
   ##
   # Records the parsing of an alias +as+.
 
-  def add_alias as
+  def add_alias(as)
     @display.print_alias as
   end
 
   ##
   # Records the parsing of an attribute +attribute+
 
-  def add_attribute attribute
+  def add_attribute(attribute)
     @display.print_attribute attribute
   end
 
   ##
   # Records the parsing of a class +klass+
 
-  def add_class klass
+  def add_class(klass)
     @display.print_class klass
   end
 
   ##
   # Records the parsing of +constant+
 
-  def add_constant constant
+  def add_constant(constant)
     @display.print_constant constant
   end
 
@@ -155,7 +155,7 @@ class RDoc::Stats
   # 0:: Classes, modules, constants, attributes, methods
   # 1:: Level 0 + method parameters
 
-  def coverage_level= level
+  def coverage_level=(level)
     level = -1 unless level
 
     @coverage_level = level
@@ -164,7 +164,7 @@ class RDoc::Stats
   ##
   # Returns the length and number of undocumented items in +collection+.
 
-  def doc_stats collection
+  def doc_stats(collection)
     visible = collection.select { |item| item.display? }
     [visible.length, visible.count { |item| not item.documented? }]
   end
@@ -256,12 +256,12 @@ class RDoc::Stats
   ##
   # Returns a report on undocumented attributes in ClassModule +cm+
 
-  def report_attributes cm
+  def report_attributes(cm)
     return if cm.attributes.empty?
 
     report = []
 
-    cm.each_attribute do |attr|
+    cm.attributes.each do |attr|
       next if attr.documented?
       line = attr.line ? ":#{attr.line}" : nil
       report << "  #{attr.definition} :#{attr.name} # in file #{attr.file.full_name}#{line}\n"
@@ -274,7 +274,7 @@ class RDoc::Stats
   ##
   # Returns a report on undocumented items in ClassModule +cm+
 
-  def report_class_module cm
+  def report_class_module(cm)
     return if cm.fully_documented? and @coverage_level.zero?
     return unless cm.display?
 
@@ -326,12 +326,12 @@ class RDoc::Stats
   ##
   # Returns a report on undocumented constants in ClassModule +cm+
 
-  def report_constants cm
+  def report_constants(cm)
     return if cm.constants.empty?
 
     report = []
 
-    cm.each_constant do |constant|
+    cm.constants.each do |constant|
       # TODO constant aliases are listed in the summary but not reported
       # figure out what to do here
       next if constant.documented? || constant.is_alias_for
@@ -348,7 +348,7 @@ class RDoc::Stats
   ##
   # Returns a report on undocumented methods in ClassModule +cm+
 
-  def report_methods cm
+  def report_methods(cm)
     return if cm.method_list.empty?
 
     report = []
@@ -436,7 +436,7 @@ class RDoc::Stats
   # Determines which parameters in +method+ were not documented.  Returns a
   # total parameter count and an Array of undocumented methods.
 
-  def undoc_params method
+  def undoc_params(method)
     @formatter ||= RDoc::Markup::ToTtOnly.new
 
     params = method.param_list

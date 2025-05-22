@@ -26,7 +26,7 @@ class RDoc::Generator::POT::POEntry
   # Creates a PO entry for +msgid+. Other values can be specified by
   # +options+.
 
-  def initialize msgid, options = {}
+  def initialize(msgid, options = {})
     @msgid = msgid
     @msgstr = options[:msgstr] || ""
     @translator_comment = options[:translator_comment]
@@ -53,7 +53,7 @@ msgstr #{format_message(@msgstr)}
   ##
   # Merges the PO entry with +other_entry+.
 
-  def merge other_entry
+  def merge(other_entry)
     options = {
       :extracted_comment  => merge_string(@extracted_comment,
                                           other_entry.extracted_comment),
@@ -69,7 +69,7 @@ msgstr #{format_message(@msgstr)}
 
   private
 
-  def format_comment mark, comment
+  def format_comment(mark, comment)
     return '' unless comment
     return '' if comment.empty?
 
@@ -106,7 +106,7 @@ msgstr #{format_message(@msgstr)}
     "\#, #{formatted_flags}\n"
   end
 
-  def format_message message
+  def format_message(message)
     return "\"#{escape(message)}\"" unless message.include?("\n")
 
     formatted_message = '""'
@@ -117,7 +117,7 @@ msgstr #{format_message(@msgstr)}
     formatted_message
   end
 
-  def escape string
+  def escape(string)
     string.gsub(/["\\\t\n]/) do |special_character|
       case special_character
       when "\t"
@@ -130,11 +130,11 @@ msgstr #{format_message(@msgstr)}
     end
   end
 
-  def merge_string string1, string2
+  def merge_string(string1, string2)
     [string1, string2].compact.join("\n")
   end
 
-  def merge_array array1, array2
+  def merge_array(array1, array2)
       (array1 + array2).uniq
   end
 

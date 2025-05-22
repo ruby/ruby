@@ -20,7 +20,7 @@ class RDoc::Stats::Normal < RDoc::Stats::Quiet
   ##
   # Prints a file with a progress bar
 
-  def print_file files_so_far, filename
+  def print_file(files_so_far, filename)
     progress_bar = sprintf("%3d%% [%2d/%2d]  ",
                            100 * files_so_far / @num_files,
                            files_so_far,

@@ -57,7 +57,7 @@ class RDoc::Markup::Parser
   #
   # Use RDoc::Markup#parse instead of this method.
 
-  def self.parse str
+  def self.parse(str)
     parser = new
     parser.tokenize str
     doc = RDoc::Markup::Document.new
@@ -67,7 +67,7 @@ class RDoc::Markup::Parser
   ##
   # Returns a token stream for +str+, for testing
 
-  def self.tokenize str
+  def self.tokenize(str)
     parser = new
     parser.tokenize str
     parser.tokens
@@ -87,7 +87,7 @@ class RDoc::Markup::Parser
   ##
   # Builds a Heading of +level+
 
-  def build_heading level
+  def build_heading(level)
     type, text, = get
 
     text = case type
@@ -105,7 +105,7 @@ class RDoc::Markup::Parser
   ##
   # Builds a List flush to +margin+
 
-  def build_list margin
+  def build_list(margin)
     p :list_start => margin if @debug
 
     list = RDoc::Markup::List.new
@@ -205,7 +205,7 @@ class RDoc::Markup::Parser
   ##
   # Builds a Paragraph that is flush to +margin+
 
-  def build_paragraph margin
+  def build_paragraph(margin)
     p :paragraph_start => margin if @debug
 
     paragraph = RDoc::Markup::Paragraph.new
@@ -240,7 +240,7 @@ class RDoc::Markup::Parser
   # terminated by a newline.  Blank lines always consist of a single newline
   # character, and there is never a single newline at the end of the verbatim.
 
-  def build_verbatim margin
+  def build_verbatim(margin)
     p :verbatim_begin => margin if @debug
     verbatim = RDoc::Markup::Verbatim.new
 
@@ -339,7 +339,7 @@ class RDoc::Markup::Parser
   #
   # Returns +parent+.
 
-  def parse parent, indent = 0
+  def parse(parent, indent = 0)
     p :parse_start => indent if @debug
 
     until @tokens.empty? do
@@ -403,7 +403,7 @@ class RDoc::Markup::Parser
   ##
   # Small hook that is overridden by RDoc::TomDoc
 
-  def parse_text parent, indent # :nodoc:
+  def parse_text(parent, indent) # :nodoc:
     parent << build_paragraph(indent)
   end
 
@@ -465,7 +465,7 @@ class RDoc::Markup::Parser
   ##
   # Creates the StringScanner
 
-  def setup_scanner input
+  def setup_scanner(input)
     @s = MyStringScanner.new input
   end
 
@@ -474,7 +474,7 @@ class RDoc::Markup::Parser
   #
   # Optionally raises an error if the next token is not of the expected type.
 
-  def skip token_type, error = true
+  def skip(token_type, error = true)
     type, = get
     return unless type # end of stream
     return @current_token if token_type == type
@@ -485,7 +485,7 @@ class RDoc::Markup::Parser
   ##
   # Turns text +input+ into a stream of tokens
 
-  def tokenize input
+  def tokenize(input)
     setup_scanner input
 
     until @s.eos? do

@@ -46,11 +46,11 @@ class RDoc::Markup::List
   ##
   # Appends +item+ to the list
 
-  def << item
+  def <<(item)
     @items << item
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class == other.class and
       @type == other.type and
       @items == other.items
@@ -59,7 +59,7 @@ class RDoc::Markup::List
   ##
   # Runs this list and all its #items through +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.accept_list_start self
 
     @items.each do |item|
@@ -83,7 +83,7 @@ class RDoc::Markup::List
     @items.last
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     q.group 2, "[list: #{@type} ", ']' do
       q.seplist @items do |item|
         q.pp item

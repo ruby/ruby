@@ -27,7 +27,7 @@ class RDoc::Markup::PreProcess
   # with the result RDoc::Comment (or text String) and the code object for the
   # comment (if any).
 
-  def self.post_process &block
+  def self.post_process(&block)
     @post_processors << block
   end
 
@@ -50,7 +50,7 @@ class RDoc::Markup::PreProcess
   #     # replace text, etc.
   #   end
 
-  def self.register directive, &block
+  def self.register(directive, &block)
     @registered[directive] = block
   end
 
@@ -96,7 +96,7 @@ class RDoc::Markup::PreProcess
   # directive's parameter is set as metadata on the +code_object+.  See
   # RDoc::CodeObject#metadata for details.
 
-  def handle text, code_object = nil, &block
+  def handle(text, code_object = nil, &block)
     first_line = 1
     if RDoc::Comment === text then
       comment = text
@@ -150,8 +150,8 @@ class RDoc::Markup::PreProcess
   #--
   # When 1.8.7 support is ditched prefix can be defaulted to ''
 
-  def handle_directive prefix, directive, param, code_object = nil,
-                       encoding = nil, line = nil
+  def handle_directive(prefix, directive, param, code_object = nil,
+                       encoding = nil, line = nil)
     blankline = "#{prefix.strip}\n"
     directive = directive.downcase
 
@@ -279,7 +279,7 @@ class RDoc::Markup::PreProcess
   # TODO shift left the whole file content in that case
   # TODO comment stop/start #-- and #++ in included file must be processed here
 
-  def include_file name, indent, encoding
+  def include_file(name, indent, encoding)
     full_name = find_include_file name
 
     unless full_name then

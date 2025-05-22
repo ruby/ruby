@@ -29,10 +29,6 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   # The section title of the method (if defined in a C file via +:category:+)
   attr_accessor :section_title
 
-  # Parameters for this method
-
-  attr_accessor :params
-
   ##
   # If true this method uses +super+ to call a superclass version
 
@@ -43,8 +39,8 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Creates a new AnyMethod with a token stream +text+ and +name+
 
-  def initialize text, name
-    super
+  def initialize(text, name, singleton: false)
+    super(text, name, singleton: singleton)
 
     @c_function = nil
     @dont_rename_initialize = false
@@ -56,11 +52,10 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Adds +an_alias+ as an alias for this method in +context+.
 
-  def add_alias an_alias, context = nil
-    method = self.class.new an_alias.text, an_alias.new_name
+  def add_alias(an_alias, context = nil)
+    method = self.class.new an_alias.text, an_alias.new_name, singleton: singleton
 
     method.record_location an_alias.file
-    method.singleton = self.singleton
     method.params = self.params
     method.visibility = self.visibility
     method.comment = an_alias.comment
@@ -109,8 +104,8 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   #
   # See also #param_seq
 
-  def call_seq= call_seq
-    return if call_seq.empty?
+  def call_seq=(call_seq)
+    return if call_seq.nil? || call_seq.empty?
 
     @call_seq = call_seq
   end
@@ -181,7 +176,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   # * #full_name
   # * #parent_name
 
-  def marshal_load array
+  def marshal_load(array)
     initialize_visibility
 
     @dont_rename_initialize = nil
@@ -198,7 +193,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @full_name     = array[2]
     @singleton     = array[3]
     @visibility    = array[4]
-    @comment       = array[5]
+    @comment       = RDoc::Comment.from_document array[5]
     @call_seq      = array[6]
     @block_params  = array[7]
     #                      8 handled below
@@ -210,8 +205,8 @@ class RDoc::AnyMethod < RDoc::MethodAttr
     @section_title = array[14]
     @is_alias_for  = array[15]
 
-    array[8].each do |new_name, comment|
-      add_alias RDoc::Alias.new(nil, @name, new_name, comment, @singleton)
+    array[8].each do |new_name, document|
+      add_alias RDoc::Alias.new(nil, @name, new_name, RDoc::Comment.from_document(document), singleton: @singleton)
     end
 
     @parent_name ||= if @full_name =~ /#/ then
@@ -314,7 +309,7 @@ class RDoc::AnyMethod < RDoc::MethodAttr
   ##
   # Sets the store for this method and its referenced code objects.
 
-  def store= store
+  def store=(store)
     super
 
     @file = @store.add_file @file.full_name if @file

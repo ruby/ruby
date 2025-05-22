@@ -14,7 +14,7 @@ class RDoc::Parser::Simple < RDoc::Parser
   ##
   # Prepare to parse a plain file
 
-  def initialize(top_level, file_name, content, options, stats)
+  def initialize(top_level, content, options, stats)
     super
 
     preprocess = RDoc::Markup::PreProcess.new @file_name, @options.rdoc_include
@@ -38,7 +38,7 @@ class RDoc::Parser::Simple < RDoc::Parser
   ##
   # Removes the encoding magic comment from +text+
 
-  def remove_coding_comment text
+  def remove_coding_comment(text)
     text.sub(/\A# .*coding[=:].*$/, '')
   end
 
@@ -49,7 +49,7 @@ class RDoc::Parser::Simple < RDoc::Parser
   # dashes at the beginning of the line.  Three or more dashes are considered
   # to be a rule and ignored.
 
-  def remove_private_comment comment
+  def remove_private_comment(comment)
     # Workaround for gsub encoding for Ruby 1.9.2 and earlier
     empty = ''
     empty = RDoc::Encoding.change_encoding empty, comment.encoding

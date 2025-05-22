@@ -20,14 +20,14 @@ class RDoc::ERBIO < ERB
   ##
   # Defaults +eoutvar+ to 'io', otherwise is identical to ERB's initialize
 
-  def initialize str, trim_mode: nil, eoutvar: 'io'
+  def initialize(str, trim_mode: nil, eoutvar: 'io')
     super(str, trim_mode: trim_mode, eoutvar: eoutvar)
   end
 
   ##
   # Instructs +compiler+ how to write to +io_variable+
 
-  def set_eoutvar compiler, io_variable
+  def set_eoutvar(compiler, io_variable)
     compiler.put_cmd    = "#{io_variable}.write"
     compiler.insert_cmd = "#{io_variable}.write"
     compiler.pre_cmd    = []

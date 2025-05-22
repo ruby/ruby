@@ -37,7 +37,7 @@ class RDoc::Markup::Document
   ##
   # Appends +part+ to the document
 
-  def << part
+  def <<(part)
     case part
     when RDoc::Markup::Document then
       unless part.empty? then
@@ -53,7 +53,7 @@ class RDoc::Markup::Document
     end
   end
 
-  def == other # :nodoc:
+  def ==(other) # :nodoc:
     self.class == other.class and
       @file == other.file and
       @parts == other.parts
@@ -62,7 +62,7 @@ class RDoc::Markup::Document
   ##
   # Runs this document and all its #items through +visitor+
 
-  def accept visitor
+  def accept(visitor)
     visitor.start_accepting
 
     visitor.accept_document self
@@ -73,14 +73,14 @@ class RDoc::Markup::Document
   ##
   # Concatenates the given +parts+ onto the document
 
-  def concat parts
+  def concat(parts)
     self.parts.concat parts
   end
 
   ##
   # Enumerator for the parts of this document
 
-  def each &block
+  def each(&block)
     @parts.each(&block)
   end
 
@@ -94,7 +94,7 @@ class RDoc::Markup::Document
   ##
   # The file this Document was created from.
 
-  def file= location
+  def file=(location)
     @file = case location
             when RDoc::TopLevel then
               location.relative_name
@@ -111,7 +111,7 @@ class RDoc::Markup::Document
   #
   # The information in +other+ is preferred over the receiver
 
-  def merge other
+  def merge(other)
     if empty? then
       @parts = other.parts
       return self
@@ -135,7 +135,7 @@ class RDoc::Markup::Document
     RDoc::Markup::Document === @parts.first
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print(q) # :nodoc:
     start = @file ? "[doc (#{@file}): " : '[doc: '
 
     q.group 2, start, ']' do

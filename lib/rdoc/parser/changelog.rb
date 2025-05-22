@@ -23,7 +23,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   # Continued function listings are joined together as a single entry.
   # Continued descriptions are joined to make a single paragraph.
 
-  def continue_entry_body entry_body, continuation
+  def continue_entry_body(entry_body, continuation)
     return unless last = entry_body.last
 
     if last =~ /\)\s*\z/ and continuation =~ /\A\(/ then
@@ -41,7 +41,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   ##
   # Creates an RDoc::Markup::Document given the +groups+ of ChangeLog entries.
 
-  def create_document groups
+  def create_document(groups)
     doc = RDoc::Markup::Document.new
     doc.omit_headings_below = 2
     doc.file = @top_level
@@ -63,7 +63,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   # Returns a list of ChangeLog entries an RDoc::Markup nodes for the given
   # +entries+.
 
-  def create_entries entries
+  def create_entries(entries)
     out = []
 
     entries.each do |entry, items|
@@ -80,7 +80,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   # Returns an RDoc::Markup::List containing the given +items+ in the
   # ChangeLog
 
-  def create_items items
+  def create_items(items)
     list = RDoc::Markup::List.new :NOTE
 
     items.each do |item|
@@ -100,7 +100,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
   ##
   # Groups +entries+ by date.
 
-  def group_entries entries
+  def group_entries(entries)
     @time_cache ||= {}
     entries.group_by do |title, _|
       begin
@@ -210,8 +210,9 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     grouped_entries = group_entries entries
 
     doc = create_document grouped_entries
-
-    @top_level.comment = doc
+    comment = RDoc::Comment.new(@content)
+    comment.document = doc
+    @top_level.comment = comment
 
     @top_level
   end
@@ -259,7 +260,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     # RDoc::Parser::ChangeLog::Git::LogEntry list for the given
     # +entries+.
 
-    def create_entries entries
+    def create_entries(entries)
       # git log entries have no strictly itemized style like the old
       # style, just assume Markdown.
       entries.map do |commit, entry|
@@ -295,7 +296,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         "label-#{commit}"
       end
 
-      def label context = nil
+      def label(context = nil)
         aref
       end
 
@@ -310,7 +311,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         end + " {#{author}}[mailto:#{email}]"
       end
 
-      def accept visitor
+      def accept(visitor)
         visitor.accept_heading self
         begin
           if visitor.respond_to?(:code_object=)
@@ -327,7 +328,7 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
         end
       end
 
-      def pretty_print q # :nodoc:
+      def pretty_print(q) # :nodoc:
         q.group(2, '[log_entry: ', ']') do
           q.text commit
           q.text ','
