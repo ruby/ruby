@@ -1797,7 +1797,6 @@ pub enum CallType {
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
-    UnknownNewArraySend(String),
     UnhandledCallType(CallType),
 }
 
@@ -1976,11 +1975,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => (BOP_MAX, Insn::ArrayMax { elements, state: exit_id }),
-                        VM_OPT_NEWARRAY_SEND_MIN => return Err(ParseError::UnknownNewArraySend("min".into())),
-                        VM_OPT_NEWARRAY_SEND_HASH => return Err(ParseError::UnknownNewArraySend("hash".into())),
-                        VM_OPT_NEWARRAY_SEND_PACK => return Err(ParseError::UnknownNewArraySend("pack".into())),
-                        VM_OPT_NEWARRAY_SEND_PACK_BUFFER => return Err(ParseError::UnknownNewArraySend("pack_buffer".into())),
-                        _ => return Err(ParseError::UnknownNewArraySend(format!("{method}"))),
+                        _ => {
+                            // Unknown opcode; side-exit into the interpreter
+                            fun.push_insn(block, Insn::SideExit { state: exit_id });
+                            break;  // End the block
+                        },
                     };
                     fun.push_insn(block, Insn::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }));
                     state.stack_push(fun.push_insn(block, insn));
@@ -3228,6 +3227,90 @@ mod tests {
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
               v5:BasicObject = ArrayMax v0, v1
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_newarray_send_min() {
+        eval("
+            def test(a,b)
+              sum = a+b
+              result = [a,b].min
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v6:BasicObject = SendWithoutBlock v0, :+, v1
+              SideExit
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_newarray_send_hash() {
+        eval("
+            def test(a,b)
+              sum = a+b
+              result = [a,b].hash
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v6:BasicObject = SendWithoutBlock v0, :+, v1
+              SideExit
+        "#]]);
+    }
+
+    #[test]
+    fn test_opt_newarray_send_pack() {
+        eval("
+            def test(a,b)
+              sum = a+b
+              result = [a,b].pack 'C'
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v6:BasicObject = SendWithoutBlock v0, :+, v1
+              v7:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v8:StringExact = StringCopy v7
+              SideExit
+        "#]]);
+    }
+
+    // TODO(max): Add a test for VM_OPT_NEWARRAY_SEND_PACK_BUFFER
+
+    #[test]
+    fn test_opt_newarray_send_include_p() {
+        eval("
+            def test(a,b)
+              sum = a+b
+              result = [a,b].include? b
+              puts [1,2,3]
+              result
+            end
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v6:BasicObject = SendWithoutBlock v0, :+, v1
+              SideExit
         "#]]);
     }
 
