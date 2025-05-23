@@ -37,6 +37,9 @@ TestInstanceNetHTTPResponse depending on external resources
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
+# Incompatibility changes with RDoc 6.14.0
+RDocPluginParserTest
+
 ## Unknown failures
 
 # NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
@@ -45,4 +48,3 @@ test_linear_time?(RegexpSingletonTest)
 test_new(RegexpSingletonTest)
 
 ## Failed tests caused by unreleased version of Ruby
-
