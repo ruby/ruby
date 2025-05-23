@@ -2191,6 +2191,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_aset |
                 YARVINSN_opt_length |
                 YARVINSN_opt_size |
+                YARVINSN_opt_aref |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -3477,6 +3478,34 @@ mod tests {
               ArrayPush v3, v5
               ArrayPush v3, v6
               Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_aset() {
+        eval("
+            def test(a, b) = a[b] = 1
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v3:NilClassExact = Const Value(nil)
+              v4:Fixnum[1] = Const Value(1)
+              v6:BasicObject = SendWithoutBlock v0, :[]=, v1, v4
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_aref() {
+        eval("
+            def test(a, b) = a[b]
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:BasicObject = SendWithoutBlock v0, :[], v1
+              Return v4
         "#]]);
     }
 }
