@@ -59,10 +59,10 @@ jobs:
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: C:\vcpkg\installed
-          key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
+          key: ${{ runner.os }}-vcpkg-installed-windows-${{ matrix.vs }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-
-            ${{ runner.os }}-vcpkg-installed-
+            ${{ runner.os }}-vcpkg-installed-windows-${{ matrix.vs }}-
+            ${{ runner.os }}-vcpkg-installed-windows-
       - name: Install libraries with vcpkg
         run: |
           iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
