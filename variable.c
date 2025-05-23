@@ -1542,11 +1542,68 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
     }
 
-    if (!rb_shape_transition_remove_ivar(obj, id, &val)) {
-        if (!rb_shape_obj_too_complex_p(obj)) {
-            rb_evict_fields_to_hash(obj);
-        }
+    shape_id_t old_shape_id = rb_obj_shape_id(obj);
+    if (rb_shape_id_too_complex_p(old_shape_id)) {
+        goto too_complex;
+    }
 
+    shape_id_t removed_shape_id = 0;
+    shape_id_t next_shape_id = rb_shape_transition_remove_ivar(obj, id, &removed_shape_id);
+
+    if (next_shape_id == old_shape_id) {
+        return undef;
+    }
+
+    if (UNLIKELY(rb_shape_id_too_complex_p(next_shape_id))) {
+        rb_evict_fields_to_hash(obj);
+        goto too_complex;
+    }
+
+    RUBY_ASSERT(RSHAPE(next_shape_id)->next_field_index == RSHAPE(old_shape_id)->next_field_index - 1);
+
+    VALUE *fields;
+    switch(BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        fields = RCLASS_PRIME_FIELDS(obj);
+        break;
+      case T_OBJECT:
+        fields = ROBJECT_FIELDS(obj);
+        break;
+      default: {
+        struct gen_fields_tbl *fields_tbl;
+        rb_gen_fields_tbl_get(obj, id, &fields_tbl);
+        fields = fields_tbl->as.shape.fields;
+        break;
+      }
+    }
+
+    RUBY_ASSERT(removed_shape_id != INVALID_SHAPE_ID);
+
+    attr_index_t new_fields_count = RSHAPE(next_shape_id)->next_field_index;
+
+    attr_index_t removed_index = RSHAPE(removed_shape_id)->next_field_index - 1;
+    val = fields[removed_index];
+    size_t trailing_fields = new_fields_count - removed_index;
+
+    MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
+
+    if (RB_TYPE_P(obj, T_OBJECT) &&
+        !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
+        rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
+        // Re-embed objects when instances become small enough
+        // This is necessary because YJIT assumes that objects with the same shape
+        // have the same embeddedness for efficiency (avoid extra checks)
+        RB_FL_SET_RAW(obj, ROBJECT_EMBED);
+        MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
+        xfree(fields);
+    }
+    rb_shape_set_shape_id(obj, next_shape_id);
+
+    return val;
+
+too_complex:
+    {
         st_table *table = NULL;
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
@@ -1573,7 +1630,6 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             }
         }
     }
-
     return val;
 }
 

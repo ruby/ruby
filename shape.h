@@ -168,7 +168,7 @@ bool rb_shape_id_too_complex_p(shape_id_t shape_id);
 void rb_shape_set_shape(VALUE obj, rb_shape_t *shape);
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
-bool rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed);
+shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);

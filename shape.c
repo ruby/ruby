@@ -632,62 +632,21 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
     }
 }
 
-bool
-rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed)
+shape_id_t
+rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id)
 {
-    rb_shape_t *shape = rb_obj_shape(obj);
+    shape_id_t shape_id = rb_obj_shape_id(obj);
+    rb_shape_t *shape = RSHAPE(shape_id);
 
-    if (UNLIKELY(rb_shape_too_complex_p(shape))) {
-        return false;
-    }
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape));
 
     rb_shape_t *removed_shape = NULL;
     rb_shape_t *new_shape = remove_shape_recursive(shape, id, &removed_shape);
     if (new_shape) {
-        RUBY_ASSERT(removed_shape != NULL);
-
-        if (UNLIKELY(rb_shape_too_complex_p(new_shape))) {
-            return false;
-        }
-
-        RUBY_ASSERT(new_shape->next_field_index == shape->next_field_index - 1);
-
-        VALUE *fields;
-        switch(BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            fields = RCLASS_PRIME_FIELDS(obj);
-            break;
-          case T_OBJECT:
-            fields = ROBJECT_FIELDS(obj);
-            break;
-          default: {
-            struct gen_fields_tbl *fields_tbl;
-            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
-            fields = fields_tbl->as.shape.fields;
-            break;
-          }
-        }
-
-        *removed = fields[removed_shape->next_field_index - 1];
-
-        memmove(&fields[removed_shape->next_field_index - 1], &fields[removed_shape->next_field_index],
-                ((new_shape->next_field_index + 1) - removed_shape->next_field_index) * sizeof(VALUE));
-
-        // Re-embed objects when instances become small enough
-        // This is necessary because YJIT assumes that objects with the same shape
-        // have the same embeddedness for efficiency (avoid extra checks)
-        if (BUILTIN_TYPE(obj) == T_OBJECT &&
-                !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
-                rb_obj_embedded_size(new_shape->next_field_index) <= rb_gc_obj_slot_size(obj)) {
-            RB_FL_SET_RAW(obj, ROBJECT_EMBED);
-            memcpy(ROBJECT_FIELDS(obj), fields, new_shape->next_field_index * sizeof(VALUE));
-            xfree(fields);
-        }
-
-        rb_shape_set_shape(obj, new_shape);
+        *removed_shape_id = rb_shape_id(removed_shape);
+        return rb_shape_id(new_shape);
     }
-    return true;
+    return shape_id;
 }
 
 shape_id_t
