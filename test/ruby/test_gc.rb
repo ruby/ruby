@@ -703,7 +703,9 @@ class TestGc < Test::Unit::TestCase
         allocate_large_object
       end
 
-      assert_operator(GC.stat(:heap_available_slots), :<, COUNT * 2)
+      heap_available_slots = GC.stat(:heap_available_slots)
+
+      assert_operator(heap_available_slots, :<, COUNT * 2, "GC.stat: #{GC.stat}\nGC.stat_heap: #{GC.stat_heap}")
     RUBY
   end
 
