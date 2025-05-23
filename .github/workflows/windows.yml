@@ -58,13 +58,6 @@ jobs:
         if: ${{ steps.setup-msys2.outcome == 'success' }}
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
-          path: C:\vcpkg\downloads
-          key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
-            ${{ runner.os }}-vcpkg-download-
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-        with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ matrix.os }}-${{ github.sha }}
           restore-keys: |
