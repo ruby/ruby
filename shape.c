@@ -884,7 +884,7 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    if (RB_TYPE_P(obj, T_OBJECT) && FL_TEST_RAW(obj, ROBJECT_HIDDEN)) { // HACK
+    if (IMEMO_TYPE_P(obj, imemo_class_fields)) { // HACK
         klass = CLASS_OF(obj);
     }
     else {

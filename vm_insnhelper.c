@@ -1213,9 +1213,10 @@ ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const s
 static inline VALUE
 vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, VALUE default_value)
 {
+    VALUE fields_obj;
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
-    VALUE * ivar_list;
+    VALUE *ivar_list;
 
     if (SPECIAL_CONST_P(obj)) {
         return default_value;
@@ -1247,9 +1248,12 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
-            ivar_list = fields_obj ? ROBJECT_FIELDS(fields_obj) : NULL;
-            shape_id = fields_obj ? RBASIC_SHAPE_ID(fields_obj) : ROOT_SHAPE_ID;
+            fields_obj = RCLASS_FIELDS_OBJ(obj);
+            if (!fields_obj) {
+                return default_value;
+            }
+            ivar_list = rb_imemo_class_fields_ptr(fields_obj);
+            shape_id = rb_obj_shape_id(fields_obj);
 
             break;
         }
@@ -1321,7 +1325,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
               case T_MODULE:
-                table = ROBJECT_FIELDS_HASH(RCLASS_FIELDS_OBJ(obj));
+                table = rb_imemo_class_fields_complex_tbl(fields_obj);
                 break;
 
               case T_OBJECT:
@@ -1377,6 +1381,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         RUBY_ASSERT(!UNDEF_P(val));
     }
 
+    RB_GC_GUARD(fields_obj);
     return val;
 
 general_path:

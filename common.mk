@@ -4135,7 +4135,6 @@ debug.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/gc.h
 debug.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 debug.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-debug.$(OBJEXT): $(top_srcdir)/internal/object.h
 debug.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 debug.$(OBJEXT): $(top_srcdir)/internal/serial.h
 debug.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -6451,7 +6450,6 @@ enumerator.$(OBJEXT): $(top_srcdir)/internal/hash.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/numeric.h
-enumerator.$(OBJEXT): $(top_srcdir)/internal/object.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/range.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/rational.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
@@ -8126,10 +8124,10 @@ imemo.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/gc.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-imemo.$(OBJEXT): $(top_srcdir)/internal/object.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/serial.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/set_table.h
+imemo.$(OBJEXT): $(top_srcdir)/internal/st.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/variable.h
 imemo.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -8952,7 +8950,6 @@ iseq.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/io.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/numeric.h
-iseq.$(OBJEXT): $(top_srcdir)/internal/object.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/parse.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/rational.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
@@ -9201,7 +9198,6 @@ jit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 jit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 jit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-jit.$(OBJEXT): $(top_srcdir)/internal/object.h
 jit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 jit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 jit.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -11059,7 +11055,6 @@ namespace.$(OBJEXT): $(top_srcdir)/internal/hash.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/load.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-namespace.$(OBJEXT): $(top_srcdir)/internal/object.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 namespace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -11479,7 +11474,6 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/numeric.h
-node_dump.$(OBJEXT): $(top_srcdir)/internal/object.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/parse.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/rational.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
@@ -20389,7 +20383,6 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/error.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -21068,7 +21061,6 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/namespace.h
-vm_trace.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -21516,7 +21508,6 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/hash.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/namespace.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
-yjit.$(OBJEXT): $(top_srcdir)/internal/object.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/set_table.h

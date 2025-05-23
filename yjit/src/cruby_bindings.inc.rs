@@ -306,7 +306,6 @@ pub type ruby_rarray_consts = u32;
 pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
-pub const ROBJECT_HIDDEN: ruby_robject_flags = 16384;
 pub type ruby_robject_flags = u32;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
@@ -410,6 +409,7 @@ pub const imemo_parser_strterm: imemo_type = 10;
 pub const imemo_callinfo: imemo_type = 11;
 pub const imemo_callcache: imemo_type = 12;
 pub const imemo_constcache: imemo_type = 13;
+pub const imemo_class_fields: imemo_type = 14;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

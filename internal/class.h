@@ -10,7 +10,6 @@
  */
 #include "id.h"
 #include "id_table.h"           /* for struct rb_id_table */
-#include "internal/object.h"    /* for rb_class_allocate_instance */
 #include "internal/namespace.h" /* for rb_current_namespace */
 #include "internal/serial.h"    /* for rb_serial_t */
 #include "internal/static_assert.h"
@@ -257,9 +256,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 
 static inline void RCLASS_SET_SUPER(VALUE klass, VALUE super);
 static inline void RCLASS_WRITE_SUPER(VALUE klass, VALUE super);
-static inline st_table * RCLASS_WRITABLE_FIELDS_HASH(VALUE obj);
-static inline void RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *table);
-static inline void RCLASS_WRITE_FIELDS_HASH(VALUE obj, const st_table *table);
 // TODO: rename RCLASS_SET_M_TBL_WORKAROUND (and _WRITE_) to RCLASS_SET_M_TBL with write barrier
 static inline void RCLASS_SET_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
 static inline void RCLASS_WRITE_M_TBL_WORKAROUND(VALUE klass, struct rb_id_table *table, bool check_promoted);
@@ -536,20 +532,12 @@ RCLASS_FIELDS_OBJ(VALUE obj)
 }
 
 static inline VALUE
-rb_allocate_fields_obj(VALUE klass)
-{
-    VALUE fields_obj = rb_class_allocate_instance(rb_singleton_class(klass));
-    FL_SET_RAW(fields_obj, ROBJECT_HIDDEN); // HACK
-    return fields_obj;
-}
-
-static inline VALUE
 RCLASS_ENSURE_FIELDS_OBJ(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_READABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_allocate_fields_obj(obj));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_class_fields_new(obj, 1));
     }
     return ext->fields_obj;
 }
@@ -562,34 +550,18 @@ RCLASS_WRITABLE_FIELDS_OBJ(VALUE obj)
 }
 
 static inline void
-RCLASSEXT_SET_FIELDS_HASH(VALUE obj, rb_classext_t *ext, const st_table *tbl)
+RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
-
-    if (!ext->fields_obj) {
-        // FIXME: We can trigger GC here and `*tbl` may not be marked
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_allocate_fields_obj(obj));
-    }
-    ROBJECT_SET_FIELDS_HASH(ext->fields_obj, tbl);
+    RB_OBJ_WRITE(obj, &ext->fields_obj, fields_obj);
 }
 
 static inline void
-RCLASS_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
+RCLASS_SET_FIELDS_OBJ(VALUE obj, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
 
-    RCLASSEXT_SET_FIELDS_HASH(obj, RCLASS_EXT_PRIME(obj), tbl);
-}
-
-static inline void
-RCLASS_WRITE_FIELDS_HASH(VALUE obj, const st_table *tbl)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
-
-    RCLASSEXT_SET_FIELDS_HASH(obj, RCLASS_EXT_WRITABLE(obj), tbl);
+    RCLASSEXT_SET_FIELDS_OBJ(obj, RCLASS_EXT_PRIME(obj), fields_obj);
 }
 
 #define RCLASS_SET_M_TBL_EVEN_WHEN_PROMOTED(klass, table) RCLASS_SET_M_TBL_WORKAROUND(klass, table, false)
