@@ -326,12 +326,21 @@ pub enum Insn {
     StringCopy { val: InsnId },
     StringIntern { val: InsnId },
 
+    /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise.
+    ToArray { val: InsnId, state: InsnId },
+    /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise. If we
+    /// called `to_a`, duplicate the returned array.
+    ToNewArray { val: InsnId, state: InsnId },
     NewArray { elements: Vec<InsnId>, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
+    /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
+    ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
+    /// Push `val` onto `array`, where `array` is already `Array`.
+    ArrayPush { array: InsnId, val: InsnId, state: InsnId },
 
     HashDup { val: InsnId, state: InsnId },
 
@@ -401,7 +410,8 @@ impl Insn {
         match self {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
-            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } => false,
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
+            | Insn::ArrayPush { .. } => false,
             _ => true,
         }
     }
@@ -546,6 +556,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
+            Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
+            Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
+            Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
+            Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -897,6 +911,10 @@ impl Function {
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
+            &ToArray { val, state } => ToArray { val: find!(val), state },
+            &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
+            &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
+            &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
         }
     }
 
@@ -922,7 +940,8 @@ impl Function {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
-            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } =>
+            | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
+            | Insn::ArrayPush { .. } =>
                 panic!("Cannot infer type of instruction with no output"),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -967,6 +986,8 @@ impl Function {
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::ToNewArray { .. } => types::ArrayExact,
+            Insn::ToArray { .. } => types::ArrayExact,
         }
     }
 
@@ -1431,7 +1452,9 @@ impl Function {
                 | Insn::Test { val } =>
                     worklist.push_back(val),
                 Insn::GuardType { val, state, .. }
-                | Insn::GuardBitEquals { val, state, .. } => {
+                | Insn::GuardBitEquals { val, state, .. }
+                | Insn::ToArray { val, state }
+                | Insn::ToNewArray { val, state } => {
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
@@ -1448,6 +1471,7 @@ impl Function {
                 | Insn::FixnumMult { left, right, state }
                 | Insn::FixnumDiv { left, right, state }
                 | Insn::FixnumMod { left, right, state }
+                | Insn::ArrayExtend { left, right, state }
                 => {
                     worklist.push_back(left);
                     worklist.push_back(right);
@@ -1486,6 +1510,11 @@ impl Function {
                 }
                 Insn::SetIvar { self_val, val, state, .. } => {
                     worklist.push_back(self_val);
+                    worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::ArrayPush { array, val, state } => {
+                    worklist.push_back(array);
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
@@ -1975,6 +2004,39 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::HashDup { val, state: exit_id });
                     state.stack_push(insn_id);
+                }
+                YARVINSN_splatarray => {
+                    let flag = get_arg(pc, 0);
+                    let result_must_be_mutable = flag.test();
+                    let val = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let obj = if result_must_be_mutable {
+                        fun.push_insn(block, Insn::ToNewArray { val, state: exit_id })
+                    } else {
+                        fun.push_insn(block, Insn::ToArray { val, state: exit_id })
+                    };
+                    state.stack_push(obj);
+                }
+                YARVINSN_concattoarray => {
+                    let right = state.stack_pop()?;
+                    let left = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let right_array = fun.push_insn(block, Insn::ToArray { val: right, state: exit_id });
+                    fun.push_insn(block, Insn::ArrayExtend { left, right: right_array, state: exit_id });
+                    state.stack_push(left);
+                }
+                YARVINSN_pushtoarray => {
+                    let count = get_arg(pc, 0).as_usize();
+                    let mut vals = vec![];
+                    for _ in 0..count {
+                        vals.push(state.stack_pop()?);
+                    }
+                    let array = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    for val in vals.into_iter().rev() {
+                        fun.push_insn(block, Insn::ArrayPush { array, val, state: exit_id });
+                    }
+                    state.stack_push(array);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }));
@@ -3006,7 +3068,7 @@ mod tests {
         eval("
             def test(a) = foo(*a)
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("splatarray".into()))
+        assert_compile_fails("test", ParseError::UnhandledCallType(CallType::Splat))
     }
 
     #[test]
@@ -3074,7 +3136,7 @@ mod tests {
         eval("
             def test(*) = foo *, 1
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("splatarray".into()))
+        assert_compile_fails("test", ParseError::UnhandledCallType(CallType::SplatMut))
     }
 
     #[test]
@@ -3190,6 +3252,69 @@ mod tests {
               v3:BasicObject = PutSelf
               SetIvar v3, :@foo, v1
               Return v1
+        "#]]);
+    }
+
+    #[test]
+    fn test_splatarray_mut() {
+        eval("
+            def test(a) = [*a]
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = ToNewArray v0
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_concattoarray() {
+        eval("
+            def test(a) = [1, *a]
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              v4:ArrayExact = NewArray v2
+              v6:ArrayExact = ToArray v0
+              ArrayExtend v4, v6
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_pushtoarray_one_element() {
+        eval("
+            def test(a) = [*a, 1]
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = ToNewArray v0
+              v4:Fixnum[1] = Const Value(1)
+              ArrayPush v3, v4
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_pushtoarray_multiple_elements() {
+        eval("
+            def test(a) = [*a, 1, 2, 3]
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:ArrayExact = ToNewArray v0
+              v4:Fixnum[1] = Const Value(1)
+              v5:Fixnum[2] = Const Value(2)
+              v6:Fixnum[3] = Const Value(3)
+              ArrayPush v3, v4
+              ArrayPush v3, v5
+              ArrayPush v3, v6
+              Return v3
         "#]]);
     }
 }
