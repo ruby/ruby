@@ -534,6 +534,7 @@ RBIMPL_ATTR_MAYBE_UNUSED()
 static bool
 ractor_sched_timeslice_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
 {
+    ASSERT_ractor_sched_locked(vm, NULL);
     rb_thread_t *rth;
     ccan_list_for_each(&vm->ractor.sched.timeslice_threads, rth, sched.node.timeslice_threads) {
         if (rth == th) return true;
@@ -754,7 +755,16 @@ thread_sched_enq(struct rb_thread_sched *sched, rb_thread_t *ready_th)
         }
     }
     else {
-        VM_ASSERT(!ractor_sched_timeslice_threads_contain_p(ready_th->vm, sched->running));
+#if VM_CHECK_MODE > 0
+        rb_ractor_t *r = ready_th->ractor;
+        rb_vm_t *vm = ready_th->vm;
+        VM_ASSERT(vm->ractor.sched.lock_owner != r);
+        ractor_sched_lock(vm, r);
+        {
+            VM_ASSERT(!ractor_sched_timeslice_threads_contain_p(vm, sched->running));
+        }
+        ractor_sched_unlock(vm, r);
+#endif
     }
 
     ccan_list_add_tail(&sched->readyq, &ready_th->sched.node.readyq);
