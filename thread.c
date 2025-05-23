@@ -1889,8 +1889,8 @@ rb_thread_mn_schedulable(VALUE thval)
 VALUE
 rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void *data1, int events)
 {
-    rb_execution_context_t * ec = GET_EC();
-    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    rb_execution_context_t * volatile ec = GET_EC();
+    rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), io->fd, events);
 

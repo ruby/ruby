@@ -2002,9 +2002,9 @@ rb_current_execution_context(bool expect_ec)
 {
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   #if defined(__arm64__) || defined(__aarch64__)
-    rb_execution_context_t *ec = rb_current_ec();
+    rb_execution_context_t * volatile ec = rb_current_ec();
   #else
-    rb_execution_context_t *ec = ruby_current_ec;
+    rb_execution_context_t * volatile ec = ruby_current_ec;
   #endif
 
     /* On the shared objects, `__tls_get_addr()` is used to access the TLS
@@ -2021,7 +2021,7 @@ rb_current_execution_context(bool expect_ec)
      */
     VM_ASSERT(ec == rb_current_ec_noinline());
 #else
-    rb_execution_context_t *ec = native_tls_get(ruby_current_ec_key);
+    rb_execution_context_t * volatile ec = native_tls_get(ruby_current_ec_key);
 #endif
     VM_ASSERT(!expect_ec || ec != NULL);
     return ec;
