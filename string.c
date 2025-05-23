@@ -682,10 +682,8 @@ fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VA
 
 // Rebuilds the table
 static void
-fstring_try_resize(VALUE old_table_obj)
+fstring_try_resize_without_locking(VALUE old_table_obj)
 {
-    RB_VM_LOCK_ENTER();
-
     // Check if another thread has already resized
     if (RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj) != old_table_obj) {
         goto end;
@@ -737,7 +735,14 @@ fstring_try_resize(VALUE old_table_obj)
 
 end:
     RB_GC_GUARD(old_table_obj);
-    RB_VM_LOCK_LEAVE();
+}
+
+static void
+fstring_try_resize(VALUE old_table_obj)
+{
+    RB_VM_LOCKING() {
+        fstring_try_resize_without_locking(old_table_obj);
+    }
 }
 
 static VALUE
@@ -749,7 +754,7 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
     VALUE table_obj;
     struct fstring_table_struct *table;
 
-    retry:
+  retry:
     table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
     RUBY_ASSERT(table_obj);
     table = RTYPEDDATA_GET_DATA(table_obj);
@@ -798,8 +803,7 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
         }
         else if (candidate == FSTRING_TABLE_MOVED) {
             // Wait
-            RB_VM_LOCK_ENTER();
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCKING();
 
             goto retry;
         }
@@ -13271,3 +13275,4 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+

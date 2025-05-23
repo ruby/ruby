@@ -630,8 +630,7 @@ thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *c
 #endif
         thread_sched_unlock(sched, lock_owner);
         {
-            RB_VM_LOCK_ENTER();
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCKING();
         }
         thread_sched_lock(sched, lock_owner);
     }
@@ -2283,11 +2282,9 @@ rb_threadptr_remove(rb_thread_t *th)
         rb_vm_t *vm = th->vm;
         th->sched.finished = false;
 
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             ccan_list_add(&vm->ractor.sched.zombie_threads, &th->sched.node.zombie_threads);
         }
-        RB_VM_LOCK_LEAVE();
     }
 #endif
 }

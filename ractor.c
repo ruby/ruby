@@ -2320,12 +2320,10 @@ rb_ractor_teardown(rb_execution_context_t *ec)
     ractor_close_outgoing(ec, cr);
 
     // sync with rb_ractor_terminate_interrupt_main_thread()
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         VM_ASSERT(cr->threads.main != NULL);
         cr->threads.main = NULL;
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 void
@@ -2458,11 +2456,9 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
         // change ractor status: running -> blocking
         rb_vm_t *vm = GET_VM();
 
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
         }
-        RB_VM_LOCK_LEAVE();
     }
 }
 
@@ -2514,11 +2510,9 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
     if (cr->threads.cnt == cr->threads.blocking_cnt) {
         rb_vm_t *vm = GET_VM();
 
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
         }
-        RB_VM_LOCK_LEAVE();
     }
 
     cr->threads.blocking_cnt--;
@@ -3067,11 +3061,9 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
                 .stop = false,
                 .data = data,
             };
-            RB_VM_LOCK_ENTER_NO_BARRIER();
-            {
+            RB_VM_LOCKING_NO_BARRIER() {
                 rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
             }
-            RB_VM_LOCK_LEAVE_NO_BARRIER();
             if (d.stop) return 1;
         }
         break;
@@ -3406,11 +3398,9 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCK_ENTER_NO_BARRIER();
-    {
+    RB_VM_LOCKING_NO_BARRIER() {
         rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
     }
-    RB_VM_LOCK_LEAVE_NO_BARRIER();
     return cnt == 0;
 }
 
@@ -3840,15 +3830,13 @@ rb_ractor_local_storage_value_newkey(void)
 void
 rb_ractor_local_storage_delkey(rb_ractor_local_key_t key)
 {
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         if (freed_ractor_local_keys.cnt == freed_ractor_local_keys.capa) {
             freed_ractor_local_keys.capa = freed_ractor_local_keys.capa ? freed_ractor_local_keys.capa * 2 : 4;
             REALLOC_N(freed_ractor_local_keys.keys, rb_ractor_local_key_t, freed_ractor_local_keys.capa);
         }
         freed_ractor_local_keys.keys[freed_ractor_local_keys.cnt++] = key;
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 static bool

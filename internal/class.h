@@ -412,8 +412,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
         rb_evict_ivars_to_hash(obj); // fallback to ivptr for ivars from shapes
     }
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
         if (!ext) {
@@ -424,7 +423,6 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
             }
         }
     }
-    RB_VM_LOCK_LEAVE();
     return ext;
 }
 
@@ -572,11 +570,9 @@ RCLASS_FIELDS_COUNT(VALUE obj)
 
         // "Too complex" classes could have their IV hash mutated in
         // parallel, so lets lock around getting the hash size.
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             count = (uint32_t)rb_st_table_size(RCLASS_FIELDS_HASH(obj));
         }
-        RB_VM_LOCK_LEAVE();
 
         return count;
     }

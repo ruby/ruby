@@ -2280,11 +2280,9 @@ classext_fields_hash_memsize(rb_classext_t *ext, bool prime, VALUE namespace, vo
 {
     size_t *size = (size_t *)arg;
     size_t count;
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         count = rb_st_table_size((st_table *)RCLASSEXT_FIELDS(ext));
     }
-    RB_VM_LOCK_LEAVE();
     // class IV sizes are allocated as powers of two
     *size += SIZEOF_VALUE << bit_length(count);
 }
@@ -4570,8 +4568,7 @@ ruby_gc_set_params(void)
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
         if (!RB_SPECIAL_CONST_P(obj)) {
@@ -4587,7 +4584,6 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
             vm->gc.mark_func_data = prev_mfd;
         }
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 struct root_objects_data {

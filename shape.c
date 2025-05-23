@@ -517,8 +517,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
         }
     }
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         // The situation may have changed while we waited for the lock.
         // So we load the edge again.
         edges = RUBY_ATOMIC_PTR_LOAD(shape->edges);
@@ -577,7 +576,6 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             }
         }
     }
-    RB_VM_LOCK_LEAVE();
 
     return res;
 }

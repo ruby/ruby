@@ -5170,8 +5170,7 @@ extern char **environ;
 #define ENVNMATCH(s1, s2, n) (memcmp((s1), (s2), (n)) == 0)
 #endif
 
-#define ENV_LOCK()   RB_VM_LOCK_ENTER()
-#define ENV_UNLOCK() RB_VM_LOCK_LEAVE()
+#define ENV_LOCKING() RB_VM_LOCKING()
 
 static inline rb_encoding *
 env_encoding(void)
@@ -5209,12 +5208,10 @@ static VALUE
 getenv_with_lock(const char *name)
 {
     VALUE ret;
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         const char *val = getenv(name);
         ret = env_str_new2(val);
     }
-    ENV_UNLOCK();
     return ret;
 }
 
@@ -5223,11 +5220,9 @@ has_env_with_lock(const char *name)
 {
     const char *val;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         val = getenv(name);
     }
-    ENV_UNLOCK();
 
     return val ? true : false;
 }
@@ -5477,13 +5472,11 @@ ruby_setenv(const char *name, const char *value)
         *wvalue = L'\0';
     }
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         /* Use _wputenv_s() instead of SetEnvironmentVariableW() to make sure
          * special variables like "TZ" are interpret by libc. */
         failed = _wputenv_s(wname, wvalue);
     }
-    ENV_UNLOCK();
 
     ALLOCV_END(buf);
     /* even if putenv() failed, clean up and try to delete the
@@ -5500,28 +5493,22 @@ ruby_setenv(const char *name, const char *value)
 #elif defined(HAVE_SETENV) && defined(HAVE_UNSETENV)
     if (value) {
         int ret;
-        ENV_LOCK();
-        {
+        ENV_LOCKING() {
             ret = setenv(name, value, 1);
         }
-        ENV_UNLOCK();
 
         if (ret) rb_sys_fail_sprintf("setenv(%s)", name);
     }
     else {
 #ifdef VOID_UNSETENV
-        ENV_LOCK();
-        {
+        ENV_LOCKING() {
             unsetenv(name);
         }
-        ENV_UNLOCK();
 #else
         int ret;
-        ENV_LOCK();
-        {
+        ENV_LOCKING() {
             ret = unsetenv(name);
         }
-        ENV_UNLOCK();
 
         if (ret) rb_sys_fail_sprintf("unsetenv(%s)", name);
 #endif
@@ -5544,8 +5531,7 @@ ruby_setenv(const char *name, const char *value)
         snprintf(mem_ptr, mem_size, "%s=%s", name, value);
     }
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
             if (!strncmp(str, name, len) && str[len] == '=') {
                 if (!in_origenv(str)) free(str);
@@ -5554,15 +5540,12 @@ ruby_setenv(const char *name, const char *value)
             }
         }
     }
-    ENV_UNLOCK();
 
     if (value) {
         int ret;
-        ENV_LOCK();
-        {
+        ENV_LOCKING() {
             ret = putenv(mem_ptr);
         }
-        ENV_UNLOCK();
 
         if (ret) {
             free(mem_ptr);
@@ -5573,8 +5556,7 @@ ruby_setenv(const char *name, const char *value)
     size_t len;
     int i;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         i = envix(name);		/* where does it go? */
 
         if (environ == origenviron) {	/* need we copy environment? */
@@ -5615,7 +5597,6 @@ ruby_setenv(const char *name, const char *value)
 
       finish:;
     }
-    ENV_UNLOCK();
 #endif /* WIN32 */
 }
 
@@ -5700,8 +5681,7 @@ env_keys(int raw)
     rb_encoding *enc = raw ? 0 : rb_locale_encoding();
     VALUE ary = rb_ary_new();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
@@ -5715,7 +5695,6 @@ env_keys(int raw)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return ary;
 }
@@ -5745,8 +5724,7 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
     char **env;
     long cnt = 0;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         env = GET_ENVIRON(environ);
         for (; *env ; ++env) {
             if (strchr(*env, '=')) {
@@ -5755,7 +5733,6 @@ rb_env_size(VALUE ehash, VALUE args, VALUE eobj)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return LONG2FIX(cnt);
 }
@@ -5796,8 +5773,7 @@ env_values(void)
 {
     VALUE ary = rb_ary_new();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
@@ -5809,7 +5785,6 @@ env_values(void)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return ary;
 }
@@ -5890,8 +5865,7 @@ env_each_pair(VALUE ehash)
 
     VALUE ary = rb_ary_new();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
@@ -5904,7 +5878,6 @@ env_each_pair(VALUE ehash)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     if (rb_block_pair_yield_optimizable()) {
         for (i=0; i<RARRAY_LEN(ary); i+=2) {
@@ -6244,8 +6217,7 @@ env_inspect(VALUE _)
     VALUE str = rb_str_buf_new2("{");
     rb_encoding *enc = env_encoding();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             const char *s = strchr(*env, '=');
@@ -6263,7 +6235,6 @@ env_inspect(VALUE _)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     rb_str_buf_cat2(str, "}");
 
@@ -6284,8 +6255,7 @@ env_to_a(VALUE _)
 {
     VALUE ary = rb_ary_new();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
@@ -6297,7 +6267,6 @@ env_to_a(VALUE _)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return ary;
 }
@@ -6321,13 +6290,11 @@ env_size_with_lock(void)
 {
     int i = 0;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (env[i]) i++;
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return i;
 }
@@ -6363,15 +6330,13 @@ env_empty_p(VALUE _)
 {
     bool empty = true;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (env[0] != 0) {
             empty = false;
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return RBOOL(empty);
 }
@@ -6460,8 +6425,7 @@ env_has_value(VALUE dmy, VALUE obj)
 
     VALUE ret = Qfalse;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
@@ -6476,7 +6440,6 @@ env_has_value(VALUE dmy, VALUE obj)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return ret;
 }
@@ -6503,8 +6466,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 
     VALUE result = Qnil;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
 
         while (*env) {
@@ -6521,7 +6483,6 @@ env_rassoc(VALUE dmy, VALUE obj)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return result;
 }
@@ -6548,8 +6509,7 @@ env_key(VALUE dmy, VALUE value)
     StringValue(value);
     VALUE str = Qnil;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
@@ -6564,7 +6524,6 @@ env_key(VALUE dmy, VALUE value)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return str;
 }
@@ -6574,8 +6533,7 @@ env_to_hash(void)
 {
     VALUE hash = rb_hash_new();
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         while (*env) {
             char *s = strchr(*env, '=');
@@ -6587,7 +6545,6 @@ env_to_hash(void)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     return hash;
 }
@@ -6727,8 +6684,7 @@ env_shift(VALUE _)
     VALUE result = Qnil;
     VALUE key = Qnil;
 
-    ENV_LOCK();
-    {
+    ENV_LOCKING() {
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
@@ -6741,7 +6697,6 @@ env_shift(VALUE _)
         }
         FREE_ENVIRON(environ);
     }
-    ENV_UNLOCK();
 
     if (!NIL_P(key)) {
         env_delete(key);

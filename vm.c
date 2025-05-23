@@ -4491,8 +4491,7 @@ rb_vm_register_global_object(VALUE obj)
       default:
         break;
     }
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         VALUE list = GET_VM()->mark_object_ary;
         VALUE head = pin_array_list_append(list, obj);
         if (head != list) {
@@ -4500,7 +4499,6 @@ rb_vm_register_global_object(VALUE obj)
         }
         RB_GC_GUARD(obj);
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 void

@@ -2569,8 +2569,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         terminate_interrupt = interrupt & TERMINATE_INTERRUPT_MASK; // request from other ractors
 
         if (interrupt & VM_BARRIER_INTERRUPT_MASK) {
-            RB_VM_LOCK_ENTER();
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCKING();
         }
 
         if (postponed_job_interrupt) {
@@ -6236,3 +6235,4 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
 
     // TODO MEMO: we can create a new thread in a ractor, but not sure how to do that now.
 }
+

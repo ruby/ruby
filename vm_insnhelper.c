@@ -2187,8 +2187,7 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         cc = vm_search_cc(klass, ci);
 
         VM_ASSERT(cc);
@@ -2198,7 +2197,6 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
         VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
         VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
     }
-    RB_VM_LOCK_LEAVE();
 
     return cc;
 }
@@ -6388,15 +6386,13 @@ vm_track_constant_cache(ID id, void *ic)
 static void
 vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 {
-    RB_VM_LOCK_ENTER();
-
-    for (int i = 0; segments[i]; i++) {
-        ID id = segments[i];
-        if (id == idNULL) continue;
-        vm_track_constant_cache(id, ic);
+    RB_VM_LOCKING() {
+        for (int i = 0; segments[i]; i++) {
+            ID id = segments[i];
+            if (id == idNULL) continue;
+            vm_track_constant_cache(id, ic);
+        }
     }
-
-    RB_VM_LOCK_LEAVE();
 }
 
 // For JIT inlining
@@ -7464,3 +7460,4 @@ rb_vm_lvar_exposed(rb_execution_context_t *ec, int index)
     const rb_control_frame_t *cfp = ec->cfp;
     return cfp->ep[index];
 }
+

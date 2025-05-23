@@ -446,8 +446,7 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
     entry = ZALLOC(rb_subclass_entry_t);
     entry->klass = klass;
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         anchor = RCLASS_WRITABLE_SUBCLASSES(super);
         VM_ASSERT(anchor);
         ns_subclasses = (rb_ns_subclasses_t *)anchor->ns_subclasses;
@@ -464,7 +463,6 @@ push_subclass_entry_to_list(VALUE super, VALUE klass, bool is_module)
         entry->prev = head;
         st_insert(tbl, namespace_subclasses_tbl_key(ns), (st_data_t)entry);
     }
-    RB_VM_LOCK_LEAVE();
 
     if (is_module) {
         RCLASS_WRITE_NS_MODULE_SUBCLASSES(klass, anchor->ns_subclasses);

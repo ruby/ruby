@@ -389,11 +389,9 @@ static long
 namespace_generate_id(void)
 {
     long id;
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         id = ++namespace_id_counter;
     }
-    RB_VM_LOCK_LEAVE();
     return id;
 }
 
