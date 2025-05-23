@@ -4367,6 +4367,40 @@ mod opt_tests {
     }
 
     #[test]
+    fn eliminate_array_length() {
+        eval("
+            def test
+              x = [].length
+              5
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn eliminate_array_size() {
+        eval("
+            def test
+              x = [].length
+              5
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
+              v6:Fixnum[5] = Const Value(5)
+              Return v6
+        "#]]);
+    }
+
+    #[test]
     fn kernel_itself_argc_mismatch() {
         eval("
             def test = 1.itself(0)
@@ -4563,8 +4597,9 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = SendWithoutBlock v4, :length
-              Return v6
+              PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
+              v9:Fixnum = CCall length@0x1010, v4
+              Return v9
         "#]]);
     }
 
@@ -4577,8 +4612,9 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
-              v6:BasicObject = SendWithoutBlock v4, :size
-              Return v6
+              PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
+              v9:Fixnum = CCall size@0x1010, v4
+              Return v9
         "#]]);
     }
 
