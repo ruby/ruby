@@ -404,7 +404,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
         if (!mask) {
             // Nothing to escape, ensure search_flush doesn't do anything by setting 
             // search->cursor to search->ptr.
-            search->buffer->len += remaining;
+            fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;
             search->cursor = search->end;
             return 0;
@@ -511,7 +511,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
         if (needs_escape_mask == 0) {
             // Nothing to escape, ensure search_flush doesn't do anything by setting 
             // search->cursor to search->ptr.
-            search->buffer->len += remaining;
+            fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;
             search->cursor = search->end;
             return 0;
@@ -1415,7 +1415,7 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     /* fpconv_dtoa converts a float to its shortest string representation,
      * but it adds a ".0" if this is a plain integer.
      */
-    buffer->len += len;
+    fbuffer_consumed(buffer, len);
 }
 
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, VALUE obj)

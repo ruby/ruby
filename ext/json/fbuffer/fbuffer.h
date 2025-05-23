@@ -36,6 +36,12 @@ typedef unsigned char _Bool;
 # define MAYBE_UNUSED(x) x
 #endif
 
+#ifdef RUBY_DEBUG
+#ifndef JSON_DEBUG
+#define JSON_DEBUG RUBY_DEBUG
+#endif
+#endif
+
 enum fbuffer_type {
     FBUFFER_HEAP_ALLOCATED = 0,
     FBUFFER_STACK_ALLOCATED = 1,
@@ -46,6 +52,9 @@ typedef struct FBufferStruct {
     unsigned long initial_length;
     unsigned long len;
     unsigned long capa;
+#ifdef JSON_DEBUG
+    unsigned long requested;
+#endif
     char *ptr;
     VALUE io;
 } FBuffer;
@@ -74,6 +83,20 @@ static void fbuffer_stack_init(FBuffer *fb, unsigned long initial_length, char *
         fb->ptr = stack_buffer;
         fb->capa = stack_buffer_size;
     }
+#ifdef JSON_DEBUG
+    fb->requested = 0;
+#endif
+}
+
+static inline void fbuffer_consumed(FBuffer *fb, unsigned long consumed)
+{
+#ifdef JSON_DEBUG
+    if (consumed > fb->requested) {
+        rb_bug("fbuffer: Out of bound write");
+    }
+    fb->requested = 0;
+#endif
+    fb->len += consumed;
 }
 
 static void fbuffer_free(FBuffer *fb)
@@ -137,6 +160,10 @@ static void fbuffer_do_inc_capa(FBuffer *fb, unsigned long requested)
 
 static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
+#ifdef JSON_DEBUG
+    fb->requested = requested;
+#endif
+
     if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
         fbuffer_do_inc_capa(fb, requested);
     }
@@ -147,15 +174,22 @@ static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len)
     if (len > 0) {
         fbuffer_inc_capa(fb, len);
         MEMCPY(fb->ptr + fb->len, newstr, char, len);
-        fb->len += len;
+        fbuffer_consumed(fb, len);
     }
 }
 
 /* Appends a character into a buffer. The buffer needs to have sufficient capacity, via fbuffer_inc_capa(...). */
 static inline void fbuffer_append_reserved_char(FBuffer *fb, char chr)
 {
+#ifdef JSON_DEBUG
+    if (fb->requested < 1) {
+        rb_bug("fbuffer: unreserved write");
+    }
+    fb->requested--;
+#endif
+
     fb->ptr[fb->len] = chr;
-    fb->len += 1;
+    fb->len++;
 }
 
 static void fbuffer_append_str(FBuffer *fb, VALUE str)
@@ -172,7 +206,7 @@ static inline void fbuffer_append_char(FBuffer *fb, char newchr)
 {
     fbuffer_inc_capa(fb, 1);
     *(fb->ptr + fb->len) = newchr;
-    fb->len++;
+    fbuffer_consumed(fb, 1);
 }
 
 static inline char *fbuffer_cursor(FBuffer *fb)
@@ -182,7 +216,7 @@ static inline char *fbuffer_cursor(FBuffer *fb)
 
 static inline void fbuffer_advance_to(FBuffer *fb, char *end)
 {
-    fb->len = end - fb->ptr;
+    fbuffer_consumed(fb, (end - fb->ptr) - fb->len);
 }
 
 /*
