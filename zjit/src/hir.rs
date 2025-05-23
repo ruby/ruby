@@ -903,7 +903,7 @@ impl Function {
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
             &HashDup { val , state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
-            Defined { .. } => todo!("find(Defined)"),
+            &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
             &NewHash { ref elements, state } => {
                 let mut found_elements = vec![];
