@@ -23,7 +23,8 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-#define RUBY_FIBER_SCHEDULER_VERSION 2
+// Version 3: Adds support for `fiber_interrupt`.
+#define RUBY_FIBER_SCHEDULER_VERSION 3
 
 struct timeval;
 
@@ -418,12 +419,21 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
  *
  * This hook may be invoked by a different thread.
  *
+ * @param[in]  scheduler  Target scheduler.
+ * @param[in]  fiber      The fiber to interrupt.
+ * @param[in]  exception  The exception to raise in the fiber.
+ * @return     What `scheduler.fiber_interrupt` returns.
  */
 VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception);
 
 /**
  * Create and schedule a non-blocking fiber.
  *
+ * @param[in]  scheduler  Target scheduler.
+ * @param[in]  argc      Number of arguments in argv.
+ * @param[in]  argv      Array of arguments to pass to the fiber.
+ * @param[in]  kw_splat  Whether to expand last argument as keywords.
+ * @return     The created and scheduled fiber.
  */
 VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
 
