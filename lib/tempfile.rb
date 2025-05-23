@@ -353,6 +353,11 @@ class Tempfile < DelegateClass(File)
   end
   alias length size
 
+  # Returns true if the file has no content.
+  def empty?
+    size.zero?
+  end
+
   # :stopdoc:
   def inspect
     if __getobj__.closed?
