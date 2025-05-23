@@ -402,6 +402,9 @@ pub enum Insn {
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
     PatchPoint(Invariant),
+
+    /// Side-exit into the interpreter.
+    SideExit { state: InsnId },
 }
 
 impl Insn {
@@ -411,7 +414,7 @@ impl Insn {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } => false,
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } => false,
             _ => true,
         }
     }
@@ -560,6 +563,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
+            Insn::SideExit { .. } => write!(f, "SideExit"),
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -915,6 +919,7 @@ impl Function {
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
+            &SideExit { state } => SideExit { state },
         }
     }
 
@@ -941,7 +946,7 @@ impl Function {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } =>
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } =>
                 panic!("Cannot infer type of instruction with no output"),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1518,6 +1523,7 @@ impl Function {
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
+                Insn::SideExit { state } => worklist.push_back(state),
             }
         }
         // Now remove all unnecessary instructions
@@ -1791,7 +1797,6 @@ pub enum CallType {
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
-    UnknownOpcode(String),
     UnknownNewArraySend(String),
     UnhandledCallType(CallType),
 }
@@ -2243,7 +2248,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val, id, val, state: exit_id });
                 }
-                _ => return Err(ParseError::UnknownOpcode(insn_name(opcode as usize))),
+                _ => {
+                    // Unknown opcode; side-exit into the interpreter
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    fun.push_insn(block, Insn::SideExit { state: exit_id });
+                    break;  // End the block
+                }
             }
 
             if insn_idx_to_block.contains_key(&insn_idx) {
@@ -2547,7 +2557,7 @@ mod tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let result = iseq_to_hir(iseq);
-        assert!(result.is_err(), "Expected an error but succesfully compiled to HIR");
+        assert!(result.is_err(), "Expected an error but succesfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
         assert_eq!(result.unwrap_err(), reason);
     }
 
@@ -3102,7 +3112,12 @@ mod tests {
         eval("
             def test = super()
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("invokesuper".into()))
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v1:BasicObject = PutSelf
+              SideExit
+        "#]]);
     }
 
     #[test]
@@ -3110,7 +3125,12 @@ mod tests {
         eval("
             def test = super
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("invokesuper".into()))
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0():
+              v1:BasicObject = PutSelf
+              SideExit
+        "#]]);
     }
 
     #[test]
@@ -3118,7 +3138,12 @@ mod tests {
         eval("
             def test(...) = super(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("invokesuperforward".into()))
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:BasicObject = PutSelf
+              SideExit
+        "#]]);
     }
 
     // TODO(max): Figure out how to generate a call with OPT_SEND flag
@@ -3128,7 +3153,12 @@ mod tests {
         eval("
             def test(a) = foo **a, b: 1
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("putspecialobject".into()))
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:BasicObject = PutSelf
+              SideExit
+        "#]]);
     }
 
     #[test]
@@ -3144,7 +3174,12 @@ mod tests {
         eval("
             def test(...) = foo(...)
         ");
-        assert_compile_fails("test", ParseError::UnknownOpcode("sendforward".into()))
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:BasicObject = PutSelf
+              SideExit
+        "#]]);
     }
 
     #[test]
