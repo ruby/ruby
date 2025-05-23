@@ -4217,9 +4217,12 @@ rb_ractor_require(VALUE feature)
     rb_ractor_channel_close(ec, crr.ch);
 
     if (crr.exception != Qundef) {
+        ractor_reset_belonging(crr.exception);
         rb_exc_raise(crr.exception);
     }
     else {
+        RUBY_ASSERT(crr.result != Qundef);
+        ractor_reset_belonging(crr.result);
         return crr.result;
     }
 }
