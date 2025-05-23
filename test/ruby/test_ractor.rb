@@ -79,6 +79,25 @@ class TestRactor < Test::Unit::TestCase
     end;
   end
 
+  def test_require_raises_and_no_ractor_belonging_issue
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("raise 'uh oh'")
+      f.flush
+      err_msg = Ractor.new(f.path) do |path|
+        begin
+          require path
+        rescue RuntimeError => e
+          e.message # had confirm belonging issue here
+        else
+          nil
+        end
+      end.take
+      assert_equal "uh oh", err_msg
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
