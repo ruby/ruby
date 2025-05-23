@@ -576,9 +576,8 @@ ractor_wakeup(rb_ractor_t *r, rb_thread_t *th /* can be NULL */, enum rb_ractor_
 {
     ASSERT_ractor_locking(r);
 
-    RUBY_DEBUG_LOG("r:%u wait_by:%s -> wait:%s wakeup:%s",
+    RUBY_DEBUG_LOG("r:%u wait:%s wakeup:%s",
                    rb_ractor_id(r),
-                   wait_status_str(th->ractor_waiting.wait_status),
                    wait_status_str(wait_status),
                    wakeup_status_str(wakeup_status));
 
