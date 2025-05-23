@@ -2138,7 +2138,9 @@ class TestHashOnly < Test::Unit::TestCase
 
   def test_iterlevel_in_ivar_bug19589
     h = { a: nil }
-    hash_iter_recursion(h, 200)
+    # Recursion level should be over 127 to actually test iterlevel being set in an instance variable,
+    # but it should be under 131 not to overflow the stack under MN threads/ractors.
+    hash_iter_recursion(h, 130)
     assert true
   end
 
