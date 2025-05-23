@@ -4,7 +4,7 @@ if RUBY_ENGINE == 'truffleruby'
   # The pure-Ruby generator is faster on TruffleRuby, so skip compiling the generator extension
   File.write('Makefile', dummy_makefile("").join)
 else
-  append_cflags("-std=c99 -O0")
+  append_cflags("-std=c99")
   $defs << "-DJSON_GENERATOR"
   $defs << "-DJSON_DEBUG" if ENV["JSON_DEBUG"]
 
