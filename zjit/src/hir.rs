@@ -785,7 +785,8 @@ impl Function {
     /// the union-find table (to find the current most-optimized version of this instruction). See
     /// [`UnionFind`] for more.
     ///
-    /// Use for pattern matching over instructions in a union-find-safe way. For example:
+    /// This is _the_ function for reading [`Insn`]. Use frequently. Example:
+    ///
     /// ```rust
     /// match func.find(insn_id) {
     ///   IfTrue { val, target } if func.is_truthy(val) => {
