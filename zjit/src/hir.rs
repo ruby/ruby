@@ -347,6 +347,8 @@ pub enum Insn {
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
+    /// Return C `true` if `val` is `Qnil`, else `false`.
+    IsNil { val: InsnId },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache },
 
@@ -506,6 +508,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
             Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
             Insn::Test { val } => { write!(f, "Test {val}") }
+            Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
             Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
@@ -860,6 +863,7 @@ impl Function {
             StringCopy { val } => StringCopy { val: find!(*val) },
             StringIntern { val } => StringIntern { val: find!(*val) },
             Test { val } => Test { val: find!(*val) },
+            &IsNil { val } => IsNil { val: find!(val) },
             Jump(target) => Jump(find_branch_edge!(target)),
             IfTrue { val, target } => IfTrue { val: find!(*val), target: find_branch_edge!(target) },
             IfFalse { val, target } => IfFalse { val: find!(*val), target: find_branch_edge!(target) },
@@ -963,6 +967,9 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
+            Insn::IsNil { val } if self.is_a(*val, types::NilClassExact) => Type::from_cbool(true),
+            Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClassExact) => Type::from_cbool(false),
+            Insn::IsNil { .. } => types::CBool,
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::StringExact,
             Insn::NewArray { .. } => types::ArrayExact,
@@ -1454,7 +1461,8 @@ impl Function {
                 | Insn::StringIntern { val }
                 | Insn::Return { val }
                 | Insn::Defined { v: val, .. }
-                | Insn::Test { val } =>
+                | Insn::Test { val }
+                | Insn::IsNil { val } =>
                     worklist.push_back(val),
                 Insn::GuardType { val, state, .. }
                 | Insn::GuardBitEquals { val, state, .. }
@@ -2075,6 +2083,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
                     let test_id = fun.push_insn(block, Insn::Test { val });
+                    // TODO(max): Check interrupts
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
+                    let _branch_id = fun.push_insn(block, Insn::IfTrue {
+                        val: test_id,
+                        target: BranchEdge { target, args: state.as_args() }
+                    });
+                    queue.push_back((state.clone(), target, target_idx));
+                }
+                YARVINSN_branchnil => {
+                    let offset = get_arg(pc, 0).as_i64();
+                    let val = state.stack_pop()?;
+                    let test_id = fun.push_insn(block, Insn::IsNil { val });
                     // TODO(max): Check interrupts
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
@@ -3506,6 +3527,23 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :[], v1
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_branchnil() {
+        eval("
+        def test(x) = x&.itself
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:CBool = IsNil v0
+              IfTrue v2, bb1(v0, v0)
+              v5:BasicObject = SendWithoutBlock v0, :itself
+              Jump bb1(v0, v5)
+            bb1(v7:BasicObject, v8:BasicObject):
+              Return v8
         "#]]);
     }
 }
