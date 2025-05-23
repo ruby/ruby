@@ -13,7 +13,10 @@ require 'tempfile'
 require 'tmpdir'
 require 'stringio'
 
-require_relative '../../lib/helper'
+begin
+  require_relative '../../lib/helper'
+rescue LoadError
+end
 require_relative '../../../lib/rdoc'
 
 ##
