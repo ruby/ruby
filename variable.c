@@ -1537,9 +1537,13 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 {
     rb_check_frozen(obj);
 
+    bool locked = false;
+    unsigned int lev = 0;
     VALUE val = undef;
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        RB_VM_LOCK_ENTER_LEV(&lev);
+        locked = true;
     }
 
     shape_id_t old_shape_id = rb_obj_shape_id(obj);
@@ -1551,6 +1555,9 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     shape_id_t next_shape_id = rb_shape_transition_remove_ivar(obj, id, &removed_shape_id);
 
     if (next_shape_id == old_shape_id) {
+        if (locked) {
+            RB_VM_LOCK_LEAVE_LEV(&lev);
+        }
         return undef;
     }
 
@@ -1600,6 +1607,10 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     }
     rb_shape_set_shape_id(obj, next_shape_id);
 
+    if (locked) {
+        RB_VM_LOCK_LEAVE_LEV(&lev);
+    }
+
     return val;
 
 too_complex:
@@ -1630,6 +1641,11 @@ too_complex:
             }
         }
     }
+
+    if (locked) {
+        RB_VM_LOCK_LEAVE_LEV(&lev);
+    }
+
     return val;
 }
 
