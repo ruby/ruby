@@ -348,9 +348,9 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_namespace
      * * refined_class
      * * as.class.allocator / as.singleton_class.attached_object
      * * includer
+     * * max IV count
+     * * variation count
      */
-    RCLASSEXT_MAX_IV_COUNT(ext) = RCLASSEXT_MAX_IV_COUNT(orig);
-    RCLASSEXT_VARIATION_COUNT(ext) = RCLASSEXT_VARIATION_COUNT(orig);
     RCLASSEXT_PERMANENT_CLASSPATH(ext) = RCLASSEXT_PERMANENT_CLASSPATH(orig);
     RCLASSEXT_CLONED(ext) = RCLASSEXT_CLONED(orig);
     RCLASSEXT_CLASSPATH(ext) = RCLASSEXT_CLASSPATH(orig);
