@@ -422,7 +422,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Jump(_) | Insn::Return { .. } => true,
+            Insn::Jump(_) | Insn::Return { .. } | Insn::SideExit { .. } => true,
             _ => false,
         }
     }
