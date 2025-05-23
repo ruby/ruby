@@ -190,8 +190,6 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
 #define RCLASSEXT_INCLUDER(ext) (ext->as.iclass.includer)
-#define RCLASSEXT_MAX_IV_COUNT(ext) (ext->max_iv_count)
-#define RCLASSEXT_VARIATION_COUNT(ext) (ext->variation_count)
 #define RCLASSEXT_PERMANENT_CLASSPATH(ext) (ext->permanent_classpath)
 #define RCLASSEXT_CLONED(ext) (ext->cloned)
 #define RCLASSEXT_SHARED_CONST_TBL(ext) (ext->shared_const_tbl)
@@ -229,8 +227,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_READABLE(c)->subclasses->head->next)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
-#define RCLASS_MAX_IV_COUNT(c) (RCLASS_EXT_READABLE(c)->max_iv_count)
-#define RCLASS_VARIATION_COUNT(c) (RCLASS_EXT_READABLE(c)->variation_count)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
 #define RCLASS_CLONED_P(c) (RCLASS_EXT_READABLE(c)->cloned)
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
@@ -244,6 +240,10 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
+
+// max IV count and variation count are just hints, so they don't need to be per-namespace
+#define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
+#define RCLASS_VARIATION_COUNT(ext) (RCLASS_EXT_PRIME(ext)->variation_count)
 
 // Writable classext entries (instead of RCLASS_SET_*) because member data will be operated directly
 #define RCLASS_WRITABLE_M_TBL(c) (RCLASS_EXT_WRITABLE(c)->m_tbl)
@@ -288,7 +288,6 @@ static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_objec
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
-static inline void RCLASS_WRITE_MAX_IV_COUNT(VALUE klass, attr_index_t count);
 static inline void RCLASS_SET_CLONED(VALUE klass, bool cloned);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
@@ -782,13 +781,7 @@ RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 static inline void
 RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 {
-    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_PRIME(klass)) = count;
-}
-
-static inline void
-RCLASS_WRITE_MAX_IV_COUNT(VALUE klass, attr_index_t count)
-{
-    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_WRITABLE(klass)) = count;
+    RCLASS_MAX_IV_COUNT(klass) = count;
 }
 
 static inline void
