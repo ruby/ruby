@@ -2733,7 +2733,6 @@ io_buffer_blocking_region_ensure(VALUE _argument)
 static VALUE
 io_buffer_blocking_region(VALUE io, struct rb_io_buffer *buffer, rb_blocking_function_t *function, void *data)
 {
-    io = rb_io_get_io(io);
     struct rb_io *ioptr;
     RB_IO_POINTER(io, ioptr);
 
@@ -2798,6 +2797,8 @@ io_buffer_read_internal(void *_argument)
 VALUE
 rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
 {
+    io = rb_io_get_io(io);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_read(scheduler, io, self, length, offset);
@@ -2915,6 +2916,8 @@ io_buffer_pread_internal(void *_argument)
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
 {
+    io = rb_io_get_io(io);
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, self, length, offset);
@@ -3035,6 +3038,8 @@ io_buffer_write_internal(void *_argument)
 VALUE
 rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
 {
+    io = rb_io_get_write_io(rb_io_get_io(io));
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_write(scheduler, io, self, length, offset);
@@ -3099,6 +3104,7 @@ io_buffer_write(int argc, VALUE *argv, VALUE self)
 
     return rb_io_buffer_write(self, io, length, offset);
 }
+
 struct io_buffer_pwrite_internal_argument {
     // The file descriptor to write to:
     int descriptor;
@@ -3144,6 +3150,8 @@ io_buffer_pwrite_internal(void *_argument)
 VALUE
 rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset)
 {
+    io = rb_io_get_write_io(rb_io_get_io(io));
+
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
         VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, self, length, offset);

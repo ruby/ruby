@@ -35,6 +35,13 @@ Note: We're only listing outstanding class updates.
     * Update Unicode to Version 16.0.0 and Emoji Version 16.0.
       [[Feature #19908]][[Feature #20724]] (also applies to Regexp)
 
+* Fiber::Scheduler
+
+    * Introduce `Fiber::Scheduler#fiber_interrupt` to interrupt a fiber with a
+      given exception. The initial use case is to interrupt a fiber that is
+      waiting on a blocking IO operation when the IO operation is closed.
+      [[Feature #21166]]
+
 ## Stdlib updates
 
 The following bundled gems are promoted from default gems.
@@ -134,6 +141,7 @@ The following bundled gems are updated.
 [Feature #20724]: https://bugs.ruby-lang.org/issues/20724
 [Feature #21047]: https://bugs.ruby-lang.org/issues/21047
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
+[Feature #21166]: https://bugs.ruby-lang.org/issues/21166
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287

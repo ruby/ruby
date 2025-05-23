@@ -1698,7 +1698,8 @@ rb_io_blocking_operations(struct rb_io *io)
 {
     rb_serial_t fork_generation = GET_VM()->fork_gen;
 
-    // On fork, all existing entries in this list (which are stack allocated) become invalid. Therefore, we re-initialize the list which clears it.
+    // On fork, all existing entries in this list (which are stack allocated) become invalid.
+    // Therefore, we re-initialize the list which clears it.
     if (io->fork_generation != fork_generation) {
         ccan_list_head_init(&io->blocking_operations);
         io->fork_generation = fork_generation;
@@ -1707,6 +1708,16 @@ rb_io_blocking_operations(struct rb_io *io)
     return &io->blocking_operations;
 }
 
+/*
+ * Registers a blocking operation for an IO object. This is used to track all threads and fibers
+ * that are currently blocked on this IO for reading, writing or other operations.
+ *
+ * When the IO is closed, all blocking operations will be notified via rb_fiber_scheduler_fiber_interrupt
+ * for fibers with a scheduler, or via rb_threadptr_interrupt for threads without a scheduler.
+ *
+ * @parameter io The IO object on which the operation will block
+ * @parameter blocking_operation The operation details including the execution context that will be blocked
+ */
 static void
 rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
@@ -1740,6 +1751,16 @@ io_blocking_operation_exit(VALUE _arguments)
     return Qnil;
 }
 
+/*
+ * Called when a blocking operation completes or is interrupted. Removes the operation from
+ * the IO's blocking_operations list and wakes up any waiting threads/fibers.
+ *
+ * If there's a wakeup_mutex (meaning an IO close is in progress), synchronizes the cleanup
+ * through that mutex to ensure proper coordination with the closing thread.
+ *
+ * @parameter io The IO object the operation was performed on
+ * @parameter blocking_operation The completed operation to clean up
+ */
 static void
 rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
 {
@@ -1756,6 +1777,49 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
     else {
         ccan_list_del(&blocking_operation->list);
     }
+}
+
+static VALUE
+rb_thread_io_blocking_operation_ensure(VALUE _argument)
+{
+    struct io_blocking_operation_arguments *arguments = (void*)_argument;
+
+    rb_io_blocking_operation_exit(arguments->io, arguments->blocking_operation);
+
+    return Qnil;
+}
+
+/*
+ * Executes a function that performs a blocking IO operation, while properly tracking
+ * the operation in the IO's blocking_operations list. This ensures proper cleanup
+ * and interruption handling if the IO is closed while blocked.
+ *
+ * The operation is automatically removed from the blocking_operations list when the function
+ * returns, whether normally or due to an exception.
+ *
+ * @parameter self The IO object
+ * @parameter function The function to execute that will perform the blocking operation
+ * @parameter argument The argument to pass to the function
+ * @returns The result of the blocking operation function
+ */
+VALUE
+rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argument)
+{
+    struct rb_io *io;
+    RB_IO_POINTER(self, io);
+
+    rb_execution_context_t *ec = GET_EC();
+    struct rb_io_blocking_operation blocking_operation = {
+        .ec = ec,
+    };
+    ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+
+    struct io_blocking_operation_arguments io_blocking_operation_arguments = {
+        .io = io,
+        .blocking_operation = &blocking_operation
+    };
+
+    return rb_ensure(function, argument, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
 }
 
 static bool
@@ -1859,7 +1923,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 saved_errno = errno;
             }, ubf_select, th, FALSE);
 
-            th = rb_ec_thread_ptr(ec);
+            RUBY_ASSERT(th == rb_ec_thread_ptr(ec));
             if (events &&
                 blocking_call_retryable_p((int)val, saved_errno) &&
                 thread_io_wait_events(th, fd, events, NULL)) {
@@ -2672,10 +2736,30 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
     return 1;
 }
 
-static size_t
-thread_io_close_notify_all(struct rb_io *io)
+/*
+ * Thread-safe IO closing mechanism.
+ *
+ * When an IO is closed while other threads or fibers are blocked on it, we need to:
+ * 1. Track and notify all blocking operations through io->blocking_operations
+ * 2. Ensure only one thread can close at a time using io->closing_ec
+ * 3. Synchronize cleanup using wakeup_mutex
+ *
+ * The close process works as follows:
+ * - First check if any thread is already closing (io->closing_ec)
+ * - Set up wakeup_mutex for synchronization
+ * - Iterate through all blocking operations in io->blocking_operations
+ * - For each blocked fiber with a scheduler:
+ *   - Notify via rb_fiber_scheduler_fiber_interrupt
+ * - For each blocked thread without a scheduler:
+ *   - Enqueue IOError via rb_threadptr_pending_interrupt_enque
+ *   - Wake via rb_threadptr_interrupt
+ * - Wait on wakeup_mutex until all operations are cleaned up
+ * - Only then clear closing state and allow actual close to proceed
+ */
+static VALUE
+thread_io_close_notify_all(VALUE _io)
 {
-    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
+    struct rb_io *io = (struct rb_io *)_io;
 
     size_t count = 0;
     rb_vm_t *vm = io->closing_ec->thread_ptr->vm;
@@ -2687,17 +2771,17 @@ thread_io_close_notify_all(struct rb_io *io)
 
         rb_thread_t *thread = ec->thread_ptr;
 
-        rb_threadptr_pending_interrupt_enque(thread, error);
-
-        // This operation is slow:
-        rb_threadptr_interrupt(thread);
+        if (thread->scheduler != Qnil) {
+            rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+        } else {
+            rb_threadptr_pending_interrupt_enque(thread, error);
+            rb_threadptr_interrupt(thread);
+        }
 
         count += 1;
     }
 
-    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
-
-    return count;
+    return (VALUE)count;
 }
 
 size_t
@@ -2720,7 +2804,10 @@ rb_thread_io_close_interrupt(struct rb_io *io)
     // This is used to ensure the correct execution context is woken up after the blocking operation is interrupted:
     io->wakeup_mutex = rb_mutex_new();
 
-    return thread_io_close_notify_all(io);
+    // We need to use a mutex here as entering the fiber scheduler may cause a context switch:
+    VALUE result = rb_mutex_synchronize(io->wakeup_mutex, thread_io_close_notify_all, (VALUE)io);
+
+    return (size_t)result;
 }
 
 void
