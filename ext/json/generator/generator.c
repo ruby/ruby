@@ -1406,10 +1406,9 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     }
 
     /* This implementation writes directly into the buffer. We reserve
-     * the 24 characters that fpconv_dtoa states as its maximum, plus
-     * 2 more characters for the potential ".0" suffix.
+     * the 28 characters that fpconv_dtoa states as its maximum.
      */
-    fbuffer_inc_capa(buffer, 26);
+    fbuffer_inc_capa(buffer, 28);
     char* d = buffer->ptr + buffer->len;
     int len = fpconv_dtoa(value, d);
 

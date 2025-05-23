@@ -432,8 +432,8 @@ static int filter_special(double fp, char* dest)
  *
  * Input:
  * fp -> the double to convert, dest -> destination buffer.
- * The generated string will never be longer than 24 characters.
- * Make sure to pass a pointer to at least 24 bytes of memory.
+ * The generated string will never be longer than 28 characters.
+ * Make sure to pass a pointer to at least 28 bytes of memory.
  * The emitted string will not be null terminated.
  *
  * Output:
@@ -443,7 +443,7 @@ static int filter_special(double fp, char* dest)
  *
  * void print(double d)
  * {
- *      char buf[24 + 1] // plus null terminator
+ *      char buf[28 + 1] // plus null terminator
  *      int str_len = fpconv_dtoa(d, buf);
  *
  *      buf[str_len] = '\0';
@@ -451,7 +451,7 @@ static int filter_special(double fp, char* dest)
  * }
  *
  */
-static int fpconv_dtoa(double d, char dest[24])
+static int fpconv_dtoa(double d, char dest[28])
 {
     char digits[18];
 
