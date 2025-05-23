@@ -359,6 +359,13 @@ rb_obj_shape_id(VALUE obj)
     }
 
 #if SHAPE_IN_BASIC_FLAGS
+    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
+        VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+        if (fields_obj) {
+            return ROBJECT_SHAPE_ID(fields_obj);
+        }
+        return ROOT_SHAPE_ID;
+    }
     return RBASIC_SHAPE_ID(obj);
 #else
     switch (BUILTIN_TYPE(obj)) {
@@ -366,8 +373,13 @@ rb_obj_shape_id(VALUE obj)
         return ROBJECT_SHAPE_ID(obj);
         break;
       case T_CLASS:
-      case T_MODULE:
-        return RCLASS_SHAPE_ID(obj);
+      case T_MODULE: {
+        VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+        if (fields_obj) {
+            ROBJECT_SHAPE_ID(fields_obj);
+        }
+        return ROOT_SHAPE_ID;
+      }
       default:
         return rb_generic_shape_id(obj);
     }
@@ -637,7 +649,6 @@ rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id)
 {
     shape_id_t shape_id = rb_obj_shape_id(obj);
     rb_shape_t *shape = RSHAPE(shape_id);
-
     RUBY_ASSERT(!rb_shape_too_complex_p(shape));
 
     rb_shape_t *removed_shape = NULL;
@@ -759,14 +770,11 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 #endif
 
     VALUE klass;
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        klass = rb_singleton_class(obj);
-        break;
-      default:
+    if (IMEMO_TYPE_P(obj, imemo_class_fields)) { // HACK
+        klass = CLASS_OF(obj);
+    }
+    else {
         klass = rb_obj_class(obj);
-        break;
     }
 
     bool allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;
