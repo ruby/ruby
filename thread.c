@@ -1947,6 +1947,8 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         EC_JUMP_TAG(ec, state);
     }
 
+    RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
     // If the error was a timeout, we raise a specific exception for that:
     if (saved_errno == ETIMEDOUT) {
         rb_raise(rb_eIOTimeoutError, "Blocking operation timed out!");
