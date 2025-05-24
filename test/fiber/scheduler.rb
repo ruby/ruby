@@ -126,7 +126,7 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.transfer
+          fiber.transfer if fiber.alive?
         end
       end
     end
@@ -307,7 +307,7 @@ class Scheduler
     end
 
     def transfer
-      @fiber.raise(@exception)
+      @fiber.raise(@exception) if @fiber.alive?
     end
   end
 
