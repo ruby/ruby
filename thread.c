@@ -207,6 +207,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
@@ -1947,6 +1951,9 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
             state = saved_state;
         }
         EC_POP_TAG();
@@ -1960,9 +1967,6 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     if (state) {
         EC_JUMP_TAG(ec, state);
     }
-
-    /* TODO: check func() */
-    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 
     // If the error was a timeout, we raise a specific exception for that:
     if (saved_errno == ETIMEDOUT) {
@@ -4471,6 +4475,8 @@ do_select(VALUE p)
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
     } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
+    RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec);
+
     if (result < 0) {
         errno = lerrno;
     }
@@ -4591,7 +4597,10 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
             } while (wait_retryable(&result, lerrno, to, end));
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
         }
+
         EC_POP_TAG();
     }
 

@@ -422,6 +422,13 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
     // If we explicitly preserve `errno` in `io_binwrite` and other similar functions (e.g. by returning it), this code is no longer needed. I hope in the future we will be able to remove it.
     int saved_errno = errno;
 
+#ifdef RUBY_DEBUG
+    rb_execution_context_t *ec = GET_EC();
+    if (ec->interrupt_flag) {
+        rb_bug("rb_fiber_scheduler_unblock called with interrupt flags set");
+    }
+#endif
+
     VALUE result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
 
     errno = saved_errno;
@@ -852,6 +859,13 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     VALUE arguments[] = {
         fiber, exception
     };
+
+#ifdef RUBY_DEBUG
+    rb_execution_context_t *ec = GET_EC();
+    if (ec->interrupt_flag) {
+        rb_bug("rb_fiber_scheduler_fiber_interrupt called with interrupt flags set");
+    }
+#endif
 
     return rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
 }
