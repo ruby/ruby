@@ -284,6 +284,7 @@ class Net::HTTPResponse
   # Raises an HTTP error if the response is not 2xx (success).
   def value
     error! unless self.kind_of?(Net::HTTPSuccess)
+    self
   end
 
   def uri= uri # :nodoc:
