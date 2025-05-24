@@ -7502,7 +7502,7 @@ fn gen_send_general(
                         asm.mov(stack_ret, ret);
 
                         // End the block to allow invalidating the next instruction
-                        return jump_to_next_insn(jit, asm);
+                        return jump_to_next_insn(jit, asm, ocb);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
                         gen_counter_incr(asm, Counter::send_optimized_method_block_call);
