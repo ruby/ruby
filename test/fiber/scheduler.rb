@@ -126,7 +126,7 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.transfer
+          fiber.transfer if fiber.alive?
         end
       end
     end
@@ -307,7 +307,7 @@ class Scheduler
     end
 
     def transfer
-      @fiber.raise(@exception)
+      @fiber.raise(@exception) if @fiber.alive?
     end
   end
 
@@ -340,15 +340,15 @@ class Scheduler
     end.value
   end
 
-  def blocking_operation_wait(work)
-    thread = Thread.new(&work)
+  # def blocking_operation_wait(work)
+  #   thread = Thread.new(&work)
 
-    thread.join
+  #   thread.join
 
-    thread = nil
-  ensure
-    thread&.kill
-  end
+  #   thread = nil
+  # ensure
+  #   thread&.kill
+  # end
 end
 
 # This scheduler class implements `io_read` and `io_write` hooks which require

@@ -1930,6 +1930,9 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
             state = saved_state;
         }
         EC_POP_TAG();
@@ -1944,7 +1947,6 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
         EC_JUMP_TAG(ec, state);
     }
 
-    /* TODO: check func() */
     RUBY_VM_CHECK_INTS_BLOCKING(ec);
 
     // If the error was a timeout, we raise a specific exception for that:
@@ -2768,7 +2770,6 @@ thread_io_close_notify_all(VALUE _io)
     struct rb_io_blocking_operation *blocking_operation;
     ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
-
         rb_thread_t *thread = ec->thread_ptr;
 
         if (thread->scheduler != Qnil) {
@@ -2814,7 +2815,6 @@ void
 rb_thread_io_close_wait(struct rb_io* io)
 {
     VALUE wakeup_mutex = io->wakeup_mutex;
-
     if (!RB_TEST(wakeup_mutex)) {
         // There was nobody else using this file when we closed it, so we never bothered to allocate a mutex:
         return;
