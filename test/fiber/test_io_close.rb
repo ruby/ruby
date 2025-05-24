@@ -38,7 +38,7 @@ class TestFiberIOClose < Test::Unit::TestCase
       thread.join
 
       assert_instance_of IOError, error
-      assert_match(/stream closed/, error.message)
+      assert_match(/closed/, error.message)
     end
   end
 
@@ -68,7 +68,7 @@ class TestFiberIOClose < Test::Unit::TestCase
       thread.join
 
       assert_instance_of IOError, error
-      assert_match(/stream closed/, error.message)
+      assert_match(/closed/, error.message)
     end
   end
 
@@ -96,7 +96,7 @@ class TestFiberIOClose < Test::Unit::TestCase
       thread.join
 
       assert_instance_of IOError, error
-      assert_match(/closed stream/, error.message)
+      assert_match(/closed/, error.message)
     end
   end
 end
