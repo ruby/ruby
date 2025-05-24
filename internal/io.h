@@ -25,7 +25,7 @@ struct rb_io_blocking_operation {
     // The linked list data structure.
     struct ccan_list_node list;
 
-    // The execution context of the blocking operation:
+    // The execution context of the blocking operation.
     struct rb_execution_context_struct *ec;
 };
 
