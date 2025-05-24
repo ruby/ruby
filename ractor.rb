@@ -800,6 +800,8 @@ class Ractor
   # If +copy+ keyword is +true+, it will copy objects before freezing them, and will not
   # modify +obj+ or its internal objects.
   #
+  # This method will raise a Ractor::Error if the object could not be made shareable.
+  #
   # Note that the specification and implementation of this method are not
   # mature and may be changed in the future.
   #
@@ -821,6 +823,10 @@ class Ractor
   #   obj2s.frozen?                       #=> true
   #   obj2s.object_id == obj2.object_id   #=> false
   #   obj2s[0].object_id == obj2[0].object_id #=> false
+  #
+  #   # Objects that cannot be made shareable:
+  #   obj3 = Thread::Mutex.new
+  #   Ractor.make_shareable(obj3) # raises a Ractor::Error
   #
   # See also the "Shareable and unshareable objects" section in the Ractor class docs.
   def self.make_shareable obj, copy: false
