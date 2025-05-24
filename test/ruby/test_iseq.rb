@@ -859,6 +859,17 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_serialize_anonymous_outer_variables
+    iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
+      [1].each do
+      rescue => e
+        puts it
+      end
+    RUBY
+
+    iseq.to_binary # [Bug # 21370]
+  end
+
   def test_loading_kwargs_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
     a = iseq_to_binary(RubyVM::InstructionSequence.compile("foo(bar: :baz)"))
