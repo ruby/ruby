@@ -7449,7 +7449,6 @@ fn gen_send_general(
 
                     }
                     OPTIMIZED_METHOD_TYPE_CALL => {
-
                         if block.is_some() {
                             gen_counter_incr(asm, Counter::send_call_block);
                             return None;
@@ -7501,8 +7500,9 @@ fn gen_send_general(
 
                         let stack_ret = asm.stack_push(Type::Unknown);
                         asm.mov(stack_ret, ret);
-                        return Some(KeepCompiling);
 
+                        // End the block to allow invalidating the next instruction
+                        return jump_to_next_insn(jit, asm);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
                         gen_counter_incr(asm, Counter::send_optimized_method_block_call);
