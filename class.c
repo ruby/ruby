@@ -1233,9 +1233,16 @@ rb_singleton_class_internal_p(VALUE sklass)
  *       i.e. the attached object of the eigenclass is `klass`.
  * @note this macro creates a new eigenclass if necessary.
  */
-#define ENSURE_EIGENCLASS(klass) \
-    (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
+// #define ENSURE_EIGENCLASS(klass)                                      \
+//    (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
+static inline VALUE make_metaclass(VALUE klass);
 
+static VALUE
+ENSURE_EIGENCLASS(VALUE klass)
+{
+    VM_ASSERT(klass);
+    return HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass);
+}
 
 /**
  * Creates a metaclass of `klass`
@@ -1249,7 +1256,7 @@ rb_singleton_class_internal_p(VALUE sklass)
 static inline VALUE
 make_metaclass(VALUE klass)
 {
-    VALUE super;
+    VALUE super, assoc;
     VALUE metaclass = rb_class_boot(Qundef);
 
     FL_SET(metaclass, FL_SINGLETON);

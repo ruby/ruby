@@ -750,20 +750,10 @@ typedef struct rb_vm_struct {
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* namespace */
+    rb_namespace_t *root_namespace;
     rb_namespace_t *main_namespace;
 
     /* load */
-    VALUE top_self;
-    VALUE load_path;
-    VALUE load_path_snapshot;
-    VALUE load_path_check_cache;
-    VALUE expanded_load_path;
-    VALUE loaded_features;
-    VALUE loaded_features_snapshot;
-    VALUE loaded_features_realpaths;
-    VALUE loaded_features_realpath_map;
-    struct st_table *loaded_features_index;
-    struct st_table *loading_table;
     // For running the init function of statically linked
     // extensions when they are loaded
     struct st_table *static_ext_inits;
