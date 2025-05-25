@@ -634,19 +634,17 @@ class_switch_superclass(VALUE super, VALUE klass)
 }
 
 /**
- * Allocates a struct RClass for a new class.
+ * Allocates a struct RClass for a new class, iclass, or module.
  *
- * @param flags     initial value for basic.flags of the returned class.
- * @param klass     the class of the returned class.
- * @return          an uninitialized Class object.
- * @pre  `klass` must refer `Class` class or an ancestor of Class.
- * @pre  `(flags | T_CLASS) != 0`
- * @post the returned class can safely be `#initialize` 'd.
+ * @param type      The type of the RClass (T_CLASS, T_ICLASS, or T_MODULE)
+ * @param klass     value for basic.klass of the returned object.
+ * @return          an uninitialized Class/IClass/Module object.
+ * @pre  `klass` must refer to a class or module
  *
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc(VALUE flags, VALUE klass)
+class_alloc(enum ruby_value_type type, VALUE klass)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
@@ -666,7 +664,9 @@ class_alloc(VALUE flags, VALUE klass)
     anchor->ns_subclasses = ns_subclasses;
     anchor->head = ZALLOC(rb_subclass_entry_t);
 
-    flags &= T_MASK;
+    RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
+
+    VALUE flags = type;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
@@ -1064,7 +1064,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
             if (BUILTIN_TYPE(p) != T_ICLASS) {
                 rb_bug("non iclass between module/class and origin");
             }
-            clone_p = class_alloc(RBASIC(p)->flags, METACLASS_OF(p));
+            clone_p = class_alloc(T_ICLASS, METACLASS_OF(p));
             /* We should set the m_tbl right after allocation before anything
              * that can trigger GC to avoid clone_p from becoming old and
              * needing to fire write barriers. */
@@ -1141,7 +1141,8 @@ rb_singleton_class_clone_and_attach(VALUE obj, VALUE attach)
     else {
         /* copy singleton(unnamed) class */
         bool klass_of_clone_is_new;
-        VALUE clone = class_alloc(RBASIC(klass)->flags, 0);
+        RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+        VALUE clone = class_alloc(T_CLASS, 0);
 
         if (BUILTIN_TYPE(obj) == T_CLASS) {
             klass_of_clone_is_new = true;
