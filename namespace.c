@@ -20,18 +20,13 @@
 
 VALUE rb_cNamespace = 0;
 VALUE rb_cNamespaceEntry = 0;
-VALUE rb_mNamespaceRefiner = 0;
 VALUE rb_mNamespaceLoader = 0;
 
-static rb_namespace_t builtin_namespace_data = {
-    .ns_object = Qnil,
-    .ns_id = 0,
-    .is_builtin = true,
-    .is_user = false,
-    .is_optional = false
+static rb_namespace_t root_namespace_data = {
+    /* Initialize values lazily in Init_namespace() */
 };
-static rb_namespace_t * const root_namespace = 0;
-static rb_namespace_t * const builtin_namespace = &builtin_namespace_data;
+
+static rb_namespace_t * const root_namespace = &root_namespace_data;
 static rb_namespace_t * main_namespace = 0;
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
@@ -75,12 +70,6 @@ rb_namespace_t *
 rb_root_namespace(void)
 {
     return root_namespace;
-}
-
-const rb_namespace_t *
-rb_builtin_namespace(void)
-{
-    return (const rb_namespace_t *)builtin_namespace;
 }
 
 rb_namespace_t *
@@ -365,32 +354,35 @@ namespace_generate_id(void)
 static void
 namespace_entry_initialize(rb_namespace_t *ns)
 {
-    rb_vm_t *vm = GET_VM();
+    const rb_namespace_t *root = rb_root_namespace();
 
     // These will be updated immediately
     ns->ns_object = 0;
     ns->ns_id = 0;
 
-    ns->top_self = 0; // TODO: set top_self appropriately
-    ns->load_path = rb_ary_dup(vm->load_path);
-    ns->expanded_load_path = rb_ary_dup(vm->expanded_load_path);
+    ns->top_self = rb_obj_alloc(rb_cObject);
+    // TODO:
+    // rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
+    // rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
+    ns->load_path = rb_ary_dup(root->load_path);
+    ns->expanded_load_path = rb_ary_dup(root->expanded_load_path);
     ns->load_path_snapshot = rb_ary_new();
     ns->load_path_check_cache = 0;
-    ns->loaded_features = rb_ary_dup(vm->loaded_features);
+    ns->loaded_features = rb_ary_dup(root->loaded_features);
     ns->loaded_features_snapshot = rb_ary_new();
     ns->loaded_features_index = st_init_numtable();
-    ns->loaded_features_realpaths = rb_hash_dup(vm->loaded_features_realpaths);
-    ns->loaded_features_realpath_map = rb_hash_dup(vm->loaded_features_realpath_map);
+    ns->loaded_features_realpaths = rb_hash_dup(root->loaded_features_realpaths);
+    ns->loaded_features_realpath_map = rb_hash_dup(root->loaded_features_realpath_map);
     ns->loading_table = st_init_strtable();
     ns->ruby_dln_libmap = rb_hash_new_with_size(0);
     ns->gvar_tbl = rb_hash_new_with_size(0);
 
-    ns->is_builtin = false;
     ns->is_user = true;
     ns->is_optional = true;
 }
 
-void rb_namespace_gc_update_references(void *ptr)
+void
+rb_namespace_gc_update_references(void *ptr)
 {
     rb_namespace_t *ns = (rb_namespace_t *)ptr;
     if (!NIL_P(ns->ns_object))
@@ -473,10 +465,10 @@ rb_get_namespace_t(VALUE namespace)
     VALUE entry;
     ID id_namespace_entry;
 
-    if (!namespace)
+    if (!namespace || NIL_P(namespace))
         return root_namespace;
-    if (NIL_P(namespace))
-        return builtin_namespace;
+
+    VM_ASSERT(NAMESPACE_OBJ_P(namespace));
 
     CONST_ID(id_namespace_entry, "__namespace_entry__");
     entry = rb_attr_get(namespace, id_namespace_entry);
@@ -486,8 +478,7 @@ rb_get_namespace_t(VALUE namespace)
 VALUE
 rb_get_namespace_object(rb_namespace_t *ns)
 {
-    if (!ns) // root namespace
-        return Qfalse;
+    VM_ASSERT(ns && ns->ns_object);
     return ns->ns_object;
 }
 
@@ -509,8 +500,6 @@ namespace_initialize(VALUE namespace)
 
     ns->ns_object = namespace;
     ns->ns_id = namespace_generate_id();
-    ns->load_path = rb_ary_dup(GET_VM()->load_path);
-    ns->is_user = true;
     rb_define_singleton_method(ns->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
 
     // Set the Namespace object unique/consistent from any namespaces to have just single
@@ -541,13 +530,12 @@ static VALUE
 rb_namespace_current(VALUE klass)
 {
     const rb_namespace_t *ns = rb_current_namespace();
-    if (NAMESPACE_USER_P(ns)) {
-        return ns->ns_object;
-    }
-    if (NAMESPACE_BUILTIN_P(ns)) {
+
+    if (!rb_namespace_available())
         return Qnil;
-    }
-    return Qfalse;
+
+    VM_ASSERT(ns && ns->ns_object);
+    return ns->ns_object;
 }
 
 static VALUE
@@ -561,6 +549,7 @@ rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
 static VALUE
 rb_namespace_load_path(VALUE namespace)
 {
+    VM_ASSERT(NAMESPACE_OBJ_P(namespace));
     return rb_get_namespace_t(namespace)->load_path;
 }
 
@@ -870,8 +859,10 @@ void
 rb_initialize_main_namespace(void)
 {
     rb_namespace_t *ns;
-    rb_vm_t *vm = GET_VM();
     VALUE main_ns;
+    rb_vm_t *vm = GET_VM();
+
+    VM_ASSERT(rb_namespace_available());
 
     if (!namespace_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
@@ -884,7 +875,6 @@ rb_initialize_main_namespace(void)
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
     ns->ns_id = namespace_generate_id();
-    ns->is_builtin = false;
     ns->is_user = true;
     ns->is_optional = false;
 
@@ -957,7 +947,6 @@ Init_Namespace(void)
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
     rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
-    // rb_define_singleton_method(rb_cNamespace, "current_details", rb_current_namespace_details, 0);
     rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
