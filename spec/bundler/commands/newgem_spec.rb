@@ -1020,7 +1020,7 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
 
-      it "contained .gitlab-ci.yml into ignore list" do
+      it "contained .github into ignore list" do
         bundle "gem #{gem_name} --ci=github"
 
         expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .github appveyor")
