@@ -4959,13 +4959,16 @@ str_ensure_byte_pos(VALUE str, long pos)
  *    s.byteindex('ooo') # => nil
  *
  *  When +object+ is a Regexp,
- *  returns the index of the first found substring matching +object+:
+ *  returns the index of the first found substring matching +object+;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
  *    s = 'foo'
  *    s.byteindex(/f/)   # => 0
+ *    $~                 # => #<MatchData "f">
  *    s.byteindex(/o/)   # => 1
  *    s.byteindex(/oo/)  # => 1
  *    s.byteindex(/ooo/) # => nil
+ *    $~                 # => nil
  *
  *  \Integer argument +offset+, if given, specifies the 0-based index
  *  of the byte where searching is to begin.
@@ -4986,7 +4989,7 @@ str_ensure_byte_pos(VALUE str, long pos)
  *    s.byteindex('o', -3) # => 1
  *    s.byteindex('o', -4) # => nil
  *
- *  Raises IndexError if +offset+ does not land of a character boundary:
+ *  Raises IndexError if the byte at +offset+ is not the first byte of a character:
  *
  *    s = "\uFFFF\uFFFF"       # => "\uFFFF\uFFFF"
  *    s.size                   # => 2 # Two 3-byte characters.
