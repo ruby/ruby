@@ -110,6 +110,7 @@ class Exports::Mswin < Exports
         case filetype
         when /OBJECT/, /LIBRARY/
           l.chomp!
+          next if (/^ .*\(pick any\)$/ =~ l)...true
           next if /^[[:xdigit:]]+ 0+ UNDEF / =~ l
           next unless /External/ =~ l
           next if /(?:_local_stdio_printf_options|v(f|sn?)printf(_s)?_l)\Z/ =~ l
