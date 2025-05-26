@@ -1849,19 +1849,6 @@ id2ref_tbl_memsize(const void *data)
 }
 
 static void
-id2ref_tbl_compact(void *data)
-{
-    st_table *table = (st_table *)data;
-    if (LIKELY(RB_POSFIXABLE(LAST_OBJECT_ID()))) {
-        // We know keys are all FIXNUM, so no need to update them.
-        gc_ref_update_table_values_only(table);
-    }
-    else {
-        gc_update_table_refs(table);
-    }
-}
-
-static void
 id2ref_tbl_free(void *data)
 {
     id2ref_tbl = NULL; // clear global ref
@@ -1875,7 +1862,8 @@ static const rb_data_type_t id2ref_tbl_type = {
         .dmark = id2ref_tbl_mark,
         .dfree = id2ref_tbl_free,
         .dsize = id2ref_tbl_memsize,
-        .dcompact = id2ref_tbl_compact,
+        // dcompact function not required because the table is reference updated
+        // in rb_gc_vm_weak_table_foreach
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
