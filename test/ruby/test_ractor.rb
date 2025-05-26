@@ -74,7 +74,7 @@ class TestRactor < Test::Unit::TestCase
       Warning[:experimental] = false
 
       main_ractor_id = Thread.current.group.object_id
-      ractor_id = Ractor.new { Thread.current.group.object_id }.take
+      ractor_id = Ractor.new { Thread.current.group.object_id }.value
       refute_equal main_ractor_id, ractor_id
     end;
   end
@@ -93,7 +93,7 @@ class TestRactor < Test::Unit::TestCase
         else
           nil
         end
-      end.take
+      end.value
       assert_equal "uh oh", err_msg
     RUBY
   end

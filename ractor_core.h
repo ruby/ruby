@@ -9,118 +9,36 @@
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
-enum rb_ractor_basket_type {
-    // basket is empty
-    basket_type_none,
-
-    // value is available
-    basket_type_ref,
-    basket_type_copy,
-    basket_type_move,
-    basket_type_will,
-
-    // basket should be deleted
-    basket_type_deleted,
-
-    // basket is reserved
-    basket_type_reserved,
-
-    // take_basket is available
-    basket_type_take_basket,
-
-    // basket is keeping by yielding ractor
-    basket_type_yielding,
-};
-
-// per ractor taking configuration
-struct rb_ractor_selector_take_config {
-    bool closed;
-    bool oneshot;
-};
-
-struct rb_ractor_basket {
-    union {
-        enum rb_ractor_basket_type e;
-        rb_atomic_t atomic;
-    } type;
-    VALUE sender; // Ractor object sending message
-    rb_thread_t *sending_th;
-
-    union {
-        struct {
-            VALUE v;
-            bool exception;
-        } send;
-
-        struct {
-            struct rb_ractor_basket *basket;
-            struct rb_ractor_selector_take_config *config;
-        } take;
-    } p; // payload
-};
-
-static inline bool
-basket_type_p(struct rb_ractor_basket *b, enum rb_ractor_basket_type type)
-{
-    return b->type.e == type;
-}
-
-static inline bool
-basket_none_p(struct rb_ractor_basket *b)
-{
-    return basket_type_p(b, basket_type_none);
-}
-
-struct rb_ractor_queue {
-    struct rb_ractor_basket *baskets;
-    int start;
-    int cnt;
-    int size;
-    unsigned int serial;
-    unsigned int reserved_cnt;
-};
-
-enum rb_ractor_wait_status {
-    wait_none      = 0x00,
-    wait_receiving = 0x01,
-    wait_taking    = 0x02,
-    wait_yielding  = 0x04,
-    wait_moving    = 0x08,
-};
-
-enum rb_ractor_wakeup_status {
-    wakeup_none,
-    wakeup_by_send,
-    wakeup_by_yield,
-    wakeup_by_take,
-    wakeup_by_close,
-    wakeup_by_interrupt,
-    wakeup_by_retry,
-};
-
 struct rb_ractor_sync {
     // ractor lock
     rb_nativethread_lock_t lock;
+
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by;
 #endif
 
-    bool incoming_port_closed;
-    bool outgoing_port_closed;
+#ifndef RUBY_THREAD_PTHREAD_H
+    rb_nativethread_cond_t wakeup_cond;
+#endif
 
-    // All sent messages will be pushed into recv_queue
-    struct rb_ractor_queue recv_queue;
+    // incoming messages
+    struct ractor_queue *recv_queue;
 
-    // The following ractors waiting for the yielding by this ractor
-    struct rb_ractor_queue takers_queue;
+    // waiting threads for receiving
+    struct ccan_list_head waiters;
 
-    // Enabled if the ractor already terminated and not taken yet.
-    struct rb_ractor_basket will_basket;
+    // ports
+    VALUE default_port_value;
+    struct st_table *ports;
+    size_t next_port_id;
 
-    struct ractor_wait {
-        struct ccan_list_head waiting_threads;
-        // each thread has struct ccan_list_node ractor_waiting.waiting_node
-    } wait;
+    // monitors
+    struct ccan_list_head monitors;
+
+    // value
+    rb_ractor_t *successor;
+    VALUE legacy;
+    bool legacy_exc;
 };
 
 // created
@@ -146,11 +64,7 @@ enum ractor_status {
 
 struct rb_ractor_struct {
     struct rb_ractor_pub pub;
-
     struct rb_ractor_sync sync;
-
-    // vm wide barrier synchronization
-    rb_nativethread_cond_t barrier_wait_cond;
 
     // thread management
     struct {
@@ -162,6 +76,7 @@ struct rb_ractor_struct {
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
     } threads;
+
     VALUE thgroup_default;
 
     VALUE name;

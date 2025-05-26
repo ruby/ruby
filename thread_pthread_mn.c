@@ -72,7 +72,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
         RUBY_DEBUG_LOG("wait fd:%d", fd);
 
         RB_VM_SAVE_MACHINE_CONTEXT(th);
-        setup_ubf(th, ubf_event_waiting, (void *)th);
+        ubf_set(th, ubf_event_waiting, (void *)th);
 
         RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
@@ -102,7 +102,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
             timer_thread_cancel_waiting(th);
         }
 
-        setup_ubf(th, NULL, NULL); // TODO: maybe it is already NULL?
+        ubf_clear(th); // TODO: maybe it is already NULL?
 
         th->status = THREAD_RUNNABLE;
     }
@@ -450,7 +450,7 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
 
     // RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
-    thread_sched_set_lock_owner(sched, th);
+    thread_sched_set_locked(sched, th);
     thread_sched_add_running_thread(TH_SCHED(th), th);
     thread_sched_unlock(sched, th);
     {
@@ -475,13 +475,11 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
         coroutine_transfer0(self, nt->nt_context, true);
     }
     else {
-        rb_vm_t *vm = th->vm;
-        bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
         rb_thread_t *next_th = sched->running;
 
-        if (!has_ready_ractor && next_th && !next_th->nt) {
+        if (next_th && !next_th->nt) {
             // switch to the next thread
-            thread_sched_set_lock_owner(sched, NULL);
+            thread_sched_set_unlocked(sched, NULL);
             th->sched.finished = true;
             thread_sched_switch0(th->sched.context, next_th, nt, true);
         }
