@@ -596,8 +596,8 @@ class TestShapes < Test::Unit::TestCase
 
       assert_predicate RubyVM::Shape.of(tc), :too_complex?
       assert_equal 3, tc.very_unique
-      assert_equal 3, Ractor.new(tc) { |x| Ractor.yield(x.very_unique) }.take
-      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| Ractor.yield(x.instance_variables) }.take.sort
+      assert_equal 3, Ractor.new(tc) { |x| x.very_unique }.value
+      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| x.instance_variables }.value.sort
     end;
   end
 
@@ -699,10 +699,10 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = Object.new
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
@@ -717,10 +717,10 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = []
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end

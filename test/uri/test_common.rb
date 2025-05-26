@@ -75,7 +75,7 @@ class URI::TestCommon < Test::Unit::TestCase
     return unless defined?(Ractor)
     assert_ractor(<<~RUBY, require: 'uri')
       r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
-      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.take)
+      assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.value)
     RUBY
   end
 

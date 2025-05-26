@@ -526,9 +526,6 @@ thread_cleanup_func(void *th_ptr, int atfork)
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_destroy(&th->ractor_waiting.cond);
-#endif
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
@@ -6174,6 +6171,8 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         }
         rb_native_mutex_unlock(&th->interrupt_lock);
 
+        RUBY_DEBUG_LOG("task:%p", task);
+
         if (task) {
             (*task->func)(task->data);
             ruby_xfree(task);
@@ -6227,6 +6226,8 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                          rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
 {
     struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
+
+    RUBY_DEBUG_LOG("flags:%d", (int)flags);
 
     d->func = func;
     d->data = data;

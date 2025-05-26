@@ -808,7 +808,7 @@ class TestISeq < Test::Unit::TestCase
         GC.start
         Float(30)
       }
-      assert_equal :new, r.take
+      assert_equal :new, r.value
     RUBY
   end
 

@@ -22,7 +22,7 @@ class TestStringScannerRactor < Test::Unit::TestCase
           s.scan(/\\w+/)
         ]
       end
-      puts r.take.compact
+      puts r.value.compact
     end;
   end
 end

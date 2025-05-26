@@ -2181,7 +2181,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
     gc_report(5, objspace, "newobj: %s\n", rb_obj_info(obj));
 
-    RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, rb_obj_info(obj));
+    // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, rb_obj_info(obj));
     return obj;
 }
 

@@ -169,7 +169,7 @@ rb_gc_vm_lock_no_barrier(void)
 void
 rb_gc_vm_unlock_no_barrier(unsigned int lev)
 {
-    RB_VM_LOCK_LEAVE_LEV(&lev);
+    RB_VM_LOCK_LEAVE_LEV_NB(&lev);
 }
 
 void

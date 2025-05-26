@@ -18,7 +18,7 @@ class TestIOConsoleInRactor < Test::Unit::TestCase
       else
         true                    # should not success
       end
-      puts r.take
+      puts r.value
     end;
 
     assert_in_out_err(%W[-r#{path}], "#{<<~"begin;"}\n#{<<~'end;'}", ["true"], [])
@@ -28,7 +28,7 @@ class TestIOConsoleInRactor < Test::Unit::TestCase
       r = Ractor.new do
         IO.console
       end
-      puts console.class == r.take.class
+      puts console.class == r.value.class
     end;
   end
 end if defined? Ractor
