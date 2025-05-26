@@ -248,26 +248,26 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {    if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
             // no subclasses
             // check only current class
-    
+
             // invalidate CCs
             struct rb_id_table *cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
             invalidate_method_cache_in_cc_table(cc_tbl, mid);
             if (RCLASS_CC_TBL_NOT_PRIME_P(klass, cc_tbl)) {
                 invalidate_method_cache_in_cc_table(RCLASS_PRIME_CC_TBL(klass), mid);
             }
-    
+
             // remove from callable_m_tbl, if exists
             struct rb_id_table *cm_tbl = RCLASS_WRITABLE_CALLABLE_M_TBL(klass);
             invalidate_callable_method_entry_in_callable_m_table(cm_tbl, mid);
             if (RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(klass, cm_tbl)) {
                 invalidate_callable_method_entry_in_callable_m_table(RCLASS_PRIME_CALLABLE_M_TBL(klass), mid);
             }
-    
+
             RB_DEBUG_COUNTER_INC(cc_invalidate_leaf);
         }
         else {
             const rb_callable_method_entry_t *cme = complemented_callable_method_entry(klass, mid);
-    
+
             if (cme) {
                 // invalidate cme if found to invalidate the inline method cache.
                 if (METHOD_ENTRY_CACHED(cme)) {
@@ -285,21 +285,21 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         else {
                             klass_housing_cme = RCLASS_ORIGIN(owner);
                         }
-    
+
                         // replace the cme that will be invalid in the all classexts
                         invalidate_callable_method_entry_in_every_m_table(klass_housing_cme, mid, cme);
                     }
-    
+
                     vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                     RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
-    
+
                     // In case of refinement ME, also invalidate the wrapped ME that
                     // could be cached at some callsite and is unreachable from any
                     // RCLASS_WRITABLE_CC_TBL.
                     if (cme->def->type == VM_METHOD_TYPE_REFINED && cme->def->body.refined.orig_me) {
                         vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.refined.orig_me);
                     }
-    
+
                     if (cme->def->iseq_overload) {
                         rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
                         if (monly_cme) {
@@ -307,7 +307,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         }
                     }
                 }
-    
+
                 // invalidate complement tbl
                 if (METHOD_ENTRY_COMPLEMENTED(cme)) {
                     VALUE defined_class = cme->defined_class;
@@ -318,14 +318,14 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         invalidate_complemented_method_entry_in_callable_m_table(prime_cm_table, mid);
                     }
                 }
-    
+
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
             }
             else {
                 invalidate_negative_cache(mid);
             }
         }
-    
+
         rb_gccct_clear_table(Qnil);
 }
 }

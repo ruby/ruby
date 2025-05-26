@@ -746,11 +746,11 @@ void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
     RB_VM_LOCKING() {    rb_vm_barrier();
-    
+
         // Compile a block version starting at the current instruction
         uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
         uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
-    
+
         if (jit_exception) {
             iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
         }
