@@ -3656,8 +3656,15 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
 static enum obj_traverse_iterator_result
 move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 {
-    size_t size = rb_gc_obj_slot_size(obj);
-    memcpy((void *)data->replacement, (void *)obj, size);
+    // Copy flags
+    VALUE ignored_flags = RUBY_FL_PROMOTED;
+    RBASIC(data->replacement)->flags = (RBASIC(obj)->flags & ~ignored_flags) | (RBASIC(data->replacement)->flags & ignored_flags);
+    // Copy contents without the flags
+    memcpy(
+        (char *)data->replacement + sizeof(VALUE),
+        (char *)obj + sizeof(VALUE),
+        rb_gc_obj_slot_size(obj) - sizeof(VALUE)
+    );
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
 

@@ -2427,6 +2427,7 @@ end
 assert_equal 'ok', %q{
   r = Ractor.new do
     o = Ractor.receive
+    GC.verify_internal_consistency
     GC.start
     o
   end
