@@ -294,8 +294,9 @@ static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool perma
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 
 #define RCLASS_IS_ROOT FL_USER0
-// 1 is for RUBY_FL_SINGLETON or RMODULE_ALLOCATED_BUT_NOT_INITIALIZED (see class.c)
+// 1 is for RUBY_FL_SINGLETON or RMODULE_IS_REFINEMENT
 #define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
+#define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
 // 4-19: SHAPE_FLAG_MASK
 
@@ -485,7 +486,7 @@ VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
-void rb_module_set_initialized(VALUE module);
+void rb_class_set_initialized(VALUE klass);
 void rb_module_check_initializable(VALUE module);
 VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
@@ -794,6 +795,13 @@ static inline void
 RCLASS_SET_CLONED(VALUE klass, bool cloned)
 {
     RCLASSEXT_CLONED(RCLASS_EXT_PRIME(klass)) = cloned;
+}
+
+static inline bool
+RCLASS_INITIALIZED_P(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE));
+    return FL_TEST_RAW(klass, RCLASS_IS_INITIALIZED);
 }
 
 #endif /* INTERNAL_CLASS_H */

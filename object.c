@@ -2069,7 +2069,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     else {
         super = argv[0];
         rb_check_inheritable(super);
-        if (super != rb_cBasicObject && !RCLASS_SUPER(super)) {
+        if (!RCLASS_INITIALIZED_P(super)) {
             rb_raise(rb_eTypeError, "can't inherit uninitialized class");
         }
     }
@@ -2126,7 +2126,7 @@ class_get_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
-    if (RCLASS_SUPER(klass) == 0 && klass != rb_cBasicObject) {
+    if (!RCLASS_INITIALIZED_P(klass)) {
         rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
     }
     if (RCLASS_SINGLETON_P(klass)) {
