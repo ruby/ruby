@@ -422,7 +422,8 @@ rb_class_modify_check(VALUE klass)
         Check_Type(klass, T_CLASS);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_module_set_initialized(klass);
+        // TODO: shouldn't this only happen in a few places?
+        rb_class_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
         const char *desc;
