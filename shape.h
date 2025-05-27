@@ -125,8 +125,7 @@ shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
 RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
-bool rb_shape_too_complex_p(rb_shape_t *shape);
-bool rb_shape_id_too_complex_p(shape_id_t shape_id);
+bool rb_shape_too_complex_p(shape_id_t shape_id);
 bool rb_shape_has_object_id(shape_id_t shape_id);
 
 shape_id_t rb_shape_transition_frozen(VALUE obj);

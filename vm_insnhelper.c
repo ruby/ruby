@@ -1275,7 +1275,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     }
 
     if (LIKELY(cached_id == shape_id)) {
-        RUBY_ASSERT(!rb_shape_id_too_complex_p(cached_id));
+        RUBY_ASSERT(!rb_shape_too_complex_p(cached_id));
 
         if (index == ATTR_INDEX_NOT_SET) {
             return default_value;
@@ -1316,7 +1316,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (rb_shape_id_too_complex_p(shape_id)) {
+        if (rb_shape_too_complex_p(shape_id)) {
             st_table *table = NULL;
             switch (BUILTIN_TYPE(obj)) {
               case T_CLASS:
@@ -1394,7 +1394,7 @@ general_path:
 static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
-    RUBY_ASSERT(!rb_shape_id_too_complex_p(next_shape_id));
+    RUBY_ASSERT(!rb_shape_too_complex_p(next_shape_id));
 
     // Cache population code
     if (is_attr) {
@@ -1422,7 +1422,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 
         shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
-        if (!rb_shape_id_too_complex_p(next_shape_id)) {
+        if (!rb_shape_too_complex_p(next_shape_id)) {
             populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
         }
 
@@ -1495,7 +1495,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_id_too_complex_p(dest_shape_id));
+            RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_too_complex_p(dest_shape_id));
 
             if (LIKELY(shape_id == dest_shape_id)) {
                 RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
