@@ -2330,7 +2330,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         goto clear;
     }
 
-    rb_shape_t *src_shape = rb_obj_shape(obj);
+    shape_id_t src_shape_id = rb_obj_shape_id(obj);
 
     if (rb_gen_fields_tbl_get(obj, 0, &obj_fields_tbl)) {
         if (gen_fields_tbl_count(obj, obj_fields_tbl) == 0)
@@ -2338,26 +2338,19 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
         FL_SET(dest, FL_EXIVAR);
 
-        if (rb_shape_too_complex_p(src_shape)) {
-            // obj is TOO_COMPLEX so we can copy its iv_hash
-            st_table *table = st_copy(obj_fields_tbl->as.complex.table);
-            if (rb_shape_has_object_id(src_shape)) {
-                st_data_t id = (st_data_t)ruby_internal_object_id;
-                st_delete(table, &id, NULL);
-            }
-            rb_obj_init_too_complex(dest, table);
-
+        if (rb_shape_id_too_complex_p(src_shape_id)) {
+            rb_shape_copy_complex_ivars(dest, obj, src_shape_id, obj_fields_tbl->as.complex.table);
             return;
         }
 
-        rb_shape_t *shape_to_set_on_dest = src_shape;
-        rb_shape_t *initial_shape = rb_obj_shape(dest);
+        shape_id_t dest_shape_id = src_shape_id;
+        shape_id_t initial_shape_id = rb_obj_shape_id(dest);
 
-        if (!rb_shape_canonical_p(src_shape)) {
-            RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
+        if (!rb_shape_id_canonical_p(src_shape_id)) {
+            RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_ROOT);
 
-            shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
-            if (UNLIKELY(rb_shape_too_complex_p(shape_to_set_on_dest))) {
+            dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+            if (UNLIKELY(rb_shape_id_too_complex_p(dest_shape_id))) {
                 st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
                 rb_obj_copy_ivs_to_hash_table(obj, table);
                 rb_obj_init_too_complex(dest, table);
@@ -2366,39 +2359,18 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             }
         }
 
-        if (!shape_to_set_on_dest->capacity) {
-            rb_shape_set_shape(dest, shape_to_set_on_dest);
+        if (!RSHAPE(dest_shape_id)->capacity) {
+            rb_shape_set_shape_id(dest, dest_shape_id);
             FL_UNSET(dest, FL_EXIVAR);
             return;
         }
 
-        new_fields_tbl = gen_fields_tbl_resize(0, shape_to_set_on_dest->capacity);
+        new_fields_tbl = gen_fields_tbl_resize(0, RSHAPE(dest_shape_id)->capacity);
 
         VALUE *src_buf = obj_fields_tbl->as.shape.fields;
         VALUE *dest_buf = new_fields_tbl->as.shape.fields;
 
-        if (src_shape->next_field_index == shape_to_set_on_dest->next_field_index) {
-            // Happy path, we can just memcpy the ivptr content
-            MEMCPY(dest_buf, src_buf, VALUE, shape_to_set_on_dest->next_field_index);
-
-            // Fire write barriers
-            for (uint32_t i = 0; i < shape_to_set_on_dest->next_field_index; i++) {
-                RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
-            }
-        }
-        else {
-            rb_shape_t *dest_shape = shape_to_set_on_dest;
-            while (src_shape->parent_id != INVALID_SHAPE_ID) {
-                if (src_shape->type == SHAPE_IVAR) {
-                    while (dest_shape->edge_name != src_shape->edge_name) {
-                        dest_shape = RSHAPE(dest_shape->parent_id);
-                    }
-
-                    RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
-                }
-                src_shape = RSHAPE(src_shape->parent_id);
-            }
-        }
+        rb_shape_copy_fields(dest, dest_buf, dest_shape_id, obj, src_buf, src_shape_id);
 
         /*
          * c.fields_tbl may change in gen_fields_copy due to realloc,
@@ -2409,7 +2381,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             st_insert(generic_fields_tbl_no_ractor_check(obj), (st_data_t)dest, (st_data_t)new_fields_tbl);
         }
 
-        rb_shape_set_shape(dest, shape_to_set_on_dest);
+        rb_shape_set_shape_id(dest, dest_shape_id);
     }
     return;
 

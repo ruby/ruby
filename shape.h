@@ -127,6 +127,8 @@ bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *v
 RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
 bool rb_shape_too_complex_p(rb_shape_t *shape);
 bool rb_shape_id_too_complex_p(shape_id_t shape_id);
+bool rb_shape_has_object_id(rb_shape_t *shape);
+bool rb_shape_id_has_object_id(shape_id_t shape_id);
 
 void rb_shape_set_shape(VALUE obj, rb_shape_t *shape);
 shape_id_t rb_shape_transition_frozen(VALUE obj);
@@ -136,10 +138,11 @@ shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
 
-bool rb_shape_has_object_id(rb_shape_t *shape);
 void rb_shape_free_all(void);
 
-rb_shape_t *rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape);
+shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
+void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE src, VALUE *src_buf, shape_id_t src_shape_id);
+void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
 static inline rb_shape_t *
 rb_obj_shape(VALUE obj)
@@ -151,6 +154,12 @@ static inline bool
 rb_shape_canonical_p(rb_shape_t *shape)
 {
     return !shape->flags;
+}
+
+static inline bool
+rb_shape_id_canonical_p(shape_id_t shape_id)
+{
+    return rb_shape_canonical_p(RSHAPE(shape_id));
 }
 
 static inline shape_id_t
