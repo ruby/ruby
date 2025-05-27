@@ -476,7 +476,7 @@ EOF
     refute_match response_success, @stub_ui.output
   end
 
-  def test_remove_owners_unathorized_api_key
+  def test_remove_owners_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Owner removed successfully."
 
@@ -541,7 +541,7 @@ EOF
     assert_empty reused_otp_codes
   end
 
-  def test_add_owners_unathorized_api_key
+  def test_add_owners_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Owner added successfully."
 
