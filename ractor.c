@@ -3645,6 +3645,10 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
+	if (FL_TEST_RAW(obj, FL_FINALIZE)) {
+	    rb_raise(rb_eRactorError, "can not move an object with finalizer");
+	}
+
         VALUE type = RB_BUILTIN_TYPE(obj);
         type |= wb_protected_types[type] ? FL_WB_PROTECTED : 0;
         NEWOBJ_OF(moved, struct RBasic, 0, type, rb_gc_obj_slot_size(obj), 0);
@@ -3680,6 +3684,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
     return traverse_cont;
 }
 

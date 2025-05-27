@@ -54,4 +54,23 @@ class TestObjSpaceRactor < Test::Unit::TestCase
       ractors.each(&:take)
     RUBY
   end
+
+  def test_move_finalizer
+    assert_ractor(<<~'RUBY', require: 'objspace')
+      r = Ractor.new do
+        Ractor.receive
+      end
+
+      1_000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o, proc { })
+        begin
+          r.send(o, move: true)
+        rescue Ractor::Error => e
+          raise unless e.message.include?("finalizer")
+          break
+        end
+      end
+    RUBY
+  end
 end
