@@ -331,7 +331,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_id_too_complex_p(src_shape_id)) {
+    if (rb_shape_too_complex_p(src_shape_id)) {
         rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
@@ -343,7 +343,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_T_OBJECT);
 
         dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-        if (UNLIKELY(rb_shape_id_too_complex_p(dest_shape_id))) {
+        if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
             st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
             rb_obj_copy_ivs_to_hash_table(obj, table);
             rb_obj_init_too_complex(dest, table);
@@ -496,7 +496,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
 
         if (RB_OBJ_FROZEN(obj)) {
             shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-            if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
+            if (!rb_shape_obj_too_complex_p(clone) && rb_shape_too_complex_p(next_shape_id)) {
                 rb_evict_ivars_to_hash(clone);
             }
             else {
@@ -520,7 +520,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
-        if (!rb_shape_obj_too_complex_p(clone) && rb_shape_id_too_complex_p(next_shape_id)) {
+        if (!rb_shape_obj_too_complex_p(clone) && rb_shape_too_complex_p(next_shape_id)) {
             rb_evict_ivars_to_hash(clone);
         }
         else {

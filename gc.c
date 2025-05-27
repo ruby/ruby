@@ -380,7 +380,7 @@ uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
     shape_id_t orig_shape_id = rb_obj_shape_id(obj);
-    if (rb_shape_id_too_complex_p(orig_shape_id)) {
+    if (rb_shape_too_complex_p(orig_shape_id)) {
         return (uint32_t)orig_shape_id;
     }
 
