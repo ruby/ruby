@@ -319,7 +319,7 @@ rb_shape_get_root_shape(void)
     return GET_SHAPE_TREE()->root_shape;
 }
 
-shape_id_t
+static inline shape_id_t
 rb_shape_id(rb_shape_t *shape)
 {
     if (shape == NULL) {
@@ -329,12 +329,13 @@ rb_shape_id(rb_shape_t *shape)
 }
 
 void
-rb_shape_each_shape(each_shape_callback callback, void *data)
+rb_shape_each_shape_id(each_shape_callback callback, void *data)
 {
-    rb_shape_t *cursor = rb_shape_get_root_shape();
+    rb_shape_t *start = rb_shape_get_root_shape();
+    rb_shape_t *cursor = start;
     rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
     while (cursor < end) {
-        callback(cursor, data);
+        callback((shape_id_t)(cursor - start), data);
         cursor += 1;
     }
 }
