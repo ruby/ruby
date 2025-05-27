@@ -339,7 +339,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     shape_id_t dest_shape_id = src_shape_id;
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
 
-    if (RSHAPE(initial_shape_id)->heap_index != RSHAPE(src_shape_id)->heap_index || !rb_shape_id_canonical_p(src_shape_id)) {
+    if (RSHAPE(initial_shape_id)->heap_index != RSHAPE(src_shape_id)->heap_index || !rb_shape_canonical_p(src_shape_id)) {
         RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_T_OBJECT);
 
         dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);

@@ -1659,7 +1659,7 @@ rb_obj_init_too_complex(VALUE obj, st_table *table)
 {
     // This method is meant to be called on newly allocated object.
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    RUBY_ASSERT(rb_shape_id_canonical_p(RBASIC_SHAPE_ID(obj)));
+    RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
     RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
 
     obj_transition_too_complex(obj, table);
@@ -2340,7 +2340,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         shape_id_t dest_shape_id = src_shape_id;
         shape_id_t initial_shape_id = rb_obj_shape_id(dest);
 
-        if (!rb_shape_id_canonical_p(src_shape_id)) {
+        if (!rb_shape_canonical_p(src_shape_id)) {
             RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_ROOT);
 
             dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
