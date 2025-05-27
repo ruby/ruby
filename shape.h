@@ -151,15 +151,9 @@ rb_obj_shape(VALUE obj)
 }
 
 static inline bool
-rb_shape_canonical_p(rb_shape_t *shape)
-{
-    return !shape->flags;
-}
-
-static inline bool
 rb_shape_id_canonical_p(shape_id_t shape_id)
 {
-    return rb_shape_canonical_p(RSHAPE(shape_id));
+    return !RSHAPE(shape_id)->flags;
 }
 
 static inline shape_id_t
