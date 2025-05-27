@@ -142,7 +142,7 @@ void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id,
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
 static inline bool
-rb_shape_id_canonical_p(shape_id_t shape_id)
+rb_shape_canonical_p(shape_id_t shape_id)
 {
     return !RSHAPE(shape_id)->flags;
 }
