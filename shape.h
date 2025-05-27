@@ -127,8 +127,7 @@ bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *v
 RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
 bool rb_shape_too_complex_p(rb_shape_t *shape);
 bool rb_shape_id_too_complex_p(shape_id_t shape_id);
-bool rb_shape_has_object_id(rb_shape_t *shape);
-bool rb_shape_id_has_object_id(shape_id_t shape_id);
+bool rb_shape_has_object_id(shape_id_t shape_id);
 
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
@@ -237,7 +236,7 @@ bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 static inline bool
 rb_shape_obj_has_id(VALUE obj)
 {
-    return rb_shape_id_has_object_id(RBASIC_SHAPE_ID(obj));
+    return rb_shape_has_object_id(RBASIC_SHAPE_ID(obj));
 }
 
 // For ext/objspace

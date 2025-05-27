@@ -686,16 +686,16 @@ rb_shape_transition_complex(VALUE obj)
     return rb_shape_id(shape_transition_too_complex(original_shape));
 }
 
-bool
-rb_shape_has_object_id(rb_shape_t *shape)
+static inline bool
+shape_has_object_id(rb_shape_t *shape)
 {
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;
 }
 
 bool
-rb_shape_id_has_object_id(shape_id_t shape_id)
+rb_shape_has_object_id(shape_id_t shape_id)
 {
-    return rb_shape_has_object_id(RSHAPE(shape_id));
+    return shape_has_object_id(RSHAPE(shape_id));
 }
 
 shape_id_t
@@ -1081,7 +1081,7 @@ rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_t
 {
     // obj is TOO_COMPLEX so we can copy its iv_hash
     st_table *table = st_copy(fields_table);
-    if (rb_shape_id_has_object_id(src_shape_id)) {
+    if (rb_shape_has_object_id(src_shape_id)) {
         st_data_t id = (st_data_t)ruby_internal_object_id;
         st_delete(table, &id, NULL);
     }
@@ -1155,11 +1155,11 @@ shape_frozen(VALUE self)
 }
 
 static VALUE
-shape_has_object_id(VALUE self)
+shape_has_object_id_p(VALUE self)
 {
     shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
     rb_shape_t *shape = RSHAPE(shape_id);
-    return RBOOL(rb_shape_has_object_id(shape));
+    return RBOOL(shape_has_object_id(shape));
 }
 
 static VALUE
@@ -1467,7 +1467,7 @@ Init_shape(void)
     rb_define_method(rb_cShape, "depth", rb_shape_export_depth, 0);
     rb_define_method(rb_cShape, "too_complex?", shape_too_complex, 0);
     rb_define_method(rb_cShape, "shape_frozen?", shape_frozen, 0);
-    rb_define_method(rb_cShape, "has_object_id?", shape_has_object_id, 0);
+    rb_define_method(rb_cShape, "has_object_id?", shape_has_object_id_p, 0);
 
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
