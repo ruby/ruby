@@ -362,7 +362,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     }
 
     rb_shape_copy_fields(dest, dest_buf, dest_shape_id, obj, src_buf, src_shape_id);
-    rb_shape_set_shape_id(dest, dest_shape_id);
+    rb_obj_set_shape_id(dest, dest_shape_id);
 }
 
 static void
@@ -500,7 +500,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
                 rb_evict_ivars_to_hash(clone);
             }
             else {
-                rb_shape_set_shape_id(clone, next_shape_id);
+                rb_obj_set_shape_id(clone, next_shape_id);
             }
         }
         break;
@@ -524,7 +524,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
             rb_evict_ivars_to_hash(clone);
         }
         else {
-            rb_shape_set_shape_id(clone, next_shape_id);
+            rb_obj_set_shape_id(clone, next_shape_id);
         }
         break;
       }

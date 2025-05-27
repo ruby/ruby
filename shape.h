@@ -230,7 +230,7 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 
 shape_id_t rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t orig_shape_id);
 
-bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
+bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 static inline bool
 rb_shape_obj_has_id(VALUE obj)

@@ -1554,7 +1554,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
         xfree(fields);
     }
-    rb_shape_set_shape_id(obj, next_shape_id);
+    rb_obj_set_shape_id(obj, next_shape_id);
 
     if (locked) {
         RB_VM_LOCK_LEAVE_LEV(&lev);
@@ -1617,13 +1617,13 @@ obj_transition_too_complex(VALUE obj, st_table *table)
         if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             old_fields = ROBJECT_FIELDS(obj);
         }
-        rb_shape_set_shape_id(obj, shape_id);
+        rb_obj_set_shape_id(obj, shape_id);
         ROBJECT_SET_FIELDS_HASH(obj, table);
         break;
       case T_CLASS:
       case T_MODULE:
         old_fields = RCLASS_PRIME_FIELDS(obj);
-        rb_shape_set_shape_id(obj, shape_id);
+        rb_obj_set_shape_id(obj, shape_id);
         RCLASS_SET_FIELDS_HASH(obj, table);
         break;
       default:
@@ -1638,7 +1638,7 @@ obj_transition_too_complex(VALUE obj, st_table *table)
                  * and hold the table because the xmalloc could trigger a GC
                  * compaction. We want the table to be updated rather than
                  * the original fields. */
-                rb_shape_set_shape_id(obj, shape_id);
+                rb_obj_set_shape_id(obj, shape_id);
                 old_fields_tbl->as.complex.table = table;
                 old_fields = (VALUE *)old_fields_tbl;
             }
@@ -1647,7 +1647,7 @@ obj_transition_too_complex(VALUE obj, st_table *table)
             fields_tbl->as.complex.table = table;
             st_insert(gen_ivs, (st_data_t)obj, (st_data_t)fields_tbl);
 
-            rb_shape_set_shape_id(obj, shape_id);
+            rb_obj_set_shape_id(obj, shape_id);
         }
     }
 
@@ -1831,7 +1831,7 @@ generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int e
 
     fields_lookup->fields_tbl = fields_tbl;
     if (fields_lookup->shape_id) {
-        rb_shape_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
+        rb_obj_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
     }
 
     return ST_CONTINUE;
@@ -1986,7 +1986,7 @@ obj_ivar_set_shape_resize_fields(VALUE obj, attr_index_t old_capa, attr_index_t 
 static void
 obj_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *_data)
 {
-    rb_shape_set_shape_id(obj, shape_id);
+    rb_obj_set_shape_id(obj, shape_id);
 }
 
 static void
@@ -2038,7 +2038,7 @@ rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 }
 
 bool
-rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id)
+rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id)
 {
     if (rb_obj_shape_id(obj) == shape_id) {
         return false;
@@ -2063,7 +2063,7 @@ void rb_obj_freeze_inline(VALUE x)
         if (rb_shape_too_complex_p(next_shape_id) && !rb_shape_obj_too_complex_p(x)) {
             rb_evict_fields_to_hash(x);
         }
-        rb_shape_set_shape_id(x, next_shape_id);
+        rb_obj_set_shape_id(x, next_shape_id);
 
         if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);
@@ -2354,7 +2354,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         }
 
         if (!RSHAPE(dest_shape_id)->capacity) {
-            rb_shape_set_shape_id(dest, dest_shape_id);
+            rb_obj_set_shape_id(dest, dest_shape_id);
             FL_UNSET(dest, FL_EXIVAR);
             return;
         }
@@ -2375,7 +2375,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             st_insert(generic_fields_tbl_no_ractor_check(obj), (st_data_t)dest, (st_data_t)new_fields_tbl);
         }
 
-        rb_shape_set_shape_id(dest, dest_shape_id);
+        rb_obj_set_shape_id(dest, dest_shape_id);
     }
     return;
 
@@ -4671,7 +4671,7 @@ class_ivar_set_shape_resize_fields(VALUE obj, attr_index_t _old_capa, attr_index
 static void
 class_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *_data)
 {
-    rb_shape_set_shape_id(obj, shape_id);
+    rb_obj_set_shape_id(obj, shape_id);
 }
 
 static void

@@ -959,8 +959,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-
-    rb_shape_set_shape_id((VALUE)fake_str, 0);
+    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID);
 
     if (!name) {
         RUBY_ASSERT_ALWAYS(len == 0);
