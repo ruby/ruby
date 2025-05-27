@@ -547,9 +547,14 @@ static VALUE
 set_inspect(VALUE set, VALUE dummy, int recur)
 {
     VALUE str;
+    VALUE klass_name = rb_class_path(CLASS_OF(set));
 
-    if (recur) return rb_usascii_str_new2("#<Set: {...}>");
-    str = rb_str_buf_new2("#<Set: {");
+    if (recur) {
+	str = rb_sprintf("#<%"PRIsVALUE": {...}>", klass_name);
+	return rb_str_export_to_enc(str, rb_usascii_encoding());
+    }
+
+    str = rb_sprintf("#<%"PRIsVALUE": {", klass_name);
     set_iter(set, set_inspect_i, str);
     rb_str_buf_cat2(str, "}>");
 

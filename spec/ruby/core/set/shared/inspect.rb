@@ -22,4 +22,11 @@ describe :set_inspect, shared: true do
     set1.send(@method).should be_kind_of(String)
     set1.send(@method).should include("#<Set: {...}>")
   end
+
+  it "returns a String with the class name" do
+    class MySet < Set; end
+    MySet[].send(@method).should include("#<MySet: {}>")
+  ensure
+    Object.send(:remove_const, :MySet) if defined?(MySet)
+  end
 end
