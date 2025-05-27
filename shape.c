@@ -685,6 +685,12 @@ rb_shape_has_object_id(rb_shape_t *shape)
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;
 }
 
+bool
+rb_shape_id_has_object_id(shape_id_t shape_id)
+{
+    return rb_shape_has_object_id(RSHAPE(shape_id));
+}
+
 shape_id_t
 rb_shape_transition_object_id(VALUE obj)
 {
@@ -1030,6 +1036,53 @@ rb_shape_rebuild_shape(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     }
 
     return midway_shape;
+}
+
+shape_id_t
+rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
+{
+    return rb_shape_id(rb_shape_rebuild_shape(RSHAPE(initial_shape_id), RSHAPE(dest_shape_id)));
+}
+
+void
+rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE src, VALUE *src_buf, shape_id_t src_shape_id)
+{
+    rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
+    rb_shape_t *src_shape = RSHAPE(src_shape_id);
+
+    if (src_shape->next_field_index == dest_shape->next_field_index) {
+        // Happy path, we can just memcpy the ivptr content
+        MEMCPY(dest_buf, src_buf, VALUE, dest_shape->next_field_index);
+
+        // Fire write barriers
+        for (uint32_t i = 0; i < dest_shape->next_field_index; i++) {
+            RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
+        }
+    }
+    else {
+        while (src_shape->parent_id != INVALID_SHAPE_ID) {
+            if (src_shape->type == SHAPE_IVAR) {
+                while (dest_shape->edge_name != src_shape->edge_name) {
+                    dest_shape = RSHAPE(dest_shape->parent_id);
+                }
+
+                RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
+            }
+            src_shape = RSHAPE(src_shape->parent_id);
+        }
+    }
+}
+
+void
+rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table)
+{
+    // obj is TOO_COMPLEX so we can copy its iv_hash
+    st_table *table = st_copy(fields_table);
+    if (rb_shape_id_has_object_id(src_shape_id)) {
+        st_data_t id = (st_data_t)ruby_internal_object_id;
+        st_delete(table, &id, NULL);
+    }
+    rb_obj_init_too_complex(dest, table);
 }
 
 RUBY_FUNC_EXPORTED bool

@@ -322,7 +322,6 @@ void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
     RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-
     RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
 
     unsigned long src_num_ivs = rb_ivar_count(obj);
@@ -330,28 +329,21 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         return;
     }
 
-    rb_shape_t *src_shape = rb_obj_shape(obj);
+    shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_too_complex_p(src_shape)) {
-        // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table *table = st_copy(ROBJECT_FIELDS_HASH(obj));
-        if (rb_shape_has_object_id(src_shape)) {
-            st_data_t id = (st_data_t)ruby_internal_object_id;
-            st_delete(table, &id, NULL);
-        }
-        rb_obj_init_too_complex(dest, table);
-
+    if (rb_shape_id_too_complex_p(src_shape_id)) {
+        rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
 
-    rb_shape_t *shape_to_set_on_dest = src_shape;
-    rb_shape_t *initial_shape = rb_obj_shape(dest);
+    shape_id_t dest_shape_id = src_shape_id;
+    shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
 
-    if (initial_shape->heap_index != src_shape->heap_index || !rb_shape_canonical_p(src_shape)) {
-        RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
+    if (RSHAPE(initial_shape_id)->heap_index != RSHAPE(src_shape_id)->heap_index || !rb_shape_id_canonical_p(src_shape_id)) {
+        RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_T_OBJECT);
 
-        shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
-        if (UNLIKELY(rb_shape_too_complex_p(shape_to_set_on_dest))) {
+        dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+        if (UNLIKELY(rb_shape_id_too_complex_p(dest_shape_id))) {
             st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
             rb_obj_copy_ivs_to_hash_table(obj, table);
             rb_obj_init_too_complex(dest, table);
@@ -363,36 +355,14 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     VALUE *src_buf = ROBJECT_FIELDS(obj);
     VALUE *dest_buf = ROBJECT_FIELDS(dest);
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
-    if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
-        rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
+    RUBY_ASSERT(src_num_ivs <= RSHAPE(dest_shape_id)->capacity);
+    if (RSHAPE(initial_shape_id)->capacity < RSHAPE(dest_shape_id)->capacity) {
+        rb_ensure_iv_list_size(dest, RSHAPE(initial_shape_id)->capacity, RSHAPE(dest_shape_id)->capacity);
         dest_buf = ROBJECT_FIELDS(dest);
     }
 
-    if (src_shape->next_field_index == shape_to_set_on_dest->next_field_index) {
-        // Happy path, we can just memcpy the fields content
-        MEMCPY(dest_buf, src_buf, VALUE, src_num_ivs);
-
-        // Fire write barriers
-        for (uint32_t i = 0; i < src_num_ivs; i++) {
-            RB_OBJ_WRITTEN(dest, Qundef, dest_buf[i]);
-        }
-    }
-    else {
-        rb_shape_t *dest_shape = shape_to_set_on_dest;
-        while (src_shape->parent_id != INVALID_SHAPE_ID) {
-            if (src_shape->type == SHAPE_IVAR) {
-                while (dest_shape->edge_name != src_shape->edge_name) {
-                    dest_shape = RSHAPE(dest_shape->parent_id);
-                }
-
-                RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
-            }
-            src_shape = RSHAPE(src_shape->parent_id);
-        }
-    }
-
-    rb_shape_set_shape(dest, shape_to_set_on_dest);
+    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, obj, src_buf, src_shape_id);
+    rb_shape_set_shape_id(dest, dest_shape_id);
 }
 
 static void
@@ -404,11 +374,20 @@ init_copy(VALUE dest, VALUE obj)
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     // Copies the shape id from obj to dest
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
-        rb_obj_copy_ivar(dest, obj);
-    }
-    else {
-        rb_copy_generic_ivar(dest, obj);
+    switch (BUILTIN_TYPE(obj)) {
+        case T_IMEMO:
+          rb_bug("Unreacheable");
+          break;
+        case T_CLASS:
+        case T_MODULE:
+          // noop: handled in class.c: rb_mod_init_copy
+          break;
+        case T_OBJECT:
+          rb_obj_copy_ivar(dest, obj);
+          break;
+        default:
+          rb_copy_generic_ivar(dest, obj);
+          break;
     }
     rb_gc_copy_attributes(dest, obj);
 }
