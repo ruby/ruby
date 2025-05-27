@@ -131,3 +131,14 @@ pub(crate) fn set_panic_hook() {
         }
     }));
 }
+
+/// This kind of assertion is enabled if either building in debug mode or the
+/// "extra_assert" feature is enabled.
+#[macro_export]
+macro_rules! extra_assert {
+    ($($arg:tt)*) => {
+        if std::cfg!(any(debug_assertions, feature = "extra_assert")) {
+            std::assert!($($arg)*);
+        }
+    };
+}
