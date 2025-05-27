@@ -1663,7 +1663,7 @@ rb_obj_init_too_complex(VALUE obj, st_table *table)
 {
     // This method is meant to be called on newly allocated object.
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    RUBY_ASSERT(rb_shape_canonical_p(rb_obj_shape(obj)));
+    RUBY_ASSERT(rb_shape_id_canonical_p(RBASIC_SHAPE_ID(obj)));
     RUBY_ASSERT(rb_obj_shape(obj)->next_field_index == 0);
 
     obj_transition_too_complex(obj, table);
