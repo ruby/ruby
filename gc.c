@@ -373,7 +373,7 @@ rb_gc_get_shape(VALUE obj)
 void
 rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 {
-    rb_shape_set_shape_id(obj, (uint32_t)shape_id);
+    rb_obj_set_shape_id(obj, (uint32_t)shape_id);
 }
 
 uint32_t
