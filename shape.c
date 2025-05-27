@@ -347,10 +347,6 @@ rb_shape_lookup(shape_id_t shape_id)
     return &GET_SHAPE_TREE()->shape_list[shape_id];
 }
 
-#if !SHAPE_IN_BASIC_FLAGS
-shape_id_t rb_generic_shape_id(VALUE obj);
-#endif
-
 RUBY_FUNC_EXPORTED shape_id_t
 rb_obj_shape_id(VALUE obj)
 {
@@ -358,20 +354,7 @@ rb_obj_shape_id(VALUE obj)
         return SPECIAL_CONST_SHAPE_ID;
     }
 
-#if SHAPE_IN_BASIC_FLAGS
     return RBASIC_SHAPE_ID(obj);
-#else
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        return ROBJECT_SHAPE_ID(obj);
-        break;
-      case T_CLASS:
-      case T_MODULE:
-        return RCLASS_SHAPE_ID(obj);
-      default:
-        return rb_generic_shape_id(obj);
-    }
-#endif
 }
 
 size_t
@@ -517,8 +500,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
         }
     }
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         // The situation may have changed while we waited for the lock.
         // So we load the edge again.
         edges = RUBY_ATOMIC_PTR_LOAD(shape->edges);
@@ -577,7 +559,6 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
             }
         }
     }
-    RB_VM_LOCK_LEAVE();
 
     return res;
 }
@@ -632,62 +613,21 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
     }
 }
 
-bool
-rb_shape_transition_remove_ivar(VALUE obj, ID id, VALUE *removed)
+shape_id_t
+rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id)
 {
-    rb_shape_t *shape = rb_obj_shape(obj);
+    shape_id_t shape_id = rb_obj_shape_id(obj);
+    rb_shape_t *shape = RSHAPE(shape_id);
 
-    if (UNLIKELY(rb_shape_too_complex_p(shape))) {
-        return false;
-    }
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape));
 
     rb_shape_t *removed_shape = NULL;
     rb_shape_t *new_shape = remove_shape_recursive(shape, id, &removed_shape);
     if (new_shape) {
-        RUBY_ASSERT(removed_shape != NULL);
-
-        if (UNLIKELY(rb_shape_too_complex_p(new_shape))) {
-            return false;
-        }
-
-        RUBY_ASSERT(new_shape->next_field_index == shape->next_field_index - 1);
-
-        VALUE *fields;
-        switch(BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            fields = RCLASS_PRIME_FIELDS(obj);
-            break;
-          case T_OBJECT:
-            fields = ROBJECT_FIELDS(obj);
-            break;
-          default: {
-            struct gen_fields_tbl *fields_tbl;
-            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
-            fields = fields_tbl->as.shape.fields;
-            break;
-          }
-        }
-
-        *removed = fields[removed_shape->next_field_index - 1];
-
-        memmove(&fields[removed_shape->next_field_index - 1], &fields[removed_shape->next_field_index],
-                ((new_shape->next_field_index + 1) - removed_shape->next_field_index) * sizeof(VALUE));
-
-        // Re-embed objects when instances become small enough
-        // This is necessary because YJIT assumes that objects with the same shape
-        // have the same embeddedness for efficiency (avoid extra checks)
-        if (BUILTIN_TYPE(obj) == T_OBJECT &&
-                !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
-                rb_obj_embedded_size(new_shape->next_field_index) <= rb_gc_obj_slot_size(obj)) {
-            RB_FL_SET_RAW(obj, ROBJECT_EMBED);
-            memcpy(ROBJECT_FIELDS(obj), fields, new_shape->next_field_index * sizeof(VALUE));
-            xfree(fields);
-        }
-
-        rb_shape_set_shape(obj, new_shape);
+        *removed_shape_id = rb_shape_id(removed_shape);
+        return rb_shape_id(new_shape);
     }
-    return true;
+    return shape_id;
 }
 
 shape_id_t
@@ -745,8 +685,8 @@ rb_shape_has_object_id(rb_shape_t *shape)
     return shape->flags & SHAPE_FL_HAS_OBJECT_ID;
 }
 
-rb_shape_t *
-rb_shape_object_id_shape(VALUE obj)
+shape_id_t
+rb_shape_transition_object_id(VALUE obj)
 {
     rb_shape_t* shape = rb_obj_shape(obj);
     RUBY_ASSERT(shape);
@@ -755,13 +695,13 @@ rb_shape_object_id_shape(VALUE obj)
         while (shape->type != SHAPE_OBJ_ID) {
             shape = RSHAPE(shape->parent_id);
         }
-        return shape;
     }
-
-    bool dont_care;
-    rb_shape_t* next_shape = get_next_shape_internal(shape, ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
-    RUBY_ASSERT(next_shape);
-    return next_shape;
+    else {
+        bool dont_care;
+        shape = get_next_shape_internal(shape, ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    }
+    RUBY_ASSERT(shape);
+    return rb_shape_id(shape);
 }
 
 /*

@@ -38,7 +38,7 @@ jobs:
             libclang_path: '/usr/lib/llvm-14/lib/libclang.so.1'
 
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev'
+            configure: '--enable-yjit --enable-zjit=dev'
 
           - test_task: 'test-all'
             configure: '--enable-zjit=dev'
@@ -75,7 +75,7 @@ jobs:
 
       - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
 
       - uses: taiki-e/install-action@v2
@@ -109,6 +109,13 @@ jobs:
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
+
+      - name: Verify that --zjit-dump-disasm works
+        run: |
+          ./miniruby --zjit-call-threshold=1 --zjit-dump-disasm -e0 | \
+          wc -l | \
+          ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
+        if: ${{ contains(matrix.configure, 'jit=dev') }}
 
       # Check that the binary was built with ZJIT
       - name: Check ZJIT enabled

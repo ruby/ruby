@@ -93,15 +93,11 @@ static rb_encoding *global_enc_ascii,
                    *global_enc_utf_8,
                    *global_enc_us_ascii;
 
-#define GLOBAL_ENC_TABLE_ENTER(enc_table) struct enc_table *enc_table = &global_enc_table; RB_VM_LOCK_ENTER()
-#define GLOBAL_ENC_TABLE_LEAVE()                                                           RB_VM_LOCK_LEAVE()
-#define GLOBAL_ENC_TABLE_EVAL(enc_table, expr) do { \
-    GLOBAL_ENC_TABLE_ENTER(enc_table); \
-    { \
-        expr; \
-    } \
-    GLOBAL_ENC_TABLE_LEAVE(); \
-} while (0)
+#define GLOBAL_ENC_TABLE_LOCKING(tbl) \
+    for (struct enc_table *tbl = &global_enc_table, **locking = &tbl; \
+         locking; \
+         locking = NULL) \
+        RB_VM_LOCKING()
 
 
 #define ENC_DUMMY_FLAG (1<<24)
@@ -409,8 +405,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
 {
     int index;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         index = enc_registered(enc_table, name);
 
         if (index >= 0) {
@@ -430,7 +425,6 @@ rb_enc_register(const char *name, rb_encoding *encoding)
             set_encoding_const(name, rb_enc_from_index(index));
         }
     }
-    GLOBAL_ENC_TABLE_LEAVE();
     return index;
 }
 
@@ -450,15 +444,13 @@ enc_registered(struct enc_table *enc_table, const char *name)
 void
 rb_encdb_declare(const char *name)
 {
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         int idx = enc_registered(enc_table, name);
         if (idx < 0) {
             idx = enc_register(enc_table, name, 0);
         }
         set_encoding_const(name, rb_enc_from_index(idx));
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 }
 
 static void
@@ -490,13 +482,11 @@ set_base_encoding(struct enc_table *enc_table, int index, rb_encoding *base)
 void
 rb_enc_set_base(const char *name, const char *orig)
 {
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         int idx = enc_registered(enc_table, name);
         int origidx = enc_registered(enc_table, orig);
         set_base_encoding(enc_table, idx, rb_enc_from_index(origidx));
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 }
 
 /* for encdb.h
@@ -547,8 +537,7 @@ rb_encdb_replicate(const char *name, const char *orig)
 {
     int r;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         int origidx = enc_registered(enc_table, orig);
         int idx = enc_registered(enc_table, name);
 
@@ -557,7 +546,6 @@ rb_encdb_replicate(const char *name, const char *orig)
         }
         r = enc_replicate_with_index(enc_table, name, rb_enc_from_index(origidx), idx);
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return r;
 }
@@ -567,13 +555,11 @@ rb_define_dummy_encoding(const char *name)
 {
     int index;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         index = enc_replicate(enc_table, name, rb_ascii8bit_encoding());
         rb_encoding *enc = enc_table->list[index].enc;
         ENC_SET_DUMMY((rb_raw_encoding *)enc);
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return index;
 }
@@ -583,15 +569,13 @@ rb_encdb_dummy(const char *name)
 {
     int index;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         index = enc_replicate_with_index(enc_table, name,
                                          rb_ascii8bit_encoding(),
                                          enc_registered(enc_table, name));
         rb_encoding *enc = enc_table->list[index].enc;
         ENC_SET_DUMMY((rb_raw_encoding *)enc);
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return index;
 }
@@ -671,8 +655,7 @@ rb_enc_alias(const char *alias, const char *orig)
 {
     int idx, r;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         enc_check_addable(enc_table, alias);
         if ((idx = rb_enc_find_index(orig)) < 0) {
             r =  -1;
@@ -681,7 +664,6 @@ rb_enc_alias(const char *alias, const char *orig)
             r = enc_alias(enc_table, alias, idx);
         }
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return r;
 }
@@ -691,8 +673,7 @@ rb_encdb_alias(const char *alias, const char *orig)
 {
     int r;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         int idx = enc_registered(enc_table, orig);
 
         if (idx < 0) {
@@ -700,7 +681,6 @@ rb_encdb_alias(const char *alias, const char *orig)
         }
         r = enc_alias(enc_table, alias, idx);
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return r;
 }
@@ -767,8 +747,7 @@ load_encoding(const char *name)
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         if (loaded < 0 || 1 < loaded) {
             idx = -1;
         }
@@ -779,7 +758,6 @@ load_encoding(const char *name)
             idx = -1;
         }
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return idx;
 }
@@ -812,7 +790,9 @@ int
 rb_enc_autoload(rb_encoding *enc)
 {
     int i;
-    GLOBAL_ENC_TABLE_EVAL(enc_table, i = enc_autoload_body(enc_table, enc));
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        i = enc_autoload_body(enc_table, enc);
+    }
     if (i == -2) {
         i = load_encoding(rb_enc_name(enc));
     }
@@ -1509,11 +1489,9 @@ rb_locale_encindex(void)
         void Init_w32_codepage(void);
         Init_w32_codepage();
 # endif
-        GLOBAL_ENC_TABLE_ENTER(enc_table);
-        {
+        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
             enc_alias_internal(enc_table, "locale", idx);
         }
-        GLOBAL_ENC_TABLE_LEAVE();
     }
 
     return idx;
@@ -1555,8 +1533,7 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
         /* Already set */
         overridden = TRUE;
 
-    GLOBAL_ENC_TABLE_ENTER(enc_table);
-    {
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         if (NIL_P(encoding)) {
             def->index = -1;
             def->enc = 0;
@@ -1580,7 +1557,6 @@ enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const cha
             enc_alias_internal(enc_table, "filesystem", Init_enc_set_filesystem_encoding());
         }
     }
-    GLOBAL_ENC_TABLE_LEAVE();
 
     return overridden;
 }

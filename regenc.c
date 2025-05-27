@@ -985,7 +985,8 @@ onigenc_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar** pp, const
     if (code >= 'a' && code <= 'z' && (flags & ONIGENC_CASE_UPCASE)) {
       flags |= ONIGENC_CASE_MODIFIED;
       code += 'A' - 'a';
-    } else if (code >= 'A' && code <= 'Z' &&
+    }
+    else if (code >= 'A' && code <= 'Z' &&
 	(flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
       flags |= ONIGENC_CASE_MODIFIED;
       code += 'a' - 'A';
@@ -1013,7 +1014,8 @@ onigenc_single_byte_ascii_only_case_map(OnigCaseFoldType* flagP, const OnigUChar
     if (code >= 'a' && code <= 'z' && (flags & ONIGENC_CASE_UPCASE)) {
       flags |= ONIGENC_CASE_MODIFIED;
       code += 'A' - 'a';
-    } else if (code >= 'A' && code <= 'Z' &&
+    }
+    else if (code >= 'A' && code <= 'Z' &&
 	(flags & (ONIGENC_CASE_DOWNCASE | ONIGENC_CASE_FOLD))) {
       flags |= ONIGENC_CASE_MODIFIED;
       code += 'a' - 'A';

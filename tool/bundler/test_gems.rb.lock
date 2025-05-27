@@ -3,14 +3,12 @@ GEM
   specs:
     base64 (0.2.0)
     builder (3.3.0)
-    cgi (0.5.0.beta1)
-    cgi (0.5.0.beta1-java)
     compact_index (0.15.0)
     fiddle (1.1.6)
     logger (1.7.0)
     mustermann (3.0.3)
       ruby2_keywords (~> 0.0.1)
-    rack (3.1.12)
+    rack (3.1.15)
     rack-protection (4.1.1)
       base64 (>= 0.1.0)
       logger (>= 1.6.0)
@@ -49,10 +47,9 @@ PLATFORMS
 
 DEPENDENCIES
   builder (~> 3.2)
-  cgi (~> 0.5.0.beta1)
   compact_index (~> 0.15.0)
   fiddle
-  rack (~> 3.0)
+  rack (~> 3.1)
   rack-test (~> 2.1)
   rackup (~> 2.1)
   rake (~> 13.1)
@@ -64,13 +61,11 @@ DEPENDENCIES
 CHECKSUMS
   base64 (0.2.0) sha256=0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507
   builder (3.3.0) sha256=497918d2f9dca528fdca4b88d84e4ef4387256d984b8154e9d5d3fe5a9c8835f
-  cgi (0.5.0.beta1) sha256=e89d89608613f9bd053b82268cf202a64a589816d5b0f4f0a313945305d83b6d
-  cgi (0.5.0.beta1-java) sha256=1f638a6a14879ca2c78d7d42835efe7a27be8f39d4fad44d6e226fb877bbb8e2
   compact_index (0.15.0) sha256=5c6c404afca8928a7d9f4dde9524f6e1610db17e675330803055db282da84a8b
   fiddle (1.1.6) sha256=79e8d909e602d979434cf9fccfa6e729cb16432bb00e39c7596abe6bee1249ab
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203
   mustermann (3.0.3) sha256=d1f8e9ba2ddaed47150ddf81f6a7ea046826b64c672fbc92d83bce6b70657e88
-  rack (3.1.12) sha256=00d83055c89273eb13679ab562767b8826955aa6c4371d7d161deb975c50c540
+  rack (3.1.15) sha256=d12b3e9960d18a26ded961250f2c0e3b375b49ff40dbe6786e9c3b160cbffca4
   rack-protection (4.1.1) sha256=51a254a5d574a7f0ca4f0672025ce2a5ef7c8c3bd09c431349d683e825d7d16a
   rack-session (2.1.0) sha256=437c3916535b58ef71c816ce4a2dee0a01c8a52ae6077dc2b6cd19085760a290
   rack-test (2.2.0) sha256=005a36692c306ac0b4a9350355ee080fd09ddef1148a5f8b2ac636c720f5c463

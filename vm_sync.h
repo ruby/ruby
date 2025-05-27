@@ -119,10 +119,16 @@ rb_vm_lock_leave_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char 
 
 #define RB_VM_LOCK_ENTER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV(&_lev);
 #define RB_VM_LOCK_LEAVE()    RB_VM_LOCK_LEAVE_LEV(&_lev); }
+#define RB_VM_LOCKING() \
+    for (unsigned int vm_locking_level, vm_locking_do = (RB_VM_LOCK_ENTER_LEV(&vm_locking_level), 1); \
+         vm_locking_do; RB_VM_LOCK_LEAVE_LEV(&vm_locking_level), vm_locking_do = 0)
 
 #define RB_VM_LOCK_ENTER_LEV_NB(levp) rb_vm_lock_enter_nb(levp, __FILE__, __LINE__)
 #define RB_VM_LOCK_ENTER_NO_BARRIER()  { unsigned int _lev; RB_VM_LOCK_ENTER_LEV_NB(&_lev);
 #define RB_VM_LOCK_LEAVE_NO_BARRIER()    RB_VM_LOCK_LEAVE_LEV(&_lev); }
+#define RB_VM_LOCKING_NO_BARRIER() \
+    for (unsigned int vm_locking_level, vm_locking_do = (RB_VM_LOCK_ENTER_LEV_NB(&vm_locking_level), 1); \
+         vm_locking_do; RB_VM_LOCK_LEAVE_LEV(&vm_locking_level), vm_locking_do = 0)
 
 #if RUBY_DEBUG > 0
 void RUBY_ASSERT_vm_locking(void);

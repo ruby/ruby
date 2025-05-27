@@ -43,7 +43,8 @@ struct rb_ractor_basket {
         enum rb_ractor_basket_type e;
         rb_atomic_t atomic;
     } type;
-    VALUE sender;
+    VALUE sender; // Ractor object sending message
+    rb_thread_t *sending_th;
 
     union {
         struct {
@@ -117,14 +118,9 @@ struct rb_ractor_sync {
     struct rb_ractor_basket will_basket;
 
     struct ractor_wait {
-        enum rb_ractor_wait_status status;
-        enum rb_ractor_wakeup_status wakeup_status;
-        rb_thread_t *waiting_thread;
+        struct ccan_list_head waiting_threads;
+        // each thread has struct ccan_list_node ractor_waiting.waiting_node
     } wait;
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t cond;
-#endif
 };
 
 // created
@@ -152,7 +148,6 @@ struct rb_ractor_struct {
     struct rb_ractor_pub pub;
 
     struct rb_ractor_sync sync;
-    VALUE receiving_mutex;
 
     // vm wide barrier synchronization
     rb_nativethread_cond_t barrier_wait_cond;
@@ -282,11 +277,15 @@ rb_ractor_sleeper_thread_num(rb_ractor_t *r)
 }
 
 static inline void
-rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
+rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th, bool always_reset)
 {
     RUBY_DEBUG_LOG("th:%d->%u%s",
                    cr->threads.running_ec ? (int)rb_th_serial(cr->threads.running_ec->thread_ptr) : -1,
                    rb_th_serial(th), cr->threads.running_ec == th->ec ? " (same)" : "");
+
+    if (cr->threads.running_ec != th->ec || always_reset) {
+        th->running_time_us = 0;
+    }
 
     if (cr->threads.running_ec != th->ec) {
         if (0) {
@@ -296,10 +295,6 @@ rb_ractor_thread_switch(rb_ractor_t *cr, rb_thread_t *th)
     }
     else {
         return;
-    }
-
-    if (cr->threads.running_ec != th->ec) {
-        th->running_time_us = 0;
     }
 
     cr->threads.running_ec = th->ec;

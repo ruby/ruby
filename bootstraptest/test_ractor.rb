@@ -544,7 +544,7 @@ assert_equal '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]', %q{
   }.sort
 }
 
-# an exception in a Ractor will be re-raised at Ractor#receive
+# an exception in a Ractor main thread will be re-raised at Ractor#receive
 assert_equal '[RuntimeError, "ok", true]', %q{
   r = Ractor.new do
     raise 'ok' # exception will be transferred receiver
@@ -556,6 +556,18 @@ assert_equal '[RuntimeError, "ok", true]', %q{
      e.cause.message, #=> 'ok'
      e.ractor == r]   #=> true
   end
+}
+
+# an exception in a Ractor non-main thread will not be re-raised at Ractor#receive
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Thread.new do
+      raise 'ng'
+    end
+    sleep 0.1
+    'ok'
+  end
+  r.take
 }
 
 # threads in a ractor will killed
@@ -1564,6 +1576,24 @@ assert_equal '1', %q{
   }.take
 }
 
+# Ractor-local storage
+assert_equal '2', %q{
+  Ractor.new {
+    fails = 0
+    begin
+      Ractor.main[:key] # cannot get ractor local storage from non-main ractor
+    rescue => e
+      fails += 1 if e.message =~ /Cannot get ractor local/
+    end
+    begin
+      Ractor.main[:key] = 'val'
+    rescue => e
+      fails += 1 if e.message =~ /Cannot set ractor local/
+    end
+    fails
+  }.take
+}
+
 ###
 ### Synchronization tests
 ###
@@ -2275,4 +2305,136 @@ assert_equal 'ok', %q{
   100.times { Ractor.select(*workers) }
 
   'ok'
+}
+
+# Using Symbol#to_proc inside ractors
+# [Bug #21354]
+assert_equal 'ok', %q{
+  :inspect.to_proc
+  Ractor.new do
+    # It should not use this cached proc, it should create a new one. If it used
+    # the cached proc, we would get a ractor_confirm_belonging error here.
+    :inspect.to_proc
+  end.take
+  'ok'
+}
+
+# take vm lock when deleting generic ivars from the global table
+assert_equal 'ok', %q{
+  Ractor.new do
+    a = [1, 2, 3]
+    a.object_id
+    a.dup # this deletes generic ivar on dupped object
+    'ok'
+  end.take
+}
+
+# There are some bugs in Windows with multiple threads in same ractor calling ractor actions
+# Ex: https://github.com/ruby/ruby/actions/runs/14998660285/job/42139383905
+unless /mswin/ =~ RUBY_PLATFORM
+  # r.send and r.take from multiple threads
+  # [Bug #21037]
+  assert_equal '[true, true]', %q{
+  class Map
+    def initialize
+      @r = Ractor.new {
+        loop do
+          key = Ractor.receive
+          Ractor.yield key
+        end
+      }
+    end
+
+    def fetch(key)
+      @r.send key
+      @r.take
+    end
+  end
+
+  tm = Map.new
+  t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+  t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+  vals = t1.value + t2.value
+  [
+    vals.first(10).all? { |v| v == "t1" },
+    vals.last(10).all? { |v| v == "t2" }
+  ]
+  }
+
+  # r.send and Ractor.select from multiple threads
+  assert_equal '[true, true]', %q{
+  class Map
+    def initialize
+      @r = Ractor.new {
+        loop do
+          key = Ractor.receive
+          Ractor.yield key
+        end
+      }
+    end
+
+    def fetch(key)
+      @r.send key
+      _r, val = Ractor.select(@r)
+      val
+    end
+  end
+
+  tm = Map.new
+  t1 = Thread.new { 10.times.map { tm.fetch("t1") } }
+  t2 = Thread.new { 10.times.map { tm.fetch("t2") } }
+  vals = t1.value + t2.value
+  [
+    vals.first(10).all? { |v| v == "t1" },
+    vals.last(10).all? { |v| v == "t2" }
+  ]
+  }
+
+  # Ractor.receive in multiple threads in same ractor
+  # [Bug #17624]
+  assert_equal '["T1 received", "T2 received"]', %q{
+  r1 = Ractor.new do
+    output = []
+    m = Mutex.new
+    # Start two listener threads
+    t1 = Thread.new do
+      Ractor.receive
+      m.synchronize do
+        output << "T1 received"
+      end
+    end
+    t2 = Thread.new do
+      Ractor.receive
+      m.synchronize do
+        output << "T2 received"
+      end
+    end
+    sleep 0.1 until [t1,t2].all? { |t| t.status == "sleep" }
+    Ractor.main.send(:both_blocking)
+
+    [t1, t2].each(&:join)
+    output
+  end
+
+  Ractor.receive # wait until both threads have blocked
+  r1.send(1)
+  r1.send(2)
+  r1.take.sort
+  }
+end
+
+# Moving an old object
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    o = Ractor.receive
+    GC.verify_internal_consistency
+    GC.start
+    o
+  end
+
+  o = "ok"
+  # Make o an old object
+  3.times { GC.start }
+  r.send(o, move: true)
+  r.take
 }

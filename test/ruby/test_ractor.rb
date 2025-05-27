@@ -60,6 +60,14 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, "can not make shareable object for #<Method: String(Kernel)#itself()>", exception: Ractor::Error)
   end
 
+  def test_shareability_error_uses_inspect
+    x = (+"").instance_exec { method(:to_s) }
+    def x.to_s
+      raise "this should not be called"
+    end
+    assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()>", exception: Ractor::Error)
+  end
+
   def test_default_thread_group
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -69,6 +77,25 @@ class TestRactor < Test::Unit::TestCase
       ractor_id = Ractor.new { Thread.current.group.object_id }.take
       refute_equal main_ractor_id, ractor_id
     end;
+  end
+
+  def test_require_raises_and_no_ractor_belonging_issue
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("raise 'uh oh'")
+      f.flush
+      err_msg = Ractor.new(f.path) do |path|
+        begin
+          require path
+        rescue RuntimeError => e
+          e.message # had confirm belonging issue here
+        else
+          nil
+        end
+      end.take
+      assert_equal "uh oh", err_msg
+    RUBY
   end
 
   def assert_make_shareable(obj)

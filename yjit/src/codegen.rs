@@ -2445,6 +2445,11 @@ fn gen_getlocal_generic(
     ep_offset: u32,
     level: u32,
 ) -> Option<CodegenStatus> {
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
     let local_opnd = if level == 0 && jit.assume_no_ep_escape(asm) {
         // Load the local using SP register
         asm.local_opnd(ep_offset)
@@ -2533,6 +2538,11 @@ fn gen_setlocal_generic(
         asm.stack_pop(1);
 
         return Some(KeepCompiling);
+    }
+
+    // Split the block if we need to invalidate this instruction when EP escapes
+    if level == 0 && !jit.escapes_ep() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
     }
 
     let (flags_opnd, local_opnd) = if level == 0 && jit.assume_no_ep_escape(asm) {
@@ -3879,6 +3889,40 @@ fn gen_opt_aref(
         // General case. Call the [] method.
         gen_opt_send_without_block(jit, asm)
     }
+}
+
+fn gen_opt_aset_with(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    // We might allocate or raise
+    jit_prepare_non_leaf_call(jit, asm);
+
+    let key_opnd = Opnd::Value(jit.get_arg(0));
+    let recv_opnd = asm.stack_opnd(1);
+    let value_opnd = asm.stack_opnd(0);
+
+    extern "C" {
+        fn rb_vm_opt_aset_with(recv: VALUE, key: VALUE, value: VALUE) -> VALUE;
+    }
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_aset_with as *const u8,
+        vec![
+            recv_opnd,
+            key_opnd,
+            value_opnd,
+        ],
+    );
+    asm.stack_pop(2); // Keep it on stack during GC
+
+    asm.cmp(val_opnd, Qundef.into());
+    asm.je(Target::side_exit(Counter::opt_aset_with_qundef));
+
+    let top = asm.stack_push(Type::Unknown);
+    asm.mov(top, val_opnd);
+
+    return Some(KeepCompiling);
 }
 
 fn gen_opt_aset(
@@ -10743,6 +10787,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_aref => Some(gen_opt_aref),
         YARVINSN_opt_aset => Some(gen_opt_aset),
         YARVINSN_opt_aref_with => Some(gen_opt_aref_with),
+        YARVINSN_opt_aset_with => Some(gen_opt_aset_with),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),

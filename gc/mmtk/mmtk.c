@@ -4,6 +4,7 @@
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
+#include "internal/object.h"
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
@@ -59,7 +60,7 @@ struct MMTk_final_job {
             void *data;
         } dfree;
         struct {
-            VALUE object_id;
+            /* HACK: we store the object ID on the 0th element of this array. */
             VALUE finalizer_array;
         } finalize;
     } as;
@@ -229,7 +230,6 @@ rb_mmtk_scan_objspace(void)
           case MMTK_FINAL_JOB_DFREE:
             break;
           case MMTK_FINAL_JOB_FINALIZE:
-            rb_gc_impl_mark(objspace, job->as.finalize.object_id);
             rb_gc_impl_mark(objspace, job->as.finalize.finalizer_array);
             break;
           default:
@@ -285,7 +285,6 @@ make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
     job->kind = MMTK_FINAL_JOB_FINALIZE;
-    job->as.finalize.object_id = rb_obj_id((VALUE)obj);
     job->as.finalize.finalizer_array = table;
 
     objspace->finalizer_jobs = job;
@@ -455,6 +454,7 @@ rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(640));
     // Pretend we have 5 size pools
@@ -855,7 +855,7 @@ gc_run_finalizers_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
 }
 
 static void
@@ -874,17 +874,15 @@ gc_run_finalizers(void *data)
             job->as.dfree.func(job->as.dfree.data);
             break;
           case MMTK_FINAL_JOB_FINALIZE: {
-            VALUE object_id = job->as.finalize.object_id;
             VALUE finalizer_array = job->as.finalize.finalizer_array;
 
             rb_gc_run_obj_finalizer(
-                job->as.finalize.object_id,
-                RARRAY_LEN(finalizer_array),
+                RARRAY_AREF(finalizer_array, 0),
+                RARRAY_LEN(finalizer_array) - 1,
                 gc_run_finalizers_get_final,
                 (void *)finalizer_array
             );
 
-            RB_GC_GUARD(object_id);
             RB_GC_GUARD(finalizer_array);
             break;
           }
@@ -950,7 +948,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         st_add_direct(objspace->finalizer_table, obj, table);
     }
@@ -966,7 +964,11 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     struct objspace *objspace = objspace_ptr;
 
     st_data_t data = obj;
+
+    int lev = rb_gc_vm_lock();
     st_delete(objspace->finalizer_table, &data, 0);
+    rb_gc_vm_unlock(lev);
+
     FL_UNSET(obj, FL_FINALIZE);
 }
 
@@ -979,14 +981,17 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    int lev = rb_gc_vm_lock();
     if (RB_LIKELY(st_lookup(objspace->finalizer_table, obj, &data))) {
-        table = (VALUE)data;
+        table = rb_ary_dup((VALUE)data);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         st_insert(objspace->finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
     }
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
+    rb_gc_vm_unlock(lev);
 }
 
 static int
@@ -1016,7 +1021,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
         if (rb_gc_shutdown_call_finalizer_p(obj)) {
             rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+            RBASIC_RESET_FLAGS(obj);
         }
     }
     mmtk_free_raw_vec_of_obj_ref(registered_candidates);

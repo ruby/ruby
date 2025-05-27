@@ -535,6 +535,8 @@ module TestStruct
   end
 
   def test_named_structs_are_not_rooted
+    omit 'skip on riscv64-linux CI machine. See https://github.com/ruby/ruby/pull/13422' if ENV['RUBY_DEBUG'] == 'ci' && /riscv64-linux/ =~ RUBY_DESCRIPTION
+
     # [Bug #20311]
     assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
       code = proc do

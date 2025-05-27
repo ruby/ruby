@@ -23,4 +23,12 @@ describe "Set#add?" do
     @set.add?("cat")
     @set.add?("cat").should be_nil
   end
+
+  it "raises RuntimeError when called during iteration" do
+    set = Set[:a, :b, :c, :d, :e, :f]
+    set.each do |_m|
+      -> { set << 1 }.should raise_error(RuntimeError, /iteration/)
+    end
+    set.should == Set[:a, :b, :c, :d, :e, :f]
+  end
 end

@@ -59,18 +59,17 @@ jobs:
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
-      RUBY_OPT_DIR: ${{ matrix.os == '11-arm' && 'C' || 'D' }}:/a/ruby/ruby/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
 
     steps:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
+      - uses: ruby/setup-ruby@e34163cd15f4bb403dcd72d98e295997e6a55798 # v1.238.0
         with:
-          ruby-version: '3.0'
+          # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
+          ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
           bundler: none
           windows-toolchain: none
-        if: ${{ matrix.os != '11-arm' }}
 
       - name: Install libraries with scoop
         run: |
@@ -98,19 +97,17 @@ jobs:
           ::- Set up VC ${{ matrix.vc }}
           set vswhere="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
           for /f "delims=;" %%I in ('%vswhere% -latest -property installationPath') do (
-            set VCVARS="%%I\VC\Auxiliary\Build\vcvars64.bat"
-          )
-          if "${{ matrix.os }}" == "11-arm" (
-            set VCVARS="C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsarm64.bat"
+            set VCVARS="%%I\VC\Auxiliary\Build\vcvarsall.bat"
           )
           set VCVARS
           set | uutils sort > old.env
-          call %VCVARS% ${{ matrix.vcvars || '' }}
+          call %VCVARS% ${{ matrix.target || 'amd64' }} ${{ matrix.vcvars || '' }}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
           set | uutils sort > new.env
           uutils comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
@@ -155,18 +152,32 @@ jobs:
       - run: nmake extract-gems
 
       # windows-11-arm runner cannot run `ruby tool/file2lastrev.rb --revision.h --output=revision.h`
-      - run: |
-          Set-Content -Path "revision.h" -Value @"
-            #define RUBY_REVISION "8aedb979da"
-            #define RUBY_FULL_REVISION "8aedb979da4090116f4fc5a6497f139fd0038881"
-            #define RUBY_BRANCH_NAME "win-arm"
-            #define RUBY_RELEASE_DATETIME "2025-04-16T23:18:54Z"
-            #define RUBY_RELEASE_YEAR 2025
-            #define RUBY_RELEASE_MONTH 4
-            #define RUBY_RELEASE_DAY 17
-          "@
-        shell: pwsh
-        if: ${{ matrix.os == '11-arm' }}
+      - name: make revision.h
+        run: |
+          if not exist revision.h (
+            for /f "tokens=1-3" %%I in ('git log -1 "--date=format-local:%%F %%T" "--format=%%H %%cd" @') do (
+              set rev=%%I
+              set dt=%%J
+              set tm=%%K
+            )
+            call set yy=%%dt:~0,4%%
+            call set /a mm=100%%dt:~5,2%% %%%% 100
+            call set /a dd=100%%dt:~8,2%% %%%% 100
+            call set branch=%%GITHUB_REF:refs/heads/=%%
+            (
+              call echo #define RUBY_REVISION "%%rev:~,10%%"
+              call echo #define RUBY_FULL_REVISION "%%rev%%"
+              call echo #define RUBY_BRANCH_NAME "%%branch%%"
+              call echo #define RUBY_RELEASE_DATETIME "%%dt%%T%%tm%%"
+              call echo #define RUBY_RELEASE_YEAR %%yy%%
+              call echo #define RUBY_RELEASE_MONTH %%mm%%
+              call echo #define RUBY_RELEASE_DAY %%dd%%
+            ) > revision.h
+            copy /y NUL .revision.time
+          )
+          type revision.h
+        env:
+          TZ: UTC
 
       - run: nmake
 

@@ -20,6 +20,7 @@ STRINGIO_VERSION = "3.1.8.dev";
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/encoding.h"
+#include "ruby/version.h"
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
@@ -1864,7 +1865,14 @@ strio_set_encoding(int argc, VALUE *argv, VALUE self)
 	}
     }
     ptr->enc = enc;
-    if (!NIL_P(ptr->string) && WRITABLE(self)) {
+    if (!NIL_P(ptr->string) && WRITABLE(self)
+#if (RUBY_API_VERSION_MAJOR == 3 && RUBY_API_VERSION_MINOR >= 4) || RUBY_API_VERSION_MAJOR >= 4
+            // Do not attempt to modify chilled strings on Ruby 3.4+
+            // RUBY_FL_USER2 == STR_CHILLED_LITERAL
+            // RUBY_FL_USER3 == STR_CHILLED_SYMBOL_TO_S
+            && !FL_TEST_RAW(ptr->string, RUBY_FL_USER2 | RUBY_FL_USER3)
+#endif
+            ) {
 	rb_enc_associate(ptr->string, enc);
     }
 

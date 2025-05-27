@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
-RSpec.describe "fetching dependencies with a not available mirror", realworld: true do
+RSpec.describe "fetching dependencies with a not available mirror" do
   let(:mirror) { @mirror_uri }
   let(:original) { @server_uri }
   let(:server_port) { @server_port }
   let(:host) { "127.0.0.1" }
 
   before do
-    require_rack
+    require_rack_test
     setup_server
     setup_mirror
   end
@@ -108,8 +108,8 @@ RSpec.describe "fetching dependencies with a not available mirror", realworld: t
     @server_port = find_unused_port
     @server_uri = "http://#{host}:#{@server_port}"
 
-    require_relative "../support/artifice/endpoint"
-    require_relative "../support/silent_logger"
+    require_relative "../../support/artifice/endpoint"
+    require_relative "../../support/silent_logger"
 
     require "rackup/server"
 

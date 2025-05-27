@@ -9530,7 +9530,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
         ADD_LABEL(ret, not_basic_new_finish);
         ADD_INSN(ret, line_node, pop);
-    } else {
+    }
+    else {
         ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
     }
 

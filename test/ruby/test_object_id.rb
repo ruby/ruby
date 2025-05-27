@@ -1,4 +1,5 @@
 require 'test/unit'
+require "securerandom"
 
 class TestObjectId < Test::Unit::TestCase
   def setup
@@ -159,14 +160,14 @@ class TestObjectIdTooComplexClass < TestObjectId
 
     @obj = TooComplex.new
 
-    @obj.instance_variable_set("@___#{rand(100_000)}", 1)
+    @obj.instance_variable_set("@___#{SecureRandom.hex}", 1)
 
     8.times do |i|
       @obj.instance_variable_set("@TestObjectIdTooComplexClass#{i}", 1)
       @obj.remove_instance_variable("@TestObjectIdTooComplexClass#{i}")
     end
 
-    @obj.instance_variable_set("@___#{rand(100_000)}", 1)
+    @obj.instance_variable_set("@test", 1)
 
     if defined?(RubyVM::Shape)
       assert_predicate(RubyVM::Shape.of(@obj), :too_complex?)

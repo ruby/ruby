@@ -15,7 +15,11 @@
 # include <sys/user.h>
 #endif
 
-#include "internal/bits.h"
+#ifdef BUILDING_MODULAR_GC
+# define nlz_int64(x) (x == 0 ? 64 : (unsigned int)__builtin_clzll((unsigned long long)x))
+#else
+# include "internal/bits.h"
+#endif
 
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
@@ -24,6 +28,7 @@
 #include "ruby/util.h"
 #include "ruby/vm.h"
 #include "ruby/internal/encoding/string.h"
+#include "internal/object.h"
 #include "ccan/list/list.h"
 #include "darray.h"
 #include "gc/gc.h"
@@ -40,7 +45,19 @@
 # include "debug_counter.h"
 #endif
 
-#include "internal/sanitizers.h"
+#ifdef BUILDING_MODULAR_GC
+# define rb_asan_poison_object(_obj) (0)
+# define rb_asan_unpoison_object(_obj, _newobj_p) (0)
+# define asan_unpoisoning_object(_obj) if (true)
+# define asan_poison_memory_region(_ptr, _size) (0)
+# define asan_unpoison_memory_region(_ptr, _size, _malloc_p) (0)
+# define asan_unpoisoning_memory_region(_ptr, _size) if (true)
+
+# define VALGRIND_MAKE_MEM_DEFINED(_ptr, _size) (0)
+# define VALGRIND_MAKE_MEM_UNDEFINED(_ptr, _size) (0)
+#else
+# include "internal/sanitizers.h"
+#endif
 
 /* MALLOC_HEADERS_BEGIN */
 #ifndef HAVE_MALLOC_USABLE_SIZE
@@ -632,7 +649,9 @@ struct rvalue_overhead {
 size_t rb_gc_impl_obj_slot_size(VALUE obj);
 # define GET_RVALUE_OVERHEAD(obj) ((struct rvalue_overhead *)((uintptr_t)obj + rb_gc_impl_obj_slot_size(obj)))
 #else
-# define RVALUE_OVERHEAD 0
+# ifndef RVALUE_OVERHEAD
+#  define RVALUE_OVERHEAD 0
+# endif
 #endif
 
 #define BASE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
@@ -2073,10 +2092,10 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 static inline VALUE
 newobj_fill(VALUE obj, VALUE v1, VALUE v2, VALUE v3)
 {
-    VALUE *p = (VALUE *)obj;
-    p[2] = v1;
-    p[3] = v2;
-    p[4] = v3;
+    VALUE *p = (VALUE *)(obj + sizeof(struct RBasic));
+    p[0] = v1;
+    p[1] = v2;
+    p[2] = v3;
     return obj;
 }
 
@@ -2101,12 +2120,13 @@ rb_gc_impl_source_location_cstr(int *ptr)
 static inline VALUE
 newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace, VALUE obj)
 {
-#if !__has_feature(memory_sanitizer)
     GC_ASSERT(BUILTIN_TYPE(obj) == T_NONE);
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-#endif
     RBASIC(obj)->flags = flags;
     *((VALUE *)&RBASIC(obj)->klass) = klass;
+#if RBASIC_SHAPE_ID_FIELD
+    RBASIC(obj)->shape_id = 0;
+#endif
 
     int t = flags & RUBY_T_MASK;
     if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
@@ -2774,7 +2794,11 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     GC_ASSERT(!OBJ_FROZEN(obj));
 
     st_data_t data = obj;
+
+    int lev = rb_gc_vm_lock();
     st_delete(finalizer_table, &data, 0);
+    rb_gc_vm_unlock(lev);
+
     FL_UNSET(obj, FL_FINALIZE);
 }
 
@@ -2787,14 +2811,17 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    int lev = rb_gc_vm_lock();
     if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
-        table = (VALUE)data;
+        table = rb_ary_dup((VALUE)data);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         st_insert(finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
     }
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
+    rb_gc_vm_unlock(lev);
 }
 
 static VALUE
@@ -2838,9 +2865,9 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         next_zombie = RZOMBIE(zombie)->next;
         page = GET_HEAP_PAGE(zombie);
 
-        run_final(objspace, zombie);
-
         int lev = rb_gc_vm_lock();
+
+        run_final(objspace, zombie);
         {
             GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
             GC_ASSERT(page->heap->final_slots_count > 0);
@@ -2945,7 +2972,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
                 if (RB_BUILTIN_TYPE(vp) != T_NONE) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC(vp)->flags = 0;
+                        RBASIC_RESET_FLAGS(vp);
                     }
                 }
             }
@@ -3019,7 +3046,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
                 if (rb_gc_shutdown_call_finalizer_p(vp)) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC(vp)->flags = 0;
+                        RBASIC_RESET_FLAGS(vp);
                     }
                 }
             }
@@ -9338,6 +9365,7 @@ rb_gc_impl_init(void)
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("DEBUG")), GC_DEBUG ? Qtrue : Qfalse);
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE - RVALUE_OVERHEAD));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), SIZET2NUM(RVALUE_OVERHEAD));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_OBJ_LIMIT")), SIZET2NUM(HEAP_PAGE_OBJ_LIMIT));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_PAGE_BITMAP_SIZE")), SIZET2NUM(HEAP_PAGE_BITMAP_SIZE));

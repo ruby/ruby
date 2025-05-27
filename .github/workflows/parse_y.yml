@@ -60,6 +60,11 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
+      - uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
       - uses: ./.github/actions/setup/directories
         with:
           srcdir: src

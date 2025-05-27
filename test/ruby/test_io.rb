@@ -3826,7 +3826,7 @@ __END__
       end
 
       tempfiles = []
-      (0..fd_setsize+1).map {|i|
+      (0...fd_setsize).map {|i|
         tempfiles << Tempfile.create("test_io_select_with_many_files")
       }
 
@@ -4414,6 +4414,31 @@ __END__
       ensure
         thread&.join
       end
+    RUBY
+  end
+
+  def test_fork_close
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_separately([], <<~'RUBY')
+      r, w = IO.pipe
+
+      thread = Thread.new do
+        r.read
+      end
+
+      Thread.pass until thread.status == "sleep"
+
+      pid = fork do
+        r.close
+      end
+
+      w.close
+
+      status = Process.wait2(pid).last
+      thread.join
+
+      assert_predicate(status, :success?)
     RUBY
   end
 end

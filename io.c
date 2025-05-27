@@ -5517,8 +5517,7 @@ maygvl_fclose(FILE *file, int keepgvl)
 static void free_io_buffer(rb_io_buffer_t *buf);
 
 static void
-fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
-                    struct rb_io_close_wait_list *busy)
+fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
 {
     VALUE error = Qnil;
     int fd = fptr->fd;
@@ -5558,11 +5557,8 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
     fptr->stdio_file = 0;
     fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 
-    // Ensure waiting_fd users do not hit EBADF.
-    if (busy) {
-        // Wait for them to exit before we call close().
-        rb_notify_fd_close_wait(busy);
-    }
+    // wait for blocking operations to ensure they do not hit EBADF:
+    rb_thread_io_close_wait(fptr);
 
     // Disable for now.
     // if (!done && fd >= 0) {
@@ -5610,7 +5606,7 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl,
 static void
 fptr_finalize(rb_io_t *fptr, int noraise)
 {
-    fptr_finalize_flush(fptr, noraise, FALSE, 0);
+    fptr_finalize_flush(fptr, noraise, FALSE);
     free_io_buffer(&fptr->rbuf);
     free_io_buffer(&fptr->wbuf);
     clear_codeconv(fptr);
@@ -5686,14 +5682,25 @@ rb_io_fptr_finalize(struct rb_io *io)
 }
 
 size_t
-rb_io_memsize(const rb_io_t *fptr)
+rb_io_memsize(const rb_io_t *io)
 {
     size_t size = sizeof(rb_io_t);
-    size += fptr->rbuf.capa;
-    size += fptr->wbuf.capa;
-    size += fptr->cbuf.capa;
-    if (fptr->readconv) size += rb_econv_memsize(fptr->readconv);
-    if (fptr->writeconv) size += rb_econv_memsize(fptr->writeconv);
+    size += io->rbuf.capa;
+    size += io->wbuf.capa;
+    size += io->cbuf.capa;
+    if (io->readconv) size += rb_econv_memsize(io->readconv);
+    if (io->writeconv) size += rb_econv_memsize(io->writeconv);
+
+    struct rb_io_blocking_operation *blocking_operation = 0;
+
+    // Validate the fork generation of the IO object. If the IO object fork generation is different, the list of blocking operations is not valid memory. See `rb_io_blocking_operations` for the exact semantics.
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+    if (io->fork_generation == fork_generation) {
+        ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+            size += sizeof(struct rb_io_blocking_operation);
+        }
+    }
+
     return size;
 }
 
@@ -5710,7 +5717,6 @@ io_close_fptr(VALUE io)
     rb_io_t *fptr;
     VALUE write_io;
     rb_io_t *write_fptr;
-    struct rb_io_close_wait_list busy;
 
     write_io = GetWriteIO(io);
     if (io != write_io) {
@@ -5724,9 +5730,9 @@ io_close_fptr(VALUE io)
     if (!fptr) return 0;
     if (fptr->fd < 0) return 0;
 
-    if (rb_notify_fd_close(fptr->fd, &busy)) {
+    if (rb_thread_io_close_interrupt(fptr)) {
         /* calls close(fptr->fd): */
-        fptr_finalize_flush(fptr, FALSE, KEEPGVL, &busy);
+        fptr_finalize_flush(fptr, FALSE, KEEPGVL);
     }
     rb_io_fptr_cleanup(fptr, FALSE);
     return fptr;
@@ -8369,6 +8375,10 @@ io_reopen(VALUE io, VALUE nfile)
     fd = fptr->fd;
     fd2 = orig->fd;
     if (fd != fd2) {
+        // Interrupt all usage of the old file descriptor:
+        rb_thread_io_close_interrupt(fptr);
+        rb_thread_io_close_wait(fptr);
+
         if (RUBY_IO_EXTERNAL_P(fptr) || fd <= 2 || !fptr->stdio_file) {
             /* need to keep FILE objects of stdin, stdout and stderr */
             if (rb_cloexec_dup2(fd2, fd) < 0)
@@ -8384,7 +8394,7 @@ io_reopen(VALUE io, VALUE nfile)
             rb_update_max_fd(fd);
             fptr->fd = fd;
         }
-        rb_thread_fd_close(fd);
+
         if ((orig->mode & FMODE_READABLE) && pos >= 0) {
             if (io_seek(fptr, pos, SEEK_SET) < 0 && errno) {
                 rb_sys_fail_path(fptr->pathv);
@@ -8561,6 +8571,12 @@ rb_io_init_copy(VALUE dest, VALUE io)
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     fptr->timeout = orig->timeout;
+
+    ccan_list_head_init(&fptr->blocking_operations);
+    fptr->closing_ec = NULL;
+    fptr->wakeup_mutex = Qnil;
+    fptr->fork_generation = GET_VM()->fork_gen;
+
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
 
@@ -9298,6 +9314,11 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
 
     io->timeout = timeout;
 
+    ccan_list_head_init(&io->blocking_operations);
+    io->closing_ec = NULL;
+    io->wakeup_mutex = Qnil;
+    io->fork_generation = GET_VM()->fork_gen;
+
     if (encoding) {
         io->encs = *encoding;
     }
@@ -9437,6 +9458,10 @@ rb_io_fptr_new(void)
     fp->encs.ecopts = Qnil;
     fp->write_lock = Qnil;
     fp->timeout = Qnil;
+    ccan_list_head_init(&fp->blocking_operations);
+    fp->closing_ec = NULL;
+    fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     return fp;
 }
 
@@ -9567,6 +9592,10 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     fp->encs = convconfig;
     fp->pathv = path;
     fp->timeout = Qnil;
+    ccan_list_head_init(&fp->blocking_operations);
+    fp->closing_ec = NULL;
+    fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     clear_codeconv(fp);
     io_check_tty(fp);
     if (fileno(stdin) == fd)

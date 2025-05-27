@@ -404,7 +404,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
         if (!mask) {
             // Nothing to escape, ensure search_flush doesn't do anything by setting 
             // search->cursor to search->ptr.
-            search->buffer->len += remaining;
+            fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;
             search->cursor = search->end;
             return 0;
@@ -511,7 +511,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
         if (needs_escape_mask == 0) {
             // Nothing to escape, ensure search_flush doesn't do anything by setting 
             // search->cursor to search->ptr.
-            search->buffer->len += remaining;
+            fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;
             search->cursor = search->end;
             return 0;
@@ -1406,17 +1406,16 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     }
 
     /* This implementation writes directly into the buffer. We reserve
-     * the 24 characters that fpconv_dtoa states as its maximum, plus
-     * 2 more characters for the potential ".0" suffix.
+     * the 28 characters that fpconv_dtoa states as its maximum.
      */
-    fbuffer_inc_capa(buffer, 26);
+    fbuffer_inc_capa(buffer, 28);
     char* d = buffer->ptr + buffer->len;
     int len = fpconv_dtoa(value, d);
 
     /* fpconv_dtoa converts a float to its shortest string representation,
      * but it adds a ".0" if this is a plain integer.
      */
-    buffer->len += len;
+    fbuffer_consumed(buffer, len);
 }
 
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, VALUE obj)

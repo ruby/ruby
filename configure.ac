@@ -1006,7 +1006,7 @@ AS_IF([test "x$OPT_DIR" != x], [
     save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
     for dir in $OPT_DIR; do
         test -z "$dir" && continue
-        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        dir=`eval $CHDIR '"$dir"' 2>/dev/null && pwd` || continue
         val="${val:+$val$PATH_SEPARATOR}$dir"
     done
     IFS="$save_IFS" OPT_DIR="$val"
@@ -1250,8 +1250,6 @@ main()
 		ac_cv_func_gmtime_r=yes
 		rb_cv_large_fd_select=yes
 		ac_cv_type_struct_timeval=yes
-                ac_cv_func_clock_gettime=yes
-                ac_cv_func_clock_getres=yes
 		ac_cv_func_malloc_usable_size=no
 		ac_cv_type_off_t=yes
 		ac_cv_sizeof_off_t=8
@@ -3926,46 +3924,33 @@ AC_ARG_ENABLE(yjit,
 CARGO=
 CARGO_BUILD_ARGS=
 YJIT_LIBS=
+JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
-    AS_IF([test x"$ZJIT_SUPPORT" != "xno"],
-        AC_MSG_ERROR([YJIT cannot be enabled when ZJIT is enabled])
-    )
 
     AS_CASE(["${YJIT_SUPPORT}"],
     [yes], [
-	rb_rust_target_subdir=release
     ],
     [dev], [
-	rb_rust_target_subdir=debug
-	CARGO_BUILD_ARGS='--features disasm,runtime_checks'
+        rb_cargo_features='disasm,runtime_checks'
+        JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
     ],
     [dev_nodebug], [
-	rb_rust_target_subdir=dev_nodebug
-	CARGO_BUILD_ARGS='--profile dev_nodebug --features disasm'
+        rb_cargo_features='disasm'
+        JIT_CARGO_SUPPORT=dev_nodebug
 	AC_DEFINE(YJIT_STATS, 1)
     ],
     [stats], [
-	rb_rust_target_subdir=stats
-	CARGO_BUILD_ARGS='--profile stats'
+        JIT_CARGO_SUPPORT=stats
 	AC_DEFINE(YJIT_STATS, 1)
     ])
 
-    AS_IF([test -n "${CARGO_BUILD_ARGS}"], [
-             AC_CHECK_TOOL(CARGO, [cargo], [no])
-             AS_IF([test x"$CARGO" = "xno"],
-                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             ]))
-
-    YJIT_LIBS="yjit/target/${rb_rust_target_subdir}/libyjit.a"
-    AS_CASE(["$target_os"],[openbsd*],[
-        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
-        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
-    ])
+    YJIT_LIBS="target/release/libyjit.a"
+    RUST_LIB='$(YJIT_LIBS)'
     YJIT_OBJ='yjit.$(OBJEXT)'
     JIT_OBJ='jit.$(OBJEXT)'
     AS_IF([test x"$YJIT_SUPPORT" != "xyes" ], [
@@ -3976,38 +3961,24 @@ AS_CASE(["${YJIT_SUPPORT}"],
     AC_DEFINE(USE_YJIT, 0)
 ])
 
-ZJIT_CARGO_BUILD_ARGS=
 ZJIT_LIBS=
 AS_CASE(["${ZJIT_SUPPORT}"],
 [yes|dev], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
-    AS_IF([test x"$YJIT_SUPPORT" != "xno"],
-        AC_MSG_ERROR([ZJIT cannot be enabled when YJIT is enabled])
-    )
 
     AS_CASE(["${ZJIT_SUPPORT}"],
     [yes], [
-	rb_rust_target_subdir=release
     ],
     [dev], [
-	rb_rust_target_subdir=debug
-	ZJIT_CARGO_BUILD_ARGS='--profile dev --features disasm'
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
     ])
 
-    AS_IF([test -n "${ZJIT_CARGO_BUILD_ARGS}"], [
-             AC_CHECK_TOOL(CARGO, [cargo], [no])
-             AS_IF([test x"$CARGO" = "xno"],
-                AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install])
-             ]))
-
-    ZJIT_LIBS="zjit/target/${rb_rust_target_subdir}/libzjit.a"
-    AS_CASE(["$target_os"],[openbsd*],[
-        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by yjit
-        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
-    ])
+    ZJIT_LIBS="target/release/libzjit.a"
+    RUST_LIB='$(ZJIT_LIBS)'
     ZJIT_OBJ='zjit.$(OBJEXT)'
     JIT_OBJ='jit.$(OBJEXT)'
     AS_IF([test x"$ZJIT_SUPPORT" != "xyes" ], [
@@ -4018,18 +3989,57 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     AC_DEFINE(USE_ZJIT, 0)
 ])
 
+# if YJIT+ZJIT release build, or any build that requires Cargo
+AS_IF([test x"$JIT_CARGO_SUPPORT" != "xno" -o \( x"$YJIT_SUPPORT" != "xno" -a x"$ZJIT_SUPPORT" != "xno" \)], [
+    AC_CHECK_TOOL(CARGO, [cargo], [no])
+    AS_IF([test x"$CARGO" = "xno"],
+        AC_MSG_ERROR([cargo is required. Installation instructions available at https://www.rust-lang.org/tools/install]))
+
+    YJIT_LIBS=
+    ZJIT_LIBS=
+
+    AS_IF([test x"${YJIT_SUPPORT}" != x"no"], [
+        rb_cargo_features="$rb_cargo_features,yjit"
+    ])
+    AS_IF([test x"${ZJIT_SUPPORT}" != x"no"], [
+        rb_cargo_features="$rb_cargo_features,zjit"
+    ])
+    # if YJIT and ZJIT release mode
+    AS_IF([test "${YJIT_SUPPORT}:${ZJIT_SUPPORT}" = "yes:yes"], [
+        JIT_CARGO_SUPPORT=release
+    ])
+    CARGO_BUILD_ARGS="--profile ${JIT_CARGO_SUPPORT} --features ${rb_cargo_features}"
+    AS_IF([test "${JIT_CARGO_SUPPORT}" = "dev"], [
+        RUST_LIB="target/debug/libjit.a"
+    ], [
+        RUST_LIB="target/${JIT_CARGO_SUPPORT}/libjit.a"
+    ])
+])
+
+# In case either we're linking rust code
+AS_IF([test -n "$RUST_LIB"], [
+    AS_CASE(["$target_os"],[openbsd*],[
+        # Link libc++abi (which requires libpthread) for _Unwind_* functions needed by rust stdlib
+        LDFLAGS="$LDFLAGS -lpthread -lc++abi"
+    ])
+
+    # absolute path to stop the "target" dir in src dir from interfering through VPATH
+    RUST_LIB="$(pwd)/${RUST_LIB}"
+])
+
 dnl These variables end up in ::RbConfig::CONFIG
-AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
 AC_SUBST(RUSTC)dnl Rust compiler command
 AC_SUBST(CARGO)dnl Cargo command for Rust builds
 AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
-AC_SUBST(ZJIT_CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
-AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
+AC_SUBST(YJIT_SUPPORT)dnl what flavor of YJIT the Ruby build includes
+AC_SUBST(YJIT_LIBS)dnl the .a library of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
 AC_SUBST(ZJIT_SUPPORT)dnl what flavor of ZJIT the Ruby build includes
-AC_SUBST(ZJIT_LIBS)dnl for optionally building the Rust parts of ZJIT
+AC_SUBST(ZJIT_LIBS)dnl path to the .a library of ZJIT
 AC_SUBST(ZJIT_OBJ)dnl for optionally building the C parts of ZJIT
 AC_SUBST(JIT_OBJ)dnl for optionally building C glue code for Rust FFI
+AC_SUBST(RUST_LIB)dnl path to the rust .a library that contains either or both JITs
+AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 }
 
 [begin]_group "build section" && {

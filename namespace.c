@@ -307,6 +307,7 @@ rb_current_namespace_details(VALUE opt)
              RSTRING_PTR(part),
              th->namespaces ? RARRAY_LEN(th->namespaces) : 0,
              require_stack ? RARRAY_LEN(require_stack) : 0);
+    RB_GC_GUARD(part);
     rb_str_cat_cstr(str, buf);
 
     if (th->namespaces && RARRAY_LEN(th->namespaces) > 0) {
@@ -314,6 +315,7 @@ rb_current_namespace_details(VALUE opt)
             nsobj = RARRAY_AREF(th->namespaces, i);
             part = rb_namespace_inspect(nsobj);
             snprintf(buf, 2048, "  th->nss[%ld] %s\n", i, RSTRING_PTR(part));
+            RB_GC_GUARD(part);
             rb_str_cat_cstr(str, buf);
         }
     }
@@ -331,6 +333,7 @@ rb_current_namespace_details(VALUE opt)
                 if (NAMESPACE_USER_P(ns)) {
                     part = rb_namespace_inspect(proc_ns->ns_object);
                     snprintf(buf, 2048, " cfp->ns:%s", RSTRING_PTR(part));
+                    RB_GC_GUARD(part);
                     calling = 0;
                     break;
                 }
@@ -350,6 +353,7 @@ rb_current_namespace_details(VALUE opt)
                              rb_id2name(cme->def->original_id),
                              RSTRING_PTR(part),
                              path);
+                    RB_GC_GUARD(part);
                     rb_str_cat_cstr(str, buf);
                     calling = 0;
                     break;
@@ -359,6 +363,7 @@ rb_current_namespace_details(VALUE opt)
                              rb_id2name(cme->def->original_id),
                              RSTRING_PTR(part),
                              path);
+                    RB_GC_GUARD(part);
                     rb_str_cat_cstr(str, buf);
                 }
             }
@@ -384,11 +389,9 @@ static long
 namespace_generate_id(void)
 {
     long id;
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         id = ++namespace_id_counter;
     }
-    RB_VM_LOCK_LEAVE();
     return id;
 }
 
@@ -720,7 +723,7 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_pat
     case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
     default:
-        rb_bug("unkown return value of copy_ext_file: %d", copy_retvalue);
+        rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
     return message;
 }
@@ -827,7 +830,7 @@ escaped_basename(char *path, char *fname, char *rvalue)
     leaf = path;
     // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
     while ((found = strstr(leaf + 1, fname)) != NULL) {
-        leaf = found; // find the last occurence for the path like /etc/my-crazy-lib-dir/etc.so
+        leaf = found; // find the last occurrence for the path like /etc/my-crazy-lib-dir/etc.so
     }
     strcpy(rvalue, leaf);
     for (pos = rvalue; *pos; pos++) {
@@ -987,7 +990,7 @@ rb_initialize_main_namespace(void)
     if (!namespace_experimental_warned) {
         rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
                          "Namespace is experimental, and the behavior may change in the future!\n"
-                         "See doc/namespace.md for know issues, etc.");
+                         "See doc/namespace.md for known issues, etc.");
         namespace_experimental_warned = 1;
     }
 

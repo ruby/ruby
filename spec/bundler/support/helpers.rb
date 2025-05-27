@@ -515,11 +515,11 @@ module Spec
       end
     end
 
-    def require_rack
-      # need to hack, so we can require rack
+    def require_rack_test
+      # need to hack, so we can require rack for testing
       old_gem_home = ENV["GEM_HOME"]
       ENV["GEM_HOME"] = Spec::Path.base_system_gem_path.to_s
-      require "rack"
+      require "rack/test"
       ENV["GEM_HOME"] = old_gem_home
     end
 

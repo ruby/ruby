@@ -31,7 +31,6 @@ module Bundler
       @extension = options[:ext]
 
       validate_ext_name if @extension
-      validate_rust_builder_rubygems_version if @extension == "rust"
     end
 
     def run
@@ -446,7 +445,7 @@ module Bundler
     end
 
     def required_ruby_version
-      "3.1.0"
+      "3.2.0"
     end
 
     def rubocop_version
@@ -455,13 +454,6 @@ module Bundler
 
     def standard_version
       "1.3"
-    end
-
-    def validate_rust_builder_rubygems_version
-      if Gem::Version.new(rust_builder_required_rubygems_version) > Gem.rubygems_version
-        Bundler.ui.error "Your RubyGems version (#{Gem.rubygems_version}) is too old to build Rust extension. Please update your RubyGems using `gem update --system` or any other way and try again."
-        exit 1
-      end
     end
   end
 end

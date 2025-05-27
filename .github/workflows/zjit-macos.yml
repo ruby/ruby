@@ -33,7 +33,10 @@ jobs:
       matrix:
         include:
           - test_task: 'zjit-test'
-            configure: '--enable-zjit=dev'
+            configure: '--enable-yjit=dev --enable-zjit'
+
+          - test_task: 'ruby' # build test for combo build
+            configure: '--enable-yjit --enable-zjit'
 
           - test_task: 'test-all'
             configure: '--enable-zjit=dev'
@@ -89,6 +92,13 @@ jobs:
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - run: make
+
+      - name: Verify that --zjit-dump-disasm works
+        run: |
+          ./miniruby --zjit-call-threshold=1 --zjit-dump-disasm -e0 | \
+          wc -l | \
+          ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
+        if: ${{ contains(matrix.configure, 'jit=dev') }}
 
       - name: make ${{ matrix.test_task }}
         run: >-

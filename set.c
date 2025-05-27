@@ -1139,6 +1139,11 @@ set_i_merge(int argc, VALUE *argv, VALUE set)
     if (rb_keyword_given_p()) {
         rb_raise(rb_eArgError, "no keywords accepted");
     }
+
+    if (set_iterating_p(set)) {
+        rb_raise(rb_eRuntimeError, "cannot add to set during iteration");
+    }
+
     rb_check_frozen(set);
 
     int i;
@@ -2184,7 +2189,6 @@ Init_Set(void)
     rb_define_method(rb_cSet, "superset?", set_i_superset, 1);
     rb_define_alias(rb_cSet, ">=", "superset?");
     rb_define_method(rb_cSet, "to_a", set_i_to_a, 0);
-    rb_define_method(rb_cSet, "to_h", set_i_to_h, 0);
     rb_define_method(rb_cSet, "to_set", set_i_to_set, -1);
 
     /* :nodoc: */

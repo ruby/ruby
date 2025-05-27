@@ -1,0 +1,113 @@
+# TSan: ThreadSanitizer
+# https://github.com/google/sanitizers/wiki/threadsanitizersuppressions
+#
+# This file describes a number of places where TSAN detects problems in CRuby.
+# Many of these indicate bugs. Others are benign (ex. data races that can be
+# replaced with relaxed atomic loads)
+#
+# Usage:
+#   Configure with:
+#     ./configure cflags='-fsanitize=thread' CC=clang
+#   Build and run with:
+#     TSAN_OPTIONS="suppressions=$(pwd)/misc/tsan_suppressions.txt:die_after_fork=0"
+#
+# Other useful TSAN_OPTIONS:
+#   * halt_on_error=1
+#   * strip_path_prefix=$(pwd)/
+
+# Namespaces
+race_top:push_subclass_entry_to_list
+
+# sub_nounderflow includes non-atomic read, possibly other issue
+race:objspace_malloc_increase_body
+
+# Signals and ubf
+race:unregister_ubf_list
+
+# It's already crashing. We're doing our best
+signal:rb_vm_bugreport
+race:check_reserved_signal_
+
+race_top:rb_check_deadlock
+
+# lock_owner
+race_top:thread_sched_setup_running_threads
+race_top:vm_lock_enter
+race_top:rb_ec_vm_lock_rec
+race_top:vm_lock_enter
+race_top:vm_locked
+
+# Ractors
+race:ractor_take
+race:ractor_register_take
+race:ractor_check_take_basket
+race:ractor_selector__wait
+
+# vm->ractor.sched.grq_cnt++
+race_top:ractor_sched_enq
+race_top:ractor_sched_deq
+
+# Using VM lock instead of rb_native_mutex_unlock?
+race:vm_remove_ractor
+
+# cr->sync.wait.wakeup_status
+race_top:rb_ractor_sched_sleep
+
+# th->sched.finished at end of co_start
+race_top:rb_thread_sched_mark_zombies
+
+# Races against timer thread setting th->sched.waiting_reason.flags
+race_top:thread_sched_wait_events
+
+# At thread start
+race_top:rb_ractor_set_current_ec_
+
+# Possible deadlock between Ractor lock and UBF lock
+deadlock:ractor_sleep_interrupt
+
+# RVALUE_AGE_SET manipulates flag bits on objects which may be accessed in Ractors
+race_top:RVALUE_AGE_SET
+
+# Inline caches
+race_top:vm_cc_call_set
+race_top:vm_cc_class_check
+race_top:vm_search_cc
+race_top:vm_search_method_slowpath0
+race_top:rb_vm_opt_getconstant_path
+race_top:vm_ic_attr_index_set
+
+# Shapes have problems with RCLASS_MAX_IV_COUNT and RCLASS_VARIATION_COUNT
+# which are probably benign
+race:shape_get_next
+
+# Non-atomic reads/writes
+race:gccct_method_search
+
+# Ignore exit for now
+race:rb_ec_finalize
+race:rb_ec_cleanup
+
+# object_id races
+race:object_id
+
+# Sets objspace->flags.dont_incremental while writebarrier may be running
+race_top:objspace_each_exec
+race_top:objspace_each_objects_ensure
+
+# Ractor autoload
+race:rb_ractor_autoload_load
+
+# Non-atomic lazy initialized static variable
+race_top:rbimpl_intern_const
+
+# Setting def->aliased bitfield non-atomically
+race_top:method_definition_addref
+
+# Switching to setting up tracing. Likely other ractors should be stopped for this.
+race_top:encoded_iseq_trace_instrument
+race:rb_iseq_trace_set_all
+race:rb_tracepoint_enable
+
+# We walk the machine stack looking for markable objects, a thread with the GVL
+# released could by mutating the stack with non-Ruby-objects
+race:rb_gc_mark_machine_context

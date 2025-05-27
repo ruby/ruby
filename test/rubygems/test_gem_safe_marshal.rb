@@ -234,8 +234,6 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_link_after_float
-    pend "Marshal.load of links and floats is broken on truffleruby, see https://github.com/oracle/truffleruby/issues/3747" if RUBY_ENGINE == "truffleruby"
-
     a = []
     a << a
     assert_safe_load_as [0.0, a, 1.0, a]

@@ -529,10 +529,14 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
         rb_exc_check_circular_cause(*cause);
 #else
         VALUE c = *cause;
-        while (!NIL_P(c = rb_attr_get(c, id_cause))) {
+        while (!NIL_P(c)) {
             if (c == mesg) {
                 rb_raise(rb_eArgError, "circular causes");
             }
+            if (THROW_DATA_P(c)) {
+                break;
+            }
+            c = rb_attr_get(c, id_cause);
         }
 #endif
     }

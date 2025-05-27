@@ -460,7 +460,8 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
 
     if (NAMESPACE_USER_P(ns)) {
         ns_value = ns->ns_object;
-    } else {
+    }
+    else {
         ns_value = 0;
     }
     // search global method cache

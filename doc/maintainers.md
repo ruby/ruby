@@ -234,12 +234,6 @@ have commit right, others don't.
 * https://github.com/ruby/securerandom
 * https://rubygems.org/gems/securerandom
 
-#### lib/set.rb
-
-* Akinori MUSHA ([knu])
-* https://github.com/ruby/set
-* https://rubygems.org/gems/set
-
 #### lib/shellwords.rb
 
 * Akinori MUSHA ([knu])

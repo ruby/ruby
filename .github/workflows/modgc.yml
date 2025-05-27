@@ -26,8 +26,8 @@ jobs:
       matrix:
         gc:
           - name: default
-          # - name: mmtk
-          #   mmtk_build: release
+          - name: mmtk
+            mmtk_build: release
         os: [macos-latest, ubuntu-latest]
         include:
           - test_task: check
@@ -65,7 +65,7 @@ jobs:
 
       - uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
         if: ${{ contains(matrix.os, 'ubuntu') }}
 

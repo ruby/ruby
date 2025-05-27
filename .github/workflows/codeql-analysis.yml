@@ -50,7 +50,6 @@ jobs:
 
     env:
       enable_install_doc: no
-      CODEQL_ACTION_CLEANUP_TRAP_CACHES: true
 
     strategy:
       fail-fast: false
@@ -81,6 +80,7 @@ jobs:
         uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
           languages: ${{ matrix.language }}
+          trap-caching: false
           debug: true
 
       - name: Autobuild

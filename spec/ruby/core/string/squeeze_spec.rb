@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 # frozen_string_literal: false
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'

@@ -1057,6 +1057,13 @@ class TestStringIO < Test::Unit::TestCase
       assert_equal("test", io.string)
       assert_same(chilled_string, io.string)
     end
+
+    def test_chilled_string_set_enocoding
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning("") { io.set_encoding(Encoding::BINARY) }
+      assert_same(chilled_string, io.string)
+    end
   end
 
   private

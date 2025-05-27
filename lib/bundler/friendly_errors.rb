@@ -102,11 +102,8 @@ module Bundler
     def issues_url(exception)
       message = exception.message.lines.first.tr(":", " ").chomp
       message = message.split("-").first if exception.is_a?(Errno)
-      begin
-        require "cgi/escape"
-      rescue LoadError
-        require "cgi/util"
-      end
+      require "cgi/escape"
+      require "cgi/util" unless defined?(CGI::EscapeExt)
       "https://github.com/rubygems/rubygems/search?q=" \
         "#{CGI.escape(message)}&type=Issues"
     end

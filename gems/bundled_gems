@@ -7,7 +7,7 @@
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
 minitest            5.25.5  https://github.com/minitest/minitest
-power_assert        2.0.5   https://github.com/ruby/power_assert
+power_assert        2.0.5   https://github.com/ruby/power_assert a7dab941153b233d3412e249d25da52a6c5691de
 rake                13.2.1  https://github.com/ruby/rake
 test-unit           3.6.8   https://github.com/test-unit/test-unit
 rexml               3.4.1   https://github.com/ruby/rexml
@@ -30,7 +30,7 @@ observer            0.1.2   https://github.com/ruby/observer
 abbrev              0.1.2   https://github.com/ruby/abbrev
 resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
 rinda               0.2.0   https://github.com/ruby/rinda
-drb                 2.2.1   https://github.com/ruby/drb
+drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.3.0   https://github.com/ruby/syslog
 csv                 3.3.4   https://github.com/ruby/csv
@@ -39,7 +39,7 @@ ostruct             0.6.1   https://github.com/ruby/ostruct
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.4.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                6.13.1  https://github.com/ruby/rdoc
+rdoc                6.14.0  https://github.com/ruby/rdoc
 win32ole            1.9.2   https://github.com/ruby/win32ole
 irb                 1.15.2  https://github.com/ruby/irb
 reline              0.6.1   https://github.com/ruby/reline

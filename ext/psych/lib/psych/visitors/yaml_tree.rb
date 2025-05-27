@@ -198,7 +198,7 @@ module Psych
 
           @emitter.end_mapping
         end
-      end
+      end unless RUBY_VERSION < "3.2"
 
       def visit_Struct o
         tag = ['!ruby/struct', o.class.name].compact.join(':')

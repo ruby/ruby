@@ -187,10 +187,9 @@ COMMONOBJS    = array.$(OBJEXT) \
 		weakmap.$(OBJEXT) \
 		$(PRISM_FILES) \
 		$(YJIT_OBJ) \
-		$(YJIT_LIBOBJ) \
 		$(ZJIT_OBJ) \
-		$(ZJIT_LIBOBJ) \
 		$(JIT_OBJ) \
+		$(RUST_LIBOBJ) \
 		$(COROUTINE_OBJ) \
 		$(DTRACE_OBJ) \
 		$(BUILTIN_ENCOBJS) \
@@ -346,7 +345,7 @@ YJIT_RUSTC_ARGS = --crate-name=yjit \
 	-C opt-level=3 \
 	-C overflow-checks=on \
 	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
-	$(top_srcdir)/yjit/src/lib.rs
+	'$(top_srcdir)/yjit/src/lib.rs'
 
 ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	--crate-type=staticlib \
@@ -355,8 +354,8 @@ ZJIT_RUSTC_ARGS = --crate-name=zjit \
 	-C lto=thin \
 	-C opt-level=3 \
 	-C overflow-checks=on \
-	'--out-dir=$(ZJIT_CARGO_TARGET_DIR)/release/' \
-	$(top_srcdir)/zjit/src/lib.rs
+	'--out-dir=$(CARGO_TARGET_DIR)/release/' \
+	'$(top_srcdir)/zjit/src/lib.rs'
 
 all: $(SHOWFLAGS) main
 
@@ -736,8 +735,8 @@ clean-local:: clean-runnable
 	$(Q)$(RM) probes.h probes.$(OBJEXT) probes.stamp ruby-glommed.$(OBJEXT) ruby.imp ChangeLog $(STATIC_RUBY)$(EXEEXT)
 	$(Q)$(RM) GNUmakefile.old Makefile.old $(arch)-fake.rb bisect.sh $(ENC_TRANS_D) builtin_binary.inc
 	$(Q)$(RM) $(PRISM_BUILD_DIR)/.time $(PRISM_BUILD_DIR)/*/.time yjit_exit_locations.dump
-	-$(Q)$(RMALL) yjit/target
-	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine yjit \
+	-$(Q)$(RMALL) target
+	-$(Q) $(RMDIR) enc/jis enc/trans enc $(COROUTINE_H:/Context.h=) coroutine target \
 	  $(PRISM_BUILD_DIR)/*/ $(PRISM_BUILD_DIR) tmp \
 	2> $(NULL) || $(NULLCMD)
 
@@ -861,7 +860,10 @@ clean-platform distclean-platform realclean-platform:
 
 RUBYSPEC_CAPIEXT = spec/ruby/optional/capi/ext
 RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
-RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY) build-ext
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+
+rubyspec-capiext: build-ext $(DOT_WAIT)
+# make-dependent rules should be included after this and built after build-ext.
 
 clean-spec: PHONY
 	-$(Q) $(RM) $(RUBYSPEC_CAPIEXT)/*.$(OBJEXT) $(RUBYSPEC_CAPIEXT)/*.$(DLEXT)
@@ -13834,6 +13836,8 @@ proc.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 proc.$(OBJEXT): {$(VPATH)}prism/version.h
 proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}ractor.h
+proc.$(OBJEXT): {$(VPATH)}ractor_core.h
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -21735,6 +21739,7 @@ yjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.c
 yjit.$(OBJEXT): {$(VPATH)}yjit.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.rbinc
+yjit.$(OBJEXT): {$(VPATH)}zjit.h
 zjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 zjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 zjit.$(OBJEXT): $(CCAN_DIR)/list/list.h

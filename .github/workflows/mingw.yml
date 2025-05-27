@@ -50,7 +50,6 @@ jobs:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
           # Ruby 3.2 is the first Windows Ruby to use OpenSSL 3.x
           - msystem: 'UCRT64'
-            baseruby: '3.2'
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false
@@ -69,7 +68,7 @@ jobs:
       - name: Set up Ruby & MSYS2
         uses: ruby/setup-ruby@d8d83c3960843afb664e821fed6be52f37da5267 # v1.231.0
         with:
-          ruby-version: ${{ matrix.baseruby }}
+          ruby-version: '3.2'
 
       - name: Misc system & package info
         working-directory:
