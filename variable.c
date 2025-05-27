@@ -1376,8 +1376,6 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 
     shape_id_t shape_id;
     VALUE * ivar_list;
-    rb_shape_t * shape;
-
     shape_id = RBASIC_SHAPE_ID(obj);
 
     switch (BUILTIN_TYPE(obj)) {
@@ -1399,8 +1397,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
                 }
                 else {
                     attr_index_t index = 0;
-                    shape = RSHAPE(shape_id);
-                    found = rb_shape_get_iv_index(shape, id, &index);
+                    found = rb_shape_get_iv_index(shape_id, id, &index);
 
                     if (found) {
                         ivar_list = RCLASS_PRIME_FIELDS(obj);
@@ -1463,8 +1460,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     attr_index_t index = 0;
-    shape = RSHAPE(shape_id);
-    if (rb_shape_get_iv_index(shape, id, &index)) {
+    if (rb_shape_get_iv_index(shape_id, id, &index)) {
         return ivar_list[index];
     }
 
@@ -1717,15 +1713,16 @@ general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
         .existing = true
     };
 
-    rb_shape_t *current_shape = rb_obj_shape(obj);
+    shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (UNLIKELY(rb_shape_too_complex_p(current_shape))) {
+    if (UNLIKELY(rb_shape_id_too_complex_p(current_shape_id))) {
         goto too_complex;
     }
 
     attr_index_t index;
-    if (!rb_shape_get_iv_index(current_shape, id, &index)) {
+    if (!rb_shape_get_iv_index(current_shape_id, id, &index)) {
         result.existing = false;
+        rb_shape_t *current_shape = RSHAPE(current_shape_id);
 
         index = current_shape->next_field_index;
         if (index >= SHAPE_MAX_FIELDS) {
@@ -2172,7 +2169,7 @@ rb_ivar_defined(VALUE obj, ID id)
         return Qtrue;
     }
     else {
-        return RBOOL(rb_shape_get_iv_index(rb_obj_shape(obj), id, &index));
+        return RBOOL(rb_shape_get_iv_index(RBASIC_SHAPE_ID(obj), id, &index));
     }
 }
 
