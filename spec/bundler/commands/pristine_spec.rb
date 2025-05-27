@@ -49,7 +49,7 @@ RSpec.describe "bundle pristine" do
       bundle "pristine"
       bundle "-v"
 
-      expected = if Bundler::VERSION < "3.0"
+      expected = if Bundler.bundler_major_version < 3
         "Bundler version"
       else
         Bundler::VERSION
