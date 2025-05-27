@@ -128,7 +128,7 @@ rb_class_allocate_instance(VALUE klass)
               T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
     VALUE obj = (VALUE)o;
 
-    RUBY_ASSERT(rb_obj_shape(obj)->type == SHAPE_ROOT);
+    RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(obj), SHAPE_ROOT));
 
     RBASIC_SET_SHAPE_ID(obj, rb_shape_root(rb_gc_heap_id_for_size(size)));
 
