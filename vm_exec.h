@@ -11,6 +11,8 @@
 
 **********************************************************************/
 
+#include "ruby/internal/has/attribute.h"
+
 typedef long OFFSET;
 typedef unsigned long lindex_t;
 typedef VALUE GENTRY;
@@ -60,17 +62,19 @@ error !
 /************************************************/
 #elif OPT_TAILCALL_THREADED_CODE
 
-/* Same as __attribute__((musttail)), but slightly wider support (GCC 15) */
-#define MUSTTAIL [[clang::musttail]]
+#if !RBIMPL_HAS_ATTRIBUTE(musttail)
+#error support for musttail attribute is required for tailcall threading
+#endif
+
+/* Declares that the function call MUST be tailcall optimized */
+#define MUSTTAIL __attribute__((musttail))
 
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
 #define LABEL_PTR(x) &LABEL(x)
 
-#if defined __has_attribute
-#if __has_attribute (preserve_none)
+#if RBIMPL_HAS_ATTRIBUTE(preserve_none)
 #define ATTR_PRESERVE_NONE __attribute__((preserve_none))
-#endif
 #endif
 
 #ifdef ATTR_PRESERVE_NONE
