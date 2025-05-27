@@ -9748,11 +9748,15 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         }
     }
 
-#define SPLIT_STR(beg, len) (empty_count = split_string(result, str, beg, len, empty_count))
+#define SPLIT_STR(beg, len) ( \
+        empty_count = split_string(result, str, beg, len, empty_count), \
+        str_mod_check(str, str_start, str_len))
 
     beg = 0;
     char *ptr = RSTRING_PTR(str);
-    char *eptr = RSTRING_END(str);
+    char *const str_start = ptr;
+    const long str_len = RSTRING_LEN(str);
+    char *const eptr = str_start + str_len;
     if (split_type == SPLIT_TYPE_AWK) {
         char *bptr = ptr;
         int skip = 1;
@@ -9813,7 +9817,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         }
     }
     else if (split_type == SPLIT_TYPE_STRING) {
-        char *str_start = ptr;
         char *substr_start = ptr;
         char *sptr = RSTRING_PTR(spat);
         long slen = RSTRING_LEN(spat);
@@ -9830,6 +9833,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
                 continue;
             }
             SPLIT_STR(substr_start - str_start, (ptr+end) - substr_start);
+            str_mod_check(spat, sptr, slen);
             ptr += end + slen;
             substr_start = ptr;
             if (!NIL_P(limit) && lim <= ++i) break;
@@ -9837,7 +9841,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         beg = ptr - str_start;
     }
     else if (split_type == SPLIT_TYPE_CHARS) {
-        char *str_start = ptr;
         int n;
 
         if (result) result = rb_ary_new_capa(RSTRING_LEN(str));
