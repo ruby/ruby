@@ -2057,12 +2057,6 @@ void rb_obj_freeze_inline(VALUE x)
         }
 
         shape_id_t next_shape_id = rb_shape_transition_frozen(x);
-
-        // If we're transitioning from "not complex" to "too complex"
-        // then evict ivars.  This can happen if we run out of shapes
-        if (rb_shape_too_complex_p(next_shape_id) && !rb_shape_obj_too_complex_p(x)) {
-            rb_evict_fields_to_hash(x);
-        }
         rb_obj_set_shape_id(x, next_shape_id);
 
         if (RBASIC_CLASS(x)) {
@@ -2227,8 +2221,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
-      case SHAPE_FROZEN:
-        return iterate_over_shapes_with_callback(RSHAPE(shape->parent_id), callback, itr_data);
       case SHAPE_OBJ_TOO_COMPLEX:
       default:
         rb_bug("Unreachable");
