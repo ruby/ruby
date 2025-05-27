@@ -130,7 +130,6 @@ bool rb_shape_id_too_complex_p(shape_id_t shape_id);
 bool rb_shape_has_object_id(rb_shape_t *shape);
 bool rb_shape_id_has_object_id(shape_id_t shape_id);
 
-void rb_shape_set_shape(VALUE obj, rb_shape_t *shape);
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);

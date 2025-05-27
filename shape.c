@@ -930,12 +930,6 @@ rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value)
     return true;
 }
 
-void
-rb_shape_set_shape(VALUE obj, rb_shape_t *shape)
-{
-    rb_shape_set_shape_id(obj, rb_shape_id(shape));
-}
-
 int32_t
 rb_shape_id_offset(void)
 {
