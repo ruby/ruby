@@ -787,7 +787,7 @@ load_wrapping(rb_execution_context_t *ec, VALUE fname, VALUE load_wrapper)
     ec->errinfo = Qnil; /* ensure */
 
     /* load in module as toplevel */
-    if (IS_NAMESPACE(load_wrapper)) {
+    if (NAMESPACE_OBJ_P(load_wrapper)) {
         ns = rb_get_namespace_t(load_wrapper);
         if (!ns->top_self) {
             ns->top_self = rb_obj_clone(rb_vm_top_self());
@@ -1666,7 +1666,7 @@ Init_load(void)
     static const char var_load_path[] = "$:";
     ID id_load_path = rb_intern2(var_load_path, sizeof(var_load_path)-1);
 
-    rb_define_hooked_variable(var_load_path, (VALUE*)Qnil, load_path_getter, rb_gvar_readonly_setter);
+    rb_define_hooked_variable(var_load_path, 0, load_path_getter, rb_gvar_readonly_setter);
     rb_gvar_namespace_ready(var_load_path);
     rb_alias_variable(rb_intern_const("$-I"), id_load_path);
     rb_alias_variable(rb_intern_const("$LOAD_PATH"), id_load_path);

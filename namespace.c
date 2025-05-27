@@ -26,7 +26,7 @@ static rb_namespace_t root_namespace_data = {
     /* Initialize values lazily in Init_namespace() */
 };
 
-static rb_namespace_t * const root_namespace = &root_namespace_data;
+static rb_namespace_t * root_namespace = &root_namespace_data;
 static rb_namespace_t * main_namespace = 0;
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
@@ -66,13 +66,13 @@ rb_namespace_available(void)
     return 0;
 }
 
-rb_namespace_t *
+const rb_namespace_t *
 rb_root_namespace(void)
 {
     return root_namespace;
 }
 
-rb_namespace_t *
+const rb_namespace_t *
 rb_main_namespace(void)
 {
     return main_namespace;
@@ -222,16 +222,6 @@ rb_loading_namespace(void)
     return rb_get_namespace_t(namespace);
     */
     return rb_vm_loading_namespace(GET_EC());
-}
-
-const rb_namespace_t *
-rb_definition_namespace(void)
-{
-    const rb_namespace_t *ns = rb_current_namespace();
-    if (NAMESPACE_BUILTIN_P(ns)) {
-        return root_namespace;
-    }
-    return ns;
 }
 
 /*
@@ -423,11 +413,26 @@ rb_namespace_entry_mark(void *ptr)
     rb_gc_mark(ns->gvar_tbl);
 }
 
+// TODO: implemente namespace_entry_free to free loading_table etc
+/*
+static int
+free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
+{
+    xfree((char *)key);
+    return ST_DELETE;
+}
+        if (vm->loading_table) {
+            st_foreach(vm->loading_table, free_loading_table_entry, 0);
+            st_free_table(vm->loading_table);
+            vm->loading_table = 0;
+        }
+*/
 #define namespace_entry_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
 namespace_entry_memsize(const void *ptr)
 {
+    // TODO: rb_st_memsize(loaded_features_index) + rb_st_memsize(vm->loading_table)
     return sizeof(rb_namespace_t);
 }
 
@@ -853,6 +858,49 @@ rb_namespace_require_relative(VALUE namespace, VALUE fname)
     return rb_require_relative_entrypoint(fname);
 }
 
+static void
+initialize_root_namespace(void)
+{
+    VALUE root_namespace, entry;
+    ID id_namespace_entry;
+    rb_vm_t *vm = GET_VM();
+    rb_namespace_t *root = (rb_namespace_t *)rb_root_namespace();
+
+    root->load_path = rb_ary_new();
+    root->expanded_load_path = rb_ary_hidden_new(0);
+    root->load_path_snapshot = rb_ary_hidden_new(0);
+    root->load_path_check_cache = 0;
+    rb_define_singleton_method(root->load_path, "resolve_feature_path", rb_resolve_feature_path, 1);
+
+    root->loaded_features = rb_ary_new();
+    root->loaded_features_snapshot = rb_ary_hidden_new(0);
+    root->loaded_features_index = st_init_numtable();
+    root->loaded_features_realpaths = rb_hash_new();
+    rb_obj_hide(root->loaded_features_realpaths);
+    root->loaded_features_realpath_map = rb_hash_new();
+    rb_obj_hide(root->loaded_features_realpath_map);
+
+    root->ruby_dln_libmap = rb_hash_new_with_size(0);
+    root->gvar_tbl = rb_hash_new_with_size(0);
+
+    vm->root_namespace = root;
+
+    if (rb_namespace_available()) {
+        CONST_ID(id_namespace_entry, "__namespace_entry__");
+
+        root_namespace = rb_obj_alloc(rb_cNamespace);
+        rb_evict_ivars_to_hash(root_namespace);
+        RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_namespace, true);
+        RCLASS_SET_CONST_TBL(root_namespace, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
+
+        root->ns_id = namespace_generate_id();
+        root->ns_object = root_namespace;
+
+        entry = TypedData_Wrap_Struct(rb_cNamespaceEntry, &rb_namespace_data_type, root);
+        rb_ivar_set(root_namespace, id_namespace_entry, entry);
+    }
+}
+
 static int namespace_experimental_warned = 0;
 
 void
@@ -895,8 +943,8 @@ rb_namespace_inspect(VALUE obj)
     ns = rb_get_namespace_t(obj);
     r = rb_str_new_cstr("#<Namespace:");
     rb_str_concat(r, rb_funcall(LONG2NUM(ns->ns_id), rb_intern("to_s"), 0));
-    if (NAMESPACE_BUILTIN_P(ns)) {
-        rb_str_cat_cstr(r, ",builtin");
+    if (NAMESPACE_ROOT_P(ns)) {
+        rb_str_cat_cstr(r, ",root");
     }
     if (NAMESPACE_USER_P(ns)) {
         rb_str_cat_cstr(r, ",user");
@@ -926,6 +974,12 @@ namespace_define_loader_method(const char *name)
 }
 
 void
+Init_root_namespace(void)
+{
+    root_namespace->loading_table = st_init_strtable();
+}
+
+void
 Init_Namespace(void)
 {
     tmp_dir = system_tmpdir();
@@ -936,6 +990,8 @@ Init_Namespace(void)
 
     rb_cNamespaceEntry = rb_define_class_under(rb_cNamespace, "Entry", rb_cObject);
     rb_define_alloc_func(rb_cNamespaceEntry, rb_namespace_entry_alloc);
+
+    initialize_root_namespace();
 
     rb_mNamespaceLoader = rb_define_module_under(rb_cNamespace, "Loader");
     namespace_define_loader_method("require");
