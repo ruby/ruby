@@ -43,6 +43,7 @@ typedef struct rb_namespace_struct rb_namespace_t;
 
 #define NAMESPACE_OBJ_P(obj) (CLASS_OF(obj) == rb_cNamespace)
 
+#define NAMESPACE_ROOT_P(ns) (ns && !ns->is_user)
 #define NAMESPACE_USER_P(ns) (ns && ns->is_user)
 #define NAMESPACE_OPTIONAL_P(ns) (ns && ns->is_optional)
 #define NAMESPACE_MAIN_P(ns) (ns && ns->is_user && !ns->is_optional)
@@ -55,9 +56,8 @@ typedef struct rb_namespace_struct rb_namespace_t;
 int rb_namespace_available(void);
 const rb_namespace_t * rb_root_namespace(void);
 const rb_namespace_t * rb_main_namespace(void);
-const rb_namespace_t * rb_definition_namespace(void);
-const rb_namespace_t * rb_loading_namespace(void);
 const rb_namespace_t * rb_current_namespace(void);
+const rb_namespace_t * rb_loading_namespace(void);
 
 void rb_namespace_entry_mark(void *);
 void rb_namespace_gc_update_references(void *ptr);

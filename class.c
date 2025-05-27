@@ -650,7 +650,7 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
-    const rb_namespace_t *ns = rb_definition_namespace();
+    const rb_namespace_t *ns = rb_current_namespace();
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     // class_alloc is supposed to return a new object that is not promoted yet.

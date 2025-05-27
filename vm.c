@@ -2948,7 +2948,7 @@ rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg,
 
 VALUE
 rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2,
-                              VALUE filename, rb_namespace_t *ns)
+                              VALUE filename, const rb_namespace_t *ns)
 {
     rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *reg_cfp = ec->cfp;
@@ -2998,20 +2998,26 @@ current_namespace_at_control_frame(const rb_control_frame_t *cfp)
 const rb_namespace_t *
 rb_vm_current_namespace(const rb_execution_context_t *ec)
 {
-    const rb_control_frame_t *cfp = ec->cfp;
+    const rb_control_frame_t *cfp;
 
-    if (!rb_namespace_available())
-        return 0;
+    if (!rb_namespace_available() || !ec)
+        return rb_root_namespace();
 
+    cfp = ec->cfp;
     return current_namespace_at_control_frame(cfp);
 }
 
 const rb_namespace_t *
 rb_vm_loading_namespace(const rb_execution_context_t *ec)
 {
-    const rb_control_frame_t *cfp = ec->cfp;
-    const rb_control_frame_t *current_cfp = cfp;
-    const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+    const rb_control_frame_t *cfp, *current_cfp, *end_cfp;
+
+    if (!rb_namespace_available() || !ec)
+        return rb_root_namespace();
+
+    cfp = ec->cfp;
+    current_cfp = cfp;
+    end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
@@ -3038,20 +3044,12 @@ rb_vm_update_references(void *ptr)
         rb_vm_t *vm = ptr;
 
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
-        vm->load_path = rb_gc_location(vm->load_path);
-        vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
-
-        if (vm->load_path_check_cache) {
-            vm->load_path_check_cache = rb_gc_location(vm->load_path_check_cache);
-        }
-
-        vm->expanded_load_path = rb_gc_location(vm->expanded_load_path);
-        vm->loaded_features = rb_gc_location(vm->loaded_features);
-        vm->loaded_features_snapshot = rb_gc_location(vm->loaded_features_snapshot);
-        vm->loaded_features_realpaths = rb_gc_location(vm->loaded_features_realpaths);
-        vm->loaded_features_realpath_map = rb_gc_location(vm->loaded_features_realpath_map);
-        vm->top_self = rb_gc_location(vm->top_self);
         vm->orig_progname = rb_gc_location(vm->orig_progname);
+
+        if (vm->root_namespace)
+            rb_namespace_gc_update_references(vm->root_namespace);
+        if (vm->main_namespace)
+            rb_namespace_gc_update_references(vm->main_namespace);
 
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3122,27 +3120,14 @@ rb_vm_mark(void *ptr)
             rb_gc_mark_maybe(*list->varptr);
         }
 
-        if (vm->main_namespace) {
-            rb_namespace_entry_mark((void *)vm->main_namespace);
-        }
+        if (vm->root_namespace)
+            rb_namespace_entry_mark(vm->root_namespace);
+        if (vm->main_namespace)
+            rb_namespace_entry_mark(vm->main_namespace);
 
-        rb_gc_mark_movable(vm->mark_object_ary);
-        rb_gc_mark_movable(vm->load_path);
-        rb_gc_mark_movable(vm->load_path_snapshot);
-        rb_gc_mark_movable(vm->load_path_check_cache);
-        rb_gc_mark_movable(vm->expanded_load_path);
-        rb_gc_mark_movable(vm->loaded_features);
-        rb_gc_mark_movable(vm->loaded_features_snapshot);
-        rb_gc_mark_movable(vm->loaded_features_realpaths);
-        rb_gc_mark_movable(vm->loaded_features_realpath_map);
-        rb_gc_mark_movable(vm->top_self);
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);
-
-        if (vm->loading_table) {
-            rb_mark_tbl(vm->loading_table);
-        }
 
         rb_gc_mark_values(RUBY_NSIG, vm->trap_list.cmd);
 
@@ -3178,14 +3163,6 @@ rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE cls,
     rb_vm_register_global_object(exc);
 }
 
-static int
-free_loading_table_entry(st_data_t key, st_data_t value, st_data_t arg)
-{
-    xfree((char *)key);
-    return ST_DELETE;
-}
-
-void rb_free_loaded_features_index(rb_vm_t *vm);
 void rb_objspace_free_objects(void *objspace);
 
 int
@@ -3207,7 +3184,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_vm_opt_tables();
             rb_free_warning();
             rb_free_rb_global_tbl();
-            rb_free_loaded_features_index(vm);
 
             rb_id_table_free(vm->negative_cme_table);
             st_free_table(vm->overloaded_cme_table);
@@ -3238,11 +3214,6 @@ ruby_vm_destruct(rb_vm_t *vm)
 
         rb_vm_living_threads_init(vm);
         ruby_vm_run_at_exit_hooks(vm);
-        if (vm->loading_table) {
-            st_foreach(vm->loading_table, free_loading_table_entry, 0);
-            st_free_table(vm->loading_table);
-            vm->loading_table = 0;
-        }
         if (vm->ci_table) {
             st_free_table(vm->ci_table);
             vm->ci_table = NULL;
@@ -3338,8 +3309,6 @@ vm_memsize(const void *ptr)
 
     return (
         sizeof(rb_vm_t) +
-        rb_st_memsize(vm->loaded_features_index) +
-        rb_st_memsize(vm->loading_table) +
         rb_vm_memsize_postponed_job_queue() +
         rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
@@ -3727,6 +3696,8 @@ rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 static void
 th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 {
+    const rb_namespace_t *ns = rb_current_namespace();
+
     th->self = self;
 
     rb_threadptr_root_fiber_setup(th);
@@ -3748,7 +3719,12 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->status = THREAD_RUNNABLE;
     th->last_status = Qnil;
     th->top_wrapper = 0;
-    th->top_self = vm->top_self; // 0 while self == 0
+    if (ns->top_self) {
+        th->top_self = ns->top_self;
+    }
+    else {
+        th->top_self = 0;
+    }
     th->value = Qundef;
 
     th->ec->errinfo = Qnil;
@@ -4542,7 +4518,6 @@ Init_vm_objects(void)
 
     /* initialize mark object array, hash */
     vm->mark_object_ary = pin_array_list_new(Qnil);
-    vm->loading_table = st_init_strtable();
     vm->ci_table = st_init_table(&vm_ci_hashtype);
 }
 
@@ -4570,17 +4545,20 @@ main_to_s(VALUE obj)
 VALUE
 rb_vm_top_self(void)
 {
-    return GET_VM()->top_self;
+    const rb_namespace_t *ns = rb_current_namespace();
+    VM_ASSERT(ns);
+    VM_ASSERT(ns->top_self);
+    return ns->top_self;
 }
 
 void
 Init_top_self(void)
 {
     rb_vm_t *vm = GET_VM();
-
-    vm->top_self = rb_obj_alloc(rb_cObject);
-    rb_define_singleton_method(rb_vm_top_self(), "to_s", main_to_s, 0);
-    rb_define_alias(rb_singleton_class(rb_vm_top_self()), "inspect", "to_s");
+    vm->root_namespace = (rb_namespace_t *)rb_root_namespace();
+    vm->root_namespace->top_self = rb_obj_alloc(rb_cObject);
+    rb_define_singleton_method(vm->root_namespace->top_self, "to_s", main_to_s, 0);
+    rb_define_alias(rb_singleton_class(vm->root_namespace->top_self), "inspect", "to_s");
 }
 
 VALUE *
