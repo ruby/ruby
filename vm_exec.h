@@ -60,12 +60,8 @@ error !
 /************************************************/
 #elif OPT_TAILCALL_THREADED_CODE
 
-// https://blog.reverberate.org/2021/04/21/musttail-efficient-interpreters.html
-// https://sillycross.github.io/2022/11/22/2022-11-22/
-// https://github.com/wasm3/wasm3/blob/main/docs/Interpreter.md#m3-massey-meta-machine
-
-// TODO: move elsewhere
-#define MUSTTAIL __attribute__((musttail))
+/* Same as __attribute__((musttail)), but slightly wider support (GCC 15) */
+#define MUSTTAIL [[clang::musttail]]
 
 #define LABEL(x)  insn_func_##x
 #define ELABEL(x)
@@ -73,15 +69,12 @@ error !
 
 #if defined __has_attribute
 #if __has_attribute (preserve_none)
-#define HAS_PRESERVE_NONE 1
+#define ATTR_PRESERVE_NONE __attribute__((preserve_none))
 #endif
-#endif
-#ifndef HAS_PRESERVE_NONE
-#define HAS_PRESERVE_NONE 0
 #endif
 
-#if HAS_PRESERVE_NONE
-#define INSN_FUNC_CONV __attribute__((preserve_none))
+#ifdef ATTR_PRESERVE_NONE
+#define INSN_FUNC_CONV ATTR_PRESERVE_NONE
 #else
 #define INSN_FUNC_CONV
 #endif
@@ -96,8 +89,8 @@ typedef INSN_FUNC_CONV INSN_FUNC_RET rb_insn_tailcall_func_t(INSN_FUNC_PARAMS);
     __attribute__((no_stack_protector))
 
 #define INSN_ENTRY(insn) \
-  static INSN_FUNC_CONV INSN_FUNC_RET \
-    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) INSN_FUNC_ATTRIBUTES {
+  static INSN_FUNC_CONV INSN_FUNC_ATTRIBUTES INSN_FUNC_RET \
+    FUNC_FASTCALL(LABEL(insn))(INSN_FUNC_PARAMS) {
 
 #define TC_DISPATCH(insn) \
   MUSTTAIL return (*(rb_insn_tailcall_func_t *)GET_CURRENT_INSN())(INSN_FUNC_ARGS);
