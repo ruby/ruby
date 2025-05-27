@@ -731,6 +731,35 @@ rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
     return rb_shape_id(next_shape);
 }
 
+static bool
+shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+{
+    while (shape->parent_id != INVALID_SHAPE_ID) {
+        if (shape->edge_name == id) {
+            enum shape_type shape_type;
+            shape_type = (enum shape_type)shape->type;
+
+            switch (shape_type) {
+              case SHAPE_IVAR:
+                RUBY_ASSERT(shape->next_field_index > 0);
+                *value = shape->next_field_index - 1;
+                return true;
+              case SHAPE_ROOT:
+              case SHAPE_T_OBJECT:
+                return false;
+              case SHAPE_OBJ_TOO_COMPLEX:
+              case SHAPE_OBJ_ID:
+              case SHAPE_FROZEN:
+                rb_bug("Ivar should not exist on transition");
+            }
+        }
+
+        shape = RSHAPE(shape->parent_id);
+    }
+
+    return false;
+}
+
 static inline rb_shape_t *
 shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 {
@@ -741,7 +770,7 @@ shape_get_next(rb_shape_t *shape, VALUE obj, ID id, bool emit_warnings)
 
 #if RUBY_DEBUG
     attr_index_t index;
-    if (rb_shape_get_iv_index(shape, id, &index)) {
+    if (shape_get_iv_index(shape, id, &index)) {
         rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
     }
 #endif
@@ -803,14 +832,14 @@ bool
 rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint)
 {
     attr_index_t index_hint = *value;
-    rb_shape_t *shape = RSHAPE(shape_id);
-    rb_shape_t *initial_shape = shape;
 
     if (*shape_id_hint == INVALID_SHAPE_ID) {
         *shape_id_hint = shape_id;
-        return rb_shape_get_iv_index(shape, id, value);
+        return rb_shape_get_iv_index(shape_id, id, value);
     }
 
+    rb_shape_t *shape = RSHAPE(shape_id);
+    rb_shape_t *initial_shape = shape;
     rb_shape_t *shape_hint = RSHAPE(*shape_id_hint);
 
     // We assume it's likely shape_id_hint and shape_id have a close common
@@ -850,36 +879,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         shape = initial_shape;
     }
     *shape_id_hint = shape_id;
-    return rb_shape_get_iv_index(shape, id, value);
-}
-
-static bool
-shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
-{
-    while (shape->parent_id != INVALID_SHAPE_ID) {
-        if (shape->edge_name == id) {
-            enum shape_type shape_type;
-            shape_type = (enum shape_type)shape->type;
-
-            switch (shape_type) {
-              case SHAPE_IVAR:
-                RUBY_ASSERT(shape->next_field_index > 0);
-                *value = shape->next_field_index - 1;
-                return true;
-              case SHAPE_ROOT:
-              case SHAPE_T_OBJECT:
-                return false;
-              case SHAPE_OBJ_TOO_COMPLEX:
-              case SHAPE_OBJ_ID:
-              case SHAPE_FROZEN:
-                rb_bug("Ivar should not exist on transition");
-            }
-        }
-
-        shape = RSHAPE(shape->parent_id);
-    }
-
-    return false;
+    return shape_get_iv_index(shape, id, value);
 }
 
 static bool
@@ -909,11 +909,13 @@ shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 }
 
 bool
-rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value)
 {
+    rb_shape_t *shape = RSHAPE(shape_id);
+
     // It doesn't make sense to ask for the index of an IV that's stored
     // on an object that is "too complex" as it uses a hash for storing IVs
-    RUBY_ASSERT(rb_shape_id(shape) != ROOT_TOO_COMPLEX_SHAPE_ID);
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape));
 
     if (!shape_cache_get_iv_index(shape, id, value)) {
         // If it wasn't in the ancestor cache, then don't do a linear search

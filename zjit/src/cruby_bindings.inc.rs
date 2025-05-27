@@ -872,7 +872,7 @@ unsafe extern "C" {
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_lookup(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
