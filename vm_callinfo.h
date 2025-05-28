@@ -448,12 +448,6 @@ vm_ic_atomic_shape_and_index(const struct iseq_inline_iv_cache_entry *ic, shape_
     return;
 }
 
-static inline shape_id_t
-vm_ic_attr_index_dest_shape_id(const struct iseq_inline_iv_cache_entry *ic)
-{
-    return (shape_id_t)(ic->value >> SHAPE_FLAG_SHIFT);
-}
-
 static inline unsigned int
 vm_cc_cmethod_missing_reason(const struct rb_callcache *cc)
 {
