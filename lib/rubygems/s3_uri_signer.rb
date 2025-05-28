@@ -147,6 +147,7 @@ class Gem::S3URISigner
     require_relative "request/connection_pools"
     require "json"
     token = ec2_metadata_token
+
     iam_info = ec2_metadata_request(EC2_IAM_INFO, token)
     # Expected format: arn:aws:iam::<id>:instance-profile/<role_name>
     role_name = iam_info["InstanceProfileArn"].split("/").last
@@ -154,9 +155,8 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_request(url, token)
-    uri = Gem::URI(url)
-    @request_pool ||= create_request_pool(uri)
-    request = Gem::Request.new(uri, Gem::Net::HTTP::Get, nil, @request_pool)
+    request = ec2_iam_request(Gem::URI(url), Gem::Net::HTTP::Get)
+
     response = request.fetch do |req|
       req.add_field "X-aws-ec2-metadata-token", token
     end
@@ -170,9 +170,8 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_token
-    uri = Gem::URI(EC2_IAM_TOKEN)
-    @request_pool ||= create_request_pool(uri)
-    request = Gem::Request.new(uri, Gem::Net::HTTP::Put, nil, @request_pool)
+    request = ec2_iam_request(Gem::URI(EC2_IAM_TOKEN), Gem::Net::HTTP::Put)
+
     response = request.fetch do |req|
       req.add_field "X-aws-ec2-metadata-token-ttl-seconds", 60
     end
@@ -183,6 +182,14 @@ class Gem::S3URISigner
     else
       raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")
     end
+  end
+
+  def ec2_iam_request(uri, verb)
+    @request_pool ||= {}
+    @request_pool[uri] ||= create_request_pool(uri)
+    pool = @request_pool[uri]
+
+    Gem::Request.new(uri, verb, nil, pool)
   end
 
   def create_request_pool(uri)
