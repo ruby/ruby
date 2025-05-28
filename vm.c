@@ -4011,9 +4011,6 @@ Init_VM(void)
     fcore = rb_class_new(rb_cBasicObject);
     rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
     rb_vm_register_global_object(rb_class_path_cached(fcore));
-    RB_FL_UNSET_RAW(fcore, T_MASK);
-    RB_FL_SET_RAW(fcore, T_ICLASS);
-    RCLASSEXT_ICLASS_IS_ORIGIN(RCLASS_EXT_PRIME(fcore)) = true;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
