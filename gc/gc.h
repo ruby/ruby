@@ -72,10 +72,10 @@ void rb_gc_prepare_heap_process_object(VALUE obj);
 bool ruby_free_at_exit_p(void);
 bool rb_memerror_reentered(void);
 bool rb_obj_id_p(VALUE);
+void *rb_gc_get_ractor_newobj_cache(void);
 
 #if USE_MODULAR_GC
 bool rb_gc_event_hook_required_p(rb_event_flag_t event);
-void *rb_gc_get_ractor_newobj_cache(void);
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
 void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
