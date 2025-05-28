@@ -16,7 +16,7 @@ module Prism
       # A prism visitor that builds Sexp objects.
       class Compiler < ::Prism::Compiler
         # This is the name of the file that we are compiling. We set it on every
-        # Sexp object that is generated, and also use it to compile __FILE__
+        # Sexp object that is generated, and also use it to compile `__FILE__`
         # nodes.
         attr_reader :file
 
