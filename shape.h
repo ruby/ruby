@@ -14,6 +14,7 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 #define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_READ_ONLY_MASK (~SHAPE_ID_FL_FROZEN)
 
 typedef uint32_t redblack_id_t;
 
@@ -108,6 +109,14 @@ RBASIC_SHAPE_ID(VALUE obj)
 #else
     return (shape_id_t)((RBASIC(obj)->flags) >> SHAPE_FLAG_SHIFT);
 #endif
+}
+
+// Same as RBASIC_SHAPE_ID but with flags that have no impact
+// on reads removed. e.g. Remove FL_FROZEN.
+static inline shape_id_t
+RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
+{
+    return RBASIC_SHAPE_ID(obj) & SHAPE_ID_READ_ONLY_MASK;
 }
 
 static inline void
