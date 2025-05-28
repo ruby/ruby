@@ -4,11 +4,7 @@
 #![allow(non_upper_case_globals)]
 
 use crate::{
-    cruby::*,
-    options::{get_option, DumpHIR},
-    profile::{get_or_create_iseq_payload, IseqPayload},
-    state::ZJITState,
-    cast::IntoUsize,
+    cast::IntoUsize, cruby::*, options::{get_option, DumpHIR}, profile::{get_or_create_iseq_payload, IseqPayload}, state::ZJITState
 };
 use std::{
     cell::RefCell,
@@ -2195,7 +2191,32 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         n -= 1;
                     }
                 }
+                YARVINSN_opt_aref_with => {
+                    // NB: opt_aref_with has an instruction argument for the call at get_arg(0)
+                    let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
+                    let call_info = unsafe { rb_get_call_data_ci(cd) };
+                    if unknown_call_type(unsafe { rb_vm_ci_flag(call_info) }) {
+                        // Unknown call type; side-exit into the interpreter
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id });
+                        break;  // End the block
+                    }
+                    let argc = unsafe { vm_ci_argc((*cd).ci) };
 
+                    let method_name = unsafe {
+                        let mid = rb_vm_ci_mid(call_info);
+                        mid.contents_lossy().into_owned()
+                    };
+
+                    assert_eq!(1, argc, "opt_aref_with should only be emitted for argc=1");
+                    let aref_arg = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let args = vec![aref_arg];
+
+                    let recv = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let send = fun.push_insn(block, Insn::SendWithoutBlock { self_val: recv, call_info: CallInfo { method_name }, cd, args, state: exit_id });
+                    state.stack_push(send);
+                }
                 YARVINSN_opt_neq => {
                     // NB: opt_neq has two cd; get_arg(0) is for eq and get_arg(1) is for neq
                     let cd: *const rb_call_data = get_arg(pc, 1).as_ptr();
@@ -3593,6 +3614,20 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :[], v1
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_aref_with() {
+        eval("
+            def test(a) = a['string lit triggers aref_with']
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v4:BasicObject = SendWithoutBlock v0, :[], v2
               Return v4
         "#]]);
     }
