@@ -43,7 +43,7 @@ class TestGemCommandManager < Gem::TestCase
     assert_kind_of Gem::Commands::SigninCommand, command
   end
 
-  def test_find_logout_alias_comamnd
+  def test_find_logout_alias_command
     command = @command_manager.find_command "logout"
 
     assert_kind_of Gem::Commands::SignoutCommand, command
