@@ -195,31 +195,31 @@ module Spec
     end
 
     def gem_repo1(*args)
-      tmp("gems/remote1", *args)
+      gem_path("remote1", *args)
     end
 
     def gem_repo_missing(*args)
-      tmp("gems/missing", *args)
+      gem_path("missing", *args)
     end
 
     def gem_repo2(*args)
-      tmp("gems/remote2", *args)
+      gem_path("remote2", *args)
     end
 
     def gem_repo3(*args)
-      tmp("gems/remote3", *args)
+      gem_path("remote3", *args)
     end
 
     def gem_repo4(*args)
-      tmp("gems/remote4", *args)
+      gem_path("remote4", *args)
     end
 
     def security_repo(*args)
-      tmp("gems/security_repo", *args)
+      gem_path("security_repo", *args)
     end
 
     def system_gem_path(*path)
-      tmp("gems/system", *path)
+      gem_path("system", *path)
     end
 
     def pristine_system_gem_path
@@ -232,6 +232,10 @@ module Spec
 
     def scoped_gem_path(base)
       base.join(Gem.ruby_engine, RbConfig::CONFIG["ruby_version"])
+    end
+
+    def gem_path(*args)
+      tmp("gems", *args)
     end
 
     def lib_path(*args)
