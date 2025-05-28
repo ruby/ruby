@@ -30,6 +30,7 @@ typedef uint32_t redblack_id_t;
 # define SHAPE_MAX_VARIATIONS 8
 
 # define INVALID_SHAPE_ID (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
+#define ATTR_INDEX_NOT_SET (attr_index_t)-1
 
 #define ROOT_SHAPE_ID               0x0
 #define SPECIAL_CONST_SHAPE_ID      0x1

@@ -1209,8 +1209,6 @@ fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, in
 #define ractor_object_incidental_shareable_p(obj, val) \
     ractor_incidental_shareable_p(rb_ractor_shareable_p(obj), val)
 
-#define ATTR_INDEX_NOT_SET (attr_index_t)-1
-
 ALWAYS_INLINE(static VALUE vm_getivar(VALUE, ID, const rb_iseq_t *, IVC, const struct rb_callcache *, int, VALUE));
 static inline VALUE
 vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, VALUE default_value)
