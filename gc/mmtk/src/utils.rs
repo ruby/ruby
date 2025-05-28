@@ -97,35 +97,29 @@ pub fn default_heap_max() -> usize {
         .expect("Invalid Memory size") as usize
 }
 
-pub fn parse_capacity(input: &str, default: usize) -> usize {
+pub fn parse_capacity(input: &str) -> Option<usize> {
     let trimmed = input.trim();
 
     const KIBIBYTE: usize = 1024;
     const MEBIBYTE: usize = 1024 * KIBIBYTE;
     const GIBIBYTE: usize = 1024 * MEBIBYTE;
 
-    let (val, suffix) = if let Some(pos) = trimmed.find(|c: char| !c.is_numeric()) {
-        (&trimmed[..pos], &trimmed[pos..])
+    let (number, suffix) = if let Some(pos) = trimmed.find(|c: char| !c.is_numeric()) {
+        trimmed.split_at(pos)
     } else {
         (trimmed, "")
     };
 
-    // 1MiB is the default heap size
-    match (val, suffix) {
-        (number, "GiB") => number
-            .parse::<usize>()
-            .map(|v| v * GIBIBYTE)
-            .unwrap_or(default),
-        (number, "MiB") => number
-            .parse::<usize>()
-            .map(|v| v * MEBIBYTE)
-            .unwrap_or(default),
-        (number, "KiB") => number
-            .parse::<usize>()
-            .map(|v| v * KIBIBYTE)
-            .unwrap_or(default),
-        (number, "") => number.parse::<usize>().unwrap_or(default),
-        (_, _) => default,
+    let Ok(v) = number.parse::<usize>() else {
+        return None;
+    };
+
+    match suffix {
+        "GiB" => Some(v * GIBIBYTE),
+        "MiB" => Some(v * MEBIBYTE),
+        "KiB" => Some(v * KIBIBYTE),
+        "" => Some(v),
+        _ => None,
     }
 }
 
@@ -135,47 +129,30 @@ mod tests {
 
     #[test]
     fn test_parse_capacity_parses_bare_bytes() {
-        assert_eq!(1234, parse_capacity(&String::from("1234"), 0));
+        assert_eq!(Some(1234), parse_capacity("1234"));
     }
 
     #[test]
     fn test_parse_capacity_parses_kibibytes() {
-        assert_eq!(10240, parse_capacity(&String::from("10KiB"), 0))
+        assert_eq!(Some(10240), parse_capacity("10KiB"));
     }
 
     #[test]
     fn test_parse_capacity_parses_mebibytes() {
-        assert_eq!(10485760, parse_capacity(&String::from("10MiB"), 0))
+        assert_eq!(Some(10485760), parse_capacity("10MiB"))
     }
 
     #[test]
     fn test_parse_capacity_parses_gibibytes() {
-        assert_eq!(10737418240, parse_capacity(&String::from("10GiB"), 0))
+        assert_eq!(Some(10737418240), parse_capacity("10GiB"))
     }
 
     #[test]
-    fn test_parses_nonsense_value_as_default_max() {
-        let default = 100;
-
-        assert_eq!(
-            default,
-            parse_capacity(&String::from("notanumber"), default)
-        );
-        assert_eq!(
-            default,
-            parse_capacity(&String::from("5tartswithanumber"), default)
-        );
-        assert_eq!(
-            default,
-            parse_capacity(&String::from("number1nthemiddle"), default)
-        );
-        assert_eq!(
-            default,
-            parse_capacity(&String::from("numberattheend111"), default)
-        );
-        assert_eq!(
-            default,
-            parse_capacity(&String::from("mult1pl3numb3r5"), default)
-        );
+    fn test_parse_capacity_parses_nonsense_values() {
+        assert_eq!(None, parse_capacity("notanumber"));
+        assert_eq!(None, parse_capacity("5tartswithanumber"));
+        assert_eq!(None, parse_capacity("number1nthemiddle"));
+        assert_eq!(None, parse_capacity("numberattheend111"));
+        assert_eq!(None, parse_capacity("mult1pl3numb3r5"));
     }
 }

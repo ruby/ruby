@@ -3,6 +3,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use mmtk::util::options::PlanSelector;
+use std::str::FromStr;
 use std::sync::atomic::Ordering;
 
 use crate::abi::RawVecOfObjRef;
@@ -41,66 +42,61 @@ pub extern "C" fn mmtk_is_reachable(object: ObjectReference) -> bool {
 
 // =============== Bootup ===============
 
-fn mmtk_builder_default_parse_threads() -> usize {
-    let threads_str = std::env::var("MMTK_THREADS").unwrap_or("0".to_string());
+fn parse_env_var_with<T, F: FnOnce(&str) -> Option<T>>(key: &str, parse: F) -> Option<T> {
+    let val = match std::env::var(key) {
+        Ok(val) => val,
+        Err(std::env::VarError::NotPresent) => return None,
+        Err(std::env::VarError::NotUnicode(os_string)) => {
+            eprintln!("[FATAL] Invalid {key} {os_string:?}");
+            std::process::exit(1);
+        }
+    };
 
-    threads_str.parse::<usize>().unwrap_or_else(|_err| {
-        eprintln!("[FATAL] Invalid MMTK_THREADS {}", threads_str);
+    let parsed = parse(&val).unwrap_or_else(|| {
+        eprintln!("[FATAL] Invalid {key} {val}");
         std::process::exit(1);
-    })
+    });
+
+    Some(parsed)
+}
+
+fn parse_env_var<T: FromStr>(key: &str) -> Option<T> {
+    parse_env_var_with(key, |s| s.parse().ok())
+}
+
+fn mmtk_builder_default_parse_threads() -> Option<usize> {
+    parse_env_var("MMTK_THREADS")
 }
 
 fn mmtk_builder_default_parse_heap_min() -> usize {
     const DEFAULT_HEAP_MIN: usize = 1 << 20;
-
-    let heap_min_str = std::env::var("MMTK_HEAP_MIN").unwrap_or(DEFAULT_HEAP_MIN.to_string());
-
-    let size = parse_capacity(&heap_min_str, 0);
-    if size == 0 {
-        eprintln!("[FATAL] Invalid MMTK_HEAP_MIN {}", heap_min_str);
-        std::process::exit(1);
-    }
-
-    size
+    parse_env_var_with("MMTK_HEAP_MIN", parse_capacity).unwrap_or(DEFAULT_HEAP_MIN)
 }
 
 fn mmtk_builder_default_parse_heap_max() -> usize {
-    let heap_max_str = std::env::var("MMTK_HEAP_MAX").unwrap_or(default_heap_max().to_string());
-
-    let size = parse_capacity(&heap_max_str, 0);
-    if size == 0 {
-        eprintln!("[FATAL] Invalid MMTK_HEAP_MAX {}", heap_max_str);
-        std::process::exit(1);
-    }
-
-    size
+    parse_env_var_with("MMTK_HEAP_MAX", parse_capacity).unwrap_or_else(default_heap_max)
 }
 
 fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCTriggerSelector {
-    let heap_mode_str = std::env::var("MMTK_HEAP_MODE").unwrap_or("dynamic".to_string());
+    let make_fixed = || GCTriggerSelector::FixedHeapSize(heap_max);
+    let make_dynamic = || GCTriggerSelector::DynamicHeapSize(heap_min, heap_max);
 
-    match heap_mode_str.as_str() {
-        "fixed" => GCTriggerSelector::FixedHeapSize(heap_max),
-        "dynamic" => GCTriggerSelector::DynamicHeapSize(heap_min, heap_max),
-        _ => {
-            eprintln!("[FATAL] Invalid MMTK_HEAP_MODE {}", heap_mode_str);
-            std::process::exit(1);
-        }
-    }
+    parse_env_var_with("MMTK_HEAP_MODE", |s| match s {
+        "fixed" => Some(make_fixed()),
+        "dynamic" => Some(make_dynamic()),
+        _ => None,
+    })
+    .unwrap_or_else(make_dynamic)
 }
 
 fn mmtk_builder_default_parse_plan() -> PlanSelector {
-    let plan_str = std::env::var("MMTK_PLAN").unwrap_or("Immix".to_string());
-
-    match plan_str.as_str() {
-        "NoGC" => PlanSelector::NoGC,
-        "MarkSweep" => PlanSelector::MarkSweep,
-        "Immix" => PlanSelector::Immix,
-        _ => {
-            eprintln!("[FATAL] Invalid MMTK_PLAN {}", plan_str);
-            std::process::exit(1);
-        }
-    }
+    parse_env_var_with("MMTK_PLAN", |s| match s {
+        "NoGC" => Some(PlanSelector::NoGC),
+        "MarkSweep" => Some(PlanSelector::MarkSweep),
+        "Immix" => Some(PlanSelector::Immix),
+        _ => None,
+    })
+    .unwrap_or(PlanSelector::Immix)
 }
 
 #[no_mangle]
@@ -108,9 +104,15 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
     builder.options.no_finalizer.set(true);
 
-    let threads = mmtk_builder_default_parse_threads();
-    if threads > 0 {
-        builder.options.threads.set(threads);
+    if let Some(threads) = mmtk_builder_default_parse_threads() {
+        if !builder.options.threads.set(threads) {
+            // MMTk will validate it and reject 0.
+            eprintln!(
+                "[FATAL] Failed to set the number of MMTk threads to {}",
+                threads
+            );
+            std::process::exit(1);
+        }
     }
 
     let heap_min = mmtk_builder_default_parse_heap_min();
