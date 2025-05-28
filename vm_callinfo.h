@@ -415,21 +415,6 @@ vm_cc_call(const struct rb_callcache *cc)
     return cc->call_;
 }
 
-static inline attr_index_t
-vm_cc_attr_index(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    return (attr_index_t)((cc->aux_.attr.value & SHAPE_FLAG_MASK) - 1);
-}
-
-static inline shape_id_t
-vm_cc_attr_index_dest_shape_id(const struct rb_callcache *cc)
-{
-    VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-
-    return cc->aux_.attr.value >> SHAPE_FLAG_SHIFT;
-}
-
 static inline void
 vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t * shape_id, attr_index_t * index)
 {

@@ -3944,8 +3944,9 @@ vm_call_attrset_direct(rb_execution_context_t *ec, rb_control_frame_t *cfp, cons
     RB_DEBUG_COUNTER_INC(ccf_attrset);
     VALUE val = *(cfp->sp - 1);
     cfp->sp -= 2;
-    attr_index_t index = vm_cc_attr_index(cc);
-    shape_id_t dest_shape_id = vm_cc_attr_index_dest_shape_id(cc);
+    attr_index_t index;
+    shape_id_t dest_shape_id;
+    vm_cc_atomic_shape_and_index(cc, &dest_shape_id, &index);
     ID id = vm_cc_cme(cc)->def->body.attr.id;
     rb_check_frozen(obj);
     VALUE res = vm_setivar(obj, id, val, dest_shape_id, index);
