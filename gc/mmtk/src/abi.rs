@@ -230,7 +230,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn check_cast(ptr: *mut GCThreadTLS) -> &'static mut GCThreadTLS {
         assert!(!ptr.is_null());
-        let result = &mut *ptr;
+        let result = unsafe { &mut *ptr };
         debug_assert!({
             let kind = result.kind;
             kind == GC_THREAD_KIND_WORKER
@@ -245,7 +245,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn from_vwt_check(vwt: VMWorkerThread) -> &'static mut GCThreadTLS {
         let ptr = Self::from_vwt(vwt);
-        Self::check_cast(ptr)
+        unsafe { Self::check_cast(ptr) }
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // `transmute` does not dereference pointer
@@ -281,7 +281,7 @@ impl RawVecOfObjRef {
     ///
     /// This function turns raw pointer into a Vec without check.
     pub unsafe fn into_vec(self) -> Vec<ObjectReference> {
-        Vec::from_raw_parts(self.ptr, self.len, self.capa)
+        unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capa) }
     }
 }
 

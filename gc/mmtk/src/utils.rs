@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use atomic_refcell::AtomicRefCell;
 use mmtk::scheduler::{GCWork, GCWorker, WorkBucketStage};
 
-use sysinfo::System;
 use crate::Ruby;
+use sysinfo::System;
 
 pub struct ChunkedVecCollector<T> {
     vecs: Vec<Vec<T>>,
@@ -97,7 +97,7 @@ pub fn default_heap_max() -> usize {
         .expect("Invalid Memory size") as usize
 }
 
-pub fn parse_capacity(input: &String, default: usize) -> usize {
+pub fn parse_capacity(input: &str, default: usize) -> usize {
     let trimmed = input.trim();
 
     const KIBIBYTE: usize = 1024;
@@ -112,17 +112,20 @@ pub fn parse_capacity(input: &String, default: usize) -> usize {
 
     // 1MiB is the default heap size
     match (val, suffix) {
-        (number, "GiB") => number.parse::<usize>()
-            .and_then(|v| Ok(v * GIBIBYTE))
+        (number, "GiB") => number
+            .parse::<usize>()
+            .map(|v| v * GIBIBYTE)
             .unwrap_or(default),
-        (number, "MiB") => number.parse::<usize>()
-            .and_then(|v| Ok(v * MEBIBYTE))
+        (number, "MiB") => number
+            .parse::<usize>()
+            .map(|v| v * MEBIBYTE)
             .unwrap_or(default),
-        (number, "KiB") => number.parse::<usize>()
-            .and_then(|v| Ok(v * KIBIBYTE))
+        (number, "KiB") => number
+            .parse::<usize>()
+            .map(|v| v * KIBIBYTE)
             .unwrap_or(default),
-        (number, suffix) if suffix.is_empty() => number.parse::<usize>().unwrap_or(default),
-        (_, _) => default
+        (number, "") => number.parse::<usize>().unwrap_or(default),
+        (_, _) => default,
     }
 }
 
@@ -154,10 +157,25 @@ mod tests {
     fn test_parses_nonsense_value_as_default_max() {
         let default = 100;
 
-        assert_eq!(default, parse_capacity(&String::from("notanumber"), default));
-        assert_eq!(default, parse_capacity(&String::from("5tartswithanumber"), default));
-        assert_eq!(default, parse_capacity(&String::from("number1nthemiddle"), default));
-        assert_eq!(default, parse_capacity(&String::from("numberattheend111"), default));
-        assert_eq!(default, parse_capacity(&String::from("mult1pl3numb3r5"), default));
+        assert_eq!(
+            default,
+            parse_capacity(&String::from("notanumber"), default)
+        );
+        assert_eq!(
+            default,
+            parse_capacity(&String::from("5tartswithanumber"), default)
+        );
+        assert_eq!(
+            default,
+            parse_capacity(&String::from("number1nthemiddle"), default)
+        );
+        assert_eq!(
+            default,
+            parse_capacity(&String::from("numberattheend111"), default)
+        );
+        assert_eq!(
+            default,
+            parse_capacity(&String::from("mult1pl3numb3r5"), default)
+        );
     }
 }

@@ -1,3 +1,7 @@
+// Warn about unsafe operations in functions that are already marked as unsafe.
+// This will become default in Rust 2024 edition.
+#![warn(unsafe_op_in_unsafe_fn)]
+
 extern crate libc;
 extern crate mmtk;
 #[macro_use]
