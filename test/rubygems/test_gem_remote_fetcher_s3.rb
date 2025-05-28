@@ -9,7 +9,6 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
   include Gem::DefaultUserInteraction
 
   class FakeGemRequest < Gem::Request
-
     attr_reader :last_request, :uri
 
     # Override perform_request to stub things
@@ -52,12 +51,13 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
 
       case uri.to_s
       when "http://169.254.169.254/latest/api/token"
-        res = Gem::Net::HTTPOK.new nil, 200, nil
-        def res.body
-          "mysecrettoken"
+        if $imdsv2_token_failure
+          res = Gem::Net::HTTPUnauthorized.new nil, 401, nil
+          def res.body = "you got a 401! panic!"
+        else
+          res = Gem::Net::HTTPOK.new nil, 200, nil
+          def res.body = "mysecrettoken"
         end
-        fake_s3_request.set_response(res)
-
       when "http://169.254.169.254/latest/meta-data/iam/info"
         res = Gem::Net::HTTPOK.new nil, 200, nil
         def res.body
@@ -70,33 +70,26 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
             }
           JSON
         end
-        fake_s3_request.set_response(res)
 
       when "http://169.254.169.254/latest/meta-data/iam/security-credentials/TestRole"
         res = Gem::Net::HTTPOK.new nil, 200, nil
-        def res.body
-          $instance_profile
-        end
-        fake_s3_request.set_response(res)
-
+        def res.body = $instance_profile
       else
         raise "Unexpected request to #{uri}"
       end
 
+      fake_s3_request.set_response(res)
       fake_s3_request
     end
   end
 
   class FakeGemFetcher < Gem::RemoteFetcher
-
     attr_reader :fetched_uri, :last_s3_uri_signer
 
     def request(uri, request_class, last_modified = nil)
       @fetched_uri = uri
       res = Gem::Net::HTTPOK.new nil, 200, nil
-      def res.body
-        "success"
-      end
+      def res.body = "success"
       res
     end
 
@@ -132,10 +125,33 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
     assert_equal(expected.strip, recent_aws_query_logs.strip)
   end
 
-  def assert_fetch_s3(url:, signature:, token: nil, region: "us-east-1", instance_profile_json: nil, method: "GET")
-    @fetcher = FakeGemFetcher.new nil
+  def assert_fetched_s3_with_imds_v1
+    # Three API requests:
+    # 1. Get the token (which fails)
+    # 2. Lookup profile details without token
+    # 3. Query the credentials without token
+    expected = <<~TEXT
+      PUT http://169.254.169.254/latest/api/token
+          x-aws-ec2-metadata-token-ttl-seconds=60
+      GET http://169.254.169.254/latest/meta-data/iam/info
+      GET http://169.254.169.254/latest/meta-data/iam/security-credentials/TestRole
+    TEXT
+    recent_aws_query_logs = @fetcher.last_s3_uri_signer.recent_aws_query_logs
+    assert_equal(expected.strip, recent_aws_query_logs.strip)
+  end
+
+  def with_imds_v2_failure
+    $imdsv2_token_failure = true
+    yield(fetcher)
+  ensure
+    $imdsv2_token_failure = nil
+  end
+
+  def assert_fetch_s3(url:, signature:, token: nil, region: "us-east-1", instance_profile_json: nil, fetcher: nil, method: "GET")
+    @fetcher = fetcher || FakeGemFetcher.new(nil)
     $instance_profile = instance_profile_json
-    res = fetcher.fetch_s3 Gem::URI.parse(url), nil, (method == "HEAD")
+    res = @fetcher.fetch_s3 Gem::URI.parse(url), nil, (method == "HEAD")
+    $imdsv2_token_failure ||= nil
 
     assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T051941Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", @fetcher.fetched_uri.to_s
     if method == "HEAD"
@@ -373,14 +389,16 @@ class TestGemRemoteFetcherS3 < Gem::TestCase
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
-      assert_fetch_s3(
-        url: url,
-        signature: "e709338735f9077edf8f6b94b247171c266a9605975e08e4a519a123c3322625",
-        token: "testtoken",
-        region: "us-east-1",
-        instance_profile_json: '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
-      )
-      assert_fetched_s3_with_imds_v2
+      with_imds_v2_failure do
+        assert_fetch_s3(
+          url: url,
+          signature: "e709338735f9077edf8f6b94b247171c266a9605975e08e4a519a123c3322625",
+          token: "testtoken",
+          region: "us-east-1",
+          instance_profile_json: '{"AccessKeyId": "testuser", "SecretAccessKey": "testpass", "Token": "testtoken"}'
+        )
+        assert_fetched_s3_with_imds_v1
+      end
     end
   ensure
     Gem.configuration[:s3_source] = nil
