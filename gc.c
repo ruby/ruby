@@ -180,13 +180,13 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
-#if USE_MODULAR_GC
 void *
 rb_gc_get_ractor_newobj_cache(void)
 {
     return GET_RACTOR()->newobj_cache;
 }
 
+#if USE_MODULAR_GC
 void
 rb_gc_initialize_vm_context(struct rb_gc_vm_context *context)
 {
