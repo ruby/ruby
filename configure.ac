@@ -3963,7 +3963,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
 ZJIT_LIBS=
 AS_CASE(["${ZJIT_SUPPORT}"],
-[yes|dev], [
+[yes|dev|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -3975,6 +3975,10 @@ AS_CASE(["${ZJIT_SUPPORT}"],
         rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
+    ],
+    [dev_nodebug], [
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev_nodebug
     ])
 
     ZJIT_LIBS="target/release/libzjit.a"
