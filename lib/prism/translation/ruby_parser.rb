@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 begin
   require "ruby_parser"
