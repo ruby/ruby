@@ -1512,6 +1512,7 @@ static inline VALUE
 VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
+    VM_ASSERT(!VM_FRAME_FLAGS(ep, VM_FRAME_MAGIC_TOP));
     return ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
