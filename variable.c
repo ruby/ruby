@@ -3322,7 +3322,7 @@ autoload_feature_require(VALUE _arguments)
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
 
-    if (rb_namespace_available() && RTEST(autoload_namespace))
+    if (rb_namespace_available() && NAMESPACE_OBJ_P(autoload_namespace))
         receiver = autoload_namespace;
 
     /*
