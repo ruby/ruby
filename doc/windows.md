@@ -78,10 +78,8 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     x64.
 
     The minimum requirement is here:
-      * VC++/MSVC on VS 2017/2019 version build tools.
-        * Visual Studio 2022 17.13.x is broken. see https://bugs.ruby-lang.org/issues/21167
+      * VC++/MSVC on VS 2017/2019/2022 version build tools.
       * Windows 10/11 SDK
-        * 10.0.26100 is broken, 10.0.22621 is recommended. see https://bugs.ruby-lang.org/issues/21255
 
 3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
     to run required commands properly from the command line.
