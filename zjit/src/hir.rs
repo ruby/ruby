@@ -1326,6 +1326,22 @@ impl Function {
         self.infer_types();
     }
 
+    /// Fold a binary operator on fixnums.
+    fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
+        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
+            .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
+            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(n as usize)) }))
+            .unwrap_or(insn_id)
+    }
+
+    /// Fold a binary predicate on fixnums.
+    fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
+        f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
+            .map(|b| if b { Qtrue } else { Qfalse })
+            .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
+            .unwrap_or(insn_id)
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -1347,42 +1363,59 @@ impl Function {
                         continue;
                     }
                     Insn::FixnumAdd { left, right, .. } => {
-                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
-                            (Some(l), Some(r)) => {
-                                let result = l + r;
-                                if result >= (RUBY_FIXNUM_MIN as i64) && result <= (RUBY_FIXNUM_MAX as i64) {
-                                    self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(result as usize)) })
-                                } else {
-                                    // Instead of allocating a Bignum at compile-time, defer the add and allocation to run-time.
-                                    insn_id
-                                }
-                            }
-                            _ => insn_id,
-                        }
+                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => l.checked_add(r),
+                            _ => None,
+                        })
                     }
-                    Insn::FixnumLt { left, right, .. } => {
-                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
-                            (Some(l), Some(r)) => {
-                                if l < r {
-                                    self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
-                                } else {
-                                    self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
-                                }
-                            }
-                            _ => insn_id,
-                        }
+                    Insn::FixnumSub { left, right, .. } => {
+                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => l.checked_sub(r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumMult { left, right, .. } => {
+                        self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => l.checked_mul(r),
+                            (Some(0), _) | (_, Some(0)) => Some(0),
+                            _ => None,
+                        })
                     }
                     Insn::FixnumEq { left, right, .. } => {
-                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
-                            (Some(l), Some(r)) => {
-                                if l == r {
-                                    self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
-                                } else {
-                                    self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
-                                }
-                            }
-                            _ => insn_id,
-                        }
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l == r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumNeq { left, right, .. } => {
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l != r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumLt { left, right, .. } => {
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l < r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumLe { left, right, .. } => {
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l <= r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumGt { left, right, .. } => {
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l > r),
+                            _ => None,
+                        })
+                    }
+                    Insn::FixnumGe { left, right, .. } => {
+                        self.fold_fixnum_pred(insn_id, left, right, |l, r| match (l, r) {
+                            (Some(l), Some(r)) => Some(l >= r),
+                            _ => None,
+                        })
                     }
                     Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
@@ -3612,7 +3645,6 @@ mod opt_tests {
             def test
               1 + 2 + 3
             end
-            test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
@@ -3621,6 +3653,63 @@ mod opt_tests {
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v14:Fixnum[6] = Const Value(6)
               Return v14
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_sub() {
+        eval("
+            def test
+              5 - 3 - 1
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
+              v14:Fixnum[1] = Const Value(1)
+              Return v14
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_mult() {
+        eval("
+            def test
+              6 * 7
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v8:Fixnum[42] = Const Value(42)
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_mult_zero() {
+        eval("
+            def test(n)
+              0 * n + n * 0
+            end
+            test 1; test 2
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[0] = Const Value(0)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v12:Fixnum = GuardType v0, Fixnum
+              v19:Fixnum[0] = Const Value(0)
+              v5:Fixnum[0] = Const Value(0)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
+              v15:Fixnum = GuardType v0, Fixnum
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
+              v21:Fixnum[0] = Const Value(0)
+              Return v21
         "#]]);
     }
 
@@ -3634,7 +3723,6 @@ mod opt_tests {
                 4
               end
             end
-            test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
@@ -3646,7 +3734,69 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_fold_fixnum_eq_true() {
+    fn test_fold_fixnum_less_equal() {
+        eval("
+            def test
+              if 1 <= 2 && 2 <= 2
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
+              v13:Fixnum[3] = Const Value(3)
+              Return v13
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_greater() {
+        eval("
+            def test
+              if 2 > 1
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
+              v7:Fixnum[3] = Const Value(3)
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_greater_equal() {
+        eval("
+            def test
+              if 2 >= 1 && 2 >= 2
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
+              v13:Fixnum[3] = Const Value(3)
+              Return v13
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_eq_false() {
         eval("
             def test
               if 1 == 2
@@ -3655,7 +3805,6 @@ mod opt_tests {
                 4
               end
             end
-            test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
@@ -3669,7 +3818,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_fold_fixnum_eq_false() {
+    fn test_fold_fixnum_eq_true() {
         eval("
             def test
               if 2 == 2
@@ -3678,7 +3827,6 @@ mod opt_tests {
                 4
               end
             end
-            test; test
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
@@ -3686,6 +3834,50 @@ mod opt_tests {
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               v7:Fixnum[3] = Const Value(3)
               Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_neq_true() {
+        eval("
+            def test
+              if 1 != 2
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              v7:Fixnum[3] = Const Value(3)
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_fold_fixnum_neq_false() {
+        eval("
+            def test
+              if 2 != 2
+                3
+              else
+                4
+              end
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+              PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
+              Jump bb1()
+            bb1():
+              v10:Fixnum[4] = Const Value(4)
+              Return v10
         "#]]);
     }
 
