@@ -1684,6 +1684,24 @@ RSpec.describe "bundle update --bundler" do
     expect(err).to eq("The `bundle update --bundler` target version (999.999.999) does not exist")
   end
 
+  it "errors if the explicit target version does not exist, even if auto switching is disabled" do
+    pristine_system_gems "bundler-9.9.9"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    bundle :update, bundler: "999.999.999", raise_on_error: false, env: { "BUNDLER_VERSION" => "9.9.9" }
+
+    expect(last_command).to be_failure
+    expect(err).to eq("The `bundle update --bundler` target version (999.999.999) does not exist")
+  end
+
   it "allows updating to development versions if already installed locally" do
     system_gems "bundler-9.9.9"
 

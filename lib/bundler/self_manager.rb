@@ -31,8 +31,6 @@ module Bundler
     end
 
     def update_bundler_and_restart_with_it_if_needed(target)
-      return unless autoswitching_applies?
-
       spec = resolve_update_version_from(target)
       return unless spec
 
@@ -40,7 +38,7 @@ module Bundler
 
       Bundler.ui.info "Updating bundler to #{version}."
 
-      install(spec)
+      install(spec) unless installed?(version)
 
       restart_with(version)
     end
@@ -102,8 +100,7 @@ module Bundler
     def needs_switching?(restart_version)
       autoswitching_applies? &&
         released?(restart_version) &&
-        !running?(restart_version) &&
-        !updating?
+        !running?(restart_version)
     end
 
     def autoswitching_applies?
@@ -170,10 +167,6 @@ module Bundler
 
     def ruby_can_restart_with_same_arguments?
       $PROGRAM_NAME != "-e"
-    end
-
-    def updating?
-      "update".start_with?(ARGV.first || " ") && ARGV[1..-1].any? {|a| a.start_with?("--bundler") }
     end
 
     def installed?(restart_version)
