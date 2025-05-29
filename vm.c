@@ -1238,7 +1238,6 @@ rb_proc_dup(VALUE self)
         break;
     }
 
-    if (RB_OBJ_SHAREABLE_P(self)) FL_SET_RAW(procval, RUBY_FL_SHAREABLE);
     RB_GC_GUARD(self); /* for: body = rb_proc_dup(body) */
     return procval;
 }

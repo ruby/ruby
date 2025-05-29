@@ -2013,4 +2013,11 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_equal(1, (f << g).call(**{})[:a])
     assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
   end
+
+  def test_dupped_shareable_proc_not_shareable
+    omit "no ractor" unless defined?(Ractor)
+    prok = nil.instance_eval { proc { } }
+    Ractor.make_shareable(prok)
+    refute Ractor.shareable?(prok.dup)
+  end
 end

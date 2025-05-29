@@ -2329,6 +2329,9 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
     }
     else {
         VALUE procval = rb_proc_dup(body);
+        if (RB_OBJ_SHAREABLE_P(body)) {
+            rb_ractor_make_shareable(procval);
+        }
         if (vm_proc_iseq(procval) != NULL) {
             rb_proc_t *proc;
             GetProcPtr(procval, proc);
