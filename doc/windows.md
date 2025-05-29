@@ -17,6 +17,7 @@ editor.
 Ruby core development can be done either in Windows `cmd` like:
 
 ```batch
+ridk install
 ridk enable ucrt64
 
 pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
@@ -37,6 +38,7 @@ make
 or in MSYS2 `bash` like:
 
 ```bash
+ridk install
 ridk enable ucrt64
 bash
 
