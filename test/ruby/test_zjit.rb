@@ -134,7 +134,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a == b
       test(0, 2) # profile opt_eq
       [test(1, 1), test(0, 1)]
-    }, call_threshold: 2
+    }, insns: [:opt_eq], call_threshold: 2
   end
 
   def test_opt_neq_dynamic
@@ -144,7 +144,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a != b
       test(0, 2) # profile opt_neq
       [test(1, 1), test(0, 1)]
-    }, call_threshold: 1
+    }, insns: [:opt_neq], call_threshold: 1
   end
 
   def test_opt_neq_fixnum
@@ -160,7 +160,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a < b
       test(2, 3) # profile opt_lt
       [test(0, 1), test(0, 0), test(1, 0)]
-    }, call_threshold: 2
+    }, insns: [:opt_lt], call_threshold: 2
   end
 
   def test_opt_lt_with_literal_lhs
@@ -168,7 +168,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(n) = 2 < n
       test(2) # profile opt_lt
       [test(1), test(2), test(3)]
-    }, call_threshold: 2
+    }, insns: [:opt_lt], call_threshold: 2
   end
 
   def test_opt_le
@@ -176,7 +176,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a <= b
       test(2, 3) # profile opt_le
       [test(0, 1), test(0, 0), test(1, 0)]
-    }, call_threshold: 2
+    }, insns: [:opt_le], call_threshold: 2
   end
 
   def test_opt_gt
@@ -184,7 +184,7 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a > b
       test(2, 3) # profile opt_gt
       [test(0, 1), test(0, 0), test(1, 0)]
-    }, call_threshold: 2
+    }, insns: [:opt_gt], call_threshold: 2
   end
 
   def test_opt_ge
@@ -192,14 +192,14 @@ class TestZJIT < Test::Unit::TestCase
       def test(a, b) = a >= b
       test(2, 3) # profile opt_ge
       [test(0, 1), test(0, 0), test(1, 0)]
-    }, call_threshold: 2
+    }, insns: [:opt_ge], call_threshold: 2
   end
 
   def test_new_array_empty
     assert_compiles '[]', %q{
       def test = []
       test
-    }
+    }, insns: [:newarray]
   end
 
   def test_new_array_nonempty
@@ -504,7 +504,7 @@ class TestZJIT < Test::Unit::TestCase
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
   # at a given call_threshold
-  def assert_compiles(expected, test_script, **opts)
+  def assert_compiles(expected, test_script, insns: [], **opts)
     pipe_fd = 3
 
     script = <<~RUBY
@@ -512,18 +512,39 @@ class TestZJIT < Test::Unit::TestCase
         RubyVM::ZJIT.assert_compiles
         #{test_script}
       }
-      result = _test_proc.call
-      IO.open(#{pipe_fd}).write(result.inspect)
+      ret_val = _test_proc.call
+      result = {
+        ret_val:,
+        #{ unless insns.empty?
+          'insns: RubyVM::InstructionSequence.of(_test_proc).enum_for(:each_child).map(&:to_a)'
+        end}
+      }
+      IO.open(#{pipe_fd}).write(Marshal.dump(result))
     RUBY
 
-    status, out, err, actual = eval_with_jit(script, pipe_fd:, **opts)
+    status, out, err, result = eval_with_jit(script, pipe_fd:, **opts)
 
     message = "exited with status #{status.to_i}"
     message << "\nstdout:\n```\n#{out}```\n" unless out.empty?
     message << "\nstderr:\n```\n#{err}```\n" unless err.empty?
     assert status.success?, message
 
-    assert_equal expected, actual
+    result = Marshal.load(result)
+    assert_equal expected, result.fetch(:ret_val).inspect
+
+    unless insns.empty?
+      iseqs = result.fetch(:insns)
+      iseqs.filter! { it[9] == :method } # ISeq type
+      assert_equal 1, iseqs.size, "Opcode assertions tests must define exactly one method"
+      iseq_insns = iseqs.first.last
+
+      expected_insns = Set.new(insns)
+      iseq_insns.each do
+        next unless it.is_a?(Array)
+        expected_insns.delete(it.first)
+      end
+      assert(expected_insns.empty?, -> { "Not present in ISeq: #{expected_insns.to_a}" })
+    end
   end
 
   # Run a Ruby process with ZJIT options and a pipe for writing test results
