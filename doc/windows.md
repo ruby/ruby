@@ -81,29 +81,9 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
       * VC++/MSVC on VS 2017/2019/2022 version build tools.
       * Windows 10/11 SDK
 
-    You can install Visual Studio Build Tools with `winget`. The minimum requirement manifest is:
-
-    ```json
-    {
-      "version": "1.0",
-      "components": [
-        "Microsoft.VisualStudio.Component.Roslyn.Compiler",
-        "Microsoft.Component.MSBuild",
-        "Microsoft.VisualStudio.Component.CoreBuildTools",
-        "Microsoft.VisualStudio.Workload.MSBuildTools",
-        "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
-        "Microsoft.VisualStudio.Component.VC.Redist.14.Latest",
-        "Microsoft.VisualStudio.Component.Windows11SDK.26100"
-      ],
-      "extensions": []
-    }
-    ```
-
-    You save the above JSON to a file like `minimum.vsconfig` and run the following command:
-
-    ```batch
-    winget install Microsoft.VisualStudio.2022.BuildTools --override "--passive --config minimum.vsconfig"
-    ```
+    You can install Visual Studio Build Tools with `winget`.
+    `win32\install-buildtools.cmd` is a batch file to install the
+    minimum requirements excluding the IDE etc.
 
 3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
     to run required commands properly from the command line.
@@ -111,7 +91,7 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     the following command to set them in your command line.
 
     ```
-    cmd /k "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+    cmd /k win32\vssetup.cmd
     ```
 
     **Note** building ruby requires following commands.
