@@ -1007,10 +1007,16 @@ ractor_basket_prepare_contents(VALUE obj, VALUE move, volatile VALUE *pobj, enum
         v = obj;
     }
     else if (!RTEST(move)) {
+        if (FL_TEST_RAW(obj, FL_FINALIZE)) {
+            rb_raise(rb_eRactorError, "can not send objects with finalizers");
+        }
         v = ractor_copy(obj);
         type = basket_type_copy;
     }
     else {
+        if (FL_TEST_RAW(obj, FL_FINALIZE)) {
+            rb_raise(rb_eRactorError, "can not send objects with finalizers");
+        }
         type = basket_type_move;
         v = ractor_move(obj);
     }
