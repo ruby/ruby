@@ -487,6 +487,14 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 5, num_profiles: 3
   end
 
+  def test_opt_aref_with
+    assert_compiles ':ok', %q{
+      def aref_with(hash) = hash["key"]
+
+      aref_with({ "key" => :ok })
+    }
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order

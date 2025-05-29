@@ -257,7 +257,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::SendWithoutBlock { call_info, cd, state, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state))?,
+        Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
         Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -443,10 +443,12 @@ fn gen_send_without_block(
     call_info: &CallInfo,
     cd: *const rb_call_data,
     state: &FrameState,
+    self_val: &InsnId,
+    args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
-    // Spill the virtual stack onto the stack. They need to be marked by GC and may be caller-saved registers.
+    // Spill the receiver and the arguments onto the stack. They need to be marked by GC and may be caller-saved registers.
     // TODO: Avoid spilling operands that have been spilled before.
-    for (idx, &insn_id) in state.stack().enumerate() {
+    for (idx, &insn_id) in [*self_val].iter().chain(args.iter()).enumerate() {
         // Currently, we don't move the SP register. So it's equal to the base pointer.
         let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
         asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
@@ -454,7 +456,7 @@ fn gen_send_without_block(
 
     // Save PC and SP
     gen_save_pc(asm, state);
-    gen_save_sp(asm, state);
+    gen_save_sp(asm, 1 + args.len()); // +1 for receiver
 
     asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
     unsafe extern "C" {
@@ -678,13 +680,13 @@ fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
 }
 
 /// Save the current SP on the CFP
-fn gen_save_sp(asm: &mut Assembler, state: &FrameState) {
+fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     // Update cfp->sp which will be read by the interpreter. We also have the SP register in JIT
     // code, and ZJIT's codegen currently assumes the SP register doesn't move, e.g. gen_param().
     // So we don't update the SP register here. We could update the SP register to avoid using
     // an extra register for asm.lea(), but you'll need to manage the SP offset like YJIT does.
-    asm_comment!(asm, "save SP to CFP: {}", state.stack_size());
-    let sp_addr = asm.lea(Opnd::mem(64, SP, state.stack_size() as i32 * SIZEOF_VALUE_I32));
+    asm_comment!(asm, "save SP to CFP: {}", stack_size);
+    let sp_addr = asm.lea(Opnd::mem(64, SP, stack_size as i32 * SIZEOF_VALUE_I32));
     let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
     asm.mov(cfp_sp, sp_addr);
 }
