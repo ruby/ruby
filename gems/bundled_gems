@@ -16,8 +16,8 @@ net-ftp             0.3.8   https://github.com/ruby/net-ftp
 net-imap            0.5.8   https://github.com/ruby/net-imap
 net-pop             0.1.2   https://github.com/ruby/net-pop
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
-matrix              0.4.2   https://github.com/ruby/matrix
-prime               0.1.3   https://github.com/ruby/prime
+matrix              0.4.2   https://github.com/ruby/matrix 200efebc35dc1a8d16fad671f7006c85cbd0e3f5
+prime               0.1.3   https://github.com/ruby/prime d97973271103f2bdde91f3f0bd3e42526401ad77
 rbs                 3.9.4   https://github.com/ruby/rbs
 typeprof            0.30.1  https://github.com/ruby/typeprof
 debug               1.10.0  https://github.com/ruby/debug
@@ -25,7 +25,7 @@ racc                1.8.1   https://github.com/ruby/racc
 mutex_m             0.3.0   https://github.com/ruby/mutex_m
 getoptlong          0.2.1   https://github.com/ruby/getoptlong
 base64              0.2.0   https://github.com/ruby/base64
-bigdecimal          3.1.9   https://github.com/ruby/bigdecimal
+bigdecimal          3.2.0   https://github.com/ruby/bigdecimal
 observer            0.1.2   https://github.com/ruby/observer
 abbrev              0.1.2   https://github.com/ruby/abbrev
 resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
@@ -33,9 +33,9 @@ rinda               0.2.0   https://github.com/ruby/rinda
 drb                 2.2.3   https://github.com/ruby/drb
 nkf                 0.2.0   https://github.com/ruby/nkf
 syslog              0.3.0   https://github.com/ruby/syslog
-csv                 3.3.4   https://github.com/ruby/csv
+csv                 3.3.4   https://github.com/ruby/csv 69d9886238a504bfac60fa516cd08ad2a855a2a8
 repl_type_completor 0.1.11  https://github.com/ruby/repl_type_completor 25108aa8d69ddaba0b5da3feff1c0035371524b2
-ostruct             0.6.1   https://github.com/ruby/ostruct
+ostruct             0.6.1   https://github.com/ruby/ostruct 50d51248bec5560a102a1024aff4174b31dca8cc
 pstore              0.2.0   https://github.com/ruby/pstore
 benchmark           0.4.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger

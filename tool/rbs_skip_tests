@@ -75,3 +75,7 @@ test_recurse_proc(JSONSingletonTest)
 
 CGITest CGI is retired
 CGISingletonTest CGI is retired
+
+RactorSingletonTest Ractor API was changed https://bugs.ruby-lang.org/issues/21262
+RactorInstanceTest  Ractor API was changed https://bugs.ruby-lang.org/issues/21262
+
