@@ -19,6 +19,8 @@ bundle list \-\-without\-group test
 bundle list \-\-only\-group dev
 .P
 bundle list \-\-only\-group dev test \-\-paths
+.P
+bundle list \-\-format json
 .SH "OPTIONS"
 .TP
 \fB\-\-name\-only\fR
@@ -32,4 +34,7 @@ A space\-separated list of groups of gems to skip during printing\.
 .TP
 \fB\-\-only\-group=<list>\fR
 A space\-separated list of groups of gems to print\.
+.TP
+\fB\-\-format=FORMAT\fR
+Format output ('json' is the only supported format)
 
