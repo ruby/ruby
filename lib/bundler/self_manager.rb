@@ -7,13 +7,15 @@ module Bundler
   #
   class SelfManager
     def restart_with_locked_bundler_if_needed
-      return unless needs_switching? && installed?
+      restart_version = find_restart_version
+      return unless restart_version && installed?(restart_version)
 
       restart_with(restart_version)
     end
 
     def install_locked_bundler_and_restart_with_it_if_needed
-      return unless needs_switching?
+      restart_version = find_restart_version
+      return unless restart_version
 
       if restart_version == lockfile_version
         Bundler.ui.info \
@@ -97,9 +99,8 @@ module Bundler
       end
     end
 
-    def needs_switching?
+    def needs_switching?(restart_version)
       autoswitching_applies? &&
-        Bundler.settings[:version] != "system" &&
         released?(restart_version) &&
         !running?(restart_version) &&
         !updating?
@@ -108,7 +109,6 @@ module Bundler
     def autoswitching_applies?
       ENV["BUNDLER_VERSION"].nil? &&
         ruby_can_restart_with_same_arguments? &&
-        SharedHelpers.in_bundle? &&
         lockfile_version
     end
 
@@ -175,7 +175,7 @@ module Bundler
       "update".start_with?(ARGV.first || " ") && ARGV[1..-1].any? {|a| a.start_with?("--bundler") }
     end
 
-    def installed?
+    def installed?(restart_version)
       Bundler.configure
 
       Bundler.rubygems.find_bundler(restart_version.to_s)
@@ -194,13 +194,16 @@ module Bundler
       @lockfile_version = nil
     end
 
-    def restart_version
-      return @restart_version if defined?(@restart_version)
-      # BUNDLE_VERSION=x.y.z
-      @restart_version = Gem::Version.new(Bundler.settings[:version])
-    rescue ArgumentError
-      # BUNDLE_VERSION=lockfile
-      @restart_version = lockfile_version
+    def find_restart_version
+      return unless SharedHelpers.in_bundle?
+
+      configured_version = Bundler.settings[:version]
+      return if configured_version == "system"
+
+      restart_version = configured_version == "lockfile" ? lockfile_version : Gem::Version.new(configured_version)
+      return unless needs_switching?(restart_version)
+
+      restart_version
     end
   end
 end
