@@ -2581,6 +2581,41 @@ mod tests {
         assert_function_hir(function, hir);
     }
 
+    fn iseq_contains_opcode(iseq: IseqPtr, expected_opcode: u32) -> bool {
+        let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+        let mut insn_idx = 0;
+        while insn_idx < iseq_size {
+            // Get the current pc and opcode
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+
+            // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
+            let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+                .try_into()
+                .unwrap();
+            if opcode == expected_opcode {
+                return true;
+            }
+            insn_idx += insn_len(opcode as usize);
+        }
+        false
+    }
+
+    #[track_caller]
+    fn assert_method_hir_with_opcodes(method: &str, opcodes: Vec<u32>, hir: Expect) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        for opcode in opcodes {
+            assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
+        }
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, hir);
+    }
+
+    #[track_caller]
+    fn assert_method_hir_with_opcode(method: &str, opcode: u32, hir: Expect) {
+        assert_method_hir_with_opcodes(method, vec![opcode], hir)
+    }
+
     #[track_caller]
     pub fn assert_function_hir(function: Function, expected_hir: Expect) {
         let actual_hir = format!("{}", FunctionPrinter::without_snapshot(&function));
@@ -2600,7 +2635,7 @@ mod tests {
     #[test]
     fn test_putobject() {
         eval("def test = 123");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0():
               v1:Fixnum[123] = Const Value(123)
@@ -2611,7 +2646,7 @@ mod tests {
     #[test]
     fn test_new_array() {
         eval("def test = []");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
             fn test:
             bb0():
               v2:ArrayExact = NewArray
@@ -2622,7 +2657,7 @@ mod tests {
     #[test]
     fn test_new_array_with_element() {
         eval("def test(a) = [a]");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v3:ArrayExact = NewArray v0
@@ -2633,7 +2668,7 @@ mod tests {
     #[test]
     fn test_new_array_with_elements() {
         eval("def test(a, b) = [a, b]");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
@@ -2644,7 +2679,7 @@ mod tests {
     #[test]
     fn test_array_dup() {
         eval("def test = [1, 2, 3]");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_duparray, expect![[r#"
             fn test:
             bb0():
               v1:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2656,7 +2691,7 @@ mod tests {
     #[test]
     fn test_hash_dup() {
         eval("def test = {a: 1, b: 2}");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_duphash, expect![[r#"
             fn test:
             bb0():
               v1:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2668,7 +2703,7 @@ mod tests {
     #[test]
     fn test_new_hash_empty() {
         eval("def test = {}");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
             fn test:
             bb0():
               v2:HashExact = NewHash
@@ -2679,7 +2714,7 @@ mod tests {
     #[test]
     fn test_new_hash_with_elements() {
         eval("def test(aval, bval) = {a: aval, b: bval}");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2692,7 +2727,7 @@ mod tests {
     #[test]
     fn test_string_copy() {
         eval("def test = \"hello\"");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putchilledstring, expect![[r#"
             fn test:
             bb0():
               v1:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2704,7 +2739,7 @@ mod tests {
     #[test]
     fn test_bignum() {
         eval("def test = 999999999999999999999999999999999999");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0():
               v1:Bignum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2715,7 +2750,7 @@ mod tests {
     #[test]
     fn test_flonum() {
         eval("def test = 1.5");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0():
               v1:Flonum[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2726,7 +2761,7 @@ mod tests {
     #[test]
     fn test_heap_float() {
         eval("def test = 1.7976931348623157e+308");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0():
               v1:HeapFloat[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2737,7 +2772,7 @@ mod tests {
     #[test]
     fn test_static_sym() {
         eval("def test = :foo");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0():
               v1:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -2748,7 +2783,7 @@ mod tests {
     #[test]
     fn test_opt_plus() {
         eval("def test = 1+2");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_plus, expect![[r#"
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
@@ -2766,7 +2801,7 @@ mod tests {
               a
             end
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcodes("test", vec![YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
             fn test:
             bb0():
               v0:NilClassExact = Const Value(nil)
@@ -2786,7 +2821,7 @@ mod tests {
               end
             end
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_leave, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v2:CBool = Test v0
@@ -2847,7 +2882,7 @@ mod tests {
             def test(a, b) = a - b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_minus, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :-, v1
@@ -2861,7 +2896,7 @@ mod tests {
             def test(a, b) = a * b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_mult, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :*, v1
@@ -2875,7 +2910,7 @@ mod tests {
             def test(a, b) = a / b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_div, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :/, v1
@@ -2889,7 +2924,7 @@ mod tests {
             def test(a, b) = a % b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_mod, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :%, v1
@@ -2903,7 +2938,7 @@ mod tests {
             def test(a, b) = a == b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_eq, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :==, v1
@@ -2917,7 +2952,7 @@ mod tests {
             def test(a, b) = a != b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_neq, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :!=, v1
@@ -2931,7 +2966,7 @@ mod tests {
             def test(a, b) = a < b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_lt, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :<, v1
@@ -2945,7 +2980,7 @@ mod tests {
             def test(a, b) = a <= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_le, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :<=, v1
@@ -2959,7 +2994,7 @@ mod tests {
             def test(a, b) = a > b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_gt, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :>, v1
@@ -3011,7 +3046,7 @@ mod tests {
             def test(a, b) = a >= b
             test(1, 2); test(1, 2)
         ");
-        assert_method_hir("test", expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_ge, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :>=, v1
@@ -3055,9 +3090,8 @@ mod tests {
             def test
               bar(2, 3)
             end
-            test
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_send_without_block, expect![[r#"
             fn test:
             bb0():
               v1:BasicObject = PutSelf
@@ -3078,7 +3112,7 @@ mod tests {
             end
             test([1,2,3])
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v3:BasicObject = Send v0, 0x1000, :each
@@ -3253,7 +3287,7 @@ mod tests {
             class C; end
             def test = C.new
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_new, expect![[r#"
             fn test:
             bb0():
               v1:BasicObject = GetConstantPath 0x1000
@@ -3273,7 +3307,7 @@ mod tests {
             def test = [].max
         ");
         // TODO(max): Rewrite to nil
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0():
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -3287,7 +3321,7 @@ mod tests {
         eval("
             def test(a,b) = [a,b].max
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
@@ -3306,7 +3340,7 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
@@ -3326,7 +3360,7 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
@@ -3346,7 +3380,7 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
@@ -3370,7 +3404,7 @@ mod tests {
               result
             end
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v2:NilClassExact = Const Value(nil)
@@ -3385,7 +3419,7 @@ mod tests {
         eval("
             def test(a,b) = [a,b].length
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_length, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
@@ -3399,7 +3433,7 @@ mod tests {
         eval("
             def test(a,b) = [a,b].size
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_size, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
@@ -3414,7 +3448,7 @@ mod tests {
             def test = @foo
             test
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_getinstancevariable, expect![[r#"
             fn test:
             bb0():
               v2:BasicObject = PutSelf
@@ -3429,7 +3463,7 @@ mod tests {
             def test = @foo = 1
             test
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_setinstancevariable, expect![[r#"
             fn test:
             bb0():
               v1:Fixnum[1] = Const Value(1)
@@ -3444,7 +3478,7 @@ mod tests {
         eval("
             def test(a) = [*a]
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_splatarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v3:ArrayExact = ToNewArray v0
@@ -3457,7 +3491,7 @@ mod tests {
         eval("
             def test(a) = [1, *a]
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_concattoarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
@@ -3473,7 +3507,7 @@ mod tests {
         eval("
             def test(a) = [*a, 1]
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v3:ArrayExact = ToNewArray v0
@@ -3488,7 +3522,7 @@ mod tests {
         eval("
             def test(a) = [*a, 1, 2, 3]
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v3:ArrayExact = ToNewArray v0
@@ -3507,7 +3541,7 @@ mod tests {
         eval("
             def test(a, b) = a[b] = 1
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_aset, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:NilClassExact = Const Value(nil)
@@ -3522,7 +3556,7 @@ mod tests {
         eval("
             def test(a, b) = a[b]
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_opt_aref, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:BasicObject = SendWithoutBlock v0, :[], v1
@@ -3535,7 +3569,7 @@ mod tests {
         eval("
         def test(x) = x&.itself
         ");
-        assert_method_hir("test",  expect![[r#"
+        assert_method_hir_with_opcode("test", YARVINSN_branchnil, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v2:CBool = IsNil v0
