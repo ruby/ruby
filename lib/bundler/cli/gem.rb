@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_files: %w[bin/ .git .gitignore Gemfile gems.rb gems.locked],
+        ignore_paths: %w[bin/ .git .gitignore Gemfile gems.rb gems.locked],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -109,8 +109,8 @@ module Bundler
             "spec/newgem_spec.rb.tt" => "spec/#{namespaced_path}_spec.rb"
           )
           config[:test_task] = :spec
-          config[:ignore_files] << ".rspec"
-          config[:ignore_files] << "spec/"
+          config[:ignore_paths] << ".rspec"
+          config[:ignore_paths] << "spec/"
         when "minitest"
           # Generate path for minitest target file (FileList["test/**/test_*.rb"])
           #   foo     => test/test_foo.rb
@@ -125,14 +125,14 @@ module Bundler
             "test/minitest/test_newgem.rb.tt" => "test/#{minitest_namespaced_path}.rb"
           )
           config[:test_task] = :test
-          config[:ignore_files] << "test/"
+          config[:ignore_paths] << "test/"
         when "test-unit"
           templates.merge!(
             "test/test-unit/test_helper.rb.tt" => "test/test_helper.rb",
             "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
           config[:test_task] = :test
-          config[:ignore_files] << "test/"
+          config[:ignore_paths] << "test/"
         end
       end
 
@@ -140,13 +140,13 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-        config[:ignore_files] << ".github/"
+        config[:ignore_paths] << ".github/"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
-        config[:ignore_files] << ".gitlab-ci.yml"
+        config[:ignore_paths] << ".gitlab-ci.yml"
       when "circle"
         templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
-        config[:ignore_files] << ".circleci/"
+        config[:ignore_paths] << ".circleci/"
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
@@ -189,12 +189,12 @@ module Bundler
         config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
-        config[:ignore_files] << ".rubocop.yml"
+        config[:ignore_paths] << ".rubocop.yml"
       when "standard"
         config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
-        config[:ignore_files] << ".standard.yml"
+        config[:ignore_paths] << ".standard.yml"
       end
 
       if config[:exe]
