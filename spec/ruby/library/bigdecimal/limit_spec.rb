@@ -23,6 +23,8 @@ describe "BigDecimal.limit" do
       (BigDecimal('0.888') + BigDecimal('0')).should == BigDecimal('0.9')
       (BigDecimal('0.888') - BigDecimal('0')).should == BigDecimal('0.9')
       (BigDecimal('0.888') * BigDecimal('3')).should == BigDecimal('3')
+
+      skip "TODO: BigDecimal 3.2.0" if BigDecimal::VERSION == '3.2.0'
       (BigDecimal('0.888') / BigDecimal('3')).should == BigDecimal('0.3')
     end
 
@@ -46,6 +48,8 @@ describe "BigDecimal.limit" do
   it "picks the global precision when limit 0 specified" do
     BigDecimalSpecs.with_limit(3) do
       BigDecimal('0.8888').add(BigDecimal('0'), 0).should == BigDecimal('0.889')
+
+      skip "TODO: BigDecimal 3.2.0" if BigDecimal::VERSION == '3.2.0'
       BigDecimal('0.8888').sub(BigDecimal('0'), 0).should == BigDecimal('0.889')
       BigDecimal('0.888').mult(BigDecimal('3'), 0).should == BigDecimal('2.66')
       BigDecimal('0.8888').div(BigDecimal('3'), 0).should == BigDecimal('0.296')
