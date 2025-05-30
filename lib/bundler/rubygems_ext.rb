@@ -56,8 +56,8 @@ module Gem
     MSWIN = Gem::Platform.new("mswin32")
     MSWIN64 = Gem::Platform.new("mswin64")
     MINGW = Gem::Platform.new("x86-mingw32")
-    X64_MINGW = [Gem::Platform.new("x64-mingw32"),
-                 Gem::Platform.new("x64-mingw-ucrt")].freeze
+    X64_MINGW_LEGACY = Gem::Platform.new("x64-mingw32")
+    X64_MINGW = Gem::Platform.new("x64-mingw-ucrt")
     UNIVERSAL_MINGW = Gem::Platform.new("universal-mingw")
     WINDOWS = [MSWIN, MSWIN64, UNIVERSAL_MINGW].flatten.freeze
     X64_LINUX = Gem::Platform.new("x86_64-linux")
