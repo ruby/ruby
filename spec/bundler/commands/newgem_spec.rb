@@ -509,6 +509,10 @@ RSpec.describe "bundle gem" do
     it "doesn't create a .gitignore file" do
       expect(bundled_app("#{gem_name}/.gitignore")).to_not exist
     end
+
+    it "does not add .gitignore into ignore list" do
+      expect(ignore_paths).not_to include ".gitignore"
+    end
   end
 
   it "generates a valid gemspec" do
@@ -634,6 +638,12 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(ignore_paths).to include "Gemfile"
+    end
+
+    it "includes .gitignore into ignore list" do
+      bundle "gem #{gem_name}"
+
+      expect(ignore_paths).to include ".gitignore"
     end
 
     it "starts with version 0.1.0" do

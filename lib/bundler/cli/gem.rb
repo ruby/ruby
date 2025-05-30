@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_paths: %w[bin/ .gitignore],
+        ignore_paths: %w[bin/],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -103,7 +103,10 @@ module Bundler
         config[:ignore_paths] << "gems.locked"
       end
 
-      templates.merge!("gitignore.tt" => ".gitignore") if use_git
+      if use_git
+        templates.merge!("gitignore.tt" => ".gitignore")
+        config[:ignore_paths] << ".gitignore"
+      end
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
