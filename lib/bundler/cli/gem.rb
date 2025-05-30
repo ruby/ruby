@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_files: %w[bin/ test/ spec/ features/ .git Gemfile],
+        ignore_files: %w[bin/ test/ features/ .git Gemfile],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -110,6 +110,7 @@ module Bundler
           )
           config[:test_task] = :spec
           config[:ignore_files] << ".rspec"
+          config[:ignore_files] << "spec/"
         when "minitest"
           # Generate path for minitest target file (FileList["test/**/test_*.rb"])
           #   foo     => test/test_foo.rb
