@@ -144,7 +144,7 @@ module Bundler
         config[:ignore_files] << ".gitlab-ci.yml"
       when "circle"
         templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
-        config[:ignore_files] << ".circleci"
+        config[:ignore_files] << ".circleci/"
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",

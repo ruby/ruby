@@ -1105,10 +1105,10 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
       end
 
-      it "includes .circleci into ignore list" do
+      it "includes .circleci/ into ignore list" do
         bundle "gem #{gem_name} --ci=circle"
 
-        assert_ignore_list_includes ".circleci"
+        assert_ignore_list_includes ".circleci/"
       end
     end
 
