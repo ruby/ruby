@@ -1072,42 +1072,43 @@ RSpec.describe "bundle gem" do
     end
 
     context "--ci set to github" do
-      it "generates a GitHub Actions config file" do
+      before do
         bundle "gem #{gem_name} --ci=github"
+      end
 
+      it "generates a GitHub Actions config file" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
 
       it "includes .github/ into ignore list" do
-        bundle "gem #{gem_name} --ci=github"
         assert_ignore_list_includes ".github/"
       end
     end
 
     context "--ci set to gitlab" do
-      it "generates a GitLab CI config file" do
+      before do
         bundle "gem #{gem_name} --ci=gitlab"
+      end
 
+      it "generates a GitLab CI config file" do
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
       end
 
       it "includes .gitlab-ci.yml into ignore list" do
-        bundle "gem #{gem_name} --ci=gitlab"
-
         assert_ignore_list_includes ".gitlab-ci.yml"
       end
     end
 
     context "--ci set to circle" do
-      it "generates a CircleCI config file" do
+      before do
         bundle "gem #{gem_name} --ci=circle"
+      end
 
+      it "generates a CircleCI config file" do
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
       end
 
       it "includes .circleci/ into ignore list" do
-        bundle "gem #{gem_name} --ci=circle"
-
         assert_ignore_list_includes ".circleci/"
       end
     end
