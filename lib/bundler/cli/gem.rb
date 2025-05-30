@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_files: %w[bin/ test/ features/ .git Gemfile],
+        ignore_files: %w[bin/ features/ .git Gemfile],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -125,12 +125,14 @@ module Bundler
             "test/minitest/test_newgem.rb.tt" => "test/#{minitest_namespaced_path}.rb"
           )
           config[:test_task] = :test
+          config[:ignore_files] << "test/"
         when "test-unit"
           templates.merge!(
             "test/test-unit/test_helper.rb.tt" => "test/test_helper.rb",
             "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
           config[:test_task] = :test
+          config[:ignore_files] << "test/"
         end
       end
 

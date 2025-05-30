@@ -442,7 +442,8 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/test/test_helper.rb")).to_not exist
     end
 
-    it "does not add .rspec into ignore list" do
+    it "does not add any test framework files into ignore list" do
+      refute_ignore_list_includes "test/"
       refute_ignore_list_includes ".rspec"
       refute_ignore_list_includes "spec/"
     end
@@ -861,6 +862,10 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
       end
+
+      it "includes test/ into ignore list" do
+        assert_ignore_list_includes "test/"
+      end
     end
 
     context "--test parameter set to minitest" do
@@ -880,6 +885,10 @@ RSpec.describe "bundle gem" do
       it "builds spec skeleton" do
         expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
+      end
+
+      it "includes test/ into ignore list" do
+        assert_ignore_list_includes "test/"
       end
 
       it "requires the main file" do
@@ -938,6 +947,10 @@ RSpec.describe "bundle gem" do
       it "builds spec skeleton" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
+      end
+
+      it "includes test/ into ignore list" do
+        assert_ignore_list_includes "test/"
       end
 
       it "requires the main file" do
