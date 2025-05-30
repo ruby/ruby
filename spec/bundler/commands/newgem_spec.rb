@@ -9,8 +9,8 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
     expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
 
-    expect(ignore_paths).to include "bin/"
-    expect(ignore_paths).to include "Gemfile"
+    expect(ignore_paths).to include("bin/")
+    expect(ignore_paths).to include("Gemfile")
   end
 
   def bundle_exec_rubocop
@@ -192,7 +192,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include ".rubocop.yml"
+        expect(ignore_paths).to include(".rubocop.yml")
       end
     end
   end
@@ -225,7 +225,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add .rubocop.yml into ignore list" do
-        expect(ignore_paths).not_to include ".rubocop.yml"
+        expect(ignore_paths).not_to include(".rubocop.yml")
       end
     end
   end
@@ -259,7 +259,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "includes .rubocop.yml into ignore list" do
-      expect(ignore_paths).to include ".rubocop.yml"
+      expect(ignore_paths).to include(".rubocop.yml")
     end
   end
 
@@ -290,7 +290,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "includes .standard.yml into ignore list" do
-      expect(ignore_paths).to include ".standard.yml"
+      expect(ignore_paths).to include(".standard.yml")
     end
   end
 
@@ -330,7 +330,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add .rubocop.yml into ignore list" do
-      expect(ignore_paths).not_to include ".rubocop.yml"
+      expect(ignore_paths).not_to include(".rubocop.yml")
     end
 
     it "doesn't generate a default .standard.yml" do
@@ -338,7 +338,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add .standard.yml into ignore list" do
-      expect(ignore_paths).not_to include ".standard.yml"
+      expect(ignore_paths).not_to include(".standard.yml")
     end
   end
 
@@ -438,9 +438,9 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add any test framework files into ignore list" do
-      expect(ignore_paths).not_to include "test/"
-      expect(ignore_paths).not_to include ".rspec"
-      expect(ignore_paths).not_to include "spec/"
+      expect(ignore_paths).not_to include("test/")
+      expect(ignore_paths).not_to include(".rspec")
+      expect(ignore_paths).not_to include("spec/")
     end
   end
 
@@ -512,7 +512,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add .gitignore into ignore list" do
-      expect(ignore_paths).not_to include ".gitignore"
+      expect(ignore_paths).not_to include(".gitignore")
     end
   end
 
@@ -638,19 +638,19 @@ RSpec.describe "bundle gem" do
     it "includes bin/ into ignore list" do
       bundle "gem #{gem_name}"
 
-      expect(ignore_paths).to include "bin/"
+      expect(ignore_paths).to include("bin/")
     end
 
     it "includes Gemfile into ignore list" do
       bundle "gem #{gem_name}"
 
-      expect(ignore_paths).to include "Gemfile"
+      expect(ignore_paths).to include("Gemfile")
     end
 
     it "includes .gitignore into ignore list" do
       bundle "gem #{gem_name}"
 
-      expect(ignore_paths).to include ".gitignore"
+      expect(ignore_paths).to include(".gitignore")
     end
 
     it "starts with version 0.1.0" do
@@ -805,8 +805,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include ".rspec"
-        expect(ignore_paths).to include "spec/"
+        expect(ignore_paths).to include(".rspec")
+        expect(ignore_paths).to include("spec/")
       end
 
       it "depends on a specific version of rspec in generated Gemfile" do
@@ -839,9 +839,9 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes gems.rb and gems.locked into ignore list" do
-        expect(ignore_paths).to include "gems.rb"
-        expect(ignore_paths).to include "gems.locked"
-        expect(ignore_paths).not_to include "Gemfile"
+        expect(ignore_paths).to include("gems.rb")
+        expect(ignore_paths).to include("gems.locked")
+        expect(ignore_paths).not_to include("Gemfile")
       end
     end
 
@@ -857,9 +857,9 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes Gemfile into ignore list" do
-        expect(ignore_paths).to include "Gemfile"
-        expect(ignore_paths).not_to include "gems.rb"
-        expect(ignore_paths).not_to include "gems.locked"
+        expect(ignore_paths).to include("Gemfile")
+        expect(ignore_paths).not_to include("gems.rb")
+        expect(ignore_paths).not_to include("gems.locked")
       end
     end
 
@@ -876,8 +876,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include ".rspec"
-        expect(ignore_paths).to include "spec/"
+        expect(ignore_paths).to include(".rspec")
+        expect(ignore_paths).to include("spec/")
       end
     end
 
@@ -893,7 +893,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        expect(ignore_paths).to include "test/"
+        expect(ignore_paths).to include("test/")
       end
     end
 
@@ -917,7 +917,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        expect(ignore_paths).to include "test/"
+        expect(ignore_paths).to include("test/")
       end
 
       it "requires the main file" do
@@ -979,7 +979,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        expect(ignore_paths).to include "test/"
+        expect(ignore_paths).to include("test/")
       end
 
       it "requires the main file" do
@@ -1045,8 +1045,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include ".rspec"
-        expect(ignore_paths).to include "spec/"
+        expect(ignore_paths).to include(".rspec")
+        expect(ignore_paths).to include("spec/")
       end
 
       it "hints that --test is already configured" do
@@ -1115,9 +1115,9 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any CI config files into ignore list" do
-        expect(ignore_paths).not_to include ".github/"
-        expect(ignore_paths).not_to include ".gitlab-ci.yml"
-        expect(ignore_paths).not_to include ".circleci/"
+        expect(ignore_paths).not_to include(".github/")
+        expect(ignore_paths).not_to include(".gitlab-ci.yml")
+        expect(ignore_paths).not_to include(".circleci/")
       end
     end
 
@@ -1131,7 +1131,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .github/ into ignore list" do
-        expect(ignore_paths).to include ".github/"
+        expect(ignore_paths).to include(".github/")
       end
     end
 
@@ -1145,7 +1145,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .gitlab-ci.yml into ignore list" do
-        expect(ignore_paths).to include ".gitlab-ci.yml"
+        expect(ignore_paths).to include(".gitlab-ci.yml")
       end
     end
 
@@ -1159,7 +1159,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .circleci/ into ignore list" do
-        expect(ignore_paths).to include ".circleci/"
+        expect(ignore_paths).to include(".circleci/")
       end
     end
 
@@ -1284,8 +1284,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include ".rubocop.yml"
-        expect(ignore_paths).not_to include ".standard.yml"
+        expect(ignore_paths).not_to include(".rubocop.yml")
+        expect(ignore_paths).not_to include(".standard.yml")
       end
     end
 
@@ -1300,8 +1300,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include ".rubocop.yml"
-        expect(ignore_paths).not_to include ".standard.yml"
+        expect(ignore_paths).to include(".rubocop.yml")
+        expect(ignore_paths).not_to include(".standard.yml")
       end
     end
 
@@ -1316,8 +1316,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .standard.yml into ignore list" do
-        expect(ignore_paths).to include ".standard.yml"
-        expect(ignore_paths).not_to include ".rubocop.yml"
+        expect(ignore_paths).to include(".standard.yml")
+        expect(ignore_paths).not_to include(".rubocop.yml")
       end
     end
 
@@ -1343,8 +1343,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include ".rubocop.yml"
-        expect(ignore_paths).not_to include ".standard.yml"
+        expect(ignore_paths).not_to include(".rubocop.yml")
+        expect(ignore_paths).not_to include(".standard.yml")
       end
     end
 
@@ -1359,7 +1359,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include ".rubocop.yml"
+        expect(ignore_paths).to include(".rubocop.yml")
       end
     end
 
@@ -1374,7 +1374,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .standard.yml into ignore list" do
-        expect(ignore_paths).to include ".standard.yml"
+        expect(ignore_paths).to include(".standard.yml")
       end
     end
 
@@ -1390,7 +1390,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include ".rubocop.yml"
+        expect(ignore_paths).to include(".rubocop.yml")
       end
 
       it "unsets gem.rubocop" do
@@ -1415,7 +1415,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include ".rubocop.yml"
+        expect(ignore_paths).to include(".rubocop.yml")
       end
 
       it "hints that --linter is already configured" do
@@ -1471,8 +1471,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include ".rubocop.yml"
-        expect(ignore_paths).not_to include ".standard.yml"
+        expect(ignore_paths).not_to include(".rubocop.yml")
+        expect(ignore_paths).not_to include(".standard.yml")
       end
     end
 
