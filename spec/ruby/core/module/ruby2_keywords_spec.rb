@@ -275,7 +275,7 @@ describe "Module#ruby2_keywords" do
 
   it "prints warning when a method accepts keywords" do
     obj = Object.new
-    def obj.foo(a:, b:) end
+    def obj.foo(*a, b:) end
 
     -> {
       obj.singleton_class.class_exec do
@@ -286,12 +286,25 @@ describe "Module#ruby2_keywords" do
 
   it "prints warning when a method accepts keyword splat" do
     obj = Object.new
-    def obj.foo(**a) end
+    def obj.foo(*a, **b) end
 
     -> {
       obj.singleton_class.class_exec do
         ruby2_keywords :foo
       end
     }.should complain(/Skipping set of ruby2_keywords flag for/)
+  end
+
+  ruby_version_is "3.5" do
+    it "prints warning when a method accepts post arguments" do
+      obj = Object.new
+      def obj.foo(*a, b) end
+
+      -> {
+        obj.singleton_class.class_exec do
+          ruby2_keywords :foo
+        end
+      }.should complain(/Skipping set of ruby2_keywords flag for/)
+    end
   end
 end
