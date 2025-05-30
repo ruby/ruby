@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_files: %w[bin/ test/ spec/ features/ .git appveyor Gemfile],
+        ignore_files: %w[bin/ test/ spec/ features/ .git Gemfile],
       }
       ensure_safe_gem_name(name, constant_array)
 
