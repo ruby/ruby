@@ -2599,13 +2599,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
             switch (me->def->type) {
               case VM_METHOD_TYPE_ISEQ:
                 if (ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_rest &&
+                        !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_post &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kw &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kwrest) {
                     ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.ruby2_keywords = 1;
                     rb_clear_method_cache(module, name);
                 }
                 else {
-                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                 }
                 break;
               case VM_METHOD_TYPE_BMETHOD: {
@@ -2618,13 +2619,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(procval);
                     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
                     if (ISEQ_BODY(iseq)->param.flags.has_rest &&
+                            !ISEQ_BODY(iseq)->param.flags.has_post &&
                             !ISEQ_BODY(iseq)->param.flags.has_kw &&
                             !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
                         ISEQ_BODY(iseq)->param.flags.ruby2_keywords = 1;
                         rb_clear_method_cache(module, name);
                     }
                     else {
-                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                     }
                     break;
                 }
