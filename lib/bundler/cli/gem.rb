@@ -138,7 +138,7 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-        config[:ignore_files] << ".github"
+        config[:ignore_files] << ".github/"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
         config[:ignore_files] << ".gitlab-ci.yml"

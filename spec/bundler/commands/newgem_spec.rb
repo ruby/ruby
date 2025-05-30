@@ -1078,9 +1078,9 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
       end
 
-      it "includes .github into ignore list" do
+      it "includes .github/ into ignore list" do
         bundle "gem #{gem_name} --ci=github"
-        assert_ignore_list_includes ".github"
+        assert_ignore_list_includes ".github/"
       end
     end
 
