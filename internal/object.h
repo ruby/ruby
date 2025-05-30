@@ -60,13 +60,4 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     RBASIC_SET_CLASS_RAW(obj, klass);
     RB_OBJ_WRITTEN(obj, oldv, klass);
 }
-
-static inline void
-RBASIC_RESET_FLAGS(VALUE obj)
-{
-    RBASIC(obj)->flags = 0;
-#if RBASIC_SHAPE_ID_FIELD
-    RBASIC(obj)->shape_id = 0;
-#endif
-}
 #endif /* INTERNAL_OBJECT_H */
