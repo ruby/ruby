@@ -9,6 +9,7 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
     expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
 
+    expect(ignore_paths).to include "bin/"
     expect(ignore_paths).to include "Gemfile"
   end
 
@@ -632,6 +633,12 @@ RSpec.describe "bundle gem" do
 
       expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
       expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
+    end
+
+    it "includes bin/ into ignore list" do
+      bundle "gem #{gem_name}"
+
+      expect(ignore_paths).to include "bin/"
     end
 
     it "includes Gemfile into ignore list" do
