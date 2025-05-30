@@ -1062,12 +1062,20 @@ RSpec.describe "bundle gem" do
     end
 
     context "--ci with no argument" do
-      it "does not generate any CI config" do
+      before do
         bundle "gem #{gem_name}"
+      end
 
+      it "does not generate any CI config" do
         expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
         expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+      end
+
+      it "does not add any CI config files into ignore list" do
+        refute_ignore_list_includes ".github/"
+        refute_ignore_list_includes ".gitlab-ci.yml"
+        refute_ignore_list_includes ".circleci/"
       end
     end
 
