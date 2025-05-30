@@ -74,6 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
+        ignore_files: %w[bin/ test/ spec/ features/ .git appveyor Gemfile],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -135,13 +136,13 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-        config[:ci_config_path] = ".github "
+        config[:ignore_files] << ".github"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
-        config[:ci_config_path] = ".gitlab-ci.yml "
+        config[:ignore_files] << ".gitlab-ci.yml"
       when "circle"
         templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
-        config[:ci_config_path] = ".circleci "
+        config[:ignore_files] << ".circleci"
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",

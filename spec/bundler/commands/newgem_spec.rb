@@ -22,6 +22,13 @@ RSpec.describe "bundle gem" do
     bundle "exec standardrb --debug", dir: bundled_app(gem_name)
   end
 
+  def assert_ignore_list_includes(path)
+    generated = bundled_app("#{gem_name}/#{gem_name}.gemspec").read
+    matched = generated.match(/^\s+f\.start_with\?\(\*%w\[(?<ignored>.*)\]\)$/)
+    ignored = matched[:ignored]&.split(" ")
+    expect(ignored).to include(path)
+  end
+
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
@@ -1022,8 +1029,7 @@ RSpec.describe "bundle gem" do
 
       it "includes .github into ignore list" do
         bundle "gem #{gem_name} --ci=github"
-
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .github appveyor")
+        assert_ignore_list_includes ".github"
       end
     end
 
@@ -1037,7 +1043,7 @@ RSpec.describe "bundle gem" do
       it "includes .gitlab-ci.yml into ignore list" do
         bundle "gem #{gem_name} --ci=gitlab"
 
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .gitlab-ci.yml appveyor")
+        assert_ignore_list_includes ".gitlab-ci.yml"
       end
     end
 
@@ -1051,7 +1057,7 @@ RSpec.describe "bundle gem" do
       it "includes .circleci into ignore list" do
         bundle "gem #{gem_name} --ci=circle"
 
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include(".git .circleci appveyor")
+        assert_ignore_list_includes ".circleci"
       end
     end
 
