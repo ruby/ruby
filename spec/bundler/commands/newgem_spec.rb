@@ -22,18 +22,10 @@ RSpec.describe "bundle gem" do
     bundle "exec standardrb --debug", dir: bundled_app(gem_name)
   end
 
-  def assert_ignore_list_includes(path)
+  def ignore_paths
     generated = bundled_app("#{gem_name}/#{gem_name}.gemspec").read
     matched = generated.match(/^\s+f\.start_with\?\(\*%w\[(?<ignored>.*)\]\)$/)
-    ignored = matched[:ignored]&.split(" ")
-    expect(ignored).to include(path)
-  end
-
-  def refute_ignore_list_includes(path)
-    generated = bundled_app("#{gem_name}/#{gem_name}.gemspec").read
-    matched = generated.match(/^\s+f\.start_with\?\(\*%w\[(?<ignored>.*)\]\)$/)
-    ignored = matched[:ignored]&.split(" ")
-    expect(ignored).not_to include(path)
+    matched[:ignored]&.split(" ")
   end
 
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
@@ -197,7 +189,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        assert_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).to include ".rubocop.yml"
       end
     end
   end
@@ -230,7 +222,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add .rubocop.yml into ignore list" do
-        refute_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).not_to include ".rubocop.yml"
       end
     end
   end
@@ -264,7 +256,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "includes .rubocop.yml into ignore list" do
-      assert_ignore_list_includes ".rubocop.yml"
+      expect(ignore_paths).to include ".rubocop.yml"
     end
   end
 
@@ -295,7 +287,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "includes .standard.yml into ignore list" do
-      assert_ignore_list_includes ".standard.yml"
+      expect(ignore_paths).to include ".standard.yml"
     end
   end
 
@@ -335,7 +327,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add .rubocop.yml into ignore list" do
-      refute_ignore_list_includes ".rubocop.yml"
+      expect(ignore_paths).not_to include ".rubocop.yml"
     end
 
     it "doesn't generate a default .standard.yml" do
@@ -343,7 +335,7 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add .standard.yml into ignore list" do
-      refute_ignore_list_includes ".standard.yml"
+      expect(ignore_paths).not_to include ".standard.yml"
     end
   end
 
@@ -443,9 +435,9 @@ RSpec.describe "bundle gem" do
     end
 
     it "does not add any test framework files into ignore list" do
-      refute_ignore_list_includes "test/"
-      refute_ignore_list_includes ".rspec"
-      refute_ignore_list_includes "spec/"
+      expect(ignore_paths).not_to include "test/"
+      expect(ignore_paths).not_to include ".rspec"
+      expect(ignore_paths).not_to include "spec/"
     end
   end
 
@@ -788,8 +780,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        assert_ignore_list_includes ".rspec"
-        assert_ignore_list_includes "spec/"
+        expect(ignore_paths).to include ".rspec"
+        expect(ignore_paths).to include "spec/"
       end
 
       it "depends on a specific version of rspec in generated Gemfile" do
@@ -847,8 +839,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        assert_ignore_list_includes ".rspec"
-        assert_ignore_list_includes "spec/"
+        expect(ignore_paths).to include ".rspec"
+        expect(ignore_paths).to include "spec/"
       end
     end
 
@@ -864,7 +856,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        assert_ignore_list_includes "test/"
+        expect(ignore_paths).to include "test/"
       end
     end
 
@@ -888,7 +880,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        assert_ignore_list_includes "test/"
+        expect(ignore_paths).to include "test/"
       end
 
       it "requires the main file" do
@@ -950,7 +942,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes test/ into ignore list" do
-        assert_ignore_list_includes "test/"
+        expect(ignore_paths).to include "test/"
       end
 
       it "requires the main file" do
@@ -1016,8 +1008,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rspec and spec/ into ignore list" do
-        assert_ignore_list_includes ".rspec"
-        assert_ignore_list_includes "spec/"
+        expect(ignore_paths).to include ".rspec"
+        expect(ignore_paths).to include "spec/"
       end
 
       it "hints that --test is already configured" do
@@ -1086,9 +1078,9 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any CI config files into ignore list" do
-        refute_ignore_list_includes ".github/"
-        refute_ignore_list_includes ".gitlab-ci.yml"
-        refute_ignore_list_includes ".circleci/"
+        expect(ignore_paths).not_to include ".github/"
+        expect(ignore_paths).not_to include ".gitlab-ci.yml"
+        expect(ignore_paths).not_to include ".circleci/"
       end
     end
 
@@ -1102,7 +1094,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .github/ into ignore list" do
-        assert_ignore_list_includes ".github/"
+        expect(ignore_paths).to include ".github/"
       end
     end
 
@@ -1116,7 +1108,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .gitlab-ci.yml into ignore list" do
-        assert_ignore_list_includes ".gitlab-ci.yml"
+        expect(ignore_paths).to include ".gitlab-ci.yml"
       end
     end
 
@@ -1130,7 +1122,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .circleci/ into ignore list" do
-        assert_ignore_list_includes ".circleci/"
+        expect(ignore_paths).to include ".circleci/"
       end
     end
 
@@ -1255,8 +1247,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        refute_ignore_list_includes ".rubocop.yml"
-        refute_ignore_list_includes ".standard.yml"
+        expect(ignore_paths).not_to include ".rubocop.yml"
+        expect(ignore_paths).not_to include ".standard.yml"
       end
     end
 
@@ -1271,8 +1263,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        assert_ignore_list_includes ".rubocop.yml"
-        refute_ignore_list_includes ".standard.yml"
+        expect(ignore_paths).to include ".rubocop.yml"
+        expect(ignore_paths).not_to include ".standard.yml"
       end
     end
 
@@ -1287,8 +1279,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .standard.yml into ignore list" do
-        assert_ignore_list_includes ".standard.yml"
-        refute_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).to include ".standard.yml"
+        expect(ignore_paths).not_to include ".rubocop.yml"
       end
     end
 
@@ -1314,8 +1306,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        refute_ignore_list_includes ".rubocop.yml"
-        refute_ignore_list_includes ".standard.yml"
+        expect(ignore_paths).not_to include ".rubocop.yml"
+        expect(ignore_paths).not_to include ".standard.yml"
       end
     end
 
@@ -1330,7 +1322,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        assert_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).to include ".rubocop.yml"
       end
     end
 
@@ -1345,7 +1337,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .standard.yml into ignore list" do
-        assert_ignore_list_includes ".standard.yml"
+        expect(ignore_paths).to include ".standard.yml"
       end
     end
 
@@ -1361,7 +1353,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        assert_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).to include ".rubocop.yml"
       end
 
       it "unsets gem.rubocop" do
@@ -1386,7 +1378,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes .rubocop.yml into ignore list" do
-        assert_ignore_list_includes ".rubocop.yml"
+        expect(ignore_paths).to include ".rubocop.yml"
       end
 
       it "hints that --linter is already configured" do
@@ -1442,8 +1434,8 @@ RSpec.describe "bundle gem" do
       end
 
       it "does not add any linter config files into ignore list" do
-        refute_ignore_list_includes ".rubocop.yml"
-        refute_ignore_list_includes ".standard.yml"
+        expect(ignore_paths).not_to include ".rubocop.yml"
+        expect(ignore_paths).not_to include ".standard.yml"
       end
     end
 
