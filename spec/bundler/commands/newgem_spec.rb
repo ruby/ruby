@@ -8,6 +8,8 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/Rakefile")).to exist
     expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
     expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
+
+    expect(ignore_paths).to include "Gemfile"
   end
 
   def bundle_exec_rubocop
@@ -628,6 +630,12 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
     end
 
+    it "includes Gemfile into ignore list" do
+      bundle "gem #{gem_name}"
+
+      expect(ignore_paths).to include "Gemfile"
+    end
+
     it "starts with version 0.1.0" do
       bundle "gem #{gem_name}"
 
@@ -812,6 +820,12 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/gems.rb")).to exist
         expect(bundled_app("#{gem_name}/Gemfile")).to_not exist
       end
+
+      it "includes gems.rb and gems.locked into ignore list" do
+        expect(ignore_paths).to include "gems.rb"
+        expect(ignore_paths).to include "gems.locked"
+        expect(ignore_paths).not_to include "Gemfile"
+      end
     end
 
     context "init_gems_rb setting to false" do
@@ -823,6 +837,12 @@ RSpec.describe "bundle gem" do
       it "generates Gemfile instead of gems.rb" do
         expect(bundled_app("#{gem_name}/gems.rb")).to_not exist
         expect(bundled_app("#{gem_name}/Gemfile")).to exist
+      end
+
+      it "includes Gemfile into ignore list" do
+        expect(ignore_paths).to include "Gemfile"
+        expect(ignore_paths).not_to include "gems.rb"
+        expect(ignore_paths).not_to include "gems.locked"
       end
     end
 

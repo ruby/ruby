@@ -74,7 +74,7 @@ module Bundler
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
-        ignore_paths: %w[bin/ .gitignore Gemfile gems.rb gems.locked],
+        ignore_paths: %w[bin/ .gitignore],
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -94,6 +94,14 @@ module Bundler
         bin/console
         bin/setup
       ]
+
+      case Bundler.preferred_gemfile_name
+      when "Gemfile"
+        config[:ignore_paths] << "Gemfile"
+      when "gems.rb"
+        config[:ignore_paths] << "gems.rb"
+        config[:ignore_paths] << "gems.locked"
+      end
 
       templates.merge!("gitignore.tt" => ".gitignore") if use_git
 
