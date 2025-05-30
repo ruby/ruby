@@ -438,7 +438,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
   end
 
-  %w[x86-mswin32 x64-mswin64 x86-mingw32 x64-mingw-ucrt x64-mingw-ucrt aarch64-mingw-ucrt].each do |platform|
+  %w[x86-mswin32 x64-mswin64 x86-mingw32 x64-mingw-ucrt aarch64-mingw-ucrt].each do |platform|
     it "allows specifying platform windows on #{platform} platform" do
       simulate_platform platform do
         lockfile <<-L
