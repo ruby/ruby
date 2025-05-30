@@ -152,7 +152,9 @@ module SyncDefaultGems
       chmod("+x", "spec/bin/parallel_rspec")
 
       %w[dev_gems test_gems rubocop_gems standard_gems].each do |gemfile|
-        cp_r("#{upstream}/tool/bundler/#{gemfile}.rb", "tool/bundler")
+        ["rb.lock", "rb"].each do |ext|
+          cp_r("#{upstream}/tool/bundler/#{gemfile}.#{ext}", "tool/bundler")
+        end
       end
       rm_rf Dir.glob("spec/bundler/support/artifice/{vcr_cassettes,used_cassettes.txt}")
       rm_rf Dir.glob("lib/{bundler,rubygems}/**/{COPYING,LICENSE,README}{,.{md,txt,rdoc}}")

@@ -233,7 +233,6 @@ lcov*.info
 
 # for `make test-bundler`
 /.rspec_status
-/tool/bundler/*.lock
 
 # /tool/
 /tool/config.guess
