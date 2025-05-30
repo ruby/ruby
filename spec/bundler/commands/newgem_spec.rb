@@ -441,6 +441,11 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/test/#{require_path}.rb")).to_not exist
       expect(bundled_app("#{gem_name}/test/test_helper.rb")).to_not exist
     end
+
+    it "does not add .rspec into ignore list" do
+      refute_ignore_list_includes ".rspec"
+      refute_ignore_list_includes "spec/"
+    end
   end
 
   context "README.md" do
@@ -781,6 +786,11 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
       end
 
+      it "includes .rspec and spec/ into ignore list" do
+        assert_ignore_list_includes ".rspec"
+        assert_ignore_list_includes "spec/"
+      end
+
       it "depends on a specific version of rspec in generated Gemfile" do
         allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
         builder = Bundler::Dsl.new
@@ -833,6 +843,11 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.rspec")).to exist
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+      end
+
+      it "includes .rspec and spec/ into ignore list" do
+        assert_ignore_list_includes ".rspec"
+        assert_ignore_list_includes "spec/"
       end
     end
 
@@ -985,6 +1000,11 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/.rspec")).to exist
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+      end
+
+      it "includes .rspec and spec/ into ignore list" do
+        assert_ignore_list_includes ".rspec"
+        assert_ignore_list_includes "spec/"
       end
 
       it "hints that --test is already configured" do
