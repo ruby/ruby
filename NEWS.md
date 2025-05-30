@@ -48,7 +48,7 @@ The following bundled gems are promoted from default gems.
 
 * ostruct 0.6.1
 * pstore 0.2.0
-* benchmark 0.4.0
+* benchmark 0.4.1
 * logger 1.7.0
 * rdoc 6.14.0
 * win32ole 1.9.2
@@ -86,12 +86,14 @@ The following bundled gems are added.
 The following bundled gems are updated.
 
 * minitest 5.25.5
+* rake 13.3.0
 * test-unit 3.6.8
 * rexml 3.4.1
 * net-imap 0.5.8
 * net-smtp 0.5.1
 * rbs 3.9.4
-* bigdecimal 3.1.9
+* base64 0.3.0
+* bigdecimal 3.2.0
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.4
