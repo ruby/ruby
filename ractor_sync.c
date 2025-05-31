@@ -533,11 +533,11 @@ ractor_exit_token(bool exc)
 {
     if (exc) {
         RUBY_DEBUG_LOG("aborted");
-        return ID2SYM(rb_intern("aborted"));
+        return ID2SYM(idAborted);
     }
     else {
         RUBY_DEBUG_LOG("exited");
-        return ID2SYM(rb_intern("exited"));
+        return ID2SYM(idExited);
     }
 }
 
