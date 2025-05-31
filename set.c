@@ -7,6 +7,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/error.h"
 #include "internal/hash.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
@@ -635,6 +636,7 @@ set_i_to_set(int argc, VALUE *argv, VALUE set)
         argc = 1;
     }
     else {
+        rb_warn_deprecated("passing arguments to Set#to_set", NULL);
         klass = argv[0];
         argv[0] = set;
     }
