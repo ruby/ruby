@@ -4680,14 +4680,14 @@ mod opt_tests {
     fn eliminate_array_size() {
         eval("
             def test
-              x = [].length
+              x = [].size
               5
             end
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0():
-              PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
+              PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
