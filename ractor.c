@@ -2295,7 +2295,7 @@ ractor_require_protect(struct cross_ractor_require *crr, VALUE (*func)(VALUE))
 }
 
 static VALUE
-ractore_require_func(void *data)
+ractor_require_func(void *data)
 {
     struct cross_ractor_require *crr = (struct cross_ractor_require *)data;
     return ractor_require_protect(crr, require_body);
@@ -2314,7 +2314,7 @@ rb_ractor_require(VALUE feature)
 
     rb_execution_context_t *ec = GET_EC();
     rb_ractor_t *main_r = GET_VM()->ractor.main_ractor;
-    rb_ractor_interrupt_exec(main_r, ractore_require_func, &crr, 0);
+    rb_ractor_interrupt_exec(main_r, ractor_require_func, &crr, 0);
 
     // wait for require done
     ractor_port_receive(ec, crr.port);
