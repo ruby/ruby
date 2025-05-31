@@ -96,7 +96,7 @@ jobs:
         run: |
           ::- Set up VC ${{ matrix.vc }}
           set | uutils sort > old.env
-          call ..\src\win32\vssetup.cmd ${{ matrix.target || 'amd64' }} ${{ matrix.vcvars || '' }}
+          call ..\src\win32\vssetup.cmd -arch=${{ matrix.target || 'amd64' }} ${{ matrix.vcvars || '' }}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
