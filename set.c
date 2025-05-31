@@ -537,7 +537,7 @@ static int
 set_inspect_i(st_data_t key, st_data_t arg)
 {
     VALUE str = (VALUE)arg;
-    if (RSTRING_LEN(str) > 8) {
+    if (RSTRING_LEN(str) > 4) {
         rb_str_buf_cat_ascii(str, ", ");
     }
     rb_str_buf_append(str, rb_inspect((VALUE)key));
@@ -550,10 +550,10 @@ set_inspect(VALUE set, VALUE dummy, int recur)
 {
     VALUE str;
 
-    if (recur) return rb_usascii_str_new2("#<Set: {...}>");
-    str = rb_str_buf_new2("#<Set: {");
+    if (recur) return rb_usascii_str_new2("Set[...]");
+    str = rb_str_buf_new2("Set[");
     set_iter(set, set_inspect_i, str);
-    rb_str_buf_cat2(str, "}>");
+    rb_str_buf_cat2(str, "]");
 
     return str;
 }
