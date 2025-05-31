@@ -31,7 +31,7 @@ describe :bigdecimal_quo, shared: true do
 
   describe "with Object" do
     it "tries to coerce the other operand to self" do
-      skip "TODO: BigDecimal 3.2.0" if BigDecimal::VERSION == '3.2.0'
+      skip if @method == :div
       object = mock("Object")
       object.should_receive(:coerce).with(@one).and_return([@one, @two])
       @one.send(@method, object, *@object).should == BigDecimal("0.5")
