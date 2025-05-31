@@ -25,6 +25,47 @@ Note: We're only listing outstanding class updates.
     * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
       [[Feature #20610]]
 
+* Ractor
+
+    * `Ractor::Port` class was added for a new synchronization mechanism
+      to communicate between Ractors. [[Feature #21262]]
+
+        ```ruby
+        port1 = Ractor::Port.new
+        port2 = Ractor::Port.new
+        Ractor.new port1, port2 do |port1, port2|
+          port1 << 1
+          port2 << 11
+          port1 << 2
+          port2 << 12
+        end
+        2.times{ p port1.receive } #=> 1, 2
+        2.times{ p port2.receive } #=> 11, 12
+        ```
+
+      `Ractor::Port` provides the following methods:
+        * `Ractor::Port#receive`
+        * `Ractor::Port#send` (or `Ractor::Port#<<`)
+        * `Ractor::Port#close`
+        * `Ractor::Port#closed?`
+
+      As result, `Ractor.yield` and `Ractor#take` were removed.
+
+    * `Ractor#join` and `Ractor#value` were added to wait for the
+      termination of a Ractor. These are similar to `Thread#join`
+      and `Thread#value`.
+
+    * `Ractor#monitor` and `Ractor#unmonitor` were added as low-level
+      interfaces used internally to implement `Ractor#join`.
+
+    * `Ractor.select` now only accepts Ractors and Ports. If Ractors are given,
+      it returns when a Ractor terminates.
+
+    * `Ractor#default_port` was added. Each `Ractor` has a default port,
+      which is used by `Ractor.send`, `Ractor.receive`.
+
+    * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
+
 * Set
 
     * Set is now a core class, instead of an autoloaded stdlib class.
@@ -103,6 +144,13 @@ The following bundled gems are updated.
 
 ## Compatibility issues
 
+* The following methdos were removed from Ractor due because of `Ractor::Port`:
+  * `Ractor.yield`
+  * `Ractor#take`
+  * `Ractor#close_incoming`
+  * `Ractor#close_outgoging`
+  [[Feature #21262]]
+
 ## Stdlib compatibility issues
 
 * CGI library is removed from the default gems. Now we only provide `cgi/escape` for
@@ -146,4 +194,5 @@ The following bundled gems are updated.
 [Feature #21166]: https://bugs.ruby-lang.org/issues/21166
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
+[Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
