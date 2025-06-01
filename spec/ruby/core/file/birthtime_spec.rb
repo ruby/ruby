@@ -18,6 +18,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
     end
 
     it "accepts an object that has a #to_path method" do
+      File.birthtime(@file) # Avoid to failure of mock object with old Kernel and glibc
       File.birthtime(mock_to_path(@file))
     rescue NotImplementedError => e
       skip e.message if e.message.start_with?("birthtime() function")
