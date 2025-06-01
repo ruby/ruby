@@ -118,13 +118,14 @@ PUREFUNC(static inline VALUE VM_CF_BLOCK_HANDLER(const rb_control_frame_t * cons
 static inline VALUE
 VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
 {
-    const VALUE *ep = VM_CF_LEP(cfp);
-    if (VM_ENV_FLAGS(ep, VM_FRAME_MAGIC_TOP)) {
+    const VALUE *ep;
+    if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP) {
         /* Never set black_handler for VM_FRAME_MAGIC_TOP
          * and the specval is used for namespace (rb_namespace_t) in the case
          */
         return VM_BLOCK_HANDLER_NONE;
     }
+    ep = VM_CF_LEP(cfp);
     return VM_ENV_BLOCK_HANDLER(ep);
 }
 
