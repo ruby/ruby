@@ -85,14 +85,30 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     `win32\install-buildtools.cmd` is a batch file to install the
     minimum requirements excluding the IDE etc.
 
-3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
-    to run required commands properly from the command line.
-    These are set properly by `vcvarall*.bat` usually. You can run
+3.  Please set environment variable `INCLUDE`, `LIB`, `PATH` to run
+    required commands properly from the command line.  These are set
+    properly by `vsdevcmd.bat` or `vcvarall*.bat` usually. You can run
     the following command to set them in your command line.
+
+    To native build:
 
     ```
     cmd /k win32\vssetup.cmd
     ```
+
+    To cross build arm64 binary:
+
+    ```
+    cmd /k win32\vssetup.cmd -arch arm64
+    ```
+
+    To cross build x64 binary:
+
+    ```
+    cmd /k win32\vssetup.cmd -arch x64
+    ```
+
+    See `win32\vssetup.cmd -help` for other command line options.
 
     **Note** building ruby requires following commands.
 
