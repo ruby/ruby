@@ -138,7 +138,7 @@ The following bundled gems are updated.
 * bigdecimal 3.2.1
 * drb 2.2.3
 * syslog 0.3.0
-* csv 3.3.4
+* csv 3.3.5
 * repl_type_completor 0.1.11
 
 ## Supported platforms
