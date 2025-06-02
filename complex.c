@@ -1927,21 +1927,6 @@ nucomp_to_c(VALUE self)
 
 /*
  * call-seq:
- *   to_c -> (0+0i)
- *
- * Returns zero as a Complex:
- *
- *   nil.to_c # => (0+0i)
- *
- */
-static VALUE
-nilclass_to_c(VALUE self)
-{
-    return rb_complex_new1(INT2FIX(0));
-}
-
-/*
- * call-seq:
  *   to_c -> complex
  *
  * Returns +self+ as a Complex object.
@@ -2693,7 +2678,6 @@ Init_Complex(void)
     rb_define_method(rb_cComplex, "to_r", nucomp_to_r, 0);
     rb_define_method(rb_cComplex, "rationalize", nucomp_rationalize, -1);
     rb_define_method(rb_cComplex, "to_c", nucomp_to_c, 0);
-    rb_define_method(rb_cNilClass, "to_c", nilclass_to_c, 0);
     rb_define_method(rb_cNumeric, "to_c", numeric_to_c, 0);
 
     rb_define_method(rb_cString, "to_c", string_to_c, 0);
