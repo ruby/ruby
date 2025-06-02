@@ -305,10 +305,21 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       context "with a commit ref" do
         let(:ref) { Digest::SHA1.hexdigest("ruby") }
 
-        it "fetches the specific revision" do
-          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
-          expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--depth", "1", "--", uri, "#{ref}:refs/#{ref}-sha"], path).and_return(["", "", clone_result])
-          subject.checkout
+        context "when the revision exists locally" do
+          it "uses the cached revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", ref, dir: path).and_return(true)
+            subject.checkout
+          end
+        end
+
+        context "when the revision doesn't exist locally" do
+          it "fetches the specific revision" do
+            allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", ref, dir: path).and_raise(Bundler::GitError)
+            expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--depth", "1", "--", uri, "#{ref}:refs/#{ref}-sha"], path).and_return(["", "", clone_result])
+            subject.checkout
+          end
         end
       end
 
