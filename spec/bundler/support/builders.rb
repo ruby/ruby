@@ -22,10 +22,6 @@ module Spec
       Gem::Platform.new(platform)
     end
 
-    def rake_version
-      "13.2.1"
-    end
-
     def build_repo1
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
