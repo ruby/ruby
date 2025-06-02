@@ -222,59 +222,99 @@ describe :kernel_float, shared: true do
     end
   end
 
-  describe "for hexadecimal literals with binary exponent" do
-    %w(p P).each do |p|
-      it "interprets the fractional part (on the left side of '#{p}') in hexadecimal" do
-        @object.send(:Float, "0x10#{p}0").should == 16.0
-      end
+  context "for hexadecimal literals" do
+    it "interprets the 0x prefix as hexadecimal" do
+      @object.send(:Float, "0x10").should == 16.0
+      @object.send(:Float, "0x0F").should == 15.0
+      @object.send(:Float, "0x0f").should == 15.0
+    end
 
-      it "interprets the exponent (on the right of '#{p}') in decimal" do
-        @object.send(:Float, "0x1#{p}10").should == 1024.0
-      end
+    it "accepts embedded _ if the number does not contain a-f" do
+      @object.send(:Float, "0x1_0").should == 16.0
+    end
 
-      it "raises an ArgumentError if #{p} is the trailing character" do
-        -> { @object.send(:Float, "0x1#{p}") }.should raise_error(ArgumentError)
+    ruby_version_is ""..."3.4.3" do
+      it "does not accept embedded _ if the number contains a-f" do
+        -> { @object.send(:Float, "0x1_0a") }.should raise_error(ArgumentError)
+        @object.send(:Float, "0x1_0a", exception: false).should be_nil
       end
+    end
 
-      it "raises an ArgumentError if #{p} is the leading character" do
-        -> { @object.send(:Float, "0x#{p}1") }.should raise_error(ArgumentError)
+    ruby_version_is "3.4.3" do
+      it "accepts embedded _ if the number contains a-f" do
+        @object.send(:Float, "0x1_0a").should == 0x10a.to_f
       end
+    end
 
-      it "returns Infinity for '0x1#{p}10000'" do
-        @object.send(:Float, "0x1#{p}10000").should == Float::INFINITY
+    it "does not accept _ before, after or inside the 0x prefix" do
+      -> { @object.send(:Float, "_0x10") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "0_x10") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "0x_10") }.should raise_error(ArgumentError)
+      @object.send(:Float, "_0x10", exception: false).should be_nil
+      @object.send(:Float, "0_x10", exception: false).should be_nil
+      @object.send(:Float, "0x_10", exception: false).should be_nil
+    end
+
+    ruby_version_is "3.4" do
+      it "accepts a fractional part" do
+        @object.send(:Float, "0x0.8").should == 0.5
       end
+    end
 
-      it "returns 0 for '0x1#{p}-10000'" do
-        @object.send(:Float, "0x1#{p}-10000").should == 0
-      end
+    describe "with binary exponent" do
+      %w(p P).each do |p|
+        it "interprets the fractional part (on the left side of '#{p}') in hexadecimal" do
+          @object.send(:Float, "0x10#{p}0").should == 16.0
+        end
 
-      it "allows embedded _ in a number on either side of the #{p}" do
-        @object.send(:Float, "0x1_0#{p}10").should == 16384.0
-        @object.send(:Float, "0x10#{p}1_0").should == 16384.0
-        @object.send(:Float, "0x1_0#{p}1_0").should == 16384.0
-      end
+        it "interprets the exponent (on the right of '#{p}') in decimal" do
+          @object.send(:Float, "0x1#{p}10").should == 1024.0
+        end
 
-      it "raises an exception if a space is embedded on either side of the '#{p}'" do
-        -> { @object.send(:Float, "0x1 0#{p}10") }.should raise_error(ArgumentError)
-        -> { @object.send(:Float, "0x10#{p}1 0") }.should raise_error(ArgumentError)
-      end
+        it "raises an ArgumentError if #{p} is the trailing character" do
+          -> { @object.send(:Float, "0x1#{p}") }.should raise_error(ArgumentError)
+        end
 
-      it "raises an exception if there's a leading _ on either side of the '#{p}'" do
-        -> { @object.send(:Float, "0x_10#{p}10") }.should raise_error(ArgumentError)
-        -> { @object.send(:Float, "0x10#{p}_10") }.should raise_error(ArgumentError)
-      end
+        it "raises an ArgumentError if #{p} is the leading character" do
+          -> { @object.send(:Float, "0x#{p}1") }.should raise_error(ArgumentError)
+        end
 
-      it "raises an exception if there's a trailing _ on either side of the '#{p}'" do
-        -> { @object.send(:Float, "0x10_#{p}10") }.should raise_error(ArgumentError)
-        -> { @object.send(:Float, "0x10#{p}10_") }.should raise_error(ArgumentError)
-      end
+        it "returns Infinity for '0x1#{p}10000'" do
+          @object.send(:Float, "0x1#{p}10000").should == Float::INFINITY
+        end
 
-      it "allows hexadecimal points on the left side of the '#{p}'" do
-        @object.send(:Float, "0x1.8#{p}0").should == 1.5
-      end
+        it "returns 0 for '0x1#{p}-10000'" do
+          @object.send(:Float, "0x1#{p}-10000").should == 0
+        end
 
-      it "raises an ArgumentError if there's a decimal point on the right side of the '#{p}'" do
-        -> { @object.send(:Float, "0x1#{p}1.0") }.should raise_error(ArgumentError)
+        it "allows embedded _ in a number on either side of the #{p}" do
+          @object.send(:Float, "0x1_0#{p}10").should == 16384.0
+          @object.send(:Float, "0x10#{p}1_0").should == 16384.0
+          @object.send(:Float, "0x1_0#{p}1_0").should == 16384.0
+        end
+
+        it "raises an exception if a space is embedded on either side of the '#{p}'" do
+          -> { @object.send(:Float, "0x1 0#{p}10") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}1 0") }.should raise_error(ArgumentError)
+        end
+
+        it "raises an exception if there's a leading _ on either side of the '#{p}'" do
+          -> { @object.send(:Float, "0x_10#{p}10") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}_10") }.should raise_error(ArgumentError)
+        end
+
+        it "raises an exception if there's a trailing _ on either side of the '#{p}'" do
+          -> { @object.send(:Float, "0x10_#{p}10") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}10_") }.should raise_error(ArgumentError)
+        end
+
+        it "allows hexadecimal points on the left side of the '#{p}'" do
+          @object.send(:Float, "0x1.8#{p}0").should == 1.5
+        end
+
+        it "raises an ArgumentError if there's a decimal point on the right side of the '#{p}'" do
+          -> { @object.send(:Float, "0x1#{p}1.0") }.should raise_error(ArgumentError)
+        end
       end
     end
   end
