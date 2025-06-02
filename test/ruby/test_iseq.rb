@@ -880,7 +880,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_loading_kwargs_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
-    a = iseq_to_binary(RubyVM::InstructionSequence.compile("foo(bar: :baz)"))
+      a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
     begin;
       1_000_000.times do
         RubyVM::InstructionSequence.load_from_binary(a)
