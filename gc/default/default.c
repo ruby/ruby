@@ -6006,8 +6006,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 
     if (RGENGC_CHECK_MODE) {
         if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
-        if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
     }
+
+    if (SPECIAL_CONST_P(b)) return;
 
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);

@@ -750,6 +750,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
 
+    if (SPECIAL_CONST_P(b)) return;
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
