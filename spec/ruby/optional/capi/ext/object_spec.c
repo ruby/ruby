@@ -383,6 +383,16 @@ static VALUE object_spec_custom_alloc_func_p(VALUE self, VALUE klass) {
   return allocator ? Qtrue : Qfalse;
 }
 
+static VALUE object_spec_redefine_frozen(VALUE self) {
+    // The purpose of this spec is to verify that `frozen?`
+    // and `RB_OBJ_FROZEN` do not mutually recurse infinitely.
+    if (RB_OBJ_FROZEN(self)) {
+        return Qtrue;
+    }
+
+    return Qfalse;
+}
+
 void Init_object_spec(void) {
   VALUE cls = rb_define_class("CApiObjectSpecs", rb_cObject);
   rb_define_method(cls, "FL_ABLE", object_spec_FL_ABLE, 1);
@@ -455,6 +465,9 @@ void Init_object_spec(void) {
   rb_define_method(cls, "custom_alloc_func?", object_spec_custom_alloc_func_p, 1);
   rb_define_method(cls, "not_implemented_method", rb_f_notimplement, -1);
   rb_define_method(cls, "rb_ivar_foreach", object_spec_rb_ivar_foreach, 1);
+
+  cls = rb_define_class("CApiObjectRedefinitionSpecs", rb_cObject);
+  rb_define_method(cls, "frozen?", object_spec_redefine_frozen, 0);
 }
 
 #ifdef __cplusplus

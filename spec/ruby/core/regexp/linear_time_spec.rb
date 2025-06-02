@@ -6,6 +6,10 @@ describe "Regexp.linear_time?" do
     Regexp.linear_time?('a').should == true
   end
 
+  it "returns true if matching can be done in linear time for a binary Regexp" do
+    Regexp.linear_time?(/[\x80-\xff]/n).should == true
+  end
+
   it "return false if matching can't be done in linear time" do
     Regexp.linear_time?(/(a)\1/).should == false
     Regexp.linear_time?("(a)\\1").should == false
