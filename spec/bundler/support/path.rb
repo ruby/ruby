@@ -280,6 +280,10 @@ module Spec
       Dir["#{base_system_gems}/#{Bundler.ruby_scope}/**/rake*.gem"].first
     end
 
+    def rake_version
+      File.basename(rake_path).delete_prefix("rake-").delete_suffix(".gem")
+    end
+
     private
 
     def git_ls_files(glob)
