@@ -3154,10 +3154,10 @@ make_shareable_check_shareable(VALUE obj)
             rb_proc_ractor_make_shareable(obj);
             return traverse_cont;
         } else if (rb_obj_is_method(obj)) {
-            if (!rb_ractor_shareable_p(rb_callable_receiver(self))) {
+            if (!rb_ractor_shareable_p(rb_callable_receiver(obj))) {
                 rb_raise(rb_eRactorIsolationError,
                         "Method's receiver is not shareable: %+" PRIsVALUE,
-                        self);
+                        obj);
             }
             return traverse_cont;
         }
