@@ -1023,9 +1023,14 @@ build_cipher_string(VALUE v)
  *    ctx.ciphers = [name, ...]
  *    ctx.ciphers = [[name, version, bits, alg_bits], ...]
  *
- * Sets the list of available cipher suites for this context.  Note in a server
- * context some ciphers require the appropriate certificates.  For example, an
- * RSA cipher suite can only be chosen when an RSA certificate is available.
+ * Sets the list of available cipher suites for TLS 1.2 and below for this
+ * context.
+ *
+ * Note in a server context some ciphers require the appropriate certificates.
+ * For example, an RSA cipher suite can only be chosen when an RSA certificate
+ * is available.
+ *
+ * This method does not affect TLS 1.3 connections. See also #ciphersuites=.
  */
 static VALUE
 ossl_sslctx_set_ciphers(VALUE self, VALUE v)
@@ -1034,6 +1039,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     VALUE str;
 
     rb_check_frozen(self);
+    // Assigning nil is a no-op for compatibility
     if (NIL_P(v))
         return v;
 
@@ -1050,9 +1056,8 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
  * call-seq:
  *    ctx.ciphersuites = "cipher1:cipher2:..."
  *    ctx.ciphersuites = [name, ...]
- *    ctx.ciphersuites = [[name, version, bits, alg_bits], ...]
  *
- * Sets the list of available TLSv1.3 cipher suites for this context.
+ * Sets the list of available TLS 1.3 cipher suites for this context.
  */
 static VALUE
 ossl_sslctx_set_ciphersuites(VALUE self, VALUE v)
@@ -1061,6 +1066,7 @@ ossl_sslctx_set_ciphersuites(VALUE self, VALUE v)
     VALUE str;
 
     rb_check_frozen(self);
+    // Assigning nil is a no-op for compatibility
     if (NIL_P(v))
         return v;
 
