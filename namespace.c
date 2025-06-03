@@ -195,6 +195,8 @@ const rb_namespace_t *
 rb_current_namespace(void)
 {
     /*
+     * If RUBY_NAMESPACE is not set, the root namespace is the only available one.
+     *
      * Until the main_namespace is not initialized, the root namespace is
      * the only valid namespace.
      * This early return is to avoid accessing EC before its setup.
@@ -229,6 +231,9 @@ rb_loading_namespace(void)
     namespace = RARRAY_AREF(require_stack, len-1);
     return rb_get_namespace_t(namespace);
     */
+    if (!main_namespace)
+        return root_namespace;
+
     return rb_vm_loading_namespace(GET_EC());
 }
 
