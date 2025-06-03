@@ -1968,6 +1968,84 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     ) { ssl_ctx.ciphers = 'BOGUS' }
   end
 
+  def test_sigalgs
+    omit "SSL_CTX_set1_sigalgs_list() not supported" if libressl?
+
+    svr_exts = [
+      ["keyUsage", "keyEncipherment,digitalSignature", true],
+      ["subjectAltName", "DNS:localhost", false],
+    ]
+    ecdsa_key = Fixtures.pkey("p256")
+    ecdsa_cert = issue_cert(@svr, ecdsa_key, 10, svr_exts, @ca_cert, @ca_key)
+
+    ctx_proc = -> ctx {
+      # Unset values set by start_server
+      ctx.cert = ctx.key = ctx.extra_chain_cert = nil
+      ctx.add_certificate(@svr_cert, @svr_key, [@ca_cert]) # RSA
+      ctx.add_certificate(ecdsa_cert, ecdsa_key, [@ca_cert]) # ECDSA
+    }
+    start_server(ctx_proc: ctx_proc) do |port|
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.sigalgs = "rsa_pss_rsae_sha256"
+      server_connect(port, ctx1) { |ssl|
+        assert_kind_of(OpenSSL::PKey::RSA, ssl.peer_cert.public_key)
+        ssl.puts("abc"); ssl.gets
+      }
+
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.sigalgs = "ed25519:ecdsa_secp256r1_sha256"
+      server_connect(port, ctx2) { |ssl|
+        assert_kind_of(OpenSSL::PKey::EC, ssl.peer_cert.public_key)
+        ssl.puts("abc"); ssl.gets
+      }
+    end
+
+    # Frozen
+    ssl_ctx = OpenSSL::SSL::SSLContext.new
+    ssl_ctx.freeze
+    assert_raise(FrozenError) { ssl_ctx.sigalgs = "ECDSA+SHA256:RSA+SHA256" }
+
+    # Bogus
+    ssl_ctx = OpenSSL::SSL::SSLContext.new
+    assert_raise(TypeError) { ssl_ctx.sigalgs = nil }
+    assert_raise(OpenSSL::SSL::SSLError) { ssl_ctx.sigalgs = "BOGUS" }
+  end
+
+  def test_client_sigalgs
+    omit "SSL_CTX_set1_client_sigalgs_list() not supported" if libressl? || aws_lc?
+
+    cli_exts = [
+      ["keyUsage", "keyEncipherment,digitalSignature", true],
+      ["subjectAltName", "DNS:localhost", false],
+    ]
+    ecdsa_key = Fixtures.pkey("p256")
+    ecdsa_cert = issue_cert(@cli, ecdsa_key, 10, cli_exts, @ca_cert, @ca_key)
+
+    ctx_proc = -> ctx {
+      store = OpenSSL::X509::Store.new
+      store.add_cert(@ca_cert)
+      store.purpose = OpenSSL::X509::PURPOSE_SSL_CLIENT
+      ctx.cert_store = store
+      ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER|OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT
+      ctx.client_sigalgs = "ECDSA+SHA256"
+    }
+    start_server(ctx_proc: ctx_proc, ignore_listener_error: true) do |port|
+      ctx1 = OpenSSL::SSL::SSLContext.new
+      ctx1.add_certificate(@cli_cert, @cli_key) # RSA
+      assert_handshake_error {
+        server_connect(port, ctx1) { |ssl|
+          ssl.puts("abc"); ssl.gets
+        }
+      }
+
+      ctx2 = OpenSSL::SSL::SSLContext.new
+      ctx2.add_certificate(ecdsa_cert, ecdsa_key) # ECDSA
+      server_connect(port, ctx2) { |ssl|
+        ssl.puts("abc"); ssl.gets
+      }
+    end
+  end
+
   def test_connect_works_when_setting_dh_callback_to_nil
     omit "AWS-LC does not support DHE ciphersuites" if aws_lc?
 
