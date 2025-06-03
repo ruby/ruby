@@ -289,7 +289,7 @@ struct rb_callcache {
 
     union {
         struct {
-          uintptr_t value; // Shape ID in upper bits, index in lower bits
+          uint64_t value; // Shape ID in upper bits, index in lower bits
         } attr;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
@@ -416,24 +416,25 @@ vm_cc_call(const struct rb_callcache *cc)
 }
 
 static inline void
-vm_unpack_shape_and_index(uintptr_t cache_value, shape_id_t *shape_id, attr_index_t *index)
+vm_unpack_shape_and_index(const uint64_t cache_value, shape_id_t *shape_id, attr_index_t *index)
 {
-    *shape_id = (shape_id_t)(cache_value >> SHAPE_FLAG_SHIFT);
-    *index = (attr_index_t)(cache_value & SHAPE_FLAG_MASK) - 1;
+    union rb_attr_index_cache cache = {
+        .pack = cache_value,
+    };
+    *shape_id = cache.unpack.shape_id;
+    *index = cache.unpack.index - 1;
 }
 
 static inline void
 vm_cc_atomic_shape_and_index(const struct rb_callcache *cc, shape_id_t *shape_id, attr_index_t *index)
 {
-    // Atomically read uintptr_t
-    vm_unpack_shape_and_index(cc->aux_.attr.value, shape_id, index);
+    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(cc->aux_.attr.value), shape_id, index);
 }
 
 static inline void
 vm_ic_atomic_shape_and_index(const struct iseq_inline_iv_cache_entry *ic, shape_id_t *shape_id, attr_index_t *index)
 {
-    // Atomically read uintptr_t
-    vm_unpack_shape_and_index(ic->value, shape_id, index);
+    vm_unpack_shape_and_index(ATOMIC_U64_LOAD_RELAXED(ic->value), shape_id, index);
 }
 
 static inline unsigned int
@@ -470,16 +471,22 @@ set_vm_cc_ivar(const struct rb_callcache *cc)
     *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
 }
 
-static inline uintptr_t
+static inline uint64_t
 vm_pack_shape_and_index(shape_id_t shape_id, attr_index_t index)
 {
-    return (attr_index_t)(index + 1) | ((uintptr_t)(shape_id) << SHAPE_FLAG_SHIFT);
+    union rb_attr_index_cache cache = {
+        .unpack = {
+            .shape_id = shape_id,
+            .index = index + 1,
+        }
+    };
+    return cache.pack;
 }
 
 static inline void
 vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t dest_shape_id)
 {
-    uintptr_t *attr_value = (uintptr_t *)&cc->aux_.attr.value;
+    uint64_t *attr_value = (uint64_t *)&cc->aux_.attr.value;
     if (!vm_cc_markable(cc)) {
         *attr_value = vm_pack_shape_and_index(INVALID_SHAPE_ID, ATTR_INDEX_NOT_SET);
         return;
@@ -497,15 +504,15 @@ vm_cc_ivar_p(const struct rb_callcache *cc)
 }
 
 static inline void
-vm_ic_attr_index_set(const rb_iseq_t *iseq, const struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
+vm_ic_attr_index_set(const rb_iseq_t *iseq, struct iseq_inline_iv_cache_entry *ic, attr_index_t index, shape_id_t dest_shape_id)
 {
-    *(uintptr_t *)&ic->value = vm_pack_shape_and_index(dest_shape_id, index);
+    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(dest_shape_id, index));
 }
 
 static inline void
-vm_ic_attr_index_initialize(const struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
+vm_ic_attr_index_initialize(struct iseq_inline_iv_cache_entry *ic, shape_id_t shape_id)
 {
-    *(uintptr_t *)&ic->value = vm_pack_shape_and_index(shape_id, ATTR_INDEX_NOT_SET);
+    ATOMIC_U64_SET_RELAXED(ic->value, vm_pack_shape_and_index(shape_id, ATTR_INDEX_NOT_SET));
 }
 
 static inline void
