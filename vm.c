@@ -2984,7 +2984,7 @@ current_namespace_at_control_frame(const rb_control_frame_t *cfp)
 
     // In case case of local ep, (1) method calls (2) toplevel
     // The toplevel (MAGIC_TOP) doesn't have method definition - check its namespace directly.
-    if (VM_ENV_FLAGS(lep, VM_FRAME_MAGIC_TOP)) {
+    if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP)) {
         return VM_ENV_TOP_NAMESPACE(lep);
     }
     else {
@@ -3023,7 +3023,7 @@ rb_vm_loading_namespace(const rb_execution_context_t *ec)
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
             if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE)) {
-                if (cfp->self && RBASIC_CLASS(cfp->self) == rb_cNamespace) {
+                if (RTEST(cfp->self) && NAMESPACE_OBJ_P(cfp->self)) {
                     // Namespace#require (, require_relative, load)
                     return rb_get_namespace_t(cfp->self);
                 }
@@ -3126,6 +3126,7 @@ rb_vm_mark(void *ptr)
         if (vm->main_namespace)
             rb_namespace_entry_mark(vm->main_namespace);
 
+        rb_gc_mark_movable(vm->mark_object_ary);
         rb_gc_mark_movable(vm->orig_progname);
         rb_gc_mark_movable(vm->coverages);
         rb_gc_mark_movable(vm->me2counter);

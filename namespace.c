@@ -194,6 +194,14 @@ current_namespace(bool permit_calling_builtin)
 const rb_namespace_t *
 rb_current_namespace(void)
 {
+    /*
+     * Until the main_namespace is not initialized, the root namespace is
+     * the only valid namespace.
+     * This early return is to avoid accessing EC before its setup.
+     */
+    if (!main_namespace)
+        return root_namespace;
+
     return rb_vm_current_namespace(GET_EC());
 }
 
@@ -375,9 +383,10 @@ void
 rb_namespace_gc_update_references(void *ptr)
 {
     rb_namespace_t *ns = (rb_namespace_t *)ptr;
-    if (!NIL_P(ns->ns_object))
+    if (ns->ns_object)
         ns->ns_object = rb_gc_location(ns->ns_object);
-    ns->top_self = rb_gc_location(ns->top_self);
+    if (ns->top_self)
+        ns->top_self = rb_gc_location(ns->top_self);
     ns->load_path = rb_gc_location(ns->load_path);
     ns->expanded_load_path = rb_gc_location(ns->expanded_load_path);
     ns->load_path_snapshot = rb_gc_location(ns->load_path_snapshot);

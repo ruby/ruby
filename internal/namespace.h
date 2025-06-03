@@ -35,7 +35,6 @@ struct rb_namespace_struct {
 
     VALUE gvar_tbl;
 
-    bool is_builtin;
     bool is_user;
     bool is_optional;
 };
