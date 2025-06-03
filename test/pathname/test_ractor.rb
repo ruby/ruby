@@ -9,6 +9,10 @@ class TestPathnameRactor < Test::Unit::TestCase
 
   def test_ractor_shareable
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    class Ractor
+      alias value take
+    end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
+
     begin;
       $VERBOSE = nil
       require "pathname"
@@ -19,4 +23,3 @@ class TestPathnameRactor < Test::Unit::TestCase
     end;
   end
 end
-
