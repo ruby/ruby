@@ -303,7 +303,7 @@ static void
 shape_tree_mark(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
+    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id - 1);
     while (cursor < end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             // FIXME: GC compaction may call `rb_shape_traverse_from_new_root`
