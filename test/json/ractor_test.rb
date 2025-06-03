@@ -8,6 +8,16 @@ rescue LoadError
 end
 
 class JSONInRactorTest < Test::Unit::TestCase
+  unless Ractor.method_defined?(:value)
+    module RactorBackport
+      refine Ractor do
+        alias_method :value, :take
+      end
+    end
+
+    using RactorBackport
+  end
+
   def test_generate
     pid = fork do
       r = Ractor.new do
