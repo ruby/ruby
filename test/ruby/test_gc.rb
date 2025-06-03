@@ -796,7 +796,6 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_stress_at_startup
-    omit "Ractor::Port patch makes faile. I'll investigate later" if Time.now < Time.new(2025, 6, 7)
     assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
   end
 
