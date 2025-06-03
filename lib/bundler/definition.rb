@@ -1045,7 +1045,7 @@ module Bundler
           s.source = gemfile_source
         else
           # Replace the locked dependency's source with the default source, if the locked source is no longer in the Gemfile
-          s.source = default_source unless sources.get(lockfile_source)
+          s.source = sources.get(lockfile_source) || default_source
         end
 
         source = s.source
