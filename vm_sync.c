@@ -226,6 +226,16 @@ rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long ms
     vm_cond_wait(vm, cond, msec);
 }
 
+static bool
+vm_barrier_acquired_p(const rb_vm_t *vm, const rb_ractor_t *cr)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    return vm->ractor.sched.barrier_ractor == cr;
+#else
+    return false;
+#endif
+}
+
 void
 rb_vm_barrier(void)
 {
@@ -237,13 +247,20 @@ rb_vm_barrier(void)
     }
     else {
         rb_vm_t *vm = GET_VM();
-        VM_ASSERT(!vm->ractor.sched.barrier_waiting);
-        ASSERT_vm_locking();
         rb_ractor_t *cr = vm->ractor.sync.lock_owner;
+
+        ASSERT_vm_locking();
         VM_ASSERT(cr == GET_RACTOR());
         VM_ASSERT(rb_ractor_status_p(cr, ractor_running));
 
-        rb_ractor_sched_barrier_start(vm, cr);
+        if (vm_barrier_acquired_p(vm, cr)) {
+            // already in barrier synchronization
+            return;
+        }
+        else {
+            VM_ASSERT(!vm->ractor.sched.barrier_waiting);
+            rb_ractor_sched_barrier_start(vm, cr);
+        }
     }
 }
 
