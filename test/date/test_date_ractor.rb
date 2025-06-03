@@ -5,6 +5,10 @@ require 'date'
 class TestDateParseRactor < Test::Unit::TestCase
   def code(klass = Date, share: false)
     <<~RUBY.gsub('Date', klass.name)
+      class Ractor
+        alias value take
+      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
+
       share = #{share}
       d = Date.parse('Aug 23:55')
       Ractor.make_shareable(d) if share
