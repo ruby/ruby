@@ -15,6 +15,10 @@ module TestDigestRactor
 
   def test_s_hexdigest
     assert_in_out_err([], <<-"end;", ["true", "true"], [])
+      class Ractor
+        alias value take
+      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
+
       $VERBOSE = nil
       require "digest"
       require "#{self.class::LIB}"
