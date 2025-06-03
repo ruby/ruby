@@ -660,6 +660,16 @@ ractor_sync_mark(rb_ractor_t *r)
     ractor_mark_monitors(r);
 }
 
+static int
+ractor_sync_free_ports_i(st_data_t _key, st_data_t val, st_data_t _args)
+{
+    struct ractor_queue *queue = (struct ractor_queue *)val;
+
+    ractor_queue_free(queue);
+
+    return ST_CONTINUE;
+}
+
 static void
 ractor_sync_free(rb_ractor_t *r)
 {
@@ -669,6 +679,7 @@ ractor_sync_free(rb_ractor_t *r)
 
     // maybe NULL
     if (r->sync.ports) {
+        st_foreach(r->sync.ports, ractor_sync_free_ports_i, 0);
         st_free_table(r->sync.ports);
         r->sync.ports = NULL;
     }
