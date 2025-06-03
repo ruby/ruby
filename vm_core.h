@@ -1421,6 +1421,12 @@ VM_ENV_FLAGS(const VALUE *ep, long flag)
 }
 
 static inline unsigned long
+VM_ENV_FRAME_TYPE_P(const VALUE *ep, unsigned long frame_type)
+{
+    return VM_ENV_FLAGS(ep, VM_FRAME_MAGIC_MASK) == frame_type;
+}
+
+static inline unsigned long
 VM_FRAME_TYPE(const rb_control_frame_t *cfp)
 {
     return VM_ENV_FLAGS(cfp->ep, VM_FRAME_MAGIC_MASK);
@@ -1504,14 +1510,14 @@ static inline VALUE
 VM_ENV_BLOCK_HANDLER(const VALUE *ep)
 {
     VM_ASSERT(VM_ENV_LOCAL_P(ep));
-    VM_ASSERT(VM_ENV_FLAGS(ep, VM_FRAME_MAGIC_MASK) != VM_FRAME_MAGIC_TOP);
+    VM_ASSERT(!VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP));
     return ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
 static inline const rb_namespace_t *
 VM_ENV_TOP_NAMESPACE(const VALUE *ep)
 {
-    VM_ASSERT(VM_ENV_FLAGS(ep, VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_TOP);
+    VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP));
     return (const rb_namespace_t *)ep[VM_ENV_DATA_INDEX_SPECVAL];
 }
 
