@@ -1037,16 +1037,15 @@ module Bundler
         lockfile_source = s.source
 
         if dep
-          gemfile_source = dep.source || default_source
+          replacement_source = dep.source
 
-          deps << dep if !dep.source || lockfile_source.include?(dep.source) || new_deps.include?(dep)
-
-          # Replace the locked dependency's source with the equivalent source from the Gemfile
-          s.source = gemfile_source
+          deps << dep if !replacement_source || lockfile_source.include?(replacement_source) || new_deps.include?(dep)
         else
-          # Replace the locked dependency's source with the default source, if the locked source is no longer in the Gemfile
-          s.source = sources.get(lockfile_source) || default_source
+          replacement_source = sources.get(lockfile_source)
         end
+
+        # Replace the locked dependency's source with the equivalent source from the Gemfile
+        s.source = replacement_source || default_source
 
         source = s.source
         next if @sources_to_unlock.include?(source.name)
