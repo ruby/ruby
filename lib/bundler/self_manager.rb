@@ -142,6 +142,7 @@ module Bundler
     end
 
     def find_latest_matching_spec(requirement)
+      Bundler.configure
       local_result = find_latest_matching_spec_from_collection(local_specs, requirement)
       return local_result if local_result && requirement.specific?
 

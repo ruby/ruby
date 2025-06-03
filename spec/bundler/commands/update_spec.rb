@@ -1685,7 +1685,7 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "allows updating to development versions if already installed locally" do
-    system_gems "bundler-9.0.0.dev"
+    system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
@@ -1696,6 +1696,7 @@ RSpec.describe "bundle update --bundler" do
       gem "myrack"
     G
 
+    system_gems "bundler-9.0.0.dev", path: local_gem_path
     bundle :update, bundler: "9.0.0.dev", verbose: "true"
 
     checksums = checksums_section_when_enabled do |c|
@@ -1722,7 +1723,7 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "does not touch the network if not necessary" do
-    system_gems "bundler-9.9.9", "bundler-9.0.0"
+    system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
@@ -1732,7 +1733,7 @@ RSpec.describe "bundle update --bundler" do
       source "https://gem.repo4"
       gem "myrack"
     G
-
+    system_gems "bundler-9.0.0", path: local_gem_path
     bundle :update, bundler: "9.0.0", verbose: true
 
     expect(out).not_to include("Fetching gem metadata from https://rubygems.org/")
