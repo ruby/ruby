@@ -62,7 +62,11 @@ module Prism
         if reader
           reader.gets.chomp
         else
-          puts(ignore_warnings { Ractor.new(*arguments, &block) }.value)
+          ractor = ignore_warnings { Ractor.new(*arguments, &block) }
+
+          # Somewhere in the Ruby 3.5.* series, Ractor#take was removed and
+          # Ractor#value was added.
+          puts(ractor.respond_to?(:value) ? ractor.value : ractor.take)
         end
       end
     end
