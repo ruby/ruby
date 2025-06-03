@@ -21,6 +21,20 @@ describe "FrozenError#receiver" do
   end
 end
 
+describe "FrozenError#message" do
+  it "includes a receiver" do
+    object = Object.new
+    object.freeze
+
+    -> {
+      def object.x; end
+    }.should raise_error(FrozenError, "can't modify frozen object: #{object}")
+
+    object = [].freeze
+    -> { object << nil }.should raise_error(FrozenError, "can't modify frozen Array: []")
+  end
+end
+
 describe "Modifying a frozen object" do
   context "#inspect is redefined and modifies the object" do
     it "returns ... instead of String representation of object" do

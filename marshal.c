@@ -460,6 +460,31 @@ w_float(double d, struct dump_arg *arg)
     }
 }
 
+
+static VALUE
+w_encivar(VALUE str, struct dump_arg *arg)
+{
+    VALUE encname = encoding_name(str, arg);
+    if (NIL_P(encname) ||
+        is_ascii_string(str)) {
+        return Qnil;
+    }
+    w_byte(TYPE_IVAR, arg);
+    return encname;
+}
+
+static void
+w_encname(VALUE encname, struct dump_arg *arg)
+{
+    if (!NIL_P(encname)) {
+        struct dump_call_arg c_arg;
+        c_arg.limit = 1;
+        c_arg.arg = arg;
+        w_long(1L, arg);
+        w_encoding(encname, &c_arg);
+    }
+}
+
 static void
 w_symbol(VALUE sym, struct dump_arg *arg)
 {
@@ -476,24 +501,11 @@ w_symbol(VALUE sym, struct dump_arg *arg)
         if (!sym) {
             rb_raise(rb_eTypeError, "can't dump anonymous ID %"PRIdVALUE, sym);
         }
-        encname = encoding_name(sym, arg);
-        if (NIL_P(encname) ||
-            is_ascii_string(sym)) {
-            encname = Qnil;
-        }
-        else {
-            w_byte(TYPE_IVAR, arg);
-        }
+        encname = w_encivar(sym, arg);
         w_byte(TYPE_SYMBOL, arg);
         w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
         st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
-        if (!NIL_P(encname)) {
-            struct dump_call_arg c_arg;
-            c_arg.limit = 1;
-            c_arg.arg = arg;
-            w_long(1L, arg);
-            w_encoding(encname, &c_arg);
-        }
+        w_encname(encname, arg);
     }
 }
 
@@ -953,19 +965,23 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             if (FL_TEST(obj, FL_SINGLETON)) {
                 rb_raise(rb_eTypeError, "singleton class can't be dumped");
             }
-            w_byte(TYPE_CLASS, arg);
             {
                 VALUE path = class2path(obj);
+                VALUE encname = w_encivar(path, arg);
+                w_byte(TYPE_CLASS, arg);
                 w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+                w_encname(encname, arg);
                 RB_GC_GUARD(path);
             }
             break;
 
           case T_MODULE:
-            w_byte(TYPE_MODULE, arg);
             {
                 VALUE path = class2path(obj);
+                VALUE encname = w_encivar(path, arg);
+                w_byte(TYPE_MODULE, arg);
                 w_bytes(RSTRING_PTR(path), RSTRING_LEN(path), arg);
+                w_encname(encname, arg);
                 RB_GC_GUARD(path);
             }
             break;
@@ -1707,6 +1723,34 @@ r_copy_ivar(VALUE v, VALUE data)
                  "can't override instance variable of "type" '%"PRIsVALUE"'", \
                  (str))
 
+static int
+r_ivar_encoding(VALUE obj, struct load_arg *arg, VALUE sym, VALUE val)
+{
+    int idx = sym2encidx(sym, val);
+    if (idx >= 0) {
+        if (rb_enc_capable(obj)) {
+            rb_enc_associate_index(obj, idx);
+        }
+        else {
+            rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
+        }
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static long
+r_encname(VALUE obj, struct load_arg *arg)
+{
+    long len = r_long(arg);
+    if (len > 0) {
+        VALUE sym = r_symbol(arg);
+        VALUE val = r_object(arg);
+        len -= r_ivar_encoding(obj, arg, sym, val);
+    }
+    return len;
+}
+
 static void
 r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
 {
@@ -1723,14 +1767,7 @@ r_ivar(VALUE obj, int *has_encoding, struct load_arg *arg)
         do {
             VALUE sym = r_symbol(arg);
             VALUE val = r_object(arg);
-            int idx = sym2encidx(sym, val);
-            if (idx >= 0) {
-                if (rb_enc_capable(obj)) {
-                    rb_enc_associate_index(obj, idx);
-                }
-                else {
-                    rb_raise(rb_eArgError, "%"PRIsVALUE" is not enc_capable", obj);
-                }
+            if (r_ivar_encoding(obj, arg, sym, val)) {
                 if (has_encoding) *has_encoding = TRUE;
             }
             else if (symname_equal_lit(sym, name_s_ruby2_keywords_flag)) {
@@ -2254,6 +2291,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         {
             VALUE str = r_bytes(arg);
 
+            if (ivp && *ivp > 0) *ivp = r_encname(str, arg) > 0;
             v = path2class(str);
             prohibit_ivar("class", str);
             v = r_entry(v, arg);
@@ -2265,6 +2303,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
         {
             VALUE str = r_bytes(arg);
 
+            if (ivp && *ivp > 0) *ivp = r_encname(str, arg) > 0;
             v = path2module(str);
             prohibit_ivar("module", str);
             v = r_entry(v, arg);

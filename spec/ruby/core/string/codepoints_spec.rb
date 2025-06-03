@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative 'shared/codepoints'
 require_relative 'shared/each_codepoint_without_block'

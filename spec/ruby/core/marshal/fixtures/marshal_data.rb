@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 require_relative 'marshal_multibyte_data'
 

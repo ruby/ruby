@@ -9,5 +9,13 @@ module DataSpecs
     end
 
     class DataSubclass < Data; end
+
+    MeasureSubclass = Class.new(Measure) do
+      def initialize(amount:, unit:)
+        super
+      end
+    end
+
+    Empty = Data.define()
   end
 end

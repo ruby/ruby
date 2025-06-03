@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-abort "RubyGems only supports Ruby 3.1 or higher" if RUBY_VERSION < "3.1.0"
+abort "RubyGems only supports Ruby 3.2 or higher" if RUBY_VERSION < "3.2.0"
 
 require_relative "path"
 

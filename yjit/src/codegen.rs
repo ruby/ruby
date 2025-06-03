@@ -2904,9 +2904,8 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
-        if rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) {
+        if rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
             None
@@ -3107,9 +3106,8 @@ fn gen_set_ivar(
     let shape_too_complex = comptime_receiver.shape_too_complex();
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let shape = unsafe { rb_shape_lookup(shape_id) };
         let mut ivar_index: u32 = 0;
-        if unsafe { rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index) } {
+        if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
             None
@@ -3123,14 +3121,14 @@ fn gen_set_ivar(
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape = comptime_receiver.shape_of();
         let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
-        let next_shape = unsafe { rb_shape_lookup(next_shape_id) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape) };
+        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape_id) };
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
+            let next_shape = unsafe { rb_shape_lookup(next_shape_id) };
             let current_capacity = unsafe { (*current_shape).capacity };
 
             // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
@@ -3397,9 +3395,8 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let shape = rb_shape_lookup(shape_id);
         let mut ivar_index: u32 = 0;
-        rb_shape_get_iv_index(shape, ivar_name, &mut ivar_index)
+        rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index)
     };
 
     // Guard heap object (recv_opnd must be used before stack_pop)
@@ -3889,6 +3886,40 @@ fn gen_opt_aref(
         // General case. Call the [] method.
         gen_opt_send_without_block(jit, asm)
     }
+}
+
+fn gen_opt_aset_with(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    // We might allocate or raise
+    jit_prepare_non_leaf_call(jit, asm);
+
+    let key_opnd = Opnd::Value(jit.get_arg(0));
+    let recv_opnd = asm.stack_opnd(1);
+    let value_opnd = asm.stack_opnd(0);
+
+    extern "C" {
+        fn rb_vm_opt_aset_with(recv: VALUE, key: VALUE, value: VALUE) -> VALUE;
+    }
+
+    let val_opnd = asm.ccall(
+        rb_vm_opt_aset_with as *const u8,
+        vec![
+            recv_opnd,
+            key_opnd,
+            value_opnd,
+        ],
+    );
+    asm.stack_pop(2); // Keep it on stack during GC
+
+    asm.cmp(val_opnd, Qundef.into());
+    asm.je(Target::side_exit(Counter::opt_aset_with_qundef));
+
+    let top = asm.stack_push(Type::Unknown);
+    asm.mov(top, val_opnd);
+
+    return Some(KeepCompiling);
 }
 
 fn gen_opt_aset(
@@ -10753,6 +10784,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_aref => Some(gen_opt_aref),
         YARVINSN_opt_aset => Some(gen_opt_aset),
         YARVINSN_opt_aref_with => Some(gen_opt_aref_with),
+        YARVINSN_opt_aset_with => Some(gen_opt_aset_with),
         YARVINSN_opt_mult => Some(gen_opt_mult),
         YARVINSN_opt_div => Some(gen_opt_div),
         YARVINSN_opt_ltlt => Some(gen_opt_ltlt),

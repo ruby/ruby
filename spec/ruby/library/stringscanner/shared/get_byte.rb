@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require 'strscan'
 
 describe :strscan_get_byte, shared: true do

@@ -15,7 +15,7 @@ class TestPathnameRactor < Test::Unit::TestCase
       r = Ractor.new Pathname("a") do |x|
         x.join(Pathname("b"), Pathname("c"))
       end
-      assert_equal(Pathname("a/b/c"), r.take)
+      assert_equal(Pathname("a/b/c"), r.value)
     end;
   end
 end

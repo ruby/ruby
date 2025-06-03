@@ -414,9 +414,11 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    size_t shape_id = rb_obj_shape_id(obj);
-    dump_append(dc, ", \"shape_id\":");
-    dump_append_sizet(dc, shape_id);
+    if (BUILTIN_TYPE(obj) != T_IMEMO) {
+        size_t shape_id = rb_obj_shape_id(obj);
+        dump_append(dc, ", \"shape_id\":");
+        dump_append_sizet(dc, shape_id);
+    }
 
     dump_append(dc, ", \"slot_size\":");
     dump_append_sizet(dc, dc->cur_page_slot_size);
@@ -782,15 +784,15 @@ objspace_dump(VALUE os, VALUE obj, VALUE output)
 }
 
 static void
-shape_i(rb_shape_t *shape, void *data)
+shape_id_i(shape_id_t shape_id, void *data)
 {
     struct dump_config *dc = (struct dump_config *)data;
 
-    shape_id_t shape_id = rb_shape_id(shape);
     if (shape_id < dc->shapes_since) {
         return;
     }
 
+    rb_shape_t *shape = RSHAPE(shape_id);
     dump_append(dc, "{\"address\":");
     dump_append_ref(dc, (VALUE)shape);
 
@@ -853,7 +855,7 @@ objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
     }
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
 
     /* dump all objects */
@@ -870,7 +872,7 @@ objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
     dump_output(&dc, output, Qfalse, Qnil, shapes);
 
     if (RTEST(shapes)) {
-        rb_shape_each_shape(shape_i, &dc);
+        rb_shape_each_shape_id(shape_id_i, &dc);
     }
     return dump_result(&dc);
 }

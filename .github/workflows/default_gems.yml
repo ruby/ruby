@@ -24,15 +24,16 @@ jobs:
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
 
+      - id: gems
+        run: true
+        if: ${{ github.ref == 'refs/heads/master' }}
+
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
           # Skip overwriting MATZBOT_GITHUB_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
-
-      - id: gems
-        run: true
-        if: ${{ github.ref == 'refs/heads/master' }}
+        if: ${{ steps.gems.outcome == 'success' }}
 
       - name: Download previous gems list
         run: |

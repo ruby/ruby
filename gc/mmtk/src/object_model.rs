@@ -40,9 +40,7 @@ impl ObjectModel<Ruby> for VMObjectModel {
         _semantics: CopySemantics,
         _copy_context: &mut GCWorkerCopyContext<Ruby>,
     ) -> ObjectReference {
-        unimplemented!(
-            "Copying GC not currently supported"
-        )
+        unimplemented!("Copying GC not currently supported")
     }
 
     fn copy_to(_from: ObjectReference, _to: ObjectReference, _region: Address) -> Address {

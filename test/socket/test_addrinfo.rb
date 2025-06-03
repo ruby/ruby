@@ -360,6 +360,12 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     assert_raise(Socket::ResolutionError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
   end
 
+  def test_ractor_shareable
+    assert_ractor(<<~'RUBY', require: 'socket', timeout: 60)
+      Ractor.make_shareable Addrinfo.new "\x10\x02\x14\xE9\xE0\x00\x00\xFB\x00\x00\x00\x00\x00\x00\x00\x00".b
+    RUBY
+  end
+
   def random_port
     # IANA suggests dynamic port for 49152 to 65535
     # http://www.iana.org/assignments/port-numbers

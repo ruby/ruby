@@ -1371,7 +1371,8 @@ struct rb_vm_call_cfunc2_data {
 };
 
 static VALUE
-call_load_ext_in_ns(VALUE data){
+call_load_ext_in_ns(VALUE data)
+{
     struct rb_vm_call_cfunc2_data *arg = (struct rb_vm_call_cfunc2_data *)data;
     return rb_vm_call_cfunc2(arg->recv, load_ext, arg->arg1, arg->arg2, arg->block_handler, arg->filename);
 }

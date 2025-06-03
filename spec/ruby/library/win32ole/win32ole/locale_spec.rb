@@ -13,14 +13,14 @@ platform_is :windows do
       begin
         begin
           WIN32OLE.locale = 1041
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
           STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_set is skipped(Japanese locale is not installed)")
           return
         end
 
         WIN32OLE.locale.should == 1041
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
-        -> { WIN32OLE.locale = 111 }.should raise_error WIN32OLERuntimeError
+        -> { WIN32OLE.locale = 111 }.should raise_error WIN32OLE::RuntimeError
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT
       ensure
         WIN32OLE.locale.should == WIN32OLE::LOCALE_SYSTEM_DEFAULT

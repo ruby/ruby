@@ -24,10 +24,6 @@ module Spec
       Gem::Platform.new(platform)
     end
 
-    def rake_version
-      "13.2.1"
-    end
-
     def build_repo1
       build_repo gem_repo1 do
         FileUtils.cp rake_path, "#{gem_repo1}/gems/"
@@ -108,10 +104,6 @@ module Spec
 
         build_gem "platform_specific" do |s|
           s.platform = "x86-mingw32"
-        end
-
-        build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw32"
         end
 
         build_gem "platform_specific" do |s|
@@ -277,7 +269,7 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") && RUBY_ENGINE != "jruby" ? "#{Module.nesting.first}#build_repo" : "build_repo"
       if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end

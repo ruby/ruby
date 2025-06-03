@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   # This module is responsible for converting the prism syntax tree into other

@@ -691,6 +691,16 @@ describe "CApiObject" do
     end
   end
 
+  describe "redefining frozen? works" do
+    it "allows an object to override frozen?" do
+      obj = CApiObjectRedefinitionSpecs.new
+
+      obj.frozen?.should == false
+      obj.freeze
+      obj.frozen?.should == true
+    end
+  end
+
   describe "rb_obj_taint" do
   end
 

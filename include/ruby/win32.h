@@ -127,13 +127,26 @@ typedef unsigned int uintptr_t;
 
 typedef int clockid_t;
 #if defined(__MINGW32__)
+/* I don't know why but these return some strange values. */
 #undef CLOCK_PROCESS_CPUTIME_ID
 #undef CLOCK_THREAD_CPUTIME_ID
 #undef CLOCK_REALTIME_COARSE
 #endif
-#if defined(HAVE_CLOCK_GETTIME) && !defined(CLOCK_REALTIME)
-#define CLOCK_REALTIME  0
-#define CLOCK_MONOTONIC 1
+
+/* defined in win32/win32.c for old versions */
+#if !defined(__MINGW32__) || !defined(HAVE_CLOCK_GETTIME)
+#  define HAVE_CLOCK_GETTIME 1
+#  define NEED_CLOCK_GETTIME 1
+#endif
+#if !defined(__MINGW32__) || !defined(HAVE_CLOCK_GETRES)
+#  define HAVE_CLOCK_GETRES 1
+#  define NEED_CLOCK_GETRES 1
+#endif
+#ifndef CLOCK_REALTIME
+#  define CLOCK_REALTIME  0
+#endif
+#ifndef CLOCK_MONOTONIC
+#  define CLOCK_MONOTONIC 1
 #endif
 
 #undef utime

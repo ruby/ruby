@@ -163,6 +163,11 @@ impl Type {
         else if val == Qnil { types::NilClassExact }
         else if val == Qtrue { types::TrueClassExact }
         else if val == Qfalse { types::FalseClassExact }
+        else if val.cme_p() {
+            // NB: Checking for CME has to happen before looking at class_of because that's not
+            // valid on imemo.
+            Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
+        }
         else if val.class_of() == unsafe { rb_cInteger } {
             Type { bits: bits::Bignum, spec: Specialization::Object(val) }
         }
@@ -679,6 +684,19 @@ mod tests {
             let left = Type::from_value(unsafe { rb_float_new(1.7976931348623157e+308) });
             let right = Type::from_value(unsafe { rb_float_new(1.7976931348623157e+308) });
             assert_bit_equal(left.union(right), types::HeapFloat);
+        });
+    }
+
+    #[test]
+    fn cme() {
+        use crate::cruby::{rb_callable_method_entry, ID};
+        crate::cruby::with_rubyvm(|| {
+            let cme = unsafe { rb_callable_method_entry(rb_cInteger, ID!(to_s)) };
+            assert!(!cme.is_null());
+            let cme_value: VALUE = cme.into();
+            let ty = Type::from_value(cme_value);
+            assert_subtype(ty, types::CallableMethodEntry);
+            assert!(ty.ruby_object_known());
         });
     }
 

@@ -5692,8 +5692,13 @@ rb_io_memsize(const rb_io_t *io)
     if (io->writeconv) size += rb_econv_memsize(io->writeconv);
 
     struct rb_io_blocking_operation *blocking_operation = 0;
-    ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
-        size += sizeof(struct rb_io_blocking_operation);
+
+    // Validate the fork generation of the IO object. If the IO object fork generation is different, the list of blocking operations is not valid memory. See `rb_io_blocking_operations` for the exact semantics.
+    rb_serial_t fork_generation = GET_VM()->fork_gen;
+    if (io->fork_generation == fork_generation) {
+        ccan_list_for_each(&io->blocking_operations, blocking_operation, list) {
+            size += sizeof(struct rb_io_blocking_operation);
+        }
     }
 
     return size;
@@ -8570,6 +8575,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     ccan_list_head_init(&fptr->blocking_operations);
     fptr->closing_ec = NULL;
     fptr->wakeup_mutex = Qnil;
+    fptr->fork_generation = GET_VM()->fork_gen;
 
     if (!NIL_P(orig->pathv)) fptr->pathv = orig->pathv;
     fptr_copy_finalizer(fptr, orig);
@@ -9311,6 +9317,7 @@ rb_io_open_descriptor(VALUE klass, int descriptor, int mode, VALUE path, VALUE t
     ccan_list_head_init(&io->blocking_operations);
     io->closing_ec = NULL;
     io->wakeup_mutex = Qnil;
+    io->fork_generation = GET_VM()->fork_gen;
 
     if (encoding) {
         io->encs = *encoding;
@@ -9454,6 +9461,7 @@ rb_io_fptr_new(void)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     return fp;
 }
 
@@ -9587,6 +9595,7 @@ io_initialize(VALUE io, VALUE fnum, VALUE vmode, VALUE opt)
     ccan_list_head_init(&fp->blocking_operations);
     fp->closing_ec = NULL;
     fp->wakeup_mutex = Qnil;
+    fp->fork_generation = GET_VM()->fork_gen;
     clear_codeconv(fp);
     io_check_tty(fp);
     if (fileno(stdin) == fd)

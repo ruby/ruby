@@ -164,4 +164,8 @@ native_tls_set(native_tls_key_t key, void *ptr)
 RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 #endif
 
+struct rb_ractor_struct;
+void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ubf, void *ptr);
+void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
+
 #endif /* RUBY_THREAD_PTHREAD_H */

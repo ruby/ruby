@@ -452,12 +452,6 @@ module Spec
       ruby_major_minor.map.with_index {|s, i| i == 1 ? s + 1 : s }.join(".")
     end
 
-    def previous_ruby_minor
-      return "2.7" if ruby_major_minor == [3, 0]
-
-      ruby_major_minor.map.with_index {|s, i| i == 1 ? s - 1 : s }.join(".")
-    end
-
     def ruby_major_minor
       Gem.ruby_version.segments[0..1]
     end
@@ -515,11 +509,11 @@ module Spec
       end
     end
 
-    def require_rack
-      # need to hack, so we can require rack
+    def require_rack_test
+      # need to hack, so we can require rack for testing
       old_gem_home = ENV["GEM_HOME"]
       ENV["GEM_HOME"] = Spec::Path.base_system_gem_path.to_s
-      require "rack"
+      require "rack/test"
       ENV["GEM_HOME"] = old_gem_home
     end
 

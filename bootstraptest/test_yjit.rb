@@ -3018,15 +3018,16 @@ assert_equal '[:itself]', %q{
     itself
   end
 
-  tracing_ractor = Ractor.new do
+  port = Ractor::Port.new
+  tracing_ractor = Ractor.new port do |port|
     # 1: start tracing
     events = []
     tp = TracePoint.new(:c_call) { events << _1.method_id }
     tp.enable
-    Ractor.yield(nil)
+    port << nil
 
     # 3: run compiled method on tracing ractor
-    Ractor.yield(nil)
+    port << nil
     traced_method
 
     events
@@ -3034,13 +3035,13 @@ assert_equal '[:itself]', %q{
     tp&.disable
   end
 
-  tracing_ractor.take
+  port.receive
 
   # 2: compile on non tracing ractor
   traced_method
 
-  tracing_ractor.take
-  tracing_ractor.take
+  port.receive
+  tracing_ractor.value
 }
 
 # Try to hit a lazy branch stub while another ractor enables tracing
@@ -3054,17 +3055,18 @@ assert_equal '42', %q{
     end
   end
 
-  ractor = Ractor.new do
+  port = Ractor::Port.new
+  ractor = Ractor.new port do |port|
     compiled(false)
-    Ractor.yield(nil)
+    port << nil
     compiled(41)
   end
 
   tp = TracePoint.new(:line) { itself }
-  ractor.take
+  port.receive
   tp.enable
 
-  ractor.take
+  ractor.value
 }
 
 # Test equality with changing types
@@ -3140,7 +3142,7 @@ assert_equal '42',  %q{
   A.foo
   A.foo
 
-  Ractor.new { A.foo }.take
+  Ractor.new { A.foo }.value
 }
 
 assert_equal '["plain", "special", "sub", "plain"]', %q{
@@ -3857,36 +3859,6 @@ assert_equal '3,12', %q{
 
   # Make sure it's returning '3,12' instead of e.g. '3,false'
   pt_inspect(p)
-}
-
-# Regression test for deadlock between branch_stub_hit and ractor_receive_if
-assert_equal '10', %q{
-  r = Ractor.new Ractor.current do |main|
-    main << 1
-    main << 2
-    main << 3
-    main << 4
-    main << 5
-    main << 6
-    main << 7
-    main << 8
-    main << 9
-    main << 10
-  end
-
-  a = []
-  a << Ractor.receive_if{|msg| msg == 10}
-  a << Ractor.receive_if{|msg| msg == 9}
-  a << Ractor.receive_if{|msg| msg == 8}
-  a << Ractor.receive_if{|msg| msg == 7}
-  a << Ractor.receive_if{|msg| msg == 6}
-  a << Ractor.receive_if{|msg| msg == 5}
-  a << Ractor.receive_if{|msg| msg == 4}
-  a << Ractor.receive_if{|msg| msg == 3}
-  a << Ractor.receive_if{|msg| msg == 2}
-  a << Ractor.receive_if{|msg| msg == 1}
-
-  a.length
 }
 
 # checktype

@@ -13836,6 +13836,8 @@ proc.$(OBJEXT): {$(VPATH)}prism/diagnostic.h
 proc.$(OBJEXT): {$(VPATH)}prism/version.h
 proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
+proc.$(OBJEXT): {$(VPATH)}ractor.h
+proc.$(OBJEXT): {$(VPATH)}ractor_core.h
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -14291,6 +14293,7 @@ ractor.$(OBJEXT): {$(VPATH)}ractor.c
 ractor.$(OBJEXT): {$(VPATH)}ractor.h
 ractor.$(OBJEXT): {$(VPATH)}ractor.rbinc
 ractor.$(OBJEXT): {$(VPATH)}ractor_core.h
+ractor.$(OBJEXT): {$(VPATH)}ractor_sync.c
 ractor.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ractor.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -21737,6 +21740,7 @@ yjit.$(OBJEXT): {$(VPATH)}vm_sync.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.c
 yjit.$(OBJEXT): {$(VPATH)}yjit.h
 yjit.$(OBJEXT): {$(VPATH)}yjit.rbinc
+yjit.$(OBJEXT): {$(VPATH)}zjit.h
 zjit.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 zjit.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 zjit.$(OBJEXT): $(CCAN_DIR)/list/list.h

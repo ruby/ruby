@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "zjit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -744,21 +745,19 @@ rb_yjit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line
 void
 rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
-    RB_VM_LOCK_ENTER();
-    rb_vm_barrier();
+    RB_VM_LOCKING() {    rb_vm_barrier();
 
-    // Compile a block version starting at the current instruction
-    uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
-    uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
+        // Compile a block version starting at the current instruction
+        uint8_t *rb_yjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
+        uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
-    if (jit_exception) {
-        iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
-    }
-    else {
-        iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
-    }
-
-    RB_VM_LOCK_LEAVE();
+        if (jit_exception) {
+            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+        }
+        else {
+            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+        }
+}
 }
 
 // GC root for interacting with the GC
@@ -859,3 +858,4 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
+

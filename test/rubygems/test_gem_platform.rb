@@ -148,12 +148,27 @@ class TestGemPlatform < Gem::TestCase
       "wasm32-wasi" => ["wasm32", "wasi", nil],
       "wasm32-wasip1" => ["wasm32", "wasi", nil],
       "wasm32-wasip2" => ["wasm32", "wasi", nil],
+
+      "darwin-java-java" => ["darwin", "java", nil],
+      "linux-linux-linux" => ["linux", "linux", "linux"],
+      "linux-linux-linux1.0" => ["linux", "linux", "linux1"],
+      "x86x86-1x86x86x86x861linuxx86x86" => ["x86x86", "linux", "x86x86"],
+      "freebsd0" => [nil, "freebsd", "0"],
+      "darwin0" => [nil, "darwin", "0"],
+      "darwin0---" => [nil, "darwin", "0"],
+      "x86-linux-x8611.0l" => ["x86", "linux", "x8611"],
+      "0-x86linuxx86---" => ["0", "linux", "x86"],
+      "x86_64-macruby-x86" => ["x86_64", "macruby", nil],
+      "x86_64-dotnetx86" => ["x86_64", "dotnet", nil],
+      "x86_64-dalvik0" => ["x86_64", "dalvik", "0"],
+      "x86_64-dotnet1." => ["x86_64", "dotnet", "1"],
     }
 
     test_cases.each do |arch, expected|
       platform = Gem::Platform.new arch
       assert_equal expected, platform.to_a, arch.inspect
-      assert_equal expected, Gem::Platform.new(platform.to_s).to_a, arch.inspect
+      platform2 = Gem::Platform.new platform.to_s
+      assert_equal expected, platform2.to_a, "#{arch.inspect} => #{platform2.inspect}"
     end
   end
 
@@ -393,18 +408,11 @@ class TestGemPlatform < Gem::TestCase
 
   def test_equals3_universal_mingw
     uni_mingw  = Gem::Platform.new "universal-mingw"
-    mingw32    = Gem::Platform.new "x64-mingw32"
     mingw_ucrt = Gem::Platform.new "x64-mingw-ucrt"
 
-    util_set_arch "x64-mingw32"
-    assert((uni_mingw === Gem::Platform.local), "uni_mingw === mingw32")
-    assert((mingw32 === Gem::Platform.local), "mingw32 === mingw32")
-    refute((mingw_ucrt === Gem::Platform.local), "mingw32 === mingw_ucrt")
-
     util_set_arch "x64-mingw-ucrt"
-    assert((uni_mingw === Gem::Platform.local), "uni_mingw === mingw32")
+    assert((uni_mingw === Gem::Platform.local), "uni_mingw === mingw_ucrt")
     assert((mingw_ucrt === Gem::Platform.local), "mingw_ucrt === mingw_ucrt")
-    refute((mingw32 === Gem::Platform.local), "mingw32 === mingw_ucrt")
   end
 
   def test_equals3_version

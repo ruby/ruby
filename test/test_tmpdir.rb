@@ -134,16 +134,17 @@ class TestTmpdir < Test::Unit::TestCase
 
   def test_ractor
     assert_ractor(<<~'end;', require: "tmpdir")
-      r = Ractor.new do
+      port = Ractor::Port.new
+      r = Ractor.new port do |port|
         Dir.mktmpdir() do |d|
-          Ractor.yield d
+          port << d
           Ractor.receive
         end
       end
-      dir = r.take
+      dir = port.receive
       assert_file.directory? dir
       r.send true
-      r.take
+      r.join
       assert_file.not_exist? dir
     end;
   end

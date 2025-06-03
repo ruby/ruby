@@ -11,7 +11,7 @@ class TestIOWaitInRactor < Test::Unit::TestCase
       r = Ractor.new do
         $stdout.equal?($stdout.wait_writable)
       end
-      puts r.take
+      puts r.value
     end;
   end
 end if defined? Ractor

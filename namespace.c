@@ -389,11 +389,9 @@ static long
 namespace_generate_id(void)
 {
     long id;
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         id = ++namespace_id_counter;
     }
-    RB_VM_LOCK_LEAVE();
     return id;
 }
 
@@ -725,7 +723,7 @@ copy_ext_file_error(char *message, size_t size, int copy_retvalue, char *src_pat
     case 4:
         snprintf(message, size, "failed to write the extension path: %s", dst_path);
     default:
-        rb_bug("unkown return value of copy_ext_file: %d", copy_retvalue);
+        rb_bug("unknown return value of copy_ext_file: %d", copy_retvalue);
     }
     return message;
 }
@@ -832,7 +830,7 @@ escaped_basename(char *path, char *fname, char *rvalue)
     leaf = path;
     // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
     while ((found = strstr(leaf + 1, fname)) != NULL) {
-        leaf = found; // find the last occurence for the path like /etc/my-crazy-lib-dir/etc.so
+        leaf = found; // find the last occurrence for the path like /etc/my-crazy-lib-dir/etc.so
     }
     strcpy(rvalue, leaf);
     for (pos = rvalue; *pos; pos++) {

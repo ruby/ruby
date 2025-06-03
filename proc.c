@@ -22,6 +22,7 @@
 #include "method.h"
 #include "iseq.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 #include "yjit.h"
 
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
@@ -506,7 +507,7 @@ bind_local_variables(VALUE bindval)
 int
 rb_numparam_id_p(ID id)
 {
-    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 10) << ID_SCOPE_SHIFT);
+    return (tNUMPARAM_1 << ID_SCOPE_SHIFT) <= id && id < ((tNUMPARAM_1 + 9) << ID_SCOPE_SHIFT);
 }
 
 /*
@@ -1394,10 +1395,17 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer]
+ *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
  *
- * Returns the Ruby source filename and line number containing this proc
- * or +nil+ if this proc was not defined in Ruby (i.e. native).
+ * Returns the location where the Proc was defined.
+ * The returned Array contains:
+ *   (1) the Ruby source filename
+ *   (2) the line number where the definition starts
+ *   (3) the column number where the definition starts
+ *   (4) the line number where the definition ends
+ *   (5) the column number where the definitions ends
+ *
+ * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -1507,6 +1515,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
     return hash;
 }
 
+static VALUE sym_proc_cache = Qfalse;
 
 /*
  *  call-seq:
@@ -1525,29 +1534,32 @@ rb_hash_proc(st_index_t hash, VALUE prc)
 VALUE
 rb_sym_to_proc(VALUE sym)
 {
-    static VALUE sym_proc_cache = Qfalse;
     enum {SYM_PROC_CACHE_SIZE = 67};
-    VALUE proc;
-    long index;
-    ID id;
 
-    if (!sym_proc_cache) {
-        sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE * 2);
-        rb_vm_register_global_object(sym_proc_cache);
-        rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE*2 - 1, Qnil);
-    }
+    if (rb_ractor_main_p()) {
+        if (!sym_proc_cache) {
+            sym_proc_cache = rb_ary_hidden_new(SYM_PROC_CACHE_SIZE);
+            rb_ary_store(sym_proc_cache, SYM_PROC_CACHE_SIZE - 1, Qnil);
+        }
 
-    id = SYM2ID(sym);
-    index = (id % SYM_PROC_CACHE_SIZE) << 1;
+        ID id = SYM2ID(sym);
+        long index = (id % SYM_PROC_CACHE_SIZE);
+        VALUE procval = RARRAY_AREF(sym_proc_cache, index);
+        if (RTEST(procval)) {
+            rb_proc_t *proc;
+            GetProcPtr(procval, proc);
 
-    if (RARRAY_AREF(sym_proc_cache, index) == sym) {
-        return RARRAY_AREF(sym_proc_cache, index + 1);
-    }
-    else {
-        proc = sym_proc_new(rb_cProc, ID2SYM(id));
-        RARRAY_ASET(sym_proc_cache, index, sym);
-        RARRAY_ASET(sym_proc_cache, index + 1, proc);
-        return proc;
+            if (proc->block.as.symbol == sym) {
+                return procval;
+            }
+        }
+
+        procval = sym_proc_new(rb_cProc, sym);
+        RARRAY_ASET(sym_proc_cache, index, procval);
+
+        return RB_GC_GUARD(procval);
+    } else {
+        return sym_proc_new(rb_cProc, sym);
     }
 }
 
@@ -3056,10 +3068,17 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer]
+ *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
  *
- * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native).
+ * Returns the location where the method was defined.
+ * The returned Array contains:
+ *   (1) the Ruby source filename
+ *   (2) the line number where the definition starts
+ *   (3) the column number where the definition starts
+ *   (4) the line number where the definition ends
+ *   (5) the column number where the definitions ends
+ *
+ * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -4557,6 +4576,8 @@ Init_Proc(void)
 void
 Init_Binding(void)
 {
+    rb_gc_register_address(&sym_proc_cache);
+
     rb_cBinding = rb_define_class("Binding", rb_cObject);
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");

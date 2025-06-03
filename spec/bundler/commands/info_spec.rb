@@ -86,7 +86,7 @@ RSpec.describe "bundle info" do
       expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    context "given a default gem shippped in ruby", :ruby_repo do
+    context "given a default gem shipped in ruby", :ruby_repo do
       it "prints information about the default gem" do
         bundle "info json"
         expect(out).to include("* json")

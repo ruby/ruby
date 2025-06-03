@@ -198,7 +198,7 @@ class TestEtc < Test::Unit::TestCase
             raise unless Integer === Etc.nprocessors
           end
         end
-      end.each(&:take)
+      end.each(&:join)
     RUBY
   end
 
@@ -210,7 +210,7 @@ class TestEtc < Test::Unit::TestCase
         rescue => e
           e.class
         end
-      end.take
+      end.value
       assert_equal Ractor::UnsafeError, r
     RUBY
   end
@@ -221,19 +221,19 @@ class TestEtc < Test::Unit::TestCase
     Etc.endpwent
 
     assert_ractor(<<~RUBY, require: 'etc')
-      ractor = Ractor.new do
+      ractor = Ractor.new port = Ractor::Port.new do |port|
         Etc.passwd do |s|
-          Ractor.yield :sync
-          Ractor.yield s.name
+          port << :sync
+          port << s.name
           break :done
         end
       end
-      ractor.take # => :sync
+      port.receive # => :sync
       assert_raise RuntimeError, /parallel/ do
         Etc.passwd {}
       end
-      name = ractor.take # => first name
-      ractor.take # => :done
+      name = port.receive # => first name
+      ractor.join # => :done
       name2 = Etc.passwd do |s|
         break s.name
       end
@@ -251,7 +251,7 @@ class TestEtc < Test::Unit::TestCase
             raise unless Etc.getgrgid(Process.gid).gid == Process.gid
           end
         end
-      end.each(&:take)
+      end.each(&:join)
     RUBY
   end
 end

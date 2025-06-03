@@ -127,7 +127,6 @@ struct rb_classext_struct {
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
-    bool superclasses_owner : 1;
     bool superclasses_with_self : 1;
     VALUE classpath;
 };
@@ -191,14 +190,11 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
 #define RCLASSEXT_INCLUDER(ext) (ext->as.iclass.includer)
-#define RCLASSEXT_MAX_IV_COUNT(ext) (ext->max_iv_count)
-#define RCLASSEXT_VARIATION_COUNT(ext) (ext->variation_count)
 #define RCLASSEXT_PERMANENT_CLASSPATH(ext) (ext->permanent_classpath)
 #define RCLASSEXT_CLONED(ext) (ext->cloned)
 #define RCLASSEXT_SHARED_CONST_TBL(ext) (ext->shared_const_tbl)
 #define RCLASSEXT_ICLASS_IS_ORIGIN(ext) (ext->iclass_is_origin)
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
-#define RCLASSEXT_SUPERCLASSES_OWNER(ext) (ext->superclasses_owner)
 #define RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) (ext->superclasses_with_self)
 #define RCLASSEXT_CLASSPATH(ext) (ext->classpath)
 
@@ -227,23 +223,27 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
  * so always those should be writable.
  */
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT_READABLE(c)->cvc_tbl)
-#define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_READABLE(c)->superclass_depth)
-#define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_READABLE(c)->superclasses)
-#define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_READABLE(c)->superclasses_with_self)
 #define RCLASS_SUBCLASSES_X(c) (RCLASS_EXT_READABLE(c)->subclasses)
 #define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_READABLE(c)->subclasses->head->next)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
-#define RCLASS_MAX_IV_COUNT(c) (RCLASS_EXT_READABLE(c)->max_iv_count)
-#define RCLASS_VARIATION_COUNT(c) (RCLASS_EXT_READABLE(c)->variation_count)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
 #define RCLASS_CLONED_P(c) (RCLASS_EXT_READABLE(c)->cloned)
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
+
+// Superclasses can't be changed after initialization
+#define RCLASS_SUPERCLASS_DEPTH(c) (RCLASS_EXT_PRIME(c)->superclass_depth)
+#define RCLASS_SUPERCLASSES(c) (RCLASS_EXT_PRIME(c)->superclasses)
+#define RCLASS_SUPERCLASSES_WITH_SELF_P(c) (RCLASS_EXT_PRIME(c)->superclasses_with_self)
 
 // namespaces don't make changes on these refined_class/attached_object/includer
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
+
+// max IV count and variation count are just hints, so they don't need to be per-namespace
+#define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
+#define RCLASS_VARIATION_COUNT(ext) (RCLASS_EXT_PRIME(ext)->variation_count)
 
 // Writable classext entries (instead of RCLASS_SET_*) because member data will be operated directly
 #define RCLASS_WRITABLE_M_TBL(c) (RCLASS_EXT_WRITABLE(c)->m_tbl)
@@ -270,7 +270,7 @@ static inline void RCLASS_WRITE_CC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
 
-static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self);
+static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_anchor_t *anchor);
 static inline void RCLASS_WRITE_NS_SUPER_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
 static inline void RCLASS_WRITE_NS_MODULE_SUBCLASSES(VALUE klass, rb_ns_subclasses_t *ns_subclasses);
@@ -288,14 +288,14 @@ static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_objec
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
-static inline void RCLASS_WRITE_MAX_IV_COUNT(VALUE klass, attr_index_t count);
 static inline void RCLASS_SET_CLONED(VALUE klass, bool cloned);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 
 #define RCLASS_IS_ROOT FL_USER0
-// 1 is for RUBY_FL_SINGLETON or RMODULE_ALLOCATED_BUT_NOT_INITIALIZED (see class.c)
+// 1 is for RUBY_FL_SINGLETON or RMODULE_IS_REFINEMENT
 #define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
+#define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
 // 4-19: SHAPE_FLAG_MASK
 
@@ -412,8 +412,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
         rb_evict_ivars_to_hash(obj); // fallback to ivptr for ivars from shapes
     }
 
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
         if (!ext) {
@@ -424,7 +423,6 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
             }
         }
     }
-    RB_VM_LOCK_LEAVE();
     return ext;
 }
 
@@ -487,7 +485,7 @@ VALUE rb_class_set_super(VALUE klass, VALUE super);
 VALUE rb_class_boot(VALUE);
 VALUE rb_class_s_alloc(VALUE klass);
 VALUE rb_module_s_alloc(VALUE klass);
-void rb_module_set_initialized(VALUE module);
+void rb_class_set_initialized(VALUE klass);
 void rb_module_check_initializable(VALUE module);
 VALUE rb_make_metaclass(VALUE, VALUE);
 VALUE rb_include_class_new(VALUE, VALUE);
@@ -572,16 +570,14 @@ RCLASS_FIELDS_COUNT(VALUE obj)
 
         // "Too complex" classes could have their IV hash mutated in
         // parallel, so lets lock around getting the hash size.
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             count = (uint32_t)rb_st_table_size(RCLASS_FIELDS_HASH(obj));
         }
-        RB_VM_LOCK_LEAVE();
 
         return count;
     }
     else {
-        return RSHAPE(RCLASS_SHAPE_ID(obj))->next_field_index;
+        return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
     }
 }
 
@@ -658,6 +654,7 @@ RCLASS_SET_REFINED_CLASS(VALUE klass, VALUE refined)
 static inline rb_alloc_func_t
 RCLASS_ALLOCATOR(VALUE klass)
 {
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
     if (RCLASS_SINGLETON_P(klass) || RB_TYPE_P(klass, T_ICLASS)) {
         return 0;
     }
@@ -667,7 +664,8 @@ RCLASS_ALLOCATOR(VALUE klass)
 static inline void
 RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator)
 {
-    assert(!RCLASS_SINGLETON_P(klass));
+    RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS));
+    RUBY_ASSERT(!RCLASS_SINGLETON_P(klass));
     RCLASS_EXT_PRIME(klass)->as.class.allocator = allocator; // Allocator is set only on the initial definition
 }
 
@@ -714,14 +712,13 @@ RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 }
 
 static inline void
-RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool owns_it, bool with_self)
+RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self)
 {
     RUBY_ASSERT(depth <= RCLASS_MAX_SUPERCLASS_DEPTH);
 
-    rb_classext_t *ext = RCLASS_EXT_WRITABLE(klass);
+    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
     RCLASSEXT_SUPERCLASS_DEPTH(ext) = depth;
     RCLASSEXT_SUPERCLASSES(ext) = superclasses;
-    RCLASSEXT_SUPERCLASSES_OWNER(ext) = owns_it;
     RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) = with_self;
 }
 
@@ -784,19 +781,20 @@ RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 static inline void
 RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 {
-    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_PRIME(klass)) = count;
-}
-
-static inline void
-RCLASS_WRITE_MAX_IV_COUNT(VALUE klass, attr_index_t count)
-{
-    RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_WRITABLE(klass)) = count;
+    RCLASS_MAX_IV_COUNT(klass) = count;
 }
 
 static inline void
 RCLASS_SET_CLONED(VALUE klass, bool cloned)
 {
     RCLASSEXT_CLONED(RCLASS_EXT_PRIME(klass)) = cloned;
+}
+
+static inline bool
+RCLASS_INITIALIZED_P(VALUE klass)
+{
+    VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE));
+    return FL_TEST_RAW(klass, RCLASS_IS_INITIALIZED);
 }
 
 #endif /* INTERNAL_CLASS_H */

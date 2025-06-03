@@ -1006,7 +1006,7 @@ AS_IF([test "x$OPT_DIR" != x], [
     save_IFS="$IFS" IFS="$PATH_SEPARATOR" val= PWD=
     for dir in $OPT_DIR; do
         test -z "$dir" && continue
-        dir=`eval $CHDIR '"$dir"' && pwd` || continue
+        dir=`eval $CHDIR '"$dir"' 2>/dev/null && pwd` || continue
         val="${val:+$val$PATH_SEPARATOR}$dir"
     done
     IFS="$save_IFS" OPT_DIR="$val"
@@ -3963,7 +3963,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
 ZJIT_LIBS=
 AS_CASE(["${ZJIT_SUPPORT}"],
-[yes|dev], [
+[yes|dev|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -3972,8 +3972,13 @@ AS_CASE(["${ZJIT_SUPPORT}"],
     [yes], [
     ],
     [dev], [
+        rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
+    ],
+    [dev_nodebug], [
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev_nodebug
     ])
 
     ZJIT_LIBS="target/release/libzjit.a"

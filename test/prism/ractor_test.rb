@@ -62,7 +62,7 @@ module Prism
         if reader
           reader.gets.chomp
         else
-          puts(ignore_warnings { Ractor.new(*arguments, &block) }.take)
+          puts(ignore_warnings { Ractor.new(*arguments, &block) }.value)
         end
       end
     end

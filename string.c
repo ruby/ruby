@@ -682,10 +682,8 @@ fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VA
 
 // Rebuilds the table
 static void
-fstring_try_resize(VALUE old_table_obj)
+fstring_try_resize_without_locking(VALUE old_table_obj)
 {
-    RB_VM_LOCK_ENTER();
-
     // Check if another thread has already resized
     if (RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj) != old_table_obj) {
         goto end;
@@ -737,7 +735,14 @@ fstring_try_resize(VALUE old_table_obj)
 
 end:
     RB_GC_GUARD(old_table_obj);
-    RB_VM_LOCK_LEAVE();
+}
+
+static void
+fstring_try_resize(VALUE old_table_obj)
+{
+    RB_VM_LOCKING() {
+        fstring_try_resize_without_locking(old_table_obj);
+    }
 }
 
 static VALUE
@@ -749,7 +754,7 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
     VALUE table_obj;
     struct fstring_table_struct *table;
 
-    retry:
+  retry:
     table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
     RUBY_ASSERT(table_obj);
     table = RTYPEDDATA_GET_DATA(table_obj);
@@ -798,8 +803,7 @@ fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg
         }
         else if (candidate == FSTRING_TABLE_MOVED) {
             // Wait
-            RB_VM_LOCK_ENTER();
-            RB_VM_LOCK_LEAVE();
+            RB_VM_LOCKING();
 
             goto retry;
         }
@@ -955,6 +959,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
+    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID);
 
     if (!name) {
         RUBY_ASSERT_ALWAYS(len == 0);
@@ -4173,25 +4178,27 @@ rb_str_concat_multi(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    append_as_bytes(*objects) -> string
+ *    append_as_bytes(*objects) -> self
  *
- *  Concatenates each object in +objects+ into +self+ without any encoding
- *  validation or conversion and returns +self+:
+ *  Concatenates each object in +objects+ into +self+; returns +self+;
+ *  performs no encoding validation or conversion:
  *
  *    s = 'foo'
- *    s.append_as_bytes(" \xE2\x82")  # => "foo \xE2\x82"
- *    s.valid_encoding?               # => false
+ *    s.append_as_bytes(" \xE2\x82") # => "foo \xE2\x82"
+ *    s.valid_encoding?              # => false
  *    s.append_as_bytes("\xAC 12")
- *    s.valid_encoding?               # => true
+ *    s.valid_encoding?              # => true
  *
- *  For each given object +object+ that is an Integer,
- *  the value is considered a Byte. If the Integer is bigger
- *  than one byte, only the lower byte is considered, similar to String#setbyte:
+ *  When a given object is an integer,
+ *  the value is considered an 8-bit byte;
+ *  if the integer occupies more than one byte (i.e,. is greater than 255),
+ *  appends only the low-order byte (similar to String#setbyte):
  *
  *    s = ""
- *    s.append_as_bytes(0, 257)             # =>  "\u0000\u0001"
+ *    s.append_as_bytes(0, 257) # => "\u0000\u0001"
+ *    s.bytesize                # => 2
  *
- *  Related: String#<<, String#concat, which do an encoding aware concatenation.
+ *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
 
 VALUE
@@ -4938,43 +4945,69 @@ str_ensure_byte_pos(VALUE str, long pos)
 
 /*
  *  call-seq:
- *    byteindex(substring, offset = 0) -> integer or nil
- *    byteindex(regexp, offset = 0) -> integer or nil
+ *    byteindex(object, offset = 0) -> integer or nil
  *
- *  Returns the Integer byte-based index of the first occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  Returns the 0-based integer index of a substring of +self+
+ *  specified by +object+ (a string or Regexp) and +offset+,
+ *  or +nil+ if there is no such substring;
+ *  the returned index is the count of _bytes_ (not characters).
  *
- *    'foo'.byteindex('f') # => 0
- *    'foo'.byteindex('o') # => 1
- *    'foo'.byteindex('oo') # => 1
- *    'foo'.byteindex('ooo') # => nil
+ *  When +object+ is a string,
+ *  returns the index of the first found substring equal to +object+:
  *
- *  Returns the Integer byte-based index of the first match for the given Regexp +regexp+,
- *  or +nil+ if none found:
+ *    s = 'foo'          # => "foo"
+ *    s.size             # => 3 # Three 1-byte characters.
+      s.bytesize         # => 3 # Three bytes.
+ *    s.byteindex('f')   # => 0
+ *    s.byteindex('o')   # => 1
+ *    s.byteindex('oo')  # => 1
+ *    s.byteindex('ooo') # => nil
  *
- *    'foo'.byteindex(/f/) # => 0
- *    'foo'.byteindex(/o/) # => 1
- *    'foo'.byteindex(/oo/) # => 1
- *    'foo'.byteindex(/ooo/) # => nil
+ *  When +object+ is a Regexp,
+ *  returns the index of the first found substring matching +object+;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
- *  Integer argument +offset+, if given, specifies the byte-based position in the
- *  string to begin the search:
+ *    s = 'foo'
+ *    s.byteindex(/f/)   # => 0
+ *    $~                 # => #<MatchData "f">
+ *    s.byteindex(/o/)   # => 1
+ *    s.byteindex(/oo/)  # => 1
+ *    s.byteindex(/ooo/) # => nil
+ *    $~                 # => nil
  *
- *    'foo'.byteindex('o', 1) # => 1
- *    'foo'.byteindex('o', 2) # => 2
- *    'foo'.byteindex('o', 3) # => nil
+ *  \Integer argument +offset+, if given, specifies the 0-based index
+ *  of the byte where searching is to begin.
  *
- *  If +offset+ is negative, counts backward from the end of +self+:
+ *  When +offset+ is non-negative,
+ *  searching begins at byte position +offset+:
  *
- *    'foo'.byteindex('o', -1) # => 2
- *    'foo'.byteindex('o', -2) # => 1
- *    'foo'.byteindex('o', -3) # => 1
- *    'foo'.byteindex('o', -4) # => nil
+ *    s = 'foo'
+ *    s.byteindex('o', 1) # => 1
+ *    s.byteindex('o', 2) # => 2
+ *    s.byteindex('o', 3) # => nil
  *
- *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
- *  raised.
+ *  When +offset+ is negative, counts backward from the end of +self+:
  *
- *  Related: String#index, String#byterindex.
+ *    s = 'foo'
+ *    s.byteindex('o', -1) # => 2
+ *    s.byteindex('o', -2) # => 1
+ *    s.byteindex('o', -3) # => 1
+ *    s.byteindex('o', -4) # => nil
+ *
+ *  Raises IndexError if the byte at +offset+ is not the first byte of a character:
+ *
+ *    s = "\uFFFF\uFFFF"       # => "\uFFFF\uFFFF"
+ *    s.size                   # => 2 # Two 3-byte characters.
+ *    s.bytesize               # => 6 # Six bytes.
+ *    s.byteindex("\uFFFF")    # => 0
+ *    s.byteindex("\uFFFF", 1) # Raises IndexError
+ *    s.byteindex("\uFFFF", 2) # Raises IndexError
+ *    s.byteindex("\uFFFF", 3) # => 3
+ *    s.byteindex("\uFFFF", 4) # Raises IndexError
+ *    s.byteindex("\uFFFF", 5) # Raises IndexError
+ *    s.byteindex("\uFFFF", 6) # => nil
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -5332,30 +5365,33 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    string =~ regexp -> integer or nil
- *    string =~ object -> integer or nil
+ *    self =~ object -> integer or nil
  *
- *  Returns the Integer index of the first substring that matches
- *  the given +regexp+, or +nil+ if no match found:
+ *  When +object+ is a Regexp, returns the index of the first substring in +self+
+ *  matched by +object+,
+ *  or +nil+ if no match is found;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
  *    'foo' =~ /f/ # => 0
+ *    $~           # => #<MatchData "f">
  *    'foo' =~ /o/ # => 1
+ *    $~           # => #<MatchData "o">
  *    'foo' =~ /x/ # => nil
- *
- *  Note: also updates Regexp@Global+Variables.
- *
- *  If the given +object+ is not a Regexp, returns the value
- *  returned by <tt>object =~ self</tt>.
+ *    $~           # => nil
  *
  *  Note that <tt>string =~ regexp</tt> is different from <tt>regexp =~ string</tt>
  *  (see Regexp#=~):
  *
- *    number= nil
- *    "no. 9" =~ /(?<number>\d+)/
- *    number # => nil (not assigned)
- *    /(?<number>\d+)/ =~ "no. 9"
- *    number #=> "9"
+ *    number = nil
+ *    'no. 9' =~ /(?<number>\d+)/ # => 4
+ *    number                      # => nil # Not assigned.
+ *    /(?<number>\d+)/ =~ 'no. 9' # => 4
+ *    number                      # => "9" # Assigned.
  *
+ *  If +object+ is not a Regexp, returns the value
+ *  returned by <tt>object =~ self</tt>.
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -9712,11 +9748,15 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         }
     }
 
-#define SPLIT_STR(beg, len) (empty_count = split_string(result, str, beg, len, empty_count))
+#define SPLIT_STR(beg, len) ( \
+        empty_count = split_string(result, str, beg, len, empty_count), \
+        str_mod_check(str, str_start, str_len))
 
     beg = 0;
     char *ptr = RSTRING_PTR(str);
-    char *eptr = RSTRING_END(str);
+    char *const str_start = ptr;
+    const long str_len = RSTRING_LEN(str);
+    char *const eptr = str_start + str_len;
     if (split_type == SPLIT_TYPE_AWK) {
         char *bptr = ptr;
         int skip = 1;
@@ -9777,7 +9817,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         }
     }
     else if (split_type == SPLIT_TYPE_STRING) {
-        char *str_start = ptr;
         char *substr_start = ptr;
         char *sptr = RSTRING_PTR(spat);
         long slen = RSTRING_LEN(spat);
@@ -9794,6 +9833,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
                 continue;
             }
             SPLIT_STR(substr_start - str_start, (ptr+end) - substr_start);
+            str_mod_check(spat, sptr, slen);
             ptr += end + slen;
             substr_start = ptr;
             if (!NIL_P(limit) && lim <= ++i) break;
@@ -9801,7 +9841,6 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         beg = ptr - str_start;
     }
     else if (split_type == SPLIT_TYPE_CHARS) {
-        char *str_start = ptr;
         int n;
 
         if (result) result = rb_ary_new_capa(RSTRING_LEN(str));
@@ -11836,7 +11875,7 @@ rb_str_force_encoding(VALUE str, VALUE enc)
 
 /*
  *  call-seq:
- *    b -> string
+ *    b -> new_string
  *
  *  :include: doc/string/b.rdoc
  *
@@ -11898,12 +11937,12 @@ rb_str_valid_encoding_p(VALUE str)
  *  call-seq:
  *    ascii_only? -> true or false
  *
- *  Returns +true+ if +self+ contains only ASCII characters,
- *  +false+ otherwise:
+ *  Returns whether +self+ contains only ASCII characters:
  *
  *    'abc'.ascii_only?         # => true
  *    "abc\u{6666}".ascii_only? # => false
  *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
@@ -13243,3 +13282,4 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+

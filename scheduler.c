@@ -37,6 +37,7 @@ static ID id_io_close;
 static ID id_address_resolve;
 
 static ID id_blocking_operation_wait;
+static ID id_fiber_interrupt;
 
 static ID id_fiber_schedule;
 
@@ -116,6 +117,7 @@ Init_Fiber_Scheduler(void)
     id_address_resolve = rb_intern_const("address_resolve");
 
     id_blocking_operation_wait = rb_intern_const("blocking_operation_wait");
+    id_fiber_interrupt = rb_intern_const("fiber_interrupt");
 
     id_fiber_schedule = rb_intern_const("fiber");
 
@@ -167,6 +169,10 @@ verify_interface(VALUE scheduler)
 
     if (!rb_respond_to(scheduler, id_io_wait)) {
         rb_raise(rb_eArgError, "Scheduler must implement #io_wait");
+    }
+
+    if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
+        rb_warn("Scheduler should implement #fiber_interrupt");
     }
 }
 
@@ -442,10 +448,25 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
  *  Expected to return the subset of events that are ready immediately.
  *
  */
+static VALUE
+fiber_scheduler_io_wait(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_io_wait, 3, arguments + 1);
+}
+
 VALUE
 rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeout)
 {
-    return rb_funcall(scheduler, id_io_wait, 3, io, events, timeout);
+    VALUE arguments[] = {
+        scheduler, io, events, timeout
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_wait((VALUE)&arguments);
+    }
 }
 
 VALUE
@@ -515,14 +536,29 @@ VALUE rb_fiber_scheduler_io_selectv(VALUE scheduler, int argc, VALUE *argv)
  *
  *  The method should be considered _experimental_.
  */
+static VALUE
+fiber_scheduler_io_read(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_io_read, 4, arguments + 1);
+}
+
 VALUE
 rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
 {
+    if (!rb_respond_to(scheduler, id_io_read)) {
+        return RUBY_Qundef;
+    }
+
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_read, 4, arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_read((VALUE)&arguments);
+    }
 }
 
 /*
@@ -539,14 +575,29 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
  *
  *  The method should be considered _experimental_.
  */
+static VALUE
+fiber_scheduler_io_pread(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_io_pread, 5, arguments + 1);
+}
+
 VALUE
 rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
 {
+    if (!rb_respond_to(scheduler, id_io_pread)) {
+        return RUBY_Qundef;
+    }
+
     VALUE arguments[] = {
-        io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_pread, 5, arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pread((VALUE)&arguments);
+    }
 }
 
 /*
@@ -577,14 +628,29 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
  *
  *  The method should be considered _experimental_.
  */
+static VALUE
+fiber_scheduler_io_write(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_io_write, 4, arguments + 1);
+}
+
 VALUE
 rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t length, size_t offset)
 {
+    if (!rb_respond_to(scheduler, id_io_write)) {
+        return RUBY_Qundef;
+    }
+
     VALUE arguments[] = {
-        io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_write, 4, arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_write((VALUE)&arguments);
+    }
 }
 
 /*
@@ -602,14 +668,29 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
  *  The method should be considered _experimental_.
  *
  */
+static VALUE
+fiber_scheduler_io_pwrite(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_io_pwrite, 5, arguments + 1);
+}
+
 VALUE
 rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buffer, size_t length, size_t offset)
 {
+    if (!rb_respond_to(scheduler, id_io_pwrite)) {
+        return RUBY_Qundef;
+    }
+
     VALUE arguments[] = {
-        io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
+        scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_check_funcall(scheduler, id_io_pwrite, 5, arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pwrite((VALUE)&arguments);
+    }
 }
 
 VALUE
@@ -764,6 +845,15 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
     VALUE proc = rb_proc_new(rb_fiber_scheduler_blocking_operation_wait_proc, (VALUE)&arguments);
 
     return rb_check_funcall(scheduler, id_blocking_operation_wait, 1, &proc);
+}
+
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
+{
+    VALUE arguments[] = {
+        fiber, exception
+    };
+
+    return rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
 }
 
 /*

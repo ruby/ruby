@@ -337,6 +337,19 @@ class TestAst < Test::Unit::TestCase
     assert_parse("END {defined? yield}")
   end
 
+  def test_invalid_yield_no_memory_leak
+    # [Bug #21383]
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+      code = proc do
+        eval("class C; yield; end")
+      rescue SyntaxError
+      end
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_node_id_for_location
     omit if ParserSupport.prism_enabled?
 

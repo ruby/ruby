@@ -1938,10 +1938,10 @@ end
   end
 
   def test_pre_install_checks_malicious_platform_before_eval
-    gem_with_ill_formated_platform = File.expand_path("packages/ill-formatted-platform-1.0.0.10.gem", __dir__)
+    gem_with_ill_formatted_platform = File.expand_path("packages/ill-formatted-platform-1.0.0.10.gem", __dir__)
 
     installer = Gem::Installer.at(
-      gem_with_ill_formated_platform,
+      gem_with_ill_formatted_platform,
       install_dir: @gemhome,
       user_install: false,
       force: true

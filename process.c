@@ -4132,12 +4132,10 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        RB_VM_LOCK_ENTER();
-        {
+        RB_VM_LOCKING() {
             child.pid = pid = rb_fork();
             child.error = err = errno;
         }
-        RB_VM_LOCK_LEAVE();
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (
@@ -8756,9 +8754,9 @@ static VALUE rb_mProcID_Syscall;
 static VALUE
 proc_warmup(VALUE _)
 {
-    RB_VM_LOCK_ENTER();
-    rb_gc_prepare_heap();
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        rb_gc_prepare_heap();
+    }
     return Qtrue;
 }
 

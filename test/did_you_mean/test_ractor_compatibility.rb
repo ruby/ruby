@@ -14,7 +14,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
                   e.corrections # It is important to call the #corrections method within Ractor.
                   e
                 end
-              }.take
+              }.value
 
       assert_correction "Book", error.corrections
     CODE
@@ -32,7 +32,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
                   e.corrections # It is important to call the #corrections method within Ractor.
                   e
                 end
-              }.take
+              }.value
 
       assert_correction ":bar", error.corrections
       assert_match "Did you mean?  :bar", get_message(error)
@@ -49,7 +49,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
                   e.corrections # It is important to call the #corrections method within Ractor.
                   e
                 end
-              }.take
+              }.value
 
       assert_correction :to_s, error.corrections
       assert_match "Did you mean?  to_s",  get_message(error)
@@ -71,7 +71,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
                     e.corrections # It is important to call the #corrections method within Ractor.
                     e
                   end
-                }.take
+                }.value
 
         assert_correction ":foo", error.corrections
         assert_match "Did you mean?  :foo", get_message(error)
@@ -90,7 +90,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
           e.corrections # It is important to call the #corrections method within Ractor.
           e
         end
-      }.take
+      }.value
 
       assert_not_match(/Did you mean\?/, error.message)
     CODE
@@ -108,7 +108,7 @@ class RactorCompatibilityTest < Test::Unit::TestCase
           e.corrections # It is important to call the #corrections method within Ractor.
           e
         end
-      }.take
+      }.value
 
       assert_correction :in_ractor, error.corrections
       assert_match "Did you mean?  in_ractor", get_message(error)

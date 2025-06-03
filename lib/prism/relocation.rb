@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 module Prism
   # Prism parses deterministically for the same input. This provides a nice

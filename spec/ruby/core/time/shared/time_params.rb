@@ -179,6 +179,10 @@ describe :time_params, shared: true do
     }.should raise_error(ArgumentError, "argument out of range")
   end
 
+  it "raises ArgumentError when given 8 arguments" do
+    -> { Time.send(@method, *[0]*8) }.should raise_error(ArgumentError)
+  end
+
   it "raises ArgumentError when given 9 arguments" do
     -> { Time.send(@method, *[0]*9) }.should raise_error(ArgumentError)
   end

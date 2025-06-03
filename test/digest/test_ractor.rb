@@ -26,7 +26,7 @@ module TestDigestRactor
         [r, hexdigest]
       end
       rs.each do |r, hexdigest|
-        puts r.take == hexdigest
+        puts r.value == hexdigest
       end
     end;
   end

@@ -1530,7 +1530,6 @@ iseqw_new(const rb_iseq_t *iseq)
 
         /* cache a wrapper object */
         RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
-        RB_OBJ_FREEZE((VALUE)iseq);
 
         return obj;
     }
@@ -2919,7 +2918,7 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
     attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_READABLE(superclass));
+    count += RCLASS_MAX_IV_COUNT(superclass);
 
     rb_id_table_free(iv_names);
 

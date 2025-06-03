@@ -271,7 +271,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal [yank_uri], @fetcher.paths
   end
 
-  def test_yank_gem_unathorized_api_key
+  def test_yank_gem_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Successfully yanked"
     host               = "http://example"

@@ -8,7 +8,7 @@ require "bundler/vendored_persistent.rb"
 
 RSpec.describe "bundle doctor ssl" do
   before(:each) do
-    require_rack
+    require_rack_test
     require_relative "../support/artifice/helpers/endpoint"
 
     @dummy_endpoint = Class.new(Endpoint) do

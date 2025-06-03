@@ -49,21 +49,6 @@ describe :kernel_raise, shared: true do
     end
   end
 
-  it "does not allow message and extra keyword arguments" do
-    data_error = Class.new(StandardError) do
-      attr_reader :data
-      def initialize(data)
-        @data = data
-      end
-    end
-
-    -> { @object.raise(data_error, {a: 1}, b: 2) }.should raise_error(StandardError) do |e|
-      [TypeError, ArgumentError].should.include?(e.class)
-    end
-
-    -> { @object.raise(data_error, {a: 1}, [], b: 2) }.should raise_error(ArgumentError)
-  end
-
   it "raises RuntimeError if no exception class is given" do
     -> { @object.raise }.should raise_error(RuntimeError, "")
   end
@@ -74,7 +59,7 @@ describe :kernel_raise, shared: true do
   end
 
   it "raises a RuntimeError if string given" do
-    -> { @object.raise("a bad thing") }.should raise_error(RuntimeError)
+    -> { @object.raise("a bad thing") }.should raise_error(RuntimeError, "a bad thing")
   end
 
   it "passes no arguments to the constructor when given only an exception class" do
@@ -86,19 +71,32 @@ describe :kernel_raise, shared: true do
   end
 
   it "raises a TypeError when passed a non-Exception object" do
-    -> { @object.raise(Object.new) }.should raise_error(TypeError)
+    -> { @object.raise(Object.new) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(Object.new, "message") }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(Object.new, "message", []) }.should raise_error(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed true" do
-    -> { @object.raise(true) }.should raise_error(TypeError)
+    -> { @object.raise(true) }.should raise_error(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed false" do
-    -> { @object.raise(false) }.should raise_error(TypeError)
+    -> { @object.raise(false) }.should raise_error(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed nil" do
-    -> { @object.raise(nil) }.should raise_error(TypeError)
+    -> { @object.raise(nil) }.should raise_error(TypeError, "exception class/object expected")
+  end
+
+  it "raises TypeError when passed a non-Exception object but it responds to #exception method that doesn't return an instance of Exception class" do
+    e = Object.new
+    def e.exception
+      Array
+    end
+
+    -> {
+      @object.raise e
+    }.should raise_error(TypeError, "exception object expected")
   end
 
   it "re-raises a previously rescued exception without overwriting the backtrace" do

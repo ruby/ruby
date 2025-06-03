@@ -133,7 +133,7 @@
 unsigned int
 rb_gc_vm_lock(void)
 {
-    unsigned int lev;
+    unsigned int lev = 0;
     RB_VM_LOCK_ENTER_LEV(&lev);
     return lev;
 }
@@ -169,7 +169,7 @@ rb_gc_vm_lock_no_barrier(void)
 void
 rb_gc_vm_unlock_no_barrier(unsigned int lev)
 {
-    RB_VM_LOCK_LEAVE_LEV(&lev);
+    RB_VM_LOCK_LEAVE_LEV_NB(&lev);
 }
 
 void
@@ -373,14 +373,14 @@ rb_gc_get_shape(VALUE obj)
 void
 rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 {
-    rb_shape_set_shape_id(obj, (uint32_t)shape_id);
+    rb_obj_set_shape_id(obj, (uint32_t)shape_id);
 }
 
 uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
     shape_id_t orig_shape_id = rb_obj_shape_id(obj);
-    if (rb_shape_id_too_complex_p(orig_shape_id)) {
+    if (rb_shape_too_complex_p(orig_shape_id)) {
         return (uint32_t)orig_shape_id;
     }
 
@@ -1238,7 +1238,8 @@ classext_free(rb_classext_t *ext, bool is_prime, VALUE namespace, void *arg)
         rb_id_table_free(tbl);
     }
     rb_class_classext_free_subclasses(ext, args->klass);
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(is_prime); // superclasses should only be used on prime
         xfree(RCLASSEXT_SUPERCLASSES(ext));
     }
     if (!is_prime) { // the prime classext will be freed with RClass
@@ -1490,7 +1491,10 @@ internal_object_p(VALUE obj)
           case T_ZOMBIE:
             break;
           case T_CLASS:
-            if (!RBASIC(obj)->klass) break;
+            if (obj == rb_mRubyVMFrozenCore)
+                return 1;
+
+            if (!RBASIC_CLASS(obj)) break;
             if (RCLASS_SINGLETON_P(obj)) {
                 return rb_singleton_class_internal_p(obj);
             }
@@ -1848,19 +1852,6 @@ id2ref_tbl_memsize(const void *data)
 }
 
 static void
-id2ref_tbl_compact(void *data)
-{
-    st_table *table = (st_table *)data;
-    if (LIKELY(RB_POSFIXABLE(LAST_OBJECT_ID()))) {
-        // We know keys are all FIXNUM, so no need to update them.
-        gc_ref_update_table_values_only(table);
-    }
-    else {
-        gc_update_table_refs(table);
-    }
-}
-
-static void
 id2ref_tbl_free(void *data)
 {
     id2ref_tbl = NULL; // clear global ref
@@ -1874,7 +1865,8 @@ static const rb_data_type_t id2ref_tbl_type = {
         .dmark = id2ref_tbl_mark,
         .dfree = id2ref_tbl_free,
         .dsize = id2ref_tbl_memsize,
-        .dcompact = id2ref_tbl_compact,
+        // dcompact function not required because the table is reference updated
+        // in rb_gc_vm_weak_table_foreach
     },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
@@ -1905,7 +1897,7 @@ object_id0(VALUE obj)
 {
     VALUE id = Qfalse;
 
-    if (rb_shape_has_object_id(rb_obj_shape(obj))) {
+    if (rb_shape_has_object_id(RBASIC_SHAPE_ID(obj))) {
         shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
         id = rb_obj_field_get(obj, object_id_shape_id);
         RUBY_ASSERT(id, "object_id missing");
@@ -1934,6 +1926,9 @@ object_id(VALUE obj)
         // in different namespaces, so we cannot store the object id
         // in fields.
         return class_object_id(obj);
+      case T_IMEMO:
+        rb_bug("T_IMEMO can't have an object_id");
+        break;
       default:
         break;
     }
@@ -1960,6 +1955,9 @@ build_id2ref_i(VALUE obj, void *data)
             st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
         }
         break;
+      case T_IMEMO:
+      case T_NONE:
+        break;
       default:
         if (rb_shape_obj_has_id(obj)) {
             st_insert(id2ref_tbl, rb_obj_id(obj), obj);
@@ -1983,7 +1981,14 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
         // the table even though it wasn't inserted yet.
         id2ref_tbl = st_init_table(&object_id_hash_type);
         id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
-        rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+
+        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
+        // objects we just added to the table.
+        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+        {
+            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+        }
+        if (!gc_disabled) rb_gc_enable();
         id2ref_tbl_built = true;
     }
 
@@ -2007,6 +2012,10 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 static inline void
 obj_free_object_id(VALUE obj)
 {
+    if (RB_BUILTIN_TYPE(obj) == T_IMEMO) {
+        return;
+    }
+
     VALUE obj_id = 0;
     if (RB_UNLIKELY(id2ref_tbl)) {
         switch (BUILTIN_TYPE(obj)) {
@@ -2210,7 +2219,7 @@ rb_obj_id(VALUE obj)
 bool
 rb_obj_id_p(VALUE obj)
 {
-    return rb_shape_obj_has_id(obj);
+    return !RB_TYPE_P(obj, T_IMEMO) && rb_shape_obj_has_id(obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -2263,11 +2272,9 @@ classext_fields_hash_memsize(rb_classext_t *ext, bool prime, VALUE namespace, vo
 {
     size_t *size = (size_t *)arg;
     size_t count;
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         count = rb_st_table_size((st_table *)RCLASSEXT_FIELDS(ext));
     }
-    RB_VM_LOCK_LEAVE();
     // class IV sizes are allocated as powers of two
     *size += SIZEOF_VALUE << bit_length(count);
 }
@@ -2277,10 +2284,9 @@ classext_superclasses_memsize(rb_classext_t *ext, bool prime, VALUE namespace, v
 {
     size_t *size = (size_t *)arg;
     size_t array_size;
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
-        array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext);
-        if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext))
-            array_size += 1;
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        RUBY_ASSERT(prime);
+        array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext) + 1;
         *size += array_size * sizeof(VALUE);
     }
 }
@@ -2812,12 +2818,11 @@ struct mark_cc_entry_args {
 };
 
 static enum rb_id_table_iterator_result
-mark_cc_entry_i(ID id, VALUE ccs_ptr, void *data)
+mark_cc_entry_i(VALUE ccs_ptr, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
 
     VM_ASSERT(vm_ccs_p(ccs));
-    VM_ASSERT(id == ccs->cme->called_id);
 
     if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
         rb_vm_ccs_free(ccs);
@@ -2845,7 +2850,7 @@ mark_cc_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl, VALUE klass)
 
     args.objspace = objspace;
     args.klass = klass;
-    rb_id_table_foreach(tbl, mark_cc_entry_i, (void *)&args);
+    rb_id_table_foreach_values(tbl, mark_cc_entry_i, (void *)&args);
 }
 
 static enum rb_id_table_iterator_result
@@ -3261,14 +3266,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (fields_count) {
             VALUE klass = RBASIC_CLASS(obj);
 
-            // Skip updating max_iv_count if the prime classext is not writable
-            // because GC context doesn't provide information about namespaces.
-            if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass)) {
-                VM_ASSERT(rb_shape_obj_too_complex_p(klass));
-                // Increment max_iv_count if applicable, used to determine size pool allocation
-                if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
-                    RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
-                }
+            // Increment max_iv_count if applicable, used to determine size pool allocation
+            if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
+                RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
             }
         }
 
@@ -3788,10 +3788,8 @@ update_subclasses(void *objspace, rb_classext_t *ext)
 static void
 update_superclasses(rb_objspace_t *objspace, rb_classext_t *ext)
 {
-    size_t array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext);
-    if (RCLASSEXT_SUPERCLASSES_OWNER(ext)) {
-        if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext))
-            array_size += 1;
+    if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
+        size_t array_size = RCLASSEXT_SUPERCLASS_DEPTH(ext) + 1;
         for (size_t i = 0; i < array_size; i++) {
             UPDATE_IF_MOVED(objspace, RCLASSEXT_SUPERCLASSES(ext)[i]);
         }
@@ -4558,8 +4556,7 @@ ruby_gc_set_params(void)
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
-    RB_VM_LOCK_ENTER();
-    {
+    RB_VM_LOCKING() {
         if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
         if (!RB_SPECIAL_CONST_P(obj)) {
@@ -4575,7 +4572,6 @@ rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *
             vm->gc.mark_func_data = prev_mfd;
         }
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 struct root_objects_data {

@@ -17,7 +17,7 @@ class TestStringIOInRactor < Test::Unit::TestCase
         io.puts "def"
         "\0\0\0\0def\n" == io.string
       end
-      puts r.take
+      puts r.value
     end;
   end
 end

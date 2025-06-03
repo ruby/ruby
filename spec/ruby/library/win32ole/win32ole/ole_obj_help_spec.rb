@@ -12,8 +12,8 @@ platform_is :windows do
       -> { @dict.ole_obj_help(1) }.should raise_error ArgumentError
     end
 
-    it "returns an instance of WIN32OLE_TYPE" do
-      @dict.ole_obj_help.kind_of?(WIN32OLE_TYPE).should be_true
+    it "returns an instance of WIN32OLE::Type" do
+      @dict.ole_obj_help.kind_of?(WIN32OLE::Type).should be_true
     end
   end
 end

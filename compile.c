@@ -9530,7 +9530,8 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
 
         ADD_LABEL(ret, not_basic_new_finish);
         ADD_INSN(ret, line_node, pop);
-    } else {
+    }
+    else {
         ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
     }
 
@@ -13377,6 +13378,13 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 {
     const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
     const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+
+    if (!ap->name) {
+        return -1;
+    } else if (!bp->name) {
+        return 1;
+    }
+
     return rb_str_cmp(ap->name, bp->name);
 }
 

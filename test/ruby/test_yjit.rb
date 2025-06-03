@@ -166,6 +166,11 @@ class TestYJIT < Test::Unit::TestCase
     end
   end
 
+  if JITSupport.zjit_supported?
+    def test_yjit_enable_with_zjit_enabled
+      assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
+    end
+  end
 
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)

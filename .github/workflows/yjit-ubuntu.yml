@@ -163,6 +163,13 @@ jobs:
 
       - run: make
 
+      - name: Verify that --yjit-dump-disasm works
+        run: |
+          ./miniruby --yjit-call-threshold=1 --yjit-dump-disasm -e0 | \
+          wc -l | \
+          ruby -ne 'raise "Disassembly seems broken in dev build (output has too few lines)" unless $_.to_i > 10'
+        if: ${{ contains(matrix.configure, 'jit=dev') }}
+
       - name: Enable YJIT through ENV
         run: echo "RUBY_YJIT_ENABLE=1" >> $GITHUB_ENV
 

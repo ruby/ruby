@@ -1,3 +1,5 @@
+// This build script is only used for `make zjit-test` for building
+// the test binary; ruby builds don't use this.
 fn main() {
     use std::env;
 
@@ -20,6 +22,14 @@ fn main() {
             } else if let Some(lib_name) = token.strip_prefix("-l") {
                 println!("cargo:rustc-link-lib={lib_name}");
             }
+        }
+
+        // When doing a combo build, there is a copy of ZJIT symbols in libruby.a
+        // and Cargo builds another copy for the test binary. Tell the linker to
+        // not complaint about duplicate symbols. For some reason, darwin doesn't
+        // suffer the same issue.
+        if env::var("TARGET").unwrap().contains("linux") {
+            println!("cargo:rustc-link-arg=-Wl,--allow-multiple-definition");
         }
     }
 }

@@ -1174,13 +1174,15 @@ onig_region_copy(OnigRegion* to, const OnigRegion* from)
       stk_base  = stk_alloc;\
       stk       = stk_base;\
       stk_end   = stk_base + msa->stack_n;\
-    } else {\
+    }\
+    else {\
       stk_alloc = (OnigStackType* )xalloca(sizeof(OnigStackType) * (stack_num));\
       stk_base  = stk_alloc;\
       stk       = stk_base;\
       stk_end   = stk_base + (stack_num);\
     }\
-  } else if (msa->stack_p) {\
+  }\
+  else if (msa->stack_p) {\
     alloc_addr = (char* )xalloca(sizeof(OnigStackIndex) * (ptr_num));\
     heap_addr  = NULL;\
     stk_alloc  = (OnigStackType* )(msa->stack_p);\
@@ -1532,7 +1534,8 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
     if (stk->type == STK_MATCH_CACHE_POINT) {\
       msa->match_cache_buf[stk->u.match_cache_point.index] |= stk->u.match_cache_point.mask;\
       MATCH_CACHE_DEBUG_MEMOIZE(stk);\
-    } else if (stk->type == STK_ATOMIC_MATCH_CACHE_POINT) {\
+    }\
+    else if (stk->type == STK_ATOMIC_MATCH_CACHE_POINT) {\
       memoize_extended_match_cache_point(msa->match_cache_buf, stk->u.match_cache_point.index, stk->u.match_cache_point.mask);\
       MATCH_CACHE_DEBUG_MEMOIZE(stkp);\
     }\
@@ -2277,19 +2280,25 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
     cache_point;
 }
 
-static int check_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+static int
+check_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask)
+{
   if (match_cache_point_mask & 0x80) {
     return (match_cache_buf[match_cache_point_index + 1] & 0x01) > 0;
-  } else {
+  }
+  else {
     return (match_cache_buf[match_cache_point_index] & (match_cache_point_mask << 1)) > 0;
   }
 }
 
-static void memoize_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask) {
+static void
+memoize_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask)
+{
   match_cache_buf[match_cache_point_index] |= match_cache_point_mask;
   if (match_cache_point_mask & 0x80) {
     match_cache_buf[match_cache_point_index + 1] |= 0x01;
-  } else {
+  }
+  else {
     match_cache_buf[match_cache_point_index] |= match_cache_point_mask << 1;
   }
 }
@@ -2630,13 +2639,16 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
             STACK_STOP_BT_FAIL;\
             goto fail;\
-          } else goto fail;\
-        } else {\
+          }\
+          else goto fail;\
+        }\
+        else {\
 	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
 	    p = cache_opcode->match_addr;\
             MOP_OUT;\
             JUMP;\
-          } else goto fail;\
+          }\
+          else goto fail;\
         }\
       }\
       STACK_PUSH_MATCH_CACHE_POINT(match_cache_point_index, match_cache_point_mask);\

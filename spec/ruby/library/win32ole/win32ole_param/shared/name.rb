@@ -3,8 +3,8 @@ platform_is :windows do
 
   describe :win32ole_param_name, shared: true do
     before :each do
-      ole_type_detail = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      m_copyfile = WIN32OLE_METHOD.new(ole_type_detail, "CopyFile")
+      ole_type_detail = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE::Method.new(ole_type_detail, "CopyFile")
       @param_overwritefiles = m_copyfile.params[2]
     end
 

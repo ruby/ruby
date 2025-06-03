@@ -303,7 +303,7 @@ pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub type ruby_rarray_flags = u32;
 pub const RARRAY_EMBED_LEN_SHIFT: ruby_rarray_consts = 15;
 pub type ruby_rarray_consts = u32;
-pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 32768;
+pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_EMBED: ruby_robject_flags = 8192;
 pub type ruby_robject_flags = u32;
@@ -395,11 +395,6 @@ pub struct rb_namespace_struct {
 }
 pub type rb_namespace_t = rb_namespace_struct;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
-    _unused: [u8; 0],
-}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -695,9 +690,8 @@ pub type shape_id_t = u32;
 pub type redblack_id_t = u32;
 pub type redblack_node_t = redblack_node;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
-    pub edges: *mut rb_id_table,
+    pub edges: VALUE,
     pub edge_name: ID,
     pub next_field_index: attr_index_t,
     pub capacity: attr_index_t,
@@ -1142,11 +1136,10 @@ extern "C" {
     pub fn rb_shape_id_offset() -> i32;
     pub fn rb_shape_lookup(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape: *mut rb_shape_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_obj_too_complex_p(obj: VALUE) -> bool;
-    pub fn rb_shape_too_complex_p(shape: *mut rb_shape_t) -> bool;
+    pub fn rb_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
-    pub fn rb_shape_id(shape: *mut rb_shape_t) -> shape_id_t;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_ensure_iv_list_size(obj: VALUE, len: u32, newsize: u32);
