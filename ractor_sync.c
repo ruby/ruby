@@ -663,6 +663,10 @@ ractor_sync_mark(rb_ractor_t *r)
 static void
 ractor_sync_free(rb_ractor_t *r)
 {
+    if (r->sync.recv_queue) {
+        ractor_queue_free(r->sync.recv_queue);
+    }
+
     // maybe NULL
     if (r->sync.ports) {
         st_free_table(r->sync.ports);
