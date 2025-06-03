@@ -987,7 +987,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
             VM_FORCE_WRITE_SPECIAL_CONST(&ep[VM_ENV_DATA_INDEX_SPECVAL], VM_GUARDED_PREV_EP(prev_cfp->ep));
         }
     }
-    else if (MV_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP)) {
+    else if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP)) {
         // block_handler is always VM_BLOCK_HANDLER_NONE in this case
     }
     else {
