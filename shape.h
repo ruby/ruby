@@ -3,34 +3,22 @@
 
 #include "internal/gc.h"
 
-#if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
-
 #define SIZEOF_SHAPE_T 4
-typedef uint32_t attr_index_t;
-typedef uint32_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 32
-
-#else
-
-#define SIZEOF_SHAPE_T 2
 typedef uint16_t attr_index_t;
-typedef uint16_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 16
-
-#endif
+typedef uint32_t shape_id_t;
+#define SHAPE_ID_NUM_BITS 32
 
 typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_FIELDS (attr_index_t)(-1)
 
-# define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
+#define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
+#define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
-# define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
+#define SHAPE_MAX_VARIATIONS 8
 
-# define SHAPE_MAX_VARIATIONS 8
-
-# define INVALID_SHAPE_ID (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
-#define ATTR_INDEX_NOT_SET (attr_index_t)-1
+#define INVALID_SHAPE_ID ((shape_id_t)-1)
+#define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID               0x0
 #define SPECIAL_CONST_SHAPE_ID      0x1
@@ -44,13 +32,13 @@ typedef struct redblack_node redblack_node_t;
 struct rb_shape {
     VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
+    redblack_node_t *ancestor_index;
+    shape_id_t parent_id;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
     uint8_t flags;
-    shape_id_t parent_id;
-    redblack_node_t *ancestor_index;
 };
 
 typedef struct rb_shape rb_shape_t;
@@ -81,6 +69,14 @@ typedef struct {
     unsigned int cache_size;
 } rb_shape_tree_t;
 RUBY_EXTERN rb_shape_tree_t *rb_shape_tree_ptr;
+
+union rb_attr_index_cache {
+    uint64_t pack;
+    struct {
+        shape_id_t shape_id;
+        attr_index_t index;
+    } unpack;
+};
 
 static inline rb_shape_tree_t *
 rb_current_shape_tree(void)
