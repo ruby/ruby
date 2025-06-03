@@ -330,6 +330,7 @@ pub enum Insn {
     NewArray { elements: Vec<InsnId>, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
+    NewRange { low: InsnId, high: InsnId, flag: u32, state: InsnId },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
@@ -439,6 +440,7 @@ impl Insn {
             Insn::StringCopy { .. } => false,
             Insn::NewArray { .. } => false,
             Insn::NewHash { .. } => false,
+            Insn::NewRange { .. } => false,
             Insn::ArrayDup { .. } => false,
             Insn::HashDup { .. } => false,
             Insn::Test { .. } => false,
@@ -489,6 +491,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     prefix = ", ";
                 }
                 Ok(())
+            }
+            Insn::NewRange { low, high, flag, .. } => {
+                let flag_str = match *flag {
+                    0 => "..",
+                    1 => "...",
+                    _ => &format!("flag({})", flag),
+                };
+                write!(f, "NewRange {low} {flag_str} {high}")
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
@@ -912,6 +922,7 @@ impl Function {
                 }
                 NewHash { elements: found_elements, state: find!(state) }
             }
+            &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
@@ -972,6 +983,7 @@ impl Function {
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::NewHash { .. } => types::HashExact,
             Insn::HashDup { .. } => types::HashExact,
+            Insn::NewRange { .. } => types::RangeExact,
             Insn::CCall { return_type, .. } => *return_type,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_value(*expected)),
@@ -1484,6 +1496,11 @@ impl Function {
                         worklist.push_back(key);
                         worklist.push_back(value);
                     }
+                    worklist.push_back(state);
+                }
+                Insn::NewRange { low, high, state, .. } => {
+                    worklist.push_back(low);
+                    worklist.push_back(high);
                     worklist.push_back(state);
                 }
                 Insn::StringCopy { val }
@@ -2342,6 +2359,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val, id, val, state: exit_id });
                 }
+                YARVINSN_newrange => {
+                    let flag = get_arg(pc, 0).as_u32();
+                    let high = state.stack_pop()?;
+                    let low = state.stack_pop()?;
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::NewRange { low, high, flag, state: exit_id });
+                    state.stack_push(insn_id);
+                }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -2731,6 +2756,52 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v4:ArrayExact = NewArray v0, v1
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_range_with_one_element() {
+        eval("def test(a) = (a..10)");
+        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[10] = Const Value(10)
+              v4:RangeExact = NewRange v0 .. v2
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_range_with_two_elements() {
+        eval("def test(a, b) = (a..b)");
+        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:RangeExact = NewRange v0 .. v1
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_range_exclude_with_one_element() {
+        eval("def test(a) = (a...10)");
+        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[10] = Const Value(10)
+              v4:RangeExact = NewRange v0 ... v2
+              Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_new_range_exclude_with_two_elements() {
+        eval("def test(a, b) = (a...b)");
+        assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:RangeExact = NewRange v0 ... v1
               Return v4
         "#]]);
     }
@@ -4270,6 +4341,23 @@ mod opt_tests {
             bb0():
               v4:Fixnum[5] = Const Value(5)
               Return v4
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_new_range() {
+        eval("
+            def test()
+              c = (1..2)
+              5
+            end
+            test; test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0():
+              v3:Fixnum[5] = Const Value(5)
+              Return v3
         "#]]);
     }
 
