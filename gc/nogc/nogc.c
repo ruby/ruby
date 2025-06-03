@@ -14,7 +14,7 @@
 #define MAX_HEAP_SIZE (BASE_SLOT_SIZE * 16)
 
 // Define heap sizes using power-of-2 progression
-static size_t heap_sizes[HEAP_COUNT + 1] = {
+static const size_t heap_sizes[HEAP_COUNT + 1] = {
     BASE_SLOT_SIZE,      // 40
     BASE_SLOT_SIZE * 2,  // 80
     BASE_SLOT_SIZE * 4,  // 160
@@ -50,9 +50,32 @@ rb_gc_impl_set_params(void *objspace_ptr)
     // Stub implementation
 }
 
+static VALUE
+gc_verify_internal_consistency(VALUE self)
+{
+}
+
 void
 rb_gc_impl_init(void)
 {
+    VALUE gc_constants = rb_hash_new();
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MAX_HEAP_SIZE));
+    // Pretend we have 5 size pools
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(HEAP_COUNT));
+    OBJ_FREEZE(gc_constants);
+    rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
+
+    // no-ops for compatibility
+    rb_define_singleton_method(rb_mGC, "verify_internal_consistency", gc_verify_internal_consistency, 0);
+
+    rb_define_singleton_method(rb_mGC, "compact", rb_f_notimplement, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact", rb_f_notimplement, 0);
+    rb_define_singleton_method(rb_mGC, "auto_compact=", rb_f_notimplement, 1);
+    rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
+    rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
     // Stub implementation
 }
 
@@ -448,4 +471,4 @@ void
 rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
 {
     // Stub implementation
-} 
+}
