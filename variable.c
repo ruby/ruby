@@ -2131,12 +2131,11 @@ rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
     }
 }
 
-VALUE
-rb_ivar_defined(VALUE obj, ID id)
+static VALUE
+ivar_defined0(VALUE obj, ID id)
 {
     attr_index_t index;
 
-    if (SPECIAL_CONST_P(obj)) return Qfalse;
     if (rb_shape_obj_too_complex_p(obj)) {
         VALUE idx;
         st_table *table = NULL;
@@ -2168,6 +2167,26 @@ rb_ivar_defined(VALUE obj, ID id)
     else {
         return RBOOL(rb_shape_get_iv_index(RBASIC_SHAPE_ID(obj), id, &index));
     }
+}
+
+VALUE
+rb_ivar_defined(VALUE obj, ID id)
+{
+    if (SPECIAL_CONST_P(obj)) return Qfalse;
+
+    VALUE defined;
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        RB_VM_LOCKING() {
+            defined = ivar_defined0(obj, id);
+        }
+        break;
+      default:
+        defined = ivar_defined0(obj, id);
+        break;
+    }
+    return defined;
 }
 
 struct iv_itr_data {
