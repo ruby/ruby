@@ -381,6 +381,7 @@ managed_id_table_dup_i(ID id, VALUE val, void *data)
 VALUE
 rb_managed_id_table_dup(VALUE old_table)
 {
+    RUBY_ASSERT(RB_TYPE_P(old_table, T_DATA));
     RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(old_table), &managed_id_table_type));
 
     struct rb_id_table *new_tbl;
@@ -394,6 +395,7 @@ rb_managed_id_table_dup(VALUE old_table)
 int
 rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp)
 {
+    RUBY_ASSERT(RB_TYPE_P(table, T_DATA));
     RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(table), &managed_id_table_type));
 
     return rb_id_table_lookup(RTYPEDDATA_GET_DATA(table), id, valp);
@@ -402,6 +404,7 @@ rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp)
 int
 rb_managed_id_table_insert(VALUE table, ID id, VALUE val)
 {
+    RUBY_ASSERT(RB_TYPE_P(table, T_DATA));
     RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(table), &managed_id_table_type));
 
     return rb_id_table_insert(RTYPEDDATA_GET_DATA(table), id, val);
@@ -410,6 +413,7 @@ rb_managed_id_table_insert(VALUE table, ID id, VALUE val)
 size_t
 rb_managed_id_table_size(VALUE table)
 {
+    RUBY_ASSERT(RB_TYPE_P(table, T_DATA));
     RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(table), &managed_id_table_type));
 
     return rb_id_table_size(RTYPEDDATA_GET_DATA(table));
@@ -418,6 +422,7 @@ rb_managed_id_table_size(VALUE table)
 void
 rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
 {
+    RUBY_ASSERT(RB_TYPE_P(table, T_DATA));
     RUBY_ASSERT(rb_typeddata_inherited_p(RTYPEDDATA_TYPE(table), &managed_id_table_type));
 
     rb_id_table_foreach(RTYPEDDATA_GET_DATA(table), func, data);
