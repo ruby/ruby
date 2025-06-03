@@ -151,19 +151,22 @@ VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
     // Ensure minimum allocation size of BASE_SLOT_SIZE
-    size_t actual_size = alloc_size < BASE_SLOT_SIZE ? BASE_SLOT_SIZE : alloc_size;
-    
-    // Allocate memory for the object
-    void *mem = malloc(actual_size);
+    alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
+
+    // Allocate memory for the object plus one extra VALUE for slot size
+    VALUE *mem = malloc(alloc_size + sizeof(VALUE));
     if (!mem) rb_bug("FIXME: malloc failed");
 
-    // Initialize the object
+    // Store the slot size in the extra VALUE before the object
+    *mem++ = alloc_size;
+
+    // Initialize the object after the slot size
     VALUE obj = (VALUE)mem;
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS(obj, klass);
 
     // Fill in provided values
-    VALUE *ptr = (VALUE *)((char *)mem + sizeof(struct RBasic));
+    VALUE *ptr = (VALUE *)((char *)obj + sizeof(struct RBasic));
     ptr[0] = v1;
     ptr[1] = v2;
     ptr[2] = v3;
@@ -174,8 +177,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
-    // For nogc, we don't track slot sizes since we use malloc directly
-    return 0;
+    // Read the slot size from the extra VALUE before the object
+    return ((VALUE *)obj)[-1];
 }
 
 size_t
@@ -415,8 +418,10 @@ rb_gc_impl_active_gc_name(void)
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
-    return NULL;
+    static struct rb_gc_object_metadata_entry entries[1] = {
+        {0, Qnil}
+    };
+    return entries;
 }
 
 bool
