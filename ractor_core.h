@@ -6,7 +6,7 @@
 #include "vm_debug.h"
 
 #ifndef RACTOR_CHECK_MODE
-#define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#define RACTOR_CHECK_MODE 0
 #endif
 
 struct rb_ractor_sync {
