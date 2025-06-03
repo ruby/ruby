@@ -1,8 +1,3 @@
-#ifndef RVALUE_OVERHEAD
-#define RVALUE_OVERHEAD 0
-#endif
-#define BASE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
-
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
@@ -14,8 +9,19 @@
 
 #include <stdbool.h>
 
-// Define a single heap size
-static size_t heap_sizes[] = { BASE_SLOT_SIZE };
+#define BASE_SLOT_SIZE 40
+#define HEAP_COUNT 5
+#define MAX_HEAP_SIZE (BASE_SLOT_SIZE * 16)
+
+// Define heap sizes using power-of-2 progression
+static size_t heap_sizes[HEAP_COUNT + 1] = {
+    BASE_SLOT_SIZE,      // 40
+    BASE_SLOT_SIZE * 2,  // 80
+    BASE_SLOT_SIZE * 4,  // 160
+    BASE_SLOT_SIZE * 8,  // 320
+    BASE_SLOT_SIZE * 16, // 640
+    0
+};
 
 // Bootup
 void *
@@ -149,9 +155,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     
     // Allocate memory for the object
     void *mem = malloc(actual_size);
-    if (!mem) {
-        rb_memerror();
-    }
+    if (!mem) rb_bug("FIXME: malloc failed");
 
     // Initialize the object
     VALUE obj = (VALUE)mem;
@@ -177,46 +181,37 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 {
-    // For nogc, we don't use heap IDs since we use malloc directly
-    return 0;
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        if (size == heap_sizes[i]) return i;
+        if (size < heap_sizes[i]) return i;
+    }
+    rb_bug("size too big");
 }
 
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    // Allow any size that malloc can handle
-    return true;
+    // Only allow sizes up to the largest heap size
+    return size <= (BASE_SLOT_SIZE * 16);
 }
 
 // Malloc
 void *
 rb_gc_impl_malloc(void *objspace_ptr, size_t size)
 {
-    void *mem = malloc(size);
-    if (!mem) {
-        rb_memerror();
-    }
-    return mem;
+    return malloc(size);
 }
 
 void *
 rb_gc_impl_calloc(void *objspace_ptr, size_t size)
 {
-    void *mem = calloc(1, size);
-    if (!mem) {
-        rb_memerror();
-    }
-    return mem;
+    return calloc(1, size);
 }
 
 void *
 rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
 {
-    void *mem = realloc(ptr, new_size);
-    if (!mem) {
-        rb_memerror();
-    }
-    return mem;
+    return realloc(ptr, new_size);
 }
 
 void
