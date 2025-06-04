@@ -20,7 +20,7 @@ matrix              0.4.2   https://github.com/ruby/matrix 200efebc35dc1a8d16fad
 prime               0.1.3   https://github.com/ruby/prime d97973271103f2bdde91f3f0bd3e42526401ad77
 rbs                 3.9.4   https://github.com/ruby/rbs
 typeprof            0.30.1  https://github.com/ruby/typeprof
-debug               1.10.0  https://github.com/ruby/debug cf469f2b21710727abdd153b25a1e5123b002bb0
+debug               1.11.0  https://github.com/ruby/debug
 racc                1.8.1   https://github.com/ruby/racc
 mutex_m             0.3.0   https://github.com/ruby/mutex_m
 getoptlong          0.2.1   https://github.com/ruby/getoptlong
@@ -41,7 +41,7 @@ benchmark           0.4.1   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
 rdoc                6.14.0  https://github.com/ruby/rdoc 27869f5d06b6c72657c5aac72258a65f518489b0
 win32ole            1.9.2   https://github.com/ruby/win32ole
-irb                 1.15.2  https://github.com/ruby/irb
+irb                 1.15.2  https://github.com/ruby/irb 331c4e851296b115db766c291e8cf54a2492fb36
 reline              0.6.1   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle
