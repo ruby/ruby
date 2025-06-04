@@ -14,7 +14,9 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 #define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_HAS_OBJECT_ID (SHAPE_FL_HAS_OBJECT_ID << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_TOO_COMPLEX (SHAPE_FL_TOO_COMPLEX << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_NON_CANONICAL_MASK (SHAPE_FL_NON_CANONICAL_MASK << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_READ_ONLY_MASK (~SHAPE_ID_FL_FROZEN)
 
 typedef uint32_t redblack_id_t;
@@ -29,9 +31,10 @@ typedef uint32_t redblack_id_t;
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID               0x0
+#define ROOT_SHAPE_WITH_OBJ_ID      0x1
 #define ROOT_TOO_COMPLEX_SHAPE_ID   (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
 #define SPECIAL_CONST_SHAPE_ID      (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
-#define FIRST_T_OBJECT_SHAPE_ID     0x1
+#define FIRST_T_OBJECT_SHAPE_ID     0x2
 
 extern ID ruby_internal_object_id;
 
@@ -46,7 +49,6 @@ struct rb_shape {
     attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
-    uint8_t flags;
 };
 
 typedef struct rb_shape rb_shape_t;
@@ -142,7 +144,6 @@ RUBY_FUNC_EXPORTED shape_id_t rb_obj_shape_id(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
-bool rb_shape_has_object_id(shape_id_t shape_id);
 
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
@@ -170,9 +171,15 @@ rb_shape_obj_too_complex_p(VALUE obj)
 }
 
 static inline bool
+rb_shape_has_object_id(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_HAS_OBJECT_ID;
+}
+
+static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
-    return !(shape_id & SHAPE_ID_FLAGS_MASK) && !RSHAPE(shape_id)->flags;
+    return !(shape_id & SHAPE_ID_FL_NON_CANONICAL_MASK);
 }
 
 static inline shape_id_t

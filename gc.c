@@ -1897,7 +1897,8 @@ object_id0(VALUE obj)
 {
     VALUE id = Qfalse;
 
-    if (rb_shape_has_object_id(RBASIC_SHAPE_ID(obj))) {
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+    if (rb_shape_has_object_id(shape_id)) {
         shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
         id = rb_obj_field_get(obj, object_id_shape_id);
         RUBY_ASSERT(id, "object_id missing");
