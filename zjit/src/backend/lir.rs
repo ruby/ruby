@@ -1,6 +1,9 @@
+use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
-use crate::{cruby::VALUE, hir::FrameState};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VM_ENV_DATA_SIZE};
+use crate::state::ZJITState;
+use crate::{cruby::VALUE};
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -273,9 +276,7 @@ pub enum Target
     /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
     // Side exit with a counter
-    SideExit(FrameState),
-    /// Pointer to a side exit code
-    SideExitPtr(CodePtr),
+    SideExit { pc: *const VALUE, stack: Vec<Opnd>, locals: Vec<Opnd> },
     /// A label within the generated code
     Label(Label),
 }
@@ -292,7 +293,6 @@ impl Target
     pub fn unwrap_code_ptr(&self) -> CodePtr {
         match self {
             Target::CodePtr(ptr) => *ptr,
-            Target::SideExitPtr(ptr) => *ptr,
             _ => unreachable!("trying to unwrap {:?} into code ptr", self)
         }
     }
@@ -539,11 +539,11 @@ impl Insn {
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
             Insn::JoMul(target) |
+            Insn::Jz(target) |
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
+            Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } => {
                 Some(target)
             }
@@ -697,7 +697,11 @@ impl Insn {
             Insn::Jne(target) |
             Insn::Jnz(target) |
             Insn::Jo(target) |
+            Insn::JoMul(target) |
             Insn::Jz(target) |
+            Insn::Joz(_, target) |
+            Insn::Jonz(_, target) |
+            Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } => Some(target),
             _ => None
         }
@@ -731,6 +735,63 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.insn {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } => {
+                if let Target::SideExit { stack, locals, .. } = target {
+                    let stack_idx = self.idx;
+                    if stack_idx < stack.len() {
+                        let opnd = &stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = self.idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                if self.idx == 0 {
+                    self.idx += 1;
+                    return Some(opnd);
+                }
+
+                if let Target::SideExit { stack, locals, .. } = target {
+                    let stack_idx = self.idx - 1;
+                    if stack_idx < stack.len() {
+                        let opnd = &stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = stack_idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
@@ -739,20 +800,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::Jbe(_) |
-            Insn::Jb(_) |
-            Insn::Je(_) |
-            Insn::Jl(_) |
-            Insn::Jg(_) |
-            Insn::Jge(_) |
-            Insn::Jmp(_) |
-            Insn::Jne(_) |
-            Insn::Jnz(_) |
-            Insn::Jo(_) |
-            Insn::JoMul(_) |
-            Insn::Jz(_) |
-            Insn::Label(_) |
-            Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
 
@@ -764,8 +811,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Joz(opnd, _) |
-            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
@@ -845,6 +890,63 @@ impl<'a> InsnOpndMutIterator<'a> {
 
     pub(super) fn next(&mut self) -> Option<&mut Opnd> {
         match self.insn {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } => {
+                if let Target::SideExit { stack, locals, .. } = target {
+                    let stack_idx = self.idx;
+                    if stack_idx < stack.len() {
+                        let opnd = &mut stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = self.idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &mut locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                if self.idx == 0 {
+                    self.idx += 1;
+                    return Some(opnd);
+                }
+
+                if let Target::SideExit { stack, locals, .. } = target {
+                    let stack_idx = self.idx - 1;
+                    if stack_idx < stack.len() {
+                        let opnd = &mut stack[stack_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+
+                    let local_idx = stack_idx - stack.len();
+                    if local_idx < locals.len() {
+                        let opnd = &mut locals[local_idx];
+                        self.idx += 1;
+                        return Some(opnd);
+                    }
+                }
+                None
+            }
+
             Insn::BakeString(_) |
             Insn::Breakpoint |
             Insn::Comment(_) |
@@ -853,20 +955,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::Jbe(_) |
-            Insn::Jb(_) |
-            Insn::Je(_) |
-            Insn::Jl(_) |
-            Insn::Jg(_) |
-            Insn::Jge(_) |
-            Insn::Jmp(_) |
-            Insn::Jne(_) |
-            Insn::Jnz(_) |
-            Insn::Jo(_) |
-            Insn::JoMul(_) |
-            Insn::Jz(_) |
-            Insn::Label(_) |
-            Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
 
@@ -878,8 +966,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Joz(opnd, _) |
-            Insn::Jonz(opnd, _) |
             Insn::Not { opnd, .. } => {
                 match self.idx {
                     0 => {
@@ -1649,10 +1735,8 @@ impl Assembler
     /// Compile the instructions down to machine code.
     /// Can fail due to lack of code memory and inopportune code placement, among other reasons.
     #[must_use]
-    pub fn compile(mut self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
+    pub fn compile(self, cb: &mut CodeBlock) -> Option<(CodePtr, Vec<u32>)>
     {
-        self.compile_side_exits(cb)?;
-
         #[cfg(feature = "disasm")]
         let start_addr = cb.get_write_ptr();
         let alloc_regs = Self::get_alloc_regs();
@@ -1669,47 +1753,74 @@ impl Assembler
 
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     #[must_use]
-    pub fn compile_side_exits(&mut self, cb: &mut CodeBlock) -> Option<()> {
-        for insn in self.insns.iter_mut() {
-            if let Some(target) = insn.target_mut() {
-                if let Target::SideExit(state) = target {
-                    let side_exit_ptr = cb.get_write_ptr();
-                    let mut asm = Assembler::new();
-                    asm_comment!(asm, "side exit: {state}");
-                    asm.ccall(Self::rb_zjit_side_exit as *const u8, vec![]);
-                    asm.compile(cb)?;
-                    *target = Target::SideExitPtr(side_exit_ptr);
+    pub fn compile_side_exits(&mut self) -> Option<()> {
+        let mut targets = HashMap::new();
+        for (idx, insn) in self.insns.iter().enumerate() {
+            if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                targets.insert(idx, target.clone());
+            }
+        }
+
+        for (idx, target) in targets {
+            // Compile a side exit. Note that this is past the split pass and alloc_regs(),
+            // so you can't use a VReg or an instruction that needs to be split.
+            if let Target::SideExit { pc, stack, locals } = target {
+                let side_exit_label = self.new_label("side_exit".into());
+                self.write_label(side_exit_label.clone());
+
+                // Load an operand that cannot be used as a source of Insn::Store
+                fn split_store_source(asm: &mut Assembler, opnd: Opnd) -> Opnd {
+                    if matches!(opnd, Opnd::Mem(_) | Opnd::Value(_)) ||
+                        (cfg!(target_arch = "aarch64") && matches!(opnd, Opnd::UImm(_))) {
+                        asm.load_into(Opnd::Reg(Assembler::SCRATCH_REG), opnd);
+                        Opnd::Reg(Assembler::SCRATCH_REG)
+                    } else {
+                        opnd
+                    }
                 }
+
+                asm_comment!(self, "write stack slots: {stack:?}");
+                for (idx, &opnd) in stack.iter().enumerate() {
+                    let opnd = split_store_source(self, opnd);
+                    self.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
+                }
+
+                asm_comment!(self, "write locals: {locals:?}");
+                for (idx, &opnd) in locals.iter().enumerate() {
+                    let opnd = split_store_source(self, opnd);
+                    self.store(Opnd::mem(64, SP, (-(VM_ENV_DATA_SIZE as i32) - locals.len() as i32 + idx as i32) * SIZEOF_VALUE_I32), opnd);
+                }
+
+                asm_comment!(self, "save cfp->pc");
+                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc as *const u8));
+                self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
+
+                asm_comment!(self, "save cfp->sp");
+                self.lea_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
+                let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
+                self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
+
+                asm_comment!(self, "rewind caller frames");
+                self.mov(C_ARG_OPNDS[0], Assembler::return_addr_opnd());
+                self.ccall(Self::rewind_caller_frames as *const u8, vec![]);
+
+                asm_comment!(self, "exit to the interpreter");
+                self.frame_teardown();
+                self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
+                self.cret(C_RET_OPND);
+
+                *self.insns[idx].target_mut().unwrap() = side_exit_label;
             }
         }
         Some(())
     }
 
     #[unsafe(no_mangle)]
-    extern "C" fn rb_zjit_side_exit() {
-        unimplemented!("side exits are not implemented yet");
+    extern "C" fn rewind_caller_frames(addr: *const u8) {
+        if ZJITState::is_iseq_return_addr(addr) {
+            unimplemented!("Can't side-exit from JIT-JIT call: rewind_caller_frames is not implemented yet");
+        }
     }
-
-    /*
-    /// Compile with a limited number of registers. Used only for unit tests.
-    #[cfg(test)]
-    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<u32>)
-    {
-        let mut alloc_regs = Self::get_alloc_regs();
-        let alloc_regs = alloc_regs.drain(0..num_regs).collect();
-        self.compile_with_regs(cb, None, alloc_regs).unwrap()
-    }
-
-    /// Return true if the next ccall() is expected to be leaf.
-    pub fn get_leaf_ccall(&mut self) -> bool {
-        self.leaf_ccall
-    }
-
-    /// Assert that the next ccall() is going to be leaf.
-    pub fn expect_leaf_ccall(&mut self) {
-        self.leaf_ccall = true;
-    }
-    */
 }
 
 impl fmt::Debug for Assembler {
@@ -1968,6 +2079,10 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Lea { opnd, out });
         out
+    }
+
+    pub fn lea_into(&mut self, out: Opnd, opnd: Opnd) {
+        self.push_insn(Insn::Lea { opnd, out });
     }
 
     #[must_use]

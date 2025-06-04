@@ -94,6 +94,24 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_plus_type_guard_exit
+    assert_compiles '[3, 3.0]', %q{
+      def test(a) = 1 + a
+      test(1) # profile opt_plus
+      [test(2), test(2.0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_plus_type_guard_nested_exit
+    omit 'rewind_caller_frames is not implemented yet'
+    assert_compiles '[3, 3.0]', %q{
+      def side_exit(n) = 1 + n
+      def jit_frame(n) = 1 + side_exit(n)
+      def entry(n) = jit_frame(n)
+      [entry(2), entry(2.0)]
+    }, call_threshold: 2
+  end
+
   # Test argument ordering
   def test_opt_minus
     assert_compiles '2', %q{
