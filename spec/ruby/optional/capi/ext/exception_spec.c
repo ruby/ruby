@@ -36,9 +36,11 @@ VALUE exception_spec_rb_set_errinfo(VALUE self, VALUE exc) {
   return Qnil;
 }
 
+NORETURN(VALUE exception_spec_rb_error_frozen_object(VALUE self, VALUE object));
+
 VALUE exception_spec_rb_error_frozen_object(VALUE self, VALUE object) {
-    rb_error_frozen_object(object);
-    return Qnil;
+  rb_error_frozen_object(object);
+  UNREACHABLE_RETURN(Qnil);
 }
 
 VALUE exception_spec_rb_syserr_new(VALUE self, VALUE num, VALUE msg) {
