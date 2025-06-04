@@ -228,6 +228,50 @@ impl Const {
     }
 }
 
+pub enum RangeType {
+    Inclusive = 0, // include the end value
+    Exclusive = 1, // exclude the end value
+}
+
+impl std::fmt::Display for RangeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            RangeType::Inclusive => "NewRangeInclusive",
+            RangeType::Exclusive => "NewRangeExclusive",
+        })
+    }
+}
+
+impl std::fmt::Debug for RangeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.to_string())
+    }
+}
+
+impl Clone for RangeType {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl Copy for RangeType {}
+
+impl From<u32> for RangeType {
+    fn from(flag: u32) -> Self {
+        match flag {
+            0 => RangeType::Inclusive,
+            1 => RangeType::Exclusive,
+            _ => panic!("Invalid range flag: {}", flag),
+        }
+    }
+}
+
+impl From<RangeType> for u32 {
+    fn from(range_type: RangeType) -> Self {
+        range_type as u32
+    }
+}
+
 /// Print adaptor for [`Const`]. See [`PtrPrintMap`].
 struct ConstPrinter<'a> {
     inner: &'a Const,
@@ -330,7 +374,7 @@ pub enum Insn {
     NewArray { elements: Vec<InsnId>, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<(InsnId,InsnId)>, state: InsnId },
-    NewRange { low: InsnId, high: InsnId, flag: u32, state: InsnId },
+    NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArraySet { array: InsnId, idx: usize, val: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
@@ -493,12 +537,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::NewRange { low, high, flag, .. } => {
-                let flag_str = match *flag {
-                    0 => "..",
-                    1 => "...",
-                    _ => &format!("flag({})", flag),
-                };
-                write!(f, "NewRange {low} {flag_str} {high}")
+                write!(f, "NewRange {low} {flag} {high}")
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
@@ -2360,7 +2399,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     fun.push_insn(block, Insn::SetIvar { self_val, id, val, state: exit_id });
                 }
                 YARVINSN_newrange => {
-                    let flag = get_arg(pc, 0).as_u32();
+                    let flag = RangeType::from(get_arg(pc, 0).as_u32());
                     let high = state.stack_pop()?;
                     let low = state.stack_pop()?;
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -2761,47 +2800,47 @@ mod tests {
     }
 
     #[test]
-    fn test_new_range_with_one_element() {
+    fn test_new_range_inclusive_with_one_element() {
         eval("def test(a) = (a..10)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[10] = Const Value(10)
-              v4:RangeExact = NewRange v0 .. v2
+              v4:RangeExact = NewRange v0 NewRangeInclusive v2
               Return v4
         "#]]);
     }
 
     #[test]
-    fn test_new_range_with_two_elements() {
+    fn test_new_range_inclusive_with_two_elements() {
         eval("def test(a, b) = (a..b)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:RangeExact = NewRange v0 .. v1
+              v4:RangeExact = NewRange v0 NewRangeInclusive v1
               Return v4
         "#]]);
     }
 
     #[test]
-    fn test_new_range_exclude_with_one_element() {
+    fn test_new_range_exclusive_with_one_element() {
         eval("def test(a) = (a...10)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v2:Fixnum[10] = Const Value(10)
-              v4:RangeExact = NewRange v0 ... v2
+              v4:RangeExact = NewRange v0 NewRangeExclusive v2
               Return v4
         "#]]);
     }
 
     #[test]
-    fn test_new_range_exclude_with_two_elements() {
+    fn test_new_range_exclusive_with_two_elements() {
         eval("def test(a, b) = (a...b)");
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:RangeExact = NewRange v0 ... v1
+              v4:RangeExact = NewRange v0 NewRangeExclusive v1
               Return v4
         "#]]);
     }

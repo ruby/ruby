@@ -7,7 +7,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -558,7 +558,7 @@ fn gen_new_range(
     asm: &mut Assembler,
     low: lir::Opnd,
     high: lir::Opnd,
-    flag: u32,
+    flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
     asm_comment!(asm, "call rb_range_new");
