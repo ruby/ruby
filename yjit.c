@@ -781,6 +781,18 @@ rb_object_shape_count(void)
     return ULONG2NUM((unsigned long)GET_SHAPE_TREE()->next_shape_id);
 }
 
+bool
+rb_yjit_shape_too_complex_p(shape_id_t shape_id)
+{
+    return rb_shape_too_complex_p(shape_id);
+}
+
+bool
+rb_yjit_shape_obj_too_complex_p(VALUE obj)
+{
+    return rb_shape_obj_too_complex_p(obj);
+}
+
 // Assert that we have the VM lock. Relevant mostly for multi ractor situations.
 // The GC takes the lock before calling us, and this asserts that it indeed happens.
 void

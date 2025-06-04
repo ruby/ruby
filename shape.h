@@ -14,6 +14,7 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 #define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_TOO_COMPLEX (SHAPE_FL_TOO_COMPLEX << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_READ_ONLY_MASK (~SHAPE_ID_FL_FROZEN)
 
 typedef uint32_t redblack_id_t;
@@ -28,9 +29,9 @@ typedef uint32_t redblack_id_t;
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID               0x0
-//      ROOT_TOO_COMPLEX_SHAPE_ID   0x1
+#define ROOT_TOO_COMPLEX_SHAPE_ID   (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
 #define SPECIAL_CONST_SHAPE_ID      (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
-#define FIRST_T_OBJECT_SHAPE_ID     0x2
+#define FIRST_T_OBJECT_SHAPE_ID     0x1
 
 extern ID ruby_internal_object_id;
 
@@ -62,7 +63,6 @@ enum shape_type {
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
     SHAPE_T_OBJECT,
-    SHAPE_OBJ_TOO_COMPLEX,
 };
 
 enum shape_flags {
@@ -142,8 +142,6 @@ RUBY_FUNC_EXPORTED shape_id_t rb_obj_shape_id(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
-RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
-bool rb_shape_too_complex_p(shape_id_t shape_id);
 bool rb_shape_has_object_id(shape_id_t shape_id);
 
 shape_id_t rb_shape_transition_frozen(VALUE obj);
@@ -158,6 +156,18 @@ void rb_shape_free_all(void);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE src, VALUE *src_buf, shape_id_t src_shape_id);
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
+
+static inline bool
+rb_shape_too_complex_p(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_TOO_COMPLEX;
+}
+
+static inline bool
+rb_shape_obj_too_complex_p(VALUE obj)
+{
+    return !RB_SPECIAL_CONST_P(obj) && rb_shape_too_complex_p(RBASIC_SHAPE_ID(obj));
+}
 
 static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
