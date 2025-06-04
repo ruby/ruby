@@ -575,6 +575,12 @@ class Ractor
     __builtin_ractor_value
   end
 
+  # keep it for compatibility
+  def take
+    Kernel.warn("Ractor#take was deprecated and use Ractor#value instead. This method will be removed after the end of Aug 2025", uplevel: 0)
+    self.value
+  end
+
   #
   # call-seq:
   #    ractor.monitor(port) -> self

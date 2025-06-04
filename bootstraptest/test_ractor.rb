@@ -2211,3 +2211,19 @@ assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %
     Ractor.receive
   }.tally.sort
 }
+
+# Ractor#take will warn for compatibility.
+# This method will be removed after 2025/09/01
+assert_equal "2", %q{
+  raise "remove Ractor#take and this test" if Time.now > Time.new(2025, 9, 2)
+  $VERBOSE = true
+  r = Ractor.new{42}
+  $msg = []
+  def Warning.warn(msg)
+    $msg << msg
+  end
+  r.take
+  r.take
+  raise unless $msg.all?{/Ractor#take/ =~ it}
+  $msg.size
+}
