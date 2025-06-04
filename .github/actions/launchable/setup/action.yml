@@ -123,6 +123,7 @@ runs:
         echo "LAUNCHABLE_TOKEN=${{ inputs.launchable-token }}" >> $GITHUB_ENV
         : # To prevent a slowdown in CI, disable request retries when the Launchable server is unstable.
         echo "LAUNCHABLE_SKIP_TIMEOUT_RETRY=1" >> $GITHUB_ENV
+        echo "LAUNCHABLE_COMMIT_TIMEOUT=1" >> $GITHUB_ENV
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set up path

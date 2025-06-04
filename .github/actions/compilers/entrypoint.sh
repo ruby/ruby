@@ -79,6 +79,7 @@ setup_launchable() {
     pushd ${srcdir}
     # To prevent a slowdown in CI, disable request retries when the Launchable server is unstable.
     export LAUNCHABLE_SKIP_TIMEOUT_RETRY=1
+    export LAUNCHABLE_COMMIT_TIMEOUT=1
     # Launchable creates .launchable file in the current directory, but cannot a file to ${srcdir} directory.
     # As a workaround, we set LAUNCHABLE_SESSION_DIR to ${builddir}.
     export LAUNCHABLE_SESSION_DIR=${builddir}
