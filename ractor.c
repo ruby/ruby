@@ -4,6 +4,7 @@
 #include "ruby/thread.h"
 #include "ruby/ractor.h"
 #include "ruby/thread_native.h"
+#include "ruby/fiber/scheduler.h"
 #include "vm_core.h"
 #include "eval_intern.h"
 #include "vm_sync.h"
@@ -17,6 +18,7 @@
 #include "internal/rational.h"
 #include "internal/struct.h"
 #include "internal/thread.h"
+#include "internal/cont.h"
 #include "variable.h"
 #include "yjit.h"
 
