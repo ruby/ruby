@@ -112,7 +112,7 @@ fn main() {
         .allowlist_function("rb_shape_id_offset")
         .allowlist_function("rb_shape_get_iv_index")
         .allowlist_function("rb_shape_transition_add_ivar_no_warnings")
-        .allowlist_function("rb_shape_obj_too_complex_p")
+        .allowlist_function("rb_zjit_shape_obj_too_complex_p")
         .allowlist_var("SHAPE_ID_NUM_BITS")
 
         // From ruby/internal/intern/object.h

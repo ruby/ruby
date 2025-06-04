@@ -3124,7 +3124,7 @@ fn gen_set_ivar(
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape_id) };
+        new_shape_too_complex = unsafe { rb_yjit_shape_too_complex_p(next_shape_id) };
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {

@@ -2240,10 +2240,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
-      case SHAPE_OBJ_TOO_COMPLEX:
-      default:
-        rb_bug("Unreachable");
-        UNREACHABLE_RETURN(false);
     }
 }
 
