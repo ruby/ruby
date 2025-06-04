@@ -4,10 +4,6 @@ require_relative 'helper'
 class TestPsychRactor < Test::Unit::TestCase
   def test_ractor_round_trip
     assert_ractor(<<~RUBY, require_relative: 'helper')
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       obj = {foo: [42]}
       obj2 = Ractor.new(obj) do |obj|
         Psych.unsafe_load(Psych.dump(obj))
@@ -32,10 +28,6 @@ class TestPsychRactor < Test::Unit::TestCase
     # Test is to make sure it works, even though usage is probably very low.
     # The methods are not documented and might be deprecated one day
     assert_ractor(<<~RUBY, require_relative: 'helper')
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       r = Ractor.new do
         Psych.add_builtin_type 'omap' do |type, val|
           val * 2
@@ -49,10 +41,6 @@ class TestPsychRactor < Test::Unit::TestCase
 
   def test_ractor_constants
     assert_ractor(<<~RUBY, require_relative: 'helper')
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       r = Ractor.new do
         Psych.libyaml_version.join('.') == Psych::LIBYAML_VERSION
       end.value
