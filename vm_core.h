@@ -288,7 +288,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    uint64_t value; // attr_index in lower bits, dest_shape_id in upper bits
+    uint64_t value; // dest_shape_id in former half, attr_index in latter half
     ID iv_set_name;
 };
 
