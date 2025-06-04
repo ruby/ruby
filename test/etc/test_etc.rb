@@ -178,10 +178,6 @@ class TestEtc < Test::Unit::TestCase
     omit "This test is flaky and intermittently failing now on ModGC workflow" if ENV['GITHUB_WORKFLOW'] == 'ModGC'
 
     assert_ractor(<<~RUBY, require: 'etc', timeout: 60)
-      class Ractor
-        alias join take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       10.times.map do
         Ractor.new do
           100.times do
@@ -208,10 +204,6 @@ class TestEtc < Test::Unit::TestCase
 
   def test_ractor_unsafe
     assert_ractor(<<~RUBY, require: 'etc')
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       r = Ractor.new do
         begin
           Etc.passwd
