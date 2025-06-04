@@ -33,6 +33,13 @@ describe "Struct anonymous class instance methods" do
     car['model'].should == 'F150'
     car[1].should == 'F150'
   end
+
+  it "writer methods raise a FrozenError on a frozen struct" do
+    car = StructClasses::Car.new('Ford', 'Ranger')
+    car.freeze
+
+    -> { car.model = 'Escape' }.should raise_error(FrozenError)
+  end
 end
 
 describe "Struct subclasses" do

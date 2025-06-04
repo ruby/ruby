@@ -526,9 +526,6 @@ thread_cleanup_func(void *th_ptr, int atfork)
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_destroy(&th->ractor_waiting.cond);
-#endif
 }
 
 static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
@@ -1724,6 +1721,12 @@ rb_io_blocking_operation_enter(struct rb_io *io, struct rb_io_blocking_operation
     ccan_list_add(rb_io_blocking_operations(io), &blocking_operation->list);
 }
 
+static void
+rb_io_blocking_operation_pop(struct rb_io *io, struct rb_io_blocking_operation *blocking_operation)
+{
+    ccan_list_del(&blocking_operation->list);
+}
+
 struct io_blocking_operation_arguments {
     struct rb_io *io;
     struct rb_io_blocking_operation *blocking_operation;
@@ -1735,7 +1738,7 @@ io_blocking_operation_exit(VALUE _arguments)
     struct io_blocking_operation_arguments *arguments = (void*)_arguments;
     struct rb_io_blocking_operation *blocking_operation = arguments->blocking_operation;
 
-    ccan_list_del(&blocking_operation->list);
+    rb_io_blocking_operation_pop(arguments->io, blocking_operation);
 
     rb_io_t *io = arguments->io;
     rb_thread_t *thread = io->closing_ec->thread_ptr;
@@ -1766,6 +1769,9 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
 {
     VALUE wakeup_mutex = io->wakeup_mutex;
 
+    // Indicate that the blocking operation is no longer active:
+    blocking_operation->ec = NULL;
+
     if (RB_TEST(wakeup_mutex)) {
         struct io_blocking_operation_arguments arguments = {
             .io = io,
@@ -1775,7 +1781,8 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
         rb_mutex_synchronize(wakeup_mutex, io_blocking_operation_exit, (VALUE)&arguments);
     }
     else {
-        ccan_list_del(&blocking_operation->list);
+        // If there's no wakeup_mutex, we can safely remove the operation directly:
+        rb_io_blocking_operation_pop(io, blocking_operation);
     }
 }
 
@@ -1812,7 +1819,7 @@ rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argum
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
     };
-    ccan_list_add(&io->blocking_operations, &blocking_operation.list);
+    rb_io_blocking_operation_enter(io, &blocking_operation);
 
     struct io_blocking_operation_arguments io_blocking_operation_arguments = {
         .io = io,
@@ -2768,13 +2775,20 @@ thread_io_close_notify_all(VALUE _io)
     ccan_list_for_each(rb_io_blocking_operations(io), blocking_operation, list) {
         rb_execution_context_t *ec = blocking_operation->ec;
 
-        rb_thread_t *thread = ec->thread_ptr;
+        // If the operation is in progress, we need to interrupt it:
+        if (ec) {
+            rb_thread_t *thread = ec->thread_ptr;
 
-        if (thread->scheduler != Qnil) {
-            rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
-        } else {
-            rb_threadptr_pending_interrupt_enque(thread, error);
-            rb_threadptr_interrupt(thread);
+            VALUE result = RUBY_Qundef;
+            if (thread->scheduler != Qnil) {
+                result = rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+            }
+
+            if (result == RUBY_Qundef) {
+                // If the thread is not the current thread, we need to enqueue an error:
+                rb_threadptr_pending_interrupt_enque(thread, error);
+                rb_threadptr_interrupt(thread);
+            }
         }
 
         count += 1;
@@ -4728,7 +4742,7 @@ rb_gc_set_stack_end(VALUE **stack_end_p)
 {
     VALUE stack_end;
 COMPILER_WARNING_PUSH
-#if __has_warning("-Wdangling-pointer")
+#ifdef __GNUC__
 COMPILER_WARNING_IGNORED(-Wdangling-pointer);
 #endif
     *stack_end_p = &stack_end;
@@ -6174,6 +6188,8 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         }
         rb_native_mutex_unlock(&th->interrupt_lock);
 
+        RUBY_DEBUG_LOG("task:%p", task);
+
         if (task) {
             (*task->func)(task->data);
             ruby_xfree(task);
@@ -6227,6 +6243,8 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                          rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
 {
     struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
+
+    RUBY_DEBUG_LOG("flags:%d", (int)flags);
 
     d->func = func;
     d->data = data;

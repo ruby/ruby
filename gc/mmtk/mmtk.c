@@ -4,7 +4,6 @@
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
-#include "internal/object.h"
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
@@ -751,6 +750,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
 
+    if (SPECIAL_CONST_P(b)) return;
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
@@ -1021,7 +1022,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
         if (rb_gc_shutdown_call_finalizer_p(obj)) {
             rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC_RESET_FLAGS(obj);
+            RBASIC(obj)->flags = 0;
         }
     }
     mmtk_free_raw_vec_of_obj_ref(registered_candidates);

@@ -17,6 +17,7 @@ editor.
 Ruby core development can be done either in Windows `cmd` like:
 
 ```batch
+ridk install
 ridk enable ucrt64
 
 pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
@@ -37,6 +38,7 @@ make
 or in MSYS2 `bash` like:
 
 ```bash
+ridk install
 ridk enable ucrt64
 bash
 
@@ -76,14 +78,37 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     x64.
 
     The minimum requirement is here:
-      * VC++/MSVC on VS 2017/2019 version build tools.
-        * Visual Studio 2022 17.13.x is broken. see https://bugs.ruby-lang.org/issues/21167
+      * VC++/MSVC on VS 2017/2019/2022 version build tools.
       * Windows 10/11 SDK
-        * 10.0.26100 is broken, 10.0.22621 is recommended. see https://bugs.ruby-lang.org/issues/21255
 
-3.  Please set environment variable `INCLUDE`, `LIB`, `PATH`
-    to run required commands properly from the command line.
-    These are set properly by `vcvarall*.bat` usually.
+    You can install Visual Studio Build Tools with `winget`.
+    `win32\install-buildtools.cmd` is a batch file to install the
+    minimum requirements excluding the IDE etc.
+
+3.  Please set environment variable `INCLUDE`, `LIB`, `PATH` to run
+    required commands properly from the command line.  These are set
+    properly by `vsdevcmd.bat` or `vcvarall*.bat` usually. You can run
+    the following command to set them in your command line.
+
+    To native build:
+
+    ```
+    cmd /k win32\vssetup.cmd
+    ```
+
+    To cross build arm64 binary:
+
+    ```
+    cmd /k win32\vssetup.cmd -arch arm64
+    ```
+
+    To cross build x64 binary:
+
+    ```
+    cmd /k win32\vssetup.cmd -arch x64
+    ```
+
+    See `win32\vssetup.cmd -help` for other command line options.
 
     **Note** building ruby requires following commands.
 

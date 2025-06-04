@@ -17,7 +17,7 @@ class WebauthnListenerTest < Gem::TestCase
     super
   end
 
-  def test_listener_thread_retreives_otp_code
+  def test_listener_thread_retrieves_otp_code
     thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
     Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}?code=xyz")
 

@@ -596,8 +596,8 @@ class TestShapes < Test::Unit::TestCase
 
       assert_predicate RubyVM::Shape.of(tc), :too_complex?
       assert_equal 3, tc.very_unique
-      assert_equal 3, Ractor.new(tc) { |x| Ractor.yield(x.very_unique) }.take
-      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| Ractor.yield(x.instance_variables) }.take.sort
+      assert_equal 3, Ractor.new(tc) { |x| x.very_unique }.value
+      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| x.instance_variables }.value.sort
     end;
   end
 
@@ -699,10 +699,10 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = Object.new
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
@@ -717,10 +717,10 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = []
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
@@ -1055,11 +1055,12 @@ class TestShapes < Test::Unit::TestCase
 
   def test_freezing_and_duplicating_object
     obj = Object.new.freeze
+    assert_predicate(RubyVM::Shape.of(obj), :shape_frozen?)
+
+    # dup'd objects shouldn't be frozen
     obj2 = obj.dup
     refute_predicate(obj2, :frozen?)
-    # dup'd objects shouldn't be frozen, and the shape should be the
-    # parent shape of the copied object
-    assert_equal(RubyVM::Shape.of(obj).parent.id, RubyVM::Shape.of(obj2).id)
+    refute_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
   end
 
   def test_freezing_and_duplicating_object_with_ivars
@@ -1076,6 +1077,7 @@ class TestShapes < Test::Unit::TestCase
     str.freeze
     str2 = str.dup
     refute_predicate(str2, :frozen?)
+
     refute_equal(RubyVM::Shape.of(str).id, RubyVM::Shape.of(str2).id)
     assert_equal(str2.instance_variable_get(:@a), 1)
   end
@@ -1092,8 +1094,7 @@ class TestShapes < Test::Unit::TestCase
     obj2 = obj.clone(freeze: true)
     assert_predicate(obj2, :frozen?)
     refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
-    assert_equal(RubyVM::Shape::SHAPE_FROZEN, RubyVM::Shape.of(obj2).type)
-    assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2).parent)
+    assert_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
   end
 
   def test_freezing_and_cloning_object_with_ivars

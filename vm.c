@@ -3294,8 +3294,7 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
         rb_st_memsize(vm->overloaded_cme_table) +
-        vm_memsize_constant_cache() +
-        GET_SHAPE_TREE()->cache_size * sizeof(redblack_node_t)
+        vm_memsize_constant_cache()
     );
 
     // TODO
@@ -3557,7 +3556,6 @@ thread_mark(void *ptr)
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
     rb_gc_mark(th->name);
-    rb_gc_mark(th->ractor_waiting.receiving_mutex);
 
     rb_gc_mark(th->scheduler);
 
@@ -3719,10 +3717,6 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->ext_config.ractor_safe = true;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
-    ccan_list_node_init(&th->ractor_waiting.waiting_node);
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_initialize(&th->ractor_waiting.cond);
-#endif
 
 #if USE_RUBY_DEBUG_LOG
     static rb_atomic_t thread_serial = 1;
@@ -4017,9 +4011,6 @@ Init_VM(void)
     fcore = rb_class_new(rb_cBasicObject);
     rb_set_class_path(fcore, rb_cRubyVM, "FrozenCore");
     rb_vm_register_global_object(rb_class_path_cached(fcore));
-    RB_FL_UNSET_RAW(fcore, T_MASK);
-    RB_FL_SET_RAW(fcore, T_ICLASS);
-    RCLASSEXT_ICLASS_IS_ORIGIN(RCLASS_EXT_PRIME(fcore)) = true;
     klass = rb_singleton_class(fcore);
     rb_define_method_id(klass, id_core_set_method_alias, m_core_set_method_alias, 3);
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
@@ -4381,7 +4372,8 @@ Init_BareVM(void)
     vm_opt_mid_table = st_init_numtable();
 
 #ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_complete_cond);
+    rb_native_cond_initialize(&vm->ractor.sync.barrier_release_cond);
 #endif
 }
 

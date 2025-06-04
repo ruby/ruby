@@ -1327,6 +1327,15 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     ln = NUM2INT(line);
     StringValueCStr(file);
 
+    bool parse_file = false;
+    if (RB_TYPE_P(src, T_FILE)) {
+        parse_file = true;
+        src = rb_io_path(src);
+    }
+    else {
+        src = StringValue(src);
+    }
+
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
     pm_options_scopes_init(&result.options, 1);
@@ -1349,15 +1358,14 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     VALUE script_lines;
     VALUE error;
 
-    if (RB_TYPE_P(src, T_FILE)) {
-        VALUE filepath = rb_io_path(src);
-        error = pm_load_parse_file(&result, filepath, ruby_vm_keep_script_lines ? &script_lines : NULL);
-        RB_GC_GUARD(filepath);
+    if (parse_file) {
+        error = pm_load_parse_file(&result, src, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
     else {
-        src = StringValue(src);
         error = pm_parse_string(&result, src, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
     }
+
+    RB_GC_GUARD(src);
 
     if (error == Qnil) {
         int error_state;
@@ -2918,7 +2926,7 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
     attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASSEXT_MAX_IV_COUNT(RCLASS_EXT_READABLE(superclass));
+    count += RCLASS_MAX_IV_COUNT(superclass);
 
     rb_id_table_free(iv_names);
 

@@ -1743,6 +1743,18 @@ AS_IF([test "$GCC" = yes], [
 		    [rb_cv_gcc_atomic_builtins=no])])
     AS_IF([test "$rb_cv_gcc_atomic_builtins" = yes], [
 	AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS)
+	AC_CACHE_CHECK([for 64bit __atomic builtins], [rb_cv_gcc_atomic_builtins_64], [
+	    AC_LINK_IFELSE([AC_LANG_PROGRAM([[@%:@include <stdint.h>
+			uint64_t atomic_var;]],
+			[[
+			    __atomic_load_n(&atomic_var, __ATOMIC_RELAXED);
+			    __atomic_store_n(&atomic_var, 0, __ATOMIC_RELAXED);
+			]])],
+			[rb_cv_gcc_atomic_builtins_64=yes],
+			[rb_cv_gcc_atomic_builtins_64=no])])
+	AS_IF([test "$rb_cv_gcc_atomic_builtins_64" = yes], [
+	    AC_DEFINE(HAVE_GCC_ATOMIC_BUILTINS_64)
+	])
     ])
 
     AC_CACHE_CHECK([for __sync builtins], [rb_cv_gcc_sync_builtins], [
@@ -3963,7 +3975,7 @@ AS_CASE(["${YJIT_SUPPORT}"],
 
 ZJIT_LIBS=
 AS_CASE(["${ZJIT_SUPPORT}"],
-[yes|dev], [
+[yes|dev|dev_nodebug], [
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
@@ -3975,6 +3987,10 @@ AS_CASE(["${ZJIT_SUPPORT}"],
         rb_cargo_features="$rb_cargo_features,disasm"
         JIT_CARGO_SUPPORT=dev
 	AC_DEFINE(RUBY_DEBUG, 1)
+    ],
+    [dev_nodebug], [
+        rb_cargo_features="$rb_cargo_features,disasm"
+        JIT_CARGO_SUPPORT=dev_nodebug
     ])
 
     ZJIT_LIBS="target/release/libzjit.a"

@@ -164,6 +164,35 @@ describe "Struct.new" do
       obj.args.should == 42
       obj2.args.should == 42
     end
+
+    context "given positional and keyword arguments" do
+      it "treats keyword arguments as a positional parameter" do
+        type = Struct.new(:a, :b)
+        s = type.new("a", b: "b")
+        s.a.should == "a"
+        s.b.should == {b: "b"}
+
+        type = Struct.new(:a, :b, :c)
+        s = type.new("a", b: "b", c: "c")
+        s.a.should == "a"
+        s.b.should == {b: "b", c: "c"}
+        s.c.should == nil
+      end
+
+      it "ignores empty keyword arguments" do
+        type = Struct.new(:a, :b)
+        h = {}
+        s = type.new("a", **h)
+
+        s.a.should == "a"
+        s.b.should == nil
+      end
+
+      it "raises ArgumentError when all struct attribute values are specified" do
+        type = Struct.new(:a, :b)
+        -> { type.new("a", "b", c: "c") }.should raise_error(ArgumentError, "struct size differs")
+      end
+    end
   end
 
   context "keyword_init: true option" do

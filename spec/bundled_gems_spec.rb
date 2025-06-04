@@ -24,6 +24,7 @@ RSpec.configure do |config|
     require_relative "bundler/support/rubygems_ext"
     Spec::Rubygems.test_setup
     Spec::Helpers.install_dev_bundler
+    FileUtils.mkdir_p Spec::Path.gem_path
   end
 
   config.around(:each) do |example|

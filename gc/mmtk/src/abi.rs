@@ -1,5 +1,5 @@
 use crate::api::RubyMutator;
-use crate::Ruby;
+use crate::{extra_assert, Ruby};
 use libc::c_int;
 use mmtk::scheduler::GCWorker;
 use mmtk::util::{Address, ObjectReference, VMMutatorThread, VMWorkerThread};
@@ -10,7 +10,6 @@ pub const MIN_OBJ_ALIGN: usize = 8; // Even on 32-bit machine.  A Ruby object is
 
 pub const GC_THREAD_KIND_WORKER: libc::c_int = 1;
 
-const HAS_MOVED_GFIELDSTBL: usize = 1 << 63;
 const HIDDEN_SIZE_MASK: usize = 0x0000FFFFFFFFFFFF;
 
 // Should keep in sync with C code.
@@ -19,6 +18,32 @@ const RUBY_FL_EXIVAR: usize = 1 << 10;
 // An opaque type for the C counterpart.
 #[allow(non_camel_case_types)]
 pub struct st_table;
+
+#[repr(C)]
+pub struct HiddenHeader {
+    pub prefix: usize,
+}
+
+impl HiddenHeader {
+    #[inline(always)]
+    pub fn is_sane(&self) -> bool {
+        self.prefix & !HIDDEN_SIZE_MASK == 0
+    }
+
+    #[inline(always)]
+    fn assert_sane(&self) {
+        extra_assert!(
+            self.is_sane(),
+            "Hidden header is corrupted: {:x}",
+            self.prefix
+        );
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.assert_sane();
+        self.prefix & HIDDEN_SIZE_MASK
+    }
+}
 
 /// Provide convenient methods for accessing Ruby objects.
 /// TODO: Wrap C functions in `RubyUpcalls` as Rust-friendly methods.
@@ -47,32 +72,17 @@ impl RubyObjectAccess {
         self.suffix_addr() + Self::suffix_size()
     }
 
-    fn hidden_field(&self) -> Address {
-        self.obj_start()
+    fn hidden_header(&self) -> &'static HiddenHeader {
+        unsafe { self.obj_start().as_ref() }
     }
 
-    fn load_hidden_field(&self) -> usize {
-        unsafe { self.hidden_field().load::<usize>() }
-    }
-
-    fn update_hidden_field<F>(&self, f: F)
-    where
-        F: FnOnce(usize) -> usize,
-    {
-        let old_value = self.load_hidden_field();
-        let new_value = f(old_value);
-        unsafe {
-            self.hidden_field().store(new_value);
-        }
+    #[allow(unused)] // Maybe we need to mutate the hidden header in the future.
+    fn hidden_header_mut(&self) -> &'static mut HiddenHeader {
+        unsafe { self.obj_start().as_mut_ref() }
     }
 
     pub fn payload_size(&self) -> usize {
-        self.load_hidden_field() & HIDDEN_SIZE_MASK
-    }
-
-    pub fn set_payload_size(&self, size: usize) {
-        debug_assert!((size & HIDDEN_SIZE_MASK) == size);
-        self.update_hidden_field(|old| old & !HIDDEN_SIZE_MASK | size & HIDDEN_SIZE_MASK);
+        self.hidden_header().payload_size()
     }
 
     fn flags_field(&self) -> Address {
@@ -85,18 +95,6 @@ impl RubyObjectAccess {
 
     pub fn has_exivar_flag(&self) -> bool {
         (self.load_flags() & RUBY_FL_EXIVAR) != 0
-    }
-
-    pub fn has_moved_gfields_tbl(&self) -> bool {
-        (self.load_hidden_field() & HAS_MOVED_GFIELDSTBL) != 0
-    }
-
-    pub fn set_has_moved_gfields_tbl(&self) {
-        self.update_hidden_field(|old| old | HAS_MOVED_GFIELDSTBL)
-    }
-
-    pub fn clear_has_moved_gfields_tbl(&self) {
-        self.update_hidden_field(|old| old & !HAS_MOVED_GFIELDSTBL)
     }
 
     pub fn prefix_size() -> usize {
@@ -232,7 +230,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn check_cast(ptr: *mut GCThreadTLS) -> &'static mut GCThreadTLS {
         assert!(!ptr.is_null());
-        let result = &mut *ptr;
+        let result = unsafe { &mut *ptr };
         debug_assert!({
             let kind = result.kind;
             kind == GC_THREAD_KIND_WORKER
@@ -247,7 +245,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn from_vwt_check(vwt: VMWorkerThread) -> &'static mut GCThreadTLS {
         let ptr = Self::from_vwt(vwt);
-        Self::check_cast(ptr)
+        unsafe { Self::check_cast(ptr) }
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // `transmute` does not dereference pointer
@@ -283,7 +281,7 @@ impl RawVecOfObjRef {
     ///
     /// This function turns raw pointer into a Vec without check.
     pub unsafe fn into_vec(self) -> Vec<ObjectReference> {
-        Vec::from_raw_parts(self.ptr, self.len, self.capa)
+        unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capa) }
     }
 }
 

@@ -395,11 +395,6 @@ pub struct rb_namespace_struct {
 }
 pub type rb_namespace_t = rb_namespace_struct;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct rb_id_table {
-    _unused: [u8; 0],
-}
 pub const imemo_env: imemo_type = 0;
 pub const imemo_cref: imemo_type = 1;
 pub const imemo_svar: imemo_type = 2;
@@ -520,7 +515,7 @@ pub struct iseq_inline_constant_cache {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct iseq_inline_iv_cache_entry {
-    pub value: usize,
+    pub value: u64,
     pub iv_set_name: ID,
 }
 #[repr(C)]
@@ -690,22 +685,21 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u32;
+pub type attr_index_t = u16;
 pub type shape_id_t = u32;
 pub type redblack_id_t = u32;
 pub type redblack_node_t = redblack_node;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct rb_shape {
-    pub edges: *mut rb_id_table,
+    pub edges: VALUE,
     pub edge_name: ID,
+    pub ancestor_index: *mut redblack_node_t,
+    pub parent_id: shape_id_t,
     pub next_field_index: attr_index_t,
     pub capacity: attr_index_t,
     pub type_: u8,
     pub heap_index: u8,
     pub flags: u8,
-    pub parent_id: shape_id_t,
-    pub ancestor_index: *mut redblack_node_t,
 }
 pub type rb_shape_t = rb_shape;
 #[repr(C)]

@@ -170,6 +170,10 @@ verify_interface(VALUE scheduler)
     if (!rb_respond_to(scheduler, id_io_wait)) {
         rb_raise(rb_eArgError, "Scheduler must implement #io_wait");
     }
+
+    if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
+        rb_warn("Scheduler should implement #fiber_interrupt");
+    }
 }
 
 static VALUE
@@ -458,7 +462,11 @@ rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeou
         scheduler, io, events, timeout
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_wait((VALUE)&arguments);
+    }
 }
 
 VALUE
@@ -546,7 +554,11 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t lengt
         scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_read((VALUE)&arguments);
+    }
 }
 
 /*
@@ -581,7 +593,11 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
         scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pread((VALUE)&arguments);
+    }
 }
 
 /*
@@ -630,7 +646,11 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t leng
         scheduler, io, buffer, SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_write((VALUE)&arguments);
+    }
 }
 
 /*
@@ -666,7 +686,11 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
         scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(length), SIZET2NUM(offset)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pwrite((VALUE)&arguments);
+    }
 }
 
 VALUE

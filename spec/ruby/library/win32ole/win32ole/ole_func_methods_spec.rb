@@ -11,8 +11,8 @@ platform_is :windows do
       -> { @dict.ole_func_methods(1) }.should raise_error ArgumentError
     end
 
-    it "returns an array of WIN32OLE_METHODs" do
-      @dict.ole_func_methods.all? { |m| m.kind_of? WIN32OLE_METHOD }.should be_true
+    it "returns an array of WIN32OLE::Methods" do
+      @dict.ole_func_methods.all? { |m| m.kind_of? WIN32OLE::Method }.should be_true
     end
 
     it "contains a 'AddRef' method for Scripting Dictionary" do

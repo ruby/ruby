@@ -8,6 +8,16 @@ rescue LoadError
 end
 
 class JSONInRactorTest < Test::Unit::TestCase
+  unless Ractor.method_defined?(:value)
+    module RactorBackport
+      refine Ractor do
+        alias_method :value, :take
+      end
+    end
+
+    using RactorBackport
+  end
+
   def test_generate
     pid = fork do
       r = Ractor.new do
@@ -25,7 +35,7 @@ class JSONInRactorTest < Test::Unit::TestCase
       end
       expected_json = JSON.parse('{"a":2,"b":3.141,"c":"c","d":[1,"b",3.14],"e":{"foo":"bar"},' +
                       '"g":"\\"\\u0000\\u001f","h":1000.0,"i":0.001}')
-      actual_json = r.take
+      actual_json = r.value
 
       if expected_json == actual_json
         exit 0
