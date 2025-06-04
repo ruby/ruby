@@ -1343,6 +1343,13 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
         }
         VALUE value = Qundef;
         st_lookup(fields_hash, RSHAPE(target_shape_id)->edge_name, &value);
+
+#if RUBY_DEBUG
+        if (UNDEF_P(value)) {
+            rb_bug("Object's shape includes object_id, but it's missing %s", rb_obj_info(obj));
+        }
+#endif
+
         RUBY_ASSERT(!UNDEF_P(value));
         return value;
     }
@@ -1617,13 +1624,13 @@ obj_transition_too_complex(VALUE obj, st_table *table)
         if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
             old_fields = ROBJECT_FIELDS(obj);
         }
-        rb_obj_set_shape_id(obj, shape_id);
+        RBASIC_SET_SHAPE_ID(obj, shape_id);
         ROBJECT_SET_FIELDS_HASH(obj, table);
         break;
       case T_CLASS:
       case T_MODULE:
         old_fields = RCLASS_PRIME_FIELDS(obj);
-        rb_obj_set_shape_id(obj, shape_id);
+        RBASIC_SET_SHAPE_ID(obj, shape_id);
         RCLASS_SET_FIELDS_HASH(obj, table);
         break;
       default:
@@ -1647,7 +1654,7 @@ obj_transition_too_complex(VALUE obj, st_table *table)
             fields_tbl->as.complex.table = table;
             st_insert(gen_ivs, (st_data_t)obj, (st_data_t)fields_tbl);
 
-            rb_obj_set_shape_id(obj, shape_id);
+            RBASIC_SET_SHAPE_ID(obj, shape_id);
         }
     }
 
@@ -1776,8 +1783,9 @@ general_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val, void *data,
         }
 
         st_table *table = too_complex_table_func(obj, data);
+
         if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
-            set_shape_id_func(obj, target_shape_id, data);
+            RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
 
         st_insert(table, (st_data_t)RSHAPE_EDGE_NAME(target_shape_id), (st_data_t)val);

@@ -666,9 +666,6 @@ typedef struct gc_function_map {
     void (*undefine_finalizer)(void *objspace_ptr, VALUE obj);
     void (*copy_finalizer)(void *objspace_ptr, VALUE dest, VALUE obj);
     void (*shutdown_call_finalizer)(void *objspace_ptr);
-    // Object ID
-    VALUE (*object_id)(void *objspace_ptr, VALUE obj);
-    VALUE (*object_id_to_ref)(void *objspace_ptr, VALUE object_id);
     // Forking
     void (*before_fork)(void *objspace_ptr);
     void (*after_fork)(void *objspace_ptr, rb_pid_t pid);
@@ -1892,16 +1889,35 @@ class_object_id(VALUE klass)
     return id;
 }
 
+static inline VALUE
+object_id_get(VALUE obj, shape_id_t shape_id)
+{
+    VALUE id;
+    if (rb_shape_too_complex_p(shape_id)) {
+        id = rb_obj_field_get(obj, ROOT_TOO_COMPLEX_WITH_OBJ_ID);
+    }
+    else {
+        id = rb_obj_field_get(obj, rb_shape_object_id(shape_id));
+    }
+
+#if RUBY_DEBUG
+    if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
+        rb_p(obj);
+        rb_bug("Object's shape includes object_id, but it's missing %s", rb_obj_info(obj));
+    }
+#endif
+
+    return id;
+}
+
 static VALUE
 object_id0(VALUE obj)
 {
     VALUE id = Qfalse;
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_has_object_id(RBASIC_SHAPE_ID(obj))) {
-        shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
-        id = rb_obj_field_get(obj, object_id_shape_id);
-        RUBY_ASSERT(id, "object_id missing");
-        return id;
+    if (rb_shape_has_object_id(shape_id)) {
+        return object_id_get(obj, shape_id);
     }
 
     // rb_shape_object_id_shape may lock if the current shape has
@@ -1910,6 +1926,10 @@ object_id0(VALUE obj)
 
     id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape_id, id);
+
+    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == object_id_shape_id);
+    RUBY_ASSERT(rb_shape_obj_has_id(obj));
+
     if (RB_UNLIKELY(id2ref_tbl)) {
         st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
     }
@@ -2016,30 +2036,47 @@ obj_free_object_id(VALUE obj)
         return;
     }
 
+#if RUBY_DEBUG
+    switch (BUILTIN_TYPE(obj)) {
+      case T_CLASS:
+      case T_MODULE:
+        break;
+      default:
+        if (rb_shape_obj_has_id(obj)) {
+            VALUE id = object_id_get(obj, RBASIC_SHAPE_ID(obj)); // Crash if missing
+            if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
+                rb_p(obj);
+                rb_bug("Corrupted object_id");
+            }
+        }
+        break;
+    }
+#endif
+
     VALUE obj_id = 0;
     if (RB_UNLIKELY(id2ref_tbl)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_CLASS:
           case T_MODULE:
-            if (RCLASS(obj)->object_id) {
-                obj_id = RCLASS(obj)->object_id;
+            obj_id = RCLASS(obj)->object_id;
+            break;
+          default: {
+            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+            if (rb_shape_has_object_id(shape_id)) {
+                obj_id = object_id_get(obj, shape_id);
             }
             break;
-          default:
-            if (rb_shape_obj_has_id(obj)) {
-                obj_id = object_id(obj);
-            }
-            break;
+          }
         }
-    }
 
-    if (RB_UNLIKELY(obj_id)) {
-        RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj, T_BIGNUM));
+        if (RB_UNLIKELY(obj_id)) {
+            RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
-        if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-            // If we're currently building the table then it's not a bug
-            if (id2ref_tbl_built) {
-                rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+            if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
+                // If we're currently building the table then it's not a bug
+                if (id2ref_tbl_built) {
+                    rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
+                }
             }
         }
     }
