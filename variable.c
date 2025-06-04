@@ -1667,7 +1667,6 @@ rb_obj_init_too_complex(VALUE obj, st_table *table)
 {
     // This method is meant to be called on newly allocated object.
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
     RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
 
     obj_transition_too_complex(obj, table);
@@ -2211,7 +2210,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
         return false;
       case SHAPE_OBJ_ID:
         if (itr_data->ivar_only) {
@@ -2361,17 +2359,15 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
         shape_id_t dest_shape_id = src_shape_id;
         shape_id_t initial_shape_id = rb_obj_shape_id(dest);
 
-        if (!rb_shape_canonical_p(src_shape_id)) {
-            RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_ROOT);
+        RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_ROOT);
 
-            dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-            if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
-                st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
-                rb_obj_copy_ivs_to_hash_table(obj, table);
-                rb_obj_init_too_complex(dest, table);
+        dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+        if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+            st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
+            rb_obj_copy_ivs_to_hash_table(obj, table);
+            rb_obj_init_too_complex(dest, table);
 
-                return;
-            }
+            return;
         }
 
         if (!RSHAPE_LEN(dest_shape_id)) {

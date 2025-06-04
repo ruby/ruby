@@ -381,19 +381,7 @@ rb_gc_set_shape(VALUE obj, uint32_t shape_id)
 uint32_t
 rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
 {
-    shape_id_t orig_shape_id = rb_obj_shape_id(obj);
-    if (rb_shape_too_complex_p(orig_shape_id)) {
-        return (uint32_t)orig_shape_id;
-    }
-
-    shape_id_t initial_shape_id = rb_shape_root(heap_id);
-    shape_id_t new_shape_id = rb_shape_traverse_from_new_root(initial_shape_id, orig_shape_id);
-
-    if (new_shape_id == INVALID_SHAPE_ID) {
-         return 0;
-     }
-
-    return (uint32_t)new_shape_id;
+    return (uint32_t)rb_shape_transition_heap(obj, heap_id);
 }
 
 void rb_vm_update_references(void *ptr);
@@ -1925,6 +1913,7 @@ object_id0(VALUE obj)
     // rb_shape_object_id_shape may lock if the current shape has
     // multiple children.
     shape_id_t object_id_shape_id = rb_shape_transition_object_id(obj);
+    RUBY_ASSERT(rb_shape_has_object_id(object_id_shape_id));
 
     id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape_id, id);
