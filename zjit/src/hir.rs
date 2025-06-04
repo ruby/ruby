@@ -961,7 +961,7 @@ impl Function {
                 }
                 NewHash { elements: found_elements, state: find!(state) }
             }
-            &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state },
+            &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
