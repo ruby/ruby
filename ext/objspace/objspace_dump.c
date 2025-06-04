@@ -818,14 +818,8 @@ shape_id_i(shape_id_t shape_id, void *data)
         dump_append_id(dc, shape->edge_name);
 
         break;
-      case SHAPE_FROZEN:
-        dump_append(dc, ", \"shape_type\":\"FROZEN\"");
-        break;
       case SHAPE_T_OBJECT:
         dump_append(dc, ", \"shape_type\":\"T_OBJECT\"");
-        break;
-      case SHAPE_OBJ_TOO_COMPLEX:
-        dump_append(dc, ", \"shape_type\":\"OBJ_TOO_COMPLEX\"");
         break;
       case SHAPE_OBJ_ID:
         dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");

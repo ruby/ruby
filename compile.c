@@ -2184,7 +2184,10 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
     }
 
     if (size > 0) {
-        ID *ids = (ID *)ALLOC_N(ID, size);
+#if SIZEOF_INT >= SIZEOF_SIZE_T
+        ASSUME(size < SIZE_MAX / sizeof(ID)); /* checked in xmalloc2_size */
+#endif
+        ID *ids = ALLOC_N(ID, size);
         MEMCPY(ids, tbl->ids + offset, ID, size);
         ISEQ_BODY(iseq)->local_table = ids;
     }
@@ -13378,6 +13381,13 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 {
     const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
     const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+
+    if (!ap->name) {
+        return -1;
+    } else if (!bp->name) {
+        return 1;
+    }
+
     return rb_str_cmp(ap->name, bp->name);
 }
 

@@ -1215,14 +1215,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 {
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
-    shape_id_t shape_id;
     VALUE * ivar_list;
 
     if (SPECIAL_CONST_P(obj)) {
         return default_value;
     }
 
-    shape_id = RBASIC_SHAPE_ID(obj);
+    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
@@ -4774,7 +4773,7 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
                     .call_ = cc->call_,
                     .aux_  = {
                         .attr = {
-                            .value = INVALID_SHAPE_ID << SHAPE_FLAG_SHIFT,
+                            .value = vm_pack_shape_and_index(INVALID_SHAPE_ID, ATTR_INDEX_NOT_SET),
                         }
                     },
             });
@@ -5912,7 +5911,7 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
     if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
-        RCLASS_WRITE_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
+        RCLASS_SET_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
     }
 
     if (!is_singleton && vm_scope_module_func_check(ec)) {

@@ -2904,7 +2904,7 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u16 = 0;
         if rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
@@ -3106,7 +3106,7 @@ fn gen_set_ivar(
     let shape_too_complex = comptime_receiver.shape_too_complex();
     let ivar_index = if !shape_too_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u16 = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
@@ -3124,7 +3124,7 @@ fn gen_set_ivar(
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_shape_too_complex_p(next_shape_id) };
+        new_shape_too_complex = unsafe { rb_yjit_shape_too_complex_p(next_shape_id) };
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
@@ -3395,7 +3395,7 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let mut ivar_index: u32 = 0;
+        let mut ivar_index: u16 = 0;
         rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index)
     };
 

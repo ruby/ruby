@@ -5,12 +5,10 @@ class TestObjSpaceRactor < Test::Unit::TestCase
     assert_ractor(<<~RUBY, require: 'objspace')
       ObjectSpace.trace_object_allocations do
         r = Ractor.new do
-          obj = 'a' * 1024
-          Ractor.yield obj
+          _obj = 'a' * 1024
         end
 
-        r.take
-        r.take
+        r.join
       end
     RUBY
   end
@@ -30,7 +28,7 @@ class TestObjSpaceRactor < Test::Unit::TestCase
         end
       end
 
-      ractors.each(&:take)
+      ractors.each(&:join)
     RUBY
   end
 
@@ -51,7 +49,7 @@ class TestObjSpaceRactor < Test::Unit::TestCase
         end
       end
 
-      ractors.each(&:take)
+      ractors.each(&:join)
     RUBY
   end
 end

@@ -3,54 +3,50 @@
 
 #include "internal/gc.h"
 
-#if (SIZEOF_UINT64_T <= SIZEOF_VALUE)
-
-#define SIZEOF_SHAPE_T 4
-typedef uint32_t attr_index_t;
-typedef uint32_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 32
-
-#else
-
-#define SIZEOF_SHAPE_T 2
 typedef uint16_t attr_index_t;
-typedef uint16_t shape_id_t;
-# define SHAPE_ID_NUM_BITS 16
+typedef uint32_t shape_id_t;
+#define SHAPE_ID_NUM_BITS 32
+#define SHAPE_ID_OFFSET_NUM_BITS 19
 
-#endif
+STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_BIT);
+
+#define SHAPE_BUFFER_SIZE (1 << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
+#define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_TOO_COMPLEX (SHAPE_FL_TOO_COMPLEX << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_READ_ONLY_MASK (~SHAPE_ID_FL_FROZEN)
 
 typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_FIELDS (attr_index_t)(-1)
+#define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * CHAR_BIT) - SHAPE_ID_NUM_BITS)
+#define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
 
-# define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
+#define SHAPE_MAX_VARIATIONS 8
 
-# define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
-
-# define SHAPE_MAX_VARIATIONS 8
-
-# define INVALID_SHAPE_ID (((uintptr_t)1 << SHAPE_ID_NUM_BITS) - 1)
-#define ATTR_INDEX_NOT_SET (attr_index_t)-1
+#define INVALID_SHAPE_ID ((shape_id_t)-1)
+#define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID               0x0
-#define SPECIAL_CONST_SHAPE_ID      0x1
-//      ROOT_TOO_COMPLEX_SHAPE_ID   0x2
-#define FIRST_T_OBJECT_SHAPE_ID     0x3
+#define ROOT_TOO_COMPLEX_SHAPE_ID   (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
+#define SPECIAL_CONST_SHAPE_ID      (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
+#define FIRST_T_OBJECT_SHAPE_ID     0x1
 
 extern ID ruby_internal_object_id;
 
 typedef struct redblack_node redblack_node_t;
 
 struct rb_shape {
-    struct rb_id_table *edges; // id_table from ID (ivar) to next shape
+    VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
+    redblack_node_t *ancestor_index;
+    shape_id_t parent_id;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
     uint8_t heap_index;
     uint8_t flags;
-    shape_id_t parent_id;
-    redblack_node_t *ancestor_index;
 };
 
 typedef struct rb_shape rb_shape_t;
@@ -66,21 +62,35 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
-    SHAPE_FROZEN,
     SHAPE_T_OBJECT,
-    SHAPE_OBJ_TOO_COMPLEX,
+};
+
+enum shape_flags {
+    SHAPE_FL_FROZEN             = 1 << 0,
+    SHAPE_FL_HAS_OBJECT_ID      = 1 << 1,
+    SHAPE_FL_TOO_COMPLEX        = 1 << 2,
+
+    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID,
 };
 
 typedef struct {
     /* object shapes */
     rb_shape_t *shape_list;
     rb_shape_t *root_shape;
-    shape_id_t next_shape_id;
+    rb_atomic_t next_shape_id;
 
     redblack_node_t *shape_cache;
     unsigned int cache_size;
 } rb_shape_tree_t;
 RUBY_EXTERN rb_shape_tree_t *rb_shape_tree_ptr;
+
+union rb_attr_index_cache {
+    uint64_t pack;
+    struct {
+        shape_id_t shape_id;
+        attr_index_t index;
+    } unpack;
+};
 
 static inline rb_shape_tree_t *
 rb_current_shape_tree(void)
@@ -101,6 +111,14 @@ RBASIC_SHAPE_ID(VALUE obj)
 #endif
 }
 
+// Same as RBASIC_SHAPE_ID but with flags that have no impact
+// on reads removed. e.g. Remove FL_FROZEN.
+static inline shape_id_t
+RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
+{
+    return RBASIC_SHAPE_ID(obj) & SHAPE_ID_READ_ONLY_MASK;
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
@@ -109,7 +127,6 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
-    // Ractors are occupying the upper 32 bits of flags, but only in debug mode
     // Object shapes are occupying top bits
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
@@ -125,8 +142,6 @@ RUBY_FUNC_EXPORTED shape_id_t rb_obj_shape_id(VALUE obj);
 shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
-RUBY_FUNC_EXPORTED bool rb_shape_obj_too_complex_p(VALUE obj);
-bool rb_shape_too_complex_p(shape_id_t shape_id);
 bool rb_shape_has_object_id(shape_id_t shape_id);
 
 shape_id_t rb_shape_transition_frozen(VALUE obj);
@@ -143,9 +158,21 @@ void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id,
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
 static inline bool
+rb_shape_too_complex_p(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_TOO_COMPLEX;
+}
+
+static inline bool
+rb_shape_obj_too_complex_p(VALUE obj)
+{
+    return !RB_SPECIAL_CONST_P(obj) && rb_shape_too_complex_p(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
-    return !RSHAPE(shape_id)->flags;
+    return !(shape_id & SHAPE_ID_FLAGS_MASK) && !RSHAPE(shape_id)->flags;
 }
 
 static inline shape_id_t

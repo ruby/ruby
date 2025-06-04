@@ -441,7 +441,7 @@ impl VALUE {
     }
 
     pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_shape_obj_too_complex_p(self) }
+        unsafe { rb_yjit_shape_obj_too_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {

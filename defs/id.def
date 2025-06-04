@@ -63,6 +63,8 @@ firstline, predefined = __LINE__+1, %[\
   pack
   buffer
   include?
+  aborted
+  exited
 
   _                                                     UScore
 

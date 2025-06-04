@@ -169,7 +169,7 @@ rb_gc_vm_lock_no_barrier(void)
 void
 rb_gc_vm_unlock_no_barrier(unsigned int lev)
 {
-    RB_VM_LOCK_LEAVE_LEV(&lev);
+    RB_VM_LOCK_LEAVE_LEV_NB(&lev);
 }
 
 void
@@ -1491,7 +1491,10 @@ internal_object_p(VALUE obj)
           case T_ZOMBIE:
             break;
           case T_CLASS:
-            if (!RBASIC(obj)->klass) break;
+            if (obj == rb_mRubyVMFrozenCore)
+                return 1;
+
+            if (!RBASIC_CLASS(obj)) break;
             if (RCLASS_SINGLETON_P(obj)) {
                 return rb_singleton_class_internal_p(obj);
             }
@@ -3263,13 +3266,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (fields_count) {
             VALUE klass = RBASIC_CLASS(obj);
 
-            // Skip updating max_iv_count if the prime classext is not writable
-            // because GC context doesn't provide information about namespaces.
-            if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass)) {
-                // Increment max_iv_count if applicable, used to determine size pool allocation
-                if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
-                    RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
-                }
+            // Increment max_iv_count if applicable, used to determine size pool allocation
+            if (RCLASS_MAX_IV_COUNT(klass) < fields_count) {
+                RCLASS_SET_MAX_IV_COUNT(klass, fields_count);
             }
         }
 

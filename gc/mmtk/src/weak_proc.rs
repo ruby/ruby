@@ -6,11 +6,7 @@ use mmtk::{
     vm::ObjectTracerContext,
 };
 
-use crate::{
-    abi::GCThreadTLS,
-    upcalls,
-    Ruby,
-};
+use crate::{abi::GCThreadTLS, upcalls, Ruby};
 
 pub struct WeakProcessor {
     /// Objects that needs `obj_free` called when dying.
@@ -84,16 +80,13 @@ impl WeakProcessor {
 
         let global_tables_count = (crate::upcalls().global_tables_count)();
         let work_packets = (0..global_tables_count)
-                .map(|i| {
-                    Box::new(UpdateGlobalTables { idx: i }) as _
-                })
-                .collect();
+            .map(|i| Box::new(UpdateGlobalTables { idx: i }) as _)
+            .collect();
 
         worker.scheduler().work_buckets[WorkBucketStage::VMRefClosure].bulk_add(work_packets);
 
-        worker.scheduler().work_buckets[WorkBucketStage::VMRefClosure].bulk_add(vec![
-            Box::new(UpdateWbUnprotectedObjectsList) as _,
-        ]);
+        worker.scheduler().work_buckets[WorkBucketStage::VMRefClosure]
+            .bulk_add(vec![Box::new(UpdateWbUnprotectedObjectsList) as _]);
     }
 }
 
@@ -144,13 +137,13 @@ impl GCWork<Ruby> for ProcessWeakReferences {
             .try_lock()
             .expect("Mutators should not be holding the lock.");
 
-            for ptr_ptr in weak_references.iter_mut() {
-                if !(**ptr_ptr).is_reachable() {
-                    **ptr_ptr = crate::binding().weak_reference_dead_value;
-                }
+        for ptr_ptr in weak_references.iter_mut() {
+            if !(**ptr_ptr).is_reachable() {
+                **ptr_ptr = crate::binding().weak_reference_dead_value;
             }
+        }
 
-            weak_references.clear();
+        weak_references.clear();
     }
 }
 
@@ -194,7 +187,7 @@ impl GCWork<Ruby> for UpdateFinalizerObjIdTables {
 }
 
 struct UpdateGlobalTables {
-    idx: i32
+    idx: i32,
 }
 impl GlobalTableProcessingWork for UpdateGlobalTables {
     fn process_table(&mut self) {

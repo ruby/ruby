@@ -288,7 +288,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    uintptr_t value; // attr_index in lower bits, dest_shape_id in upper bits
+    uint64_t value; // dest_shape_id in former half, attr_index in latter half
     ID iv_set_name;
 };
 
@@ -683,12 +683,15 @@ typedef struct rb_vm_struct {
             bool terminate_waiting;
 
 #ifndef RUBY_THREAD_PTHREAD_H
+            // win32
             bool barrier_waiting;
             unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_cond;
+            rb_nativethread_cond_t barrier_complete_cond;
+            rb_nativethread_cond_t barrier_release_cond;
 #endif
         } sync;
 
+#ifdef RUBY_THREAD_PTHREAD_H
         // ractor scheduling
         struct {
             rb_nativethread_lock_t lock;
@@ -722,7 +725,10 @@ typedef struct rb_vm_struct {
             bool barrier_waiting;
             unsigned int barrier_waiting_cnt;
             unsigned int barrier_serial;
+            struct rb_ractor_struct *barrier_ractor;
+            unsigned int barrier_lock_rec;
         } sched;
+#endif
     } ractor;
 
 #ifdef USE_SIGALTSTACK
@@ -1105,18 +1111,6 @@ typedef struct rb_ractor_struct rb_ractor_t;
 
 struct rb_native_thread;
 
-struct rb_thread_ractor_waiting {
-    //enum rb_ractor_wait_status wait_status;
-    int wait_status;
-    //enum rb_ractor_wakeup_status wakeup_status;
-    int wakeup_status;
-    struct ccan_list_node waiting_node; // the rb_thread_t
-    VALUE receiving_mutex; // protects Ractor.receive_if
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t cond;
-#endif
-};
-
 typedef struct rb_thread_struct {
     struct ccan_list_node lt_node; // managed by a ractor (r->threads.set)
     VALUE self;
@@ -1128,8 +1122,6 @@ typedef struct rb_thread_struct {
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
     rb_atomic_t serial; // only for RUBY_DEBUG_LOG()
-
-    struct rb_thread_ractor_waiting ractor_waiting;
 
     VALUE last_status; /* $? */
 
@@ -1903,7 +1895,9 @@ rb_vm_living_threads_init(rb_vm_t *vm)
 {
     ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
+#ifdef RUBY_THREAD_PTHREAD_H
     ccan_list_head_init(&vm->ractor.sched.zombie_threads);
+#endif
 }
 
 typedef int rb_backtrace_iter_func(void *, VALUE, int, VALUE);

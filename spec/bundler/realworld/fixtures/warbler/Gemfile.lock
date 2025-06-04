@@ -20,7 +20,7 @@ GEM
   specs:
     jruby-jars (10.0.0.1)
     jruby-rack (1.2.2)
-    rake (13.2.1)
+    rake (13.3.0)
     rexml (3.4.1)
     rubyzip (2.4.1)
 

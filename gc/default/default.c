@@ -28,7 +28,6 @@
 #include "ruby/util.h"
 #include "ruby/vm.h"
 #include "ruby/internal/encoding/string.h"
-#include "internal/object.h"
 #include "ccan/list/list.h"
 #include "darray.h"
 #include "gc/gc.h"
@@ -2181,7 +2180,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
     gc_report(5, objspace, "newobj: %s\n", rb_obj_info(obj));
 
-    RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, rb_obj_info(obj));
+    // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, rb_obj_info(obj));
     return obj;
 }
 
@@ -2972,7 +2971,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
                 if (RB_BUILTIN_TYPE(vp) != T_NONE) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC_RESET_FLAGS(vp);
+                        RBASIC(vp)->flags = 0;
                     }
                 }
             }
@@ -3046,7 +3045,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
                 if (rb_gc_shutdown_call_finalizer_p(vp)) {
                     rb_gc_obj_free_vm_weak_references(vp);
                     if (rb_gc_obj_free(objspace, vp)) {
-                        RBASIC_RESET_FLAGS(vp);
+                        RBASIC(vp)->flags = 0;
                     }
                 }
             }
@@ -6007,8 +6006,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 
     if (RGENGC_CHECK_MODE) {
         if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
-        if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
     }
+
+    if (SPECIAL_CONST_P(b)) return;
 
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_NONE);
     GC_ASSERT(RB_BUILTIN_TYPE(a) != T_MOVED);

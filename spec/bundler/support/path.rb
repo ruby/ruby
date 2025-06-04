@@ -284,6 +284,10 @@ module Spec
       Dir["#{base_system_gems}/*/*/**/rake*.gem"].first
     end
 
+    def rake_version
+      File.basename(rake_path).delete_prefix("rake-").delete_suffix(".gem")
+    end
+
     def sinatra_dependency_paths
       deps = %w[
         mustermann

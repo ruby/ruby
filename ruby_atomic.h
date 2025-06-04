@@ -36,4 +36,36 @@ rbimpl_atomic_load_relaxed(rb_atomic_t *ptr)
 }
 #define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_relaxed(&(var))
 
+static inline uint64_t
+rbimpl_atomic_u64_load_relaxed(const uint64_t *value)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    return __atomic_load_n(value, __ATOMIC_RELAXED);
+#elif defined(_WIN32)
+    uint64_t val = *value;
+    return InterlockedCompareExchange64(value, val, val);
+#elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
+    uint64_t val = *value;
+    return atomic_cas_64(value, val, val);
+#else
+    return *value;
+#endif
+}
+#define ATOMIC_U64_LOAD_RELAXED(var) rbimpl_atomic_u64_load_relaxed(&(var))
+
+static inline void
+rbimpl_atomic_u64_set_relaxed(uint64_t *address, uint64_t value)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    __atomic_store_n(address, value, __ATOMIC_RELAXED);
+#elif defined(_WIN32)
+    InterlockedExchange64(address, value);
+#elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
+    atomic_swap_64(address, value);
+#else
+    *address = value;
+#endif
+}
+#define ATOMIC_U64_SET_RELAXED(var, val) rbimpl_atomic_u64_set_relaxed(&(var), val)
+
 #endif
