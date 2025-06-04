@@ -321,7 +321,7 @@ static void
 shape_tree_compact(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
+    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id - 1);
     while (cursor < end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             cursor->edges = rb_gc_location(cursor->edges);
@@ -1107,6 +1107,8 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     return midway_shape;
 }
 
+// Rebuild `dest_shape_id` starting from `initial_shape_id`, and keep only SHAPE_IVAR transitions.
+// SHAPE_OBJ_ID and frozen status are lost.
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
@@ -1135,6 +1137,9 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
         while (src_shape->parent_id != INVALID_SHAPE_ID) {
             if (src_shape->type == SHAPE_IVAR) {
                 while (dest_shape->edge_name != src_shape->edge_name) {
+                    if (UNLIKELY(dest_shape->parent_id == INVALID_SHAPE_ID)) {
+                        rb_bug("Lost field %s", rb_id2name(src_shape->edge_name));
+                    }
                     dest_shape = RSHAPE(dest_shape->parent_id);
                 }
 

@@ -232,7 +232,7 @@ ROBJECT_FIELDS_CAPACITY(VALUE obj)
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    return RSHAPE(RBASIC_SHAPE_ID(obj))->capacity;
+    return RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj));
 }
 
 static inline st_table *
