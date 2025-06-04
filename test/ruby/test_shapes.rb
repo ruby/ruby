@@ -651,6 +651,22 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_object_id_transition_too_complex
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
+      obj = Hi.new
+      obj.instance_variable_set(:@a, 1)
+      obj.instance_variable_set(:@b, 2)
+      old_id = obj.object_id
+
+      RubyVM::Shape.exhaust_shapes
+      obj.remove_instance_variable(:@a)
+
+      assert_equal old_id, obj.object_id
+    end;
+  end
+
   def test_too_complex_and_frozen_and_object_id
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -676,7 +692,7 @@ class TestShapes < Test::Unit::TestCase
       assert_predicate frozen_shape, :shape_frozen?
       refute_predicate frozen_shape, :has_object_id?
 
-      tc.object_id
+      assert_equal tc.object_id, tc.object_id
 
       id_shape = RubyVM::Shape.of(tc)
       refute_equal frozen_shape.id, id_shape.id
