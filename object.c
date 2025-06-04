@@ -355,9 +355,12 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     VALUE *src_buf = ROBJECT_FIELDS(obj);
     VALUE *dest_buf = ROBJECT_FIELDS(dest);
 
-    RUBY_ASSERT(src_num_ivs <= RSHAPE(dest_shape_id)->capacity);
-    if (RSHAPE(initial_shape_id)->capacity < RSHAPE(dest_shape_id)->capacity) {
-        rb_ensure_iv_list_size(dest, RSHAPE(initial_shape_id)->capacity, RSHAPE(dest_shape_id)->capacity);
+    attr_index_t initial_capa = RSHAPE_CAPACITY(initial_shape_id);
+    attr_index_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
+
+    RUBY_ASSERT(src_num_ivs <= dest_capa);
+    if (initial_capa < dest_capa) {
+        rb_ensure_iv_list_size(dest, 0, dest_capa);
         dest_buf = ROBJECT_FIELDS(dest);
     }
 

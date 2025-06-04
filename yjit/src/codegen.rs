@@ -3119,7 +3119,7 @@ fn gen_set_ivar(
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_too_complex = false;
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
-        let current_shape = comptime_receiver.shape_of();
+        let current_shape_id = comptime_receiver.shape_id_of();
         let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(comptime_receiver, ivar_name) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
@@ -3128,18 +3128,20 @@ fn gen_set_ivar(
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
-            let next_shape = unsafe { rb_shape_lookup(next_shape_id) };
-            let current_capacity = unsafe { (*current_shape).capacity };
+            let current_shape = unsafe { rb_shape_lookup(current_shape_id) };
+
+            let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
+            let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
             // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
             // reallocate it.
-            let needs_extension = unsafe { (*current_shape).capacity != (*next_shape).capacity };
+            let needs_extension = next_capacity != current_capacity;
 
             // We can write to the object, but we need to transition the shape
             let ivar_index = unsafe { (*current_shape).next_field_index } as usize;
 
             let needs_extension = if needs_extension {
-                Some((current_capacity, unsafe { (*next_shape).capacity }))
+                Some((current_capacity, next_capacity))
             } else {
                 None
             };
