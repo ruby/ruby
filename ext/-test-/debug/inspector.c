@@ -4,8 +4,7 @@
 static VALUE
 callback(const rb_debug_inspector_t *dbg_context, void *data)
 {
-    VALUE locs = rb_debug_inspector_backtrace_locations(dbg_context);
-    long i, len = RARRAY_LEN(locs);
+    long i, len = rb_debug_inspector_frame_count(dbg_context);
     VALUE binds = rb_ary_new();
     for (i = 0; i < len; ++i) {
         VALUE entry = rb_ary_new();
@@ -14,7 +13,7 @@ callback(const rb_debug_inspector_t *dbg_context, void *data)
         rb_ary_push(entry, rb_debug_inspector_frame_binding_get(dbg_context, i));
         rb_ary_push(entry, rb_debug_inspector_frame_class_get(dbg_context, i));
         rb_ary_push(entry, rb_debug_inspector_frame_iseq_get(dbg_context, i));
-        rb_ary_push(entry, rb_ary_entry(locs, i));
+        rb_ary_push(entry, rb_debug_inspector_frame_loc_get(dbg_context, i));
     }
     return binds;
 }

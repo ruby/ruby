@@ -1504,18 +1504,22 @@ enum {
     CALLER_BINDING_BINDING,
     CALLER_BINDING_ISEQ,
     CALLER_BINDING_CFP,
+    CALLER_BINDING_LOC,
     CALLER_BINDING_DEPTH,
 };
 
 struct collect_caller_bindings_data {
     VALUE ary;
     const rb_execution_context_t *ec;
+    VALUE btobj;
+    rb_backtrace_t *bt;
 };
 
 static void
-collect_caller_bindings_init(void *arg, size_t size)
+collect_caller_bindings_init(void *arg, size_t num_frames)
 {
-    /* */
+    struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
+    data->btobj = backtrace_alloc_capa(num_frames, &data->bt);
 }
 
 static VALUE
@@ -1546,13 +1550,21 @@ static void
 collect_caller_bindings_iseq(void *arg, const rb_control_frame_t *cfp)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
-    VALUE frame = rb_ary_new2(6);
+    VALUE frame = rb_ary_new2(7);
 
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
     rb_ary_store(frame, CALLER_BINDING_BINDING, GC_GUARDED_PTR(cfp)); /* create later */
     rb_ary_store(frame, CALLER_BINDING_ISEQ, cfp->iseq ? (VALUE)cfp->iseq : Qnil);
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_backtrace_location_t *loc = &data->bt->backtrace[RARRAY_LEN(data->ary)];
+    RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
+    RB_OBJ_WRITE(data->btobj, &loc->iseq, cfp->iseq);
+    loc->pc = cfp->pc;
+    VALUE vloc = location_create(loc, (void *)data->btobj);
+    rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
+
     rb_ary_store(frame, CALLER_BINDING_DEPTH, INT2FIX(frame_depth(data->ec, cfp)));
 
     rb_ary_push(data->ary, frame);
@@ -1562,13 +1574,21 @@ static void
 collect_caller_bindings_cfunc(void *arg, const rb_control_frame_t *cfp, ID mid)
 {
     struct collect_caller_bindings_data *data = (struct collect_caller_bindings_data *)arg;
-    VALUE frame = rb_ary_new2(6);
+    VALUE frame = rb_ary_new2(7);
 
     rb_ary_store(frame, CALLER_BINDING_SELF, cfp->self);
     rb_ary_store(frame, CALLER_BINDING_CLASS, get_klass(cfp));
     rb_ary_store(frame, CALLER_BINDING_BINDING, Qnil); /* not available */
     rb_ary_store(frame, CALLER_BINDING_ISEQ, Qnil); /* not available */
     rb_ary_store(frame, CALLER_BINDING_CFP, GC_GUARDED_PTR(cfp));
+
+    rb_backtrace_location_t *loc = &data->bt->backtrace[RARRAY_LEN(data->ary)];
+    RB_OBJ_WRITE(data->btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
+    loc->iseq = NULL;
+    loc->pc = NULL;
+    VALUE vloc = location_create(loc, (void *)data->btobj);
+    rb_ary_store(frame, CALLER_BINDING_LOC, vloc);
+
     rb_ary_store(frame, CALLER_BINDING_DEPTH, INT2FIX(frame_depth(data->ec, cfp)));
 
     rb_ary_push(data->ary, frame);
@@ -1645,10 +1665,16 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 static VALUE
 frame_get(const rb_debug_inspector_t *dc, long index)
 {
-    if (index < 0 || index >= dc->backtrace_size) {
+    if (index < 0 || index >= RARRAY_LEN(dc->contexts)) {
         rb_raise(rb_eArgError, "no such frame");
     }
     return rb_ary_entry(dc->contexts, index);
+}
+
+VALUE
+rb_debug_inspector_frame_count(const rb_debug_inspector_t *dc)
+{
+    return RARRAY_LEN(dc->contexts);
 }
 
 VALUE
@@ -1679,6 +1705,13 @@ rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
     VALUE iseq = rb_ary_entry(frame, CALLER_BINDING_ISEQ);
 
     return RTEST(iseq) ? rb_iseqw_new((rb_iseq_t *)iseq) : Qnil;
+}
+
+VALUE
+rb_debug_inspector_frame_loc_get(const rb_debug_inspector_t *dc, long index)
+{
+    VALUE frame = frame_get(dc, index);
+    return rb_ary_entry(frame, CALLER_BINDING_LOC);
 }
 
 VALUE

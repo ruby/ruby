@@ -233,9 +233,21 @@ VALUE rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data);
  * @param[in]  dc  A debug context.
  * @return     An array  of `Thread::Backtrace::Location` which  represents the
  *             current point of execution at `dc`.
+ * @deprecated This API returns a backtrace with makeup applied. (Specifically,
+ *             rescue and ensure frames are excluded.) Therefore, inconsistency
+ *             occurs between the index of this backtrace object and the index of
+ *             arguments such as rb_debug_inspector_frame_self_get.
 
  */
 VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
+
+/**
+ * Returns the frame count of the context.
+ *
+ * @param[in]  dc  A debug context.
+ * @return     The count of the frames.
+ */
+VALUE rb_debug_inspector_frame_count(const rb_debug_inspector_t *dc);
 
 /**
  * Queries the current receiver of the passed context's upper frame.
@@ -279,6 +291,16 @@ VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long 
  *                          frame.
  */
 VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index);
+
+/**
+ * Queries the backtrace location object of the passed context's upper frame.
+ *
+ * @param[in]  dc           A debug context.
+ * @param[in]  index        Index of the frame from top to bottom.
+ * @exception  rb_eArgError `index` out of range.
+ * @retval     The backtrace location object at `index`-th frame in Integer.
+ */
+VALUE rb_debug_inspector_frame_loc_get(const rb_debug_inspector_t *dc, long index);
 
 /**
  * Queries the depth of the passed context's upper frame.
