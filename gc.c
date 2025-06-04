@@ -5163,11 +5163,6 @@ rb_memerror_reentered(void)
     return (ec && rb_ec_raised_p(ec, RAISED_NOMEMORY));
 }
 
-void
-rb_malloc_info_show_results(void)
-{
-}
-
 static void *
 handle_malloc_failure(void *ptr)
 {
