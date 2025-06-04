@@ -1215,14 +1215,13 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 {
 #if OPT_IC_FOR_IVAR
     VALUE val = Qundef;
-    shape_id_t shape_id;
     VALUE * ivar_list;
 
     if (SPECIAL_CONST_P(obj)) {
         return default_value;
     }
 
-    shape_id = RBASIC_SHAPE_ID(obj);
+    shape_id_t shape_id = RBASIC_SHAPE_ID_FOR_READ(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:

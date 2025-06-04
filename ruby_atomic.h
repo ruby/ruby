@@ -39,7 +39,7 @@ rbimpl_atomic_load_relaxed(rb_atomic_t *ptr)
 static inline uint64_t
 rbimpl_atomic_u64_load_relaxed(const uint64_t *value)
 {
-#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     return __atomic_load_n(value, __ATOMIC_RELAXED);
 #elif defined(_WIN32)
     uint64_t val = *value;
@@ -56,7 +56,7 @@ rbimpl_atomic_u64_load_relaxed(const uint64_t *value)
 static inline void
 rbimpl_atomic_u64_set_relaxed(uint64_t *address, uint64_t value)
 {
-#if defined(HAVE_GCC_ATOMIC_BUILTINS)
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     __atomic_store_n(address, value, __ATOMIC_RELAXED);
 #elif defined(_WIN32)
     InterlockedExchange64(address, value);

@@ -5,10 +5,6 @@ return if not DidYouMean::TestHelper.ractor_compatible?
 class RactorCompatibilityTest < Test::Unit::TestCase
   def test_class_name_suggestion_works_in_ractor
     assert_ractor(<<~CODE, require_relative: "helper")
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       class ::Book; end
       include DidYouMean::TestHelper
       error = Ractor.new {
@@ -26,10 +22,6 @@ class RactorCompatibilityTest < Test::Unit::TestCase
 
   def test_key_name_suggestion_works_in_ractor
     assert_ractor(<<~CODE, require_relative: "helper")
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       include DidYouMean::TestHelper
       error = Ractor.new {
                 begin
@@ -49,10 +41,6 @@ class RactorCompatibilityTest < Test::Unit::TestCase
 
   def test_method_name_suggestion_works_in_ractor
     assert_ractor(<<~CODE, require_relative: "helper")
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       include DidYouMean::TestHelper
       error = Ractor.new {
                 begin
@@ -71,10 +59,6 @@ class RactorCompatibilityTest < Test::Unit::TestCase
   if defined?(::NoMatchingPatternKeyError)
     def test_pattern_key_name_suggestion_works_in_ractor
       assert_ractor(<<~CODE, require_relative: "helper")
-        class Ractor
-          alias value take
-        end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
         include DidYouMean::TestHelper
         error = Ractor.new {
                   begin
@@ -97,10 +81,6 @@ class RactorCompatibilityTest < Test::Unit::TestCase
 
   def test_can_raise_other_name_error_in_ractor
     assert_ractor(<<~CODE, require_relative: "helper")
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       class FirstNameError < NameError; end
       include DidYouMean::TestHelper
       error = Ractor.new {
@@ -118,10 +98,6 @@ class RactorCompatibilityTest < Test::Unit::TestCase
 
   def test_variable_name_suggestion_works_in_ractor
     assert_ractor(<<~CODE, require_relative: "helper")
-      class Ractor
-        alias value take
-      end unless Ractor.method_defined? :value # compat with Ruby 3.4 and olders
-
       include DidYouMean::TestHelper
       error = Ractor.new {
         in_ractor = in_ractor = 1

@@ -74,9 +74,6 @@ class URI::TestCommon < Test::Unit::TestCase
   def test_ractor
     return unless defined?(Ractor)
     assert_ractor(<<~RUBY, require: 'uri')
-      class Ractor
-        alias value take unless method_defined? :value # compat with Ruby 3.4 and olders
-      end
       r = Ractor.new { URI.parse("https://ruby-lang.org/").inspect }
       assert_equal(URI.parse("https://ruby-lang.org/").inspect, r.value)
     RUBY

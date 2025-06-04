@@ -3,17 +3,24 @@
 
 #include "internal/gc.h"
 
-#define SIZEOF_SHAPE_T 4
 typedef uint16_t attr_index_t;
 typedef uint32_t shape_id_t;
 #define SHAPE_ID_NUM_BITS 32
+#define SHAPE_ID_OFFSET_NUM_BITS 19
+
+STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_BIT);
+
+#define SHAPE_BUFFER_SIZE (1 << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
+#define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_READ_ONLY_MASK (~SHAPE_ID_FL_FROZEN)
 
 typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_FIELDS (attr_index_t)(-1)
-
+#define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * CHAR_BIT) - SHAPE_ID_NUM_BITS)
 #define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
-#define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * 8) - SHAPE_ID_NUM_BITS)
 
 #define SHAPE_MAX_VARIATIONS 8
 
@@ -21,9 +28,9 @@ typedef uint32_t redblack_id_t;
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID               0x0
-#define SPECIAL_CONST_SHAPE_ID      0x1
-//      ROOT_TOO_COMPLEX_SHAPE_ID   0x2
-#define FIRST_T_OBJECT_SHAPE_ID     0x3
+//      ROOT_TOO_COMPLEX_SHAPE_ID   0x1
+#define SPECIAL_CONST_SHAPE_ID      (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
+#define FIRST_T_OBJECT_SHAPE_ID     0x2
 
 extern ID ruby_internal_object_id;
 
@@ -54,9 +61,16 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
-    SHAPE_FROZEN,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
+};
+
+enum shape_flags {
+    SHAPE_FL_FROZEN             = 1 << 0,
+    SHAPE_FL_HAS_OBJECT_ID      = 1 << 1,
+    SHAPE_FL_TOO_COMPLEX        = 1 << 2,
+
+    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID,
 };
 
 typedef struct {
@@ -97,6 +111,14 @@ RBASIC_SHAPE_ID(VALUE obj)
 #endif
 }
 
+// Same as RBASIC_SHAPE_ID but with flags that have no impact
+// on reads removed. e.g. Remove FL_FROZEN.
+static inline shape_id_t
+RBASIC_SHAPE_ID_FOR_READ(VALUE obj)
+{
+    return RBASIC_SHAPE_ID(obj) & SHAPE_ID_READ_ONLY_MASK;
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
@@ -105,7 +127,6 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
-    // Ractors are occupying the upper 32 bits of flags, but only in debug mode
     // Object shapes are occupying top bits
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
@@ -141,7 +162,7 @@ void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id,
 static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
-    return !RSHAPE(shape_id)->flags;
+    return !(shape_id & SHAPE_ID_FLAGS_MASK) && !RSHAPE(shape_id)->flags;
 }
 
 static inline shape_id_t

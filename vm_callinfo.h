@@ -289,7 +289,7 @@ struct rb_callcache {
 
     union {
         struct {
-          uint64_t value; // Shape ID in upper bits, index in lower bits
+            uint64_t value; // Shape ID in former half, index in latter half
         } attr;
         const enum method_missing_reason method_missing_reason; /* used by method_missing */
         VALUE v;
