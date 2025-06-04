@@ -459,7 +459,12 @@ static VALUE
 set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 {
     VALUE element = rb_yield(i);
-    set_insert_wb(set, element, &element);
+    if (rb_obj_is_instance_of(set, rb_cSet)) {
+        set_insert_wb(set, element, &element);
+    }
+    else {
+        rb_funcall(set, rb_intern("add"), 1, element);
+    }
     return element;
 }
 
@@ -497,10 +502,17 @@ set_i_initialize(int argc, VALUE *argv, VALUE set)
             long i;
             int block_given = rb_block_given_p();
             set_table *into = RSET_TABLE(set);
+            VALUE is_subclass = !rb_obj_is_instance_of(set, rb_cSet);
+
             for (i=0; i<RARRAY_LEN(other); i++) {
                 VALUE key = RARRAY_AREF(other, i);
                 if (block_given) key = rb_yield(key);
-                set_table_insert_wb(into, set, key, NULL);
+                if (is_subclass) {
+                    rb_funcall(set, rb_intern("add"), 1, key);
+                }
+                else {
+                    set_table_insert_wb(into, set, key, NULL);
+                }
             }
         }
         else {
