@@ -27,18 +27,18 @@ jobs:
         include:
           - os: 2022
             vc: 2019
-            vcvars: '-vcvars_ver=14.2' # VS 2022 17.13.x is broken at windows-2022
+            vcvars: '14.2' # VS 2022 17.13.x is broken at windows-2022
             test_task: check
           - os: 2025
             vc: 2019
-            vcvars: '-vcvars_ver=14.2'
+            vcvars: '14.2'
             test_task: check
           - os: 11-arm
             test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
             target: arm64
           - os: 2022
             vc: 2019
-            vcvars: '-vcvars_ver=14.2'
+            vcvars: '14.2'
             test_task: test-bundled-gems
       fail-fast: false
 
@@ -96,7 +96,9 @@ jobs:
         run: |
           ::- Set up VC ${{ matrix.vc }}
           set | uutils sort > old.env
-          call ..\src\win32\vssetup.cmd -arch=${{ matrix.target || 'amd64' }} ${{ matrix.vcvars || '' }}
+          call ..\src\win32\vssetup.cmd ^
+            -arch=${{ matrix.target || 'amd64' }} ^
+            ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
