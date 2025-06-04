@@ -1818,7 +1818,7 @@ impl Assembler
     #[unsafe(no_mangle)]
     extern "C" fn rewind_caller_frames(addr: *const u8) {
         if ZJITState::is_iseq_return_addr(addr) {
-            unimplemented!("rewind_caller_frames is not implemented yet");
+            unimplemented!("Can't side-exit from JIT-JIT call: rewind_caller_frames is not implemented yet");
         }
     }
 }
