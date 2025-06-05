@@ -65,6 +65,14 @@ race_top:rb_ractor_set_current_ec_
 # Possible deadlock between Ractor lock and UBF lock
 deadlock:ractor_sleep_interrupt
 
+# TSan reports a lock-order-inversion between thread_sched_lock_ and this lock.
+# It's unclear if that can cause a deadlock since the lock is on self
+deadlock:ractor_lock_self
+
+# TSan reports a deadlock when reacquiring the this lock after a barrier, but
+# we know the other threads have been stopped
+deadlock:rb_ractor_sched_barrier_start
+
 # RVALUE_AGE_SET manipulates flag bits on objects which may be accessed in Ractors
 race_top:RVALUE_AGE_SET
 
@@ -86,6 +94,10 @@ race:gccct_method_search
 # Ignore exit for now
 race:rb_ec_finalize
 race:rb_ec_cleanup
+
+# TSan doesn't work well post-fork, this raises errors when creating the new
+# timer thread
+race:after_fork_ruby
 
 # object_id races
 race:object_id
