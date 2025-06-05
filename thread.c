@@ -1052,23 +1052,28 @@ thread_join_sleep(VALUE arg)
     while (!thread_finished(target_th)) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
-        if (scheduler != Qnil) {
-            rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
-            // Check if the target thread is finished after blocking:
-            if (thread_finished(target_th)) break;
-            // Otherwise, a timeout occurred:
-            else return Qfalse;
-        }
-        else if (!limit) {
-            sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+        if (!limit) {
+            if (scheduler != Qnil) {
+                rb_fiber_scheduler_block(scheduler, target_th->self, Qnil);
+            }
+            else {
+                sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+            }
         }
         else {
             if (hrtime_update_expire(limit, end)) {
                 RUBY_DEBUG_LOG("timeout target_th:%u", rb_th_serial(target_th));
                 return Qfalse;
             }
-            th->status = THREAD_STOPPED;
-            native_sleep(th, limit);
+
+            if (scheduler != Qnil) {
+                VALUE timeout = rb_float_new(hrtime2double(*limit));
+                rb_fiber_scheduler_block(scheduler, target_th->self, timeout);
+            }
+            else {
+                th->status = THREAD_STOPPED;
+                native_sleep(th, limit);
+            }
         }
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
         th->status = THREAD_RUNNABLE;
@@ -1745,6 +1750,7 @@ io_blocking_operation_exit(VALUE _arguments)
     rb_fiber_t *fiber = io->closing_ec->fiber_ptr;
 
     if (thread->scheduler != Qnil) {
+        // This can cause spurious wakeups...
         rb_fiber_scheduler_unblock(thread->scheduler, io->self, rb_fiberptr_self(fiber));
     }
     else {

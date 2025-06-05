@@ -126,7 +126,7 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.transfer
+          fiber.transfer if fiber.alive?
         end
       end
     end
