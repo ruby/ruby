@@ -2248,6 +2248,8 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
+      default:
+        UNREACHABLE_RETURN(false);
     }
 }
 

@@ -883,7 +883,7 @@ rb_gc_free_dsymbol(VALUE sym)
 VALUE
 rb_str_intern(VALUE str)
 {
-    VALUE sym;
+    VALUE sym = 0;
 
     GLOBAL_SYMBOLS_LOCKING(symbols) {
         sym = lookup_str_sym_with_lock(symbols, str);
@@ -920,7 +920,7 @@ rb_str_intern(VALUE str)
 ID
 rb_sym2id(VALUE sym)
 {
-    ID id;
+    ID id = 0;
     if (STATIC_SYM_P(sym)) {
         id = STATIC_SYM2ID(sym);
     }
