@@ -43,7 +43,7 @@ rbimpl_atomic_u64_load_relaxed(const uint64_t *value)
     return __atomic_load_n(value, __ATOMIC_RELAXED);
 #elif defined(_WIN32)
     uint64_t val = *value;
-    return InterlockedCompareExchange64(value, val, val);
+    return InterlockedCompareExchange64(RBIMPL_CAST((uint64_t *)value), val, val);
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     uint64_t val = *value;
     return atomic_cas_64(value, val, val);
