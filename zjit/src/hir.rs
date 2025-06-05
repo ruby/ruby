@@ -397,6 +397,9 @@ pub enum Insn {
     GetIvar { self_val: InsnId, id: ID, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val`
     SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
+    /// Check whether an instance variable exists on `self_val`
+    DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
+
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -603,6 +606,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
@@ -951,6 +955,7 @@ impl Function {
             &HashDup { val , state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
             &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
+            &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
             &NewHash { ref elements, state } => {
                 let mut found_elements = vec![];
@@ -1039,6 +1044,7 @@ impl Function {
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
+            Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
@@ -1599,7 +1605,7 @@ impl Function {
                     worklist.push_back(state);
                 }
                 Insn::CCall { args, .. } => worklist.extend(args),
-                Insn::GetIvar { self_val, state, .. } => {
+                Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
                     worklist.push_back(self_val);
                     worklist.push_back(state);
                 }
@@ -2164,6 +2170,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 0);
                     let v = state.stack_pop()?;
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
+                }
+                YARVINSN_definedivar => {
+                    // (ID id, IVC ic, VALUE pushval)
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let pushval = get_arg(pc, 2);
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let self_val = fun.push_insn(block, Insn::PutSelf);
+                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val, id, pushval, state: exit_id }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
@@ -2988,6 +3002,39 @@ mod tests {
               v1:NilClassExact = Const Value(nil)
               v3:Fixnum[1] = Const Value(1)
               Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn defined_ivar() {
+        eval("
+            def test = defined?(@foo)
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_definedivar, expect![[r#"
+            fn test:
+            bb0():
+              v2:BasicObject = PutSelf
+              v3:BasicObject = DefinedIvar v2, :@foo
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn defined() {
+        eval("
+            def test = return defined?(SeaChange), defined?(favourite), defined?($ruby)
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_defined, expect![[r#"
+            fn test:
+            bb0():
+              v1:NilClassExact = Const Value(nil)
+              v2:BasicObject = Defined constant, v1
+              v3:BasicObject = PutSelf
+              v4:BasicObject = Defined func, v3
+              v5:NilClassExact = Const Value(nil)
+              v6:BasicObject = Defined global-variable, v5
+              v8:ArrayExact = NewArray v2, v4, v6
+              Return v8
         "#]]);
     }
 
