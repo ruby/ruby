@@ -2606,9 +2606,10 @@ mod infer_tests {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
             let param = function.push_insn(function.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
+            function.param_types.push(types::BasicObject); // self
             let val = function.push_insn(function.entry_block, Insn::Test { val: param });
             function.infer_types();
-            assert_bit_equal(function.type_of(val), Type::from_cbool(false));
+            assert_bit_equal(function.type_of(val), types::CBool);
         });
     }
 
