@@ -2398,17 +2398,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let self_val = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
-                    let result = fun.push_insn(block, Insn::GetIvar { self_val, id, state: exit_id });
+                    let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, state: exit_id });
                     state.stack_push(result);
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
                     // ic is in arg 1
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let self_val = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
                     let val = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SetIvar { self_val, id, val, state: exit_id });
+                    fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
                 }
                 YARVINSN_newrange => {
                     let flag = RangeType::from(get_arg(pc, 0).as_u32());
@@ -3619,9 +3617,9 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_getinstancevariable, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v3):
-              v4:BasicObject = GetIvar v3, :@foo
-              Return v4
+            bb0(v0:BasicObject):
+              v3:BasicObject = GetIvar v0, :@foo
+              Return v3
         "#]]);
     }
 
@@ -3633,9 +3631,9 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_setinstancevariable, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v4):
+            bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
-              SetIvar v4, :@foo, v2
+              SetIvar v0, :@foo, v2
               Return v2
         "#]]);
     }
@@ -5076,9 +5074,9 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test",  expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v3):
-              v4:BasicObject = GetIvar v3, :@foo
-              Return v4
+            bb0(v0:BasicObject):
+              v3:BasicObject = GetIvar v0, :@foo
+              Return v3
         "#]]);
     }
 
@@ -5089,9 +5087,9 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test",  expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v4):
+            bb0(v0:BasicObject):
               v2:Fixnum[1] = Const Value(1)
-              SetIvar v4, :@foo, v2
+              SetIvar v0, :@foo, v2
               Return v2
         "#]]);
     }
