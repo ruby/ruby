@@ -635,6 +635,29 @@ ossl_pkey_initialize_copy(VALUE self, VALUE other)
 }
 #endif
 
+#ifndef OSSL_USE_PROVIDER
+static int
+lookup_pkey_type(VALUE type)
+{
+    const EVP_PKEY_ASN1_METHOD *ameth;
+    int pkey_id;
+
+    StringValue(type);
+    /*
+     * XXX: EVP_PKEY_asn1_find_str() looks up a PEM type string. Should we use
+     * OBJ_txt2nid() instead (and then somehow check if the NID is an acceptable
+     * EVP_PKEY type)?
+     * It is probably fine, though, since it can handle all algorithms that
+     * support raw keys in 1.1.1: { X25519, X448, ED25519, ED448, HMAC }.
+     */
+    ameth = EVP_PKEY_asn1_find_str(NULL, RSTRING_PTR(type), RSTRING_LENINT(type));
+    if (!ameth)
+        ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", type);
+    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
+    return pkey_id;
+}
+#endif
+
 /*
  *  call-seq:
  *      OpenSSL::PKey.new_raw_private_key(algo, string) -> PKey
@@ -646,22 +669,23 @@ static VALUE
 ossl_pkey_new_raw_private_key(VALUE self, VALUE type, VALUE key)
 {
     EVP_PKEY *pkey;
-    const EVP_PKEY_ASN1_METHOD *ameth;
-    int pkey_id;
     size_t keylen;
 
-    StringValue(type);
     StringValue(key);
-    ameth = EVP_PKEY_asn1_find_str(NULL, RSTRING_PTR(type), RSTRING_LENINT(type));
-    if (!ameth)
-        ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", type);
-    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
-
     keylen = RSTRING_LEN(key);
 
+#ifdef OSSL_USE_PROVIDER
+    pkey = EVP_PKEY_new_raw_private_key_ex(NULL, StringValueCStr(type), NULL,
+                                           (unsigned char *)RSTRING_PTR(key),
+                                           keylen);
+    if (!pkey)
+        ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key_ex");
+#else
+    int pkey_id = lookup_pkey_type(type);
     pkey = EVP_PKEY_new_raw_private_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_private_key");
+#endif
 
     return ossl_pkey_new(pkey);
 }
@@ -677,22 +701,23 @@ static VALUE
 ossl_pkey_new_raw_public_key(VALUE self, VALUE type, VALUE key)
 {
     EVP_PKEY *pkey;
-    const EVP_PKEY_ASN1_METHOD *ameth;
-    int pkey_id;
     size_t keylen;
 
-    StringValue(type);
     StringValue(key);
-    ameth = EVP_PKEY_asn1_find_str(NULL, RSTRING_PTR(type), RSTRING_LENINT(type));
-    if (!ameth)
-        ossl_raise(ePKeyError, "algorithm %"PRIsVALUE" not found", type);
-    EVP_PKEY_asn1_get0_info(&pkey_id, NULL, NULL, NULL, NULL, ameth);
-
     keylen = RSTRING_LEN(key);
 
+#ifdef OSSL_USE_PROVIDER
+    pkey = EVP_PKEY_new_raw_public_key_ex(NULL, StringValueCStr(type), NULL,
+                                          (unsigned char *)RSTRING_PTR(key),
+                                          keylen);
+    if (!pkey)
+        ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key_ex");
+#else
+    int pkey_id = lookup_pkey_type(type);
     pkey = EVP_PKEY_new_raw_public_key(pkey_id, NULL, (unsigned char *)RSTRING_PTR(key), keylen);
     if (!pkey)
         ossl_raise(ePKeyError, "EVP_PKEY_new_raw_public_key");
+#endif
 
     return ossl_pkey_new(pkey);
 }

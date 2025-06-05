@@ -161,6 +161,25 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       bob.raw_public_key.unpack1("H*")
   end
 
+  def test_ml_dsa
+    # AWS-LC also supports ML-DSA, but it's implemented in a different way
+    return unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-DSA-44")
+    assert_match(/type_name=ML-DSA-44/, pkey.inspect)
+    sig = pkey.sign(nil, "data")
+    assert_equal(2420, sig.bytesize)
+    assert_equal(true, pkey.verify(nil, sig, "data"))
+
+    pub2 = OpenSSL::PKey.read(pkey.public_to_der)
+    assert_equal(true, pub2.verify(nil, sig, "data"))
+
+    raw_public_key = pkey.raw_public_key
+    assert_equal(1312, raw_public_key.bytesize)
+    pub3 = OpenSSL::PKey.new_raw_public_key("ML-DSA-44", raw_public_key)
+    assert_equal(true, pub3.verify(nil, sig, "data"))
+  end
+
   def test_raw_initialize_errors
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }
