@@ -381,6 +381,7 @@ fn main() {
         .allowlist_function("rb_attr_get")
         .allowlist_function("rb_ivar_defined")
         .allowlist_function("rb_ivar_get")
+        .allowlist_function("rb_ivar_set")
         .allowlist_function("rb_mod_name")
 
         // From include/ruby/internal/intern/vm.h

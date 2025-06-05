@@ -829,6 +829,7 @@ unsafe extern "C" {
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
     pub fn rb_mod_name(mod_: VALUE) -> VALUE;
     pub fn rb_ivar_get(obj: VALUE, name: ID) -> VALUE;
+    pub fn rb_ivar_set(obj: VALUE, name: ID, val: VALUE) -> VALUE;
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_obj_info_dump(obj: VALUE);
