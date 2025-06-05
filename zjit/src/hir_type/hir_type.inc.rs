@@ -9,7 +9,7 @@ mod bits {
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
   pub const BoolExact: u64 = FalseClassExact | TrueClassExact;
-  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | FalseClassExact | FloatExact | HashExact | IntegerExact | NilClassExact | ObjectExact | StringExact | SymbolExact | TrueClassExact;
+  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | FalseClassExact | FloatExact | HashExact | IntegerExact | NilClassExact | ObjectExact | RangeExact | StringExact | SymbolExact | TrueClassExact;
   pub const CBool: u64 = 1u64 << 5;
   pub const CDouble: u64 = 1u64 << 6;
   pub const CInt: u64 = CSigned | CUnsigned;
@@ -48,23 +48,26 @@ mod bits {
   pub const NilClass: u64 = NilClassExact | NilClassSubclass;
   pub const NilClassExact: u64 = 1u64 << 28;
   pub const NilClassSubclass: u64 = 1u64 << 29;
-  pub const Object: u64 = Array | FalseClass | Float | Hash | Integer | NilClass | ObjectExact | ObjectSubclass | String | Symbol | TrueClass;
+  pub const Object: u64 = Array | FalseClass | Float | Hash | Integer | NilClass | ObjectExact | ObjectSubclass | Range | String | Symbol | TrueClass;
   pub const ObjectExact: u64 = 1u64 << 30;
   pub const ObjectSubclass: u64 = 1u64 << 31;
+  pub const Range: u64 = RangeExact | RangeSubclass;
+  pub const RangeExact: u64 = 1u64 << 32;
+  pub const RangeSubclass: u64 = 1u64 << 33;
   pub const RubyValue: u64 = BasicObject | CallableMethodEntry | Undef;
-  pub const StaticSymbol: u64 = 1u64 << 32;
+  pub const StaticSymbol: u64 = 1u64 << 34;
   pub const String: u64 = StringExact | StringSubclass;
-  pub const StringExact: u64 = 1u64 << 33;
-  pub const StringSubclass: u64 = 1u64 << 34;
-  pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | FalseClassSubclass | FloatSubclass | HashSubclass | IntegerSubclass | NilClassSubclass | ObjectSubclass | StringSubclass | SymbolSubclass | TrueClassSubclass;
+  pub const StringExact: u64 = 1u64 << 35;
+  pub const StringSubclass: u64 = 1u64 << 36;
+  pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | FalseClassSubclass | FloatSubclass | HashSubclass | IntegerSubclass | NilClassSubclass | ObjectSubclass | RangeSubclass | StringSubclass | SymbolSubclass | TrueClassSubclass;
   pub const Symbol: u64 = SymbolExact | SymbolSubclass;
   pub const SymbolExact: u64 = DynamicSymbol | StaticSymbol;
-  pub const SymbolSubclass: u64 = 1u64 << 35;
+  pub const SymbolSubclass: u64 = 1u64 << 37;
   pub const TrueClass: u64 = TrueClassExact | TrueClassSubclass;
-  pub const TrueClassExact: u64 = 1u64 << 36;
-  pub const TrueClassSubclass: u64 = 1u64 << 37;
-  pub const Undef: u64 = 1u64 << 38;
-  pub const AllBitPatterns: [(&'static str, u64); 64] = [
+  pub const TrueClassExact: u64 = 1u64 << 38;
+  pub const TrueClassSubclass: u64 = 1u64 << 39;
+  pub const Undef: u64 = 1u64 << 40;
+  pub const AllBitPatterns: [(&'static str, u64); 67] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -84,6 +87,9 @@ mod bits {
     ("StringExact", StringExact),
     ("SymbolExact", SymbolExact),
     ("StaticSymbol", StaticSymbol),
+    ("Range", Range),
+    ("RangeSubclass", RangeSubclass),
+    ("RangeExact", RangeExact),
     ("ObjectSubclass", ObjectSubclass),
     ("ObjectExact", ObjectExact),
     ("NilClass", NilClass),
@@ -130,7 +136,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 39;
+  pub const NumTypeBits: u64 = 41;
 }
 pub mod types {
   use super::*;
@@ -185,6 +191,9 @@ pub mod types {
   pub const Object: Type = Type::from_bits(bits::Object);
   pub const ObjectExact: Type = Type::from_bits(bits::ObjectExact);
   pub const ObjectSubclass: Type = Type::from_bits(bits::ObjectSubclass);
+  pub const Range: Type = Type::from_bits(bits::Range);
+  pub const RangeExact: Type = Type::from_bits(bits::RangeExact);
+  pub const RangeSubclass: Type = Type::from_bits(bits::RangeSubclass);
   pub const RubyValue: Type = Type::from_bits(bits::RubyValue);
   pub const StaticSymbol: Type = Type::from_bits(bits::StaticSymbol);
   pub const String: Type = Type::from_bits(bits::String);

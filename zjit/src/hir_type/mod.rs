@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::hir::PtrPrintMap;
@@ -137,6 +137,10 @@ fn is_hash_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cHash } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_HASH)
 }
 
+fn is_range_exact(val: VALUE) -> bool {
+    val.class_of() == unsafe { rb_cRange }
+}
+
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -182,6 +186,9 @@ impl Type {
         }
         else if is_hash_exact(val) {
             Type { bits: bits::HashExact, spec: Specialization::Object(val) }
+        }
+        else if is_range_exact(val) {
+            Type { bits: bits::RangeExact, spec: Specialization::Object(val) }
         }
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
@@ -277,6 +284,7 @@ impl Type {
         if class == unsafe { rb_cInteger } { return true; }
         if class == unsafe { rb_cNilClass } { return true; }
         if class == unsafe { rb_cObject } { return true; }
+        if class == unsafe { rb_cRange } { return true; }
         if class == unsafe { rb_cString } { return true; }
         if class == unsafe { rb_cSymbol } { return true; }
         if class == unsafe { rb_cTrueClass } { return true; }
@@ -383,6 +391,7 @@ impl Type {
         if self.is_subtype(types::IntegerExact) { return Some(unsafe { rb_cInteger }); }
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
+        if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
         if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
         if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }
         if self.is_subtype(types::TrueClassExact) { return Some(unsafe { rb_cTrueClass }); }

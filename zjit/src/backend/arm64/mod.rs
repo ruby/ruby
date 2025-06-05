@@ -211,6 +211,11 @@ impl Assembler
         vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
+    /// Get the address that the current frame returns to
+    pub fn return_addr_opnd() -> Opnd {
+        Opnd::Reg(X30_REG)
+    }
+
     /// Split platform-specific instructions
     /// The transformations done here are meant to make our lives simpler in later
     /// stages of the compilation pipeline.
@@ -757,7 +762,7 @@ impl Assembler
         /// called when lowering any of the conditional jump instructions.
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
-                Target::CodePtr(dst_ptr) | Target::SideExitPtr(dst_ptr) => {
+                Target::CodePtr(dst_ptr) => {
                     let dst_addr = dst_ptr.as_offset();
                     let src_addr = cb.get_write_ptr().as_offset();
 
@@ -829,8 +834,10 @@ impl Assembler
         }
 
         /// Emit a CBZ or CBNZ which branches when a register is zero or non-zero
-        fn emit_cmp_zero_jump(cb: &mut CodeBlock, reg: A64Opnd, branch_if_zero: bool, target: Target) {
-            if let Target::SideExitPtr(dst_ptr) = target {
+        fn emit_cmp_zero_jump(_cb: &mut CodeBlock, _reg: A64Opnd, _branch_if_zero: bool, target: Target) {
+            if let Target::Label(_) = target {
+                unimplemented!("this should be re-implemented with Label for side exits");
+                /*
                 let dst_addr = dst_ptr.as_offset();
                 let src_addr = cb.get_write_ptr().as_offset();
 
@@ -862,6 +869,7 @@ impl Assembler
                     br(cb, Assembler::SCRATCH0);
 
                 }
+                */
             } else {
                 unreachable!("We should only generate Joz/Jonz with side-exit targets");
             }
@@ -1162,9 +1170,6 @@ impl Assembler
                         Target::CodePtr(dst_ptr) => {
                             emit_jmp_ptr(cb, dst_ptr, true);
                         },
-                        Target::SideExitPtr(dst_ptr) => {
-                            emit_jmp_ptr(cb, dst_ptr, false);
-                        },
                         Target::Label(label_idx) => {
                             // Here we're going to save enough space for
                             // ourselves and then come back and write the
@@ -1297,6 +1302,7 @@ impl Assembler
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
         let asm = self.arm64_split();
         let mut asm = asm.alloc_regs(regs);
+        asm.compile_side_exits()?;
 
         // Create label instances in the code block
         for (idx, name) in asm.label_names.iter().enumerate() {

@@ -94,6 +94,24 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_plus_type_guard_exit
+    assert_compiles '[3, 3.0]', %q{
+      def test(a) = 1 + a
+      test(1) # profile opt_plus
+      [test(2), test(2.0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_plus_type_guard_nested_exit
+    omit 'rewind_caller_frames is not implemented yet'
+    assert_compiles '[3, 3.0]', %q{
+      def side_exit(n) = 1 + n
+      def jit_frame(n) = 1 + side_exit(n)
+      def entry(n) = jit_frame(n)
+      [entry(2), entry(2.0)]
+    }, call_threshold: 2
+  end
+
   # Test argument ordering
   def test_opt_minus
     assert_compiles '2', %q{
@@ -224,6 +242,27 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '[1, 2, 3]', %q{
       def test = [1,2,3]
       test
+    }
+  end
+
+  def test_new_range_inclusive
+    assert_compiles '1..5', %q{
+      def test(a, b) = a..b
+      test(1, 5)
+    }
+  end
+
+  def test_new_range_exclusive
+    assert_compiles '1...5', %q{
+      def test(a, b) = a...b
+      test(1, 5)
+    }
+  end
+
+  def test_new_range_with_literal
+    assert_compiles '3..10', %q{
+      def test(n) = n..10
+      test(3)
     }
   end
 

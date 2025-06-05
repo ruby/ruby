@@ -135,7 +135,7 @@ The following bundled gems are updated.
 * net-smtp 0.5.1
 * rbs 3.9.4
 * base64 0.3.0
-* bigdecimal 3.2.1
+* bigdecimal 3.2.2
 * drb 2.2.3
 * syslog 0.3.0
 * csv 3.3.5

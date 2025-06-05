@@ -407,7 +407,6 @@ pub struct rb_shape {
     pub capacity: attr_index_t,
     pub type_: u8,
     pub heap_index: u8,
-    pub flags: u8,
 }
 pub type rb_shape_t = rb_shape;
 #[repr(C)]
@@ -771,6 +770,7 @@ unsafe extern "C" {
     pub static mut rb_cModule: VALUE;
     pub static mut rb_cNilClass: VALUE;
     pub static mut rb_cNumeric: VALUE;
+    pub static mut rb_cRange: VALUE;
     pub static mut rb_cString: VALUE;
     pub static mut rb_cSymbol: VALUE;
     pub static mut rb_cThread: VALUE;

@@ -1684,8 +1684,8 @@ RSpec.describe "bundle update --bundler" do
     expect(err).to eq("The `bundle update --bundler` target version (999.999.999) does not exist")
   end
 
-  it "allows updating to development versions if already installed locally" do
-    system_gems "bundler-2.3.0.dev"
+  it "errors if the explicit target version does not exist, even if auto switching is disabled" do
+    pristine_system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
@@ -1696,7 +1696,26 @@ RSpec.describe "bundle update --bundler" do
       gem "myrack"
     G
 
-    bundle :update, bundler: "2.3.0.dev", verbose: "true"
+    bundle :update, bundler: "999.999.999", raise_on_error: false, env: { "BUNDLER_VERSION" => "9.9.9" }
+
+    expect(last_command).to be_failure
+    expect(err).to eq("The `bundle update --bundler` target version (999.999.999) does not exist")
+  end
+
+  it "allows updating to development versions if already installed locally" do
+    system_gems "bundler-9.9.9"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    system_gems "bundler-9.0.0.dev", path: local_gem_path
+    bundle :update, bundler: "9.0.0.dev", verbose: "true"
 
     checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
@@ -1715,14 +1734,14 @@ RSpec.describe "bundle update --bundler" do
           myrack
         #{checksums}
         BUNDLED WITH
-           2.3.0.dev
+           9.0.0.dev
       L
 
-    expect(out).to include("Using bundler 2.3.0.dev")
+    expect(out).to include("Using bundler 9.0.0.dev")
   end
 
   it "does not touch the network if not necessary" do
-    system_gems "bundler-2.3.9"
+    system_gems "bundler-9.9.9"
 
     build_repo4 do
       build_gem "myrack", "1.0"
@@ -1732,8 +1751,8 @@ RSpec.describe "bundle update --bundler" do
       source "https://gem.repo4"
       gem "myrack"
     G
-
-    bundle :update, bundler: "2.3.9", verbose: true
+    system_gems "bundler-9.0.0", path: local_gem_path
+    bundle :update, bundler: "9.0.0", verbose: true
 
     expect(out).not_to include("Fetching gem metadata from https://rubygems.org/")
 
@@ -1755,10 +1774,10 @@ RSpec.describe "bundle update --bundler" do
           myrack
         #{checksums}
         BUNDLED WITH
-           2.3.9
+           9.0.0
       L
 
-    expect(out).to include("Using bundler 2.3.9")
+    expect(out).to include("Using bundler 9.0.0")
   end
 
   it "prints an error when trying to update bundler in frozen mode" do

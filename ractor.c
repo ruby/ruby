@@ -481,11 +481,13 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 void
 rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 {
-    r->pub.self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
+    VALUE rv = r->pub.self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
     FL_SET_RAW(r->pub.self, RUBY_FL_SHAREABLE);
     ractor_init(r, Qnil, Qnil);
     r->threads.main = th;
     rb_ractor_living_threads_insert(r, th);
+
+    RB_GC_GUARD(rv);
 }
 
 static VALUE

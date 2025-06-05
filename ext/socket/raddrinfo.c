@@ -1211,7 +1211,7 @@ addrinfo_memsize(const void *ptr)
 static const rb_data_type_t addrinfo_type = {
     "socket/addrinfo",
     {addrinfo_mark, addrinfo_free, addrinfo_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1249,7 +1249,7 @@ alloc_addrinfo(void)
 }
 
 static void
-init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
+init_addrinfo(VALUE self, rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
               int pfamily, int socktype, int protocol,
               VALUE canonname, VALUE inspectname)
 {
@@ -1261,8 +1261,8 @@ init_addrinfo(rb_addrinfo_t *rai, struct sockaddr *sa, socklen_t len,
     rai->pfamily = pfamily;
     rai->socktype = socktype;
     rai->protocol = protocol;
-    rai->canonname = canonname;
-    rai->inspectname = inspectname;
+    RB_OBJ_WRITE(self, &rai->canonname, canonname);
+    RB_OBJ_WRITE(self, &rai->inspectname, inspectname);
 }
 
 VALUE
@@ -1275,7 +1275,7 @@ rsock_addrinfo_new(struct sockaddr *addr, socklen_t len,
 
     a = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(a) = rai = alloc_addrinfo();
-    init_addrinfo(rai, addr, len, family, socktype, protocol, canonname, inspectname);
+    init_addrinfo(a, rai, addr, len, family, socktype, protocol, canonname, inspectname);
     return a;
 }
 
@@ -1310,7 +1310,7 @@ call_getaddrinfo(VALUE node, VALUE service,
 static VALUE make_inspectname(VALUE node, VALUE service, struct addrinfo *res);
 
 static void
-init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
+init_addrinfo_getaddrinfo(VALUE self, rb_addrinfo_t *rai, VALUE node, VALUE service,
                           VALUE family, VALUE socktype, VALUE protocol, VALUE flags,
                           VALUE inspectnode, VALUE inspectservice)
 {
@@ -1324,7 +1324,7 @@ init_addrinfo_getaddrinfo(rb_addrinfo_t *rai, VALUE node, VALUE service,
         OBJ_FREEZE(canonname);
     }
 
-    init_addrinfo(rai, res->ai->ai_addr, res->ai->ai_addrlen,
+    init_addrinfo(self, rai, res->ai->ai_addr, res->ai->ai_addrlen,
                   NUM2INT(family), NUM2INT(socktype), NUM2INT(protocol),
                   canonname, inspectname);
 
@@ -1436,7 +1436,7 @@ addrinfo_list_new(VALUE node, VALUE service, VALUE family, VALUE socktype, VALUE
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
 static void
-init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
+init_unix_addrinfo(VALUE self, rb_addrinfo_t *rai, VALUE path, int socktype)
 {
     struct sockaddr_un un;
     socklen_t len;
@@ -1452,7 +1452,7 @@ init_unix_addrinfo(rb_addrinfo_t *rai, VALUE path, int socktype)
     memcpy((void*)&un.sun_path, RSTRING_PTR(path), RSTRING_LEN(path));
 
     len = rsock_unix_sockaddr_len(path);
-    init_addrinfo(rai, (struct sockaddr *)&un, len,
+    init_addrinfo(self, rai, (struct sockaddr *)&un, len,
                   PF_UNIX, socktype, 0, Qnil, Qnil);
 }
 
@@ -1556,7 +1556,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
             flags |= AI_NUMERICSERV;
 #endif
 
-            init_addrinfo_getaddrinfo(rai, numericnode, service,
+            init_addrinfo_getaddrinfo(self, rai, numericnode, service,
                     INT2NUM(i_pfamily ? i_pfamily : af), INT2NUM(i_socktype), INT2NUM(i_protocol),
                     INT2NUM(flags),
                     nodename, service);
@@ -1568,7 +1568,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
           {
             VALUE path = rb_ary_entry(sockaddr_ary, 1);
             StringValue(path);
-            init_unix_addrinfo(rai, path, SOCK_STREAM);
+            init_unix_addrinfo(self, rai, path, SOCK_STREAM);
             break;
           }
 #endif
@@ -1581,7 +1581,7 @@ addrinfo_initialize(int argc, VALUE *argv, VALUE self)
         StringValue(sockaddr_arg);
         sockaddr_ptr = (struct sockaddr *)RSTRING_PTR(sockaddr_arg);
         sockaddr_len = RSTRING_SOCKLEN(sockaddr_arg);
-        init_addrinfo(rai, sockaddr_ptr, sockaddr_len,
+        init_addrinfo(self, rai, sockaddr_ptr, sockaddr_len,
                       i_pfamily, i_socktype, i_protocol,
                       canonname, inspectname);
     }
@@ -2170,7 +2170,7 @@ addrinfo_mload(VALUE self, VALUE ary)
     }
 
     DATA_PTR(self) = rai = alloc_addrinfo();
-    init_addrinfo(rai, &ss.addr, len,
+    init_addrinfo(self, rai, &ss.addr, len,
                   pfamily, socktype, protocol,
                   canonname, inspectname);
     return self;
@@ -2938,7 +2938,7 @@ addrinfo_s_unix(int argc, VALUE *argv, VALUE self)
 
     addr = addrinfo_s_allocate(rb_cAddrinfo);
     DATA_PTR(addr) = rai = alloc_addrinfo();
-    init_unix_addrinfo(rai, path, socktype);
+    init_unix_addrinfo(self, rai, path, socktype);
     return addr;
 }
 

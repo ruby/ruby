@@ -7,7 +7,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -251,6 +251,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, elements, &function.frame_state(*state)),
+        Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
@@ -260,9 +261,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
         Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
-        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
-        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
-        Insn::FixnumMult { left, right, state } => gen_fixnum_mult(asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
+        Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
+        Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
+        Insn::FixnumMult { left, right, state } => gen_fixnum_mult(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right))?,
         Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right))?,
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right))?,
@@ -270,8 +271,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right))?,
         Insn::FixnumGe { left, right } => gen_fixnum_ge(asm, opnd!(left), opnd!(right))?,
         Insn::Test { val } => gen_test(asm, opnd!(val))?,
-        Insn::GuardType { val, guard_type, state } => gen_guard_type(asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
-        Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(asm, opnd!(val), *expected, &function.frame_state(*state))?,
+        Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
+        Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         _ => {
@@ -552,6 +553,28 @@ fn gen_new_array(
     new_array
 }
 
+/// Compile a new range instruction
+fn gen_new_range(
+    asm: &mut Assembler,
+    low: lir::Opnd,
+    high: lir::Opnd,
+    flag: RangeType,
+    state: &FrameState,
+) -> lir::Opnd {
+    asm_comment!(asm, "call rb_range_new");
+
+    // Save PC
+    gen_save_pc(asm, state);
+
+    // Call rb_range_new(low, high, flag)
+    let new_range = asm.ccall(
+        rb_range_new as *const u8,
+        vec![low, high, lir::Opnd::Imm(flag as i64)],
+    );
+
+    new_range
+}
+
 /// Compile code that exits from JIT code with a return value
 fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
     // Pop the current frame (ec->cfp++)
@@ -569,27 +592,27 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
 }
 
 /// Compile Fixnum + Fixnum
-fn gen_fixnum_add(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_add(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Add left + right and test for overflow
     let left_untag = asm.sub(left, Opnd::Imm(1));
     let out_val = asm.add(left_untag, right);
-    asm.jo(Target::SideExit(state.clone()));
+    asm.jo(side_exit(jit, state)?);
 
     Some(out_val)
 }
 
 /// Compile Fixnum - Fixnum
-fn gen_fixnum_sub(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_sub(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Subtract left - right and test for overflow
     let val_untag = asm.sub(left, right);
-    asm.jo(Target::SideExit(state.clone()));
+    asm.jo(side_exit(jit, state)?);
     let out_val = asm.add(val_untag, Opnd::Imm(1));
 
     Some(out_val)
 }
 
 /// Compile Fixnum * Fixnum
-fn gen_fixnum_mult(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_fixnum_mult(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Do some bitwise gymnastics to handle tag bits
     // x * y is translated to (x >> 1) * (y - 1) + 1
     let left_untag = asm.rshift(left, Opnd::UImm(1));
@@ -597,7 +620,7 @@ fn gen_fixnum_mult(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd, state
     let out_val = asm.mul(left_untag, right_untag);
 
     // Test for overflow
-    asm.jo_mul(Target::SideExit(state.clone()));
+    asm.jo_mul(side_exit(jit, state)?);
     let out_val = asm.add(out_val, Opnd::UImm(1));
 
     Some(out_val)
@@ -651,11 +674,11 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> Option<lir::Opnd> {
 }
 
 /// Compile a type check with a side exit
-fn gen_guard_type(asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> Option<lir::Opnd> {
     if guard_type.is_subtype(Fixnum) {
         // Check if opnd is Fixnum
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.jz(Target::SideExit(state.clone()));
+        asm.jz(side_exit(jit, state)?);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
@@ -663,9 +686,9 @@ fn gen_guard_type(asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: 
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: VALUE, state: &FrameState) -> Option<lir::Opnd> {
     asm.cmp(val, Opnd::UImm(expected.into()));
-    asm.jnz(Target::SideExit(state.clone()));
+    asm.jnz(side_exit(jit, state)?);
     Some(val)
 }
 
@@ -731,6 +754,26 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
     Some(function)
 }
 
+/// Build a Target::SideExit out of a FrameState
+fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
+    let mut stack = Vec::new();
+    for &insn_id in state.stack() {
+        stack.push(jit.get_opnd(insn_id)?);
+    }
+
+    let mut locals = Vec::new();
+    for &insn_id in state.locals() {
+        locals.push(jit.get_opnd(insn_id)?);
+    }
+
+    let target = Target::SideExit {
+        pc: state.pc,
+        stack,
+        locals,
+    };
+    Some(target)
+}
+
 impl Assembler {
     /// Make a C call while marking the start and end positions of it
     fn ccall_with_branch(&mut self, fptr: *const u8, opnds: Vec<Opnd>, branch: &Rc<Branch>) -> Opnd {
@@ -744,8 +787,9 @@ impl Assembler {
             move |code_ptr, _| {
                 start_branch.start_addr.set(Some(code_ptr));
             },
-            move |code_ptr, _| {
+            move |code_ptr, cb| {
                 end_branch.end_addr.set(Some(code_ptr));
+                ZJITState::add_iseq_return_addr(code_ptr.raw_ptr(cb));
             },
         )
     }
