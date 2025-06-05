@@ -77,7 +77,7 @@ impl fmt::Debug for Opnd {
         match self {
             Self::None => write!(fmt, "None"),
             Value(val) => write!(fmt, "Value({val:?})"),
-            VReg { idx, num_bits } => write!(fmt, "Out{num_bits}({idx})"),
+            VReg { idx, num_bits } => write!(fmt, "VReg{num_bits}({idx})"),
             Imm(signed) => write!(fmt, "{signed:x}_i64"),
             UImm(unsigned) => write!(fmt, "{unsigned:x}_u64"),
             // Say Mem and Reg only once
@@ -1122,7 +1122,7 @@ impl RegisterPool {
     fn take_reg(&mut self, reg: &Reg, vreg_idx: usize) -> Reg {
         let reg_idx = self.regs.iter().position(|elem| elem.reg_no == reg.reg_no)
             .unwrap_or_else(|| panic!("Unable to find register: {}", reg.reg_no));
-        assert_eq!(self.pool[reg_idx], None, "register already allocated");
+        assert_eq!(self.pool[reg_idx], None, "register already allocated for VReg({:?})", self.pool[reg_idx]);
         self.pool[reg_idx] = Some(vreg_idx);
         self.live_regs += 1;
         *reg
