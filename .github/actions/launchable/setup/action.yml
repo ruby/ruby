@@ -55,6 +55,17 @@ inputs:
     description: >-
       Whether this workflow is executed on YJIT.
 
+outputs:
+  stdout_report_path:
+    value: ${{ steps.variables.outputs.stdout_report_path }}
+    description: >-
+      Report file path for standard output.
+
+  stderr_report_path:
+    value: ${{ steps.variables.outputs.stderr_report_path }}
+    description: >-
+      Report file path for standard error.
+
 runs:
   using: composite
 

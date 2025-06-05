@@ -178,6 +178,7 @@ jobs:
         run: ./miniruby --yjit -v | grep "+YJIT"
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ubuntu-22.04
@@ -190,11 +191,8 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec \
-            > >(tee launchable_stdout.log) \
-            2> >(tee launchable_stderr.log)
-          fi
+          ${LAUNCHABLE_STDOUT:+exec 1> >(tee "${LAUNCHABLE_STDOUT}")}
+          ${LAUNCHABLE_STDERR:+exec 2> >(tee "${LAUNCHABLE_STDERR}")}
 
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS" \
@@ -207,6 +205,8 @@ jobs:
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
           LIBCLANG_PATH: ${{ matrix.libclang_path }}
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
