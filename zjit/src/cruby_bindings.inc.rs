@@ -911,6 +911,7 @@ unsafe extern "C" {
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
     pub fn rb_iseqw_to_iseq(iseqw: VALUE) -> *const rb_iseq_t;
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
+    pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_profile_frames(
         start: ::std::os::raw::c_int,
         limit: ::std::os::raw::c_int,

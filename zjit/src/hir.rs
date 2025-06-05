@@ -608,6 +608,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::Defined { op_type, v, .. } => {
+                // op_type (enum defined_type) printing logic from iseq.c.
+                // Not sure why rb_iseq_defined_string() isn't exhaustive.
+                use std::borrow::Cow;
+                let op_type = *op_type as u32;
+                let op_type = if op_type == DEFINED_FUNC {
+                    Cow::Borrowed("func")
+                } else if op_type == DEFINED_REF {
+                    Cow::Borrowed("ref")
+                } else if op_type == DEFINED_CONST_FROM {
+                    Cow::Borrowed("constant-from")
+                } else {
+                    String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() })
+                };
+                write!(f, "Defined {op_type}, {v}")
+            }
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
@@ -2152,9 +2168,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
                 }
                 YARVINSN_defined => {
+                    // (rb_num_t op_type, VALUE obj, VALUE pushval)
                     let op_type = get_arg(pc, 0).as_usize();
-                    let obj = get_arg(pc, 0);
-                    let pushval = get_arg(pc, 0);
+                    let obj = get_arg(pc, 1);
+                    let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
                 }
