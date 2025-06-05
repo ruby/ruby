@@ -2736,9 +2736,9 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_method_hir_with_opcodes(method: &str, opcodes: Vec<u32>, hir: Expect) {
+    fn assert_method_hir_with_opcodes(method: &str, opcodes: &[u32], hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
-        for opcode in opcodes {
+        for &opcode in opcodes {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
@@ -2748,7 +2748,7 @@ mod tests {
 
     #[track_caller]
     fn assert_method_hir_with_opcode(method: &str, opcode: u32, hir: Expect) {
-        assert_method_hir_with_opcodes(method, vec![opcode], hir)
+        assert_method_hir_with_opcodes(method, &[opcode], hir)
     }
 
     #[track_caller]
@@ -2982,7 +2982,7 @@ mod tests {
               a
             end
         ");
-        assert_method_hir_with_opcodes("test", vec![YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
+        assert_method_hir_with_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
