@@ -1991,16 +1991,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut entry_state = FrameState::new(iseq);
     fun.param_types.push(types::BasicObject); // self
     for local_idx in 0..num_locals(iseq) {
-        let idx = local_idx + 1;
         if local_idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
-            entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Param { idx }));
+            entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Param { idx: local_idx + 1 })); // +1 for self
         } else {
             entry_state.locals.push(fun.push_insn(fun.entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
 
         let mut param_type = types::BasicObject;
         // Rest parameters are always ArrayExact
-        if let Ok(true) = c_int::try_from(idx).map(|idx| idx == rest_param_idx) {
+        if let Ok(true) = c_int::try_from(local_idx).map(|idx| idx == rest_param_idx) {
             param_type = types::ArrayExact;
         }
         fun.param_types.push(param_type);
@@ -3427,7 +3426,7 @@ mod tests {
         ");
         assert_method_hir("test",  expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject):
+            bb0(v0:BasicObject, v1:ArrayExact):
               v4:ArrayExact = ToNewArray v0
               v5:Fixnum[1] = Const Value(1)
               ArrayPush v4, v5
@@ -4092,7 +4091,7 @@ mod opt_tests {
 
         assert_optimized_method_hir("rest", expect![[r#"
             fn rest:
-            bb0(v0:BasicObject, v1:BasicObject):
+            bb0(v0:BasicObject, v1:ArrayExact):
               Return v0
         "#]]);
         // extra hidden param for the set of specified keywords
@@ -4114,7 +4113,7 @@ mod opt_tests {
         "#]]);
         assert_optimized_method_hir("post", expect![[r#"
             fn post:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:ArrayExact, v2:BasicObject):
               Return v1
         "#]]);
         assert_optimized_method_hir("forwardable", expect![[r#"
