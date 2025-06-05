@@ -846,6 +846,10 @@ class TC_Set < Test::Unit::TestCase
 
     set1.add(set2)
     assert_equal('Set[Set[0], 1, 2, Set[1, 2, Set[...]]]', set2.inspect)
+
+    c = Class.new(Set)
+    c.set_temporary_name("_MySet")
+    assert_equal('_MySet[1, 2]', c[1, 2].inspect)
   end
 
   def test_to_s
