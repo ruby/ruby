@@ -1020,6 +1020,10 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
     if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
         /* ok */
     }
+    else if (trace_arg->event == RUBY_EVENT_IVAR_SET) {
+        VALUE pair = trace_arg->data;
+        return RARRAY_AREF(pair, 1);
+    }
     else {
         rb_raise(rb_eRuntimeError, "not supported by this event");
     }
