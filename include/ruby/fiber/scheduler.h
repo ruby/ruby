@@ -394,10 +394,53 @@ VALUE rb_fiber_scheduler_io_close(VALUE scheduler, VALUE io);
  */
 VALUE rb_fiber_scheduler_address_resolve(VALUE scheduler, VALUE hostname);
 
+// The state of the blocking operation execution.
 struct rb_fiber_scheduler_blocking_operation_state {
     void *result;
     int saved_errno;
 };
+
+// The opaque handle for the blocking operation.
+typedef struct rb_fiber_scheduler_blocking_operation rb_fiber_scheduler_blocking_operation_t;
+
+/**
+ * Extract the blocking operation handle from a BlockingOperationRuby object.
+ *
+ * This function safely extracts the opaque handle from a BlockingOperation VALUE
+ * while holding the GVL. The returned pointer can be passed to worker threads
+ * and used with rb_fiber_scheduler_blocking_operation_execute.
+ *
+ * @param[in] self The BlockingOperation VALUE to extract from
+ * @return The opaque struct pointer on success, NULL on error
+ * @note Experimental.
+ */
+rb_fiber_scheduler_blocking_operation_t *rb_fiber_scheduler_blocking_operation_extract(VALUE self);
+
+/**
+ * Execute blocking operation from handle (GVL not required).
+ *
+ * This function executes a blocking operation using the opaque handle
+ * obtained from rb_fiber_scheduler_blocking_operation_extract.
+ * It can be called from native threads without holding the GVL.
+ *
+ * @param[in] blocking_operation The opaque handle.
+ * @return 0 on success, -1 on error.
+ * @note Experimental. Can be called from any thread without holding the GVL
+ */
+int rb_fiber_scheduler_blocking_operation_execute(rb_fiber_scheduler_blocking_operation_t *blocking_operation);
+
+/**
+ * Cancel a blocking operation.
+ *
+ * This function cancels a blocking operation. If the operation is queued,
+ * it just marks it as cancelled. If it's executing, it marks it as cancelled
+ * and calls the unblock function to interrupt the operation.
+ *
+ * @param blocking_operation The opaque struct pointer
+ * @return 1 if unblock function was called, 0 if just marked cancelled, -1 on error
+ * @note Experimental.
+ */
+int rb_fiber_scheduler_blocking_operation_cancel(rb_fiber_scheduler_blocking_operation_t *blocking_operation);
 
 /**
  * Defer the execution of the passed function to the scheduler.

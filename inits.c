@@ -63,9 +63,9 @@ rb_call_inits(void)
     CALL(ISeq);
     CALL(Thread);
     CALL(signal);
+    CALL(Cont);
     CALL(Fiber_Scheduler);
     CALL(process);
-    CALL(Cont);
     CALL(Rational);
     CALL(Complex);
     CALL(MemoryView);
