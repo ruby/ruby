@@ -7,7 +7,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -251,6 +251,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, elements, &function.frame_state(*state)),
+        Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
@@ -550,6 +551,28 @@ fn gen_new_array(
     }
 
     new_array
+}
+
+/// Compile a new range instruction
+fn gen_new_range(
+    asm: &mut Assembler,
+    low: lir::Opnd,
+    high: lir::Opnd,
+    flag: RangeType,
+    state: &FrameState,
+) -> lir::Opnd {
+    asm_comment!(asm, "call rb_range_new");
+
+    // Save PC
+    gen_save_pc(asm, state);
+
+    // Call rb_range_new(low, high, flag)
+    let new_range = asm.ccall(
+        rb_range_new as *const u8,
+        vec![low, high, lir::Opnd::Imm(flag as i64)],
+    );
+
+    new_range
 }
 
 /// Compile code that exits from JIT code with a return value

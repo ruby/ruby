@@ -245,6 +245,27 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_new_range_inclusive
+    assert_compiles '1..5', %q{
+      def test(a, b) = a..b
+      test(1, 5)
+    }
+  end
+
+  def test_new_range_exclusive
+    assert_compiles '1...5', %q{
+      def test(a, b) = a...b
+      test(1, 5)
+    }
+  end
+
+  def test_new_range_with_literal
+    assert_compiles '3..10', %q{
+      def test(n) = n..10
+      test(3)
+    }
+  end
+
   def test_if
     assert_compiles '[0, nil]', %q{
       def test(n)
