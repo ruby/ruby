@@ -1005,6 +1005,38 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_equal %W[a-3-#{local}], @cmd.installed_specs.map(&:full_name)
   end
 
+  def test_install_gem_platform_specificity_match
+    util_set_arch "arm64-darwin-20"
+
+    spec_fetcher do |fetcher|
+      %w[ruby universal-darwin universal-darwin-20 x64-darwin-20 arm64-darwin-20].each do |platform|
+        fetcher.download "a", 3 do |s|
+          s.platform = platform
+        end
+      end
+    end
+
+    @cmd.install_gem "a", ">= 0"
+
+    assert_equal %w[a-3-arm64-darwin-20], @cmd.installed_specs.map(&:full_name)
+  end
+
+  def test_install_gem_platform_specificity_match_reverse_order
+    util_set_arch "arm64-darwin-20"
+
+    spec_fetcher do |fetcher|
+      %w[ruby universal-darwin universal-darwin-20 x64-darwin-20 arm64-darwin-20].reverse_each do |platform|
+        fetcher.download "a", 3 do |s|
+          s.platform = platform
+        end
+      end
+    end
+
+    @cmd.install_gem "a", ">= 0"
+
+    assert_equal %w[a-3-arm64-darwin-20], @cmd.installed_specs.map(&:full_name)
+  end
+
   def test_install_gem_ignore_dependencies_specific_file
     spec = util_spec "a", 2
 
