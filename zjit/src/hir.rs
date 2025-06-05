@@ -1989,7 +1989,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // item between commas in the source increase the parameter count by one,
     // regardless of parameter kind.
     let mut entry_state = FrameState::new(iseq);
-    let mut self_param = fun.push_insn(fun.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
     fun.param_types.push(types::BasicObject); // self
     for local_idx in 0..num_locals(iseq) {
         let idx = local_idx + 1;
@@ -2014,9 +2013,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
+        let self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
         let mut state = if insn_idx == 0 { incoming_state.clone() } else {
             let mut result = FrameState::new(iseq);
-            self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
             let mut idx = 1;
             for _ in 0..incoming_state.locals.len() {
                 result.locals.push(fun.push_insn(block, Insn::Param { idx }));
@@ -2793,7 +2792,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = NewArray v1
+              v4:ArrayExact = NewArray v0
               Return v4
         "#]]);
     }
@@ -2804,7 +2803,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_newarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
+              v5:ArrayExact = NewArray v0, v1
               Return v5
         "#]]);
     }
@@ -2816,7 +2815,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[10] = Const Value(10)
-              v5:RangeExact = NewRange v1 NewRangeInclusive v3
+              v5:RangeExact = NewRange v0 NewRangeInclusive v3
               Return v5
         "#]]);
     }
@@ -2827,7 +2826,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:RangeExact = NewRange v1 NewRangeInclusive v2
+              v5:RangeExact = NewRange v0 NewRangeInclusive v1
               Return v5
         "#]]);
     }
@@ -2839,7 +2838,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[10] = Const Value(10)
-              v5:RangeExact = NewRange v1 NewRangeExclusive v3
+              v5:RangeExact = NewRange v0 NewRangeExclusive v3
               Return v5
         "#]]);
     }
@@ -2850,7 +2849,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_newrange, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:RangeExact = NewRange v1 NewRangeExclusive v2
+              v5:RangeExact = NewRange v0 NewRangeExclusive v1
               Return v5
         "#]]);
     }
@@ -2898,7 +2897,7 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v4:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v5:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v7:HashExact = NewHash v4: v1, v5: v2
+              v7:HashExact = NewHash v4: v0, v5: v1
               Return v7
         "#]]);
     }
@@ -2982,8 +2981,8 @@ mod tests {
         ");
         assert_method_hir_with_opcodes("test", vec![YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
+            bb0(v1:BasicObject):
+              v0:NilClassExact = Const Value(nil)
               v3:Fixnum[1] = Const Value(1)
               Return v3
         "#]]);
@@ -3003,8 +3002,8 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_leave, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:CBool = Test v1
-              IfFalse v3, bb1(v0, v1)
+              v3:CBool = Test v0
+              IfFalse v3, bb1(v1, v0)
               v5:Fixnum[3] = Const Value(3)
               Return v5
             bb1(v7:BasicObject, v8:BasicObject):
@@ -3027,12 +3026,12 @@ mod tests {
         ");
         assert_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v2:NilClassExact = Const Value(nil)
-              v4:CBool = Test v1
-              IfFalse v4, bb1(v0, v1, v2)
+            bb0(v0:BasicObject, v2:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v4:CBool = Test v0
+              IfFalse v4, bb1(v2, v0, v1)
               v6:Fixnum[3] = Const Value(3)
-              Jump bb2(v0, v1, v6)
+              Jump bb2(v2, v0, v6)
             bb1(v8:BasicObject, v9:BasicObject, v10:NilClassExact):
               v12:Fixnum[4] = Const Value(4)
               Jump bb2(v8, v9, v12)
@@ -3050,7 +3049,7 @@ mod tests {
         assert_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :+, v2
+              v5:BasicObject = SendWithoutBlock v0, :+, v1
               Return v5
         "#]]);
     }
@@ -3064,7 +3063,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_minus, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :-, v2
+              v5:BasicObject = SendWithoutBlock v0, :-, v1
               Return v5
         "#]]);
     }
@@ -3078,7 +3077,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_mult, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :*, v2
+              v5:BasicObject = SendWithoutBlock v0, :*, v1
               Return v5
         "#]]);
     }
@@ -3092,7 +3091,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_div, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :/, v2
+              v5:BasicObject = SendWithoutBlock v0, :/, v1
               Return v5
         "#]]);
     }
@@ -3106,7 +3105,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_mod, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :%, v2
+              v5:BasicObject = SendWithoutBlock v0, :%, v1
               Return v5
         "#]]);
     }
@@ -3120,7 +3119,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_eq, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :==, v2
+              v5:BasicObject = SendWithoutBlock v0, :==, v1
               Return v5
         "#]]);
     }
@@ -3134,7 +3133,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_neq, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :!=, v2
+              v5:BasicObject = SendWithoutBlock v0, :!=, v1
               Return v5
         "#]]);
     }
@@ -3148,7 +3147,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_lt, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :<, v2
+              v5:BasicObject = SendWithoutBlock v0, :<, v1
               Return v5
         "#]]);
     }
@@ -3162,7 +3161,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_le, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :<=, v2
+              v5:BasicObject = SendWithoutBlock v0, :<=, v1
               Return v5
         "#]]);
     }
@@ -3176,7 +3175,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_gt, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :>, v2
+              v5:BasicObject = SendWithoutBlock v0, :>, v1
               Return v5
         "#]]);
     }
@@ -3197,12 +3196,12 @@ mod tests {
         ");
         assert_method_hir("test",  expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v2:BasicObject):
+              v0:NilClassExact = Const Value(nil)
               v1:NilClassExact = Const Value(nil)
-              v2:NilClassExact = Const Value(nil)
               v4:Fixnum[0] = Const Value(0)
               v5:Fixnum[10] = Const Value(10)
-              Jump bb2(v0, v4, v5)
+              Jump bb2(v2, v4, v5)
             bb2(v7:BasicObject, v8:BasicObject, v9:BasicObject):
               v11:Fixnum[0] = Const Value(0)
               v13:BasicObject = SendWithoutBlock v9, :>, v11
@@ -3228,7 +3227,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_ge, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :>=, v2
+              v5:BasicObject = SendWithoutBlock v0, :>=, v1
               Return v5
         "#]]);
     }
@@ -3247,11 +3246,11 @@ mod tests {
         ");
         assert_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
-              v1:NilClassExact = Const Value(nil)
+            bb0(v1:BasicObject):
+              v0:NilClassExact = Const Value(nil)
               v3:TrueClassExact = Const Value(true)
               v4:CBool[true] = Test v3
-              IfFalse v4, bb1(v0, v3)
+              IfFalse v4, bb1(v1, v3)
               v6:Fixnum[3] = Const Value(3)
               Return v6
             bb1(v8, v9):
@@ -3293,7 +3292,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_send, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:BasicObject = Send v1, 0x1000, :each
+              v4:BasicObject = Send v0, 0x1000, :each
               Return v4
         "#]]);
     }
@@ -3327,7 +3326,7 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToArray v1
+              v4:ArrayExact = ToArray v0
               SideExit
         "#]]);
     }
@@ -3429,7 +3428,7 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
+              v4:ArrayExact = ToNewArray v0
               v5:Fixnum[1] = Const Value(1)
               ArrayPush v4, v5
               SideExit
@@ -3492,7 +3491,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
-              v6:BasicObject = ArrayMax v1, v2
+              v6:BasicObject = ArrayMax v0, v1
               Return v6
         "#]]);
     }
@@ -3509,10 +3508,10 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:BasicObject, v4:BasicObject):
+              v2:NilClassExact = Const Value(nil)
               v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
+              v7:BasicObject = SendWithoutBlock v0, :+, v1
               SideExit
         "#]]);
     }
@@ -3529,10 +3528,10 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:BasicObject, v4:BasicObject):
+              v2:NilClassExact = Const Value(nil)
               v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
+              v7:BasicObject = SendWithoutBlock v0, :+, v1
               SideExit
         "#]]);
     }
@@ -3549,10 +3548,10 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:BasicObject, v4:BasicObject):
+              v2:NilClassExact = Const Value(nil)
               v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
+              v7:BasicObject = SendWithoutBlock v0, :+, v1
               v8:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v9:StringExact = StringCopy v8
               SideExit
@@ -3573,10 +3572,10 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_opt_newarray_send, expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:BasicObject, v4:BasicObject):
+              v2:NilClassExact = Const Value(nil)
               v3:NilClassExact = Const Value(nil)
-              v4:NilClassExact = Const Value(nil)
-              v7:BasicObject = SendWithoutBlock v1, :+, v2
+              v7:BasicObject = SendWithoutBlock v0, :+, v1
               SideExit
         "#]]);
     }
@@ -3589,7 +3588,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_length, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
+              v5:ArrayExact = NewArray v0, v1
               v7:BasicObject = SendWithoutBlock v5, :length
               Return v7
         "#]]);
@@ -3603,7 +3602,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_size, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
+              v5:ArrayExact = NewArray v0, v1
               v7:BasicObject = SendWithoutBlock v5, :size
               Return v7
         "#]]);
@@ -3646,7 +3645,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_splatarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
+              v4:ArrayExact = ToNewArray v0
               Return v4
         "#]]);
     }
@@ -3661,7 +3660,7 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               v5:ArrayExact = NewArray v3
-              v7:ArrayExact = ToArray v1
+              v7:ArrayExact = ToArray v0
               ArrayExtend v5, v7
               Return v5
         "#]]);
@@ -3675,7 +3674,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
+              v4:ArrayExact = ToNewArray v0
               v5:Fixnum[1] = Const Value(1)
               ArrayPush v4, v5
               Return v4
@@ -3690,7 +3689,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_pushtoarray, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v4:ArrayExact = ToNewArray v1
+              v4:ArrayExact = ToNewArray v0
               v5:Fixnum[1] = Const Value(1)
               v6:Fixnum[2] = Const Value(2)
               v7:Fixnum[3] = Const Value(3)
@@ -3711,7 +3710,7 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
-              v7:BasicObject = SendWithoutBlock v1, :[]=, v2, v5
+              v7:BasicObject = SendWithoutBlock v0, :[]=, v1, v5
               Return v5
         "#]]);
     }
@@ -3724,7 +3723,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_aref, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:BasicObject = SendWithoutBlock v1, :[], v2
+              v5:BasicObject = SendWithoutBlock v0, :[], v1
               Return v5
         "#]]);
     }
@@ -3738,7 +3737,7 @@ mod tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v5:BasicObject = SendWithoutBlock v1, :[], v3
+              v5:BasicObject = SendWithoutBlock v0, :[], v3
               Return v5
         "#]]);
     }
@@ -3751,10 +3750,10 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_branchnil, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:CBool = IsNil v1
-              IfTrue v3, bb1(v0, v1, v1)
-              v6:BasicObject = SendWithoutBlock v1, :itself
-              Jump bb1(v0, v1, v6)
+              v3:CBool = IsNil v0
+              IfTrue v3, bb1(v1, v0, v0)
+              v6:BasicObject = SendWithoutBlock v0, :itself
+              Jump bb1(v1, v0, v6)
             bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject):
               Return v10
         "#]]);
@@ -3790,7 +3789,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v6:Fixnum[3] = Const Value(3)
               Return v6
         "#]]);
@@ -3810,9 +3809,9 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v3:FalseClassExact = Const Value(false)
-              Jump bb1(v0, v3)
+              Jump bb1(v1, v3)
             bb1(v8:BasicObject, v9:FalseClassExact):
               v11:Fixnum[4] = Const Value(4)
               Return v11
@@ -3882,11 +3881,11 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v13:Fixnum = GuardType v1, Fixnum
+              v13:Fixnum = GuardType v0, Fixnum
               v20:Fixnum[0] = Const Value(0)
               v6:Fixnum[0] = Const Value(0)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v16:Fixnum = GuardType v1, Fixnum
+              v16:Fixnum = GuardType v0, Fixnum
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
               v22:Fixnum[0] = Const Value(0)
               Return v22
@@ -4074,7 +4073,7 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
               v9:Fixnum = FixnumAdd v8, v3
               Return v9
         "#]]);
@@ -4094,18 +4093,18 @@ mod opt_tests {
         assert_optimized_method_hir("rest", expect![[r#"
             fn rest:
             bb0(v0:BasicObject, v1:BasicObject):
-              Return v1
+              Return v0
         "#]]);
         // extra hidden param for the set of specified keywords
         assert_optimized_method_hir("kw", expect![[r#"
             fn kw:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              Return v1
+              Return v0
         "#]]);
         assert_optimized_method_hir("kw_rest", expect![[r#"
             fn kw_rest:
             bb0(v0:BasicObject, v1:BasicObject):
-              Return v1
+              Return v0
         "#]]);
         assert_optimized_method_hir("block", expect![[r#"
             fn block:
@@ -4116,7 +4115,7 @@ mod opt_tests {
         assert_optimized_method_hir("post", expect![[r#"
             fn post:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              Return v2
+              Return v1
         "#]]);
         assert_optimized_method_hir("forwardable", expect![[r#"
             fn forwardable:
@@ -4263,8 +4262,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
               v10:Fixnum = FixnumAdd v8, v9
               Return v10
         "#]]);
@@ -4281,7 +4280,7 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
               v9:Fixnum = FixnumAdd v8, v3
               Return v9
         "#]]);
@@ -4298,7 +4297,7 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v8:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
               v9:Fixnum = FixnumAdd v3, v8
               Return v9
         "#]]);
@@ -4314,8 +4313,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
-              v9:Fixnum = GuardType v2, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
+              v9:Fixnum = GuardType v1, Fixnum
               v10:BoolExact = FixnumLt v8, v9
               Return v10
         "#]]);
@@ -4332,7 +4331,7 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
               v9:BoolExact = FixnumLt v8, v3
               Return v9
         "#]]);
@@ -4349,7 +4348,7 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject):
               v3:Fixnum[1] = Const Value(1)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v8:Fixnum = GuardType v1, Fixnum
+              v8:Fixnum = GuardType v0, Fixnum
               v9:BoolExact = FixnumLt v3, v8
               Return v9
         "#]]);
@@ -4366,7 +4365,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
         "#]]);
@@ -4383,7 +4382,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v4:Fixnum[5] = Const Value(5)
               Return v4
         "#]]);
@@ -4400,7 +4399,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject):
+            bb0(v0:BasicObject, v2:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4416,7 +4415,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
         "#]]);
@@ -4432,7 +4431,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+            bb0(v0:BasicObject, v1:BasicObject, v3:BasicObject):
               v9:Fixnum[5] = Const Value(5)
               Return v9
         "#]]);
@@ -4449,7 +4448,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4465,7 +4464,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4482,7 +4481,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v3:Fixnum[5] = Const Value(5)
               Return v3
         "#]]);
@@ -4499,7 +4498,7 @@ mod opt_tests {
         "#);
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               v5:Fixnum[5] = Const Value(5)
               Return v5
         "#]]);
@@ -4518,8 +4517,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_PLUS)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4538,8 +4537,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MINUS)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4558,8 +4557,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MULT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4578,8 +4577,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_DIV)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v11:Fixnum = FixnumDiv v9, v10
               v6:Fixnum[5] = Const Value(5)
               Return v6
@@ -4599,8 +4598,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_MOD)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v11:Fixnum = FixnumMod v9, v10
               v6:Fixnum[5] = Const Value(5)
               Return v6
@@ -4620,8 +4619,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4640,8 +4639,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_LE)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4660,8 +4659,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GT)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4680,8 +4679,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_GE)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4700,8 +4699,8 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              v9:Fixnum = GuardType v1, Fixnum
-              v10:Fixnum = GuardType v2, Fixnum
+              v9:Fixnum = GuardType v0, Fixnum
+              v10:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4721,8 +4720,8 @@ mod opt_tests {
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              v10:Fixnum = GuardType v1, Fixnum
-              v11:Fixnum = GuardType v2, Fixnum
+              v10:Fixnum = GuardType v0, Fixnum
+              v11:Fixnum = GuardType v1, Fixnum
               v6:Fixnum[5] = Const Value(5)
               Return v6
         "#]]);
@@ -4756,7 +4755,7 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
               PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
-              v7:Fixnum = GuardType v1, Fixnum
+              v7:Fixnum = GuardType v0, Fixnum
               v8:BasicObject = CCall itself@0x1010, v7
               Return v8
         "#]]);
@@ -4787,7 +4786,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               PatchPoint MethodRedefined(Array@0x1000, itself@0x1008)
               v7:Fixnum[1] = Const Value(1)
               Return v7
@@ -4806,7 +4805,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, M)
               PatchPoint MethodRedefined(Module@0x1008, name@0x1010)
@@ -4825,7 +4824,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
               v7:Fixnum[5] = Const Value(5)
               Return v7
@@ -4842,7 +4841,7 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject):
+            bb0(v1:BasicObject):
               PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
               v7:Fixnum[5] = Const Value(5)
               Return v7
@@ -4892,8 +4891,8 @@ mod opt_tests {
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
-            bb0(v0:BasicObject, v1:BasicObject):
-              v2:NilClassExact = Const Value(nil)
+            bb0(v0:BasicObject, v2:BasicObject):
+              v1:NilClassExact = Const Value(nil)
               v4:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v6:ArrayExact = ArrayDup v4
               PatchPoint MethodRedefined(Array@0x1008, first@0x1010)
@@ -5045,7 +5044,7 @@ mod opt_tests {
         assert_optimized_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
+              v5:ArrayExact = NewArray v0, v1
               PatchPoint MethodRedefined(Array@0x1000, length@0x1008)
               v10:Fixnum = CCall length@0x1010, v5
               Return v10
@@ -5060,7 +5059,7 @@ mod opt_tests {
         assert_optimized_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v5:ArrayExact = NewArray v1, v2
+              v5:ArrayExact = NewArray v0, v1
               PatchPoint MethodRedefined(Array@0x1000, size@0x1008)
               v10:Fixnum = CCall size@0x1010, v5
               Return v10
