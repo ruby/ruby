@@ -6210,7 +6210,11 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         RUBY_DEBUG_LOG("task:%p", task);
 
         if (task) {
-            (*task->func)(task->data);
+            if (task->flags & rb_interrupt_exec_flag_new_thread) {
+                rb_thread_create(task->func, task->data);
+            } else {
+                (*task->func)(task->data);
+            }
             ruby_xfree(task);
         }
         else {
@@ -6233,43 +6237,15 @@ threadptr_interrupt_exec_cleanup(rb_thread_t *th)
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
 
-struct interrupt_ractor_new_thread_data {
-    rb_interrupt_exec_func_t *func;
-    void *data;
-};
-
-static VALUE
-interrupt_ractor_new_thread_func(void *data)
-{
-    struct interrupt_ractor_new_thread_data d = *(struct interrupt_ractor_new_thread_data *)data;
-    ruby_xfree(data);
-
-    d.func(d.data);
-    return Qnil;
-}
-
-static VALUE
-interrupt_ractor_func(void *data)
-{
-    rb_thread_create(interrupt_ractor_new_thread_func, data);
-    return Qnil;
-}
-
 // native thread safe
 // func/data should be native thread safe
 void
 rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                          rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags)
 {
-    struct interrupt_ractor_new_thread_data *d = ALLOC(struct interrupt_ractor_new_thread_data);
-
     RUBY_DEBUG_LOG("flags:%d", (int)flags);
 
-    d->func = func;
-    d->data = data;
     rb_thread_t *main_th = target_r->threads.main;
-    rb_threadptr_interrupt_exec(main_th, interrupt_ractor_func, d, flags);
-
-    // TODO MEMO: we can create a new thread in a ractor, but not sure how to do that now.
+    rb_threadptr_interrupt_exec(main_th, func, data, flags | rb_interrupt_exec_flag_new_thread);
 }
 
