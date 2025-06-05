@@ -545,6 +545,20 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_getinstancevariable
+    assert_compiles 'nil', %q{
+      def test() = @foo
+
+      test()
+    }
+    assert_compiles '3', %q{
+      @foo = 3
+      def test() = @foo
+
+      test()
+    }
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
