@@ -529,7 +529,7 @@ RSpec.describe "bundle gem" do
     system_gems gems, path: path, gem_repo: gem_repo2
     bundle "exec rake build", dir: bundled_app("newgem")
 
-    expect(last_command.stdboth).not_to include("ERROR")
+    expect(stdboth).not_to include("ERROR")
   end
 
   context "gem naming with relative paths" do

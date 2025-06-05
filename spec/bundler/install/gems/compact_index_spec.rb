@@ -313,7 +313,7 @@ RSpec.describe "compact index api" do
       gem "myrack"
     G
 
-    expect(last_command.stdboth).not_to include "Double checking"
+    expect(stdboth).not_to include "Double checking"
   end
 
   it "fetches again when more dependencies are found in subsequent sources", bundler: "< 3" do
