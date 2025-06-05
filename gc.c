@@ -130,32 +130,19 @@
 #include "builtin.h"
 #include "shape.h"
 
+#if USE_MODULAR_GC
 unsigned int
 rb_gc_vm_lock(void)
 {
-    unsigned int lev = 0;
-    RB_VM_LOCK_ENTER_LEV(&lev);
-    return lev;
+    RB_VM_LOCK();
+    return 1;
 }
 
 void
 rb_gc_vm_unlock(unsigned int lev)
 {
-    RB_VM_LOCK_LEAVE_LEV(&lev);
-}
-
-unsigned int
-rb_gc_cr_lock(void)
-{
-    unsigned int lev;
-    RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
-    return lev;
-}
-
-void
-rb_gc_cr_unlock(unsigned int lev)
-{
-    RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
+    RUBY_ASSERT(lev == 1);
+    RB_VM_UNLOCK();
 }
 
 unsigned int
@@ -178,7 +165,6 @@ rb_gc_vm_barrier(void)
     rb_vm_barrier();
 }
 
-#if USE_MODULAR_GC
 void *
 rb_gc_get_ractor_newobj_cache(void)
 {
@@ -1791,9 +1777,14 @@ generate_next_object_id(void)
     // 64bit atomics are available
     return SIZET2NUM(RUBY_ATOMIC_SIZE_FETCH_ADD(object_id_counter, 1) * OBJ_ID_INCREMENT);
 #else
-    unsigned int lock_lev = rb_gc_vm_lock();
-    VALUE id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
-    rb_gc_vm_unlock(lock_lev);
+    VALUE id;
+
+    RB_VM_LOCK();
+    {
+        id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
+    }
+    RB_VM_UNLOCK();
+
     return id;
 #endif
 }
@@ -1875,16 +1866,18 @@ class_object_id(VALUE klass)
 {
     VALUE id = RUBY_ATOMIC_VALUE_LOAD(RCLASS(klass)->object_id);
     if (!id) {
-        unsigned int lock_lev = rb_gc_vm_lock();
-        id = generate_next_object_id();
-        VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
-        if (existing_id) {
-            id = existing_id;
+        RB_VM_LOCK();
+        {
+            id = generate_next_object_id();
+            VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
+            if (existing_id) {
+                id = existing_id;
+            }
+            else if (RB_UNLIKELY(id2ref_tbl)) {
+                st_insert(id2ref_tbl, id, klass);
+            }
         }
-        else if (RB_UNLIKELY(id2ref_tbl)) {
-            st_insert(id2ref_tbl, id, klass);
-        }
-        rb_gc_vm_unlock(lock_lev);
+        RB_VM_UNLOCK();
     }
     return id;
 }
@@ -1954,9 +1947,14 @@ object_id(VALUE obj)
     }
 
     if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
-        unsigned int lock_lev = rb_gc_vm_lock();
-        VALUE id = object_id0(obj);
-        rb_gc_vm_unlock(lock_lev);
+        VALUE id;
+
+        RB_VM_LOCK();
+        {
+            id = object_id0(obj);
+        }
+        RB_VM_UNLOCK();
+
         return id;
     }
 
@@ -1990,32 +1988,33 @@ static VALUE
 object_id_to_ref(void *objspace_ptr, VALUE object_id)
 {
     rb_objspace_t *objspace = objspace_ptr;
-
-    unsigned int lev = rb_gc_vm_lock();
-
-    if (!id2ref_tbl) {
-        rb_gc_vm_barrier(); // stop other ractors
-
-        // GC Must not trigger while we build the table, otherwise if we end
-        // up freeing an object that had an ID, we might try to delete it from
-        // the table even though it wasn't inserted yet.
-        id2ref_tbl = st_init_table(&object_id_hash_type);
-        id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
-
-        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
-        // objects we just added to the table.
-        bool gc_disabled = RTEST(rb_gc_disable_no_rest());
-        {
-            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
-        }
-        if (!gc_disabled) rb_gc_enable();
-        id2ref_tbl_built = true;
-    }
-
     VALUE obj;
-    bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+    bool found;
 
-    rb_gc_vm_unlock(lev);
+    RB_VM_LOCK();
+    {
+        if (!id2ref_tbl) {
+            rb_vm_barrier(); // stop other ractors
+
+            // GC Must not trigger while we build the table, otherwise if we end
+            // up freeing an object that had an ID, we might try to delete it from
+            // the table even though it wasn't inserted yet.
+            id2ref_tbl = st_init_table(&object_id_hash_type);
+            id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, id2ref_tbl);
+
+            // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
+            // objects we just added to the table.
+            bool gc_disabled = RTEST(rb_gc_disable_no_rest());
+            {
+                rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
+            }
+            if (!gc_disabled) rb_gc_enable();
+            id2ref_tbl_built = true;
+        }
+
+        found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
+    }
+    RB_VM_UNLOCK();
 
     if (found) {
         return obj;

@@ -35,13 +35,6 @@ enum rb_gc_vm_weak_tables {
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
-unsigned int rb_gc_vm_lock(void);
-void rb_gc_vm_unlock(unsigned int lev);
-unsigned int rb_gc_cr_lock(void);
-void rb_gc_cr_unlock(unsigned int lev);
-unsigned int rb_gc_vm_lock_no_barrier(void);
-void rb_gc_vm_unlock_no_barrier(unsigned int lev);
-void rb_gc_vm_barrier(void);
 size_t rb_gc_obj_optimal_size(VALUE obj);
 void rb_gc_mark_children(void *objspace, VALUE obj);
 void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
@@ -72,6 +65,14 @@ void rb_gc_prepare_heap_process_object(VALUE obj);
 bool ruby_free_at_exit_p(void);
 bool rb_memerror_reentered(void);
 bool rb_obj_id_p(VALUE);
+
+#ifdef BUILDING_MODULAR_GC
+unsigned int rb_gc_vm_lock(void);
+void rb_gc_vm_unlock(unsigned int lev);
+unsigned int rb_gc_vm_lock_no_barrier(void);
+void rb_gc_vm_unlock_no_barrier(unsigned int lev);
+void rb_gc_vm_barrier(void);
+#endif
 
 #if USE_MODULAR_GC
 bool rb_gc_event_hook_required_p(rb_event_flag_t event);
