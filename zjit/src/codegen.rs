@@ -332,7 +332,7 @@ fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
 
         // Allocate registers for basic block arguments
         let params: Vec<Opnd> = (0..num_params).map(|idx|
-            gen_param(asm, idx + 1)
+            gen_param(asm, idx + 1) // +1 for self
         ).collect();
 
         // Assign local variables to the basic block arguments

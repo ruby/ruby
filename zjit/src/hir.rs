@@ -1990,7 +1990,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // regardless of parameter kind.
     let mut entry_state = FrameState::new(iseq);
     let mut self_param = fun.push_insn(fun.entry_block, Insn::Param { idx: SELF_PARAM_IDX });
-    fun.param_types.push(types::BasicObject);
+    fun.param_types.push(types::BasicObject); // self
     for local_idx in 0..num_locals(iseq) {
         let idx = local_idx + 1;
         if local_idx < unsafe { get_iseq_body_param_size(iseq) }.as_usize() {
