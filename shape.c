@@ -1219,7 +1219,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 #if SHAPE_DEBUG
 
 /*
- * Exposing Shape to Ruby via RubyVM.debug_shape
+ * Exposing Shape to Ruby via RubyVM::Shape.of(object)
  */
 
 static VALUE
