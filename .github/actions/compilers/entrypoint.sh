@@ -147,7 +147,10 @@ launchable_record_test() {
     fi
 }
 if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
-    setup_launchable
+    setup_launchable & setup_pid=$!
+    (sleep 180; kill "$setup_pid" 2> /dev/null) & sleep_pid=$!
+    wait -f "$setup_pid"
+    kill "$sleep_pid" 2> /dev/null
 fi
 
 pushd ${builddir}

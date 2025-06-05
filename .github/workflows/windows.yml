@@ -188,6 +188,7 @@ jobs:
           test-task: ${{ matrix.test_task || 'check' }}
         continue-on-error: true
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
+        timeout-minutes: 3
 
       - run: nmake ${{ matrix.test_task || 'check' }}
         env:

@@ -124,6 +124,7 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: Set extra test options
         run: |
