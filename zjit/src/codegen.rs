@@ -274,6 +274,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
+        Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -295,6 +296,15 @@ fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[I
     }
 
     Some(asm.ccall(cfun, lir_args))
+}
+
+/// Emit an uncached instance variable lookup
+fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
+    asm_comment!(asm, "call rb_ivar_get");
+    asm.ccall(
+        rb_ivar_get as *const u8,
+        vec![recv, Opnd::UImm(id.0)],
+    )
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
