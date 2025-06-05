@@ -1127,6 +1127,10 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
                 /* OK. killed. */
                 break;
               default:
+                if (err == RUBY_FATAL_FIBER_KILLED) { // not integer constant so can't be a case expression
+                    // root fiber killed in non-main thread
+                    break;
+                }
                 rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
             }
         }
