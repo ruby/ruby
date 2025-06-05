@@ -16,9 +16,8 @@ class TestFiberIOClose < Test::Unit::TestCase
     end
   end
 
-  # Problematic on Windows.
   def test_io_close_across_fibers
-    omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
+    # omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
 
     with_socket_pair do |i, o|
       error = nil
@@ -45,7 +44,6 @@ class TestFiberIOClose < Test::Unit::TestCase
     end
   end
 
-  # Okay on all platforms.
   def test_io_close_blocking_thread
     omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
 
@@ -77,9 +75,8 @@ class TestFiberIOClose < Test::Unit::TestCase
     end
   end
 
-  # Problematic on Windows.
   def test_io_close_blocking_fiber
-    omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
+    # omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
 
     with_socket_pair do |i, o|
       error = nil

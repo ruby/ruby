@@ -341,7 +341,7 @@ class Scheduler
   end
 
   def blocking_operation_wait(work)
-    thread = Thread.new(&work)
+    thread = Thread.new{work.call}
 
     thread.join
 

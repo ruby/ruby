@@ -1552,7 +1552,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     if (flags & RB_NOGVL_OFFLOAD_SAFE) {
         VALUE scheduler = rb_fiber_scheduler_current();
         if (scheduler != Qnil) {
-            struct rb_fiber_scheduler_blocking_operation_state state;
+            struct rb_fiber_scheduler_blocking_operation_state state = {0};
 
             VALUE result = rb_fiber_scheduler_blocking_operation_wait(scheduler, func, data1, ubf, data2, flags, &state);
 
