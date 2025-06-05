@@ -12860,10 +12860,10 @@ numparam_nested_p(struct parser_params *p)
     NODE *inner = local->numparam.inner;
     if (outer || inner) {
         NODE *used = outer ? outer : inner;
-        compile_error(p, "numbered parameter is already used in\n"
-                      "%s:%d: %s block here",
-                      p->ruby_sourcefile, nd_line(used),
-                      outer ? "outer" : "inner");
+        compile_error(p, "numbered parameter is already used in %s block\n"
+                      "%s:%d: numbered parameter is already used here",
+                      outer ? "outer" : "inner",
+                      p->ruby_sourcefile, nd_line(used));
         parser_show_error_line(p, &used->nd_loc);
         return 1;
     }
@@ -12875,8 +12875,8 @@ numparam_used_p(struct parser_params *p)
 {
     NODE *numparam = p->lvtbl->numparam.current;
     if (numparam) {
-        compile_error(p, "numbered parameter is already used in\n"
-                      "%s:%d: current block here",
+        compile_error(p, "'it' is not allowed when a numbered parameter is already used\n"
+                      "%s:%d: numbered parameter is already used here",
                       p->ruby_sourcefile, nd_line(numparam));
         parser_show_error_line(p, &numparam->nd_loc);
         return 1;
@@ -12889,8 +12889,8 @@ it_used_p(struct parser_params *p)
 {
     NODE *it = p->lvtbl->it;
     if (it) {
-        compile_error(p, "'it' is already used in\n"
-                      "%s:%d: current block here",
+        compile_error(p, "numbered parameters are not allowed when 'it' is already used\n"
+                      "%s:%d: 'it' is already used here",
                       p->ruby_sourcefile, nd_line(it));
         parser_show_error_line(p, &it->nd_loc);
         return 1;
