@@ -534,6 +534,17 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_putself
+    assert_compiles '3', %q{
+      class Integer
+        def minus(a)
+          self - a
+        end
+      end
+      5.minus(2)
+    }
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
