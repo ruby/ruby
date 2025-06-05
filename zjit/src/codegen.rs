@@ -730,6 +730,12 @@ fn gen_push_frame(asm: &mut Assembler, recv: Opnd) {
 fn param_reg(idx: usize) -> Reg {
     // To simplify the implementation, allocate a fixed register for each basic block argument for now.
     // TODO: Allow allocating arbitrary registers for basic block arguments
+    if idx >= ALLOC_REGS.len() {
+        unimplemented!(
+            "register spilling not yet implemented, too many basic block arguments ({}/{})",
+            idx + 1, ALLOC_REGS.len()
+        );
+    }
     ALLOC_REGS[idx]
 }
 
