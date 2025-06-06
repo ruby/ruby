@@ -142,15 +142,15 @@ module Bundler
         end
       else
         materialize([name, version]) do |matching_specs|
-          target_platform = source.is_a?(Source::Path) ? platform : local_platform
+          target_platform = source.is_a?(Source::Path) ? platform : Bundler.local_platform
 
-          installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
+          installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, target_platform)
 
           specification = choose_compatible(installable_candidates, fallback_to_non_installable: false)
           return specification unless specification.nil?
 
           if target_platform != platform
-            installable_candidates = GemHelpers.select_best_platform_match(matching_specs, platform)
+            installable_candidates = MatchPlatform.select_best_platform_match(matching_specs, platform)
           end
 
           choose_compatible(installable_candidates)
@@ -190,7 +190,7 @@ module Bundler
     end
 
     def ruby_platform_materializes_to_ruby_platform?
-      generic_platform = generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
+      generic_platform = Bundler.generic_local_platform == Gem::Platform::JAVA ? Gem::Platform::JAVA : Gem::Platform::RUBY
 
       (most_specific_locked_platform != generic_platform) || force_ruby_platform || Bundler.settings[:force_ruby_platform]
     end

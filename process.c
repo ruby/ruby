@@ -4122,7 +4122,7 @@ rb_fork_ruby(int *status)
 {
     struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
-    int try_gc = 1, err;
+    int try_gc = 1, err = 0;
     struct child_handler_disabler_state old;
 
     do {

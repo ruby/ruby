@@ -22,6 +22,10 @@ module Spec
       last_command.stderr
     end
 
+    def stdboth
+      last_command.stdboth
+    end
+
     def exitstatus
       last_command.exitstatus
     end

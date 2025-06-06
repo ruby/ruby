@@ -193,7 +193,10 @@ RSpec.describe "bundle exec" do
   end
 
   context "with default gems" do
-    let(:default_erb_version) { ruby "gem 'erb', '< 999999'; require 'erb/version'; puts Erb::VERSION", raise_on_error: false }
+    # TODO: Switch to ERB::VERSION once Ruby 3.4 support is dropped, so all
+    # supported rubies include an `erb` gem version where `ERB::VERSION` is
+    # public
+    let(:default_erb_version) { ruby "require 'erb/version'; puts ERB.const_get(:VERSION)" }
 
     context "when not specified in Gemfile" do
       before do
@@ -201,9 +204,9 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version provided by ruby" do
-        bundle "exec erb --version"
+        bundle "exec erb --version", artifice: nil
 
-        expect(out).to include(default_erb_version)
+        expect(stdboth).to eq(default_erb_version)
       end
     end
 
@@ -226,8 +229,7 @@ RSpec.describe "bundle exec" do
       it "uses version specified" do
         bundle "exec erb --version", artifice: nil
 
-        expect(out).to eq(specified_erb_version)
-        expect(err).to be_empty
+        expect(stdboth).to eq(specified_erb_version)
       end
     end
 
@@ -249,13 +251,12 @@ RSpec.describe "bundle exec" do
           source "https://gem.repo2"
           gem "gem_depending_on_old_erb"
         G
-
-        bundle "exec erb --version", artifice: nil
       end
 
       it "uses resolved version" do
-        expect(out).to eq(indirect_erb_version)
-        expect(err).to be_empty
+        bundle "exec erb --version", artifice: nil
+
+        expect(stdboth).to eq(indirect_erb_version)
       end
     end
   end
@@ -1199,11 +1200,11 @@ RSpec.describe "bundle exec" do
 
     context "with a system gem that shadows a default gem" do
       let(:openssl_version) { "99.9.9" }
-      let(:expected) { ruby "gem 'openssl', '< 999999'; require 'openssl'; puts OpenSSL::VERSION", artifice: nil, raise_on_error: false }
 
       it "only leaves the default gem in the stdlib available" do
+        default_openssl_version = ruby "require 'openssl'; puts OpenSSL::VERSION"
+
         skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
-        skip "openssl isn't a default gem" if expected.empty?
 
         install_gemfile "source \"https://gem.repo1\"" # must happen before installing the broken system gem
 
@@ -1228,10 +1229,10 @@ RSpec.describe "bundle exec" do
 
         env = { "PATH" => path }
         aggregate_failures do
-          expect(bundle("exec #{file}", artifice: nil, env: env)).to eq(expected)
-          expect(bundle("exec bundle exec #{file}", artifice: nil, env: env)).to eq(expected)
-          expect(bundle("exec ruby #{file}", artifice: nil, env: env)).to eq(expected)
-          expect(run(file.read, artifice: nil, env: env)).to eq(expected)
+          expect(bundle("exec #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
+          expect(bundle("exec bundle exec #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
+          expect(bundle("exec ruby #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
+          expect(run(file.read, artifice: nil, env: env)).to eq(default_openssl_version)
         end
 
         skip "ruby_core has openssl and rubygems in the same folder, and this test needs rubygems require but default openssl not in a directly added entry in $LOAD_PATH" if ruby_core?

@@ -85,14 +85,7 @@ setup_launchable() {
     export LAUNCHABLE_SESSION_DIR=${builddir}
     local github_ref="${GITHUB_REF//\//_}"
     local build_name="${github_ref}"_"${GITHUB_PR_HEAD_SHA}"
-    btest_report_path='launchable_bootstraptest.json'
-    test_report_path='launchable_test_all.json'
-    test_spec_report_path='launchable_test_spec_report'
-    test_all_session_file='launchable_test_all_session.txt'
-    btest_session_file='launchable_btest_session.txt'
-    test_spec_session_file='launchable_test_spec_session.txt'
     btests+=--launchable-test-reports="${btest_report_path}"
-    echo "::group::Setup Launchable"
     launchable record build --name "${build_name}" || true
     launchable record session \
         --build "${build_name}" \
@@ -135,8 +128,6 @@ setup_launchable() {
             > "${builddir}"/${test_spec_session_file} \
             || true
     fi
-    echo "::endgroup::"
-    trap launchable_record_test EXIT
 }
 launchable_record_test() {
     pushd "${builddir}"
@@ -147,7 +138,20 @@ launchable_record_test() {
     fi
 }
 if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
-    setup_launchable
+    echo "::group::Setup Launchable"
+    btest_report_path='launchable_bootstraptest.json'
+    test_report_path='launchable_test_all.json'
+    test_spec_report_path='launchable_test_spec_report'
+    test_all_session_file='launchable_test_all_session.txt'
+    btest_session_file='launchable_btest_session.txt'
+    test_spec_session_file='launchable_test_spec_session.txt'
+    setup_launchable & setup_pid=$!
+    (sleep 180; echo "setup_launchable timed out; killing"; kill "$setup_pid" 2> /dev/null) & sleep_pid=$!
+    launchable_failed=false
+    wait -f "$setup_pid" || launchable_failed=true
+    kill "$sleep_pid" 2> /dev/null
+    echo "::endgroup::"
+    $launchable_failed || trap launchable_record_test EXIT
 fi
 
 pushd ${builddir}

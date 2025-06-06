@@ -1673,7 +1673,7 @@ In Gemfile:
           end
         G
 
-        expect(last_command.stdboth).to_not include("password1")
+        expect(stdboth).to_not include("password1")
         expect(out).to include("Fetching https://user1@github.com/company/private-repo")
       end
     end
@@ -1689,7 +1689,7 @@ In Gemfile:
           end
         G
 
-        expect(last_command.stdboth).to_not include("oauth_token")
+        expect(stdboth).to_not include("oauth_token")
         expect(out).to include("Fetching https://x-oauth-basic@github.com/company/private-repo")
       end
     end

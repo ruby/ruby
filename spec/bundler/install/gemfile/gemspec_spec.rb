@@ -192,7 +192,7 @@ RSpec.describe "bundle install from an existing gemspec" do
     install_gemfile <<-G, raise_on_error: false
       gemspec :path => '#{tmp("foo")}'
     G
-    expect(last_command.stdboth).not_to include("ahh")
+    expect(stdboth).not_to include("ahh")
   end
 
   it "allows the gemspec to activate other gems" do

@@ -179,7 +179,7 @@ RSpec.describe "bundle executable" do
     shared_examples_for "no warning" do
       it "prints no warning" do
         bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
-        expect(last_command.stdboth).to eq("Could not find command \"fail\".")
+        expect(stdboth).to eq("Could not find command \"fail\".")
       end
     end
 
@@ -228,10 +228,10 @@ To update to the most recent version, run `bundle update --bundler`
       context "running a parseable command" do
         it "prints no warning" do
           bundle "config get --parseable foo", env: { "BUNDLER_VERSION" => bundler_version }
-          expect(last_command.stdboth).to eq ""
+          expect(stdboth).to eq ""
 
           bundle "platform --ruby", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
-          expect(last_command.stdboth).to eq "Could not locate Gemfile"
+          expect(stdboth).to eq "Could not locate Gemfile"
         end
       end
 

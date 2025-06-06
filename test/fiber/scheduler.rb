@@ -126,7 +126,7 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.transfer
+          fiber.transfer if fiber.alive?
         end
       end
     end
@@ -341,7 +341,7 @@ class Scheduler
   end
 
   def blocking_operation_wait(work)
-    thread = Thread.new(&work)
+    thread = Thread.new{work.call}
 
     thread.join
 

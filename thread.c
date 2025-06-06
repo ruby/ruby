@@ -207,6 +207,10 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+#endif
+
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     if (LIKELY(rb_threadptr_pending_interrupt_empty_p(th))) {
@@ -1052,23 +1056,28 @@ thread_join_sleep(VALUE arg)
     while (!thread_finished(target_th)) {
         VALUE scheduler = rb_fiber_scheduler_current();
 
-        if (scheduler != Qnil) {
-            rb_fiber_scheduler_block(scheduler, target_th->self, p->timeout);
-            // Check if the target thread is finished after blocking:
-            if (thread_finished(target_th)) break;
-            // Otherwise, a timeout occurred:
-            else return Qfalse;
-        }
-        else if (!limit) {
-            sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+        if (!limit) {
+            if (scheduler != Qnil) {
+                rb_fiber_scheduler_block(scheduler, target_th->self, Qnil);
+            }
+            else {
+                sleep_forever(th, SLEEP_DEADLOCKABLE | SLEEP_ALLOW_SPURIOUS | SLEEP_NO_CHECKINTS);
+            }
         }
         else {
             if (hrtime_update_expire(limit, end)) {
                 RUBY_DEBUG_LOG("timeout target_th:%u", rb_th_serial(target_th));
                 return Qfalse;
             }
-            th->status = THREAD_STOPPED;
-            native_sleep(th, limit);
+
+            if (scheduler != Qnil) {
+                VALUE timeout = rb_float_new(hrtime2double(*limit));
+                rb_fiber_scheduler_block(scheduler, target_th->self, timeout);
+            }
+            else {
+                th->status = THREAD_STOPPED;
+                native_sleep(th, limit);
+            }
         }
         RUBY_VM_CHECK_INTS_BLOCKING(th->ec);
         th->status = THREAD_RUNNABLE;
@@ -1127,6 +1136,10 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
                 /* OK. killed. */
                 break;
               default:
+                if (err == RUBY_FATAL_FIBER_KILLED) { // not integer constant so can't be a case expression
+                    // root fiber killed in non-main thread
+                    break;
+                }
                 rb_bug("thread_join: Fixnum (%d) should not reach here.", FIX2INT(err));
             }
         }
@@ -1539,7 +1552,7 @@ rb_nogvl(void *(*func)(void *), void *data1,
     if (flags & RB_NOGVL_OFFLOAD_SAFE) {
         VALUE scheduler = rb_fiber_scheduler_current();
         if (scheduler != Qnil) {
-            struct rb_fiber_scheduler_blocking_operation_state state;
+            struct rb_fiber_scheduler_blocking_operation_state state = {0};
 
             VALUE result = rb_fiber_scheduler_blocking_operation_wait(scheduler, func, data1, ubf, data2, flags, &state);
 
@@ -1745,6 +1758,7 @@ io_blocking_operation_exit(VALUE _arguments)
     rb_fiber_t *fiber = io->closing_ec->fiber_ptr;
 
     if (thread->scheduler != Qnil) {
+        // This can cause spurious wakeups...
         rb_fiber_scheduler_unblock(thread->scheduler, io->self, rb_fiberptr_self(fiber));
     }
     else {
@@ -1937,6 +1951,9 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
                 goto retry;
             }
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
+
             state = saved_state;
         }
         EC_POP_TAG();
@@ -1950,9 +1967,6 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
     if (state) {
         EC_JUMP_TAG(ec, state);
     }
-
-    /* TODO: check func() */
-    RUBY_VM_CHECK_INTS_BLOCKING(ec);
 
     // If the error was a timeout, we raise a specific exception for that:
     if (saved_errno == ETIMEDOUT) {
@@ -4461,6 +4475,8 @@ do_select(VALUE p)
         RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec); /* may raise */
     } while (wait_retryable(&result, lerrno, to, endtime) && do_select_update());
 
+    RUBY_VM_CHECK_INTS_BLOCKING(set->th->ec);
+
     if (result < 0) {
         errno = lerrno;
     }
@@ -4581,7 +4597,10 @@ thread_io_wait(struct rb_io *io, int fd, int events, struct timeval *timeout)
 
                 RUBY_VM_CHECK_INTS_BLOCKING(ec);
             } while (wait_retryable(&result, lerrno, to, end));
+
+            RUBY_VM_CHECK_INTS_BLOCKING(ec);
         }
+
         EC_POP_TAG();
     }
 

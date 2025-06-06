@@ -793,6 +793,12 @@ rb_yjit_shape_obj_too_complex_p(VALUE obj)
     return rb_shape_obj_too_complex_p(obj);
 }
 
+attr_index_t
+rb_yjit_shape_capacity(shape_id_t shape_id)
+{
+    return RSHAPE_CAPACITY(shape_id);
+}
+
 // Assert that we have the VM lock. Relevant mostly for multi ractor situations.
 // The GC takes the lock before calling us, and this asserts that it indeed happens.
 void

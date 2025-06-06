@@ -7,7 +7,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -248,7 +248,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     }
 
     let out_opnd = match insn {
-        Insn::PutSelf => gen_putself(),
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, elements, &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
@@ -275,6 +274,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
+        Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
+        Insn::SetIvar { self_val, id, val, state: _ } => gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -296,6 +297,24 @@ fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[I
     }
 
     Some(asm.ccall(cfun, lir_args))
+}
+
+/// Emit an uncached instance variable lookup
+fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
+    asm_comment!(asm, "call rb_ivar_get");
+    asm.ccall(
+        rb_ivar_get as *const u8,
+        vec![recv, Opnd::UImm(id.0)],
+    )
+}
+
+/// Emit an uncached instance variable store
+fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Opnd {
+    asm_comment!(asm, "call rb_ivar_set");
+    asm.ccall(
+        rb_ivar_set as *const u8,
+        vec![recv, Opnd::UImm(id.0), val],
+    )
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -324,13 +343,16 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 
 /// Assign method arguments to basic block arguments at JIT entry
 fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
+    let self_param = gen_param(asm, SELF_PARAM_IDX);
+    asm.mov(self_param, Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
+
     let num_params = entry_block.params().len();
     if num_params > 0 {
         asm_comment!(asm, "set method params: {num_params}");
 
         // Allocate registers for basic block arguments
         let params: Vec<Opnd> = (0..num_params).map(|idx|
-            gen_param(asm, idx)
+            gen_param(asm, idx + 1) // +1 for self
         ).collect();
 
         // Assign local variables to the basic block arguments
@@ -372,11 +394,6 @@ fn gen_getlocal(asm: &mut Assembler, iseq: IseqPtr, local_idx: usize) -> lir::Op
         let offs = -(SIZEOF_VALUE_I32 * ep_offset);
         Opnd::mem(64, ep_reg, offs)
     }
-}
-
-/// Compile self in the current frame
-fn gen_putself() -> lir::Opnd {
-    Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF)
 }
 
 /// Compile a constant
@@ -482,9 +499,6 @@ fn gen_send_without_block_direct(
     recv: Opnd,
     args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
-    // Set up the new frame
-    gen_push_frame(asm, recv);
-
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
@@ -492,6 +506,7 @@ fn gen_send_without_block_direct(
 
     // Set up arguments
     let mut c_args: Vec<Opnd> = vec![];
+    c_args.push(recv);
     for &arg in args.iter() {
         c_args.push(jit.get_opnd(arg)?);
     }
@@ -714,22 +729,16 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     asm.mov(cfp_sp, sp_addr);
 }
 
-/// Compile an interpreter frame
-fn gen_push_frame(asm: &mut Assembler, recv: Opnd) {
-    // Write to a callee CFP
-    fn cfp_opnd(offset: i32) -> Opnd {
-        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
-    }
-
-    asm_comment!(asm, "push callee control frame");
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), recv);
-    // TODO: Write more fields as needed
-}
-
 /// Return a register we use for the basic block argument at a given index
 fn param_reg(idx: usize) -> Reg {
     // To simplify the implementation, allocate a fixed register for each basic block argument for now.
     // TODO: Allow allocating arbitrary registers for basic block arguments
+    if idx >= ALLOC_REGS.len() {
+        unimplemented!(
+            "register spilling not yet implemented, too many basic block arguments ({}/{})",
+            idx + 1, ALLOC_REGS.len()
+        );
+    }
     ALLOC_REGS[idx]
 }
 

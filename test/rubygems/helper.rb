@@ -418,6 +418,9 @@ class Gem::TestCase < Test::Unit::TestCase
       @orig_hooks[name] = Gem.send(name).dup
     end
 
+    Gem::Platform.const_get(:GENERIC_CACHE).clear
+    Gem::Platform.const_get(:GENERICS).each {|g| Gem::Platform.const_get(:GENERIC_CACHE)[g] = g }
+
     @marshal_version = "#{Marshal::MAJOR_VERSION}.#{Marshal::MINOR_VERSION}"
     @orig_loaded_features = $LOADED_FEATURES.dup
   end

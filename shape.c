@@ -37,6 +37,8 @@ static ID id_frozen;
 static ID id_t_object;
 ID ruby_internal_object_id; // extern
 
+static const attr_index_t *shape_capacities = NULL;
+
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -321,7 +323,7 @@ static void
 shape_tree_compact(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id);
+    rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id - 1);
     while (cursor < end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             cursor->edges = rb_gc_location(cursor->edges);
@@ -496,6 +498,23 @@ redblack_cache_ancestors(rb_shape_t *shape)
 }
 #endif
 
+static attr_index_t
+shape_grow_capa(attr_index_t current_capa)
+{
+    const attr_index_t *capacities = shape_capacities;
+
+    // First try to use the next size that will be embeddable in a larger object slot.
+    attr_index_t capa;
+    while ((capa = *capacities)) {
+        if (capa > current_capa) {
+            return capa;
+        }
+        capacities++;
+    }
+
+    return (attr_index_t)rb_malloc_grow_capa(current_capa, sizeof(VALUE));
+}
+
 static rb_shape_t *
 rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 {
@@ -506,7 +525,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
             RUBY_ASSERT(shape->next_field_index == shape->capacity);
-            new_shape->capacity = (uint32_t)rb_malloc_grow_capa(shape->capacity, sizeof(VALUE));
+            new_shape->capacity = shape_grow_capa(shape->capacity);
         }
         RUBY_ASSERT(new_shape->capacity > shape->next_field_index);
         new_shape->next_field_index = shape->next_field_index + 1;
@@ -703,7 +722,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 }
 
 static inline shape_id_t
-transition_frozen(shape_id_t shape_id)
+transition_complex(shape_id_t shape_id)
 {
     if (rb_shape_has_object_id(shape_id)) {
         return ROOT_TOO_COMPLEX_WITH_OBJ_ID | (shape_id & SHAPE_ID_FLAGS_MASK);
@@ -733,7 +752,7 @@ rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id)
     else if (removed_shape) {
         // We found the shape to remove, but couldn't create a new variation.
         // We must transition to TOO_COMPLEX.
-        return transition_frozen(original_shape_id);
+        return transition_complex(original_shape_id);
     }
     return original_shape_id;
 }
@@ -750,7 +769,7 @@ rb_shape_transition_frozen(VALUE obj)
 shape_id_t
 rb_shape_transition_complex(VALUE obj)
 {
-    return transition_frozen(RBASIC_SHAPE_ID(obj));
+    return transition_complex(RBASIC_SHAPE_ID(obj));
 }
 
 shape_id_t
@@ -1107,6 +1126,8 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     return midway_shape;
 }
 
+// Rebuild `dest_shape_id` starting from `initial_shape_id`, and keep only SHAPE_IVAR transitions.
+// SHAPE_OBJ_ID and frozen status are lost.
 shape_id_t
 rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
@@ -1135,6 +1156,9 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
         while (src_shape->parent_id != INVALID_SHAPE_ID) {
             if (src_shape->type == SHAPE_IVAR) {
                 while (dest_shape->edge_name != src_shape->edge_name) {
+                    if (UNLIKELY(dest_shape->parent_id == INVALID_SHAPE_ID)) {
+                        rb_bug("Lost field %s", rb_id2name(src_shape->edge_name));
+                    }
                     dest_shape = RSHAPE(dest_shape->parent_id);
                 }
 
@@ -1219,7 +1243,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 #if SHAPE_DEBUG
 
 /*
- * Exposing Shape to Ruby via RubyVM.debug_shape
+ * Exposing Shape to Ruby via RubyVM::Shape.of(object)
  */
 
 static VALUE
@@ -1426,6 +1450,19 @@ Init_default_shapes(void)
 {
     rb_shape_tree_ptr = xcalloc(1, sizeof(rb_shape_tree_t));
 
+    size_t *heap_sizes = rb_gc_heap_sizes();
+    size_t heaps_count = 0;
+    while (heap_sizes[heaps_count]) {
+        heaps_count++;
+    }
+    attr_index_t *capacities = ALLOC_N(attr_index_t, heaps_count + 1);
+    capacities[heaps_count] = 0;
+    size_t index;
+    for (index = 0; index < heaps_count; index++) {
+        capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+    }
+    shape_capacities = capacities;
+
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
     rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
@@ -1500,6 +1537,8 @@ Init_default_shapes(void)
 void
 rb_shape_free_all(void)
 {
+    xfree((void *)shape_capacities);
+    shape_capacities = NULL;
     xfree(GET_SHAPE_TREE());
 }
 

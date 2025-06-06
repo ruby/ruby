@@ -305,8 +305,8 @@ module Bundler
         end
 
         def has_revision_cached?
-          return unless @revision && path.exist?
-          git("cat-file", "-e", @revision, dir: path)
+          return unless commit && path.exist?
+          git("cat-file", "-e", commit, dir: path)
           true
         rescue GitError
           false

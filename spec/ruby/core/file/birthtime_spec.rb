@@ -21,13 +21,13 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
       File.birthtime(@file) # Avoid to failure of mock object with old Kernel and glibc
       File.birthtime(mock_to_path(@file))
     rescue NotImplementedError => e
-      skip e.message if e.message.start_with?("birthtime() function")
+      e.message.should.start_with?("birthtime() function")
     end
 
     it "raises an Errno::ENOENT exception if the file is not found" do
       -> { File.birthtime('bogus') }.should raise_error(Errno::ENOENT)
     rescue NotImplementedError => e
-      skip e.message if e.message.start_with?("birthtime() function")
+      e.message.should.start_with?("birthtime() function")
     end
   end
 
@@ -45,7 +45,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
       @file.birthtime
       @file.birthtime.should be_kind_of(Time)
     rescue NotImplementedError => e
-      skip e.message if e.message.start_with?("birthtime() function")
+      e.message.should.start_with?("birthtime() function")
     end
   end
 end

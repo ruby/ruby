@@ -18,7 +18,7 @@ platform_is(:windows, :darwin, :freebsd, :netbsd,
       st.birthtime.should be_kind_of(Time)
       st.birthtime.should <= Time.now
     rescue NotImplementedError => e
-      skip e.message if e.message.start_with?("birthtime() function")
+      e.message.should.start_with?("birthtime() function")
     end
   end
 end

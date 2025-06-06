@@ -1825,13 +1825,13 @@ generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int e
     if (!existing || fields_lookup->resize) {
         if (existing) {
             RUBY_ASSERT(RSHAPE(fields_lookup->shape_id)->type == SHAPE_IVAR || RSHAPE(fields_lookup->shape_id)->type == SHAPE_OBJ_ID);
-            RUBY_ASSERT(RSHAPE(RSHAPE(fields_lookup->shape_id)->parent_id)->capacity < RSHAPE(fields_lookup->shape_id)->capacity);
+            RUBY_ASSERT(RSHAPE_CAPACITY(RSHAPE(fields_lookup->shape_id)->parent_id) < RSHAPE_CAPACITY(fields_lookup->shape_id));
         }
         else {
             FL_SET_RAW((VALUE)*k, FL_EXIVAR);
         }
 
-        fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE(fields_lookup->shape_id)->capacity);
+        fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE_CAPACITY(fields_lookup->shape_id));
         *v = (st_data_t)fields_tbl;
     }
 
@@ -1940,14 +1940,14 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
 }
 
 void
-rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capacity)
+rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
 
     if (RBASIC(obj)->flags & ROBJECT_EMBED) {
         VALUE *ptr = ROBJECT_FIELDS(obj);
         VALUE *newptr = ALLOC_N(VALUE, new_capacity);
-        MEMCPY(newptr, ptr, VALUE, current_capacity);
+        MEMCPY(newptr, ptr, VALUE, current_len);
         RB_FL_UNSET_RAW(obj, ROBJECT_EMBED);
         ROBJECT(obj)->as.heap.fields = newptr;
     }
@@ -2248,6 +2248,8 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
+      default:
+        UNREACHABLE_RETURN(false);
     }
 }
 
@@ -2368,13 +2370,13 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             }
         }
 
-        if (!RSHAPE(dest_shape_id)->capacity) {
+        if (!RSHAPE_LEN(dest_shape_id)) {
             rb_obj_set_shape_id(dest, dest_shape_id);
             FL_UNSET(dest, FL_EXIVAR);
             return;
         }
 
-        new_fields_tbl = gen_fields_tbl_resize(0, RSHAPE(dest_shape_id)->capacity);
+        new_fields_tbl = gen_fields_tbl_resize(0, RSHAPE_CAPACITY(dest_shape_id));
 
         VALUE *src_buf = obj_fields_tbl->as.shape.fields;
         VALUE *dest_buf = new_fields_tbl->as.shape.fields;

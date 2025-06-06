@@ -1140,7 +1140,7 @@ RSpec.describe "bundle update in more complicated situations" do
     end
 
     bundle "update thin myrack-obama"
-    expect(last_command.stdboth).to include "Bundler attempted to update myrack-obama but its version stayed the same"
+    expect(stdboth).to include "Bundler attempted to update myrack-obama but its version stayed the same"
     expect(the_bundle).to include_gems "thin 2.0", "myrack 10.0", "myrack-obama 1.0"
   end
 
@@ -1158,7 +1158,7 @@ RSpec.describe "bundle update in more complicated situations" do
 
     bundle "update foo"
 
-    expect(last_command.stdboth).not_to include "attempted to update"
+    expect(stdboth).not_to include "attempted to update"
   end
 
   it "will not warn when changing gem sources but not versions" do
@@ -1176,7 +1176,7 @@ RSpec.describe "bundle update in more complicated situations" do
 
     bundle "update myrack"
 
-    expect(last_command.stdboth).not_to include "attempted to update"
+    expect(stdboth).not_to include "attempted to update"
   end
 
   it "will update only from pinned source" do
@@ -1266,7 +1266,7 @@ RSpec.describe "bundle update in more complicated situations" do
     it "is not updated because it is not actually included in the bundle" do
       simulate_platform "x86_64-linux" do
         bundle "update a"
-        expect(last_command.stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
+        expect(stdboth).to include "Bundler attempted to update a but it was not considered because it is for a different platform from the current one"
         expect(the_bundle).to_not include_gem "a"
       end
     end
@@ -1307,7 +1307,7 @@ RSpec.describe "bundle update when a gem depends on a newer version of bundler" 
 
   it "should explain that bundler conflicted and how to resolve the conflict" do
     bundle "update", all: true, raise_on_error: false
-    expect(last_command.stdboth).not_to match(/in snapshot/i)
+    expect(stdboth).not_to match(/in snapshot/i)
     expect(err).to match(/current Bundler version/i).
       and match(/Install the necessary version with `gem install bundler:9\.9\.9`/i)
   end

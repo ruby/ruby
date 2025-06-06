@@ -641,7 +641,7 @@ impl Assembler
                         },
                         // If we're loading a memory operand into a register, then
                         // we'll switch over to the load instruction.
-                        (Opnd::Reg(_), Opnd::Mem(_)) => {
+                        (Opnd::Reg(_) | Opnd::VReg { .. }, Opnd::Mem(_)) => {
                             let value = split_memory_address(asm, *src);
                             asm.load_into(*dest, value);
                         },
@@ -654,7 +654,7 @@ impl Assembler
                             };
                             asm.mov(*dest, value);
                         },
-                        _ => unreachable!()
+                        _ => unreachable!("unexpected combination of operands in Insn::Mov: {dest:?}, {src:?}")
                     };
                 },
                 Insn::Not { opnd, .. } => {

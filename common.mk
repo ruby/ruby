@@ -16792,6 +16792,7 @@ set.$(OBJEXT): $(top_srcdir)/internal/array.h
 set.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 set.$(OBJEXT): $(top_srcdir)/internal/bits.h
 set.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+set.$(OBJEXT): $(top_srcdir)/internal/error.h
 set.$(OBJEXT): $(top_srcdir)/internal/gc.h
 set.$(OBJEXT): $(top_srcdir)/internal/hash.h
 set.$(OBJEXT): $(top_srcdir)/internal/imemo.h
@@ -16801,6 +16802,7 @@ set.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 set.$(OBJEXT): $(top_srcdir)/internal/serial.h
 set.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 set.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+set.$(OBJEXT): $(top_srcdir)/internal/string.h
 set.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 set.$(OBJEXT): $(top_srcdir)/internal/variable.h
 set.$(OBJEXT): $(top_srcdir)/internal/vm.h

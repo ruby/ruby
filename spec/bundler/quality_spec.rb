@@ -217,7 +217,7 @@ RSpec.describe "The library itself" do
       end
     end
 
-    warnings = last_command.stdboth.split("\n")
+    warnings = stdboth.split("\n")
     # ignore warnings around deprecated Object#=~ method in RubyGems
     warnings.reject! {|w| w =~ %r{rubygems\/version.rb.*deprecated\ Object#=~} }
 

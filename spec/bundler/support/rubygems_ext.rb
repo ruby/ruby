@@ -28,6 +28,9 @@ module Spec
     end
 
     def test_setup
+      # Install test dependencies unless parallel-rspec is being used, since in that case they should be setup already
+      install_test_deps unless ENV["RSPEC_FORMATTER_OUTPUT_ID"]
+
       setup_test_paths
 
       require "fileutils"

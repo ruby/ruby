@@ -260,7 +260,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "myrack"
       G
 
-      expect(last_command.stdboth).to include(plugin_msg)
+      expect(stdboth).to include(plugin_msg)
     end
 
     describe "with a gem that installs multiple platforms" do
@@ -722,7 +722,7 @@ RSpec.describe "bundle install with gem sources" do
         gem "ajp-rails", "0.0.0"
       G
 
-      expect(last_command.stdboth).not_to match(/Error Report/i)
+      expect(stdboth).not_to match(/Error Report/i)
       expect(err).to include("An error occurred while installing ajp-rails (0.0.0), and Bundler cannot continue.").
         and include("Bundler::APIResponseInvalidDependenciesError")
     end

@@ -256,6 +256,13 @@ class Gem::BasicSpecification
     raise NotImplementedError
   end
 
+  def installable_on_platform?(target_platform) # :nodoc:
+    return true if [Gem::Platform::RUBY, nil, target_platform].include?(platform)
+    return true if Gem::Platform.new(platform) === target_platform
+
+    false
+  end
+
   def raw_require_paths # :nodoc:
     raise NotImplementedError
   end

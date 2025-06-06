@@ -24,7 +24,7 @@ RSpec.describe "env helpers" do
       path = `getconf PATH`.strip + "#{File::PATH_SEPARATOR}/foo"
       with_path_as(path) do
         bundle_exec_ruby(bundled_app("source.rb").to_s)
-        expect(last_command.stdboth).to eq(path)
+        expect(stdboth).to eq(path)
       end
     end
 
@@ -35,7 +35,7 @@ RSpec.describe "env helpers" do
       gem_path = ENV["GEM_PATH"] + "#{File::PATH_SEPARATOR}/foo"
       with_gem_path_as(gem_path) do
         bundle_exec_ruby(bundled_app("source.rb").to_s)
-        expect(last_command.stdboth).to eq(gem_path)
+        expect(stdboth).to eq(gem_path)
       end
     end
 
@@ -81,7 +81,7 @@ RSpec.describe "env helpers" do
       RUBY
       ENV["BUNDLE_PATH"] = "./foo"
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).to include "false"
+      expect(stdboth).to include "false"
     end
 
     it "should remove absolute path to 'bundler/setup' from RUBYOPT even if it was present in original env" do
@@ -91,7 +91,7 @@ RSpec.describe "env helpers" do
       setup_require = "-r#{lib_dir}/bundler/setup"
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 #{setup_require} #{ENV["RUBYOPT"]}"
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).not_to include(setup_require)
+      expect(stdboth).not_to include(setup_require)
     end
 
     it "should remove relative path to 'bundler/setup' from RUBYOPT even if it was present in original env" do
@@ -100,7 +100,7 @@ RSpec.describe "env helpers" do
       RUBY
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).not_to include("-rbundler/setup")
+      expect(stdboth).not_to include("-rbundler/setup")
     end
 
     it "should delete BUNDLER_SETUP even if it was present in original env" do
@@ -109,7 +109,7 @@ RSpec.describe "env helpers" do
       RUBY
       ENV["BUNDLER_ORIG_BUNDLER_SETUP"] = system_gem_path("gems/bundler-#{Bundler::VERSION}/lib/bundler/setup").to_s
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).to include "false"
+      expect(stdboth).to include "false"
     end
 
     it "should restore RUBYLIB", :ruby_repo do
@@ -119,7 +119,7 @@ RSpec.describe "env helpers" do
       ENV["RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo"
       ENV["BUNDLER_ORIG_RUBYLIB"] = lib_dir.to_s + File::PATH_SEPARATOR + "/foo-original"
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).to include("/foo-original")
+      expect(stdboth).to include("/foo-original")
     end
 
     it "should restore the original MANPATH" do
@@ -129,7 +129,7 @@ RSpec.describe "env helpers" do
       ENV["MANPATH"] = "/foo"
       ENV["BUNDLER_ORIG_MANPATH"] = "/foo-original"
       bundle_exec_ruby bundled_app("source.rb")
-      expect(last_command.stdboth).to include("/foo-original")
+      expect(stdboth).to include("/foo-original")
     end
   end
 

@@ -3878,7 +3878,6 @@ static VALUE
 rt_complete_frags(VALUE klass, VALUE hash)
 {
     static VALUE tab = Qnil;
-    int g;
     long e;
     VALUE k, a, d;
 
@@ -3975,9 +3974,13 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	rb_gc_register_mark_object(tab);
     }
 
-    {
-	long i, eno = 0, idx = 0;
+    k = Qnil;
 
+    {
+	long i, eno = 0;
+	VALUE t = Qnil;
+
+	e = 0;
 	for (i = 0; i < RARRAY_LEN(tab); i++) {
 	    VALUE x, a;
 
@@ -3992,23 +3995,20 @@ rt_complete_frags(VALUE klass, VALUE hash)
 			n++;
 		if (n > eno) {
 		    eno = n;
-		    idx = i;
+		    t = x;
 		}
 	    }
 	}
-	if (eno == 0)
-	    g = 0;
-	else {
-	    g = 1;
-	    k = RARRAY_AREF(RARRAY_AREF(tab, idx), 0);
-	    a = RARRAY_AREF(RARRAY_AREF(tab, idx), 1);
-	    e =	eno;
+	if (eno > 0) {
+	    k = RARRAY_AREF(t, 0);
+	    a = RARRAY_AREF(t, 1);
 	}
+	e = eno;
     }
 
     d = Qnil;
 
-    if (g && !NIL_P(k) && (RARRAY_LEN(a) - e)) {
+    if (!NIL_P(k) && (RARRAY_LEN(a) > e)) {
 	if (k == sym("ordinal")) {
 	    if (NIL_P(ref_hash("year"))) {
 		if (NIL_P(d))
@@ -4095,7 +4095,7 @@ rt_complete_frags(VALUE klass, VALUE hash)
 	}
     }
 
-    if (g && k == sym("time")) {
+    if (k == sym("time")) {
 	if (f_le_p(klass, cDateTime)) {
 	    if (NIL_P(d))
 		d = date_s_today(0, (VALUE *)0, cDate);

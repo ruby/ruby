@@ -92,15 +92,18 @@ class TestShapes < Test::Unit::TestCase
   # RubyVM::Shape.of returns new instances of shape objects for
   # each call. This helper method allows us to define equality for
   # shapes
-  def assert_shape_equal(shape1, shape2)
-    assert_equal(shape1.id, shape2.id)
-    assert_equal(shape1.parent_id, shape2.parent_id)
-    assert_equal(shape1.depth, shape2.depth)
-    assert_equal(shape1.type, shape2.type)
+  def assert_shape_equal(e, a)
+    assert_equal(
+      {id: e.id, parent_id: e.parent_id, depth: e.depth, type: e.type},
+      {id: a.id, parent_id: a.parent_id, depth: a.depth, type: a.type},
+    )
   end
 
-  def refute_shape_equal(shape1, shape2)
-    refute_equal(shape1.id, shape2.id)
+  def refute_shape_equal(e, a)
+    refute_equal(
+      {id: e.id, parent_id: e.parent_id, depth: e.depth, type: e.type},
+      {id: a.id, parent_id: a.parent_id, depth: a.depth, type: a.type},
+    )
   end
 
   def test_iv_order_correct_on_complex_objects

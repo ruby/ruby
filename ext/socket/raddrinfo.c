@@ -715,7 +715,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
     int retry;
     struct getnameinfo_arg *arg;
-    int err, gni_errno = 0;
+    int err = 0, gni_errno = 0;
 
 start:
     retry = 0;
