@@ -233,6 +233,13 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_not
+    assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
+      def test(obj) = !obj
+      return test(nil), test(false), test(0)
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
