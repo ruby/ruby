@@ -648,8 +648,8 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
 
 #ifdef RUBY_DEBUG
     rb_execution_context_t *ec = GET_EC();
-    if (ec->interrupt_flag) {
-        rb_bug("rb_fiber_scheduler_unblock called with interrupt flags set: %d", ec->interrupt_flag);
+    if (RUBY_VM_INTERRUPTED(ec)) {
+        rb_bug("rb_fiber_scheduler_unblock called with pending interrupt");
     }
 #endif
 
@@ -1078,8 +1078,8 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
 
 #ifdef RUBY_DEBUG
     rb_execution_context_t *ec = GET_EC();
-    if (ec->interrupt_flag) {
-        rb_bug("rb_fiber_scheduler_fiber_interrupt called with interrupt flags set: %d", ec->interrupt_flag);
+    if (RUBY_VM_INTERRUPTED(ec)) {
+        rb_bug("rb_fiber_scheduler_fiber_interrupt called with pending interrupt");
     }
 #endif
 
