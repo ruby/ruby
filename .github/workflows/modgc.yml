@@ -144,8 +144,8 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          ${LAUNCHABLE_STDOUT:+exec 1> >(tee "${LAUNCHABLE_STDOUT}")}
-          ${LAUNCHABLE_STDERR:+exec 2> >(tee "${LAUNCHABLE_STDERR}")}
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
           $SETARCH make -s ${{ matrix.test_task }} \
             ${TESTS:+TESTS="$TESTS"} \
