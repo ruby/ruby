@@ -3044,26 +3044,30 @@ autoload_synchronized(VALUE _arguments)
 void
 rb_autoload_str(VALUE module, ID name, VALUE feature)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
-    VALUE current_namespace = rb_get_namespace_object((rb_namespace_t *)ns);
+    VALUE result;
 
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
-
     Check_Type(feature, T_STRING);
     if (!RSTRING_LEN(feature)) {
         rb_raise(rb_eArgError, "empty feature name");
     }
 
-    struct autoload_arguments arguments = {
-        .module = module,
-        .name = name,
-        .feature = feature,
-        .namespace = current_namespace,
-    };
+    if (rb_ractor_main_p()) {
+        const rb_namespace_t *ns = rb_current_namespace();
+        VALUE current_namespace = rb_get_namespace_object((rb_namespace_t *)ns);
+        struct autoload_arguments arguments = {
+            .module = module,
+            .name = name,
+            .feature = feature,
+            .namespace = current_namespace,
+        };
 
-    VALUE result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
+        result = rb_mutex_synchronize(autoload_mutex, autoload_synchronized, (VALUE)&arguments);
+    } else {
+        result = rb_ractor_autoload_load(module, name);
+    }
 
     if (result == Qtrue) {
         const_added(module, name);
@@ -3447,7 +3451,6 @@ rb_autoload_load(VALUE module, ID name)
         return Qfalse;
     }
 
-    // At this point, we assume there might be autoloading, so fail if it's ractor:
     if (UNLIKELY(!rb_ractor_main_p())) {
         return rb_ractor_autoload_load(module, name);
     }
