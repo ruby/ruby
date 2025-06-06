@@ -298,10 +298,8 @@ rb_binding_alloc(VALUE klass)
     return obj;
 }
 
-
-/* :nodoc: */
 static VALUE
-binding_dup(VALUE self)
+binding_copy(VALUE self)
 {
     VALUE bindval = rb_binding_alloc(rb_cBinding);
     rb_binding_t *src, *dst;
@@ -310,15 +308,21 @@ binding_dup(VALUE self)
     rb_vm_block_copy(bindval, &dst->block, &src->block);
     RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
-    return rb_obj_dup_setup(self, bindval);
+    return bindval;
+}
+
+/* :nodoc: */
+static VALUE
+binding_dup(VALUE self)
+{
+    return rb_obj_dup_setup(self, binding_copy(self));
 }
 
 /* :nodoc: */
 static VALUE
 binding_clone(VALUE self)
 {
-    VALUE bindval = binding_dup(self);
-    return rb_obj_clone_setup(self, bindval, Qnil);
+    return rb_obj_clone_setup(self, binding_copy(self), Qnil);
 }
 
 VALUE
