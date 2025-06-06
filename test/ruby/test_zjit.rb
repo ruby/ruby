@@ -212,6 +212,13 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_succ
+    assert_compiles('[0, "B"]', <<~RUBY, insns: [:opt_succ])
+      def test(obj) = obj.succ
+      return test(-1), test("A")
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
