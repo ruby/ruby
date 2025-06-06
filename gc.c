@@ -131,45 +131,45 @@
 #include "shape.h"
 
 unsigned int
-rb_gc_vm_lock(void)
+rb_gc_vm_lock(const char *file, int line)
 {
     unsigned int lev = 0;
-    RB_VM_LOCK_ENTER_LEV(&lev);
+    rb_vm_lock_enter(&lev, file, line);
     return lev;
 }
 
 void
-rb_gc_vm_unlock(unsigned int lev)
+rb_gc_vm_unlock(unsigned int lev, const char *file, int line)
 {
-    RB_VM_LOCK_LEAVE_LEV(&lev);
+    rb_vm_lock_leave(&lev, file, line);
 }
 
 unsigned int
-rb_gc_cr_lock(void)
+rb_gc_cr_lock(const char *file, int line)
 {
     unsigned int lev;
-    RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
+    rb_vm_lock_enter_cr(GET_RACTOR(), &lev, file, line);
     return lev;
 }
 
 void
-rb_gc_cr_unlock(unsigned int lev)
+rb_gc_cr_unlock(unsigned int lev, const char *file, int line)
 {
-    RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
+    rb_vm_lock_leave_cr(GET_RACTOR(), &lev, file, line);
 }
 
 unsigned int
-rb_gc_vm_lock_no_barrier(void)
+rb_gc_vm_lock_no_barrier(const char *file, int line)
 {
     unsigned int lev = 0;
-    RB_VM_LOCK_ENTER_LEV_NB(&lev);
+    rb_vm_lock_enter_nb(&lev, file, line);
     return lev;
 }
 
 void
-rb_gc_vm_unlock_no_barrier(unsigned int lev)
+rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file, int line)
 {
-    RB_VM_LOCK_LEAVE_LEV_NB(&lev);
+    rb_vm_lock_leave_nb(&lev, file, line);
 }
 
 void
@@ -1791,9 +1791,9 @@ generate_next_object_id(void)
     // 64bit atomics are available
     return SIZET2NUM(RUBY_ATOMIC_SIZE_FETCH_ADD(object_id_counter, 1) * OBJ_ID_INCREMENT);
 #else
-    unsigned int lock_lev = rb_gc_vm_lock();
+    unsigned int lock_lev = RB_GC_VM_LOCK();
     VALUE id = ULL2NUM(++object_id_counter * OBJ_ID_INCREMENT);
-    rb_gc_vm_unlock(lock_lev);
+    RB_GC_VM_UNLOCK(lock_lev);
     return id;
 #endif
 }
@@ -1875,7 +1875,7 @@ class_object_id(VALUE klass)
 {
     VALUE id = RUBY_ATOMIC_VALUE_LOAD(RCLASS(klass)->object_id);
     if (!id) {
-        unsigned int lock_lev = rb_gc_vm_lock();
+        unsigned int lock_lev = RB_GC_VM_LOCK();
         id = generate_next_object_id();
         VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
         if (existing_id) {
@@ -1884,7 +1884,7 @@ class_object_id(VALUE klass)
         else if (RB_UNLIKELY(id2ref_tbl)) {
             st_insert(id2ref_tbl, id, klass);
         }
-        rb_gc_vm_unlock(lock_lev);
+        RB_GC_VM_UNLOCK(lock_lev);
     }
     return id;
 }
@@ -1954,9 +1954,9 @@ object_id(VALUE obj)
     }
 
     if (UNLIKELY(rb_gc_multi_ractor_p() && rb_ractor_shareable_p(obj))) {
-        unsigned int lock_lev = rb_gc_vm_lock();
+        unsigned int lock_lev = RB_GC_VM_LOCK();
         VALUE id = object_id0(obj);
-        rb_gc_vm_unlock(lock_lev);
+        RB_GC_VM_UNLOCK(lock_lev);
         return id;
     }
 
@@ -1991,7 +1991,7 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     if (!id2ref_tbl) {
         rb_gc_vm_barrier(); // stop other ractors
@@ -2015,7 +2015,7 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
     VALUE obj;
     bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 
     if (found) {
         return obj;
