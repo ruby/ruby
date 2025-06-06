@@ -240,6 +240,13 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_regexpmatch2
+    assert_compiles('[1, nil]', <<~RUBY, insns: [:opt_regexpmatch2])
+      def test(haystack) = /needle/ =~ haystack
+      return test("kneedle"), test("")
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
