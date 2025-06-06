@@ -219,6 +219,13 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_and
+    assert_compiles('[1, [3, 2, 1]]', <<~RUBY, insns: [:opt_and])
+      def test(x, y) = x & y
+      return test(0b1101, 3), test([3, 2, 1, 4], [8, 1, 2, 3])
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
