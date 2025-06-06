@@ -35,53 +35,70 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_WEAK_TABLE_COUNT
 };
 
+#if USE_MODULAR_GC
+# define MODULAR_GC_FN
+#else
+// This takes advantage of internal linkage winning when appearing first.
+// See C99 6.2.2p4.
+# define MODULAR_GC_FN static
+#endif
+
+#if USE_MODULAR_GC
 RUBY_SYMBOL_EXPORT_BEGIN
-unsigned int rb_gc_vm_lock(void);
-void rb_gc_vm_unlock(unsigned int lev);
-unsigned int rb_gc_cr_lock(void);
-void rb_gc_cr_unlock(unsigned int lev);
-unsigned int rb_gc_vm_lock_no_barrier(void);
-void rb_gc_vm_unlock_no_barrier(unsigned int lev);
-void rb_gc_vm_barrier(void);
-size_t rb_gc_obj_optimal_size(VALUE obj);
-void rb_gc_mark_children(void *objspace, VALUE obj);
-void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
-void rb_gc_update_object_references(void *objspace, VALUE obj);
-void rb_gc_update_vm_references(void *objspace);
-void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
-void *rb_gc_get_objspace(void);
+#endif
+
+// These functions cannot be defined as static because they are used by other
+// files in Ruby.
 size_t rb_size_mul_or_raise(size_t x, size_t y, VALUE exc);
-void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
-void rb_gc_set_pending_interrupt(void);
-void rb_gc_unset_pending_interrupt(void);
-void rb_gc_obj_free_vm_weak_references(VALUE obj);
-bool rb_gc_obj_free(void *objspace, VALUE obj);
-void rb_gc_save_machine_context(void);
-void rb_gc_mark_roots(void *objspace, const char **categoryp);
-void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
-bool rb_gc_multi_ractor_p(void);
-void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_obj_info_dump(VALUE obj);
 const char *rb_obj_info(VALUE obj);
-bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-uint32_t rb_gc_get_shape(VALUE obj);
-void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
 size_t rb_obj_memsize_of(VALUE obj);
-void rb_gc_prepare_heap_process_object(VALUE obj);
 bool ruby_free_at_exit_p(void);
-bool rb_memerror_reentered(void);
-bool rb_obj_id_p(VALUE);
+void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
+
+MODULAR_GC_FN unsigned int rb_gc_vm_lock(void);
+MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev);
+MODULAR_GC_FN unsigned int rb_gc_cr_lock(void);
+MODULAR_GC_FN void rb_gc_cr_unlock(unsigned int lev);
+MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(void);
+MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev);
+MODULAR_GC_FN void rb_gc_vm_barrier(void);
+MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
+MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
+MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
+MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
+MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
+MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
+MODULAR_GC_FN void *rb_gc_get_objspace(void);
+MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
+MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
+MODULAR_GC_FN void rb_gc_unset_pending_interrupt(void);
+MODULAR_GC_FN void rb_gc_obj_free_vm_weak_references(VALUE obj);
+MODULAR_GC_FN bool rb_gc_obj_free(void *objspace, VALUE obj);
+MODULAR_GC_FN void rb_gc_save_machine_context(void);
+MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
+MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
+MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
+MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
+MODULAR_GC_FN uint32_t rb_gc_get_shape(VALUE obj);
+MODULAR_GC_FN void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
+MODULAR_GC_FN uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
+MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
+MODULAR_GC_FN bool rb_memerror_reentered(void);
+MODULAR_GC_FN bool rb_obj_id_p(VALUE);
 
 #if USE_MODULAR_GC
-bool rb_gc_event_hook_required_p(rb_event_flag_t event);
-void *rb_gc_get_ractor_newobj_cache(void);
-void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
-void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
-void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
+MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);
+MODULAR_GC_FN void *rb_gc_get_ractor_newobj_cache(void);
+MODULAR_GC_FN void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
+MODULAR_GC_FN void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
+MODULAR_GC_FN void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
 #endif
+
+#if USE_MODULAR_GC
 RUBY_SYMBOL_EXPORT_END
+#endif
 
 void rb_ractor_finish_marking(void);
 

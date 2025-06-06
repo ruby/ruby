@@ -397,6 +397,9 @@ pub enum Insn {
     GetIvar { self_val: InsnId, id: ID, state: InsnId },
     /// Set `self_val`'s instance variable `id` to `val`
     SetIvar { self_val: InsnId, id: ID, val: InsnId, state: InsnId },
+    /// Check whether an instance variable exists on `self_val`
+    DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
+
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -603,6 +606,23 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             },
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
+            Insn::Defined { op_type, v, .. } => {
+                // op_type (enum defined_type) printing logic from iseq.c.
+                // Not sure why rb_iseq_defined_string() isn't exhaustive.
+                use std::borrow::Cow;
+                let op_type = *op_type as u32;
+                let op_type = if op_type == DEFINED_FUNC {
+                    Cow::Borrowed("func")
+                } else if op_type == DEFINED_REF {
+                    Cow::Borrowed("ref")
+                } else if op_type == DEFINED_CONST_FROM {
+                    Cow::Borrowed("constant-from")
+                } else {
+                    String::from_utf8_lossy(unsafe { rb_iseq_defined_string(op_type).as_rstring_byte_slice().unwrap() })
+                };
+                write!(f, "Defined {op_type}, {v}")
+            }
+            Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
@@ -951,6 +971,7 @@ impl Function {
             &HashDup { val , state } => HashDup { val: find!(val), state },
             &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: args.iter().map(|arg| find!(*arg)).collect(), name: name, return_type: return_type, elidable },
             &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
+            &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
             &NewHash { ref elements, state } => {
                 let mut found_elements = vec![];
@@ -1039,6 +1060,7 @@ impl Function {
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
+            Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
@@ -1599,7 +1621,7 @@ impl Function {
                     worklist.push_back(state);
                 }
                 Insn::CCall { args, .. } => worklist.extend(args),
-                Insn::GetIvar { self_val, state, .. } => {
+                Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
                     worklist.push_back(self_val);
                     worklist.push_back(state);
                 }
@@ -2159,11 +2181,19 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
                 }
                 YARVINSN_defined => {
+                    // (rb_num_t op_type, VALUE obj, VALUE pushval)
                     let op_type = get_arg(pc, 0).as_usize();
-                    let obj = get_arg(pc, 0);
-                    let pushval = get_arg(pc, 0);
+                    let obj = get_arg(pc, 1);
+                    let pushval = get_arg(pc, 2);
                     let v = state.stack_pop()?;
                     state.stack_push(fun.push_insn(block, Insn::Defined { op_type, obj, pushval, v }));
+                }
+                YARVINSN_definedivar => {
+                    // (ID id, IVC ic, VALUE pushval)
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let pushval = get_arg(pc, 2);
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
@@ -2736,9 +2766,9 @@ mod tests {
     }
 
     #[track_caller]
-    fn assert_method_hir_with_opcodes(method: &str, opcodes: Vec<u32>, hir: Expect) {
+    fn assert_method_hir_with_opcodes(method: &str, opcodes: &[u32], hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
-        for opcode in opcodes {
+        for &opcode in opcodes {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
@@ -2748,7 +2778,7 @@ mod tests {
 
     #[track_caller]
     fn assert_method_hir_with_opcode(method: &str, opcode: u32, hir: Expect) {
-        assert_method_hir_with_opcodes(method, vec![opcode], hir)
+        assert_method_hir_with_opcodes(method, &[opcode], hir)
     }
 
     #[track_caller]
@@ -2982,12 +3012,43 @@ mod tests {
               a
             end
         ");
-        assert_method_hir_with_opcodes("test", vec![YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
+        assert_method_hir_with_opcodes("test", &[YARVINSN_getlocal_WC_0, YARVINSN_setlocal_WC_0], expect![[r#"
             fn test:
             bb0(v0:BasicObject):
               v1:NilClassExact = Const Value(nil)
               v3:Fixnum[1] = Const Value(1)
               Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn defined_ivar() {
+        eval("
+            def test = defined?(@foo)
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_definedivar, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:BasicObject = DefinedIvar v0, :@foo
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn defined() {
+        eval("
+            def test = return defined?(SeaChange), defined?(favourite), defined?($ruby)
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_defined, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:BasicObject = Defined constant, v2
+              v4:BasicObject = Defined func, v0
+              v5:NilClassExact = Const Value(nil)
+              v6:BasicObject = Defined global-variable, v5
+              v8:ArrayExact = NewArray v3, v4, v6
+              Return v8
         "#]]);
     }
 
