@@ -146,11 +146,12 @@ if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
     btest_session_file='launchable_btest_session.txt'
     test_spec_session_file='launchable_test_spec_session.txt'
     setup_launchable & setup_pid=$!
-    (sleep 180; kill "$setup_pid" 2> /dev/null) & sleep_pid=$!
-    wait -f "$setup_pid"
+    (sleep 180; echo "setup_launchable timed out; killing"; kill "$setup_pid" 2> /dev/null) & sleep_pid=$!
+    launchable_failed=false
+    wait -f "$setup_pid" || launchable_failed=true
     kill "$sleep_pid" 2> /dev/null
     echo "::endgroup::"
-    trap launchable_record_test EXIT
+    $launchable_failed || trap launchable_record_test EXIT
 fi
 
 pushd ${builddir}
