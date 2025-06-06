@@ -37,7 +37,7 @@ impl Annotations {
             if VM_METHOD_TYPE_CFUNC != get_cme_def_type(method) {
                 return None;
             }
-            get_mct_func(get_cme_def_body_cfunc(method.cast()))
+            rb_get_mct_func(rb_get_cme_def_body_cfunc(method.cast()))
         };
         self.cfuncs.get(&fn_ptr).copied()
     }
@@ -65,11 +65,12 @@ pub fn init() -> Annotations {
     let cfuncs = &mut HashMap::new();
 
     macro_rules! annotate {
-        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),+) => {
+        ($module:ident, $method_name:literal, $return_type:expr, $($properties:ident),*) => {
+            #[allow(unused_mut)]
             let mut props = FnProperties { no_gc: false, leaf: false, elidable: false, return_type: $return_type };
             $(
                 props.$properties = true;
-            )+
+            )*
             annotate_c_method(cfuncs, unsafe { $module }, $method_name, props);
         }
     }
@@ -80,6 +81,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cInteger, "+", types::IntegerExact,);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs)

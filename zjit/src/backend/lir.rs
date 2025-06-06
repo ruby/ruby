@@ -16,6 +16,7 @@ pub const SP: Opnd = _SP;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
+pub const NATIVE_STACK_PTR: Opnd = _NATIVE_STACK_PTR;
 pub use crate::backend::current::{Reg, C_RET_REG};
 
 // Memory operand base
@@ -2225,7 +2226,7 @@ impl Assembler {
 /// when not dumping disassembly.
 macro_rules! asm_comment {
     ($asm:expr, $($fmt:tt)*) => {
-        if $crate::options::get_option!(dump_disasm) {
+        if $crate::options::get_option!(dump_disasm) || $crate::options::get_option!(dump_lir) {
             $asm.push_insn(crate::backend::lir::Insn::Comment(format!($($fmt)*)));
         }
     };

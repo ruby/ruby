@@ -28,6 +28,7 @@ pub const _C_ARG_OPNDS: [Opnd; 6] = [
 // C return value register on this platform
 pub const C_RET_REG: Reg = X0_REG;
 pub const _C_RET_OPND: Opnd = Opnd::Reg(X0_REG);
+pub const _NATIVE_STACK_PTR: Opnd = Opnd::Reg(X13_REG);
 
 // These constants define the way we work with Arm64's stack pointer. The stack
 // pointer always needs to be aligned to a 16-byte boundary.
@@ -679,6 +680,10 @@ impl Assembler
                     *opnd = opnd0;
                     asm.push_insn(insn);
                 },
+                Insn::CPush(opnd) => {
+                    let opnd = split_load_operand(asm, *opnd);
+                    asm.push_insn(Insn::CPush(opnd));
+                }
                 Insn::Store { dest, src } => {
                     // The value being stored must be in a register, so if it's
                     // not already one we'll load it first.

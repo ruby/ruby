@@ -369,6 +369,7 @@ pub type vm_special_object_type = u32;
 pub type IC = *mut iseq_inline_constant_cache;
 pub type IVC = *mut iseq_inline_iv_cache_entry;
 pub type ICVARC = *mut iseq_inline_cvar_cache_entry;
+pub type CALL_DATA = *mut rb_call_data;
 pub const VM_FRAME_MAGIC_METHOD: vm_frame_env_flags = 286326785;
 pub const VM_FRAME_MAGIC_BLOCK: vm_frame_env_flags = 572653569;
 pub const VM_FRAME_MAGIC_CLASS: vm_frame_env_flags = 858980353;
@@ -736,6 +737,7 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub type ISEQ = *mut rb_iseq_t;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
@@ -1020,4 +1022,18 @@ unsafe extern "C" {
     pub fn rb_assert_iseq_handle(handle: VALUE);
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
+    pub fn rb_zjit_vm_call0_no_splat(
+        ec: *mut rb_execution_context_t,
+        recv: VALUE,
+        id: ID,
+        argc: ::std::os::raw::c_int,
+        argv: *const VALUE,
+        cme: *const rb_callable_method_entry_t,
+    ) -> VALUE;
+    pub fn rb_vm_send(
+        ec: *mut rb_execution_context_t,
+        reg_cfp: *mut rb_control_frame_t,
+        cd: CALL_DATA,
+        blockiseq: ISEQ,
+    ) -> VALUE;
 }

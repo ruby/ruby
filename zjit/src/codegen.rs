@@ -6,8 +6,8 @@ use crate::profile::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
-use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX};
+use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP, NATIVE_STACK_PTR};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, RangeType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -257,8 +257,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
-        Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
+        Insn::LookupMethod { self_val, method_id, state } => gen_lookup_method(jit, asm, opnd!(self_val), *method_id, &function.frame_state(*state))?,
+        Insn::CallMethod { callable, cd, self_val, args, state } => gen_call_method(jit, asm, opnd!(callable), *cd, opnd!(self_val), args, &function.frame_state(*state))?,
+        Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(jit, asm, *cfunc, opnd!(self_val), args)?,
+        Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -455,38 +457,109 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
 }
 
 /// Compile a dynamic dispatch without block
-fn gen_send_without_block(
+fn gen_lookup_method(
     jit: &mut JITState,
     asm: &mut Assembler,
-    call_info: &CallInfo,
-    cd: *const rb_call_data,
+    recv: Opnd,
+    method_id: ID,
     state: &FrameState,
-    self_val: &InsnId,
+) -> Option<lir::Opnd> {
+    asm_comment!(asm, "get the class of the receiver with rb_obj_class");
+    let class = asm.ccall(rb_obj_class as *const u8, vec![recv]);
+    // TODO(max): Figure out if we need to do anything here to save state to CFP
+    let method_opnd = Opnd::UImm(method_id.0.into());
+    asm_comment!(asm, "call rb_callable_method_entry");
+    let result = asm.ccall(
+        rb_callable_method_entry as *const u8,
+        vec![class, method_opnd],
+    );
+    asm.test(result, result);
+    asm.jz(side_exit(jit, state)?);
+    Some(result)
+}
+
+fn gen_call_method(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    callable: Opnd,
+    cd: CallDataPtr,
+    recv: Opnd,
+    args: &Vec<InsnId>,
+    state: &FrameState,
+) -> Option<Opnd> {
+    // Don't push recv; it is passed in separately.
+    asm_comment!(asm, "make stack-allocated array of {} args", args.len());
+    for &arg in args.iter().rev() {
+        asm.cpush(jit.get_opnd(arg)?);
+    }
+    // Save PC for GC
+    gen_save_pc(asm, state);
+    // Call rb_zjit_vm_call0_no_splat, which will push a frame
+    // TODO(max): Figure out if we need to manually handle stack alignment and how to do it
+    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    let method_id = unsafe { rb_vm_ci_mid(call_info) };
+    asm_comment!(asm, "get stack pointer");
+    let sp = asm.lea(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0));
+    asm_comment!(asm, "call rb_zjit_vm_call0_no_splat");
+    let result = asm.ccall(
+        rb_zjit_vm_call0_no_splat as *const u8,
+        vec![EC, recv, Opnd::UImm(method_id.0), Opnd::UImm(args.len().try_into().unwrap()), sp, callable],
+    );
+    // Pop all the args off the stack
+    asm_comment!(asm, "clear stack-allocated array of {} args", args.len());
+    let new_sp = asm.add(NATIVE_STACK_PTR, (args.len()*SIZEOF_VALUE).into());
+    asm.mov(NATIVE_STACK_PTR, new_sp);
+    Some(result)
+}
+
+/// Compile an interpreter frame
+fn gen_push_frame(asm: &mut Assembler, recv: Opnd) {
+    // Write to a callee CFP
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+
+    asm_comment!(asm, "push callee control frame");
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), recv);
+    // TODO: Write more fields as needed
+}
+
+fn gen_call_cfunc(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cfunc: CFuncPtr,
+    recv: Opnd,
     args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
-    // Spill the receiver and the arguments onto the stack. They need to be marked by GC and may be caller-saved registers.
-    // TODO: Avoid spilling operands that have been spilled before.
-    for (idx, &insn_id) in [*self_val].iter().chain(args.iter()).enumerate() {
-        // Currently, we don't move the SP register. So it's equal to the base pointer.
-        let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
-        asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
+    let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+    // NB: The presence of self is assumed (no need for +1).
+    if args.len() != cfunc_argc as usize {
+        // TODO(max): We should check this at compile-time. If we have an arity mismatch at this
+        // point, we should side-exit (we're definitely going to raise) and if we don't, we should
+        // not check anything.
+        todo!("Arity mismatch");
     }
 
-    // Save PC and SP
-    gen_save_pc(asm, state);
-    gen_save_sp(asm, 1 + args.len()); // +1 for receiver
+    // Set up the new frame
+    gen_push_frame(asm, recv);
 
-    asm_comment!(asm, "call #{} with dynamic dispatch", call_info.method_name);
-    unsafe extern "C" {
-        fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+
+    // Set up arguments
+    let mut c_args: Vec<Opnd> = vec![recv];
+    for &arg in args.iter() {
+        c_args.push(jit.get_opnd(arg)?);
     }
-    let ret = asm.ccall(
-        rb_vm_opt_send_without_block as *const u8,
-        vec![EC, CFP, (cd as usize).into()],
-    );
+
+    // Make a method call. The target address will be rewritten once compiled.
+    let cfun = unsafe { get_mct_func(cfunc) }.cast();
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
-
+    let ret = asm.ccall(cfun, c_args);
+    gen_pop_frame(asm);
     Some(ret)
 }
 
@@ -590,14 +663,18 @@ fn gen_new_range(
     new_range
 }
 
-/// Compile code that exits from JIT code with a return value
-fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+fn gen_pop_frame(asm: &mut Assembler) {
     // Pop the current frame (ec->cfp++)
     // Note: the return PC is already in the previous CFP
     asm_comment!(asm, "pop stack frame");
     let incr_cfp = asm.add(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, incr_cfp);
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+}
+
+/// Compile code that exits from JIT code with a return value
+fn gen_return(asm: &mut Assembler, val: lir::Opnd) -> Option<()> {
+    gen_pop_frame(asm);
 
     asm.frame_teardown();
 
