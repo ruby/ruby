@@ -37,6 +37,8 @@ static ID id_frozen;
 static ID id_t_object;
 ID ruby_internal_object_id; // extern
 
+static const attr_index_t *shape_capacities = NULL;
+
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -496,6 +498,23 @@ redblack_cache_ancestors(rb_shape_t *shape)
 }
 #endif
 
+static attr_index_t
+shape_grow_capa(attr_index_t current_capa)
+{
+    const attr_index_t *capacities = shape_capacities;
+
+    // First try to use the next size that will be embeddable in a larger object slot.
+    attr_index_t capa;
+    while ((capa = *capacities)) {
+        if (capa > current_capa) {
+            return capa;
+        }
+        capacities++;
+    }
+
+    return (attr_index_t)rb_malloc_grow_capa(current_capa, sizeof(VALUE));
+}
+
 static rb_shape_t *
 rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 {
@@ -506,7 +525,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
             RUBY_ASSERT(shape->next_field_index == shape->capacity);
-            new_shape->capacity = (uint32_t)rb_malloc_grow_capa(shape->capacity, sizeof(VALUE));
+            new_shape->capacity = shape_grow_capa(shape->capacity);
         }
         RUBY_ASSERT(new_shape->capacity > shape->next_field_index);
         new_shape->next_field_index = shape->next_field_index + 1;
@@ -1431,6 +1450,19 @@ Init_default_shapes(void)
 {
     rb_shape_tree_ptr = xcalloc(1, sizeof(rb_shape_tree_t));
 
+    size_t *heap_sizes = rb_gc_heap_sizes();
+    size_t heaps_count = 0;
+    while (heap_sizes[heaps_count]) {
+        heaps_count++;
+    }
+    attr_index_t *capacities = ALLOC_N(attr_index_t, heaps_count + 1);
+    capacities[heaps_count] = 0;
+    size_t index;
+    for (index = 0; index < heaps_count; index++) {
+        capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+    }
+    shape_capacities = capacities;
+
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
     rb_shape_tree_ptr->shape_list = (rb_shape_t *)mmap(NULL, shape_list_mmap_size,
@@ -1505,6 +1537,8 @@ Init_default_shapes(void)
 void
 rb_shape_free_all(void)
 {
+    xfree((void *)shape_capacities);
+    shape_capacities = NULL;
     xfree(GET_SHAPE_TREE());
 }
 
