@@ -2379,6 +2379,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_succ |
                 YARVINSN_opt_and |
                 YARVINSN_opt_or |
+                YARVINSN_opt_not |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -3863,6 +3864,19 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :|, v2
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn opt_not() {
+        eval("
+            def test(x) = !x
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_opt_not, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:BasicObject = SendWithoutBlock v1, :!
+              Return v4
         "#]]);
     }
     #[test]
