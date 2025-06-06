@@ -114,7 +114,7 @@ class Scheduler
         end
 
         ready.each do |fiber|
-          fiber.resume
+          fiber.resume if fiber.alive?
         end
       end
     end
