@@ -266,9 +266,13 @@ rb_ractor_belonging(VALUE obj)
     }
 }
 
+extern bool rb_ractor_ignore_belonging_flag;
+
 static inline VALUE
 rb_ractor_confirm_belonging(VALUE obj)
 {
+    if (rb_ractor_ignore_belonging_flag) return obj;
+
     uint32_t id = rb_ractor_belonging(obj);
 
     if (id == 0) {
@@ -288,6 +292,14 @@ rb_ractor_confirm_belonging(VALUE obj)
     }
     return obj;
 }
+
+static inline void
+rb_ractor_ignore_belonging(bool flag)
+{
+    rb_ractor_ignore_belonging_flag = flag;
+}
+
 #else
 #define rb_ractor_confirm_belonging(obj) obj
+#define rb_ractor_ignore_belonging(flag) (0)
 #endif

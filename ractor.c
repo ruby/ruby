@@ -33,6 +33,11 @@ static VALUE rb_cRactorMovedObject;
 
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
+
+#if RACTOR_CHECK_MODE > 0
+bool rb_ractor_ignore_belonging_flag = false;
+#endif
+
 // Ractor locking
 
 static void
