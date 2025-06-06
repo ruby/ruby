@@ -205,6 +205,13 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_gt], call_threshold: 2
   end
 
+  def test_opt_empty_p
+    assert_compiles('[false, false, true]', <<~RUBY, insns: [:opt_empty_p])
+      def test(x) = x.empty?
+      return test([1]), test("1"), test({})
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
