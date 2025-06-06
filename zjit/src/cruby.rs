@@ -120,9 +120,9 @@ pub use autogened::*;
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 unsafe extern "C" {
     pub fn rb_check_overloaded_cme(
-        me: *const rb_callable_method_entry_t,
+        me: CmePtr,
         ci: *const rb_callinfo,
-    ) -> *const rb_callable_method_entry_t;
+    ) -> CmePtr;
 
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
@@ -144,8 +144,8 @@ unsafe extern "C" {
     pub fn rb_vm_set_ivar_id(obj: VALUE, idx: u32, val: VALUE) -> VALUE;
     pub fn rb_vm_setinstancevariable(iseq: IseqPtr, obj: VALUE, id: ID, val: VALUE, ic: IVC);
     pub fn rb_aliased_callable_method_entry(
-        me: *const rb_callable_method_entry_t,
-    ) -> *const rb_callable_method_entry_t;
+        me: CmePtr,
+    ) -> CmePtr;
     pub fn rb_vm_getclassvariable(iseq: IseqPtr, cfp: CfpPtr, id: ID, ic: ICVARC) -> VALUE;
     pub fn rb_vm_setclassvariable(
         iseq: IseqPtr,
@@ -156,7 +156,7 @@ unsafe extern "C" {
     ) -> VALUE;
     pub fn rb_vm_ic_hit_p(ic: IC, reg_ep: *const VALUE) -> bool;
     pub fn rb_vm_stack_canary() -> VALUE;
-    pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
+    pub fn rb_vm_push_cfunc_frame(cme: CmePtr, recv_idx: c_int);
 }
 
 // Renames
@@ -258,6 +258,12 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
+
+pub type CallDataPtr = *const rb_call_data;
+
+pub type CmePtr = *const rb_callable_method_entry_t;
+
+pub type CFuncPtr = *const rb_method_cfunc_t;
 
 // Given an ISEQ pointer, convert PC to insn_idx
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
@@ -579,8 +585,8 @@ impl VALUE {
     }
 
     /// Assert that `self` is a method entry in debug builds
-    pub fn as_cme(self) -> *const rb_callable_method_entry_t {
-        let ptr: *const rb_callable_method_entry_t = self.as_ptr();
+    pub fn as_cme(self) -> CmePtr {
+        let ptr: CmePtr = self.as_ptr();
 
         #[cfg(debug_assertions)]
         if !ptr.is_null() {
@@ -611,9 +617,9 @@ impl From<IseqPtr> for VALUE {
     }
 }
 
-impl From<*const rb_callable_method_entry_t> for VALUE {
+impl From<CmePtr> for VALUE {
     /// For `.into()` convenience
-    fn from(cme: *const rb_callable_method_entry_t) -> Self {
+    fn from(cme: CmePtr) -> Self {
         VALUE(cme as usize)
     }
 }

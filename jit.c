@@ -421,3 +421,16 @@ rb_assert_cme_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
+
+extern
+VALUE
+rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme, int kw_splat);
+
+VALUE
+rb_zjit_vm_call0_no_splat(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme) {
+    return rb_vm_call0(ec, recv, id, argc, argv, cme, /*kw_splat=*/0);
+}
+
+extern
+VALUE
+rb_vm_send(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_DATA cd, ISEQ blockiseq);
