@@ -530,7 +530,9 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
         RUBY_ASSERT(new_shape->capacity > shape->next_field_index);
         new_shape->next_field_index = shape->next_field_index + 1;
         if (new_shape->next_field_index > ANCESTOR_CACHE_THRESHOLD) {
-            redblack_cache_ancestors(new_shape);
+            RB_VM_LOCKING() {
+                redblack_cache_ancestors(new_shape);
+            }
         }
         break;
       case SHAPE_ROOT:
