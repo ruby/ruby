@@ -1864,7 +1864,6 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
 
     if (NIL_P(fptr->write_lock)) {
         fptr->write_lock = rb_mutex_new();
-        rb_mutex_allow_trap(fptr->write_lock, 1);
     }
 }
 

@@ -36,8 +36,6 @@ struct queue_sleep_arg {
     rb_hrtime_t end;
 };
 
-#define MUTEX_ALLOW_TRAP FL_USER1
-
 static void
 sync_wakeup(struct ccan_list_head *head, long max)
 {
@@ -300,12 +298,6 @@ do_mutex_lock(VALUE self, int interruptible_p)
     rb_fiber_t *fiber = ec->fiber_ptr;
     rb_mutex_t *mutex = mutex_ptr(self);
     rb_atomic_t saved_ints = 0;
-
-    /* When running trap handler */
-    if (!FL_TEST_RAW(self, MUTEX_ALLOW_TRAP) &&
-        th->ec->interrupt_mask & TRAP_INTERRUPT_MASK) {
-        rb_raise(rb_eThreadError, "can't be called from trap context");
-    }
 
     if (rb_mutex_trylock(self) == Qfalse) {
         if (mutex->fiber == fiber) {
@@ -658,17 +650,6 @@ rb_mutex_synchronize_m(VALUE self)
     }
 
     return rb_mutex_synchronize(self, rb_yield, Qundef);
-}
-
-void
-rb_mutex_allow_trap(VALUE self, int val)
-{
-    Check_TypedStruct(self, &mutex_data_type);
-
-    if (val)
-        FL_SET_RAW(self, MUTEX_ALLOW_TRAP);
-    else
-        FL_UNSET_RAW(self, MUTEX_ALLOW_TRAP);
 }
 
 /* Queue */
