@@ -2355,6 +2355,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
 
+                // These are opt_send_without_block and all the opt_* instructions
+                // specialized to a certain method that could also be serviced
+                // using the general send implementation. The optimizer start from
+                // a general send for all of these later in the pipeline.
                 YARVINSN_opt_nil_p |
                 YARVINSN_opt_plus |
                 YARVINSN_opt_minus |
@@ -2371,6 +2375,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_length |
                 YARVINSN_opt_size |
                 YARVINSN_opt_aref |
+                YARVINSN_opt_empty_p |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -3803,6 +3808,19 @@ mod tests {
               v3:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v5:BasicObject = SendWithoutBlock v1, :[], v3
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn opt_empty_p() {
+        eval("
+            def test(x) = x.empty?
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_opt_empty_p, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v4:BasicObject = SendWithoutBlock v1, :empty?
+              Return v4
         "#]]);
     }
 
