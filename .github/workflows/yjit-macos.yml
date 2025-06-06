@@ -144,9 +144,6 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
-          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" \
             SPECOPTS="$SPECOPTS"
@@ -156,8 +153,6 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof,rbs,repl_type_completor'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           PRECHECK_BUNDLED_GEMS: 'no'
-          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
-          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: make skipped tests
