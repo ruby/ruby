@@ -57,12 +57,12 @@ inputs:
 
 outputs:
   stdout_report_path:
-    value: ${{ steps.variables.outputs.stdout_report_path }}
+    value: ${{ steps.global.outputs.stdout_report_path }}
     description: >-
       Report file path for standard output.
 
   stderr_report_path:
-    value: ${{ steps.variables.outputs.stderr_report_path }}
+    value: ${{ steps.global.outputs.stderr_report_path }}
     description: >-
       Report file path for standard error.
 
@@ -114,6 +114,8 @@ runs:
         echo test_all_report_file='launchable_test_all_report.json' >> $GITHUB_OUTPUT
         echo btest_report_file='launchable_btest_report.json' >> $GITHUB_OUTPUT
         echo test_spec_report_dir='launchable_test_spec_report' >> $GITHUB_OUTPUT
+        echo stdout_report_path="launchable_stdout.log" >> $GITHUB_OUTPUT
+        echo stderr_report_path="launchable_stderr.log" >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
 
     - name: Set environment variables for Launchable
@@ -198,7 +200,10 @@ runs:
         fi
         if launchable_setup test_spec; then
           echo "SPECOPTS=${SPECOPTS:$SPECOPTS }--launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
+          echo test_spec_enabled=true >> $GITHUB_OUTPUT
         fi
+
+        echo launchable_setup_dir=$(pwd) >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
       env:
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
@@ -206,6 +211,14 @@ runs:
         test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
         test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
+        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
+
+    - name: make test-spec report directory in build directory
+      shell: bash
+      working-directory: ${{ inputs.builddir }}
+      run: mkdir "${test_spec_report_dir}"
+      if: ${{ steps.setup-launchable.outputs.test_spec_enabled == 'true' }}
+      env:
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
     - name: Clean up test results in Launchable
@@ -225,52 +238,11 @@ runs:
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
-    - name: Variables to report Launchable
-      id: variables
-      shell: bash
-      working-directory: ${{ inputs.srcdir }}
-      run: |
-        set -x
-        : # report-path from srcdir
-        if [ "${srcdir}" = "${{ github.workspace }}" ]; then
-          dir=
-        else
-          # srcdir must be equal to or under workspace
-          dir=$(echo ${srcdir:+${srcdir}/} | sed 's:[^/][^/]*/:../:g')
-        fi
-        if [ "${test_all_enabled}" = "true" ]; then
-          test_report_path="${dir}${builddir:+${builddir}/}${test_all_report_file}"
-          echo test_report_path="${test_report_path}" >> $GITHUB_OUTPUT
-        fi
-        if [ "${btest_enabled}" = "true" ]; then
-          btest_report_path="${dir}${builddir:+${builddir}/}${btest_report_file}"
-          echo btest_report_path="${btest_report_path}" >> $GITHUB_OUTPUT
-        fi
-        if [ "${test_spec_enabled}" = "true" ]; then
-          test_spec_report_path="${dir}${builddir:+${builddir}/}${test_spec_report_dir}"
-          mkdir "${test_spec_report_path}"
-          echo test_spec_report_path="${test_spec_report_path}" >> $GITHUB_OUTPUT
-        fi
-        stdout_report_path="${dir}${builddir:+${builddir}/}launchable_stdout.log"
-        stderr_report_path="${dir}${builddir:+${builddir}/}launchable_stderr.log"
-        echo stdout_report_path="${stdout_report_path}" >> $GITHUB_OUTPUT
-        echo stderr_report_path="${stderr_report_path}" >> $GITHUB_OUTPUT
-      if: steps.enable-launchable.outputs.enable-launchable
-      env:
-        srcdir: ${{ inputs.srcdir }}
-        builddir: ${{ inputs.builddir }}
-        test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
-        btest_enabled: ${{ steps.global.outputs.btest_enabled }}
-        test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
-        test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
-        btest_report_file: ${{ steps.global.outputs.btest_report_file }}
-        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
-
     - name: Record test results in Launchable
       uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
       with:
         shell: bash
-        working-directory: ${{ inputs.srcdir }}
+        working-directory: ${{ inputs.builddir }}
         post: |
           if [[ "${test_all_enabled}" = "true" ]]; then \
             launchable record attachment \
@@ -279,7 +251,7 @@ runs:
               "${stderr_report_path}"; \
             launchable record tests \
               --session "${test_all_session}" \
-              raw "${test_report_path}" || true; \
+              raw "${test_all_report_file}" || true; \
           fi
 
           if [[ "${btest_enabled}" = "true" ]]; then \
@@ -289,7 +261,7 @@ runs:
               "${stderr_report_path}"; \
             launchable record tests \
               --session "${btest_session}" \
-              raw "${btest_report_path}" || true; \
+              raw "${btest_report_file}" || true; \
           fi
 
           if [[ "${test_spec_enabled}" = "true" ]]; then \
@@ -299,18 +271,19 @@ runs:
               "${stderr_report_path}"; \
             launchable record tests \
               --session "${test_spec_session}" \
-              raw ${test_spec_report_path}/* || true; \
+              raw ${test_spec_report_dir}/* || true; \
           fi
-      if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
+      if: ${{ always() && steps.setup-launchable.outcome == 'success' }}
       env:
-        test_report_path: ${{ steps.variables.outputs.test_report_path }}
-        btest_report_path: ${{ steps.variables.outputs.btest_report_path }}
-        test_spec_report_path: ${{ steps.variables.outputs.test_spec_report_path }}
+        test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
+        btest_report_file: ${{ steps.global.outputs.btest_report_file }}
+        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
         test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
         test_all_session: ${{ steps.setup-launchable.outputs.test_all_session }}
         btest_session: ${{ steps.setup-launchable.outputs.btest_session }}
         test_spec_session: ${{ steps.setup-launchable.outputs.test_spec_session }}
-        stdout_report_path: ${{ steps.variables.outputs.stdout_report_path }}
-        stderr_report_path: ${{ steps.variables.outputs.stderr_report_path }}
+        stdout_report_path: ${{ steps.global.outputs.stdout_report_path }}
+        stderr_report_path: ${{ steps.global.outputs.stderr_report_path }}
+        LAUNCHABLE_SETUP_DIR: ${{ steps.setup-launchable.outputs.launchable_setup_dir }}
