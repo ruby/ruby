@@ -288,6 +288,7 @@ rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void 
     saved.finished = 0;
     saved.final = Qundef;
 
+    rb_ractor_ignore_belonging(true);
     EC_PUSH_TAG(ec);
     enum ruby_tag_type state = EC_EXEC_TAG();
     if (state != TAG_NONE) {
@@ -306,6 +307,7 @@ rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void 
         rb_check_funcall(saved.final, idCall, 1, &objid);
     }
     EC_POP_TAG();
+    rb_ractor_ignore_belonging(false);
 #undef RESTORE_FINALIZER
 }
 
