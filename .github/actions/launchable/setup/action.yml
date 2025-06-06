@@ -55,17 +55,6 @@ inputs:
     description: >-
       Whether this workflow is executed on YJIT.
 
-outputs:
-  stdout_report_path:
-    value: ${{ steps.variables.outputs.stdout_report_path }}
-    description: >-
-      Report file path for standard output.
-
-  stderr_report_path:
-    value: ${{ steps.variables.outputs.stderr_report_path }}
-    description: >-
-      Report file path for standard error.
-
 runs:
   using: composite
 
@@ -261,10 +250,6 @@ runs:
           mkdir "${test_spec_report_path}"
           echo test_spec_report_path="${test_spec_report_path}" >> $GITHUB_OUTPUT
         fi
-        stdout_report_path="${dir}${builddir:+${builddir}/}launchable_stdout.log"
-        stderr_report_path="${dir}${builddir:+${builddir}/}launchable_stderr.log"
-        echo stdout_report_path="${stdout_report_path}" >> $GITHUB_OUTPUT
-        echo stderr_report_path="${stderr_report_path}" >> $GITHUB_OUTPUT
       if: steps.enable-launchable.outputs.enable-launchable
       env:
         srcdir: ${{ inputs.srcdir }}
@@ -283,30 +268,18 @@ runs:
         working-directory: ${{ inputs.srcdir }}
         post: |
           if [[ "${test_all_enabled}" = "true" ]]; then \
-            launchable record attachment \
-              --session "$(cat "${test_all_session_file}")" \
-              "${stdout_report_path}" \
-              "${stderr_report_path}"; \
             launchable record tests \
               --session "$(cat "${test_all_session_file}")" \
               raw "${test_report_path}" || true; \
           fi
 
           if [[ "${btest_enabled}" = "true" ]]; then \
-            launchable record attachment \
-              --session "$(cat "${btest_session_file}")" \
-              "${stdout_report_path}" \
-              "${stderr_report_path}"; \
             launchable record tests \
               --session "$(cat "${btest_session_file}")" \
               raw "${btest_report_path}" || true; \
           fi
 
           if [[ "${test_spec_enabled}" = "true" ]]; then \
-            launchable record attachment \
-              --session "$(cat "${test_spec_session_file}")" \
-              "${stdout_report_path}" \
-              "${stderr_report_path}"; \
             launchable record tests \
               --session "$(cat "${test_spec_session_file}")" \
               raw ${test_spec_report_path}/* || true; \
@@ -318,8 +291,6 @@ runs:
           rm -f "${test_report_path}"
           rm -f "${btest_report_path}"
           rm -fr "${test_spec_report_path}"
-          rm -f "${stdout_report_path}"
-          rm -f "${stderr_report_path}"
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
       env:
         test_report_path: ${{ steps.variables.outputs.test_report_path }}
@@ -331,5 +302,3 @@ runs:
         test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
         btest_session_file: ${{ steps.global.outputs.btest_session_file }}
         test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
-        stdout_report_path: ${{ steps.variables.outputs.stdout_report_path }}
-        stderr_report_path: ${{ steps.variables.outputs.stderr_report_path }}
