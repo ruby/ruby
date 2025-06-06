@@ -1533,32 +1533,31 @@ extract-gems: $(HAVE_BASERUBY:yes=update-gems)
 update-gems$(sequential): PHONY
 	$(ECHO) Downloading bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -I./tool -rdownloader -answ \
-	    -e 'gem, ver = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
-	    -e 'old = Dir.glob("gems/#{gem}-*.gem")' \
-	    -e 'gem = "#{gem}-#{ver}.gem"' \
-	    -e 'Downloader::RubyGems.download(gem, "gems", nil) and' \
-	    -e '(old.delete("gems/#{gem}"); !old.empty?) and' \
-	    -e 'File.unlink(*old) and' \
-	    -e 'FileUtils.rm_rf(old.map{'"|n|"'n.chomp(".gem")})' \
-	    gems/bundled_gems
+	    -I./tool/lib -r./tool/downloader -rbundled_gem -sw \
+	    -e "BundledGem.each(snapshot: %[$(HAVE_GIT)]==%[yes]) do |gem, ver, _, rev|" \
+	    -e   "old = Dir.glob(%[gems/#{gem}-*.gem])" \
+	    -e   "gem = %[#{gem}-#{ver}.gem]" \
+	    -e   "(rev || Downloader::RubyGems.download(gem, %[gems], nil)) and" \
+	    -e   "(old.delete(%[gems/#{gem}]); !old.empty?) and" \
+	    -e   "File.unlink(*old) and" \
+	    -e   "FileUtils.rm_rf(old.map{|n|n.chomp(%[.gem])})" \
+	    -e "end"
 
 extract-gems$(sequential): PHONY
 	$(ECHO) Extracting bundled gem files...
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rfileutils -rbundled_gem -answ \
-	    -e 'BEGIN {d = ".bundle/gems"}' \
-	    -e 'gem, ver, _, rev = *$$F' \
-	    -e 'next if !ver or /^#/=~gem' \
-	    -e 'g = "#{gem}-#{ver}"' \
-	    -e 'unless File.directory?("#{d}/#{g}")' \
-	    -e   'if rev and File.exist?(gs = "gems/src/#{gem}/#{gem}.gemspec")' \
-	    -e     'BundledGem.build(gs, ver, "gems")' \
-	    -e   'end' \
-	    -e   'BundledGem.unpack("gems/#{g}.gem", ".bundle")' \
-	    -e 'end' \
-	    gems/bundled_gems
+	    -Itool/lib -rfileutils -rbundled_gem -sw \
+	    -e "d = ARGV.shift" \
+	    -e "BundledGem.each(snapshot: %[$(HAVE_GIT)]==%[yes]) do |gem, ver, _, rev|" \
+	    -e   "g = %[#{gem}-#{ver}]" \
+	    -e   "unless File.directory?(%[#{d}/#{g}])" \
+	    -e     "if rev and File.exist?(gs = %[gems/src/#{gem}/#{gem}.gemspec])" \
+	    -e       "BundledGem.build(gs, ver, %[gems])" \
+	    -e     "end" \
+	    -e     "BundledGem.unpack(%[gems/#{g}.gem], %[.bundle])" \
+	    -e   "end" \
+	    -e "end"
+	    -- .bundle/gems
 
 extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
