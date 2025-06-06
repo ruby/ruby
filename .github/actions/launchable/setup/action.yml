@@ -146,6 +146,7 @@ runs:
       if: steps.enable-launchable.outputs.enable-launchable && startsWith(inputs.os, 'macos')
 
     - name: Set up Launchable
+      id: setup-launchable
       shell: bash
       working-directory: ${{ inputs.srcdir }}
       run: |
@@ -235,6 +236,38 @@ runs:
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
 
+    - name: Clean up session files in Launchable
+      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      with:
+        shell: bash
+        working-directory: ${{ inputs.srcdir }}
+        post: |
+          rm -f "${test_all_session_file}"
+          rm -f "${btest_session_file}"
+          rm -f "${test_spec_session_file}
+      if: always() && steps.setup-launchable.outcome == 'success'
+      env:
+        test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
+        btest_session_file: ${{ steps.global.outputs.btest_session_file }}
+        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
+
+    - name: Clean up test results in Launchable
+      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
+      with:
+        shell: bash
+        working-directory: ${{ inputs.builddir }}
+        post: |
+          rm -f "${test_all_report_file}"
+          rm -f "${btest_report_file}"
+          rm -fr "${test_spec_report_dir}"
+          rm -f launchable_stdout.log
+          rm -f launchable_stderr.log
+      if: always() && steps.setup-launchable.outcome == 'success'
+      env:
+        test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
+        btest_report_file: ${{ steps.global.outputs.btest_report_file }}
+        test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
+
     - name: Variables to report Launchable
       id: variables
       shell: bash
@@ -311,15 +344,6 @@ runs:
               --session "$(cat "${test_spec_session_file}")" \
               raw ${test_spec_report_path}/* || true; \
           fi
-
-          rm -f "${test_all_session_file}"
-          rm -f "${btest_session_file}"
-          rm -f "${test_spec_session_file}"
-          rm -f "${test_report_path}"
-          rm -f "${btest_report_path}"
-          rm -fr "${test_spec_report_path}"
-          rm -f "${stdout_report_path}"
-          rm -f "${stderr_report_path}"
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
       env:
         test_report_path: ${{ steps.variables.outputs.test_report_path }}
