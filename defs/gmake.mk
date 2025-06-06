@@ -305,13 +305,23 @@ HELP_EXTRA_TASKS = \
 
 # 1. squeeze spaces
 # 2. strip and skip comment/empty lines
-# 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z|xxxxxx|URL"
+# 3. "gem x.y.z URL xxxxxx" -> "gem|x.y.z(+1).snapshot|xxxxxx|URL"
 # 4. "gem x.y.z URL" -> "gem-x.y.z"
 bundled-gems := $(shell sed \
 	-e 's/[ 	][ 	]*/ /g' \
 	-e 's/^ //;/\#/d;s/ *$$//;/^$$/d' \
 	$(if $(filter yes,$(HAVE_GIT)), \
-	-e 's/^\(.*\) \(.*\) \(.*\) \(.*\)/\1|\2|\4|\3/' \
+	-e '/^\(.*\) \(.*\) \(.*\) \(.*\)/{' \
+	  -e 's//\1|\3|\4|\2/				; # gem url rev ver' \
+	  -e 's/|[0-9][0-9]*\.[0-9][0-9]*$$/&.0/	; # add teeny' \
+	  -e '/\([0-9]9*\)$$/{				; # bump up' \
+	    -e 's//\n\1/;h;s/^.*\n//' \
+	    -e 'y/0123456789/1234567890/;s/^0/10/' \
+	    -e 'x;G;s/\n.*\n//;s/$$/.snapshot/' \
+	  -e '}' \
+	  -e 's/^\(.*\)|\(.*\)|\(.*\)|\(.*\)/\1|\4|\3|\2/' \
+	\
+	-e '}' \
 	) \
 	-e 's/ /-/;s/ .*//' \
 	 $(srcdir)/gems/bundled_gems)
@@ -385,11 +395,12 @@ $(bundled-gem-gemspec): $(bundled-gem-revision) \
 	| $(srcdir)/gems/src/$(1)/.git
 	$(Q) $(BASERUBY) -I$(tooldir)/lib -rbundled_gem -e 'BundledGem.dummy_gemspec(*ARGV)' $$(@)
 
-$(bundled-gem-gemfile): $(bundled-gem-gemspec) $(bundled-gem-revision)
+$(bundled-gem-gemfile): $(bundled-gem-revision)
 	$(ECHO) Building $(1)@$(3) to $$(@)
 	$(Q) $(BASERUBY) -C "$(srcdir)" \
 	    -Itool/lib -rbundled_gem \
-	    -e 'BundledGem.build("gems/src/$(1)/$(1).gemspec", "$(2)", "gems", validation: false)'
+	    -e 'BundledGem.build(*ARGV, validation: false)' \
+	    gems/src/$(1)/$(1).gemspec $(2) gems
 
 endef
 define build-gem-0

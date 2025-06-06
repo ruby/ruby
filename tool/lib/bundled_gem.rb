@@ -16,6 +16,24 @@ module BundledGem
     "psych" # rdoc
   ]
 
+  def self.each(release: true, snapshot: false)
+    File.foreach(File.join(__dir__, "../../gems/bundled_gems")) do |line|
+      line.chomp!
+      next if /^\s*(?:#|$)/ =~ line
+      gem, ver, uri, rev = line.split
+      if !rev
+        next unless release
+      elsif snapshot
+        # Assume a version ending with digits only segment is a release
+        # version, and append suffix to make prerelase version.
+        # Bump up because "X.Y.Z.snapshot" < "X.Y.Z" as versions.
+        ver = ver.succ if /\.\d+\z/.match?(ver)
+        ver += ".snapshot"
+      end
+      yield gem, ver, uri, rev
+    end
+  end
+
   module_function
 
   def unpack(file, *rest)
@@ -36,6 +54,15 @@ module BundledGem
     Dir.chdir(gemdir) do
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
+      spec.version = version
+      spec.files.delete_if do |f|
+        case f
+        when 'Gemfile', 'Rakefile', gemfile
+          true
+        else
+          f.start_with?('bin/', 'test/', '.git')
+        end
+      end
       output = File.join(outdir, spec.file_name)
       FileUtils.rm_rf(output)
       package = Gem::Package.new(output)
