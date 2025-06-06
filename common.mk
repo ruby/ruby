@@ -490,17 +490,19 @@ docs: srcs-doc $(DOCTARGETS)
 pkgconfig-data: $(ruby_pc)
 $(ruby_pc): $(srcdir)/template/ruby.pc.in config.status
 
+INSTALL_ALL = all
+
 install-all: pre-install-all do-install-all post-install-all
 pre-install-all:: all pre-install-local pre-install-ext pre-install-gem pre-install-doc
 do-install-all: pre-install-all $(DOT_WAIT) docs
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) $(INSTALL_DOC_OPTS)
 post-install-all:: post-install-local post-install-ext post-install-gem post-install-doc
 	@$(NULLCMD)
 
 install-nodoc: pre-install-nodoc do-install-nodoc post-install-nodoc
 pre-install-nodoc:: pre-install-local pre-install-ext pre-install-gem
 do-install-nodoc: main pre-install-nodoc
-	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all --exclude=doc
+	$(INSTRUBY) --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) --exclude=doc
 post-install-nodoc:: post-install-local post-install-ext post-install-gem
 
 install-local: pre-install-local do-install-local post-install-local
@@ -575,7 +577,7 @@ what-where-all: no-install-all
 no-install-all: pre-no-install-all dont-install-all post-no-install-all
 pre-no-install-all:: pre-no-install-local pre-no-install-ext pre-no-install-doc
 dont-install-all: $(PROGRAM)
-	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --install=all $(INSTALL_DOC_OPTS)
+	$(INSTRUBY) -n --make="$(MAKE)" $(INSTRUBY_ARGS) --install=$(INSTALL_ALL) $(INSTALL_DOC_OPTS)
 post-no-install-all:: post-no-install-local post-no-install-ext post-no-install-doc
 	@$(NULLCMD)
 
