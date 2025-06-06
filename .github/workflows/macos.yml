@@ -135,12 +135,10 @@ jobs:
       - name: make ${{ matrix.test_task }}
         run: |
           if [ -n "${LAUNCHABLE_STDOUT}" ]; then
-            exec \
-            1> >(tee "$LAUNCHABLE_STDOUT")
+            exec 1> >(tee "$LAUNCHABLE_STDOUT")
           fi
           if [ -n "${LAUNCHABLE_STDERR}" ]; then
-            exec \
-            2> >(tee "$LAUNCHABLE_STDERR")
+            exec 2> >(tee "$LAUNCHABLE_STDERR")
           fi
 
           ulimit -c unlimited
