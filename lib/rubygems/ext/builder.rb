@@ -169,7 +169,7 @@ class Gem::Ext::Builder
       @ran_rake = true
       Gem::Ext::RakeBuilder
     when /CMakeLists.txt/ then
-      Gem::Ext::CmakeBuilder
+      Gem::Ext::CmakeBuilder.new
     when /Cargo.toml/ then
       Gem::Ext::CargoBuilder.new
     else
