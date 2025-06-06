@@ -2193,8 +2193,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
-                    let self_val = fun.push_insn(block, Insn::PutSelf);
-                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val, id, pushval, state: exit_id }));
+                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
@@ -3029,9 +3028,8 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_definedivar, expect![[r#"
             fn test:
-            bb0():
-              v2:BasicObject = PutSelf
-              v3:BasicObject = DefinedIvar v2, :@foo
+            bb0(v0:BasicObject):
+              v3:BasicObject = DefinedIvar v0, :@foo
               Return v3
         "#]]);
     }
@@ -3043,14 +3041,13 @@ mod tests {
         ");
         assert_method_hir_with_opcode("test", YARVINSN_defined, expect![[r#"
             fn test:
-            bb0():
-              v1:NilClassExact = Const Value(nil)
-              v2:BasicObject = Defined constant, v1
-              v3:BasicObject = PutSelf
-              v4:BasicObject = Defined func, v3
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              v3:BasicObject = Defined constant, v2
+              v4:BasicObject = Defined func, v0
               v5:NilClassExact = Const Value(nil)
               v6:BasicObject = Defined global-variable, v5
-              v8:ArrayExact = NewArray v2, v4, v6
+              v8:ArrayExact = NewArray v3, v4, v6
               Return v8
         "#]]);
     }
