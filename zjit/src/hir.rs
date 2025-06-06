@@ -2380,6 +2380,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_and |
                 YARVINSN_opt_or |
                 YARVINSN_opt_not |
+                YARVINSN_opt_regexpmatch2 |
                 YARVINSN_opt_send_without_block => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let call_info = unsafe { rb_get_call_data_ci(cd) };
@@ -3879,6 +3880,20 @@ mod tests {
               Return v4
         "#]]);
     }
+
+    #[test]
+    fn opt_regexpmatch2() {
+        eval("
+            def test(regexp, matchee) = regexp =~ matchee
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_opt_regexpmatch2, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
+              v5:BasicObject = SendWithoutBlock v1, :=~, v2
+              Return v5
+        "#]]);
+    }
+
     #[test]
     fn test_branchnil() {
         eval("
