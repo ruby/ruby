@@ -976,7 +976,7 @@ class TestShapes < Test::Unit::TestCase
     example.add_foo # makes a transition
     add_foo_shape = RubyVM::Shape.of(example)
     assert_equal([:@foo], example.instance_variables)
-    assert_equal(initial_shape.id, add_foo_shape.parent.id)
+    assert_equal(initial_shape.raw_id, add_foo_shape.parent.raw_id)
     assert_equal(1, add_foo_shape.next_field_index)
 
     example.remove_foo # makes a transition
@@ -987,7 +987,7 @@ class TestShapes < Test::Unit::TestCase
     example.add_bar # makes a transition
     bar_shape = RubyVM::Shape.of(example)
     assert_equal([:@bar], example.instance_variables)
-    assert_equal(initial_shape.id, bar_shape.parent_id)
+    assert_equal(initial_shape.raw_id, bar_shape.parent_id)
     assert_equal(1, bar_shape.next_field_index)
   end
 

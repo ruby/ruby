@@ -1092,7 +1092,10 @@ rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t dest_sha
 {
     rb_shape_t *initial_shape = RSHAPE(initial_shape_id);
     rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
-    return shape_id(shape_traverse_from_new_root(initial_shape, dest_shape), dest_shape_id);
+
+    // Keep all dest_shape_id flags except for the heap_index.
+    shape_id_t dest_flags = (dest_shape_id & ~SHAPE_ID_HEAP_INDEX_MASK) | (initial_shape_id & SHAPE_ID_HEAP_INDEX_MASK);
+    return shape_id(shape_traverse_from_new_root(initial_shape, dest_shape), dest_flags);
 }
 
 // Rebuild a similar shape with the same ivars but starting from
@@ -1136,7 +1139,7 @@ rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
     RUBY_ASSERT(!rb_shape_too_complex_p(initial_shape_id));
     RUBY_ASSERT(!rb_shape_too_complex_p(dest_shape_id));
 
-    return raw_shape_id(shape_rebuild(RSHAPE(initial_shape_id), RSHAPE(dest_shape_id)));
+    return shape_id(shape_rebuild(RSHAPE(initial_shape_id), RSHAPE(dest_shape_id)), initial_shape_id);
 }
 
 void
@@ -1238,6 +1241,14 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
+    // All complex shape are in heap_index=0, it's a limitation
+    if (!rb_shape_too_complex_p(shape_id)) {
+        uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
+        if (flags_heap_index != shape->heap_index) {
+            rb_bug("shape_id heap_index flags mismatch: flags=%u, transition=%u\n", flags_heap_index, shape->heap_index);
+        }
+    }
+
     return true;
 }
 #endif
@@ -1288,6 +1299,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
 
     VALUE obj = rb_struct_new(rb_cShape,
             INT2NUM(shape_id),
+            INT2NUM(shape_id & SHAPE_ID_OFFSET_MASK),
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
@@ -1528,7 +1540,7 @@ Init_default_shapes(void)
     for (int i = 0; sizes[i] > 0; i++) {
         rb_shape_t *t_object_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
         t_object_shape->type = SHAPE_T_OBJECT;
-        t_object_shape->heap_index = i;
+        t_object_shape->heap_index = i + 1;
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
         t_object_shape->edges = rb_managed_id_table_new(256);
         t_object_shape->ancestor_index = LEAF;
@@ -1552,6 +1564,7 @@ Init_shape(void)
      * :nodoc: */
     VALUE rb_cShape = rb_struct_define_under(rb_cRubyVM, "Shape",
             "id",
+            "raw_id",
             "parent_id",
             "edge_name",
             "next_field_index",
