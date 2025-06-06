@@ -703,7 +703,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 }
 
 static inline shape_id_t
-transition_frozen(shape_id_t shape_id)
+transition_complex(shape_id_t shape_id)
 {
     if (rb_shape_has_object_id(shape_id)) {
         return ROOT_TOO_COMPLEX_WITH_OBJ_ID | (shape_id & SHAPE_ID_FLAGS_MASK);
@@ -733,7 +733,7 @@ rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id)
     else if (removed_shape) {
         // We found the shape to remove, but couldn't create a new variation.
         // We must transition to TOO_COMPLEX.
-        return transition_frozen(original_shape_id);
+        return transition_complex(original_shape_id);
     }
     return original_shape_id;
 }
@@ -750,7 +750,7 @@ rb_shape_transition_frozen(VALUE obj)
 shape_id_t
 rb_shape_transition_complex(VALUE obj)
 {
-    return transition_frozen(RBASIC_SHAPE_ID(obj));
+    return transition_complex(RBASIC_SHAPE_ID(obj));
 }
 
 shape_id_t
