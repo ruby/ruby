@@ -895,9 +895,9 @@ class Socket < BasicSocket
         end
       end
 
-      if resolution_store.empty_addrinfos?
-        raise(Errno::ETIMEDOUT, 'user specified timeout') if expired?(now, user_specified_open_timeout_at)
+      raise(Errno::ETIMEDOUT, 'user specified timeout') if expired?(now, user_specified_open_timeout_at)
 
+      if resolution_store.empty_addrinfos?
         if connecting_sockets.empty? && resolution_store.resolved_all_families?
           if last_error_from_thread
             raise last_error.class, last_error.message, cause: last_error
