@@ -205,6 +205,48 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_gt], call_threshold: 2
   end
 
+  def test_opt_empty_p
+    assert_compiles('[false, false, true]', <<~RUBY, insns: [:opt_empty_p])
+      def test(x) = x.empty?
+      return test([1]), test("1"), test({})
+    RUBY
+  end
+
+  def test_opt_succ
+    assert_compiles('[0, "B"]', <<~RUBY, insns: [:opt_succ])
+      def test(obj) = obj.succ
+      return test(-1), test("A")
+    RUBY
+  end
+
+  def test_opt_and
+    assert_compiles('[1, [3, 2, 1]]', <<~RUBY, insns: [:opt_and])
+      def test(x, y) = x & y
+      return test(0b1101, 3), test([3, 2, 1, 4], [8, 1, 2, 3])
+    RUBY
+  end
+
+  def test_opt_or
+    assert_compiles('[11, [3, 2, 1]]', <<~RUBY, insns: [:opt_or])
+      def test(x, y) = x | y
+      return test(0b1000, 3), test([3, 2, 1], [1, 2, 3])
+    RUBY
+  end
+
+  def test_opt_not
+    assert_compiles('[true, true, false]', <<~RUBY, insns: [:opt_not])
+      def test(obj) = !obj
+      return test(nil), test(false), test(0)
+    RUBY
+  end
+
+  def test_opt_regexpmatch2
+    assert_compiles('[1, nil]', <<~RUBY, insns: [:opt_regexpmatch2])
+      def test(haystack) = /needle/ =~ haystack
+      return test("kneedle"), test("")
+    RUBY
+  end
+
   def test_opt_ge
     assert_compiles '[false, true, true]', %q{
       def test(a, b) = a >= b
