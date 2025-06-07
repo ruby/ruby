@@ -1879,6 +1879,13 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+
+    if (FL_TEST_RAW(obj, FL_FINALIZE)) {
+	rb_gc_copy_finalizer(data->replacement, obj);
+	rb_undefine_finalizer(obj);
+	FL_UNSET_RAW(obj, FL_FINALIZE);
+    }
+
     return traverse_cont;
 }
 
