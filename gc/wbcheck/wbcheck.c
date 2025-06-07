@@ -579,16 +579,92 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 }
 
 // Heap walking
+struct wbcheck_foreach_data {
+    int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data);
+    void *data;
+};
+
+static int
+wbcheck_foreach_object_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    VALUE obj = (VALUE)key;
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
+    struct wbcheck_foreach_data *foreach_data = (struct wbcheck_foreach_data *)arg;
+    
+    return foreach_data->callback(obj, info, foreach_data->data);
+}
+
+static void
+wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE obj, rb_wbcheck_object_info_t *info, void *data), void *data)
+{
+    struct wbcheck_foreach_data foreach_data = {
+        .callback = callback,
+        .data = data
+    };
+    
+    st_foreach(objspace->object_table, wbcheck_foreach_object_i, (st_data_t)&foreach_data);
+}
+
+struct each_object_callback_data {
+    void (*func)(VALUE obj, void *data);
+    void *data;
+};
+
+static int
+each_object_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *arg)
+{
+    struct each_object_callback_data *callback_data = (struct each_object_callback_data *)arg;
+    callback_data->func(obj, callback_data->data);
+    return ST_CONTINUE;
+}
+
+struct each_objects_callback_data {
+    int (*callback)(void *, void *, size_t, void *);
+    void *data;
+};
+
+static int
+each_objects_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *arg)
+{
+    struct each_objects_callback_data *callback_data = (struct each_objects_callback_data *)arg;
+    
+    // Call the callback with the object as a single-object memory region
+    int result = callback_data->callback(
+        (void *)obj, 
+        (void *)((char *)obj + info->alloc_size), 
+        info->alloc_size, 
+        callback_data->data
+    );
+    
+    return (result == 0) ? ST_CONTINUE : ST_STOP;
+}
+
 void
 rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    GC_ASSERT(objspace);
+    
+    struct each_objects_callback_data callback_data = {
+        .callback = callback,
+        .data = data
+    };
+    
+    wbcheck_foreach_object(objspace, each_objects_callback, &callback_data);
 }
 
 void
 rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    GC_ASSERT(objspace);
+    
+    struct each_object_callback_data callback_data = {
+        .func = func,
+        .data = data
+    };
+    
+    wbcheck_foreach_object(objspace, each_object_callback, &callback_data);
 }
 
 // Finalizers
