@@ -90,6 +90,7 @@ typedef VALUE (rb_interrupt_exec_func_t)(void *data);
 enum rb_interrupt_exec_flag {
     rb_interrupt_exec_flag_none = 0x00,
     rb_interrupt_exec_flag_value_data = 0x01,
+    rb_interrupt_exec_flag_new_thread = 0x02,
 };
 
 // interrupt the target_th and run func.
