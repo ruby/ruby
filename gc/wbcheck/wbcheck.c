@@ -216,6 +216,12 @@ gc_verify_internal_consistency(VALUE self)
 void
 rb_gc_impl_init(void)
 {
+    // Configure debug output based on environment variable
+    const char *debug_env = getenv("WBCHECK_DEBUG");
+    if (debug_env && (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0)) {
+        wbcheck_debug_enabled = true;
+    }
+    
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
