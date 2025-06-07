@@ -368,7 +368,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     // Initialize the object
     VALUE obj = (VALUE)mem;
     RBASIC(obj)->flags = flags;
-    RBASIC_SET_CLASS(obj, klass);
+    *((VALUE *)&RBASIC(obj)->klass) = klass;
 
     // Fill in provided values
     VALUE *ptr = (VALUE *)((char *)obj + sizeof(struct RBasic));
@@ -520,7 +520,20 @@ rb_gc_impl_location(void *objspace_ptr, VALUE value)
 void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    
+    // Get the object info for the parent object (a)
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(a);
+    
+    // Only record the write barrier if references have been initialized
+    if (info->references) {
+        // Add the new reference to the parent's references list
+        wbcheck_references_append(info->references, b);
+        
+        fprintf(stderr, "wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
+    } else {
+        fprintf(stderr, "wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
+    }
 }
 
 void
