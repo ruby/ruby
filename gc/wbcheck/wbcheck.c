@@ -378,6 +378,8 @@ maybe_gc(void *objspace_ptr)
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
+    unsigned int lev = rb_gc_vm_lock();
+    
     // Check if we should trigger GC before allocating
     maybe_gc(objspace_ptr);
 
@@ -406,6 +408,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     objspace->last_allocated_obj = obj;
 
+    rb_gc_vm_unlock(lev);
     return obj;
 }
 
@@ -543,6 +546,8 @@ rb_gc_impl_location(void *objspace_ptr, VALUE value)
 void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
+    unsigned int lev = rb_gc_vm_lock();
+    
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     
     // Get the object info for the parent object (a)
@@ -557,6 +562,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     } else {
         wbcheck_debug("wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
+    
+    rb_gc_vm_unlock(lev);
 }
 
 void
