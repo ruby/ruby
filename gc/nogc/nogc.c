@@ -1,8 +1,9 @@
+#include "ruby/ruby.h"
 #include "ruby/assert.h"
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
+#include "ruby/internal/core/rbasic.h"
 #include "internal/object.h"
-
 
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
@@ -14,7 +15,7 @@
 #define MAX_HEAP_SIZE (BASE_SLOT_SIZE * 16)
 
 // Define heap sizes using power-of-2 progression
-static const size_t heap_sizes[HEAP_COUNT + 1] = {
+static size_t heap_sizes[HEAP_COUNT + 1] = {
     BASE_SLOT_SIZE,      // 40
     BASE_SLOT_SIZE * 2,  // 80
     BASE_SLOT_SIZE * 4,  // 160
@@ -53,6 +54,7 @@ rb_gc_impl_set_params(void *objspace_ptr)
 static VALUE
 gc_verify_internal_consistency(VALUE self)
 {
+    return Qnil;
 }
 
 void
@@ -365,7 +367,12 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
-    // Stub implementation
+    // HACK: Manually flush stdout and stderr since nogc never runs finalizers.
+    // Normally, I/O object finalizers would handle this flushing automatically
+    // when the GC collects them, but since we never run GC, we need to manually
+    // flush during shutdown to prevent output loss in subprocess scenarios.
+    rb_io_flush(rb_stdout);
+    rb_io_flush(rb_stderr);
 }
 
 // Forking
@@ -451,7 +458,7 @@ bool
 rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
     // Stub implementation
-    return false;
+    return true;
 }
 
 bool
