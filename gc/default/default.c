@@ -1229,7 +1229,7 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
 {
     int err = 0;
 
-    int lev = rb_gc_vm_lock_no_barrier();
+    int lev = RB_GC_VM_LOCK_NO_BARRIER();
     {
         if (SPECIAL_CONST_P(obj)) {
             fprintf(stderr, "check_rvalue_consistency: %p is a special const.\n", (void *)obj);
@@ -1319,7 +1319,7 @@ check_rvalue_consistency_force(rb_objspace_t *objspace, const VALUE obj, int ter
             }
         }
     }
-    rb_gc_vm_unlock_no_barrier(lev);
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 
     if (err > 0 && terminate) {
         rb_bug("check_rvalue_consistency_force: there is %d errors.", err);
@@ -2140,7 +2140,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 #if RGENGC_CHECK_MODE
     newobj_fill(obj, 0, 0, 0);
 
-    int lev = rb_gc_vm_lock_no_barrier();
+    int lev = RB_GC_VM_LOCK_NO_BARRIER();
     {
         check_rvalue_consistency(objspace, obj);
 
@@ -2151,7 +2151,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
 
         if (RVALUE_REMEMBERED(objspace, obj)) rb_bug("newobj: %s is remembered.", rb_obj_info(obj));
     }
-    rb_gc_vm_unlock_no_barrier(lev);
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 #endif
 
     if (RB_UNLIKELY(wb_protected == FALSE)) {
@@ -2363,7 +2363,7 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
     bool unlock_vm = false;
 
     if (!vm_locked) {
-        lev = rb_gc_cr_lock();
+        lev = RB_GC_CR_LOCK();
         unlock_vm = true;
     }
 
@@ -2387,7 +2387,7 @@ newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size
     }
 
     if (unlock_vm) {
-        rb_gc_cr_unlock(lev);
+        RB_GC_CR_UNLOCK(lev);
     }
 
     if (RB_UNLIKELY(obj == Qfalse)) {
@@ -2416,7 +2416,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
     VALUE obj;
     unsigned int lev;
 
-    lev = rb_gc_cr_lock();
+    lev = RB_GC_CR_LOCK();
     {
         if (RB_UNLIKELY(during_gc || ruby_gc_stressful)) {
             if (during_gc) {
@@ -2438,7 +2438,7 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_new
         obj = newobj_alloc(objspace, cache, heap_idx, true);
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
-    rb_gc_cr_unlock(lev);
+    RB_GC_CR_UNLOCK(lev);
 
     return obj;
 }
@@ -2753,7 +2753,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
     RBASIC(obj)->flags |= FL_FINALIZE;
 
-    int lev = rb_gc_vm_lock();
+    int lev = RB_GC_VM_LOCK();
 
     if (st_lookup(finalizer_table, obj, &data)) {
         table = (VALUE)data;
@@ -2766,7 +2766,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
                 if (rb_equal(recv, block)) {
-                    rb_gc_vm_unlock(lev);
+                    RB_GC_VM_UNLOCK(lev);
                     return recv;
                 }
             }
@@ -2780,7 +2780,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         st_add_direct(finalizer_table, obj, table);
     }
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 
     return block;
 }
@@ -2794,9 +2794,9 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 
     st_data_t data = obj;
 
-    int lev = rb_gc_vm_lock();
+    int lev = RB_GC_VM_LOCK();
     st_delete(finalizer_table, &data, 0);
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 
     FL_UNSET(obj, FL_FINALIZE);
 }
@@ -2810,7 +2810,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
-    int lev = rb_gc_vm_lock();
+    int lev = RB_GC_VM_LOCK();
     if (RB_LIKELY(st_lookup(finalizer_table, obj, &data))) {
         table = rb_ary_dup((VALUE)data);
         RARRAY_ASET(table, 0, rb_obj_id(dest));
@@ -2820,7 +2820,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 static VALUE
@@ -2864,7 +2864,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         next_zombie = RZOMBIE(zombie)->next;
         page = GET_HEAP_PAGE(zombie);
 
-        int lev = rb_gc_vm_lock();
+        int lev = RB_GC_VM_LOCK();
 
         run_final(objspace, zombie);
         {
@@ -2878,7 +2878,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             heap_page_add_freeobj(objspace, page, zombie);
             page->heap->total_freed_objects++;
         }
-        rb_gc_vm_unlock(lev);
+        RB_GC_VM_UNLOCK(lev);
 
         zombie = next_zombie;
     }
@@ -3247,7 +3247,7 @@ read_barrier_handler(uintptr_t address)
         rb_bug("read_barrier_handler: segmentation fault at %p", (void *)address);
     }
 
-    int lev = rb_gc_vm_lock();
+    int lev = RB_GC_VM_LOCK();
     {
         unlock_page_body(objspace, page_body);
 
@@ -3255,7 +3255,7 @@ read_barrier_handler(uintptr_t address)
 
         invalidate_moved_page(objspace, GET_HEAP_PAGE(address));
     }
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 #endif
 
@@ -5180,7 +5180,7 @@ gc_verify_internal_consistency(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
     {
         rb_gc_vm_barrier(); // stop other ractors
 
@@ -5191,7 +5191,7 @@ gc_verify_internal_consistency(void *objspace_ptr)
         }
         during_gc = prev_during_gc;
     }
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 static void
@@ -5952,11 +5952,11 @@ gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
 
     /* mark `a' and remember (default behavior) */
     if (!RVALUE_REMEMBERED(objspace, a)) {
-        int lev = rb_gc_vm_lock_no_barrier();
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             rgengc_remember(objspace, a);
         }
-        rb_gc_vm_unlock_no_barrier(lev);
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 
         gc_report(1, objspace, "gc_writebarrier_generational: %s (remembered) -> %s\n", rb_obj_info(a), rb_obj_info(b));
     }
@@ -6029,7 +6029,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     else {
         bool retry = false;
         /* slow path */
-        int lev = rb_gc_vm_lock_no_barrier();
+        int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             if (is_incremental_marking(objspace)) {
                 gc_writebarrier_incremental(a, b, objspace);
@@ -6038,7 +6038,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
                 retry = true;
             }
         }
-        rb_gc_vm_unlock_no_barrier(lev);
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 
         if (retry) goto retry;
     }
@@ -6057,7 +6057,7 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
         gc_report(2, objspace, "rb_gc_writebarrier_unprotect: %s %s\n", rb_obj_info(obj),
                   RVALUE_REMEMBERED(objspace, obj) ? " (already remembered)" : "");
 
-        unsigned int lev = rb_gc_vm_lock_no_barrier();
+        unsigned int lev = RB_GC_VM_LOCK_NO_BARRIER();
         {
             if (RVALUE_OLD_P(objspace, obj)) {
                 gc_report(1, objspace, "rb_gc_writebarrier_unprotect: %s\n", rb_obj_info(obj));
@@ -6079,7 +6079,7 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
             RB_DEBUG_COUNTER_INC(obj_wb_unprotect);
             MARK_IN_BITMAP(GET_HEAP_WB_UNPROTECTED_BITS(obj), obj);
         }
-        rb_gc_vm_unlock_no_barrier(lev);
+        RB_GC_VM_UNLOCK_NO_BARRIER(lev);
     }
 }
 
@@ -6292,7 +6292,7 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 {
     int ret;
 
-    int lev = rb_gc_vm_lock();
+    int lev = RB_GC_VM_LOCK();
     {
 #if GC_PROFILE_MORE_DETAIL
         objspace->profile.prepare_time = getrusage_time();
@@ -6306,7 +6306,7 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 
         ret = gc_start(objspace, reason);
     }
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 
     return ret;
 }
@@ -6590,7 +6590,7 @@ gc_clock_end(struct timespec *ts)
 static inline void
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
-    *lock_lev = rb_gc_vm_lock();
+    *lock_lev = RB_GC_VM_LOCK();
 
     switch (event) {
       case gc_enter_event_rest:
@@ -6629,7 +6629,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     gc_report(1, objspace, "gc_exit: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
     during_gc = FALSE;
 
-    rb_gc_vm_unlock(*lock_lev);
+    RB_GC_VM_UNLOCK(*lock_lev);
 }
 
 #ifndef MEASURE_GC
@@ -9106,7 +9106,7 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
     /* Clear the heap. */
     rb_gc_impl_start(objspace, true, true, true, false);
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
     {
         gc_rest(objspace);
 
@@ -9162,7 +9162,7 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
             objspace->rcompactor.compare_func = compare_free_slots;
         }
     }
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 
     rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
 

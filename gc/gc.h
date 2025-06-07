@@ -34,6 +34,13 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_WEAK_TABLE_COUNT
 };
 
+#define RB_GC_VM_LOCK() rb_gc_vm_lock(__FILE__, __LINE__)
+#define RB_GC_VM_UNLOCK(lev) rb_gc_vm_unlock(lev, __FILE__, __LINE__)
+#define RB_GC_CR_LOCK() rb_gc_cr_lock(__FILE__, __LINE__)
+#define RB_GC_CR_UNLOCK(lev) rb_gc_cr_unlock(lev, __FILE__, __LINE__)
+#define RB_GC_VM_LOCK_NO_BARRIER() rb_gc_vm_lock_no_barrier(__FILE__, __LINE__)
+#define RB_GC_VM_UNLOCK_NO_BARRIER(lev) rb_gc_vm_unlock_no_barrier(lev, __FILE__, __LINE__)
+
 #if USE_MODULAR_GC
 # define MODULAR_GC_FN
 #else
@@ -56,12 +63,12 @@ size_t rb_obj_memsize_of(VALUE obj);
 bool ruby_free_at_exit_p(void);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *passing_data);
 
-MODULAR_GC_FN unsigned int rb_gc_vm_lock(void);
-MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev);
-MODULAR_GC_FN unsigned int rb_gc_cr_lock(void);
-MODULAR_GC_FN void rb_gc_cr_unlock(unsigned int lev);
-MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(void);
-MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev);
+MODULAR_GC_FN unsigned int rb_gc_vm_lock(const char *file, int line);
+MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev, const char *file, int line);
+MODULAR_GC_FN unsigned int rb_gc_cr_lock(const char *file, int line);
+MODULAR_GC_FN void rb_gc_cr_unlock(unsigned int lev, const char *file, int line);
+MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(const char *file, int line);
+MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_barrier(void);
 MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
 MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
