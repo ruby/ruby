@@ -25,17 +25,70 @@ static size_t heap_sizes[HEAP_COUNT + 1] = {
     0
 };
 
+// References list structure
+typedef struct {
+    VALUE *items;
+    size_t count;
+    size_t capacity;
+} wbcheck_references_t;
+
+// Helper functions for references list
+static wbcheck_references_t *
+wbcheck_references_init(void)
+{
+    wbcheck_references_t *refs = calloc(1, sizeof(wbcheck_references_t));
+    if (!refs) rb_bug("wbcheck: failed to allocate references structure");
+    refs->items = NULL;
+    refs->count = 0;
+    refs->capacity = 0;
+    return refs;
+}
+
+static void
+wbcheck_references_append(wbcheck_references_t *refs, VALUE obj)
+{
+    if (refs->count >= refs->capacity) {
+        size_t new_capacity = refs->capacity == 0 ? 4 : refs->capacity * 2;
+        VALUE *new_items = realloc(refs->items, new_capacity * sizeof(VALUE));
+        if (!new_items) rb_bug("wbcheck: failed to reallocate references array");
+        refs->items = new_items;
+        refs->capacity = new_capacity;
+    }
+    refs->items[refs->count++] = obj;
+}
+
+static void
+wbcheck_references_free(wbcheck_references_t *refs)
+{
+    if (!refs) return;
+    if (refs->items) {
+        free(refs->items);
+    }
+    free(refs);
+}
+
+static void
+wbcheck_references_print(wbcheck_references_t *refs)
+{
+    for (size_t i = 0; i < refs->count; i++) {
+        fprintf(stderr, "-> ");
+        rb_obj_info_dump(refs->items[i]);
+    }
+}
+
 // Information tracked for each object
 typedef struct {
     size_t alloc_size;      // Allocated size (static)
     bool wb_protected;      // Write barrier protection status (static)
     VALUE finalizers;       // Ruby Array of finalizers like [finalizer1, finalizer2, ...]
-    // TODO: Add more tracking info like allocation timestamp, location, etc.
+    wbcheck_references_t *references; // Pointer to list of objects this object references
 } rb_wbcheck_object_info_t;
 
 // wbcheck objspace structure to track all objects
 typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
+    VALUE last_allocated_obj; // The most recently allocated object
+    bool during_gc;          // True when we're currently marking
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -62,14 +115,15 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
-    
+
     // Allocate and initialize object info structure
     rb_wbcheck_object_info_t *info = calloc(1, sizeof(rb_wbcheck_object_info_t));
-    if (!info) rb_bug("wbcheck: failed to allocate object info");
-    
+    if (!info) rb_bug("wbcheck_register_object: failed to allocate object info");
+
     info->alloc_size = alloc_size;
     info->wb_protected = wb_protected;
     info->finalizers = 0;  /* No finalizers initially */
+    info->references = NULL;  /* No references initially */
     
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
@@ -79,15 +133,14 @@ static void
 wbcheck_unregister_object(void *objspace_ptr, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    GC_ASSERT(objspace);
-    
-    st_data_t key = (st_data_t)obj;
-    st_data_t value;
-    
-    // Remove from table and free the object info structure
-    if (st_delete(objspace->object_table, &key, &value)) {
-        rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+    rb_wbcheck_object_info_t *info;
+
+    if (st_delete(objspace->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
+        // Free the references array if it was allocated
+        wbcheck_references_free(info->references);
         free(info);
+    } else {
+        rb_bug("wbcheck_unregister_object: object not found in table");
     }
 }
 
@@ -103,6 +156,9 @@ rb_gc_impl_objspace_alloc(void)
         free(objspace);
         rb_bug("wbcheck: failed to create object table");
     }
+    
+    objspace->last_allocated_obj = 0;  // No objects allocated yet
+    objspace->during_gc = false;       // Not marking initially
     
     return objspace;
 }
@@ -174,13 +230,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 void
 rb_gc_impl_objspace_free(void *objspace_ptr)
 {
-    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    if (objspace) {
-        if (objspace->object_table) {
-            st_free_table(objspace->object_table);
-        }
-        free(objspace);
-    }
+    // This should free everything, but we'll just let it leak
 }
 
 void
@@ -199,8 +249,8 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
 bool
 rb_gc_impl_during_gc_p(void *objspace_ptr)
 {
-    // Stub implementation
-    return false;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    return objspace->during_gc;
 }
 
 void
@@ -255,9 +305,59 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 }
 
 // Object allocation
+static void
+wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
+{
+    wbcheck_references_t *refs = (wbcheck_references_t *)data;
+    wbcheck_references_append(refs, child_obj);
+}
+
+static wbcheck_references_t *
+wbcheck_collect_references_from_object(VALUE obj)
+{
+    // Create a new references array for collection
+    wbcheck_references_t *new_refs = wbcheck_references_init();
+    
+    // Collect all references into the temporary array
+    rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_refs);
+    
+    fprintf(stderr, "wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
+    wbcheck_references_print(new_refs);
+    
+    return new_refs;
+}
+
+static void
+wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
+{
+    fprintf(stderr, "wbcheck: collecting initial references from object:\n");
+    rb_obj_info_dump(obj);
+    
+    wbcheck_references_t *new_refs = wbcheck_collect_references_from_object(obj);
+    
+    // Get the object info and replace the old references with the new ones
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    RUBY_ASSERT(!info->references);
+    info->references = new_refs;  // Set the new references
+}
+
+static void
+maybe_gc(void *objspace_ptr)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    
+    if (objspace->last_allocated_obj) {
+       wbcheck_collect_initial_references(objspace_ptr, objspace->last_allocated_obj);
+       objspace->last_allocated_obj = Qfalse;
+    }
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
+    // Check if we should trigger GC before allocating
+    maybe_gc(objspace_ptr);
+
     // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
 
@@ -278,6 +378,10 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 
     // Register the new object in our tracking table
     wbcheck_register_object(objspace_ptr, obj, alloc_size, wb_protected);
+
+    // Store this as the last allocated object
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    objspace->last_allocated_obj = obj;
 
     return obj;
 }
@@ -338,34 +442,57 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
 }
 
 // Marking
+static void
+gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
+{
+    fprintf(stderr, "wbcheck: gc_mark called\n");
+    rb_obj_info_dump(obj);
+    
+    // Mark the finalizers for this object
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    if (info->finalizers) {
+        rb_gc_mark(info->finalizers);
+    }
+}
+
 void
 rb_gc_impl_mark(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    gc_mark(objspace, obj);
 }
 
 void
 rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    gc_mark(objspace, *ptr);
 }
 
 void
 rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    gc_mark(objspace, obj);
 }
 
 void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    
+    if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)obj)) {
+        GC_ASSERT(BUILTIN_TYPE(obj) != T_ZOMBIE);
+        GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
+        gc_mark(objspace, obj);
+    }
 }
 
 void
 rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
-    // Stub implementation
+    fprintf(stderr, "wbcheck: rb_gc_impl_mark_weak called\n");
+    rb_obj_info_dump(*ptr);
 }
 
 void
