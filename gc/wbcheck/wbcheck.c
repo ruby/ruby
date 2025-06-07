@@ -365,6 +365,43 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 }
 
 static void
+wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
+{
+    // Get the object info first to check if it's write barrier protected
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    
+    // Exit immediately if the object is not write barrier protected
+    if (!info->wb_protected) {
+        return;
+    }
+    
+    wbcheck_debug("wbcheck: verifying references for object:\n");
+    wbcheck_debug_obj_info_dump(obj);
+    
+    // Get the current references from the object
+    wbcheck_references_t *current_refs = wbcheck_collect_references_from_object(obj);
+    
+    // Get stored references
+    wbcheck_references_t *stored_refs = info->references;
+    
+    if (stored_refs) {
+        // TODO: Compare current_refs against stored_refs
+        // This is where we would check if any references were missed by write barriers
+        // or if any references were incorrectly recorded
+        wbcheck_debug("wbcheck: comparing %zu current refs vs %zu stored refs\n", 
+                     current_refs->count, stored_refs->count);
+        
+        // Free the old stored references
+        wbcheck_references_free(stored_refs);
+    } else {
+        wbcheck_debug("wbcheck: no stored references to compare against\n");
+    }
+    
+    // Replace the stored references with the current ones
+    info->references = current_refs;
+}
+
+static void
 maybe_gc(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
@@ -748,11 +785,8 @@ wbcheck_get_final(long i, void *data)
 }
 
 static int
-wbcheck_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
+wbcheck_shutdown_call_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
 {
-    VALUE obj = (VALUE)key;
-    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
-    
     if (info->finalizers) {
         VALUE table = info->finalizers;
         long count = RARRAY_LEN(table);
@@ -765,13 +799,26 @@ wbcheck_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
     return ST_CONTINUE;  /* Keep iterating through all objects */
 }
 
+static int
+wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
+{
+    void *objspace_ptr = data;
+    wbcheck_verify_object_references(objspace_ptr, obj);
+    return ST_CONTINUE;
+}
+
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     
-    // Call all finalizers for all objects
-    st_foreach(objspace->object_table, wbcheck_shutdown_call_finalizer_i, 0);
+    // Call all finalizers for all objects using our shared iteration helper
+    wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
+    
+    // After all finalizers have been called, verify all object references
+    wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
+    wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
+    wbcheck_debug("wbcheck: finished verifying all object references\n");
     
     // HACK: Manually flush stdout and stderr since wbcheck never runs finalizers.
     // Normally, I/O object finalizers would handle this flushing automatically
