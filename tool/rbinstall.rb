@@ -1187,7 +1187,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     skipped.default = "not found in bundled_gems"
     puts "skipped bundled gems:"
     gems.each do |gem|
-      printf "    %-32s%s\n", File.basename(gem), skipped[gem]
+      gem = File.basename(gem)
+      printf "    %-31s %s\n", gem, skipped[gem.chomp(".gem")]
     end
   end
 end
