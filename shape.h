@@ -44,7 +44,6 @@ typedef uint32_t redblack_id_t;
 #define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
 #define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
 #define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
-#define FIRST_T_OBJECT_SHAPE_ID         0x2
 
 extern ID ruby_internal_object_id;
 
@@ -74,7 +73,6 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_OBJ_ID,
-    SHAPE_T_OBJECT,
 };
 
 enum shape_flags {
@@ -89,6 +87,7 @@ typedef struct {
     /* object shapes */
     rb_shape_t *shape_list;
     rb_shape_t *root_shape;
+    const attr_index_t *capacities;
     rb_atomic_t next_shape_id;
 
     redblack_node_t *shape_cache;
@@ -209,8 +208,7 @@ rb_shape_root(size_t heap_id)
 {
     shape_id_t heap_index = (shape_id_t)heap_id;
 
-    shape_id_t shape_id = (heap_index + FIRST_T_OBJECT_SHAPE_ID);
-    return shape_id | ((heap_index + 1) << SHAPE_ID_HEAP_INDEX_OFFSET);
+    return ROOT_SHAPE_ID | ((heap_index + 1) << SHAPE_ID_HEAP_INDEX_OFFSET);
 }
 
 static inline bool
@@ -220,9 +218,26 @@ RSHAPE_TYPE_P(shape_id_t shape_id, enum shape_type type)
 }
 
 static inline attr_index_t
+RSHAPE_EMBEDDED_CAPACITY(shape_id_t shape_id)
+{
+    uint8_t heap_index = rb_shape_heap_index(shape_id);
+    if (heap_index) {
+        return GET_SHAPE_TREE()->capacities[heap_index - 1];
+    }
+    return 0;
+}
+
+static inline attr_index_t
 RSHAPE_CAPACITY(shape_id_t shape_id)
 {
-    return RSHAPE(shape_id)->capacity;
+    attr_index_t embedded_capacity = RSHAPE_EMBEDDED_CAPACITY(shape_id);
+
+    if (embedded_capacity > RSHAPE(shape_id)->capacity) {
+        return embedded_capacity;
+    }
+    else {
+        return RSHAPE(shape_id)->capacity;
+    }
 }
 
 static inline attr_index_t

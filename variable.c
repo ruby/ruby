@@ -2211,7 +2211,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
 {
     switch ((enum shape_type)shape->type) {
       case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
         return false;
       case SHAPE_OBJ_ID:
         if (itr_data->ivar_only) {
