@@ -41,6 +41,21 @@ typedef struct {
 static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
 
 // Helper functions for object tracking
+static rb_wbcheck_object_info_t *
+wbcheck_get_object_info(VALUE obj)
+{
+    // Objspace must be initialized by this point
+    GC_ASSERT(wbcheck_global_objspace);
+    
+    st_data_t value;
+    if (st_lookup(wbcheck_global_objspace->object_table, (st_data_t)obj, &value)) {
+        return (rb_wbcheck_object_info_t *)value;
+    }
+    
+    // Object not found in tracking table - this should never happen
+    rb_bug("wbcheck: object not found in tracking table");
+}
+
 static void
 wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool wb_protected)
 {
@@ -244,14 +259,11 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     // Ensure minimum allocation size of BASE_SLOT_SIZE
     alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
 
-    // Allocate memory for the object plus one extra VALUE for slot size
-    VALUE *mem = malloc(alloc_size + sizeof(VALUE));
+    // Allocate memory for the object
+    VALUE *mem = malloc(alloc_size);
     if (!mem) rb_bug("FIXME: malloc failed");
 
-    // Store the slot size in the extra VALUE before the object
-    *mem++ = alloc_size;
-
-    // Initialize the object after the slot size
+    // Initialize the object
     VALUE obj = (VALUE)mem;
     RBASIC(obj)->flags = flags;
     RBASIC_SET_CLASS(obj, klass);
@@ -271,18 +283,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
-    // Objspace must be initialized by this point
-    GC_ASSERT(wbcheck_global_objspace);
-    
-    // Look up the object in our tracking table to get the allocation size
-    st_data_t value;
-    if (st_lookup(wbcheck_global_objspace->object_table, (st_data_t)obj, &value)) {
-        rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
-        return info->alloc_size;
-    }
-    
-    // Fallback: read from memory (should not happen if object is properly tracked)
-    return ((VALUE *)obj)[-1];
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    return info->alloc_size;
 }
 
 size_t
