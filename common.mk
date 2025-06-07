@@ -310,6 +310,7 @@ INSTRUBY_ARGS =	$(SCRIPT_ARGS) \
 		--prog-mode=$(INSTALL_PROG_MODE) \
 		--installed-list $(INSTALLED_LIST) \
 		--mantype="$(MANTYPE)" \
+		--have-git=$(HAVE_GIT) \
 		$(INSTRUBY_OPTS)
 INSTALL_PROG_MODE = 0755
 INSTALL_DATA_MODE = 0644
