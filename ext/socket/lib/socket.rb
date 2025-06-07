@@ -657,6 +657,11 @@ class Socket < BasicSocket
   #     puts sock.read
   #   }
   def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
+
+    if open_timeout && (connect_timeout || resolv_timeout)
+      raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
+    end
+
     sock = if fast_fallback && !(host && ip_address?(host))
       tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
