@@ -57,7 +57,6 @@ struct rb_shape {
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
     uint8_t type;
-    uint8_t heap_index;
 };
 
 typedef struct rb_shape rb_shape_t;

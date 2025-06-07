@@ -451,7 +451,6 @@ rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 {
     rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, raw_shape_id(parent));
     shape->type = (uint8_t)type;
-    shape->heap_index = parent->heap_index;
     shape->capacity = parent->capacity;
     shape->edges = 0;
     return shape;
@@ -716,6 +715,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
     }
 }
 
+static inline shape_id_t transition_complex(shape_id_t shape_id);
 
 static shape_id_t
 shape_transition_object_id(shape_id_t original_shape_id)
@@ -724,9 +724,11 @@ shape_transition_object_id(shape_id_t original_shape_id)
 
     bool dont_care;
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    if (!shape) {
+        shape = RSHAPE(ROOT_SHAPE_WITH_OBJ_ID);
+    }
 
     RUBY_ASSERT(shape);
-
     return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
 }
 
@@ -755,7 +757,7 @@ rb_shape_object_id(shape_id_t original_shape_id)
 static inline shape_id_t
 transition_complex(shape_id_t shape_id)
 {
-    uint8_t heap_index = RSHAPE(shape_id)->heap_index;
+    uint8_t heap_index = rb_shape_heap_index(shape_id);
     shape_id_t next_shape_id;
 
     if (heap_index) {
@@ -1341,7 +1343,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(shape->heap_index),
+            INT2NUM(rb_shape_heap_index(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
@@ -1562,7 +1564,6 @@ Init_default_shapes(void)
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
-    root->heap_index = 0;
     GET_SHAPE_TREE()->root_shape = root;
     RUBY_ASSERT(raw_shape_id(GET_SHAPE_TREE()->root_shape) == ROOT_SHAPE_ID);
 
@@ -1570,7 +1571,6 @@ Init_default_shapes(void)
     root_with_obj_id->type = SHAPE_OBJ_ID;
     root_with_obj_id->edge_name = ruby_internal_object_id;
     root_with_obj_id->next_field_index++;
-    root_with_obj_id->heap_index = 0;
     RUBY_ASSERT(raw_shape_id(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
 }
 
