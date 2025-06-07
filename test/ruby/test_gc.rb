@@ -757,7 +757,7 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(Object.new, f)
       end
     end;
-    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV) do |*result|
+    out, err, status = assert_in_out_err(["-e", src], "", [], [], bug10595, signal: :SEGV, timeout: 100) do |*result|
       break result
     end
     unless /mswin|mingw/ =~ RUBY_PLATFORM
