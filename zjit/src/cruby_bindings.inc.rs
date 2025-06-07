@@ -406,7 +406,6 @@ pub struct rb_shape {
     pub next_field_index: attr_index_t,
     pub capacity: attr_index_t,
     pub type_: u8,
-    pub heap_index: u8,
 }
 pub type rb_shape_t = rb_shape;
 #[repr(C)]
