@@ -357,18 +357,14 @@ static const rb_data_type_t shape_tree_type = {
 static inline shape_id_t
 raw_shape_id(rb_shape_t *shape)
 {
-    if (shape == NULL) {
-        return INVALID_SHAPE_ID;
-    }
+    RUBY_ASSERT(shape);
     return (shape_id_t)(shape - GET_SHAPE_TREE()->shape_list);
 }
 
 static inline shape_id_t
 shape_id(rb_shape_t *shape, shape_id_t previous_shape_id)
 {
-    if (shape == NULL) {
-        return INVALID_SHAPE_ID;
-    }
+    RUBY_ASSERT(shape);
     shape_id_t raw_id = (shape_id_t)(shape - GET_SHAPE_TREE()->shape_list);
     return raw_id | (previous_shape_id & SHAPE_ID_FLAGS_MASK);
 }
