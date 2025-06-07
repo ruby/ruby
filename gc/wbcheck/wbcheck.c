@@ -3,6 +3,7 @@
 #include "ruby/atomic.h"
 #include "ruby/debug.h"
 #include "ruby/internal/core/rbasic.h"
+#include "ruby/st.h"
 #include "internal/object.h"
 
 #include "gc/gc.h"
@@ -24,18 +25,77 @@ static size_t heap_sizes[HEAP_COUNT + 1] = {
     0
 };
 
+// Information tracked for each object
+typedef struct {
+    size_t alloc_size;      // Allocated size (static)
+    bool wb_protected;      // Write barrier protection status (static)
+    // TODO: Add more tracking info like allocation timestamp, location, etc.
+} rb_wbcheck_object_info_t;
+
+// wbcheck objspace structure to track all objects
+typedef struct {
+    st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
+} rb_wbcheck_objspace_t;
+
+// Global objspace pointer for accessing from obj_slot_size function
+static rb_wbcheck_objspace_t *wbcheck_global_objspace = NULL;
+
+// Helper functions for object tracking
+static void
+wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool wb_protected)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    GC_ASSERT(objspace);
+    
+    // Allocate and initialize object info structure
+    rb_wbcheck_object_info_t *info = calloc(1, sizeof(rb_wbcheck_object_info_t));
+    if (!info) rb_bug("wbcheck: failed to allocate object info");
+    
+    info->alloc_size = alloc_size;
+    info->wb_protected = wb_protected;
+    
+    // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
+    st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
+}
+
+static void
+wbcheck_unregister_object(void *objspace_ptr, VALUE obj)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    GC_ASSERT(objspace);
+    
+    st_data_t key = (st_data_t)obj;
+    st_data_t value;
+    
+    // Remove from table and free the object info structure
+    if (st_delete(objspace->object_table, &key, &value)) {
+        rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+        free(info);
+    }
+}
+
 // Bootup
 void *
 rb_gc_impl_objspace_alloc(void)
 {
-    // Stub implementation
-    return NULL;
+    rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
+    if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
+    
+    objspace->object_table = st_init_numtable();
+    if (!objspace->object_table) {
+        free(objspace);
+        rb_bug("wbcheck: failed to create object table");
+    }
+    
+    return objspace;
 }
 
 void
 rb_gc_impl_objspace_init(void *objspace_ptr)
 {
-    // Stub implementation
+    // Object table is already initialized in objspace_alloc
+    // Set up global objspace pointer for obj_slot_size function
+    wbcheck_global_objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
 }
 
 void *
@@ -97,7 +157,13 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 void
 rb_gc_impl_objspace_free(void *objspace_ptr)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    if (objspace) {
+        if (objspace->object_table) {
+            st_free_table(objspace->object_table);
+        }
+        free(objspace);
+    }
 }
 
 void
@@ -196,13 +262,26 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     ptr[1] = v2;
     ptr[2] = v3;
 
+    // Register the new object in our tracking table
+    wbcheck_register_object(objspace_ptr, obj, alloc_size, wb_protected);
+
     return obj;
 }
 
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
-    // Read the slot size from the extra VALUE before the object
+    // Objspace must be initialized by this point
+    GC_ASSERT(wbcheck_global_objspace);
+    
+    // Look up the object in our tracking table to get the allocation size
+    st_data_t value;
+    if (st_lookup(wbcheck_global_objspace->object_table, (st_data_t)obj, &value)) {
+        rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)value;
+        return info->alloc_size;
+    }
+    
+    // Fallback: read from memory (should not happen if object is properly tracked)
     return ((VALUE *)obj)[-1];
 }
 
@@ -426,8 +505,18 @@ rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key)
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
-    // Stub implementation
-    return Qnil;
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    GC_ASSERT(objspace);
+    
+    // Create a hash with wbcheck-specific statistics
+    VALUE hash = rb_hash_new();
+    
+    rb_hash_aset(hash, ID2SYM(rb_intern("tracked_objects")), 
+                 SIZET2NUM(st_table_size(objspace->object_table)));
+    
+    rb_hash_aset(hash, ID2SYM(rb_intern("gc_implementation")), rb_str_new_cstr("wbcheck"));
+    
+    return hash;
 }
 
 VALUE
