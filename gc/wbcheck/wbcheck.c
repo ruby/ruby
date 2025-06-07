@@ -548,8 +548,11 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
-    // Stub implementation
-    return true;
+    GC_ASSERT(wbcheck_global_objspace);
+    
+    // Check if this pointer exists in our object tracking table
+    st_data_t value;
+    return st_lookup(wbcheck_global_objspace->object_table, (st_data_t)ptr, &value);
 }
 
 bool
