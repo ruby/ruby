@@ -23,6 +23,7 @@ struct inetsock_arg
     int type;
     VALUE resolv_timeout;
     VALUE connect_timeout;
+    VALUE open_timeout;
 };
 
 static VALUE
@@ -45,6 +46,13 @@ inetsock_cleanup(VALUE v)
 }
 
 static VALUE
+current_clocktime()
+{
+    VALUE clock_monotnic_const = rb_const_get(rb_mProcess, rb_intern("CLOCK_MONOTONIC"));
+    return rb_funcall(rb_mProcess, rb_intern("clock_gettime"), 1, clock_monotnic_const);
+}
+
+static VALUE
 init_inetsock_internal(VALUE v)
 {
     struct inetsock_arg *arg = (void *)v;
@@ -56,13 +64,18 @@ init_inetsock_internal(VALUE v)
     const char *syscall = 0;
     VALUE resolv_timeout = arg->resolv_timeout;
     VALUE connect_timeout = arg->connect_timeout;
+    VALUE open_timeout = arg->open_timeout;
+    VALUE timeout;
+    VALUE starts_at;
+    unsigned int timeout_msec;
 
-    unsigned int t = NIL_P(resolv_timeout) ? 0 : rsock_value_timeout_to_msec(resolv_timeout);
+    timeout = NIL_P(open_timeout) ? resolv_timeout : open_timeout;
+    timeout_msec = NIL_P(timeout) ? 0 : rsock_value_timeout_to_msec(timeout);
+    starts_at = current_clocktime();
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
                                      family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0, t);
-
+                                     (type == INET_SERVER) ? AI_PASSIVE : 0, timeout_msec);
 
     /*
      * Maybe also accept a local address
@@ -125,8 +138,21 @@ init_inetsock_internal(VALUE v)
                 syscall = "bind(2)";
             }
 
+            if (NIL_P(open_timeout)) {
+                timeout = connect_timeout;
+            } else {
+                VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
+                timeout = rb_funcall(open_timeout, '-', 1, elapsed);
+
+                if (rb_funcall(timeout, '<', 1, INT2FIX(0)) == Qtrue) {
+                    VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
+                    VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
+                    rb_raise(etimedout_error, "user specified timeout");
+                }
+            }
+
             if (status >= 0) {
-                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), connect_timeout);
+                status = rsock_connect(io, res->ai_addr, res->ai_addrlen, (type == INET_SOCKS), timeout);
                 syscall = "connect(2)";
             }
         }
@@ -175,8 +201,12 @@ init_inetsock_internal(VALUE v)
 #if FAST_FALLBACK_INIT_INETSOCK_IMPL == 0
 
 VALUE
-rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE _fast_fallback, VALUE _test_mode_settings)
-{
+rsock_init_inetsock(
+    VALUE self, VALUE remote_host, VALUE remote_serv,
+    VALUE local_host, VALUE local_serv, int type,
+    VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout,
+    VALUE _fast_fallback, VALUE _test_mode_settings
+) {
     struct inetsock_arg arg;
     arg.self = self;
     arg.io = Qnil;
@@ -189,6 +219,7 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
     arg.type = type;
     arg.resolv_timeout = resolv_timeout;
     arg.connect_timeout = connect_timeout;
+    arg.open_timeout = open_timeout;
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
                      inetsock_cleanup, (VALUE)&arg);
 }
@@ -224,6 +255,7 @@ struct fast_fallback_inetsock_arg
     int type;
     VALUE resolv_timeout;
     VALUE connect_timeout;
+    VALUE open_timeout;
 
     const char *hostp, *portp;
     int *families;
@@ -383,11 +415,21 @@ select_expires_at(
     struct timeval *resolution_delay,
     struct timeval *connection_attempt_delay,
     struct timeval *user_specified_resolv_timeout_at,
-    struct timeval *user_specified_connect_timeout_at
+    struct timeval *user_specified_connect_timeout_at,
+    struct timeval *user_specified_open_timeout_at
 ) {
     if (any_addrinfos(resolution_store)) {
-        return resolution_delay ? resolution_delay : connection_attempt_delay;
+        struct timeval *delay;
+        delay = resolution_delay ? resolution_delay : connection_attempt_delay;
+
+        if (user_specified_open_timeout_at &&
+            timercmp(user_specified_open_timeout_at, delay, <)) {
+            return user_specified_open_timeout_at;
+        }
+        return delay;
     }
+
+    if (user_specified_open_timeout_at) return user_specified_open_timeout_at;
 
     struct timeval *timeout = NULL;
 
@@ -506,6 +548,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     VALUE io = arg->io;
     VALUE resolv_timeout = arg->resolv_timeout;
     VALUE connect_timeout = arg->connect_timeout;
+    VALUE open_timeout = arg->open_timeout;
     VALUE test_mode_settings = arg->test_mode_settings;
     struct addrinfo *remote_ai = NULL, *local_ai = NULL;
     int connected_fd = -1, status = 0, local_status = 0;
@@ -552,7 +595,15 @@ init_fast_fallback_inetsock_internal(VALUE v)
     struct timeval *user_specified_resolv_timeout_at = NULL;
     struct timeval user_specified_connect_timeout_storage;
     struct timeval *user_specified_connect_timeout_at = NULL;
+    struct timeval user_specified_open_timeout_storage;
+    struct timeval *user_specified_open_timeout_at = NULL;
     struct timespec now = current_clocktime_ts();
+
+    if (!NIL_P(open_timeout)) {
+        struct timeval open_timeout_tv = rb_time_interval(open_timeout);
+        user_specified_open_timeout_storage = add_ts_to_tv(open_timeout_tv, now);
+        user_specified_open_timeout_at = &user_specified_open_timeout_storage;
+    }
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
@@ -854,7 +905,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
             resolution_delay_expires_at,
             connection_attempt_delay_expires_at,
             user_specified_resolv_timeout_at,
-            user_specified_connect_timeout_at
+            user_specified_connect_timeout_at,
+            user_specified_open_timeout_at
         );
         if (ends_at) {
             delay = tv_to_timeout(ends_at, now);
@@ -1107,6 +1159,12 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
+        if (is_timeout_tv(user_specified_open_timeout_at, now)) {
+            VALUE errno_module = rb_const_get(rb_cObject, rb_intern("Errno"));
+            VALUE etimedout_error = rb_const_get(errno_module, rb_intern("ETIMEDOUT"));
+            rb_raise(etimedout_error, "user specified timeout");
+        }
+
         if (!any_addrinfos(&resolution_store)) {
             if (!in_progress_fds(arg->connection_attempt_fds_size) &&
                 resolution_store.is_all_finished) {
@@ -1220,8 +1278,16 @@ fast_fallback_inetsock_cleanup(VALUE v)
 }
 
 VALUE
-rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE local_host, VALUE local_serv, int type, VALUE resolv_timeout, VALUE connect_timeout, VALUE fast_fallback, VALUE test_mode_settings)
-{
+rsock_init_inetsock(
+    VALUE self, VALUE remote_host, VALUE remote_serv,
+    VALUE local_host, VALUE local_serv, int type,
+    VALUE resolv_timeout, VALUE connect_timeout, VALUE open_timeout,
+    VALUE fast_fallback, VALUE test_mode_settings
+) {
+    if (!NIL_P(open_timeout) && (!NIL_P(resolv_timeout) || !NIL_P(connect_timeout))) {
+        rb_raise(rb_eArgError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout");
+    }
+
     if (type == INET_CLIENT && FAST_FALLBACK_INIT_INETSOCK_IMPL == 1 && RTEST(fast_fallback)) {
         struct rb_addrinfo *local_res = NULL;
         char *hostp, *portp;
@@ -1278,6 +1344,7 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
             fast_fallback_arg.type = type;
             fast_fallback_arg.resolv_timeout = resolv_timeout;
             fast_fallback_arg.connect_timeout = connect_timeout;
+            fast_fallback_arg.open_timeout = open_timeout;
             fast_fallback_arg.hostp = hostp;
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
@@ -1314,6 +1381,7 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
     arg.type = type;
     arg.resolv_timeout = resolv_timeout;
     arg.connect_timeout = connect_timeout;
+    arg.open_timeout = open_timeout;
 
     return rb_ensure(init_inetsock_internal, (VALUE)&arg,
                      inetsock_cleanup, (VALUE)&arg);
