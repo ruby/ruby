@@ -379,6 +379,7 @@ VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
     unsigned int lev = rb_gc_vm_lock();
+    rb_gc_vm_barrier();
     
     // Check if we should trigger GC before allocating
     maybe_gc(objspace_ptr);
