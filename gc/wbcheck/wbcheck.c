@@ -99,6 +99,17 @@ wbcheck_references_debug_print(wbcheck_references_t *refs)
     }
 }
 
+static bool
+wbcheck_references_contains(wbcheck_references_t *refs, VALUE obj)
+{
+    for (size_t i = 0; i < refs->count; i++) {
+        if (refs->items[i] == obj) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Information tracked for each object
 typedef struct {
     size_t alloc_size;      // Allocated size (static)
@@ -131,6 +142,44 @@ wbcheck_get_object_info(VALUE obj)
     
     // Object not found in tracking table - this should never happen
     rb_bug("wbcheck: object not found in tracking table");
+}
+
+static void
+wbcheck_compare_references(VALUE parent_obj, wbcheck_references_t *current_refs, wbcheck_references_t *stored_refs)
+{
+    GC_ASSERT(stored_refs != NULL);
+    
+    wbcheck_debug("wbcheck: comparing references for object %p\n", (void *)parent_obj);
+    wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n", 
+                 current_refs->count, stored_refs->count);
+    
+    bool printed_header = false;
+    
+    // Check each object in current_refs to see if it's in stored_refs
+    for (size_t i = 0; i < current_refs->count; i++) {
+        VALUE current_ref = current_refs->items[i];
+        
+        if (!wbcheck_references_contains(stored_refs, current_ref)) {
+            if (!printed_header) {
+                rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
+                
+                fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
+                fprintf(stderr, "  Parent object: %p (wb_protected: %s)\n", 
+                       (void *)parent_obj, parent_info->wb_protected ? "true" : "false");
+                fprintf(stderr, "    "); rb_obj_info_dump(parent_obj);
+                fprintf(stderr, "  Reference counts - stored: %zu, current: %zu\n", 
+                       stored_refs->count, current_refs->count);
+                printed_header = true;
+            }
+            
+            fprintf(stderr, "  Missing reference to: %p\n    ", (void *)current_ref);
+            rb_obj_info_dump(current_ref);
+        }
+    }
+    
+    if (printed_header) {
+        fprintf(stderr, "\n");
+    }
 }
 
 static void
@@ -391,11 +440,8 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     wbcheck_references_t *stored_refs = info->references;
     
     if (stored_refs) {
-        // TODO: Compare current_refs against stored_refs
-        // This is where we would check if any references were missed by write barriers
-        // or if any references were incorrectly recorded
-        wbcheck_debug("wbcheck: comparing %zu current refs vs %zu stored refs\n", 
-                     current_refs->count, stored_refs->count);
+        // Compare current_refs against stored_refs to detect missed write barriers
+        wbcheck_compare_references(obj, current_refs, stored_refs);
         
         // Free the old stored references
         wbcheck_references_free(stored_refs);
