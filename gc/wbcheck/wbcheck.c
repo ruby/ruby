@@ -29,6 +29,7 @@ static size_t heap_sizes[HEAP_COUNT + 1] = {
 typedef struct {
     size_t alloc_size;      // Allocated size (static)
     bool wb_protected;      // Write barrier protection status (static)
+    VALUE finalizers;       // Ruby Array of finalizers like [finalizer1, finalizer2, ...]
     // TODO: Add more tracking info like allocation timestamp, location, etc.
 } rb_wbcheck_object_info_t;
 
@@ -68,6 +69,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     
     info->alloc_size = alloc_size;
     info->wb_protected = wb_protected;
+    info->finalizers = 0;  /* No finalizers initially */
     
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
@@ -429,20 +431,65 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
 VALUE
 rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 {
-    // Stub implementation
-    return Qnil;
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+
+    GC_ASSERT(!OBJ_FROZEN(obj));
+
+    RBASIC(obj)->flags |= FL_FINALIZE;
+
+    VALUE table = info->finalizers;
+    
+    if (!table) {
+        /* First finalizer for this object */
+        table = rb_ary_new3(1, block);
+        rb_obj_hide(table);
+        info->finalizers = table;
+    } else {
+        /* Check for duplicate finalizers */
+        long len = RARRAY_LEN(table);
+        long i;
+
+        for (i = 0; i < len; i++) {
+            VALUE recv = RARRAY_AREF(table, i);
+            if (rb_equal(recv, block)) {
+                return recv;  /* Duplicate found, return existing */
+            }
+        }
+
+        rb_ary_push(table, block);
+    }
+
+    return block;
 }
 
 void
 rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+
+    GC_ASSERT(!OBJ_FROZEN(obj));
+
+    info->finalizers = 0;
+    FL_UNSET(obj, FL_FINALIZE);
 }
 
 void
 rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    
+    if (!FL_TEST(obj, FL_FINALIZE)) return;
+
+    rb_wbcheck_object_info_t *src_info = wbcheck_get_object_info(obj);
+    rb_wbcheck_object_info_t *dest_info = wbcheck_get_object_info(dest);
+
+    if (src_info->finalizers) {
+        VALUE table = rb_ary_dup(src_info->finalizers);
+        dest_info->finalizers = table;
+        FL_SET(dest, FL_FINALIZE);
+    }
 }
 
 void
