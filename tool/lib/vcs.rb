@@ -524,11 +524,23 @@ class VCS
       proc do |w|
         w.print "-*- coding: utf-8 -*-\n"
         w.print "\n""base-url = #{base_url}\n" if base_url
+
+        begin
+          ignore_revs = File.readlines(File.join(@srcdir, ".git-blame-ignore-revs"), chomp: true)
+                          .grep_v(/^ *(?:#|$)/)
+                          .to_h {|v| [v, true]}
+          ignore_revs = nil if ignore_revs.empty?
+        rescue Errno::ENOENT
+        end
+
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           r.gets(sep = "commit ")
           sep = "\n" + sep
           while s = r.gets(sep, chomp: true)
             h, s = s.split(/^$/, 2)
+            if ignore_revs&.key?(h[/\A\h{40}/])
+              next
+            end
 
             next if /^Author: *dependabot\[bot\]/ =~ h
 
