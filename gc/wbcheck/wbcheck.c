@@ -492,9 +492,40 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
     }
 }
 
+static VALUE
+wbcheck_get_final(long i, void *data)
+{
+    VALUE table = (VALUE)data;
+    
+    return RARRAY_AREF(table, i);
+}
+
+static int
+wbcheck_shutdown_call_finalizer_i(st_data_t key, st_data_t val, st_data_t _data)
+{
+    VALUE obj = (VALUE)key;
+    rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
+    
+    if (info->finalizers) {
+        VALUE table = info->finalizers;
+        long count = RARRAY_LEN(table);
+        
+        rb_gc_run_obj_finalizer(rb_obj_id(obj), count, wbcheck_get_final, (void *)table);
+        
+        FL_UNSET(obj, FL_FINALIZE);
+    }
+    
+    return ST_CONTINUE;  /* Keep iterating through all objects */
+}
+
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+    
+    // Call all finalizers for all objects
+    st_foreach(objspace->object_table, wbcheck_shutdown_call_finalizer_i, 0);
+    
     // HACK: Manually flush stdout and stderr since wbcheck never runs finalizers.
     // Normally, I/O object finalizers would handle this flushing automatically
     // when the GC collects them, but since we never run GC, we need to manually
