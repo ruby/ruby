@@ -854,6 +854,7 @@ enum ractor_wakeup_status {
 struct ractor_waiter {
     enum ractor_wakeup_status wakeup_status;
     rb_thread_t *th;
+    rb_fiber_t *fiber;
     struct ccan_list_node node;
 };
 
@@ -962,6 +963,16 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 }
 #endif
 
+static VALUE
+interrupt_exec_fiber_scheduler_unblock_fiber_cb(void *data) {
+    rb_thread_t *th = GET_THREAD();
+    VALUE fiber_val = (VALUE)data;
+    if (th->scheduler != Qnil) {
+        rb_fiber_scheduler_unblock(th->scheduler, th->self, fiber_val); // switches to other fiber
+    }
+    return Qnil;
+}
+
 static bool
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
@@ -970,6 +981,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
     RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     bool wakeup_p = false;
+    VALUE fiber_scheduler;
 
     RACTOR_LOCK(r);
     while (1) {
@@ -977,9 +989,19 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 
         if (waiter) {
             VM_ASSERT(waiter->wakeup_status == wakeup_none);
-
+            rb_thread_t *th = waiter->th;
+            rb_fiber_t *fiber = waiter->fiber;
+            fiber_scheduler = th->scheduler;
             waiter->wakeup_status = wakeup_status;
-            rb_ractor_sched_wakeup(r, waiter->th);
+            if (fiber_scheduler != Qnil && fiber && !rb_fiberptr_blocking(fiber)) {
+                rb_threadptr_interrupt_exec(th,
+                    interrupt_exec_fiber_scheduler_unblock_fiber_cb, (void*)rb_fiberptr_self(fiber),
+                    rb_interrupt_exec_flag_value_data
+                );
+            } else {
+                waiter->wakeup_status = wakeup_status;
+                rb_ractor_sched_wakeup(r, th);
+            }
 
             wakeup_p = true;
         }
@@ -1025,29 +1047,48 @@ ubf_ractor_wait(void *ptr)
 static enum ractor_wakeup_status
 ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
+    ASSERT_ractor_locking(cr);
+    VM_ASSERT(GET_RACTOR() == cr);
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     struct ractor_waiter waiter = {
         .wakeup_status = wakeup_none,
         .th = th,
+        .fiber = 0
     };
 
     RUBY_DEBUG_LOG("wait%s", "");
 
-    ASSERT_ractor_locking(cr);
-
-    VM_ASSERT(GET_RACTOR() == cr);
-    VM_ASSERT(!ractor_waiter_included(cr, th));
-
     ccan_list_add_tail(&cr->sync.waiters, &waiter.node);
-
-    // resume another ready thread and wait for an event
-    rb_ractor_sched_wait(ec, cr, ubf_ractor_wait, &waiter);
+    VALUE scheduler = rb_fiber_scheduler_current();
+    rb_fiber_t *fiber = th->ec->fiber_ptr;
+    if (scheduler != Qnil && fiber && !rb_fiberptr_blocking(fiber)) {
+        waiter.fiber = fiber;
+        RACTOR_UNLOCK(cr);
+        {
+            enum ruby_tag_type state;
+            EC_PUSH_TAG(th->ec);
+            if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+                // transfer to another fiber by calling fiber_scheduler#block
+                rb_fiber_scheduler_block(scheduler, th->self, Qnil);
+            }
+            EC_POP_TAG();
+            if (state) {
+                ccan_list_del(&waiter.node);
+                EC_JUMP_TAG(th->ec, state);
+            }
+        }
+        RACTOR_LOCK(cr);
+        // We got transferred back
+    } else {
+        // resume another ready thread and wait for an event
+        rb_ractor_sched_wait(ec, cr, ubf_ractor_wait, &waiter);
+    }
 
     if (waiter.wakeup_status == wakeup_none) {
         ccan_list_del(&waiter.node);
     }
-
+    VM_ASSERT(!ractor_waiter_included(cr, th));
     RUBY_DEBUG_LOG("wakeup_status:%s", wakeup_status_str(waiter.wakeup_status));
 
     RACTOR_UNLOCK_SELF(cr);
@@ -1056,7 +1097,6 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     }
     RACTOR_LOCK_SELF(cr);
 
-    VM_ASSERT(!ractor_waiter_included(cr, th));
     return waiter.wakeup_status;
 }
 
