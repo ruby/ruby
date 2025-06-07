@@ -6,6 +6,20 @@ class TC_Set < Test::Unit::TestCase
   class Set2 < Set
   end
 
+  class Set3 < Set
+    def add(item) = super(item.bytesize)
+  end
+
+  def test_new_calls_add
+    set = Set3.new(["foo"])
+    assert_equal(true, set.include?(3))
+  end
+
+  def test_new_with_block_calls_add
+    set = Set3.new(["foo"]) { |x| x + "o" }
+    assert_equal(true, set.include?(4))
+  end
+
   def test_marshal
     set = Set[1, 2, 3]
     mset = Marshal.load(Marshal.dump(set))
