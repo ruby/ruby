@@ -304,14 +304,7 @@ shape_tree_mark(void *data)
     rb_shape_t *end = RSHAPE(GET_SHAPE_TREE()->next_shape_id - 1);
     while (cursor < end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
-            // FIXME: GC compaction may call `rb_shape_traverse_from_new_root`
-            // to migrate objects from one object slot to another.
-            // Because of this if we don't pin `cursor->edges` it might be turned
-            // into a T_MOVED during GC.
-            // We'd need to eliminate `SHAPE_T_OBJECT` so that GC never need to lookup
-            // shapes this way.
-            // rb_gc_mark_movable(cursor->edges);
-            rb_gc_mark(cursor->edges);
+            rb_gc_mark_movable(cursor->edges);
         }
         cursor++;
     }
