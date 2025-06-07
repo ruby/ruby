@@ -16,7 +16,6 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_HAS_OBJECT_ID (SHAPE_FL_HAS_OBJECT_ID << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_TOO_COMPLEX (SHAPE_FL_TOO_COMPLEX << SHAPE_ID_OFFSET_NUM_BITS)
-#define SHAPE_ID_FL_EMBEDDED (SHAPE_FL_EMBEDDED << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_NON_CANONICAL_MASK (SHAPE_FL_NON_CANONICAL_MASK << SHAPE_ID_OFFSET_NUM_BITS)
 
 #define SHAPE_ID_HEAP_INDEX_BITS 3
@@ -24,10 +23,10 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_HEAP_INDEX_MAX ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1)
 #define SHAPE_ID_HEAP_INDEX_MASK (SHAPE_ID_HEAP_INDEX_MAX << SHAPE_ID_HEAP_INDEX_OFFSET)
 
-// The interpreter doesn't care about embeded or frozen status when reading ivars.
+// The interpreter doesn't care about frozen status or slot size when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about it.
-#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_EMBEDDED | SHAPE_ID_HEAP_INDEX_MASK))
+#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK))
 
 typedef uint32_t redblack_id_t;
 
@@ -82,7 +81,6 @@ enum shape_flags {
     SHAPE_FL_FROZEN             = 1 << 0,
     SHAPE_FL_HAS_OBJECT_ID      = 1 << 1,
     SHAPE_FL_TOO_COMPLEX        = 1 << 2,
-    SHAPE_FL_EMBEDDED           = 1 << 3,
 
     SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID,
 };
@@ -212,7 +210,7 @@ rb_shape_root(size_t heap_id)
     shape_id_t heap_index = (shape_id_t)heap_id;
 
     shape_id_t shape_id = (heap_index + FIRST_T_OBJECT_SHAPE_ID);
-    return shape_id | ((heap_index + 1) << SHAPE_ID_HEAP_INDEX_OFFSET) | SHAPE_ID_FL_EMBEDDED;
+    return shape_id | ((heap_index + 1) << SHAPE_ID_HEAP_INDEX_OFFSET);
 }
 
 static inline bool
