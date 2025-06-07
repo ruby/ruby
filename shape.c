@@ -37,8 +37,6 @@ static ID id_frozen;
 static ID id_t_object;
 ID ruby_internal_object_id; // extern
 
-static const attr_index_t *shape_capacities = NULL;
-
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -497,7 +495,7 @@ redblack_cache_ancestors(rb_shape_t *shape)
 static attr_index_t
 shape_grow_capa(attr_index_t current_capa)
 {
-    const attr_index_t *capacities = shape_capacities;
+    const attr_index_t *capacities = GET_SHAPE_TREE()->capacities;
 
     // First try to use the next size that will be embeddable in a larger object slot.
     attr_index_t capa;
@@ -532,7 +530,6 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
         }
         break;
       case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
         rb_bug("Unreachable");
         break;
     }
@@ -858,7 +855,6 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
                 *value = shape->next_field_index - 1;
                 return true;
               case SHAPE_ROOT:
-              case SHAPE_T_OBJECT:
                 return false;
               case SHAPE_OBJ_ID:
                 rb_bug("Ivar should not exist on transition");
@@ -1070,7 +1066,7 @@ rb_shape_id_offset(void)
 static rb_shape_t *
 shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {
-    RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
+    RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
     rb_shape_t *next_shape = initial_shape;
 
     if (dest_shape->type != initial_shape->type) {
@@ -1107,7 +1103,6 @@ shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
         }
         break;
       case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
         break;
     }
 
@@ -1133,7 +1128,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {
     rb_shape_t *midway_shape;
 
-    RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT || initial_shape->type == SHAPE_ROOT);
+    RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
 
     if (dest_shape->type != initial_shape->type) {
         midway_shape = shape_rebuild(initial_shape, RSHAPE(dest_shape->parent_id));
@@ -1151,7 +1146,6 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
         break;
       case SHAPE_OBJ_ID:
       case SHAPE_ROOT:
-      case SHAPE_T_OBJECT:
         break;
     }
 
@@ -1279,8 +1273,18 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     }
 
     uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
-    if (flags_heap_index != shape->heap_index) {
-        rb_bug("shape_id heap_index flags mismatch: flags=%u, transition=%u\n", flags_heap_index, shape->heap_index);
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        size_t shape_id_slot_size = GET_SHAPE_TREE()->capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
+        size_t actual_slot_size = rb_gc_obj_slot_size(obj);
+
+        if (shape_id_slot_size != actual_slot_size) {
+            rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%lu, gc_slot_size=%lu\n", shape_id_slot_size, actual_slot_size);
+        }
+    }
+    else {
+        if (flags_heap_index) {
+            rb_bug("shape_id indicate heap_index > 0 but objet is not T_OBJECT: %s", rb_obj_info(obj));
+        }
     }
 
     return true;
@@ -1339,7 +1343,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->next_field_index),
             INT2NUM(shape->heap_index),
             INT2NUM(shape->type),
-            INT2NUM(shape->capacity));
+            INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
     return obj;
 }
@@ -1509,7 +1513,7 @@ Init_default_shapes(void)
     for (index = 0; index < heaps_count; index++) {
         capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
     }
-    shape_capacities = capacities;
+    GET_SHAPE_TREE()->capacities = capacities;
 
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
@@ -1568,33 +1572,12 @@ Init_default_shapes(void)
     root_with_obj_id->next_field_index++;
     root_with_obj_id->heap_index = 0;
     RUBY_ASSERT(raw_shape_id(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
-
-    // Make shapes for T_OBJECT
-    size_t *sizes = rb_gc_heap_sizes();
-    int i;
-    for (i = 0; sizes[i] > 0; i++) {
-        rb_shape_t *t_object_shape = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
-        t_object_shape->type = SHAPE_T_OBJECT;
-        t_object_shape->heap_index = i + 1;
-        t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-        t_object_shape->edges = rb_managed_id_table_new(256);
-        t_object_shape->ancestor_index = LEAF;
-        RUBY_ASSERT(t_object_shape == RSHAPE(rb_shape_root(i)));
-    }
-
-    // Prebuild all ROOT + OBJ_ID shapes so that even when we run out of shape we can always transtion to
-    // COMPLEX + OBJ_ID.
-    bool dont_care;
-    for (i = 0; sizes[i] > 0; i++) {
-        get_next_shape_internal(RSHAPE(rb_shape_root(i)), ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
-    }
 }
 
 void
 rb_shape_free_all(void)
 {
-    xfree((void *)shape_capacities);
-    shape_capacities = NULL;
+    xfree((void *)GET_SHAPE_TREE()->capacities);
     xfree(GET_SHAPE_TREE());
 }
 
@@ -1624,11 +1607,9 @@ Init_shape(void)
 
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
-    rb_define_const(rb_cShape, "SHAPE_T_OBJECT", INT2NUM(SHAPE_T_OBJECT));
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SPECIAL_CONST_SHAPE_ID", INT2NUM(SPECIAL_CONST_SHAPE_ID));
-    rb_define_const(rb_cShape, "FIRST_T_OBJECT_SHAPE_ID", INT2NUM(FIRST_T_OBJECT_SHAPE_ID));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
