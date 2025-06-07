@@ -10,6 +10,28 @@
 #include "gc/gc_impl.h"
 
 #include <stdbool.h>
+#include <stdarg.h>
+
+// Debug output control
+static bool wbcheck_debug_enabled = false;
+
+static void
+wbcheck_debug(const char *format, ...)
+{
+    if (!wbcheck_debug_enabled) return;
+    
+    va_list args;
+    va_start(args, format);
+    vfprintf(stderr, format, args);
+    va_end(args);
+}
+
+static void
+wbcheck_debug_obj_info_dump(VALUE obj)
+{
+    if (!wbcheck_debug_enabled) return;
+    rb_obj_info_dump(obj);
+}
 
 #define BASE_SLOT_SIZE 40
 #define HEAP_COUNT 5
@@ -68,8 +90,9 @@ wbcheck_references_free(wbcheck_references_t *refs)
 }
 
 static void
-wbcheck_references_print(wbcheck_references_t *refs)
+wbcheck_references_debug_print(wbcheck_references_t *refs)
 {
+    if (!wbcheck_debug_enabled) return;
     for (size_t i = 0; i < refs->count; i++) {
         fprintf(stderr, "-> ");
         rb_obj_info_dump(refs->items[i]);
@@ -321,8 +344,8 @@ wbcheck_collect_references_from_object(VALUE obj)
     // Collect all references into the temporary array
     rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_refs);
     
-    fprintf(stderr, "wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
-    wbcheck_references_print(new_refs);
+    wbcheck_debug("wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
+    wbcheck_references_debug_print(new_refs);
     
     return new_refs;
 }
@@ -330,8 +353,8 @@ wbcheck_collect_references_from_object(VALUE obj)
 static void
 wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 {
-    fprintf(stderr, "wbcheck: collecting initial references from object:\n");
-    rb_obj_info_dump(obj);
+    wbcheck_debug("wbcheck: collecting initial references from object:\n");
+    wbcheck_debug_obj_info_dump(obj);
     
     wbcheck_references_t *new_refs = wbcheck_collect_references_from_object(obj);
     
@@ -445,8 +468,8 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
 static void
 gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
 {
-    fprintf(stderr, "wbcheck: gc_mark called\n");
-    rb_obj_info_dump(obj);
+    wbcheck_debug("wbcheck: gc_mark called\n");
+    wbcheck_debug_obj_info_dump(obj);
     
     // Mark the finalizers for this object
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -491,8 +514,8 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
-    fprintf(stderr, "wbcheck: rb_gc_impl_mark_weak called\n");
-    rb_obj_info_dump(*ptr);
+    wbcheck_debug("wbcheck: rb_gc_impl_mark_weak called\n");
+    wbcheck_debug_obj_info_dump(*ptr);
 }
 
 void
@@ -530,9 +553,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         // Add the new reference to the parent's references list
         wbcheck_references_append(info->references, b);
         
-        fprintf(stderr, "wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
+        wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
     } else {
-        fprintf(stderr, "wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
+        wbcheck_debug("wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
 }
 
