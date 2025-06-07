@@ -1,6 +1,8 @@
-Returns an array of the bytes in +self+:
+Returns an array of the 8-bit bytes in +self+:
 
   'hello'.bytes # => [104, 101, 108, 108, 111]
   'тест'.bytes  # => [209, 130, 208, 181, 209, 129, 209, 130]
   'こんにちは'.bytes
   # => [227, 129, 147, 227, 130, 147, 227, 129, 171, 227, 129, 161, 227, 129, 175]
+
+Related: see {Converting to Non-String}[rdoc-ref:String@Converting+to+Non--5CString].
