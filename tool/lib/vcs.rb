@@ -522,10 +522,12 @@ class VCS
       cmd << date
       cmd.concat(arg)
       proc do |w|
-        w.print "-*- coding: utf-8 -*-\n\n"
-        w.print "base-url = #{base_url}\n\n" if base_url
+        w.print "-*- coding: utf-8 -*-\n"
+        w.print "\n""base-url = #{base_url}\n" if base_url
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
-          while s = r.gets("\ncommit ")
+          r.gets(sep = "commit ")
+          sep = "\n" + sep
+          while s = r.gets(sep, chomp: true)
             h, s = s.split(/^$/, 2)
 
             next if /^Author: *dependabot\[bot\]/ =~ h
@@ -533,6 +535,7 @@ class VCS
             h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
               fix = $1
+              next if /\A *skip\Z/ =~ fix
               s = s.lines
               fix.each_line do |x|
                 next unless x.sub!(/^(\s+)(?:(\d+)|\$(?:-\d+)?)/, '')
@@ -598,7 +601,7 @@ class VCS
 
             s.gsub!(/ +\n/, "\n")
             s.sub!(/^Notes:/, '  \&')
-            w.print h, s
+            w.print sep, h, s
           end
         end
       end
