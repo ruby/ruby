@@ -164,6 +164,7 @@ shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
 shape_id_t rb_shape_transition_object_id(VALUE obj);
+shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 
 void rb_shape_free_all(void);
@@ -301,8 +302,6 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 {
     return RSHAPE(rb_obj_shape_id(obj))->next_field_index;
 }
-
-shape_id_t rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t orig_shape_id);
 
 bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
 

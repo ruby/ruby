@@ -823,6 +823,12 @@ rb_shape_transition_complex(VALUE obj)
     return transition_complex(RBASIC_SHAPE_ID(obj));
 }
 
+shape_id_t
+rb_shape_transition_heap(VALUE obj, size_t heap_index)
+{
+     return (RBASIC_SHAPE_ID(obj) & (~SHAPE_ID_HEAP_INDEX_MASK)) | rb_shape_root(heap_index);
+}
+
 /*
  * This function is used for assertions where we don't want to increment
  * max_iv_count
@@ -1063,63 +1069,6 @@ int32_t
 rb_shape_id_offset(void)
 {
     return sizeof(uintptr_t) - SHAPE_ID_NUM_BITS / sizeof(uintptr_t);
-}
-
-static rb_shape_t *
-shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
-{
-    RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
-    rb_shape_t *next_shape = initial_shape;
-
-    if (dest_shape->type != initial_shape->type) {
-        next_shape = shape_traverse_from_new_root(initial_shape, RSHAPE(dest_shape->parent_id));
-        if (!next_shape) {
-            return NULL;
-        }
-    }
-
-    switch ((enum shape_type)dest_shape->type) {
-      case SHAPE_IVAR:
-      case SHAPE_OBJ_ID:
-        if (!next_shape->edges) {
-            return NULL;
-        }
-
-        VALUE lookup_result;
-        if (SINGLE_CHILD_P(next_shape->edges)) {
-            rb_shape_t *child = SINGLE_CHILD(next_shape->edges);
-            if (child->edge_name == dest_shape->edge_name) {
-                return child;
-            }
-            else {
-                return NULL;
-            }
-        }
-        else {
-            if (rb_managed_id_table_lookup(next_shape->edges, dest_shape->edge_name, &lookup_result)) {
-                next_shape = (rb_shape_t *)lookup_result;
-            }
-            else {
-                return NULL;
-            }
-        }
-        break;
-      case SHAPE_ROOT:
-        break;
-    }
-
-    return next_shape;
-}
-
-shape_id_t
-rb_shape_traverse_from_new_root(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
-{
-    rb_shape_t *initial_shape = RSHAPE(initial_shape_id);
-    rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
-
-    // Keep all dest_shape_id flags except for the heap_index.
-    shape_id_t dest_flags = (dest_shape_id & ~SHAPE_ID_HEAP_INDEX_MASK) | (initial_shape_id & SHAPE_ID_HEAP_INDEX_MASK);
-    return shape_id(shape_traverse_from_new_root(initial_shape, dest_shape), dest_flags);
 }
 
 // Rebuild a similar shape with the same ivars but starting from
