@@ -162,6 +162,16 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
         
+        // Sometimes these are set via RBASIC_SET_CLASS_RAW
+        if (current_ref == rb_cArray || current_ref == rb_cString) {
+            continue;
+        }
+
+        // Self reference... Weird but okay I guess
+        if (current_ref == parent_obj) {
+            continue;
+        }
+
         if (!wbcheck_object_list_contains(stored_refs, current_ref)) {
             if (missed_barriers_for_this_parent == 0) {
                 rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
@@ -674,8 +684,10 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 void
 rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
-    fprintf(stderr, "WBCHECK: writebarrier_unprotect called on object %p\n", (void *)obj);
-    // Stub implementation
+    wbcheck_debug("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
+
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    info->wb_protected = false;
 }
 
 void
