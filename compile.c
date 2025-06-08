@@ -9257,12 +9257,13 @@ compile_builtin_mandatory_only_method(rb_iseq_t *iseq, const NODE *node, const N
 
     VALUE ast_value = rb_ruby_ast_new(RNODE(&scope_node));
 
-    ISEQ_BODY(iseq)->mandatory_only_iseq =
+    const rb_iseq_t *mandatory_only_iseq =
       rb_iseq_new_with_opt(ast_value, rb_iseq_base_label(iseq),
                            rb_iseq_path(iseq), rb_iseq_realpath(iseq),
                            nd_line(line_node), NULL, 0,
                            ISEQ_TYPE_METHOD, ISEQ_COMPILE_DATA(iseq)->option,
                            ISEQ_BODY(iseq)->variable.script_lines);
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     ALLOCV_END(idtmp);
     return COMPILE_OK;
