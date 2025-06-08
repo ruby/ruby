@@ -967,23 +967,36 @@ vm_get_const_key_cref(const VALUE *ep)
     return NULL;
 }
 
-void
-rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass, rb_cref_t **new_cref_ptr)
+rb_cref_t *
+rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass)
 {
-    rb_cref_t *new_cref;
+    rb_cref_t *new_cref_head = NULL;
+    rb_cref_t *new_cref_tail = NULL;
+
+    #define ADD_NEW_CREF(new_cref) \
+        if (new_cref_tail) { \
+            new_cref_tail->next = new_cref; \
+        } else { \
+            new_cref_head = new_cref; \
+        } \
+        new_cref_tail = new_cref;
 
     while (cref) {
+        rb_cref_t *new_cref;
         if (CREF_CLASS(cref) == old_klass) {
             new_cref = vm_cref_new_use_prev(new_klass, METHOD_VISI_UNDEF, FALSE, cref, FALSE);
-            *new_cref_ptr = new_cref;
-            return;
+            ADD_NEW_CREF(new_cref);
+            return new_cref_head;
         }
         new_cref = vm_cref_new_use_prev(CREF_CLASS(cref), METHOD_VISI_UNDEF, FALSE, cref, FALSE);
         cref = CREF_NEXT(cref);
-        *new_cref_ptr = new_cref;
-        new_cref_ptr = &new_cref->next;
+        ADD_NEW_CREF(new_cref);
     }
-    *new_cref_ptr = NULL;
+
+    #undef ADD_NEW_CREF
+
+    // Could we just reuse the original cref?
+    return new_cref_head;
 }
 
 static rb_cref_t *
