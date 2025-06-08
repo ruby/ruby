@@ -81,6 +81,7 @@ ractor_port_init(VALUE rpv, rb_ractor_t *r)
     struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
 
     rp->r = r;
+    RB_OBJ_WRITTEN(rpv, Qundef, r->pub.self);
     rp->id_ = ractor_genid_for_port(r);
 
     ractor_add_port(r, ractor_port_id(rp));
@@ -102,6 +103,7 @@ ractor_port_initialzie_copy(VALUE self, VALUE orig)
     struct ractor_port *dst = RACTOR_PORT_PTR(self);
     struct ractor_port *src = RACTOR_PORT_PTR(orig);
     dst->r = src->r;
+    RB_OBJ_WRITTEN(self, Qundef, dst->r->pub.self);
     dst->id_ = ractor_port_id(src);
 
     return self;
