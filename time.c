@@ -5800,8 +5800,10 @@ tm_from_time(VALUE klass, VALUE time)
     tm = time_s_alloc(klass);
     ttm = RTYPEDDATA_GET_DATA(tm);
     v = &vtm;
-    GMTIMEW(ttm->timew = tobj->timew, v);
-    ttm->timew = wsub(ttm->timew, v->subsecx);
+
+    WIDEVALUE timew = tobj->timew;
+    GMTIMEW(timew, v);
+    time_set_timew(tm, ttm, wsub(timew, v->subsecx));
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
     time_set_vtm(tm, ttm, *v);
