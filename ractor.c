@@ -1181,6 +1181,7 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         // already traversed
         return 0;
     }
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
 
     struct obj_traverse_callback_data d = {
         .stop = false,
