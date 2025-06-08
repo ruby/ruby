@@ -2312,9 +2312,8 @@ zone_set_offset(VALUE zone, struct time_object *tobj,
     wideval_t w = wsub(tlocal, tutc);
     VALUE off = w2v(w);
     validate_utc_offset(off);
-    tobj->vtm.utc_offset = off;
-    tobj->vtm.zone = zone;
-    RB_OBJ_WRITTEN(time, Qnil, zone);
+    RB_OBJ_WRITE(time, &tobj->vtm.utc_offset, off);
+    RB_OBJ_WRITE(time, &tobj->vtm.zone, zone);
     TZMODE_SET_LOCALTIME(tobj);
 }
 
@@ -5749,8 +5748,7 @@ end_submicro: ;
     }
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
-        tobj->vtm.zone = zone;
-        RB_OBJ_WRITTEN(time, Qnil, zone);
+        RB_OBJ_WRITE(time, &tobj->vtm.zone, zone);
         zone_localtime(zone, time);
     }
 
