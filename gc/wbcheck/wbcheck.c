@@ -123,6 +123,8 @@ typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
     VALUE last_allocated_obj; // The most recently allocated object
     bool during_gc;          // True when we're currently marking
+    size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
+    size_t missed_write_barrier_children; // Total number of missed write barriers detected
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -145,22 +147,23 @@ wbcheck_get_object_info(VALUE obj)
 }
 
 static void
-wbcheck_compare_references(VALUE parent_obj, wbcheck_references_t *current_refs, wbcheck_references_t *stored_refs)
+wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_references_t *current_refs, wbcheck_references_t *stored_refs)
 {
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(stored_refs != NULL);
     
     wbcheck_debug("wbcheck: comparing references for object %p\n", (void *)parent_obj);
     wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n", 
                  current_refs->count, stored_refs->count);
     
-    bool printed_header = false;
+    size_t missed_barriers_for_this_parent = 0;
     
     // Check each object in current_refs to see if it's in stored_refs
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
         
         if (!wbcheck_references_contains(stored_refs, current_ref)) {
-            if (!printed_header) {
+            if (missed_barriers_for_this_parent == 0) {
                 rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
                 
                 fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
@@ -169,16 +172,19 @@ wbcheck_compare_references(VALUE parent_obj, wbcheck_references_t *current_refs,
                 fprintf(stderr, "    "); rb_obj_info_dump(parent_obj);
                 fprintf(stderr, "  Reference counts - stored: %zu, current: %zu\n", 
                        stored_refs->count, current_refs->count);
-                printed_header = true;
             }
             
             fprintf(stderr, "  Missing reference to: %p\n    ", (void *)current_ref);
             rb_obj_info_dump(current_ref);
+            missed_barriers_for_this_parent++;
         }
     }
     
-    if (printed_header) {
+    // Update error counters and print footer if we found violations
+    if (missed_barriers_for_this_parent > 0) {
         fprintf(stderr, "\n");
+        objspace->missed_write_barrier_parents++;
+        objspace->missed_write_barrier_children += missed_barriers_for_this_parent;
     }
 }
 
@@ -231,6 +237,8 @@ rb_gc_impl_objspace_alloc(void)
     
     objspace->last_allocated_obj = 0;  // No objects allocated yet
     objspace->during_gc = false;       // Not marking initially
+    objspace->missed_write_barrier_parents = 0;  // No errors found yet
+    objspace->missed_write_barrier_children = 0; // No errors found yet
     
     return objspace;
 }
@@ -411,7 +419,7 @@ wbcheck_collect_references_from_object(VALUE obj)
 static void
 wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 {
-    wbcheck_debug("wbcheck: collecting initial references from object:\n");
+    wbcheck_debug("wbcheck: collecting initial references from %p:\n", obj);
     wbcheck_debug_obj_info_dump(obj);
     
     wbcheck_references_t *new_refs = wbcheck_collect_references_from_object(obj);
@@ -444,7 +452,7 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     
     if (stored_refs) {
         // Compare current_refs against stored_refs to detect missed write barriers
-        wbcheck_compare_references(obj, current_refs, stored_refs);
+        wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
         
         // Free the old stored references
         wbcheck_references_free(stored_refs);
@@ -662,12 +670,14 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 void
 rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
+    fprintf(stderr, "WBCHECK: writebarrier_unprotect called on object %p\n", (void *)obj);
     // Stub implementation
 }
 
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
+    fprintf(stderr, "WBCHECK: writebarrier_remember called on object %p\n", (void *)obj);
     // Stub implementation
 }
 
@@ -869,18 +879,29 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     
     // Call all finalizers for all objects using our shared iteration helper
     wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
-    
-    // After all finalizers have been called, verify all object references
-    wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
-    wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
-    wbcheck_debug("wbcheck: finished verifying all object references\n");
-    
+            
     // HACK: Manually flush stdout and stderr since wbcheck never runs finalizers.
     // Normally, I/O object finalizers would handle this flushing automatically
     // when the GC collects them, but since we never run GC, we need to manually
     // flush during shutdown to prevent output loss in subprocess scenarios.
     rb_io_flush(rb_stdout);
     rb_io_flush(rb_stderr);
+
+    // After all finalizers have been called, verify all object references
+    wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
+    wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
+    wbcheck_debug("wbcheck: finished verifying all object references\n");
+    
+    // Print summary and exit with error code if violations were found
+    if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
+        fprintf(stderr, "WBCHECK SUMMARY: Found %zu objects with missed write barriers (%zu total violations)\n",
+                objspace->missed_write_barrier_parents, objspace->missed_write_barrier_children);
+
+        
+        exit(1);  // Exit with error code to indicate violations were found
+    } else {
+        wbcheck_debug("wbcheck: no write barrier violations detected\n");
+    }
 }
 
 // Forking
