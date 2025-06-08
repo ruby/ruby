@@ -121,7 +121,7 @@ typedef struct {
 // wbcheck objspace structure to track all objects
 typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
-    VALUE last_allocated_obj; // The most recently allocated object
+    wbcheck_object_list_t *objects_to_capture; // Objects that need initial reference capture
     bool during_gc;          // True when we're currently marking
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
@@ -235,7 +235,7 @@ rb_gc_impl_objspace_alloc(void)
         rb_bug("wbcheck: failed to create object table");
     }
     
-    objspace->last_allocated_obj = 0;  // No objects allocated yet
+    objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
@@ -469,10 +469,14 @@ maybe_gc(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     
-    if (objspace->last_allocated_obj) {
-       wbcheck_collect_initial_references(objspace_ptr, objspace->last_allocated_obj);
-       objspace->last_allocated_obj = Qfalse;
+    // Process all objects that need initial reference capture
+    for (size_t i = 0; i < objspace->objects_to_capture->count; i++) {
+        VALUE obj = objspace->objects_to_capture->items[i];
+        wbcheck_collect_initial_references(objspace_ptr, obj);
     }
+    
+    // Clear the list after processing
+    objspace->objects_to_capture->count = 0;
 }
 
 VALUE
@@ -505,9 +509,9 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     // Register the new object in our tracking table
     wbcheck_register_object(objspace_ptr, obj, alloc_size, wb_protected);
 
-    // Store this as the last allocated object
+    // Add this object to the list of objects that need initial reference capture
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    objspace->last_allocated_obj = obj;
+    wbcheck_object_list_append(objspace->objects_to_capture, obj);
 
     rb_gc_vm_unlock(lev);
     return obj;
@@ -677,8 +681,20 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
-    fprintf(stderr, "WBCHECK: writebarrier_remember called on object %p\n", (void *)obj);
-    // Stub implementation
+    wbcheck_debug("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
+    
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    
+    // Clear existing references since they may be stale
+    if (info->references) {
+        wbcheck_object_list_free(info->references);
+        info->references = NULL;
+        
+        // Only re-add to objects_to_capture if it had previous references
+        // (new objects don't need to be re-added since they'll be captured at allocation)
+        wbcheck_object_list_append(objspace->objects_to_capture, obj);
+    }
 }
 
 // Heap walking
