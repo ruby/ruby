@@ -1537,7 +1537,7 @@ Init_default_shapes(void)
         t_object_shape->type = SHAPE_T_OBJECT;
         t_object_shape->heap_index = i;
         t_object_shape->capacity = (uint32_t)((sizes[i] - offsetof(struct RObject, as.ary)) / sizeof(VALUE));
-        t_object_shape->edges = rb_managed_id_table_new(256);
+        RB_OBJ_WRITE(shape_tree_obj, &t_object_shape->edges, rb_managed_id_table_new(256));
         t_object_shape->ancestor_index = LEAF;
         RUBY_ASSERT(rb_shape_id(t_object_shape) == rb_shape_root(i));
     }
