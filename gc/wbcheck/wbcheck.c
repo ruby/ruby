@@ -19,7 +19,7 @@ static void
 wbcheck_debug(const char *format, ...)
 {
     if (!wbcheck_debug_enabled) return;
-    
+
     va_list args;
     va_start(args, format);
     vfprintf(stderr, format, args);
@@ -136,12 +136,12 @@ wbcheck_get_object_info(VALUE obj)
 {
     // Objspace must be initialized by this point
     GC_ASSERT(wbcheck_global_objspace);
-    
+
     st_data_t value;
     if (st_lookup(wbcheck_global_objspace->object_table, (st_data_t)obj, &value)) {
         return (rb_wbcheck_object_info_t *)value;
     }
-    
+
     // Object not found in tracking table - this should never happen
     rb_bug("wbcheck: object not found in tracking table");
 }
@@ -176,18 +176,18 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(stored_refs != NULL);
-    
+
     wbcheck_debug("wbcheck: comparing references for object %p\n", (void *)parent_obj);
-    wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n", 
+    wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n",
                  current_refs->count, stored_refs->count);
-    
+
     // Collect missed references (lazily allocated)
     wbcheck_object_list_t *missed_refs = NULL;
-    
+
     // Check each object in current_refs to see if it's in stored_refs
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
-        
+
         // Sometimes these are set via RBASIC_SET_CLASS_RAW
         if (current_ref == rb_cArray || current_ref == rb_cString) {
             continue;
@@ -206,7 +206,7 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
             wbcheck_object_list_append(missed_refs, current_ref);
         }
     }
-    
+
     // Report any errors found
     if (missed_refs) {
         wbcheck_report_error(objspace_ptr, parent_obj, current_refs, stored_refs, missed_refs);
@@ -228,7 +228,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     info->wb_protected = wb_protected;
     info->finalizers = 0;  /* No finalizers initially */
     info->references = NULL;  /* No references initially */
-    
+
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
 }
@@ -254,18 +254,18 @@ rb_gc_impl_objspace_alloc(void)
 {
     rb_wbcheck_objspace_t *objspace = calloc(1, sizeof(rb_wbcheck_objspace_t));
     if (!objspace) rb_bug("wbcheck: failed to allocate objspace");
-    
+
     objspace->object_table = st_init_numtable();
     if (!objspace->object_table) {
         free(objspace);
         rb_bug("wbcheck: failed to create object table");
     }
-    
+
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
-    
+
     return objspace;
 }
 
@@ -304,7 +304,7 @@ rb_gc_impl_init(void)
     if (debug_env && (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0)) {
         wbcheck_debug_enabled = true;
     }
-    
+
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
@@ -431,16 +431,16 @@ wbcheck_collect_references_from_object(VALUE obj)
 {
     // Create a new object list for collection
     wbcheck_object_list_t *new_list = wbcheck_object_list_init();
-    
+
     // Collect all references into the temporary list
     rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_list);
-    
+
     if (wbcheck_debug_enabled) {
         wbcheck_debug("wbcheck: collected %zu references from %p\n", new_list->count, (void *)obj);
         rb_obj_info_dump(obj);
         wbcheck_object_list_debug_print(new_list);
     }
-    
+
     return new_list;
 }
 
@@ -449,9 +449,9 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 {
     wbcheck_debug("wbcheck: collecting initial references from %p:\n", obj);
     wbcheck_debug_obj_info_dump(obj);
-    
+
     wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj);
-    
+
     // Get the object info and replace the old references with the new ones
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     RUBY_ASSERT(!info->references);
@@ -463,31 +463,31 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
 {
     // Get the object info first to check if it's write barrier protected
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
-    
+
     // Exit immediately if the object is not write barrier protected
     if (!info->wb_protected) {
         return;
     }
-    
+
     wbcheck_debug("wbcheck: verifying references for object:\n");
     wbcheck_debug_obj_info_dump(obj);
-    
+
     // Get the current references from the object
     wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
-    
+
     // Get stored references
     wbcheck_object_list_t *stored_refs = info->references;
-    
+
     if (stored_refs) {
         // Compare current_refs against stored_refs to detect missed write barriers
         wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
-        
+
         // Free the old stored references
         wbcheck_object_list_free(stored_refs);
     } else {
         wbcheck_debug("wbcheck: no stored references to compare against\n");
     }
-    
+
     // Replace the stored references with the current ones
     info->references = current_refs;
 }
@@ -496,13 +496,13 @@ static void
 maybe_gc(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    
+
     // Process all objects that need initial reference capture
     for (size_t i = 0; i < objspace->objects_to_capture->count; i++) {
         VALUE obj = objspace->objects_to_capture->items[i];
         wbcheck_collect_initial_references(objspace_ptr, obj);
     }
-    
+
     // Clear the list after processing
     objspace->objects_to_capture->count = 0;
 }
@@ -512,7 +512,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 {
     unsigned int lev = rb_gc_vm_lock();
     rb_gc_vm_barrier();
-    
+
     // Check if we should trigger GC before allocating
     maybe_gc(objspace_ptr);
 
@@ -606,7 +606,7 @@ gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
 {
     wbcheck_debug("wbcheck: gc_mark called\n");
     wbcheck_debug_obj_info_dump(obj);
-    
+
     // Mark the finalizers for this object
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     if (info->finalizers) {
@@ -639,7 +639,7 @@ void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
-    
+
     if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)obj)) {
         GC_ASSERT(BUILTIN_TYPE(obj) != T_ZOMBIE);
         GC_ASSERT(BUILTIN_TYPE(obj) != T_NONE);
@@ -680,24 +680,24 @@ void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     unsigned int lev = rb_gc_vm_lock();
-    
+
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
     if (RB_SPECIAL_CONST_P(b)) return;
 
     // Get the object info for the parent object (a)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(a);
-    
+
     // Only record the write barrier if references have been initialized
     if (info->references) {
         // Add the new reference to the parent's object list
         wbcheck_object_list_append(info->references, b);
-        
+
         wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
     } else {
         wbcheck_debug("wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
-    
+
     rb_gc_vm_unlock(lev);
 }
 
@@ -714,15 +714,15 @@ void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     wbcheck_debug("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
-    
+
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
-    
+
     // Clear existing references since they may be stale
     if (info->references) {
         wbcheck_object_list_free(info->references);
         info->references = NULL;
-        
+
         // Only re-add to objects_to_capture if it had previous references
         // (new objects don't need to be re-added since they'll be captured at allocation)
         wbcheck_object_list_append(objspace->objects_to_capture, obj);
@@ -741,7 +741,7 @@ wbcheck_foreach_object_i(st_data_t key, st_data_t val, st_data_t arg)
     VALUE obj = (VALUE)key;
     rb_wbcheck_object_info_t *info = (rb_wbcheck_object_info_t *)val;
     struct wbcheck_foreach_data *foreach_data = (struct wbcheck_foreach_data *)arg;
-    
+
     return foreach_data->callback(obj, info, foreach_data->data);
 }
 
@@ -752,7 +752,7 @@ wbcheck_foreach_object(rb_wbcheck_objspace_t *objspace, int (*callback)(VALUE ob
         .callback = callback,
         .data = data
     };
-    
+
     st_foreach(objspace->object_table, wbcheck_foreach_object_i, (st_data_t)&foreach_data);
 }
 
@@ -778,15 +778,15 @@ static int
 each_objects_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *arg)
 {
     struct each_objects_callback_data *callback_data = (struct each_objects_callback_data *)arg;
-    
+
     // Call the callback with the object as a single-object memory region
     int result = callback_data->callback(
-        (void *)obj, 
-        (void *)((char *)obj + info->alloc_size), 
-        info->alloc_size, 
+        (void *)obj,
+        (void *)((char *)obj + info->alloc_size),
+        info->alloc_size,
         callback_data->data
     );
-    
+
     return (result == 0) ? ST_CONTINUE : ST_STOP;
 }
 
@@ -795,12 +795,12 @@ rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
-    
+
     struct each_objects_callback_data callback_data = {
         .callback = callback,
         .data = data
     };
-    
+
     wbcheck_foreach_object(objspace, each_objects_callback, &callback_data);
 }
 
@@ -809,12 +809,12 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
-    
+
     struct each_object_callback_data callback_data = {
         .func = func,
         .data = data
     };
-    
+
     wbcheck_foreach_object(objspace, each_object_callback, &callback_data);
 }
 
@@ -836,7 +836,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     RBASIC(obj)->flags |= FL_FINALIZE;
 
     VALUE table = info->finalizers;
-    
+
     if (!table) {
         /* First finalizer for this object */
         table = rb_ary_new3(1, block);
@@ -876,7 +876,7 @@ void
 rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
-    
+
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
     rb_wbcheck_object_info_t *src_info = wbcheck_get_object_info(obj);
@@ -893,7 +893,7 @@ static VALUE
 wbcheck_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
-    
+
     return RARRAY_AREF(table, i);
 }
 
@@ -903,12 +903,12 @@ wbcheck_shutdown_call_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *in
     if (info->finalizers) {
         VALUE table = info->finalizers;
         long count = RARRAY_LEN(table);
-        
+
         rb_gc_run_obj_finalizer(rb_obj_id(obj), count, wbcheck_get_final, (void *)table);
-        
+
         FL_UNSET(obj, FL_FINALIZE);
     }
-    
+
     return ST_CONTINUE;  /* Keep iterating through all objects */
 }
 
@@ -924,10 +924,10 @@ void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
-    
+
     // Call all finalizers for all objects using our shared iteration helper
     wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
-            
+
     // HACK: Manually flush stdout and stderr since wbcheck never runs finalizers.
     // Normally, I/O object finalizers would handle this flushing automatically
     // when the GC collects them, but since we never run GC, we need to manually
@@ -939,13 +939,13 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
     wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
     wbcheck_debug("wbcheck: finished verifying all object references\n");
-    
+
     // Print summary and exit with error code if violations were found
     if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
         fprintf(stderr, "WBCHECK SUMMARY: Found %zu objects with missed write barriers (%zu total violations)\n",
                 objspace->missed_write_barrier_parents, objspace->missed_write_barrier_children);
 
-        
+
         exit(1);  // Exit with error code to indicate violations were found
     } else {
         wbcheck_debug("wbcheck: no write barrier violations detected\n");
@@ -1005,15 +1005,15 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
-    
+
     // Create a hash with wbcheck-specific statistics
     VALUE hash = rb_hash_new();
-    
-    rb_hash_aset(hash, ID2SYM(rb_intern("tracked_objects")), 
+
+    rb_hash_aset(hash, ID2SYM(rb_intern("tracked_objects")),
                  SIZET2NUM(st_table_size(objspace->object_table)));
-    
+
     rb_hash_aset(hash, ID2SYM(rb_intern("gc_implementation")), rb_str_new_cstr("wbcheck"));
-    
+
     return hash;
 }
 
@@ -1045,7 +1045,7 @@ bool
 rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
     GC_ASSERT(wbcheck_global_objspace);
-    
+
     // Check if this pointer exists in our object tracking table
     st_data_t value;
     return st_lookup(wbcheck_global_objspace->object_table, (st_data_t)ptr, &value);
