@@ -682,7 +682,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     unsigned int lev = rb_gc_vm_lock();
     
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
-    
+
+    if (RB_SPECIAL_CONST_P(b)) return;
+
     // Get the object info for the parent object (a)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(a);
     
