@@ -13825,9 +13825,13 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
     load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size);
-    load_body->parent_iseq          = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
-    load_body->local_iseq           = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
-    load_body->mandatory_only_iseq  = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+    const rb_iseq_t *parent_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
+    const rb_iseq_t *local_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
+    const rb_iseq_t *mandatory_only_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
+
+    RB_OBJ_WRITE(iseq, &load_body->parent_iseq, parent_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->local_iseq, local_iseq);
+    RB_OBJ_WRITE(iseq, &load_body->mandatory_only_iseq, mandatory_only_iseq);
 
     // This must be done after the local table is loaded.
     if (load_body->param.keyword != NULL) {
