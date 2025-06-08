@@ -3497,7 +3497,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
     pm_scope_node_init(&def.base, &next_scope_node, scope_node);
 
     int error_state;
-    ISEQ_BODY(iseq)->mandatory_only_iseq = pm_iseq_new_with_opt(
+    const rb_iseq_t *mandatory_only_iseq = pm_iseq_new_with_opt(
         &next_scope_node,
         rb_iseq_base_label(iseq),
         rb_iseq_path(iseq),
@@ -3509,6 +3509,7 @@ pm_compile_builtin_mandatory_only_method(rb_iseq_t *iseq, pm_scope_node_t *scope
         ISEQ_COMPILE_DATA(iseq)->option,
         &error_state
     );
+    RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->mandatory_only_iseq, (VALUE)mandatory_only_iseq);
 
     if (error_state) {
         RUBY_ASSERT(ISEQ_BODY(iseq)->mandatory_only_iseq == NULL);
