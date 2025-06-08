@@ -52,58 +52,58 @@ typedef struct {
     VALUE *items;
     size_t count;
     size_t capacity;
-} wbcheck_references_t;
+} wbcheck_object_list_t;
 
-// Helper functions for references list
-static wbcheck_references_t *
-wbcheck_references_init(void)
+// Helper functions for object list
+static wbcheck_object_list_t *
+wbcheck_object_list_init(void)
 {
-    wbcheck_references_t *refs = calloc(1, sizeof(wbcheck_references_t));
-    if (!refs) rb_bug("wbcheck: failed to allocate references structure");
-    refs->items = NULL;
-    refs->count = 0;
-    refs->capacity = 0;
-    return refs;
+    wbcheck_object_list_t *list = calloc(1, sizeof(wbcheck_object_list_t));
+    if (!list) rb_bug("wbcheck: failed to allocate object list structure");
+    list->items = NULL;
+    list->count = 0;
+    list->capacity = 0;
+    return list;
 }
 
 static void
-wbcheck_references_append(wbcheck_references_t *refs, VALUE obj)
+wbcheck_object_list_append(wbcheck_object_list_t *list, VALUE obj)
 {
-    if (refs->count >= refs->capacity) {
-        size_t new_capacity = refs->capacity == 0 ? 4 : refs->capacity * 2;
-        VALUE *new_items = realloc(refs->items, new_capacity * sizeof(VALUE));
-        if (!new_items) rb_bug("wbcheck: failed to reallocate references array");
-        refs->items = new_items;
-        refs->capacity = new_capacity;
+    if (list->count >= list->capacity) {
+        size_t new_capacity = list->capacity == 0 ? 4 : list->capacity * 2;
+        VALUE *new_items = realloc(list->items, new_capacity * sizeof(VALUE));
+        if (!new_items) rb_bug("wbcheck: failed to reallocate object list array");
+        list->items = new_items;
+        list->capacity = new_capacity;
     }
-    refs->items[refs->count++] = obj;
+    list->items[list->count++] = obj;
 }
 
 static void
-wbcheck_references_free(wbcheck_references_t *refs)
+wbcheck_object_list_free(wbcheck_object_list_t *list)
 {
-    if (!refs) return;
-    if (refs->items) {
-        free(refs->items);
+    if (!list) return;
+    if (list->items) {
+        free(list->items);
     }
-    free(refs);
+    free(list);
 }
 
 static void
-wbcheck_references_debug_print(wbcheck_references_t *refs)
+wbcheck_object_list_debug_print(wbcheck_object_list_t *list)
 {
     if (!wbcheck_debug_enabled) return;
-    for (size_t i = 0; i < refs->count; i++) {
+    for (size_t i = 0; i < list->count; i++) {
         fprintf(stderr, "-> ");
-        rb_obj_info_dump(refs->items[i]);
+        rb_obj_info_dump(list->items[i]);
     }
 }
 
 static bool
-wbcheck_references_contains(wbcheck_references_t *refs, VALUE obj)
+wbcheck_object_list_contains(wbcheck_object_list_t *list, VALUE obj)
 {
-    for (size_t i = 0; i < refs->count; i++) {
-        if (refs->items[i] == obj) {
+    for (size_t i = 0; i < list->count; i++) {
+        if (list->items[i] == obj) {
             return true;
         }
     }
@@ -115,7 +115,7 @@ typedef struct {
     size_t alloc_size;      // Allocated size (static)
     bool wb_protected;      // Write barrier protection status (static)
     VALUE finalizers;       // Ruby Array of finalizers like [finalizer1, finalizer2, ...]
-    wbcheck_references_t *references; // Pointer to list of objects this object references
+    wbcheck_object_list_t *references; // Pointer to list of objects this object references
 } rb_wbcheck_object_info_t;
 
 // wbcheck objspace structure to track all objects
@@ -147,7 +147,7 @@ wbcheck_get_object_info(VALUE obj)
 }
 
 static void
-wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_references_t *current_refs, wbcheck_references_t *stored_refs)
+wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *stored_refs)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(stored_refs != NULL);
@@ -162,7 +162,7 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_referen
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
         
-        if (!wbcheck_references_contains(stored_refs, current_ref)) {
+        if (!wbcheck_object_list_contains(stored_refs, current_ref)) {
             if (missed_barriers_for_this_parent == 0) {
                 rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
                 
@@ -214,8 +214,8 @@ wbcheck_unregister_object(void *objspace_ptr, VALUE obj)
     rb_wbcheck_object_info_t *info;
 
     if (st_delete(objspace->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
-        // Free the references array if it was allocated
-        wbcheck_references_free(info->references);
+        // Free the object list if it was allocated
+        wbcheck_object_list_free(info->references);
         free(info);
     } else {
         rb_bug("wbcheck_unregister_object: object not found in table");
@@ -394,26 +394,26 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 static void
 wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
 {
-    wbcheck_references_t *refs = (wbcheck_references_t *)data;
-    wbcheck_references_append(refs, child_obj);
+    wbcheck_object_list_t *list = (wbcheck_object_list_t *)data;
+    wbcheck_object_list_append(list, child_obj);
 }
 
-static wbcheck_references_t *
+static wbcheck_object_list_t *
 wbcheck_collect_references_from_object(VALUE obj)
 {
-    // Create a new references array for collection
-    wbcheck_references_t *new_refs = wbcheck_references_init();
+    // Create a new object list for collection
+    wbcheck_object_list_t *new_list = wbcheck_object_list_init();
     
-    // Collect all references into the temporary array
-    rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_refs);
+    // Collect all references into the temporary list
+    rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_list);
     
     if (wbcheck_debug_enabled) {
-        wbcheck_debug("wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
+        wbcheck_debug("wbcheck: collected %zu references from %p\n", new_list->count, (void *)obj);
         rb_obj_info_dump(obj);
-        wbcheck_references_debug_print(new_refs);
+        wbcheck_object_list_debug_print(new_list);
     }
     
-    return new_refs;
+    return new_list;
 }
 
 static void
@@ -422,12 +422,12 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
     wbcheck_debug("wbcheck: collecting initial references from %p:\n", obj);
     wbcheck_debug_obj_info_dump(obj);
     
-    wbcheck_references_t *new_refs = wbcheck_collect_references_from_object(obj);
+    wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj);
     
     // Get the object info and replace the old references with the new ones
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     RUBY_ASSERT(!info->references);
-    info->references = new_refs;  // Set the new references
+    info->references = new_list;  // Set the new references
 }
 
 static void
@@ -445,17 +445,17 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     wbcheck_debug_obj_info_dump(obj);
     
     // Get the current references from the object
-    wbcheck_references_t *current_refs = wbcheck_collect_references_from_object(obj);
+    wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
     
     // Get stored references
-    wbcheck_references_t *stored_refs = info->references;
+    wbcheck_object_list_t *stored_refs = info->references;
     
     if (stored_refs) {
         // Compare current_refs against stored_refs to detect missed write barriers
         wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
         
         // Free the old stored references
-        wbcheck_references_free(stored_refs);
+        wbcheck_object_list_free(stored_refs);
     } else {
         wbcheck_debug("wbcheck: no stored references to compare against\n");
     }
@@ -656,8 +656,8 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     
     // Only record the write barrier if references have been initialized
     if (info->references) {
-        // Add the new reference to the parent's references list
-        wbcheck_references_append(info->references, b);
+        // Add the new reference to the parent's object list
+        wbcheck_object_list_append(info->references, b);
         
         wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
     } else {
