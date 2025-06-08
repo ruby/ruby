@@ -130,6 +130,12 @@ class TC_Set < Test::Unit::TestCase
     assert_equal(Set['a','b','c'], set)
 
     set = Set[1,2]
+    ret = set.replace(Set.new('a'..'c'))
+
+    assert_same(set, ret)
+    assert_equal(Set['a','b','c'], set)
+
+    set = Set[1,2]
     assert_raise(ArgumentError) {
       set.replace(3)
     }

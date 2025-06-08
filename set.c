@@ -528,6 +528,7 @@ set_i_initialize_copy(VALUE set, VALUE other)
 
     set_free_embedded(sobj);
     set_copy(&sobj->table, RSET_TABLE(other));
+    rb_gc_writebarrier_remember(set);
 
     return set;
 }
