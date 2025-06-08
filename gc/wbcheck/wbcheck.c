@@ -147,6 +147,31 @@ wbcheck_get_object_info(VALUE obj)
 }
 
 static void
+wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *stored_refs, wbcheck_object_list_t *missed_refs)
+{
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
+
+    fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
+    fprintf(stderr, "  Parent object: %p (wb_protected: %s)\n",
+           (void *)parent_obj, parent_info->wb_protected ? "true" : "false");
+    fprintf(stderr, "    "); rb_obj_info_dump(parent_obj);
+    fprintf(stderr, "  Reference counts - stored: %zu, current: %zu, missed: %zu\n",
+           stored_refs->count, current_refs->count, missed_refs->count);
+
+    for (size_t i = 0; i < missed_refs->count; i++) {
+        VALUE missed_ref = missed_refs->items[i];
+        fprintf(stderr, "  Missing reference to: %p\n    ", (void *)missed_ref);
+        rb_obj_info_dump(missed_ref);
+    }
+
+    fprintf(stderr, "\n");
+    objspace->missed_write_barrier_parents++;
+    objspace->missed_write_barrier_children += missed_refs->count;
+}
+
+static void
 wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *stored_refs)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
@@ -156,7 +181,8 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
     wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n", 
                  current_refs->count, stored_refs->count);
     
-    size_t missed_barriers_for_this_parent = 0;
+    // Collect missed references (lazily allocated)
+    wbcheck_object_list_t *missed_refs = NULL;
     
     // Check each object in current_refs to see if it's in stored_refs
     for (size_t i = 0; i < current_refs->count; i++) {
@@ -173,28 +199,18 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
         }
 
         if (!wbcheck_object_list_contains(stored_refs, current_ref)) {
-            if (missed_barriers_for_this_parent == 0) {
-                rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
-                
-                fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
-                fprintf(stderr, "  Parent object: %p (wb_protected: %s)\n", 
-                       (void *)parent_obj, parent_info->wb_protected ? "true" : "false");
-                fprintf(stderr, "    "); rb_obj_info_dump(parent_obj);
-                fprintf(stderr, "  Reference counts - stored: %zu, current: %zu\n", 
-                       stored_refs->count, current_refs->count);
+            // Lazily allocate missed_refs list on first miss
+            if (!missed_refs) {
+                missed_refs = wbcheck_object_list_init();
             }
-            
-            fprintf(stderr, "  Missing reference to: %p\n    ", (void *)current_ref);
-            rb_obj_info_dump(current_ref);
-            missed_barriers_for_this_parent++;
+            wbcheck_object_list_append(missed_refs, current_ref);
         }
     }
     
-    // Update error counters and print footer if we found violations
-    if (missed_barriers_for_this_parent > 0) {
-        fprintf(stderr, "\n");
-        objspace->missed_write_barrier_parents++;
-        objspace->missed_write_barrier_children += missed_barriers_for_this_parent;
+    // Report any errors found
+    if (missed_refs) {
+        wbcheck_report_error(objspace_ptr, parent_obj, current_refs, stored_refs, missed_refs);
+        wbcheck_object_list_free(missed_refs);
     }
 }
 
