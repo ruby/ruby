@@ -404,6 +404,8 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 static void
 wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
 {
+    GC_ASSERT(!RB_SPECIAL_CONST_P(child_obj));
+
     wbcheck_object_list_t *list = (wbcheck_object_list_t *)data;
     wbcheck_object_list_append(list, child_obj);
 }
