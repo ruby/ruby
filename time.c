@@ -2306,7 +2306,7 @@ utc_offset_arg(VALUE arg)
 
 static void
 zone_set_offset(VALUE zone, struct time_object *tobj,
-                wideval_t tlocal, wideval_t tutc)
+                wideval_t tlocal, wideval_t tutc, VALUE time)
 {
     /* tlocal and tutc must be unmagnified and in seconds */
     wideval_t w = wsub(tlocal, tutc);
@@ -2314,6 +2314,7 @@ zone_set_offset(VALUE zone, struct time_object *tobj,
     validate_utc_offset(off);
     tobj->vtm.utc_offset = off;
     tobj->vtm.zone = zone;
+    RB_OBJ_WRITTEN(time, Qnil, zone);
     TZMODE_SET_LOCALTIME(tobj);
 }
 
@@ -2428,7 +2429,7 @@ zone_timelocal(VALUE zone, VALUE time)
     if (UNDEF_P(utc)) return 0;
 
     s = extract_time(utc);
-    zone_set_offset(zone, tobj, t, s);
+    zone_set_offset(zone, tobj, t, s, time);
     s = rb_time_magnify(s);
     if (tobj->vtm.subsecx != INT2FIX(0)) {
         s = wadd(s, v2w(tobj->vtm.subsecx));
@@ -2457,7 +2458,7 @@ zone_localtime(VALUE zone, VALUE time)
 
     s = extract_vtm(local, time, tobj, subsecx);
     tobj->vtm.tm_got = 1;
-    zone_set_offset(zone, tobj, s, t);
+    zone_set_offset(zone, tobj, s, t, time);
     zone_set_dst(zone, tobj, tm);
 
     RB_GC_GUARD(time);
@@ -5749,6 +5750,7 @@ end_submicro: ;
     if (!NIL_P(zone)) {
         zone = mload_zone(time, zone);
         tobj->vtm.zone = zone;
+        RB_OBJ_WRITTEN(time, Qnil, zone);
         zone_localtime(zone, time);
     }
 
