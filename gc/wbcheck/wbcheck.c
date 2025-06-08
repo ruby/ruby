@@ -399,8 +399,11 @@ wbcheck_collect_references_from_object(VALUE obj)
     // Collect all references into the temporary array
     rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_refs);
     
-    wbcheck_debug("wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
-    wbcheck_references_debug_print(new_refs);
+    if (wbcheck_debug_enabled) {
+        wbcheck_debug("wbcheck: collected %zu references from %p\n", new_refs->count, (void *)obj);
+        rb_obj_info_dump(obj);
+        wbcheck_references_debug_print(new_refs);
+    }
     
     return new_refs;
 }
