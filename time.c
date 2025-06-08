@@ -4088,7 +4088,9 @@ time_init_copy(VALUE copy, VALUE time)
     if (!OBJ_INIT_COPY(copy, time)) return copy;
     GetTimeval(time, tobj);
     GetNewTimeval(copy, tcopy);
-    MEMCPY(tcopy, tobj, struct time_object, 1);
+
+    time_set_timew(copy, tcopy, tobj->timew);
+    time_set_vtm(copy, tcopy, tobj->vtm);
 
     return copy;
 }
