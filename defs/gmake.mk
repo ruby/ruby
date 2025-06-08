@@ -365,7 +365,7 @@ $(srcdir)/.bundle/.timestamp:
 define build-gem
 $(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
-	$(Q) $(GIT) clone $(4) $$(@D)
+	$(Q) $(GIT) clone --depth=1 --no-tags $(4) $$(@D)
 
 $(bundled-gem-revision): \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
