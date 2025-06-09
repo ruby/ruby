@@ -473,6 +473,8 @@ fn gen_lookup_method(
         rb_callable_method_entry as *const u8,
         vec![class, method_opnd],
     );
+    // rb_callable_method_entry may be NULL, and we don't want to handle method_missing shenanigans
+    // in JIT code.
     asm.test(result, result);
     asm.jz(side_exit(jit, state)?);
     Some(result)
