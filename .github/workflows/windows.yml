@@ -71,7 +71,7 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - name: Install libraries with scoop
+      - name: Install tools with scoop
         run: |
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           iwr -useb get.scoop.sh | iex
