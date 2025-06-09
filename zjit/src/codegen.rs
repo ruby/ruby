@@ -7,7 +7,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -279,6 +279,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
+        Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -345,6 +346,20 @@ fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) -> Opnd {
 fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
     asm.jmp(side_exit(jit, state)?);
     Some(())
+}
+
+/// Emit a special object lookup
+fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> Opnd {
+    asm_comment!(asm, "call rb_vm_get_special_object");
+
+    // Get the EP of the current CFP and load it into a register
+    let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
+    let ep_reg = asm.load(ep_opnd);
+
+    asm.ccall(
+        rb_vm_get_special_object as *const u8,
+        vec![ep_reg, Opnd::UImm(u64::from(value_type))],
+    )
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ

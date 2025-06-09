@@ -652,6 +652,18 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_putspecialobject
+    assert_compiles '10', %q{
+      def test
+        alias bar test
+        10
+      end
+
+      test
+      bar
+    }, insns: [:putspecialobject]
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
