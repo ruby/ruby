@@ -602,11 +602,11 @@ set_relation(rb_iseq_t *iseq, const rb_iseq_t *piseq)
         body->local_iseq = iseq;
     }
     else if (piseq) {
-        body->local_iseq = ISEQ_BODY(piseq)->local_iseq;
+        RB_OBJ_WRITE(iseq, &body->local_iseq, ISEQ_BODY(piseq)->local_iseq);
     }
 
     if (piseq) {
-        body->parent_iseq = piseq;
+        RB_OBJ_WRITE(iseq, &body->parent_iseq, piseq);
     }
 
     if (type == ISEQ_TYPE_MAIN) {
