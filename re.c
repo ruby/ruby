@@ -1666,7 +1666,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     RSTRING_GETMEM(unescaped, ptr, len);
 
     /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (RREGEXP(re)->usecnt == 0) {
+    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
         regex_t tmp_reg;
         r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
                                    reg->options, enc,
