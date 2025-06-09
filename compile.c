@@ -2984,7 +2984,6 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             RUBY_ASSERT(pos >= 0);
             entry->end = (unsigned int)pos;
             entry->iseq = (rb_iseq_t *)ptr[3];
-            RB_OBJ_WRITTEN(iseq, Qundef, entry->iseq);
 
             /* stack depth */
             if (ptr[4]) {
@@ -3005,6 +3004,9 @@ iseq_set_exception_table(rb_iseq_t *iseq)
             }
         }
         ISEQ_BODY(iseq)->catch_table = table;
+        for (i = 0; i < table->size; i++) {
+            RB_OBJ_WRITTEN(iseq, Qundef, table->entries[i].iseq);
+        }
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
 
