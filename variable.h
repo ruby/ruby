@@ -15,7 +15,6 @@
 struct gen_fields_tbl {
     union {
         struct {
-            uint32_t fields_count;
             VALUE fields[1];
         } shape;
         struct {

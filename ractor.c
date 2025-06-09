@@ -1658,10 +1658,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             if (d.stop) return 1;
         }
         else {
-            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
-                if (!UNDEF_P(fields_tbl->as.shape.fields[i])) {
-                    CHECK_AND_REPLACE(fields_tbl->as.shape.fields[i]);
-                }
+            uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+            for (uint32_t i = 0; i < fields_count; i++) {
+                CHECK_AND_REPLACE(fields_tbl->as.shape.fields[i]);
             }
         }
     }

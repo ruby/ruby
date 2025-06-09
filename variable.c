@@ -1228,19 +1228,10 @@ gen_fields_tbl_bytes(size_t n)
 }
 
 static struct gen_fields_tbl *
-gen_fields_tbl_resize(struct gen_fields_tbl *old, uint32_t n)
+gen_fields_tbl_resize(struct gen_fields_tbl *old, uint32_t new_capa)
 {
-    RUBY_ASSERT(n > 0);
-
-    uint32_t len = old ? old->as.shape.fields_count : 0;
-    struct gen_fields_tbl *fields_tbl = xrealloc(old, gen_fields_tbl_bytes(n));
-
-    fields_tbl->as.shape.fields_count = n;
-    for (; len < n; len++) {
-        fields_tbl->as.shape.fields[len] = Qundef;
-    }
-
-    return fields_tbl;
+    RUBY_ASSERT(new_capa > 0);
+    return xrealloc(old, gen_fields_tbl_bytes(new_capa));
 }
 
 void
@@ -1253,7 +1244,8 @@ rb_mark_generic_ivar(VALUE obj)
             rb_mark_tbl_no_pin(fields_tbl->as.complex.table);
         }
         else {
-            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
+            uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+            for (uint32_t i = 0; i < fields_count; i++) {
                 rb_gc_mark_movable(fields_tbl->as.shape.fields[i]);
             }
         }
@@ -1290,7 +1282,7 @@ rb_generic_ivar_memsize(VALUE obj)
             return sizeof(struct gen_fields_tbl) + st_memsize(fields_tbl->as.complex.table);
         }
         else {
-            return gen_fields_tbl_bytes(fields_tbl->as.shape.fields_count);
+            return gen_fields_tbl_bytes(RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)));
         }
     }
     return 0;
@@ -1299,21 +1291,12 @@ rb_generic_ivar_memsize(VALUE obj)
 static size_t
 gen_fields_tbl_count(VALUE obj, const struct gen_fields_tbl *fields_tbl)
 {
-    uint32_t i;
-    size_t n = 0;
-
     if (rb_shape_obj_too_complex_p(obj)) {
-        n = st_table_size(fields_tbl->as.complex.table);
+        return st_table_size(fields_tbl->as.complex.table);
     }
     else {
-        for (i = 0; i < fields_tbl->as.shape.fields_count; i++) {
-            if (!UNDEF_P(fields_tbl->as.shape.fields[i])) {
-                n++;
-            }
-        }
+        return RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
     }
-
-    return n;
 }
 
 VALUE
