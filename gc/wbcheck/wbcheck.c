@@ -510,6 +510,19 @@ maybe_gc(void *objspace_ptr)
     objspace->objects_to_capture->count = 0;
 }
 
+static void
+lock_and_maybe_gc(void *objspace_ptr)
+{
+    if (!ruby_native_thread_p()) return;
+
+    unsigned int lev = rb_gc_vm_lock();
+    rb_gc_vm_barrier();
+
+    maybe_gc(objspace_ptr);
+
+    rb_gc_vm_unlock(lev);
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
@@ -576,21 +589,21 @@ rb_gc_impl_size_allocatable_p(size_t size)
 void *
 rb_gc_impl_malloc(void *objspace_ptr, size_t size)
 {
-    maybe_gc(objspace_ptr);
+    lock_and_maybe_gc(objspace_ptr);
     return malloc(size);
 }
 
 void *
 rb_gc_impl_calloc(void *objspace_ptr, size_t size)
 {
-    maybe_gc(objspace_ptr);
+    lock_and_maybe_gc(objspace_ptr);
     return calloc(1, size);
 }
 
 void *
 rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
 {
-    maybe_gc(objspace_ptr);
+    lock_and_maybe_gc(objspace_ptr);
     return realloc(ptr, new_size);
 }
 
