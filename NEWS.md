@@ -16,8 +16,8 @@ Note: We're only listing outstanding class updates.
 
 * Kernel
 
-    * `Kernel#inspect` now check for the existence of a `#instance_variables_to_inspect` method
-      allowing to control which instance variables are displayed in the `#inspect` string:
+    * `Kernel#inspect` now checks for the existence of a `#instance_variables_to_inspect` method,
+      allowing control over which instance variables are displayed in the `#inspect` string:
 
       ```ruby
       class DatabaseConfig
