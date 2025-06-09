@@ -221,7 +221,7 @@ rb_ary_size_as_embedded(VALUE ary)
         real_size = ary_embed_size(ARY_EMBED_LEN(ary));
     }
     else if (rb_ary_embeddable_p(ary)) {
-        real_size = ary_embed_size(ARY_HEAP_CAPA(ary));
+        real_size = ary_embed_size(ARY_HEAP_LEN(ary));
     }
     else {
         real_size = sizeof(struct RArray);
