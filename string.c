@@ -11149,11 +11149,6 @@ rb_str_oct(VALUE str)
 static struct {
     rb_nativethread_lock_t lock;
 } crypt_mutex = {PTHREAD_MUTEX_INITIALIZER};
-
-static void
-crypt_mutex_initialize(void)
-{
-}
 #endif
 
 /*
@@ -11224,6 +11219,7 @@ rb_str_crypt(VALUE str, VALUE salt)
     struct crypt_data *data;
 #   define CRYPT_END() ALLOCV_END(databuf)
 #else
+    char *tmp_buf;
     extern char *crypt(const char *, const char *);
 #   define CRYPT_END() rb_nativethread_lock_unlock(&crypt_mutex.lock)
 #endif
@@ -11258,7 +11254,6 @@ rb_str_crypt(VALUE str, VALUE salt)
 # endif
     res = crypt_r(s, saltp, data);
 #else
-    crypt_mutex_initialize();
     rb_nativethread_lock_lock(&crypt_mutex.lock);
     res = crypt(s, saltp);
 #endif
@@ -11267,8 +11262,21 @@ rb_str_crypt(VALUE str, VALUE salt)
         CRYPT_END();
         rb_syserr_fail(err, "crypt");
     }
+#ifdef HAVE_CRYPT_R
     result = rb_str_new_cstr(res);
     CRYPT_END();
+#else
+    // We need to copy this buffer because it's static and we need to unlock the mutex
+    // before allocating a new object (the string to be returned). If we allocate while
+    // holding the lock, we could run GC which fires the VM barrier and causes a deadlock
+    // if other ractors are waiting on this lock.
+    size_t res_size = strlen(res)+1;
+    tmp_buf = ALLOCA_N(char, res_size); // should be small enough to alloca
+    memcpy(tmp_buf, res, res_size);
+    res = tmp_buf;
+    CRYPT_END();
+    result = rb_str_new_cstr(res);
+#endif
     return result;
 }
 
