@@ -33,7 +33,7 @@ Add a \fBCODE_OF_CONDUCT\.md\fR file to the root of the generated project\. If t
 Do not create a \fBCODE_OF_CONDUCT\.md\fR (overrides \fB\-\-coc\fR specified in the global config)\.
 .TP
 \fB\-\-changelog\fR
-Add a \fBCHANGELOG\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\.
+Add a \fBCHANGELOG\.md\fR file to the root of the generated project\. If this option is unspecified, an interactive prompt will be displayed and the answer will be saved in Bundler's global config for future \fBbundle gem\fR use\. Update the default with \fBbundle config set \-\-global gem\.changelog <true|false>\fR\.
 .TP
 \fB\-\-no\-changelog\fR
 Do not create a \fBCHANGELOG\.md\fR (overrides \fB\-\-changelog\fR specified in the global config)\.
@@ -67,9 +67,6 @@ When Bundler is unconfigured, an interactive prompt will be displayed and the an
 .TP
 \fB\-\-no\-test\fR
 Do not use a test framework (overrides \fB\-\-test\fR specified in the global config)\.
-.TP
-\fB\-\-changelog\fR
-Generate changelog file\. Set a default with \fBbundle config set \-\-global gem\.changelog true\fR\.
 .TP
 \fB\-\-ci\fR, \fB\-\-ci=circle\fR, \fB\-\-ci=github\fR, \fB\-\-ci=gitlab\fR
 Specify the continuous integration service that Bundler should use when generating the project\. Acceptable values are \fBgithub\fR, \fBgitlab\fR and \fBcircle\fR\. A configuration file will be generated in the project directory\. Given no option is specified:

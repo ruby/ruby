@@ -45,6 +45,7 @@ configuration file using the following names:
   Add a `CHANGELOG.md` file to the root of the generated project. If
   this option is unspecified, an interactive prompt will be displayed and the
   answer will be saved in Bundler's global config for future `bundle gem` use.
+  Update the default with `bundle config set --global gem.changelog <true|false>`.
 
 * `--no-changelog`:
   Do not create a `CHANGELOG.md` (overrides `--changelog` specified in the
@@ -94,9 +95,6 @@ configuration file using the following names:
 * `--no-test`:
   Do not use a test framework (overrides `--test` specified in the global
   config).
-
-* `--changelog`:
-  Generate changelog file. Set a default with `bundle config set --global gem.changelog true`.
 
 * `--ci`, `--ci=circle`, `--ci=github`, `--ci=gitlab`:
   Specify the continuous integration service that Bundler should use when
