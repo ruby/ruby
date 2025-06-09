@@ -1562,18 +1562,6 @@ extract-gems$(sequential): PHONY
 
 extract-gems$(sequential): $(HAVE_GIT:yes=clone-bundled-gems-src)
 
-clone-bundled-gems-src: PHONY
-	$(Q) $(BASERUBY) -C "$(srcdir)" \
-	    -Itool/lib -rbundled_gem -answ \
-	    -e 'BEGIN {git = $$git}' \
-	    -e 'gem, _, repo, rev = *$$F' \
-	    -e 'next if !rev or /^#/=~gem' \
-	    -e 'gemdir = "gems/src/#{gem}"' \
-	    -e 'BundledGem.checkout(gemdir, repo, rev, git: git)' \
-	    -e 'BundledGem.dummy_gemspec("#{gemdir}/#{gem}.gemspec")' \
-	    -- -git="$(GIT)" \
-	    gems/bundled_gems
-
 outdate-bundled-gems: PHONY
 	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" \
 	--ruby-platform=$(arch) --ruby-version=$(ruby_version) \
@@ -1623,7 +1611,8 @@ yes-install-for-test-bundled-gems: yes-update-default-gemspecs
 		"sinatra" "rack" "tilt" "mustermann" "base64" "compact_index" "rack-test" "logger" "kpeg" "tracer"
 
 test-bundled-gems-fetch: yes-test-bundled-gems-fetch
-yes-test-bundled-gems-fetch:
+yes-test-bundled-gems-fetch: clone-bundled-gems-src
+clone-bundled-gems-src: PHONY
 	$(Q) $(BASERUBY) -C $(srcdir)/gems ../tool/fetch-bundled_gems.rb BUNDLED_GEMS="$(BUNDLED_GEMS)" src bundled_gems
 no-test-bundled-gems-fetch:
 
