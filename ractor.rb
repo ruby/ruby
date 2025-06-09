@@ -722,7 +722,7 @@ class Ractor
     #
     #     port = Ractor::Port.new
     #     Ractor.new port do |port|
-    #       port.sned 1 # OK
+    #       port.send 1 # OK
     #       port.send 2 # OK
     #       port.close
     #       port.send 3 # raise Ractor::ClosedError
