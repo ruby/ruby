@@ -37,7 +37,7 @@ wbcheck_debug_obj_info_dump(VALUE obj)
 #define HEAP_COUNT 5
 #define MAX_HEAP_SIZE (BASE_SLOT_SIZE * 16)
 
-// Define heap sizes using power-of-2 progression
+// Define same heap sizes as the default GC
 static size_t heap_sizes[HEAP_COUNT + 1] = {
     BASE_SLOT_SIZE,      // 40
     BASE_SLOT_SIZE * 2,  // 80
@@ -47,7 +47,7 @@ static size_t heap_sizes[HEAP_COUNT + 1] = {
     0
 };
 
-// References list structure
+// List of objects
 typedef struct {
     VALUE *items;
     size_t count;
@@ -461,10 +461,9 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 static void
 wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
 {
-    // Get the object info first to check if it's write barrier protected
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
-    // Exit immediately if the object is not write barrier protected
+    // Ignore objects which are not write barrier protected
     if (!info->wb_protected) {
         return;
     }
@@ -488,7 +487,8 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
         wbcheck_debug("wbcheck: no stored references to compare against\n");
     }
 
-    // Replace the stored references with the current ones
+    // Replace the stored references with the current ones.
+    // This will be either equal to or a subset of the previous references.
     info->references = current_refs;
 }
 
@@ -496,6 +496,9 @@ static void
 maybe_gc(void *objspace_ptr)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    // Not initialized yet
+    if (!objspace) return;
 
     // Process all objects that need initial reference capture
     for (size_t i = 0; i < objspace->objects_to_capture->count; i++) {
@@ -573,18 +576,21 @@ rb_gc_impl_size_allocatable_p(size_t size)
 void *
 rb_gc_impl_malloc(void *objspace_ptr, size_t size)
 {
+    maybe_gc(objspace_ptr);
     return malloc(size);
 }
 
 void *
 rb_gc_impl_calloc(void *objspace_ptr, size_t size)
 {
+    maybe_gc(objspace_ptr);
     return calloc(1, size);
 }
 
 void *
 rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
 {
+    maybe_gc(objspace_ptr);
     return realloc(ptr, new_size);
 }
 
