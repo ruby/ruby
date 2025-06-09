@@ -543,7 +543,7 @@ rb_stat_new(const struct stat *st)
     if (st) {
 #if RUBY_USE_STATX
 # define CP(m) .stx_ ## m = st->st_ ## m
-# define CP_32(m) .stx_ ## m = (__u32)st->st_ ## m
+# define CP_32(m) .stx_ ## m = (uint32_t)st->st_ ## m
 # define CP_TS(m) .stx_ ## m = stat_ ## m ## spec(st)
         rb_st->stat = (struct statx){
             .stx_mask = STATX_BASIC_STATS,
