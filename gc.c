@@ -4093,7 +4093,8 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
             );
         }
         else {
-            for (uint32_t i = 0; i < fields_tbl->as.shape.fields_count; i++) {
+            uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID((VALUE)key));
+            for (uint32_t i = 0; i < fields_count; i++) {
                 if (SPECIAL_CONST_P(fields_tbl->as.shape.fields[i])) continue;
 
                 int ivar_ret = iter_data->callback(fields_tbl->as.shape.fields[i], iter_data->data);
