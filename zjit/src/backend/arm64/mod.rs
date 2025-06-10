@@ -1345,14 +1345,30 @@ impl Assembler
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::disasm::*;
+    use crate::assertions::assert_disasm;
+
+    static TEMP_REGS: [Reg; 5] = [X1_REG, X9_REG, X10_REG, X14_REG, X15_REG];
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(0), CodeBlock::new_dummy(1024))
+        (Assembler::new(), CodeBlock::new_dummy())
+    }
+
+    #[test]
+    fn test_mul_with_immediate() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.mul(Opnd::Reg(TEMP_REGS[1]), 3.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm!(cb, "600080d2207d009be10300aa", {"
+            0x0: mov x0, #3
+            0x4: mul x0, x9, x0
+            0x8: mov x1, x0
+        "});
     }
 
     #[test]
@@ -1361,7 +1377,7 @@ mod tests {
 
         let opnd = asm.add(Opnd::Reg(X0_REG), Opnd::Reg(X1_REG));
         asm.store(Opnd::mem(64, Opnd::Reg(X2_REG), 0), opnd);
-        asm.compile_with_regs(&mut cb, None, vec![X3_REG]);
+        asm.compile_with_regs(&mut cb, vec![X3_REG]);
 
         // Assert that only 2 instructions were written.
         assert_eq!(8, cb.get_write_pos());
@@ -1425,6 +1441,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 0);
     }
 
+    /*
     #[test]
     fn test_emit_lea_label() {
         let (mut asm, mut cb) = setup_asm();
@@ -1438,6 +1455,7 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
     }
+    */
 
     #[test]
     fn test_emit_load_mem_disp_fits_into_load() {
@@ -1648,6 +1666,7 @@ mod tests {
         asm.compile_with_num_regs(&mut cb, 2);
     }
 
+    /*
     #[test]
     fn test_bcond_straddling_code_pages() {
         const LANDING_PAGE: usize = 65;
@@ -1784,20 +1803,5 @@ mod tests {
             0x8: mov x1, x11
         "});
     }
-
-    #[test]
-    fn test_mul_with_immediate() {
-        let (mut asm, mut cb) = setup_asm();
-
-        let out = asm.mul(Opnd::Reg(TEMP_REGS[1]), 3.into());
-        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
-        asm.compile_with_num_regs(&mut cb, 2);
-
-        assert_disasm!(cb, "6b0080d22b7d0b9be1030baa", {"
-            0x0: mov x11, #3
-            0x4: mul x11, x9, x11
-            0x8: mov x1, x11
-        "});
-    }
+    */
 }
-*/
