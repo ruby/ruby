@@ -1,6 +1,11 @@
 require_relative '../../spec_helper'
 
 platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
+  not_implemented_messages = [
+    "birthtime() function is unimplemented", # unsupported OS/version
+    "birthtime is unimplemented",            # unsupported filesystem
+  ]
+
   describe "File.birthtime" do
     before :each do
       @file = __FILE__
@@ -14,20 +19,20 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
       File.birthtime(@file)
       File.birthtime(@file).should be_kind_of(Time)
     rescue NotImplementedError => e
-      skip e.message if e.message.start_with?("birthtime() function")
+      e.message.should.start_with?(*not_implemented_messages)
     end
 
     it "accepts an object that has a #to_path method" do
       File.birthtime(@file) # Avoid to failure of mock object with old Kernel and glibc
       File.birthtime(mock_to_path(@file))
     rescue NotImplementedError => e
-      e.message.should.start_with?("birthtime() function")
+      e.message.should.start_with?(*not_implemented_messages)
     end
 
     it "raises an Errno::ENOENT exception if the file is not found" do
       -> { File.birthtime('bogus') }.should raise_error(Errno::ENOENT)
     rescue NotImplementedError => e
-      e.message.should.start_with?("birthtime() function")
+      e.message.should.start_with?(*not_implemented_messages)
     end
   end
 
@@ -45,7 +50,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
       @file.birthtime
       @file.birthtime.should be_kind_of(Time)
     rescue NotImplementedError => e
-      e.message.should.start_with?("birthtime() function")
+      e.message.should.start_with?(*not_implemented_messages)
     end
   end
 end
