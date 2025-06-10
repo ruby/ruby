@@ -1228,10 +1228,10 @@ gen_fields_tbl_bytes(size_t n)
 }
 
 static struct gen_fields_tbl *
-gen_fields_tbl_resize(struct gen_fields_tbl *old, uint32_t new_capa)
+gen_fields_tbl_alloc(uint32_t capa)
 {
-    RUBY_ASSERT(new_capa > 0);
-    return xrealloc(old, gen_fields_tbl_bytes(new_capa));
+    RUBY_ASSERT(capa > 0);
+    return xmalloc(gen_fields_tbl_bytes(capa));
 }
 
 void
@@ -1796,12 +1796,13 @@ struct gen_fields_lookup_ensure_size {
     VALUE obj;
     ID id;
     struct gen_fields_tbl *fields_tbl;
+    struct gen_fields_tbl *old_fields_tbl;
     shape_id_t shape_id;
     bool resize;
 };
 
 static int
-generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int existing)
+generic_fields_lookup_ensure_size_update(st_data_t *k, st_data_t *v, st_data_t u, int existing)
 {
     ASSERT_vm_locking();
 
@@ -1817,7 +1818,23 @@ generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int e
             FL_SET_RAW((VALUE)*k, FL_EXIVAR);
         }
 
-        fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE_CAPACITY(fields_lookup->shape_id));
+        struct gen_fields_tbl *old_fields_tbl = fields_tbl;
+        fields_lookup->old_fields_tbl = old_fields_tbl;
+
+        // We can't use `xrealloc` because if it triggers GC the current object will mark the freed pointer.
+        fields_tbl = gen_fields_tbl_alloc(RSHAPE_CAPACITY(fields_lookup->shape_id));
+        if (old_fields_tbl) {
+            attr_index_t previous_len = RSHAPE_LEN(RSHAPE(fields_lookup->shape_id)->parent_id);
+
+            // GC MUST NOT trigger after this point until the function returns.
+            // The new `fields_tbl` won't be marked until `st_update` complete, so compaction could
+            // invalidate the references we just copied.
+            MEMCPY(&fields_tbl->as.shape.fields, &old_fields_tbl->as.shape.fields, VALUE, previous_len);
+
+            // Make sure the yet to be set variable isn't garbage, because GC might trigger after we
+            // swapped the memory, but before the field is set.
+            fields_tbl->as.shape.fields[previous_len] = Qundef;
+        }
         *v = (st_data_t)fields_tbl;
     }
 
@@ -1839,7 +1856,12 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
     struct gen_fields_lookup_ensure_size *fields_lookup = data;
 
     RB_VM_LOCKING() {
-        st_update(generic_fields_tbl(obj, fields_lookup->id, false), (st_data_t)obj, generic_fields_lookup_ensure_size, (st_data_t)fields_lookup);
+        st_update(generic_fields_tbl(obj, fields_lookup->id, false), (st_data_t)obj, generic_fields_lookup_ensure_size_update, (st_data_t)fields_lookup);
+
+        // The old fields table can only be freed after `st_update` returned, because `xfree`
+        // might trigger GC, so we need to ensure the `generic_fields_tbl` points to the new memory.
+        xfree(fields_lookup->old_fields_tbl);
+        fields_lookup->old_fields_tbl = NULL;
     }
 
     FL_SET_RAW(obj, FL_EXIVAR);
@@ -2362,7 +2384,7 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             return;
         }
 
-        new_fields_tbl = gen_fields_tbl_resize(0, RSHAPE_CAPACITY(dest_shape_id));
+        new_fields_tbl = gen_fields_tbl_alloc(RSHAPE_CAPACITY(dest_shape_id));
 
         VALUE *src_buf = obj_fields_tbl->as.shape.fields;
         VALUE *dest_buf = new_fields_tbl->as.shape.fields;
