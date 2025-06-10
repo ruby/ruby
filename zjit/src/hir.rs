@@ -148,9 +148,9 @@ pub enum SpecialObjectType {
 impl From<u32> for SpecialObjectType {
     fn from(value: u32) -> Self {
         match value {
-            1 => SpecialObjectType::VMCore,
-            2 => SpecialObjectType::CBase,
-            3 => SpecialObjectType::ConstBase,
+            VM_SPECIAL_OBJECT_VMCORE => SpecialObjectType::VMCore,
+            VM_SPECIAL_OBJECT_CBASE => SpecialObjectType::CBase,
+            VM_SPECIAL_OBJECT_CONST_BASE => SpecialObjectType::ConstBase,
             _ => panic!("Invalid special object type: {}", value),
         }
     }
@@ -4011,7 +4011,9 @@ mod tests {
     }
 
     #[test]
-    fn test_putspecialobject() {
+    // Tests for ConstBase requires either constant or class definition, both
+    // of which can't be performed inside a method.
+    fn test_putspecialobject_vm_core_and_cbase() {
         eval("
             def test
                 alias aliased __callee__

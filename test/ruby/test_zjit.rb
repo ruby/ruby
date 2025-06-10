@@ -652,7 +652,14 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_putspecialobject
+  # We need to support either setconstant or defineclass insns to support ConstBase's
+  # test case, like
+  #
+  # ```
+  # Foo = 1
+  # class Module::Bar; end
+  # ```
+  def test_putspecialobject_vm_core_and_cbase
     assert_compiles '10', %q{
       def test
         alias bar test
