@@ -298,19 +298,24 @@ impl Assembler
                             let opnd1 = asm.load(*src);
                             asm.mov(*dest, opnd1);
                         },
-                        (Opnd::Mem(_), Opnd::UImm(value)) => {
-                            // 32-bit values will be sign-extended
-                            if imm_num_bits(*value as i64) > 32 {
+                        (Opnd::Mem(Mem { num_bits, .. }), Opnd::UImm(value)) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if *num_bits == 64 && imm_num_bits(*value as i64) > 32 {
                                 let opnd1 = asm.load(*src);
                                 asm.mov(*dest, opnd1);
                             } else {
                                 asm.mov(*dest, *src);
                             }
                         },
-                        (Opnd::Mem(_), Opnd::Imm(value)) => {
-                            if imm_num_bits(*value) > 32 {
+                        (Opnd::Mem(Mem { num_bits, .. }), Opnd::Imm(value)) => {
+                            // For 64 bit destinations, 32-bit values will be sign-extended
+                            if *num_bits == 64 && imm_num_bits(*value) > 32 {
                                 let opnd1 = asm.load(*src);
                                 asm.mov(*dest, opnd1);
+                            } else if uimm_num_bits(*value as u64) <= *num_bits {
+                                // If the bit string is short enough for the destination, use the unsigned representation.
+                                // Note that 64-bit and negative values are ruled out.
+                                asm.mov(*dest, Opnd::UImm(*value as u64));
                             } else {
                                 asm.mov(*dest, *src);
                             }
@@ -1292,6 +1297,21 @@ mod tests {
             0xa: mov ecx, 4
             0xf: cmove rax, rcx
             0x13: mov qword ptr [rbx], rax
+        "});
+    }
+
+    #[test]
+    fn test_mov_m32_imm32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let shape_opnd = Opnd::mem(32, C_RET_OPND, 0);
+        asm.mov(shape_opnd, Opnd::UImm(0x8000_0001));
+        asm.mov(shape_opnd, Opnd::Imm(0x8000_0001));
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm!(cb, "c70001000080c70001000080", {"
+            0x0: mov dword ptr [rax], 0x80000001
+            0x6: mov dword ptr [rax], 0x80000001
         "});
     }
 }
