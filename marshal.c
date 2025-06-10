@@ -145,12 +145,14 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
 
     compat_allocator_table();
     compat = ALLOC(marshal_compat_t);
-    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->newclass, newclass);
-    RB_OBJ_WRITE(compat_allocator_tbl_wrapper, &compat->oldclass, oldclass);
+    compat->newclass = newclass;
+    compat->oldclass = oldclass;
     compat->dumper = dumper;
     compat->loader = loader;
 
     st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
+    RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, newclass);
+    RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, oldclass);
 }
 
 struct dump_arg {
