@@ -3768,9 +3768,17 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
     VALUE aseq = enumerator_init(enumerator_allocate(rb_cArithSeq),
                                  obj, meth, argc, argv, size_fn, Qnil, rb_keyword_given_p());
     rb_ivar_set(aseq, id_begin, beg);
+    RUBY_ASSERT(rb_ivar_get(aseq, id_begin) == beg);
+
     rb_ivar_set(aseq, id_end, end);
+    RUBY_ASSERT(rb_ivar_get(aseq, id_end) == end);
+
     rb_ivar_set(aseq, id_step, step);
+    RUBY_ASSERT(rb_ivar_get(aseq, id_step) == step);
+
     rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
+    RUBY_ASSERT(rb_ivar_get(aseq, id_exclude_end) == RBOOL(excl));
+
     return aseq;
 }
 
