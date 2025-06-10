@@ -15,6 +15,9 @@
 // Debug output control
 static bool wbcheck_debug_enabled = false;
 
+// Verification after write barrier control
+static bool wbcheck_verify_after_wb_enabled = false;
+
 static void
 wbcheck_debug(const char *format, ...)
 {
@@ -122,6 +125,7 @@ typedef struct {
 typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
     wbcheck_object_list_t *objects_to_capture; // Objects that need initial reference capture
+    wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
     bool during_gc;          // True when we're currently marking
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
@@ -262,6 +266,7 @@ rb_gc_impl_objspace_alloc(void)
     }
 
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
+    objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
@@ -303,6 +308,12 @@ rb_gc_impl_init(void)
     const char *debug_env = getenv("WBCHECK_DEBUG");
     if (debug_env && (strcmp(debug_env, "1") == 0 || strcmp(debug_env, "true") == 0)) {
         wbcheck_debug_enabled = true;
+    }
+
+    // Configure verification after write barrier based on environment variable
+    const char *verify_after_wb_env = getenv("WBCHECK_VERIFY_AFTER_WB");
+    if (verify_after_wb_env && (strcmp(verify_after_wb_env, "1") == 0 || strcmp(verify_after_wb_env, "true") == 0)) {
+        wbcheck_verify_after_wb_enabled = true;
     }
 
     VALUE gc_constants = rb_hash_new();
@@ -499,6 +510,17 @@ maybe_gc(void *objspace_ptr)
 
     // Not initialized yet
     if (!objspace) return;
+
+    // Process all objects that need verification after write barriers (if enabled)
+    if (wbcheck_verify_after_wb_enabled) {
+        for (size_t i = 0; i < objspace->objects_to_verify->count; i++) {
+            VALUE obj = objspace->objects_to_verify->items[i];
+            wbcheck_verify_object_references(objspace_ptr, obj);
+        }
+
+        // Clear the list after processing
+        objspace->objects_to_verify->count = 0;
+    }
 
     // Process all objects that need initial reference capture
     for (size_t i = 0; i < objspace->objects_to_capture->count; i++) {
@@ -713,6 +735,12 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         wbcheck_object_list_append(info->references, b);
 
         wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
+
+        // If verification after write barrier is enabled, queue the object for verification
+        if (wbcheck_verify_after_wb_enabled) {
+            wbcheck_debug("wbcheck: queueing object for verification after write barrier\n");
+            wbcheck_object_list_append(objspace->objects_to_verify, a);
+        }
     } else {
         wbcheck_debug("wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
