@@ -989,6 +989,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 
         if (waiter) {
             VM_ASSERT(waiter->wakeup_status == wakeup_none);
+            ccan_list_del_init(&waiter->node); // make sure it's safe to delete again
             rb_thread_t *th = waiter->th;
             rb_fiber_t *fiber = waiter->fiber;
             fiber_scheduler = th->scheduler;
@@ -1074,7 +1075,11 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
             }
             EC_POP_TAG();
             if (state) {
-                ccan_list_del(&waiter.node);
+                RACTOR_LOCK(cr);
+                {
+                    ccan_list_del_init(&waiter.node);
+                }
+                RACTOR_UNLOCK(cr);
                 EC_JUMP_TAG(th->ec, state);
             }
         }
@@ -1086,7 +1091,7 @@ ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
     }
 
     if (waiter.wakeup_status == wakeup_none) {
-        ccan_list_del(&waiter.node);
+        ccan_list_del_init(&waiter.node);
     }
     VM_ASSERT(!ractor_waiter_included(cr, th));
     RUBY_DEBUG_LOG("wakeup_status:%s", wakeup_status_str(waiter.wakeup_status));
