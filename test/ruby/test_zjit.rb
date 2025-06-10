@@ -295,6 +295,34 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_ge], call_threshold: 2
   end
 
+  def test_opt_hash_freeze
+    assert_compiles '{}', <<~RUBY, insns: [:opt_hash_freeze]
+      def test = {}.freeze
+      test
+    RUBY
+  end
+
+  def test_opt_ary_freeze
+    assert_compiles '[]', <<~RUBY, insns: [:opt_ary_freeze]
+      def test = [].freeze
+      test
+    RUBY
+  end
+
+  def test_opt_str_freeze
+    assert_compiles '""', <<~RUBY, insns: [:opt_str_freeze]
+      def test = "".freeze
+      test
+    RUBY
+  end
+
+  def test_opt_str_uminus
+    assert_compiles '""', <<~RUBY, insns: [:opt_str_uminus]
+      def test = -""
+      test
+    RUBY
+  end
+
   def test_new_array_empty
     assert_compiles '[]', %q{
       def test = []
