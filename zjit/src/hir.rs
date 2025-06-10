@@ -392,6 +392,11 @@ pub enum Insn {
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache },
 
+    /// Get a global variable named `id`
+    GetGlobal { id: ID, state: InsnId },
+    /// Set a global variable named `id` to `val`
+    SetGlobal { id: ID, val: InsnId, state: InsnId },
+
     //NewObject?
     /// Get an instance variable `id` from `self_val`
     GetIvar { self_val: InsnId, id: ID, state: InsnId },
@@ -459,7 +464,7 @@ impl Insn {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } => false,
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. } => false,
             _ => true,
         }
     }
@@ -625,6 +630,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::DefinedIvar { self_val, id, .. } => write!(f, "DefinedIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::GetIvar { self_val, id, .. } => write!(f, "GetIvar {self_val}, :{}", id.contents_lossy().into_owned()),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
+            Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy().into_owned()),
+            Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy().into_owned()),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
@@ -982,6 +989,8 @@ impl Function {
             }
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
+            &GetGlobal { id, state } => GetGlobal { id, state },
+            &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
@@ -1012,7 +1021,7 @@ impl Function {
         assert!(self.insns[insn.0].has_output());
         match &self.insns[insn.0] {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
-            Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
+            Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } =>
@@ -1063,6 +1072,7 @@ impl Function {
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
             Insn::ArrayMax { .. } => types::BasicObject,
+            Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
@@ -1568,7 +1578,8 @@ impl Function {
                 | Insn::Test { val }
                 | Insn::IsNil { val } =>
                     worklist.push_back(val),
-                Insn::GuardType { val, state, .. }
+                Insn::SetGlobal { val, state, .. }
+                | Insn::GuardType { val, state, .. }
                 | Insn::GuardBitEquals { val, state, .. }
                 | Insn::ToArray { val, state }
                 | Insn::ToNewArray { val, state } => {
@@ -1635,6 +1646,7 @@ impl Function {
                     worklist.push_back(val);
                     worklist.push_back(state);
                 }
+                Insn::GetGlobal { state, .. } |
                 Insn::SideExit { state } => worklist.push_back(state),
             }
         }
@@ -2434,6 +2446,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let send = fun.push_insn(block, Insn::Send { self_val: recv, call_info: CallInfo { method_name }, cd, blockiseq, args, state: exit_id });
                     state.stack_push(send);
+                }
+                YARVINSN_getglobal => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let result = fun.push_insn(block, Insn::GetGlobal { id, state: exit_id });
+                    state.stack_push(result);
+                }
+                YARVINSN_setglobal => {
+                    let id = ID(get_arg(pc, 0).as_u64());
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let val = state.stack_pop()?;
+                    fun.push_insn(block, Insn::SetGlobal { id, val, state: exit_id });
                 }
                 YARVINSN_getinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
@@ -3708,6 +3732,35 @@ mod tests {
               v2:Fixnum[1] = Const Value(1)
               SetIvar v0, :@foo, v2
               Return v2
+        "#]]);
+    }
+
+    #[test]
+    fn test_setglobal() {
+        eval("
+            def test = $foo = 1
+            test
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_setglobal, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              SetGlobal :$foo, v2
+              Return v2
+        "#]]);
+    }
+
+    #[test]
+    fn test_getglobal() {
+        eval("
+            def test = $foo
+            test
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_getglobal, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:BasicObject = GetGlobal :$foo
+              Return v3
         "#]]);
     }
 
