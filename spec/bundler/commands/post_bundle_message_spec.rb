@@ -142,7 +142,7 @@ Could not find gem 'not-a-gem' in rubygems repository https://gem.repo1/ or inst
     end
   end
 
-  describe "for second bundle install run", bundler: "< 3" do
+  describe "for second bundle install run", bundler: "2" do
     it "without any options" do
       2.times { bundle :install }
       expect(out).to include(bundle_show_message)

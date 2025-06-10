@@ -26,7 +26,7 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
-    it "caches the git repo", bundler: "< 3" do
+    it "caches the git repo", bundler: "2" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes size: 1
     end
 

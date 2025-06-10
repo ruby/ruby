@@ -772,7 +772,7 @@ RSpec.describe "bundle update" do
       G
     end
 
-    it "should fail loudly", bundler: "< 3" do
+    it "should fail loudly", bundler: "2" do
       bundle "install --deployment"
       bundle "update", all: true, raise_on_error: false
 
@@ -1036,7 +1036,7 @@ RSpec.describe "bundle update" do
     end
   end
 
-  context "with multiple, duplicated sources, with lockfile in old format", bundler: "< 3" do
+  context "with multiple, duplicated sources, with lockfile in old format", bundler: "2" do
     before do
       build_repo2 do
         build_gem "dotenv", "2.7.6"

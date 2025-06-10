@@ -123,7 +123,7 @@ RSpec.describe "bundle check" do
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
-  it "remembers --without option from install", bundler: "< 3" do
+  it "remembers --without option from install", bundler: "2" do
     gemfile <<-G
       source "https://gem.repo1"
       group :foo do
@@ -272,7 +272,7 @@ RSpec.describe "bundle check" do
     expect(last_command).to be_failure
   end
 
-  context "--path", bundler: "< 3" do
+  context "--path", bundler: "2" do
     context "after installing gems in the proper directory" do
       before do
         gemfile <<-G

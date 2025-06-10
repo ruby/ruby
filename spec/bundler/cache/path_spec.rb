@@ -97,7 +97,7 @@ RSpec.describe "bundle cache with path" do
     expect(bundled_app("vendor/cache/foo-1.0")).not_to exist
   end
 
-  it "does not cache path gems by default", bundler: "< 3" do
+  it "does not cache path gems by default", bundler: "2" do
     build_lib "foo"
 
     install_gemfile <<-G

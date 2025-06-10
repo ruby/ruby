@@ -103,7 +103,7 @@ RSpec.describe Bundler::Dsl do
       )
     end
 
-    context "default hosts", bundler: "< 3" do
+    context "default hosts", bundler: "2" do
       it "converts :github to URI using https" do
         subject.gem("sparks", github: "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"

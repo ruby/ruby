@@ -43,7 +43,7 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  context "when --install flag is specified", bundler: "< 3" do
+  context "when --install flag is specified", bundler: "2" do
     it "removes gems from .bundle" do
       gemfile <<-G
         source "https://gem.repo1"

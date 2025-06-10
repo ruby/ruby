@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle inject", bundler: "< 3" do
+RSpec.describe "bundle inject", bundler: "2" do
   before :each do
     gemfile <<-G
       source "https://gem.repo1"

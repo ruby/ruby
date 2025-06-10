@@ -10,7 +10,7 @@ RSpec.describe "bundle version" do
   end
 
   context "with -v" do
-    it "outputs the version", bundler: "< 3" do
+    it "outputs the version", bundler: "2" do
       bundle "-v"
       expect(out).to eq("Bundler version #{Bundler::VERSION}")
     end
@@ -22,7 +22,7 @@ RSpec.describe "bundle version" do
   end
 
   context "with --version" do
-    it "outputs the version", bundler: "< 3" do
+    it "outputs the version", bundler: "2" do
       bundle "--version"
       expect(out).to eq("Bundler version #{Bundler::VERSION}")
     end
@@ -34,7 +34,7 @@ RSpec.describe "bundle version" do
   end
 
   context "with version" do
-    it "outputs the version with build metadata", bundler: "< 3" do
+    it "outputs the version with build metadata", bundler: "2" do
       bundle "version"
       expect(out).to match(/\ABundler version #{Regexp.escape(Bundler::VERSION)} \(\d{4}-\d{2}-\d{2} commit #{COMMIT_HASH}\)\z/)
     end

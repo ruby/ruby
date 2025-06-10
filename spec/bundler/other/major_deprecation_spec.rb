@@ -17,7 +17,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_env", bundler: "2" do
         expect(deprecations).to include \
           "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env` " \
@@ -33,7 +33,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_env", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_env", bundler: "2" do
         expect(deprecations).to include(
           "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
           "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env` " \
@@ -50,7 +50,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_system", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_system", bundler: "2" do
         expect(deprecations).to include(
           "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
           "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system` " \
@@ -67,7 +67,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .unbundled_exec", bundler: "< 3" do
+      it "is deprecated in favor of .unbundled_exec", bundler: "2" do
         expect(deprecations).to include(
           "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
           "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec` " \
@@ -84,7 +84,7 @@ RSpec.describe "major deprecations" do
         bundle "exec ruby -e #{source.dump}"
       end
 
-      it "is deprecated in favor of .load", bundler: "< 3" do
+      it "is deprecated in favor of .load", bundler: "2" do
         expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
       end
 
@@ -97,7 +97,7 @@ RSpec.describe "major deprecations" do
       bundle "exec --no-keep-file-descriptors -e 1", raise_on_error: false
     end
 
-    it "is deprecated", bundler: "< 3" do
+    it "is deprecated", bundler: "2" do
       expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
     end
 
@@ -121,7 +121,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning", bundler: "2" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -143,7 +143,7 @@ RSpec.describe "major deprecations" do
       bundle "check --path=vendor/bundle", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning", bundler: "2" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -165,7 +165,7 @@ RSpec.describe "major deprecations" do
       bundle "cache --all", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning", bundler: "2" do
       expect(deprecations).to include(
         "The `--all` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
@@ -187,7 +187,7 @@ RSpec.describe "major deprecations" do
       bundle "cache --path foo", raise_on_error: false
     end
 
-    it "should print a deprecation warning", bundler: "< 3" do
+    it "should print a deprecation warning", bundler: "2" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because its semantics are unclear. " \
         "Use `bundle config cache_path` to configure the path of your cache of gems, " \
@@ -326,7 +326,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "should output a deprecation warning", bundler: "< 3" do
+    it "should output a deprecation warning", bundler: "2" do
       expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
     end
 
@@ -390,7 +390,7 @@ RSpec.describe "major deprecations" do
           bundle "install #{flag_name} #{value}"
         end
 
-        it "should print a deprecation warning", bundler: "< 3" do
+        it "should print a deprecation warning", bundler: "2" do
           expect(deprecations).to include(
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
@@ -412,7 +412,7 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "shows a deprecation", bundler: "< 3" do
+    it "shows a deprecation", bundler: "2" do
       expect(deprecations).to include(
         "Your Gemfile contains multiple global sources. " \
         "Using `source` more than once without a block is a security risk, and " \
@@ -421,7 +421,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    it "doesn't show lockfile deprecations if there's a lockfile", bundler: "< 3" do
+    it "doesn't show lockfile deprecations if there's a lockfile", bundler: "2" do
       bundle "install"
 
       expect(deprecations).to include(
@@ -485,7 +485,7 @@ RSpec.describe "major deprecations" do
       bundle "config set --local frozen true"
     end
 
-    it "shows a deprecation", bundler: "< 3" do
+    it "shows a deprecation", bundler: "2" do
       bundle "install"
 
       expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
@@ -524,7 +524,7 @@ RSpec.describe "major deprecations" do
       RUBY
     end
 
-    it "should print a capistrano deprecation warning", bundler: "< 3" do
+    it "should print a capistrano deprecation warning", bundler: "2" do
       expect(deprecations).to include("Bundler no longer integrates " \
                              "with Capistrano, but Capistrano provides " \
                              "its own integration with Bundler via the " \
@@ -547,7 +547,7 @@ RSpec.describe "major deprecations" do
         bundle "show --outdated"
       end
 
-      it "prints a deprecation warning informing about its removal", bundler: "< 3" do
+      it "prints a deprecation warning informing about its removal", bundler: "2" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
       end
 
@@ -564,7 +564,7 @@ RSpec.describe "major deprecations" do
     end
 
     context "with --install" do
-      it "shows a deprecation warning", bundler: "< 3" do
+      it "shows a deprecation warning", bundler: "2" do
         bundle "remove myrack --install"
 
         expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
@@ -581,7 +581,7 @@ RSpec.describe "major deprecations" do
       bundle "viz"
     end
 
-    it "prints a deprecation warning", bundler: "< 3" do
+    it "prints a deprecation warning", bundler: "2" do
       expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
@@ -595,7 +595,7 @@ RSpec.describe "major deprecations" do
       end
     end
 
-    it "prints a deprecation warning", bundler: "< 3" do
+    it "prints a deprecation warning", bundler: "2" do
       bundle "plugin install foo --local_git #{lib_path("foo-1.0")}"
 
       expect(out).to include("Installed plugin foo")
@@ -616,7 +616,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning", bundler: "2" do
         expect(deprecations).to include \
           "--rubocop is deprecated, use --linter=rubocop"
       end
@@ -627,7 +627,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem --no-rubocop", raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning", bundler: "2" do
         expect(deprecations).to include \
           "--no-rubocop is deprecated, use --linter"
       end
@@ -638,7 +638,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "true" }, raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning", bundler: "2" do
         expect(deprecations).to include \
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
       end
@@ -649,7 +649,7 @@ RSpec.describe "major deprecations" do
         bundle "gem my_new_gem", env: { "BUNDLE_GEM__RUBOCOP" => "false" }, raise_on_error: false
       end
 
-      it "prints a deprecation warning", bundler: "< 3" do
+      it "prints a deprecation warning", bundler: "2" do
         expect(deprecations).to include \
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead"
       end

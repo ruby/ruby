@@ -250,7 +250,7 @@ To update to the most recent version, run `bundle update --bundler`
 end
 
 RSpec.describe "bundler executable" do
-  it "shows the bundler version just as the `bundle` executable does", bundler: "< 3" do
+  it "shows the bundler version just as the `bundle` executable does", bundler: "2" do
     bundler "--version"
     expect(out).to eq("Bundler version #{Bundler::VERSION}")
   end

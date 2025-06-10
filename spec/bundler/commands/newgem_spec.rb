@@ -162,7 +162,7 @@ RSpec.describe "bundle gem" do
   end
 
   shared_examples_for "--rubocop flag" do
-    context "is deprecated", bundler: "< 3" do
+    context "is deprecated", bundler: "2" do
       before do
         global_config "BUNDLE_GEM__LINTER" => nil
         bundle "gem #{gem_name} --rubocop"
@@ -198,7 +198,7 @@ RSpec.describe "bundle gem" do
   end
 
   shared_examples_for "--no-rubocop flag" do
-    context "is deprecated", bundler: "< 3" do
+    context "is deprecated", bundler: "2" do
       define_negated_matcher :exclude, :include
 
       before do
@@ -1374,7 +1374,7 @@ RSpec.describe "bundle gem" do
       end
     end
 
-    context "gem.rubocop setting set to true", bundler: "< 3" do
+    context "gem.rubocop setting set to true", bundler: "2" do
       before do
         global_config "BUNDLE_GEM__LINTER" => nil
         bundle "config set gem.rubocop true"
@@ -1657,7 +1657,7 @@ RSpec.describe "bundle gem" do
     include_examples "generating a gem"
 
     context "--ext parameter with no value" do
-      context "is deprecated", bundler: "< 3" do
+      context "is deprecated", bundler: "2" do
         it "prints deprecation when used after gem name" do
           bundle ["gem", "--ext", gem_name].compact.join(" ")
           expect(err).to include "[DEPRECATED]"
