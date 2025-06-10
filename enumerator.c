@@ -162,10 +162,9 @@
  */
 VALUE rb_cEnumerator;
 static VALUE rb_cLazy;
-static ID id_rewind, id_new, id_to_enum, id_each_entry;
+static ID id_rewind, id_to_enum, id_each_entry;
 static ID id_next, id_result, id_receiver, id_arguments, id_memo, id_method, id_force;
-static ID id_begin, id_end, id_step, id_exclude_end;
-static VALUE sym_each, sym_cycle, sym_yield;
+static VALUE sym_each, sym_yield;
 
 static VALUE lazy_use_super_method;
 
@@ -4727,7 +4726,6 @@ void
 Init_Enumerator(void)
 {
     id_rewind = rb_intern_const("rewind");
-    id_new = rb_intern_const("new");
     id_next = rb_intern_const("next");
     id_result = rb_intern_const("result");
     id_receiver = rb_intern_const("receiver");
@@ -4737,12 +4735,7 @@ Init_Enumerator(void)
     id_force = rb_intern_const("force");
     id_to_enum = rb_intern_const("to_enum");
     id_each_entry = rb_intern_const("each_entry");
-    id_begin = rb_intern_const("begin");
-    id_end = rb_intern_const("end");
-    id_step = rb_intern_const("step");
-    id_exclude_end = rb_intern_const("exclude_end");
     sym_each = ID2SYM(id_each);
-    sym_cycle = ID2SYM(rb_intern_const("cycle"));
     sym_yield = ID2SYM(rb_intern_const("yield"));
 
     InitVM(Enumerator);
