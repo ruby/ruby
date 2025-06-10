@@ -1391,12 +1391,14 @@ static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE va
 static VALUE edges(VALUE edges)
 {
     VALUE hash = rb_hash_new();
-    if (SINGLE_CHILD_P(edges)) {
-        rb_shape_t *child = SINGLE_CHILD(edges);
-        collect_keys_and_values(child->edge_name, (VALUE)child, &hash);
-    }
-    else {
-        rb_managed_id_table_foreach(edges, collect_keys_and_values, &hash);
+    if (edges) {
+        if (SINGLE_CHILD_P(edges)) {
+            rb_shape_t *child = SINGLE_CHILD(edges);
+            collect_keys_and_values(child->edge_name, (VALUE)child, &hash);
+        }
+        else {
+            rb_managed_id_table_foreach(edges, collect_keys_and_values, &hash);
+        }
     }
     return hash;
 }
