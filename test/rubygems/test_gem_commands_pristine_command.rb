@@ -659,6 +659,42 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     refute_includes "ruby_executable_hooks", File.read(exe)
   end
 
+  def test_execute_default_gem_and_regular_gem
+    a_default = new_default_spec("a", "1.2.0")
+
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
+    end
+
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_default_gems a_default
+    install_gem a
+
+    # Remove the extension files for a
+    FileUtils.rm_rf a.gem_build_complete_path
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_includes @ui.output, "Restored #{a.full_name}"
+
+    # Check extension files for a were restored
+    assert_path_exist a.gem_build_complete_path
+  end
+
   def test_execute_multi_platform
     a = util_spec "a" do |s|
       s.extensions << "ext/a/extconf.rb"
