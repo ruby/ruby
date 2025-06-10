@@ -125,8 +125,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert File.exist?(gem_bin)
-    assert File.exist?(gem_stub)
+    assert_path_exist gem_bin
+    assert_path_exist gem_stub
 
     out = @ui.output.split "\n"
 
@@ -537,8 +537,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert File.exist? gem_exec
-    refute File.exist? gem_lib
+    assert_path_exist gem_exec
+    assert_path_not_exist gem_lib
   end
 
   def test_execute_only_plugins
@@ -572,9 +572,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    refute File.exist? gem_exec
-    assert File.exist? gem_plugin
-    refute File.exist? gem_lib
+    assert_path_not_exist gem_exec
+    assert_path_exist gem_plugin
+    assert_path_not_exist gem_lib
   end
 
   def test_execute_bindir
@@ -606,8 +606,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    refute File.exist? gem_exec
-    assert File.exist? gem_bindir
+    assert_path_not_exist gem_exec
+    assert_path_exist gem_bindir
   end
 
   def test_execute_unknown_gem_at_remote_source
