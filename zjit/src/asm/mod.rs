@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-//use std::fmt;
+use std::fmt;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
@@ -257,6 +257,18 @@ impl CodeBlock {
     /// Make all the code in the region executable. Call this at the end of a write session.
     pub fn mark_all_executable(&mut self) {
         self.mem_block.borrow_mut().mark_all_executable();
+    }
+}
+
+/// Produce hex string output from the bytes in a code block
+impl fmt::LowerHex for CodeBlock {
+    fn fmt(&self, fmtr: &mut fmt::Formatter) -> fmt::Result {
+        for pos in 0..self.write_pos {
+            let mem_block = &*self.mem_block.borrow();
+            let byte = unsafe { mem_block.start_ptr().raw_ptr(mem_block).add(pos).read() };
+            fmtr.write_fmt(format_args!("{:02x}", byte))?;
+        }
+        Ok(())
     }
 }
 
