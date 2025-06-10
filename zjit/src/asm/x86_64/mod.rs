@@ -1024,7 +1024,10 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
             }
 
             let output_num_bits:u32 = if mem.num_bits > 32 { 32 } else { mem.num_bits.into() };
-            assert!(imm_num_bits(imm.value) <= (output_num_bits as u8));
+            assert!(
+                mem.num_bits < 64 || imm_num_bits(imm.value) <= (output_num_bits as u8),
+                "immediate value should be small enough to survive sign extension"
+            );
             cb.write_int(imm.value as u64, output_num_bits);
         },
         // M + UImm
@@ -1039,7 +1042,10 @@ pub fn mov(cb: &mut CodeBlock, dst: X86Opnd, src: X86Opnd) {
             }
 
             let output_num_bits = if mem.num_bits > 32 { 32 } else { mem.num_bits.into() };
-            assert!(imm_num_bits(uimm.value as i64) <= (output_num_bits as u8));
+            assert!(
+                mem.num_bits < 64 || imm_num_bits(uimm.value as i64) <= (output_num_bits as u8),
+                "immediate value should be small enough to survive sign extension"
+            );
             cb.write_int(uimm.value, output_num_bits);
         },
         // * + Imm/UImm
