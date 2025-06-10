@@ -520,6 +520,11 @@ maybe_gc(void *objspace_ptr)
 
         // Clear the list after processing
         objspace->objects_to_verify->count = 0;
+
+        // If any new errors were detected during verification, exit immediately
+        if (objspace->missed_write_barrier_parents > 0) {
+            rb_bug("wbcheck: missed write barrier detected during immediate verification (WBCHECK_VERIFY_AFTER_WB=1)");
+        }
     }
 
     // Process all objects that need initial reference capture
@@ -586,8 +591,13 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
+    unsigned int lev = rb_gc_vm_lock();
+
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
-    return info->alloc_size;
+    size_t result = info->alloc_size;
+
+    rb_gc_vm_unlock(lev);
+    return result;
 }
 
 size_t
@@ -753,14 +763,20 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
     wbcheck_debug("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
 
+    unsigned int lev = rb_gc_vm_lock();
+
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     info->wb_protected = false;
+
+    rb_gc_vm_unlock(lev);
 }
 
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     wbcheck_debug("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
+
+    unsigned int lev = rb_gc_vm_lock();
 
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -774,6 +790,8 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
         // (new objects don't need to be re-added since they'll be captured at allocation)
         wbcheck_object_list_append(objspace->objects_to_capture, obj);
     }
+
+    rb_gc_vm_unlock(lev);
 }
 
 // Heap walking
@@ -875,6 +893,8 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
 VALUE
 rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 {
+    unsigned int lev = rb_gc_vm_lock();
+
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
@@ -883,6 +903,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     RBASIC(obj)->flags |= FL_FINALIZE;
 
     VALUE table = info->finalizers;
+    VALUE result = block;
 
     if (!table) {
         /* First finalizer for this object */
@@ -897,19 +918,24 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         for (i = 0; i < len; i++) {
             VALUE recv = RARRAY_AREF(table, i);
             if (rb_equal(recv, block)) {
-                return recv;  /* Duplicate found, return existing */
+                result = recv;  /* Duplicate found, return existing */
+                goto unlock_and_return;
             }
         }
 
         rb_ary_push(table, block);
     }
 
-    return block;
+unlock_and_return:
+    rb_gc_vm_unlock(lev);
+    return result;
 }
 
 void
 rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 {
+    unsigned int lev = rb_gc_vm_lock();
+
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
@@ -917,6 +943,8 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 
     info->finalizers = 0;
     FL_UNSET(obj, FL_FINALIZE);
+
+    rb_gc_vm_unlock(lev);
 }
 
 void
@@ -926,6 +954,8 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    unsigned int lev = rb_gc_vm_lock();
+
     rb_wbcheck_object_info_t *src_info = wbcheck_get_object_info(obj);
     rb_wbcheck_object_info_t *dest_info = wbcheck_get_object_info(dest);
 
@@ -934,6 +964,8 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
         dest_info->finalizers = table;
         FL_SET(dest, FL_FINALIZE);
     }
+
+    rb_gc_vm_unlock(lev);
 }
 
 static VALUE
@@ -1093,9 +1125,14 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
     GC_ASSERT(wbcheck_global_objspace);
 
+    unsigned int lev = rb_gc_vm_lock();
+
     // Check if this pointer exists in our object tracking table
     st_data_t value;
-    return st_lookup(wbcheck_global_objspace->object_table, (st_data_t)ptr, &value);
+    bool result = st_lookup(wbcheck_global_objspace->object_table, (st_data_t)ptr, &value);
+
+    rb_gc_vm_unlock(lev);
+    return result;
 }
 
 bool
