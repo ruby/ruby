@@ -103,11 +103,11 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_plus_type_guard_nested_exit
-    omit 'rewind_caller_frames is not implemented yet'
-    assert_compiles '[3, 3.0]', %q{
+    assert_compiles '[4, 4.0]', %q{
       def side_exit(n) = 1 + n
       def jit_frame(n) = 1 + side_exit(n)
       def entry(n) = jit_frame(n)
+      entry(2) # profile send
       [entry(2), entry(2.0)]
     }, call_threshold: 2
   end
@@ -130,7 +130,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_mult_overflow
-    omit 'side exits are not implemented yet'
     assert_compiles '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
       def test(a, b)
         a * b

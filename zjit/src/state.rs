@@ -1,10 +1,10 @@
-use std::collections::HashSet;
-
 use crate::cruby::{self, rb_bug_panic_hook, EcPtr, Qnil, VALUE};
 use crate::cruby_methods;
 use crate::invariants::Invariants;
 use crate::options::Options;
 use crate::asm::CodeBlock;
+use crate::backend::lir::{Assembler, C_RET_OPND};
+use crate::virtualmem::CodePtr;
 
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
@@ -32,8 +32,8 @@ pub struct ZJITState {
     /// Properties of core library methods
     method_annotations: cruby_methods::Annotations,
 
-    /// The address of the instruction that JIT-to-JIT calls return to
-    iseq_return_addrs: HashSet<*const u8>,
+    /// Trampoline to propagate a callee's side exit to the caller
+    exit_trampoline: Option<CodePtr>,
 }
 
 /// Private singleton instance of the codegen globals
@@ -88,9 +88,14 @@ impl ZJITState {
             invariants: Invariants::default(),
             assert_compiles: false,
             method_annotations: cruby_methods::init(),
-            iseq_return_addrs: HashSet::new(),
+            exit_trampoline: None,
         };
         unsafe { ZJIT_STATE = Some(zjit_state); }
+
+        // Generate trampolines after initializing ZJITState, which Assembler will use
+        let cb = ZJITState::get_code_block();
+        let exit_trampoline = Self::gen_exit_trampoline(cb).unwrap();
+        ZJITState::get_instance().exit_trampoline = Some(exit_trampoline);
     }
 
     /// Return true if zjit_state has been initialized
@@ -133,14 +138,17 @@ impl ZJITState {
         instance.assert_compiles = true;
     }
 
-    /// Record an address that a JIT-to-JIT call returns to
-    pub fn add_iseq_return_addr(addr: *const u8) {
-        ZJITState::get_instance().iseq_return_addrs.insert(addr);
+    /// Generate a trampoline to propagate a callee's side exit to the caller
+    fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
+        let mut asm = Assembler::new();
+        asm.frame_teardown();
+        asm.cret(C_RET_OPND);
+        asm.compile(cb).map(|(start_ptr, _)| start_ptr)
     }
 
-    /// Returns true if a JIT-to-JIT call returns to a given address
-    pub fn is_iseq_return_addr(addr: *const u8) -> bool {
-        ZJITState::get_instance().iseq_return_addrs.contains(&addr)
+    /// Get the trampoline to propagate a callee's side exit to the caller
+    pub fn get_exit_trampoline() -> CodePtr {
+        ZJITState::get_instance().exit_trampoline.unwrap()
     }
 }
 

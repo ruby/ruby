@@ -109,11 +109,6 @@ impl Assembler
         vec![RAX_REG, RCX_REG, RDX_REG, RSI_REG, RDI_REG, R8_REG, R9_REG, R10_REG, R11_REG]
     }
 
-    /// Get the address that the current frame returns to
-    pub fn return_addr_opnd() -> Opnd {
-        Opnd::mem(64, Opnd::Reg(RSP_REG), 0)
-    }
-
     // These are the callee-saved registers in the x86-64 SysV ABI
     // RBX, RSP, RBP, and R12–R15
 

@@ -421,7 +421,15 @@ pub enum Insn {
     /// Ignoring keyword arguments etc for now
     SendWithoutBlock { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, args: Vec<InsnId>, state: InsnId },
     Send { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, blockiseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
-    SendWithoutBlockDirect { self_val: InsnId, call_info: CallInfo, cd: *const rb_call_data, iseq: IseqPtr, args: Vec<InsnId>, state: InsnId },
+    SendWithoutBlockDirect {
+        self_val: InsnId,
+        call_info: CallInfo,
+        cd: *const rb_call_data,
+        cme: *const rb_callable_method_entry_t,
+        iseq: IseqPtr,
+        args: Vec<InsnId>,
+        state: InsnId,
+    },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -950,10 +958,11 @@ impl Function {
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
-            SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state } => SendWithoutBlockDirect {
+            SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state } => SendWithoutBlockDirect {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
                 cd: *cd,
+                cme: *cme,
                 iseq: *iseq,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
@@ -1251,7 +1260,7 @@ impl Function {
                         if let Some(expected) = guard_equal_to {
                             self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
                         }
-                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, iseq, args, state });
+                        let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
                     Insn::GetConstantPath { ic } => {

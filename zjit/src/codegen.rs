@@ -258,7 +258,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
-        Insn::SendWithoutBlockDirect { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
+        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), args, &function.frame_state(*state))?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -464,8 +464,15 @@ fn gen_send_without_block(
     self_val: &InsnId,
     args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
-    // Spill the receiver and the arguments onto the stack. They need to be marked by GC and may be caller-saved registers.
+    // Spill locals onto the stack.
+    asm_comment!(asm, "spill locals");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+    }
+    // Spill the receiver and the arguments onto the stack.
+    // They need to be on the interpreter stack to let the interpreter access them.
     // TODO: Avoid spilling operands that have been spilled before.
+    asm_comment!(asm, "spill receiver and arguments");
     for (idx, &insn_id) in [*self_val].iter().chain(args.iter()).enumerate() {
         // Currently, we don't move the SP register. So it's equal to the base pointer.
         let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
@@ -495,10 +502,40 @@ fn gen_send_without_block_direct(
     cb: &mut CodeBlock,
     jit: &mut JITState,
     asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
     iseq: IseqPtr,
     recv: Opnd,
     args: &Vec<InsnId>,
+    state: &FrameState,
 ) -> Option<lir::Opnd> {
+    // Save cfp->pc and cfp->sp for the caller frame
+    gen_save_pc(asm, state);
+    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+
+    // Spill the virtual stack and the locals of the caller onto the stack
+    // TODO: Lazily materialize caller frames on side exits or when needed
+    asm_comment!(asm, "spill locals and stack");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+    }
+    for (idx, &insn_id) in state.stack().enumerate() {
+        asm.mov(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
+    }
+
+    // Set up the new frame
+    // TODO: Lazily materialize caller frames on side exits or when needed
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq,
+        cme,
+        frame_type: VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL,
+    });
+
+    asm_comment!(asm, "switch to new SP register");
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) } as usize;
+    let new_sp = asm.add(SP, ((state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE as usize) * SIZEOF_VALUE).into());
+    asm.mov(SP, new_sp);
+
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
     asm.mov(CFP, new_cfp);
@@ -517,7 +554,14 @@ fn gen_send_without_block_direct(
     jit.branch_iseqs.push((branch.clone(), iseq));
     // TODO(max): Add a PatchPoint here that can side-exit the function if the callee messed with
     // the frame's locals
-    Some(asm.ccall_with_branch(dummy_ptr, c_args, &branch))
+    let ret = asm.ccall_with_branch(dummy_ptr, c_args, &branch);
+
+    // If a callee side-exits, i.e. returns Qundef, propagate the return value to the caller.
+    // TODO: Let side exit code pop all JIT frames to optimize away this cmp + je.
+    asm.cmp(ret, Qundef.into());
+    asm.je(ZJITState::get_exit_trampoline().into());
+
+    Some(ret)
 }
 
 /// Compile an array duplication instruction
@@ -729,6 +773,45 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     asm.mov(cfp_sp, sp_addr);
 }
 
+/// Frame metadata written by gen_push_frame()
+struct ControlFrame {
+    recv: Opnd,
+    iseq: IseqPtr,
+    cme: *const rb_callable_method_entry_t,
+    frame_type: u32,
+}
+
+/// Compile an interpreter frame
+fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: ControlFrame) {
+    // Locals are written by the callee frame on side-exits or non-leaf calls
+
+    // See vm_push_frame() for details
+    asm_comment!(asm, "push cme, specval, frame type");
+    // ep[-2]: cref of cme
+    let local_size = unsafe { get_iseq_body_local_table_size(frame.iseq) } as i32;
+    let ep_offset = state.stack().len() as i32 + local_size - argc as i32 + VM_ENV_DATA_SIZE as i32 - 1;
+    asm.store(Opnd::mem(64, SP, (ep_offset - 2) * SIZEOF_VALUE_I32), VALUE::from(frame.cme).into());
+    // ep[-1]: block_handler or prev EP
+    // block_handler is not supported for now
+    asm.store(Opnd::mem(64, SP, (ep_offset - 1) * SIZEOF_VALUE_I32), VM_BLOCK_HANDLER_NONE.into());
+    // ep[0]: ENV_FLAGS
+    asm.store(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32), frame.frame_type.into());
+
+    // Write to the callee CFP
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+
+    asm_comment!(asm, "push callee control frame");
+    // cfp_opnd(RUBY_OFFSET_CFP_PC): written by the callee frame on side-exits or non-leaf calls
+    // cfp_opnd(RUBY_OFFSET_CFP_SP): written by the callee frame on side-exits or non-leaf calls
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(frame.iseq).into());
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
+    let ep = asm.lea(Opnd::mem(64, SP, ep_offset * SIZEOF_VALUE_I32));
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
+}
+
 /// Return a register we use for the basic block argument at a given index
 fn param_reg(idx: usize) -> Reg {
     // To simplify the implementation, allocate a fixed register for each basic block argument for now.
@@ -744,10 +827,13 @@ fn param_reg(idx: usize) -> Reg {
 
 /// Inverse of ep_offset_to_local_idx(). See ep_offset_to_local_idx() for details.
 fn local_idx_to_ep_offset(iseq: IseqPtr, local_idx: usize) -> i32 {
-    let local_table_size: i32 = unsafe { get_iseq_body_local_table_size(iseq) }
-        .try_into()
-        .unwrap();
-    local_table_size - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) };
+    local_size_and_idx_to_ep_offset(local_size as usize, local_idx)
+}
+
+/// Convert the number of locals and a local index to an offset in the EP
+pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i32 {
+    local_size as i32 - local_idx as i32 - 1 + VM_ENV_DATA_SIZE as i32
 }
 
 /// Convert ISEQ into High-level IR
@@ -796,9 +882,8 @@ impl Assembler {
             move |code_ptr, _| {
                 start_branch.start_addr.set(Some(code_ptr));
             },
-            move |code_ptr, cb| {
+            move |code_ptr, _| {
                 end_branch.end_addr.set(Some(code_ptr));
-                ZJITState::add_iseq_return_addr(code_ptr.raw_ptr(cb));
             },
         )
     }
