@@ -1751,6 +1751,15 @@ impl Assembler
         ret
     }
 
+    /// Compile with a limited number of registers. Used only for unit tests.
+    #[cfg(test)]
+    pub fn compile_with_num_regs(self, cb: &mut CodeBlock, num_regs: usize) -> (CodePtr, Vec<u32>)
+    {
+        let mut alloc_regs = Self::get_alloc_regs();
+        let alloc_regs = alloc_regs.drain(0..num_regs).collect();
+        self.compile_with_regs(cb, alloc_regs).unwrap()
+    }
+
     /// Compile Target::SideExit and convert it into Target::CodePtr for all instructions
     #[must_use]
     pub fn compile_side_exits(&mut self) -> Option<()> {

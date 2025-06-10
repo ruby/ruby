@@ -859,20 +859,17 @@ impl Assembler
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
-    use crate::disasm::assert_disasm;
-    #[cfg(feature = "disasm")]
-    use crate::disasm::{unindent, disasm_addr_range};
-
+    use crate::assertions::assert_disasm;
     use super::*;
 
     fn setup_asm() -> (Assembler, CodeBlock) {
-        (Assembler::new(0), CodeBlock::new_dummy(1024))
+        (Assembler::new(), CodeBlock::new_dummy())
     }
 
     #[test]
+    #[ignore]
     fn test_emit_add_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -883,6 +880,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_add_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -893,6 +891,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_and_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -903,6 +902,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_and_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -957,6 +957,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_or_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -967,6 +968,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_or_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -977,6 +979,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_sub_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -987,6 +990,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_sub_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1017,6 +1021,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_xor_lt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1027,6 +1032,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_emit_xor_gt_32_bits() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1050,6 +1056,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_merge_lea_mem() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1064,6 +1071,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_replace_cmp_0() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1216,6 +1224,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_reorder_c_args_with_insn_out() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1259,15 +1268,16 @@ mod tests {
 
         asm.compile_with_num_regs(&mut cb, 1);
 
-        assert_disasm!(cb, "48837b1001b804000000480f4f03488903", {"
+        assert_disasm!(cb, "48837b1001bf04000000480f4f3b48893b", {"
             0x0: cmp qword ptr [rbx + 0x10], 1
-            0x5: mov eax, 4
-            0xa: cmovg rax, qword ptr [rbx]
-            0xe: mov qword ptr [rbx], rax
+            0x5: mov edi, 4
+            0xa: cmovg rdi, qword ptr [rbx]
+            0xe: mov qword ptr [rbx], rdi
         "});
     }
 
     #[test]
+    #[ignore]
     fn test_csel_split() {
         let (mut asm, mut cb) = setup_asm();
 
@@ -1285,5 +1295,3 @@ mod tests {
         "});
     }
 }
-
-*/

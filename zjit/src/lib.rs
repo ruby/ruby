@@ -21,3 +21,5 @@ mod disasm;
 mod options;
 mod profile;
 mod invariants;
+#[cfg(test)]
+mod assertions;
