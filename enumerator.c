@@ -3771,6 +3771,10 @@ rb_arith_seq_new(VALUE obj, VALUE meth, int argc, VALUE const *argv,
     rb_ivar_set(aseq, id_end, end);
     rb_ivar_set(aseq, id_step, step);
     rb_ivar_set(aseq, id_exclude_end, RBOOL(excl));
+
+    // DEBUG: I'm tracking down a generic ivar corruption bug, and one possible explanation is
+    // that aseq sometimes becomes too_complex. This assertion is to attempt to confirm it.
+    RUBY_ASSERT(!rb_shape_obj_too_complex_p(aseq));
     return aseq;
 }
 
