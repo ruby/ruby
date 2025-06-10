@@ -24,7 +24,7 @@ RSpec.describe "major deprecations" do
           "(called at -e:1)"
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".with_clean_env" do
@@ -41,7 +41,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_system" do
@@ -58,7 +58,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".clean_exec" do
@@ -75,7 +75,7 @@ RSpec.describe "major deprecations" do
         )
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
 
     describe ".environment" do
@@ -88,7 +88,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include "Bundler.environment has been removed in favor of Bundler.load (called at -e:1)"
       end
 
-      pending "is removed and shows a helpful error message about it", bundler: "3"
+      pending "is removed and shows a helpful error message about it", bundler: "4"
     end
   end
 
@@ -101,7 +101,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
     end
 
-    pending "is removed and shows a helpful error message about it", bundler: "3"
+    pending "is removed and shows a helpful error message about it", bundler: "4"
   end
 
   describe "bundle update --quiet" do
@@ -130,7 +130,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle check --path=" do
@@ -152,7 +152,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --all" do
@@ -174,7 +174,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle cache --path" do
@@ -196,7 +196,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   describe "bundle config" do
@@ -205,11 +205,11 @@ RSpec.describe "major deprecations" do
         bundle "config"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old get interface" do
@@ -217,11 +217,11 @@ RSpec.describe "major deprecations" do
         bundle "config waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old set interface" do
@@ -229,11 +229,11 @@ RSpec.describe "major deprecations" do
         bundle "config waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old set interface with --local" do
@@ -241,11 +241,11 @@ RSpec.describe "major deprecations" do
         bundle "config --local waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old set interface with --global" do
@@ -253,11 +253,11 @@ RSpec.describe "major deprecations" do
         bundle "config --global waka wakapun"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old unset interface" do
@@ -265,11 +265,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old unset interface with --local" do
@@ -277,11 +277,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete --local waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
 
     describe "old unset interface with --global" do
@@ -289,11 +289,11 @@ RSpec.describe "major deprecations" do
         bundle "config --delete --global waka"
       end
 
-      it "warns", bundler: "3" do
+      it "warns", bundler: "4" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "3"
+      pending "fails with a helpful error", bundler: "4"
     end
   end
 
@@ -305,12 +305,12 @@ RSpec.describe "major deprecations" do
       G
     end
 
-    it "warns when no options are given", bundler: "3" do
+    it "warns when no options are given", bundler: "4" do
       bundle "update"
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end
 
-    pending "fails with a helpful error when no options are given", bundler: "3"
+    pending "fails with a helpful error when no options are given", bundler: "4"
 
     it "does not warn when --all is passed" do
       bundle "update --all"
@@ -330,7 +330,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include("The --binstubs option will be removed in favor of `bundle binstubs --all`")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle install with both gems.rb and Gemfile present" do
@@ -399,7 +399,7 @@ RSpec.describe "major deprecations" do
           )
         end
 
-        pending "fails with a helpful error", bundler: "3"
+        pending "fails with a helpful error", bundler: "4"
       end
     end
   end
@@ -449,7 +449,7 @@ RSpec.describe "major deprecations" do
       )
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle install in frozen mode with a lockfile with a single rubygems section with multiple remotes" do
@@ -491,7 +491,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure. Make sure you run `bundle install` in non frozen mode and commit the result to make your lockfile secure.")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "when Bundler.setup is run in a ruby script" do
@@ -531,7 +531,7 @@ RSpec.describe "major deprecations" do
                              "capistrano-bundler gem. Use it instead.")
     end
 
-    pending "fails with a helpful error", bundler: "3"
+    pending "fails with a helpful error", bundler: "4"
   end
 
   context "bundle show" do
@@ -551,7 +551,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement")
       end
 
-      pending "fails with a helpful message", bundler: "3"
+      pending "fails with a helpful message", bundler: "4"
     end
   end
 
@@ -570,7 +570,7 @@ RSpec.describe "major deprecations" do
         expect(err).to include "[DEPRECATED] The `--install` flag has been deprecated. `bundle install` is triggered by default."
       end
 
-      pending "fails with a helpful message", bundler: "3"
+      pending "fails with a helpful message", bundler: "4"
     end
   end
 
@@ -585,7 +585,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include "The `viz` command has been renamed to `graph` and moved to a plugin. See https://github.com/rubygems/bundler-graph"
     end
 
-    pending "fails with a helpful message", bundler: "3"
+    pending "fails with a helpful message", bundler: "4"
   end
 
   context "bundle plugin install --local_git" do
@@ -602,7 +602,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include "--local_git is deprecated, use --git"
     end
 
-    pending "fails with a helpful message", bundler: "3"
+    pending "fails with a helpful message", bundler: "4"
   end
 
   describe "deprecating rubocop" do

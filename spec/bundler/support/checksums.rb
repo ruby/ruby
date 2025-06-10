@@ -58,7 +58,7 @@ module Spec
       begin
         enabled = (target_lockfile || lockfile).match?(/^CHECKSUMS$/)
       rescue Errno::ENOENT
-        enabled = Bundler.feature_flag.bundler_3_mode?
+        enabled = Bundler.feature_flag.bundler_4_mode?
       end
       checksums_section(enabled, &block)
     end

@@ -87,7 +87,7 @@ RSpec.describe "bundle executable" do
   end
 
   context "with no arguments" do
-    it "prints a concise help message", bundler: "3" do
+    it "prints a concise help message", bundler: "4" do
       bundle ""
       expect(err).to be_empty
       expect(out).to include("Bundler version #{Bundler::VERSION}").
@@ -255,7 +255,7 @@ RSpec.describe "bundler executable" do
     expect(out).to eq("Bundler version #{Bundler::VERSION}")
   end
 
-  it "shows the bundler version just as the `bundle` executable does", bundler: "3" do
+  it "shows the bundler version just as the `bundle` executable does", bundler: "4" do
     bundler "--version"
     expect(out).to eq(Bundler::VERSION)
   end

@@ -219,6 +219,6 @@ RSpec.describe "bundle show", bundler: "2" do
   end
 end
 
-RSpec.describe "bundle show", bundler: "3" do
+RSpec.describe "bundle show", bundler: "4" do
   pending "shows a friendly error about the command removal"
 end

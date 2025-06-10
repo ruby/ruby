@@ -1539,7 +1539,7 @@ end
       expect(out).to eq("myrack-1.0.0")
     end
 
-    it "keeps Kernel#gem private", bundler: "3" do
+    it "keeps Kernel#gem private", bundler: "4" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"

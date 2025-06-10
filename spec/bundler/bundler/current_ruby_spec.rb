@@ -151,6 +151,6 @@ RSpec.describe Bundler::CurrentRuby do
       Bundler.current_ruby.maglev_31?
     end
 
-    pending "is removed and shows a helpful error message about it", bundler: "3"
+    pending "is removed and shows a helpful error message about it", bundler: "4"
   end
 end

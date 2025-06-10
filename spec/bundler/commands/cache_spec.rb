@@ -232,7 +232,7 @@ RSpec.describe "bundle cache" do
       expect(bundled_app("vendor/cache/myrack-1.0.0.gem")).to exist
     end
 
-    it "prints an error when using legacy windows rubies", bundler: "3" do
+    it "prints an error when using legacy windows rubies", bundler: "4" do
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]

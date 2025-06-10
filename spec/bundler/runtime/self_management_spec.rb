@@ -27,7 +27,7 @@ RSpec.describe "Self management" do
 
       pristine_system_gems "bundler-#{current_version}"
 
-      with_env_vars("BUNDLER_3_MODE" => nil, &example)
+      with_env_vars("BUNDLER_4_MODE" => nil, &example)
     end
 
     it "installs locked version when using system path and uses it" do

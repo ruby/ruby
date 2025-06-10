@@ -521,7 +521,7 @@ module Bundler
     end
 
     def multiple_global_source_warning
-      if Bundler.feature_flag.bundler_3_mode?
+      if Bundler.feature_flag.bundler_4_mode?
         msg = "This Gemfile contains multiple global sources. " \
           "Each source after the first must include a block to indicate which gems " \
           "should come from that source"

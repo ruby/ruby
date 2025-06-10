@@ -88,7 +88,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(out).not_to include("https://gem.repo3/quick/Marshal.4.8/")
         end
 
-        it "fails", bundler: "3" do
+        it "fails", bundler: "4" do
           bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
@@ -115,7 +115,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).to include_gems("myrack-obama 1.0.0", "myrack 1.0.0", source: "remote1")
       end
 
-      it "fails", bundler: "3" do
+      it "fails", bundler: "4" do
         bundle :install, artifice: "compact_index", raise_on_error: false
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4)
@@ -450,7 +450,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(lockfile).to eq(previous_lockfile)
         end
 
-        it "fails", bundler: "3" do
+        it "fails", bundler: "4" do
           bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
@@ -490,7 +490,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(the_bundle).to include_gems("depends_on_myrack 1.0.1", "myrack 1.0.0")
         end
 
-        it "fails", bundler: "3" do
+        it "fails", bundler: "4" do
           bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
@@ -914,7 +914,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(lockfile).to eq(initial_lockfile)
       end
 
-      it "fails when running bundle install in frozen mode", bundler: "3" do
+      it "fails when running bundle install in frozen mode", bundler: "4" do
         initial_lockfile = lockfile
 
         bundle "config set --local frozen true"
@@ -1302,7 +1302,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         E
       end
 
-      it "refuses to install the existing lockfile and prints an error", bundler: "3" do
+      it "refuses to install the existing lockfile and prints an error", bundler: "4" do
         bundle "config set --local deployment true"
 
         bundle "install", artifice: "compact_index", raise_on_error: false
@@ -1614,7 +1614,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
   end
 
-  context "when an indirect dependency is available from multiple ambiguous sources", bundler: "3" do
+  context "when an indirect dependency is available from multiple ambiguous sources", bundler: "4" do
     it "raises, suggesting a source block" do
       build_repo4 do
         build_gem "depends_on_myrack" do |s|

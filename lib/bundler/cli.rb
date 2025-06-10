@@ -512,7 +512,7 @@ module Bundler
       end
     end
 
-    unless Bundler.feature_flag.bundler_3_mode?
+    unless Bundler.feature_flag.bundler_4_mode?
       desc "viz [OPTIONS]", "Generates a visual dependency graph", hide: true
       long_desc <<-D
         Viz generates a PNG file of the current Gemfile as a dependency graph.
