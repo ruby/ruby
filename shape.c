@@ -357,7 +357,7 @@ shape_id(rb_shape_t *shape, shape_id_t previous_shape_id)
 {
     RUBY_ASSERT(shape);
     shape_id_t raw_id = (shape_id_t)(shape - GET_SHAPE_TREE()->shape_list);
-    return raw_id | (previous_shape_id & SHAPE_ID_FLAGS_MASK);
+    return raw_id | (previous_shape_id & SHAPE_ID_FLAGS_MASK) | (1 << 31);
 }
 
 #if RUBY_DEBUG
