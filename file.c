@@ -662,7 +662,7 @@ rb_stat_dev(VALUE self)
 #if RUBY_USE_STATX
     unsigned int m = get_stat(self)->stx_dev_major;
     unsigned int n = get_stat(self)->stx_dev_minor;
-    return DEVT2NUM(makedev(m, n));
+    return ULL2NUM(makedev(m, n));
 #elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_DEV_T
     return DEVT2NUM(get_stat(self)->st_dev);
 #elif SIZEOF_STRUCT_STAT_ST_DEV <= SIZEOF_LONG
@@ -833,7 +833,7 @@ rb_stat_rdev(VALUE self)
 #if RUBY_USE_STATX
     unsigned int m = get_stat(self)->stx_rdev_major;
     unsigned int n = get_stat(self)->stx_rdev_minor;
-    return DEVT2NUM(makedev(m, n));
+    return ULL2NUM(makedev(m, n));
 #elif !defined(HAVE_STRUCT_STAT_ST_RDEV)
     return Qnil;
 #elif SIZEOF_STRUCT_STAT_ST_RDEV <= SIZEOF_DEV_T
