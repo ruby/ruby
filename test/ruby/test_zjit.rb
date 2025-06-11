@@ -31,6 +31,20 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_putstring
+    assert_compiles '""', %q{
+      def test = "#{""}"
+      test
+    }, insns: [:putstring]
+  end
+
+  def test_putchilldedstring
+    assert_compiles '""', %q{
+      def test = ""
+      test
+    }, insns: [:putchilledstring]
+  end
+
   def test_leave_param
     assert_compiles '5', %q{
       def test(n) = n
