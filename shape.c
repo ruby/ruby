@@ -1222,7 +1222,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
         if (shape_id_slot_size != actual_slot_size) {
-            rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%lu, gc_slot_size=%lu\n", shape_id_slot_size, actual_slot_size);
+            rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
         }
     }
     else {
