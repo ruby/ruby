@@ -1144,7 +1144,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ENV["BUNDLE_GEMFILE"] ||= File.expand_path(path)
     require_relative "rubygems/user_interaction"
-    require "bundler"
+    require_relative "rubygems/bundler_integration"
     begin
       Gem::DefaultUserInteraction.use_ui(ui) do
         Bundler.ui.silence do
