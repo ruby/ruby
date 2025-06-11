@@ -158,6 +158,9 @@ shape_id_t rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id);
 bool rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value);
 bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value, shape_id_t *shape_id_hint);
 
+typedef int rb_shape_foreach_transition_callback(shape_id_t shape_id, void *data);
+bool rb_shape_foreach_field(shape_id_t shape_id, rb_shape_foreach_transition_callback func, void *data);
+
 shape_id_t rb_shape_transition_frozen(VALUE obj);
 shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
@@ -211,10 +214,22 @@ rb_shape_root(size_t heap_id)
     return ROOT_SHAPE_ID | ((heap_index + 1) << SHAPE_ID_HEAP_INDEX_OFFSET);
 }
 
+static inline shape_id_t
+RSHAPE_PARENT(shape_id_t shape_id)
+{
+    return RSHAPE(shape_id)->parent_id;
+}
+
+static inline enum shape_type
+RSHAPE_TYPE(shape_id_t shape_id)
+{
+    return RSHAPE(shape_id)->type;
+}
+
 static inline bool
 RSHAPE_TYPE_P(shape_id_t shape_id, enum shape_type type)
 {
-    return RSHAPE(shape_id)->type == type;
+    return RSHAPE_TYPE(shape_id) == type;
 }
 
 static inline attr_index_t
