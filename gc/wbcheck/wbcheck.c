@@ -479,6 +479,11 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
         return;
     }
 
+    // We hadn't captured initial references
+    if (!info->references) {
+        return;
+    }
+
     wbcheck_debug("wbcheck: verifying references for object:\n");
     wbcheck_debug_obj_info_dump(obj);
 
