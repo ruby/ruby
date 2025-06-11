@@ -3,6 +3,7 @@
 
 require "strscan"
 require_relative "../../polyfill/append_as_bytes"
+require_relative "../../polyfill/scan_byte"
 
 module Prism
   module Translation
@@ -762,12 +763,12 @@ module Prism
           elsif (value = scanner.scan(/M-\\?(?=[[:print:]])/))
             # \M-x where x is an ASCII printable character
             escape_read(result, scanner, control, true)
-          elsif (byte = scanner.get_byte)
+          elsif (byte = scanner.scan_byte)
             # Something else after an escape.
-            if control && byte == "?"
+            if control && byte == 0x3f # ASCII '?'
               result.append_as_bytes(escape_build(0x7f, false, meta))
             else
-              result.append_as_bytes(escape_build(byte.ord, control, meta))
+              result.append_as_bytes(escape_build(byte, control, meta))
             end
           end
         end
