@@ -396,7 +396,7 @@ pub enum Insn {
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param { idx: usize },
 
-    StringCopy { val: InsnId },
+    StringCopy { val: InsnId, chilled: bool },
     StringIntern { val: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
@@ -602,7 +602,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArraySet { array, idx, val } => { write!(f, "ArraySet {array}, {idx}, {val}") }
             Insn::ArrayDup { val, .. } => { write!(f, "ArrayDup {val}") }
             Insn::HashDup { val, .. } => { write!(f, "HashDup {val}") }
-            Insn::StringCopy { val } => { write!(f, "StringCopy {val}") }
+            Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::Jump(target) => { write!(f, "Jump {target}") }
@@ -978,7 +978,7 @@ impl Function {
                     }
                 },
             Return { val } => Return { val: find!(*val) },
-            StringCopy { val } => StringCopy { val: find!(*val) },
+            StringCopy { val, chilled } => StringCopy { val: find!(*val), chilled: *chilled },
             StringIntern { val } => StringIntern { val: find!(*val) },
             Test { val } => Test { val: find!(*val) },
             &IsNil { val } => IsNil { val: find!(val) },
@@ -1623,7 +1623,7 @@ impl Function {
                     worklist.push_back(high);
                     worklist.push_back(state);
                 }
-                Insn::StringCopy { val }
+                Insn::StringCopy { val, .. }
                 | Insn::StringIntern { val }
                 | Insn::Return { val }
                 | Insn::Defined { v: val, .. }
@@ -2142,10 +2142,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let value_type = SpecialObjectType::from(get_arg(pc, 0).as_u32());
                     state.stack_push(fun.push_insn(block, Insn::PutSpecialObject { value_type }));
                 }
-                YARVINSN_putstring | YARVINSN_putchilledstring => {
-                    // TODO(max): Do something different for chilled string
+                YARVINSN_putstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                    let insn_id = fun.push_insn(block, Insn::StringCopy { val });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_putchilledstring => {
+                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_putself => { state.stack_push(self_param); }
