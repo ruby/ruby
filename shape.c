@@ -1184,6 +1184,31 @@ rb_shape_memsize(shape_id_t shape_id)
     return memsize;
 }
 
+bool
+rb_shape_foreach_field(shape_id_t initial_shape_id, rb_shape_foreach_transition_callback func, void *data)
+{
+    RUBY_ASSERT(!rb_shape_too_complex_p(initial_shape_id));
+
+    rb_shape_t *shape = RSHAPE(initial_shape_id);
+    if (shape->type == SHAPE_ROOT) {
+        return true;
+    }
+
+    shape_id_t parent_id = shape_id(RSHAPE(shape->parent_id), initial_shape_id);
+    if (rb_shape_foreach_field(parent_id, func, data)) {
+        switch (func(shape_id(shape, initial_shape_id), data)) {
+          case ST_STOP:
+            return false;
+          case ST_CHECK:
+          case ST_CONTINUE:
+            break;
+          default:
+            rb_bug("unreachable");
+        }
+    }
+    return true;
+}
+
 #if RUBY_DEBUG
 bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)

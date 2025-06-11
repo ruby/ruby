@@ -340,7 +340,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     shape_id_t dest_shape_id = src_shape_id;
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
 
-    RUBY_ASSERT(RSHAPE(initial_shape_id)->type == SHAPE_ROOT);
+    RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {

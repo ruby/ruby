@@ -792,22 +792,21 @@ shape_id_i(shape_id_t shape_id, void *data)
         return;
     }
 
-    rb_shape_t *shape = RSHAPE(shape_id);
     dump_append(dc, "{\"address\":");
-    dump_append_ref(dc, (VALUE)shape);
+    dump_append_ref(dc, (VALUE)RSHAPE(shape_id));
 
     dump_append(dc, ", \"type\":\"SHAPE\", \"id\":");
     dump_append_sizet(dc, shape_id);
 
-    if (shape->type != SHAPE_ROOT) {
+    if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, shape->parent_id);
+        dump_append_lu(dc, RSHAPE_PARENT(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");
     dump_append_sizet(dc, rb_shape_depth(shape_id));
 
-    switch((enum shape_type)shape->type) {
+    switch (RSHAPE_TYPE(shape_id)) {
       case SHAPE_ROOT:
         dump_append(dc, ", \"shape_type\":\"ROOT\"");
         break;
@@ -815,7 +814,7 @@ shape_id_i(shape_id_t shape_id, void *data)
         dump_append(dc, ", \"shape_type\":\"IVAR\"");
 
         dump_append(dc, ",\"edge_name\":");
-        dump_append_id(dc, shape->edge_name);
+        dump_append_id(dc, RSHAPE_EDGE_NAME(shape_id));
 
         break;
       case SHAPE_OBJ_ID:
