@@ -262,6 +262,15 @@ retry:
     }
 }
 
+static bool
+is_internal_location(const rb_iseq_t *iseq)
+{
+    static const char prefix[] = "<internal:";
+    const size_t prefix_len = sizeof(prefix) - 1;
+    VALUE file = rb_iseq_path(iseq);
+    return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
+}
+
 // Return true if a given location is a C method or supposed to behave like one.
 static inline bool
 location_cfunc_p(rb_backtrace_location_t *loc)
@@ -272,7 +281,7 @@ location_cfunc_p(rb_backtrace_location_t *loc)
       case VM_METHOD_TYPE_CFUNC:
         return true;
       case VM_METHOD_TYPE_ISEQ:
-        return rb_iseq_attr_p(loc->cme->def->body.iseq.iseqptr, BUILTIN_ATTR_C_TRACE);
+        return is_internal_location(loc->cme->def->body.iseq.iseqptr);
       default:
         return false;
     }
@@ -605,15 +614,6 @@ backtrace_size(const rb_execution_context_t *ec)
 }
 
 static bool
-is_internal_location(const rb_control_frame_t *cfp)
-{
-    static const char prefix[] = "<internal:";
-    const size_t prefix_len = sizeof(prefix) - 1;
-    VALUE file = rb_iseq_path(cfp->iseq);
-    return strncmp(prefix, RSTRING_PTR(file), prefix_len) == 0;
-}
-
-static bool
 is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 {
     enum rb_iseq_type type = ISEQ_BODY(cfp->iseq)->type;
@@ -621,11 +621,11 @@ is_rescue_or_ensure_frame(const rb_control_frame_t *cfp)
 }
 
 static void
-bt_update_cfunc_loc(unsigned long cfunc_counter, rb_backtrace_location_t *cfunc_loc, const rb_iseq_t *iseq, const VALUE *pc)
+bt_backpatch_loc(unsigned long backpatch_counter, rb_backtrace_location_t *loc, const rb_iseq_t *iseq, const VALUE *pc)
 {
-    for (; cfunc_counter > 0; cfunc_counter--, cfunc_loc--) {
-        cfunc_loc->iseq = iseq;
-        cfunc_loc->pc = pc;
+    for (; backpatch_counter > 0; backpatch_counter--, loc--) {
+        loc->iseq = iseq;
+        loc->pc = pc;
     }
 }
 
@@ -648,7 +648,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     rb_backtrace_t *bt = NULL;
     VALUE btobj = Qnil;
     rb_backtrace_location_t *loc = NULL;
-    unsigned long cfunc_counter = 0;
+    unsigned long backpatch_counter = 0;
     bool skip_next_frame = FALSE;
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
@@ -691,26 +691,36 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 if (start_frame > 0) {
                     start_frame--;
                 }
-                else if (!(skip_internal && is_internal_location(cfp))) {
+                else {
+                    bool internal = is_internal_location(cfp->iseq);
+                    if (skip_internal && internal) continue;
                     if (!skip_next_frame) {
                         const rb_iseq_t *iseq = cfp->iseq;
                         const VALUE *pc = cfp->pc;
+                        if (internal && backpatch_counter > 0) {
+                            // To keep only one internal frame, discard the previous backpatch frames
+                            bt->backtrace_size -= backpatch_counter;
+                            backpatch_counter = 0;
+                        }
                         loc = &bt->backtrace[bt->backtrace_size++];
                         RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
-                        // Ruby methods with `Primitive.attr! :c_trace` should behave like C methods
-                        if (rb_iseq_attr_p(cfp->iseq, BUILTIN_ATTR_C_TRACE)) {
-                            loc->iseq = NULL;
-                            loc->pc = NULL;
-                            cfunc_counter++;
+                        // internal frames (`<internal:...>`) should behave like C methods
+                        if (internal) {
+                            // Typically, these iseq and pc are not needed because they will be backpatched later.
+                            // But when the call stack starts with an internal frame (i.e., prelude.rb),
+                            // they will be used to show the `<internal:...>` location.
+                            RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
+                            loc->pc = pc;
+                            backpatch_counter++;
                         }
                         else {
                             RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
                             loc->pc = pc;
-                            bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
+                            bt_backpatch_loc(backpatch_counter, loc-1, iseq, pc);
                             if (do_yield) {
-                                bt_yield_loc(loc - cfunc_counter, cfunc_counter+1, btobj);
+                                bt_yield_loc(loc - backpatch_counter, backpatch_counter+1, btobj);
                             }
-                            cfunc_counter = 0;
+                            backpatch_counter = 0;
                         }
                     }
                     skip_next_frame = is_rescue_or_ensure_frame(cfp);
@@ -727,21 +737,21 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                 loc->iseq = NULL;
                 loc->pc = NULL;
-                cfunc_counter++;
+                backpatch_counter++;
             }
         }
     }
 
     // When a backtrace entry corresponds to a method defined in C (e.g. rb_define_method), the reported file:line
     // is the one of the caller Ruby frame, so if the last entry is a C frame we find the caller Ruby frame here.
-    if (cfunc_counter > 0) {
+    if (backpatch_counter > 0) {
         for (; cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
-            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp))) {
+            if (cfp->iseq && cfp->pc && !(skip_internal && is_internal_location(cfp->iseq))) {
                 VM_ASSERT(!skip_next_frame); // ISEQ_TYPE_RESCUE/ISEQ_TYPE_ENSURE should have a caller Ruby ISEQ, not a cfunc
-                bt_update_cfunc_loc(cfunc_counter, loc, cfp->iseq, cfp->pc);
+                bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, cfp->pc);
                 RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
-                    bt_yield_loc(loc - cfunc_counter, cfunc_counter, btobj);
+                    bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
                 }
                 break;
             }
