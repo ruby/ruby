@@ -6,8 +6,6 @@ require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
-    pend "macOS 15 is not working with this test" if macos?(15)
-
     description = RUBY_DESCRIPTION
     description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     expected_stderr = [
