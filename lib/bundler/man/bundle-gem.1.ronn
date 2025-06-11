@@ -41,7 +41,7 @@ configuration file using the following names:
   Do not create a `CODE_OF_CONDUCT.md` (overrides `--coc` specified in the
   global config).
 
-* `--changelog`
+* `--changelog`:
   Add a `CHANGELOG.md` file to the root of the generated project. If
   this option is unspecified, an interactive prompt will be displayed and the
   answer will be saved in Bundler's global config for future `bundle gem` use.
