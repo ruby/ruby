@@ -137,6 +137,12 @@ ruby_mn_threads_params(void)
 {
 }
 
+static void
+native_thread_destroy_atfork(struct rb_native_thread *nt)
+{
+    /* no-op */
+}
+
 static int
 native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {

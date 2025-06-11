@@ -1817,6 +1817,27 @@ native_thread_assign(struct rb_native_thread *nt, rb_thread_t *th)
 }
 
 static void
+native_thread_destroy_atfork(struct rb_native_thread *nt)
+{
+    if (nt) {
+        /* We can't call rb_native_cond_destroy here because according to the
+         * specs of pthread_cond_destroy:
+         *
+         *   Attempting to destroy a condition variable upon which other threads
+         *   are currently blocked results in undefined behavior.
+         *
+         * Specifically, glibc's pthread_cond_destroy waits on all the other
+         * listeners. Since after forking all the threads are dead, the condition
+         * variable's listeners will never wake up, so it will hang forever.
+         */
+
+        RB_ALTSTACK_FREE(nt->altstack);
+        ruby_xfree(nt->nt_context);
+        ruby_xfree(nt);
+    }
+}
+
+static void
 native_thread_destroy(struct rb_native_thread *nt)
 {
     if (nt) {
@@ -1826,9 +1847,7 @@ native_thread_destroy(struct rb_native_thread *nt)
             rb_native_cond_destroy(&nt->cond.intr);
         }
 
-        RB_ALTSTACK_FREE(nt->altstack);
-        ruby_xfree(nt->nt_context);
-        ruby_xfree(nt);
+        native_thread_destroy_atfork(nt);
     }
 }
 
