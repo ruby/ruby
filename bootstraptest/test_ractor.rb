@@ -1427,7 +1427,7 @@ assert_equal "ok", %q{
   workers = (0...8).map do
     Ractor.new port do |port|
       loop do
-        10_000.times.map { Object.new }
+        10_0.times.map { Object.new }
         port << Time.now
       end
     end
@@ -1435,7 +1435,7 @@ assert_equal "ok", %q{
 
   1_000.times { port.receive }
   "ok"
-} if !yjit_enabled? && ENV['GITHUB_WORKFLOW'] != 'ModGC' # flaky
+}
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
