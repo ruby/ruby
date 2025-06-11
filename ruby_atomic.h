@@ -36,8 +36,10 @@ rbimpl_atomic_load_relaxed(volatile rb_atomic_t *ptr)
 }
 #define ATOMIC_LOAD_RELAXED(var) rbimpl_atomic_load_relaxed(&(var))
 
+typedef RBIMPL_ALIGNAS(8) uint64_t rbimpl_atomic_uint64_t;
+
 static inline uint64_t
-rbimpl_atomic_u64_load_relaxed(const volatile uint64_t *value)
+rbimpl_atomic_u64_load_relaxed(const volatile rbimpl_atomic_uint64_t *value)
 {
 #if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     return __atomic_load_n(value, __ATOMIC_RELAXED);
@@ -54,7 +56,7 @@ rbimpl_atomic_u64_load_relaxed(const volatile uint64_t *value)
 #define ATOMIC_U64_LOAD_RELAXED(var) rbimpl_atomic_u64_load_relaxed(&(var))
 
 static inline void
-rbimpl_atomic_u64_set_relaxed(volatile uint64_t *address, uint64_t value)
+rbimpl_atomic_u64_set_relaxed(volatile rbimpl_atomic_uint64_t *address, uint64_t value)
 {
 #if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     __atomic_store_n(address, value, __ATOMIC_RELAXED);
