@@ -1197,6 +1197,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
         if (raise_on_error) {
+            ractor_basket_free(b);
             rb_raise(rb_eRactorClosedError, "The port was already closed");
         }
     }
