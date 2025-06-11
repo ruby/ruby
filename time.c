@@ -1891,7 +1891,7 @@ time_mark(void *ptr)
 {
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew)) {
-        rb_gc_mark_movable(WIDEVAL_GET(tobj->timew));
+        rb_gc_mark_movable(w2v(tobj->timew));
     }
     rb_gc_mark_movable(tobj->vtm.year);
     rb_gc_mark_movable(tobj->vtm.subsecx);
@@ -1904,7 +1904,7 @@ time_compact(void *ptr)
 {
     struct time_object *tobj = ptr;
     if (!FIXWV_P(tobj->timew)) {
-        WIDEVAL_GET(tobj->timew) = rb_gc_location(WIDEVAL_GET(tobj->timew));
+        WIDEVAL_GET(tobj->timew) = WIDEVAL_WRAP(rb_gc_location(w2v(tobj->timew)));
     }
 
     tobj->vtm.year = rb_gc_location(tobj->vtm.year);
