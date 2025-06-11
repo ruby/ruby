@@ -118,6 +118,21 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_require_non_string
+    assert_ractor(<<~'RUBY')
+      require "tempfile"
+      require "pathname"
+      f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
+      f.write("puts 'success'")
+      f.flush
+      result = Ractor.new(f.path) do |path|
+        require Pathname.new(path)
+        "success"
+      end.value
+      assert_equal "success", result
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
