@@ -2339,8 +2339,8 @@ rb_ractor_require(VALUE feature)
     VALUE crr_obj = TypedData_Make_Struct(0, struct cross_ractor_require, &cross_ractor_require_data_type, crr);
     FL_SET_RAW(crr_obj, RUBY_FL_SHAREABLE);
 
-    // TODO: make feature shareable
-    crr->feature = feature;
+    // Convert feature to proper file path and make it shareable as fstring
+    crr->feature = rb_fstring(FilePathValue(feature));
     crr->port = ractor_port_new(GET_RACTOR());
     crr->result = Qundef;
     crr->exception = Qundef;
