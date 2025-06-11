@@ -519,12 +519,8 @@ thread_cleanup_func(void *th_ptr, int atfork)
     th->locking_mutex = Qfalse;
     thread_cleanup_func_before_exec(th_ptr);
 
-    /*
-     * Unfortunately, we can't release native threading resource at fork
-     * because libc may have unstable locking state therefore touching
-     * a threading resource may cause a deadlock.
-     */
     if (atfork) {
+        native_thread_destroy_atfork(th->nt);
         th->nt = NULL;
         return;
     }

@@ -617,6 +617,12 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
     th->ec->machine.stack_maxsize = size - space;
 }
 
+static void
+native_thread_destroy_atfork(struct rb_native_thread *nt)
+{
+    /* no-op */
+}
+
 #ifndef InterlockedExchangePointer
 #define InterlockedExchangePointer(t, v) \
     (void *)InterlockedExchange((long *)(t), (long)(v))
