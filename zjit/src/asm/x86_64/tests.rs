@@ -1,11 +1,10 @@
 #![cfg(test)]
 
-//use crate::asm::x86_64::*;
+use crate::asm::x86_64::*;
 
-/*
 /// Check that the bytes for an instruction sequence match a hex string
 fn check_bytes<R>(bytes: &str, run: R) where R: FnOnce(&mut super::CodeBlock) {
-    let mut cb = super::CodeBlock::new_dummy(4096);
+    let mut cb = super::CodeBlock::new_dummy();
     run(&mut cb);
     assert_eq!(format!("{:x}", cb), bytes);
 }
@@ -439,9 +438,10 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 }
 
 #[test]
+#[ignore]
 #[cfg(feature = "disasm")]
 fn block_comments() {
-    let mut cb = super::CodeBlock::new_dummy(4096);
+    let mut cb = super::CodeBlock::new_dummy();
 
     let first_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Beginning");
@@ -458,4 +458,3 @@ fn block_comments() {
     assert_eq!(&vec!( "Two bytes in".to_string(), "Still two bytes in".to_string() ), cb.comments_at(second_write_ptr).unwrap());
     assert_eq!(&vec!( "Ten bytes in".to_string() ), cb.comments_at(third_write_ptr).unwrap());
 }
-*/
