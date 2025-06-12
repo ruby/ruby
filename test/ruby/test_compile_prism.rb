@@ -1053,6 +1053,9 @@ module Prism
       assert_prism_eval("for foo, in  [1,2,3] do end")
 
       assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+
+      # Test splat node as index in for loop
+      assert_prism_eval("for *x in [[1,2], [3,4]] do; x; end")
     end
 
     ############################################################################
