@@ -1371,44 +1371,36 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
     if (SPECIAL_CONST_P(obj)) return undef;
 
-    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
-        VALUE val = undef;
-        RB_VM_LOCK_ENTER();
-        {
-            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-            if (fields_obj) {
-                val = rb_ivar_lookup(fields_obj, id, undef);
-            }
-        }
-        RB_VM_LOCK_LEAVE();
-
-        if (val != undef &&
-                rb_is_instance_id(id) &&
-                UNLIKELY(!rb_ractor_main_p()) &&
-                !rb_ractor_shareable_p(val)) {
-            rb_raise(rb_eRactorIsolationError,
-                    "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
-        }
-        return val;
-    }
-
     shape_id_t shape_id;
-    VALUE * ivar_list;
-    shape_id = RBASIC_SHAPE_ID(obj);
+    VALUE *ivar_list;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
         {
-            rb_bug("Unreachable");
+            VALUE val = undef;
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+            if (fields_obj) {
+                val = rb_ivar_lookup(fields_obj, id, undef);
+            }
+
+            if (val != undef &&
+                    rb_is_instance_id(id) &&
+                    UNLIKELY(!rb_ractor_main_p()) &&
+                    !rb_ractor_shareable_p(val)) {
+                rb_raise(rb_eRactorIsolationError,
+                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+            }
+            return val;
         }
       case T_IMEMO:
         // Handled like T_OBJECT
         {
             RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_class_fields));
+            shape_id = RBASIC_SHAPE_ID(obj);
 
             if (rb_shape_too_complex_p(shape_id)) {
-                st_table * iv_table = rb_imemo_class_fields_complex_tbl(obj);
+                st_table *iv_table = rb_imemo_class_fields_complex_tbl(obj);
                 VALUE val;
                 if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                     return val;
@@ -1424,8 +1416,9 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         }
       case T_OBJECT:
         {
+            shape_id = RBASIC_SHAPE_ID(obj);
             if (rb_shape_too_complex_p(shape_id)) {
-                st_table * iv_table = ROBJECT_FIELDS_HASH(obj);
+                st_table *iv_table = ROBJECT_FIELDS_HASH(obj);
                 VALUE val;
                 if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                     return val;
@@ -1440,6 +1433,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             break;
         }
       default:
+        shape_id = RBASIC_SHAPE_ID(obj);
         if (FL_TEST_RAW(obj, FL_EXIVAR)) {
             struct gen_fields_tbl *fields_tbl;
             rb_gen_fields_tbl_get(obj, id, &fields_tbl);
@@ -1494,13 +1488,16 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (fields_obj) {
-            RB_VM_LOCK_ENTER();
-            {
+            if (rb_multi_ractor_p()) {
+                fields_obj = rb_imemo_class_fields_clone(fields_obj);
+                val = rb_ivar_delete(fields_obj, id, undef);
+                RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
+            }
+            else {
                 val = rb_ivar_delete(fields_obj, id, undef);
             }
-            RB_VM_LOCK_LEAVE();
-            return val;
         }
+        return val;
     }
 
     shape_id_t old_shape_id = rb_obj_shape_id(obj);
@@ -2127,8 +2124,6 @@ rb_ivar_set_internal(VALUE obj, ID id, VALUE val)
     ivar_set(obj, id, val);
 }
 
-static void class_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val);
-
 void
 rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
 {
@@ -2138,8 +2133,8 @@ rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
         break;
       case T_CLASS:
       case T_MODULE:
-        ASSERT_vm_locking();
-        class_field_set(obj, target_shape_id, val);
+        // The only field is object_id and T_CLASS handle it differently.
+        rb_bug("Unreachable");
         break;
       default:
         generic_field_set(obj, target_shape_id, val);
@@ -2199,7 +2194,7 @@ rb_ivar_defined(VALUE obj, ID id)
     switch (BUILTIN_TYPE(obj)) {
       case T_CLASS:
       case T_MODULE:
-        RB_VM_LOCKING() {
+        {
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 defined = ivar_defined0(fields_obj, id);
@@ -2452,8 +2447,8 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
         break;
       case T_CLASS:
       case T_MODULE:
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
-        RB_VM_LOCKING() {
+        {
+            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 class_fields_each(fields_obj, func, arg, ivar_only);
@@ -4701,15 +4696,16 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     return rb_ivar_set(obj, id, val);
 }
 
-static int
-class_ivar_set(VALUE obj, ID id, VALUE val)
+static bool
+class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool concurrent, VALUE *new_fields_obj)
 {
     bool existing = true;
-    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
-    VALUE fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_class_fields_new(obj, 1);
+    const VALUE original_fields_obj = fields_obj;
+    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_class_fields_new(klass, 1);
 
-    shape_id_t next_shape_id = 0;
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
+    shape_id_t next_shape_id = current_shape_id;
+
     if (UNLIKELY(rb_shape_too_complex_p(current_shape_id))) {
         goto too_complex;
     }
@@ -4726,7 +4722,7 @@ class_ivar_set(VALUE obj, ID id, VALUE val)
         next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
         if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
             attr_index_t current_len = RSHAPE_LEN(current_shape_id);
-            fields_obj = rb_imemo_class_fields_new_complex(obj, current_len + 1);
+            fields_obj = rb_imemo_class_fields_new_complex(klass, current_len + 1);
             if (current_len) {
                 rb_obj_copy_fields_to_hash_table(original_fields_obj, rb_imemo_class_fields_complex_tbl(fields_obj));
                 RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
@@ -4737,10 +4733,12 @@ class_ivar_set(VALUE obj, ID id, VALUE val)
         attr_index_t next_capacity = RSHAPE_CAPACITY(next_shape_id);
         attr_index_t current_capacity = RSHAPE_CAPACITY(current_shape_id);
 
-        if (UNLIKELY(next_capacity != current_capacity)) {
-            RUBY_ASSERT(next_capacity > current_capacity);
-            // We allocate a new fields_obj so that we're embedded as long as possible
-            fields_obj = rb_imemo_class_fields_new(obj, next_capacity);
+        if (concurrent || next_capacity != current_capacity) {
+            RUBY_ASSERT(concurrent || next_capacity > current_capacity);
+
+            // We allocate a new fields_obj even when concurrency isn't a concern
+            // so that we're embedded as long as possible.
+            fields_obj = rb_imemo_class_fields_new(klass, next_capacity);
             if (original_fields_obj) {
                 MEMCPY(rb_imemo_class_fields_ptr(fields_obj), rb_imemo_class_fields_ptr(original_fields_obj), VALUE, RSHAPE_LEN(current_shape_id));
             }
@@ -4752,20 +4750,12 @@ class_ivar_set(VALUE obj, ID id, VALUE val)
 
     VALUE *fields = rb_imemo_class_fields_ptr(fields_obj);
     RB_OBJ_WRITE(fields_obj, &fields[index], val);
+
     if (!existing) {
         RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
     }
 
-    if (fields_obj != original_fields_obj) {
-        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
-        // TODO: What should we set as the T_CLASS shape_id?
-        // In most case we can replicate the single `fields_obj` shape
-        // but in namespaced case?
-        // Perhaps INVALID_SHAPE_ID?
-        RBASIC_SET_SHAPE_ID(obj, next_shape_id);
-    }
-
-    RB_GC_GUARD(fields_obj);
+    *new_fields_obj = fields_obj;
     return existing;
 
 too_complex:
@@ -4776,15 +4766,10 @@ too_complex:
 
         if (fields_obj != original_fields_obj) {
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
-            RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
-            // TODO: What should we set as the T_CLASS shape_id?
-            // In most case we can replicate the single `fields_obj` shape
-            // but in namespaced case?
-            // Perhaps INVALID_SHAPE_ID?
-            RBASIC_SET_SHAPE_ID(obj, next_shape_id);
         }
     }
-    RB_GC_GUARD(fields_obj);
+
+    *new_fields_obj = fields_obj;
     return existing;
 }
 
@@ -4792,23 +4777,25 @@ int
 rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    bool existing = false;
     rb_check_frozen(obj);
 
     rb_class_ensure_writable(obj);
 
-    RB_VM_LOCKING() {
-        existing = class_ivar_set(obj, id, val);
+    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+    VALUE new_fields_obj = 0;
+
+    bool existing = class_fields_ivar_set(obj, original_fields_obj, id, val, rb_multi_ractor_p(), &new_fields_obj);
+
+    if (new_fields_obj != original_fields_obj) {
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
+
+        // TODO: What should we set as the T_CLASS shape_id?
+        // In most case we can replicate the single `fields_obj` shape
+        // but in namespaced case?
+        // Perhaps INVALID_SHAPE_ID?
+        RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
     }
-
     return existing;
-}
-
-static void
-class_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    obj_field_set(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), target_shape_id, val);
 }
 
 static int
