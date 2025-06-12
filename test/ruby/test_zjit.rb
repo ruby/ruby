@@ -636,6 +636,22 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_backtrace
+    backtrace = [
+      "-e:2:in 'Object#jit_frame1'",
+      "-e:3:in 'Object#entry'",
+      "-e:5:in 'block in <main>'",
+      "-e:6:in '<main>'",
+    ]
+    assert_compiles backtrace.inspect, %q{
+      def jit_frame2 = caller     # 1
+      def jit_frame1 = jit_frame2 # 2
+      def entry = jit_frame1      # 3
+      entry # profile send        # 4
+      entry                       # 5
+    }, call_threshold: 2
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
@@ -657,11 +673,7 @@ class TestZJIT < Test::Unit::TestCase
     pipe_fd = 3
 
     script = <<~RUBY
-      _test_proc = -> {
-        RubyVM::ZJIT.assert_compiles
-        #{test_script}
-      }
-      ret_val = _test_proc.call
+      ret_val = (_test_proc = -> { RubyVM::ZJIT.assert_compiles; #{test_script.lstrip} }).call
       result = {
         ret_val:,
         #{ unless insns.empty?
