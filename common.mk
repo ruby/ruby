@@ -15119,6 +15119,8 @@ re.$(OBJEXT): {$(VPATH)}missing.h
 re.$(OBJEXT): {$(VPATH)}node.h
 re.$(OBJEXT): {$(VPATH)}onigmo.h
 re.$(OBJEXT): {$(VPATH)}oniguruma.h
+re.$(OBJEXT): {$(VPATH)}ractor.h
+re.$(OBJEXT): {$(VPATH)}ractor_core.h
 re.$(OBJEXT): {$(VPATH)}re.c
 re.$(OBJEXT): {$(VPATH)}re.h
 re.$(OBJEXT): {$(VPATH)}regenc.h
@@ -15134,6 +15136,7 @@ re.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 re.$(OBJEXT): {$(VPATH)}thread_native.h
 re.$(OBJEXT): {$(VPATH)}util.h
 re.$(OBJEXT): {$(VPATH)}vm_core.h
+re.$(OBJEXT): {$(VPATH)}vm_debug.h
 re.$(OBJEXT): {$(VPATH)}vm_opts.h
 regcomp.$(OBJEXT): $(hdrdir)/ruby.h
 regcomp.$(OBJEXT): $(hdrdir)/ruby/ruby.h
