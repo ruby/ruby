@@ -709,7 +709,7 @@ remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 static inline shape_id_t transition_complex(shape_id_t shape_id);
 
 static shape_id_t
-shape_transition_object_id(shape_id_t original_shape_id)
+shape_transition_object_id_inline(shape_id_t original_shape_id)
 {
     RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
 
@@ -720,17 +720,25 @@ shape_transition_object_id(shape_id_t original_shape_id)
     }
 
     RUBY_ASSERT(shape);
-    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
+    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_OBJ_ID_INLINE;
 }
 
 shape_id_t
-rb_shape_transition_object_id(VALUE obj)
+rb_shape_transition_object_id_inline(VALUE obj)
 {
-    return shape_transition_object_id(RBASIC_SHAPE_ID(obj));
+    return shape_transition_object_id_inline(RBASIC_SHAPE_ID(obj));
 }
 
 shape_id_t
-rb_shape_object_id(shape_id_t original_shape_id)
+rb_shape_transition_object_id_external(VALUE obj)
+{
+    shape_id_t original_shape_id = RBASIC_SHAPE_ID(obj);
+    RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
+    return original_shape_id | SHAPE_ID_FL_OBJ_ID_EXTERNAL;
+}
+
+shape_id_t
+rb_shape_object_id_inline(shape_id_t original_shape_id)
 {
     RUBY_ASSERT(rb_shape_has_object_id(original_shape_id));
 
@@ -742,7 +750,7 @@ rb_shape_object_id(shape_id_t original_shape_id)
         shape = RSHAPE(shape->parent_id);
     }
 
-    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
+    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_OBJ_ID_INLINE;
 }
 
 static inline shape_id_t
@@ -754,7 +762,7 @@ transition_complex(shape_id_t shape_id)
     if (heap_index) {
         next_shape_id = rb_shape_root(heap_index - 1) | SHAPE_ID_FL_TOO_COMPLEX;
         if (rb_shape_has_object_id(shape_id)) {
-            next_shape_id = shape_transition_object_id(next_shape_id);
+            next_shape_id = shape_transition_object_id_inline(next_shape_id);
         }
     }
     else {
@@ -1104,7 +1112,7 @@ rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
         return shape_id(next_shape, initial_shape_id);
     }
     else {
-        return transition_complex(initial_shape_id | (dest_shape_id & SHAPE_ID_FL_HAS_OBJECT_ID));
+        return transition_complex(initial_shape_id | (dest_shape_id & SHAPE_ID_FL_OBJ_ID_INLINE));
     }
 }
 
@@ -1223,7 +1231,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         shape = RSHAPE(shape->parent_id);
     }
 
-    if (rb_shape_has_object_id(shape_id)) {
+    if (rb_shape_has_object_id(shape_id) == SHAPE_INLINE_OBJ_ID) {
         if (!has_object_id) {
             rb_p(obj);
             rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));

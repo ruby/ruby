@@ -14,7 +14,8 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 #define SHAPE_ID_FLAGS_MASK (shape_id_t)(((1 << (SHAPE_ID_NUM_BITS - SHAPE_ID_OFFSET_NUM_BITS)) - 1) << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_FROZEN (SHAPE_FL_FROZEN << SHAPE_ID_OFFSET_NUM_BITS)
-#define SHAPE_ID_FL_HAS_OBJECT_ID (SHAPE_FL_HAS_OBJECT_ID << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_OBJ_ID_INLINE (SHAPE_FL_OBJ_ID_INLINE << SHAPE_ID_OFFSET_NUM_BITS)
+#define SHAPE_ID_FL_OBJ_ID_EXTERNAL (SHAPE_FL_OBJ_ID_EXTERNAL << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_TOO_COMPLEX (SHAPE_FL_TOO_COMPLEX << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_FL_NON_CANONICAL_MASK (SHAPE_FL_NON_CANONICAL_MASK << SHAPE_ID_OFFSET_NUM_BITS)
 
@@ -42,7 +43,7 @@ typedef uint32_t redblack_id_t;
 #define ROOT_SHAPE_ID                   0x0
 #define ROOT_SHAPE_WITH_OBJ_ID          0x1
 #define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
-#define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
+#define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_OBJ_ID_INLINE)
 #define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
 
 extern ID ruby_internal_object_id;
@@ -76,10 +77,11 @@ enum shape_type {
 
 enum shape_flags {
     SHAPE_FL_FROZEN             = 1 << 0,
-    SHAPE_FL_HAS_OBJECT_ID      = 1 << 1,
-    SHAPE_FL_TOO_COMPLEX        = 1 << 2,
+    SHAPE_FL_TOO_COMPLEX        = 1 << 1,
+    SHAPE_FL_OBJ_ID_INLINE      = 1 << 2,
+    SHAPE_FL_OBJ_ID_EXTERNAL    = 1 << 3,
 
-    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_HAS_OBJECT_ID,
+    SHAPE_FL_NON_CANONICAL_MASK = SHAPE_FL_FROZEN | SHAPE_FL_OBJ_ID_INLINE | SHAPE_FL_OBJ_ID_EXTERNAL,
 };
 
 typedef struct {
@@ -169,9 +171,10 @@ shape_id_t rb_shape_transition_complex(VALUE obj);
 shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
 shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
 shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE obj, ID id);
-shape_id_t rb_shape_transition_object_id(VALUE obj);
+shape_id_t rb_shape_transition_object_id_inline(VALUE obj);
+shape_id_t rb_shape_transition_object_id_external(VALUE obj);
 shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
-shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
+shape_id_t rb_shape_object_id_inline(shape_id_t original_shape_id);
 
 void rb_shape_free_all(void);
 
@@ -191,10 +194,22 @@ rb_shape_obj_too_complex_p(VALUE obj)
     return !RB_SPECIAL_CONST_P(obj) && rb_shape_too_complex_p(RBASIC_SHAPE_ID(obj));
 }
 
-static inline bool
+enum rb_shape_object_id_type {
+    SHAPE_NO_OBJ_ID = 0,
+    SHAPE_INLINE_OBJ_ID = 1,
+    SHAPE_EXTERNAL_OBJ_ID = 2,
+};
+
+static inline enum rb_shape_object_id_type
 rb_shape_has_object_id(shape_id_t shape_id)
 {
-    return shape_id & SHAPE_ID_FL_HAS_OBJECT_ID;
+    if (shape_id & SHAPE_ID_FL_OBJ_ID_INLINE) {
+        return SHAPE_INLINE_OBJ_ID;
+    }
+    else if (shape_id & SHAPE_ID_FL_OBJ_ID_EXTERNAL) {
+        return SHAPE_EXTERNAL_OBJ_ID;
+    }
+    return SHAPE_NO_OBJ_ID;
 }
 
 static inline bool
@@ -323,7 +338,7 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 
 bool rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id);
 
-static inline bool
+static inline enum rb_shape_object_id_type
 rb_shape_obj_has_id(VALUE obj)
 {
     return rb_shape_has_object_id(RBASIC_SHAPE_ID(obj));
