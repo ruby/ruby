@@ -1781,14 +1781,6 @@ generate_next_object_id(void)
 #endif
 }
 
-void
-rb_gc_obj_id_moved(VALUE obj)
-{
-    if (UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
-    }
-}
-
 static int
 object_id_cmp(st_data_t x, st_data_t y)
 {
@@ -1877,18 +1869,71 @@ obj_to_id_tbl_memsize(const void *data)
 }
 
 static void
-obj_to_id_tbl_compact(void *data)
+obj_to_id_tbl_free(void *data)
 {
-    st_table *table = (st_table *)data;
-    gc_update_table_refs(table);
+    if (obj_to_id_tbl) {
+        st_free_table(obj_to_id_tbl);
+        obj_to_id_tbl = NULL; // clear global ref
+    }
+}
+
+struct obj_to_id_tbl_any_moved_p_args {
+    bool need_rebuild;
+};
+
+static int
+obj_to_id_tbl_any_moved_p_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    struct obj_to_id_tbl_any_moved_p_args *args = (struct obj_to_id_tbl_any_moved_p_args *)data;
+
+    if (rb_gc_location(key) != key || (!FIXNUM_P(value) && rb_gc_location(value) != value)) {
+        args->need_rebuild = true;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+static int
+obj_to_id_rebuild_table_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    st_table *new_table = (st_table *)data;
+    st_insert(new_table, rb_gc_location(key), rb_gc_location(value));
+    return ST_CONTINUE;
 }
 
 static void
-obj_to_id_tbl_free(void *data)
+obj_to_id_tbl_compact(void *data)
 {
-    obj_to_id_tbl = NULL; // clear global ref
-    st_table *table = (st_table *)data;
-    st_free_table(table);
+    if (obj_to_id_tbl) {
+        struct obj_to_id_tbl_any_moved_p_args any_moved_args = { 0 };
+        st_foreach(obj_to_id_tbl, obj_to_id_tbl_any_moved_p_i, (st_data_t)&any_moved_args);
+
+        if (any_moved_args.need_rebuild) {
+            st_table *new_table;
+            DURING_GC_COULD_MALLOC_REGION_START();
+            {
+                new_table = st_init_numtable_with_size(st_table_size(obj_to_id_tbl));
+            }
+            DURING_GC_COULD_MALLOC_REGION_END();
+            st_foreach(obj_to_id_tbl, obj_to_id_rebuild_table_i, (st_data_t)new_table);
+            st_free_table(obj_to_id_tbl);
+            obj_to_id_tbl = new_table;
+        }
+    }
+}
+
+void
+rb_gc_obj_id_moved(VALUE old_obj, VALUE obj)
+{
+    if (UNLIKELY(id2ref_tbl)) {
+        st_insert(id2ref_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
+    }
+
+    if (rb_shape_obj_has_id(obj) == SHAPE_ID_FL_OBJ_ID_EXTERNAL) {
+        VALUE object_id;
+        st_delete(obj_to_id_tbl, &old_obj, &object_id);
+        st_insert(obj_to_id_tbl, obj, object_id);
+    }
 }
 
 static const rb_data_type_t obj_to_id_tbl_type = {
@@ -1937,12 +1982,6 @@ object_id_get(VALUE obj, shape_id_t shape_id)
         else {
             id = rb_obj_field_get(obj, rb_shape_object_id_inline(shape_id));
         }
-        break;
-      case SHAPE_EXTERNAL_OBJ_ID:
-        RUBY_ASSERT(obj_to_id_tbl);
-        st_lookup(obj_to_id_tbl, obj, &id);
-        break;
-    }
 
 #if RUBY_DEBUG
     if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
@@ -1950,6 +1989,25 @@ object_id_get(VALUE obj, shape_id_t shape_id)
         rb_bug("Object's shape includes object_id, but it's missing %s", rb_obj_info(obj));
     }
 #endif
+
+        break;
+      case SHAPE_EXTERNAL_OBJ_ID:
+        {
+            RUBY_ASSERT(obj_to_id_tbl);
+            unsigned int lock_lev = RB_GC_VM_LOCK();
+            st_lookup(obj_to_id_tbl, obj, &id);
+
+#if RUBY_DEBUG
+    if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
+        rb_p(obj);
+        rb_bug("Object %s/%"PRIxVALUE" shape includes external object_id, but it's missing in obj_to_id_tbl", rb_obj_info(obj), obj);
+    }
+#endif
+
+            RB_GC_VM_UNLOCK(lock_lev);
+        }
+        break;
+    }
 
     return id;
 }
@@ -1968,9 +2026,9 @@ object_id0(VALUE obj, bool shareable)
 
     attr_index_t capacity = RSHAPE_CAPACITY(shape_id);
     attr_index_t free_capacity = capacity - RSHAPE_LEN(shape_id);
-    if (shareable && capacity && !free_capacity) {
-        // The object is shared and has no free capacity, we can't
-        // safely store the object_id inline.
+    if (shareable && RB_TYPE_P(obj, T_OBJECT) && capacity && !free_capacity) {
+        // If the object was shared and has no free capacity, we can't safely store the object_id inline.
+        // This is only a problem for T_OBJECT, given other types have external fields and can do RCU.
         shape_id_t next_shape_id = rb_shape_transition_object_id_external(obj);
         if (RB_UNLIKELY(!obj_to_id_tbl)) {
             obj_to_id_tbl = st_init_numtable();
@@ -4231,17 +4289,6 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
                 id2ref_tbl,
                 vm_weak_table_id2ref_foreach,
                 vm_weak_table_id2ref_foreach_update,
-                (st_data_t)&foreach_data
-            );
-        }
-        break;
-      }
-      case RB_GC_VM_OBJ_TO_ID_TABLE: {
-        if (obj_to_id_tbl) {
-            st_foreach_with_replace(
-                obj_to_id_tbl,
-                vm_weak_table_foreach_weak_key,
-                vm_weak_table_foreach_update_weak_key,
                 (st_data_t)&foreach_data
             );
         }

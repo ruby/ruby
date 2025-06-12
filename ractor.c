@@ -1866,7 +1866,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
 
-    rb_gc_obj_id_moved(data->replacement);
+    rb_gc_obj_id_moved(obj, data->replacement);
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(data->replacement, obj);

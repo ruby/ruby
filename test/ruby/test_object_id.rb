@@ -227,6 +227,23 @@ class TestObjectIdRactor < Test::Unit::TestCase
     end;
   end
 
+  def test_external_object_id_ractor_move
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Warning[:experimental] = false
+      class MyClass
+        attr_reader :a, :b, :c
+        def initialize
+          @a = @b = @c = nil
+        end
+      end
+      obj = Ractor.make_shareable(MyClass.new)
+      object_id = obj.object_id
+      obj = Ractor.new { Ractor.receive }.send(obj, move: true).value
+      assert_equal object_id, obj.object_id
+    end;
+  end
+
   def test_object_id_race_free_with_stress_compact
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
