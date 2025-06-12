@@ -354,7 +354,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        rb_iseq_mark_and_move_each_body_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+        rb_iseq_mark_and_move_each_body_value(iseq, ISEQ_ORIGINAL_ISEQ(iseq));
 
         rb_gc_mark_and_move(&body->variable.coverage);
         rb_gc_mark_and_move(&body->variable.pc2branchindex);
