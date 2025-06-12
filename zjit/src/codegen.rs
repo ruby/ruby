@@ -277,13 +277,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state: _ } => gen_setglobal(asm, *id, opnd!(val)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
-        Insn::SetIvar { self_val, id, val, state: _ } => gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
+        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
         }
     };
+
+    assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output");
 
     // If the instruction has an output, remember it in jit.opnds
     jit.opnds[insn_id.0] = Some(out_opnd);
@@ -312,12 +314,13 @@ fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
 }
 
 /// Emit an uncached instance variable store
-fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Opnd {
+fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Option<()> {
     asm_comment!(asm, "call rb_ivar_set");
     asm.ccall(
         rb_ivar_set as *const u8,
         vec![recv, Opnd::UImm(id.0), val],
-    )
+    );
+    Some(())
 }
 
 /// Look up global variables
