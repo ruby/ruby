@@ -154,6 +154,7 @@ invalidate_negative_cache(ID mid)
 {
     VALUE cme;
     rb_vm_t *vm = GET_VM();
+    ASSERT_vm_locking();
 
     if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme)) {
         rb_id_table_delete(vm->negative_cme_table, mid);
@@ -170,6 +171,7 @@ static void
 invalidate_method_cache_in_cc_table(struct rb_id_table *tbl, ID mid)
 {
     VALUE ccs_data;
+    ASSERT_vm_locking();
     if (tbl && rb_id_table_lookup(tbl, mid, &ccs_data)) {
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
@@ -184,6 +186,7 @@ static void
 invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID mid)
 {
     VALUE cme;
+    ASSERT_vm_locking();
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
         if (rb_yjit_enabled_p) {
             rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
@@ -215,6 +218,7 @@ invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_
 static void
 invalidate_callable_method_entry_in_every_m_table(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
+    ASSERT_vm_locking();
     // The argument cme must be invalidated later in the caller side
     const rb_method_entry_t *newer = rb_method_entry_clone((const rb_method_entry_t *)cme);
     struct invalidate_callable_method_entry_foreach_arg arg = {
@@ -230,6 +234,7 @@ static void
 invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID mid)
 {
     VALUE cme;
+    ASSERT_vm_locking();
     if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
         if (rb_yjit_enabled_p) {
             rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
@@ -245,7 +250,8 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
     if (rb_objspace_garbage_object_p(klass)) return;
 
-    RB_VM_LOCKING() {    if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
+    RB_VM_LOCKING() {
+        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL)) {
             // no subclasses
             // check only current class
 
@@ -381,14 +387,19 @@ invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
     return ID_TABLE_DELETE;
 }
 
+// TODO: this function is called in only 1 place but this might be buggy across ractors. We lock
+// here for the modification of these 2 tables, but we don't always lock for the lookup of these
+// tables.
 void
 rb_invalidate_method_caches(struct rb_id_table *cm_tbl, struct rb_id_table *cc_tbl)
 {
-    if (cm_tbl) {
-        rb_id_table_foreach_values(cm_tbl, invalidate_method_entry_in_iclass_callable_m_tbl, NULL);
-    }
-    if (cc_tbl) {
-        rb_id_table_foreach_values(cc_tbl, invalidate_ccs_in_iclass_cc_tbl, NULL);
+    RB_VM_LOCKING() {
+        if (cm_tbl) {
+            rb_id_table_foreach_values(cm_tbl, invalidate_method_entry_in_iclass_callable_m_tbl, NULL);
+        }
+        if (cc_tbl) {
+            rb_id_table_foreach_values(cc_tbl, invalidate_ccs_in_iclass_cc_tbl, NULL);
+        }
     }
 }
 
@@ -1280,7 +1291,11 @@ lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 const rb_callable_method_entry_t *
 rb_vm_lookup_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
-    return lookup_overloaded_cme(cme);
+    const rb_callable_method_entry_t *me;
+    RB_VM_LOCKING() {
+        me = lookup_overloaded_cme(cme);
+    }
+    return me;
 }
 #endif
 
@@ -1295,6 +1310,7 @@ delete_overloaded_cme(const rb_callable_method_entry_t *cme)
 static const rb_callable_method_entry_t *
 get_overloaded_cme(const rb_callable_method_entry_t *cme)
 {
+    ASSERT_vm_locking();
     const rb_callable_method_entry_t *monly_cme = lookup_overloaded_cme(cme);
 
     if (monly_cme && !METHOD_ENTRY_INVALIDATED(monly_cme)) {
@@ -1312,7 +1328,6 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
         RB_OBJ_WRITE(me, &def->body.iseq.cref, cme->def->body.iseq.cref);
         RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, ISEQ_BODY(cme->def->body.iseq.iseqptr)->mandatory_only_iseq);
 
-        ASSERT_vm_locking();
         st_insert(overloaded_cme_table(), (st_data_t)cme, (st_data_t)me);
 
         METHOD_ENTRY_VISI_SET(me, METHOD_ENTRY_VISI(cme));
@@ -1329,10 +1344,12 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
         (int)vm_ci_argc(ci) == ISEQ_BODY(method_entry_iseqptr(cme))->param.lead_num) {
         VM_ASSERT(cme->def->type == VM_METHOD_TYPE_ISEQ, "type: %d", cme->def->type); // iseq_overload is marked only on ISEQ methods
 
-        cme = get_overloaded_cme(cme);
+        RB_VM_LOCKING() {
+            cme = get_overloaded_cme(cme);
+            VM_ASSERT(cme != NULL);
+            METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
+        }
 
-        VM_ASSERT(cme != NULL);
-        METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
     }
 
     return cme;
@@ -1605,6 +1622,7 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
 static const rb_callable_method_entry_t *
 negative_cme(ID mid)
 {
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
