@@ -19515,6 +19515,7 @@ transcode.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 transcode.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 transcode.$(OBJEXT): {$(VPATH)}config.h
 transcode.$(OBJEXT): {$(VPATH)}constant.h
+transcode.$(OBJEXT): {$(VPATH)}debug_counter.h
 transcode.$(OBJEXT): {$(VPATH)}defines.h
 transcode.$(OBJEXT): {$(VPATH)}encoding.h
 transcode.$(OBJEXT): {$(VPATH)}id.h
@@ -19678,6 +19679,8 @@ transcode.$(OBJEXT): {$(VPATH)}st.h
 transcode.$(OBJEXT): {$(VPATH)}subst.h
 transcode.$(OBJEXT): {$(VPATH)}transcode.c
 transcode.$(OBJEXT): {$(VPATH)}transcode_data.h
+transcode.$(OBJEXT): {$(VPATH)}vm_debug.h
+transcode.$(OBJEXT): {$(VPATH)}vm_sync.h
 util.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 util.$(OBJEXT): $(top_srcdir)/internal/array.h
 util.$(OBJEXT): $(top_srcdir)/internal/compilers.h
