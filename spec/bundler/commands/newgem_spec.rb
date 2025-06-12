@@ -386,7 +386,6 @@ RSpec.describe "bundle gem" do
 
   it "has no rubocop offenses when using --ext=rust and --linter=rubocop flag" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
 
     bundle "gem #{gem_name} --ext=rust --linter=rubocop"
     bundle_exec_rubocop
@@ -395,7 +394,6 @@ RSpec.describe "bundle gem" do
 
   it "has no rubocop offenses when using --ext=rust, --test=minitest, and --linter=rubocop flag" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
 
     bundle "gem #{gem_name} --ext=rust --test=minitest --linter=rubocop"
     bundle_exec_rubocop
@@ -404,7 +402,6 @@ RSpec.describe "bundle gem" do
 
   it "has no rubocop offenses when using --ext=rust, --test=rspec, and --linter=rubocop flag" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
 
     bundle "gem #{gem_name} --ext=rust --test=rspec --linter=rubocop"
     bundle_exec_rubocop
@@ -413,7 +410,6 @@ RSpec.describe "bundle gem" do
 
   it "has no rubocop offenses when using --ext=rust, --test=test-unit, and --linter=rubocop flag" do
     skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
-    skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
 
     bundle "gem #{gem_name} --ext=rust --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
@@ -1724,24 +1720,10 @@ RSpec.describe "bundle gem" do
       end
     end
 
-    context "--ext parameter set with rust and old RubyGems" do
-      it "fails in friendly way" do
-        if ::Gem::Version.new("3.3.11") <= ::Gem.rubygems_version
-          skip "RubyGems compatible with Rust builder"
-        end
-
-        expect do
-          bundle ["gem", gem_name, "--ext=rust"].compact.join(" ")
-        end.to raise_error(RuntimeError, /too old to build Rust extension/)
-      end
-    end
-
     context "--ext parameter set with rust" do
       let(:flags) { "--ext=rust" }
 
       before do
-        skip "RubyGems incompatible with Rust builder" if ::Gem::Version.new("3.3.11") > ::Gem.rubygems_version
-
         bundle ["gem", gem_name, flags].compact.join(" ")
       end
 
