@@ -102,10 +102,37 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_plus_type_guard_exit_with_locals
+    assert_compiles '[6, 6.0]', %q{
+      def test(a)
+        local = 3
+        1 + a + local
+      end
+      test(1) # profile opt_plus
+      [test(2), test(2.0)]
+    }, call_threshold: 2
+  end
+
   def test_opt_plus_type_guard_nested_exit
     assert_compiles '[4, 4.0]', %q{
       def side_exit(n) = 1 + n
       def jit_frame(n) = 1 + side_exit(n)
+      def entry(n) = jit_frame(n)
+      entry(2) # profile send
+      [entry(2), entry(2.0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_plus_type_guard_nested_exit_with_locals
+    assert_compiles '[9, 9.0]', %q{
+      def side_exit(n)
+        local = 2
+        1 + n + local
+      end
+      def jit_frame(n)
+        local = 3
+        1 + side_exit(n) + local
+      end
       def entry(n) = jit_frame(n)
       entry(2) # profile send
       [entry(2), entry(2.0)]
