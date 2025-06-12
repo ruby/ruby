@@ -397,7 +397,7 @@ rb_obj_shape_id(VALUE obj)
     }
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
-        VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+        VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (fields_obj) {
             return RBASIC_SHAPE_ID(fields_obj);
         }

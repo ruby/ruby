@@ -450,9 +450,6 @@ namespace_initialize(VALUE namespace)
     // If a code in the namespace adds a constant, the constant will be visible even from root/main.
     RCLASS_SET_PRIME_CLASSEXT_WRITABLE(namespace, true);
 
-    // fallback to ivptr for ivars from shapes to manipulate the constant table
-    rb_evict_ivars_to_hash(namespace);
-
     // Get a clean constant table of Object even by writable one
     // because ns was just created, so it has not touched any constants yet.
     object_classext = RCLASS_EXT_WRITABLE_IN_NS(rb_cObject, ns);
