@@ -38,7 +38,7 @@ class Gem::S3URISigner
     s3_config = fetch_s3_config
 
     current_time = Time.now.utc
-    date_time = current_time.strftime("%Y%m%dT%H%m%SZ")
+    date_time = current_time.strftime("%Y%m%dT%H%M%SZ")
     date = date_time[0,8]
 
     credential_info = "#{date}/#{s3_config.region}/s3/aws4_request"
