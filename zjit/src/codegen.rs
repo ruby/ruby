@@ -278,6 +278,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetGlobal { id, val, state: _ } => gen_setglobal(asm, *id, opnd!(val)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         Insn::SetIvar { self_val, id, val, state: _ } => gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
+        Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -335,6 +336,12 @@ fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) -> Opnd {
         rb_gvar_set as *const u8,
         vec![Opnd::UImm(id.0), val],
     )
+}
+
+/// Side-exit into the interpreter
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    asm.jmp(side_exit(jit, state)?);
+    Some(())
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
