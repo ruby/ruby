@@ -18,6 +18,9 @@ static bool wbcheck_debug_enabled = false;
 // Verification after write barrier control
 static bool wbcheck_verify_after_wb_enabled = false;
 
+// Useless write barrier warning control
+static bool wbcheck_warn_useless_wb_enabled = false;
+
 static void
 wbcheck_debug(const char *format, ...)
 {
@@ -35,6 +38,9 @@ wbcheck_debug_obj_info_dump(VALUE obj)
     if (!wbcheck_debug_enabled) return;
     rb_obj_info_dump(obj);
 }
+
+// Forward declaration
+static void lock_and_maybe_gc(void *objspace_ptr);
 
 #define BASE_SLOT_SIZE 40
 #define HEAP_COUNT 5
@@ -333,6 +339,12 @@ rb_gc_impl_init(void)
         wbcheck_verify_after_wb_enabled = true;
     }
 
+    // Configure useless write barrier warnings based on environment variable
+    const char *warn_useless_wb_env = getenv("WBCHECK_WARN_USELESS_WB");
+    if (warn_useless_wb_env && (strcmp(warn_useless_wb_env, "1") == 0 || strcmp(warn_useless_wb_env, "true") == 0)) {
+        wbcheck_warn_useless_wb_enabled = true;
+    }
+
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(BASE_SLOT_SIZE));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
@@ -383,7 +395,7 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
 {
-    // Stub implementation
+    lock_and_maybe_gc(objspace_ptr);
 }
 
 bool
@@ -507,21 +519,21 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     // Get the current references from the object
     wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
 
-    // Compare current_refs against both stored lists to detect missed write barriers
-    wbcheck_compare_references(objspace_ptr, obj, current_refs, info->gc_mark_snapshot, info->writebarrier_children);
-
     // Check for useless write barriers before clearing them
-    if (info->writebarrier_children) {
+    if (wbcheck_warn_useless_wb_enabled && info->writebarrier_children) {
         for (size_t i = 0; i < info->writebarrier_children->count; i++) {
             VALUE wb_ref = info->writebarrier_children->items[i];
             if (!wbcheck_object_list_contains(current_refs, wb_ref)) {
-                wbcheck_debug("WBCHECK WARNING: Potentially useless write barrier detected for object %p\n", (void *)obj);
-                wbcheck_debug("  Write barrier was recorded for reference to %p, but object didn't reference it on next GC mark\n", (void *)wb_ref);
-                wbcheck_debug("  Parent: "); wbcheck_debug_obj_info_dump(obj);
-                wbcheck_debug("  Unmarked reference: "); wbcheck_debug_obj_info_dump(wb_ref);
+                fprintf(stderr, "WBCHECK WARNING: Potentially useless write barrier detected for object %p\n", (void *)obj);
+                fprintf(stderr, "  Write barrier was recorded for reference to %p, but object no longer references it\n", (void *)wb_ref);
+                fprintf(stderr, "  Parent: "); rb_obj_info_dump(obj);
+                fprintf(stderr, "  Stale reference: "); rb_obj_info_dump(wb_ref);
             }
         }
     }
+
+    // Compare current_refs against both stored lists to detect missed write barriers
+    wbcheck_compare_references(objspace_ptr, obj, current_refs, info->gc_mark_snapshot, info->writebarrier_children);
 
     // Update the snapshot with current references and clear write barrier children
     wbcheck_object_list_free(info->gc_mark_snapshot);
