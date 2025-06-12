@@ -113,12 +113,37 @@ wbcheck_object_list_contains(wbcheck_object_list_t *list, VALUE obj)
     return false;
 }
 
+static wbcheck_object_list_t *
+wbcheck_object_list_merge(wbcheck_object_list_t *list1, wbcheck_object_list_t *list2)
+{
+    wbcheck_object_list_t *merged = wbcheck_object_list_init();
+    
+    // Add all items from list1
+    if (list1) {
+        for (size_t i = 0; i < list1->count; i++) {
+            wbcheck_object_list_append(merged, list1->items[i]);
+        }
+    }
+    
+    // Add items from list2 that are not already in the merged list
+    if (list2) {
+        for (size_t i = 0; i < list2->count; i++) {
+            if (!wbcheck_object_list_contains(merged, list2->items[i])) {
+                wbcheck_object_list_append(merged, list2->items[i]);
+            }
+        }
+    }
+    
+    return merged;
+}
+
 // Information tracked for each object
 typedef struct {
     size_t alloc_size;      // Allocated size (static)
     bool wb_protected;      // Write barrier protection status (static)
     VALUE finalizers;       // Ruby Array of finalizers like [finalizer1, finalizer2, ...]
-    wbcheck_object_list_t *references; // Pointer to list of objects this object references
+    wbcheck_object_list_t *gc_mark_snapshot; // Snapshot of references from last GC mark
+    wbcheck_object_list_t *writebarrier_children; // References added via write barriers since last snapshot
 } rb_wbcheck_object_info_t;
 
 // wbcheck objspace structure to track all objects
@@ -231,7 +256,8 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     info->alloc_size = alloc_size;
     info->wb_protected = wb_protected;
     info->finalizers = 0;  /* No finalizers initially */
-    info->references = NULL;  /* No references initially */
+    info->gc_mark_snapshot = NULL;  /* No snapshot initially */
+    info->writebarrier_children = NULL;  /* No write barrier children initially */
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
@@ -244,8 +270,9 @@ wbcheck_unregister_object(void *objspace_ptr, VALUE obj)
     rb_wbcheck_object_info_t *info;
 
     if (st_delete(objspace->object_table, (st_data_t *)&obj, (st_data_t *)&info)) {
-        // Free the object list if it was allocated
-        wbcheck_object_list_free(info->references);
+        // Free both object lists if they were allocated
+        wbcheck_object_list_free(info->gc_mark_snapshot);
+        wbcheck_object_list_free(info->writebarrier_children);
         free(info);
     } else {
         rb_bug("wbcheck_unregister_object: object not found in table");
@@ -463,10 +490,10 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 
     wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj);
 
-    // Get the object info and replace the old references with the new ones
+    // Get the object info and set the initial GC mark snapshot
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
-    RUBY_ASSERT(!info->references);
-    info->references = new_list;  // Set the new references
+    RUBY_ASSERT(!info->gc_mark_snapshot);
+    info->gc_mark_snapshot = new_list;  // Set the initial snapshot
 }
 
 static void
@@ -480,7 +507,7 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     }
 
     // We hadn't captured initial references
-    if (!info->references) {
+    if (!info->gc_mark_snapshot) {
         return;
     }
 
@@ -490,22 +517,24 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     // Get the current references from the object
     wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
 
-    // Get stored references
-    wbcheck_object_list_t *stored_refs = info->references;
+    // Merge gc_mark_snapshot and writebarrier_children to get stored references
+    wbcheck_object_list_t *stored_refs = wbcheck_object_list_merge(info->gc_mark_snapshot, info->writebarrier_children);
 
     if (stored_refs) {
         // Compare current_refs against stored_refs to detect missed write barriers
         wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
 
-        // Free the old stored references
+        // Free the merged stored references
         wbcheck_object_list_free(stored_refs);
     } else {
         wbcheck_debug("wbcheck: no stored references to compare against\n");
     }
 
-    // Replace the stored references with the current ones.
-    // This will be either equal to or a subset of the previous references.
-    info->references = current_refs;
+    // Update the snapshot with current references and clear write barrier children
+    wbcheck_object_list_free(info->gc_mark_snapshot);
+    wbcheck_object_list_free(info->writebarrier_children);
+    info->gc_mark_snapshot = current_refs;
+    info->writebarrier_children = NULL;
 }
 
 static void
@@ -744,10 +773,15 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     // Get the object info for the parent object (a)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(a);
 
-    // Only record the write barrier if references have been initialized
-    if (info->references) {
-        // Add the new reference to the parent's object list
-        wbcheck_object_list_append(info->references, b);
+    // Only record the write barrier if gc_mark_snapshot has been initialized
+    if (info->gc_mark_snapshot) {
+        // Initialize writebarrier_children list if it doesn't exist
+        if (!info->writebarrier_children) {
+            info->writebarrier_children = wbcheck_object_list_init();
+        }
+        
+        // Add the new reference to the write barrier children list
+        wbcheck_object_list_append(info->writebarrier_children, b);
 
         wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
 
@@ -757,7 +791,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
             wbcheck_object_list_append(objspace->objects_to_verify, a);
         }
     } else {
-        wbcheck_debug("wbcheck: write barrier skipped (references not initialized) from %p to %p\n", (void *)a, (void *)b);
+        wbcheck_debug("wbcheck: write barrier skipped (snapshot not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
 
     rb_gc_vm_unlock(lev);
@@ -787,13 +821,19 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
     // Clear existing references since they may be stale
-    if (info->references) {
-        wbcheck_object_list_free(info->references);
-        info->references = NULL;
+    if (info->gc_mark_snapshot) {
+        wbcheck_object_list_free(info->gc_mark_snapshot);
+        info->gc_mark_snapshot = NULL;
 
-        // Only re-add to objects_to_capture if it had previous references
+        // Only re-add to objects_to_capture if it had previous snapshot
         // (new objects don't need to be re-added since they'll be captured at allocation)
         wbcheck_object_list_append(objspace->objects_to_capture, obj);
+    }
+    
+    // Also clear write barrier children
+    if (info->writebarrier_children) {
+        wbcheck_object_list_free(info->writebarrier_children);
+        info->writebarrier_children = NULL;
     }
 
     rb_gc_vm_unlock(lev);
