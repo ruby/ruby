@@ -76,6 +76,21 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_invokebuiltin
+    assert_compiles '["."]', %q{
+      def test = Dir.glob(".")
+      test
+    }
+  end
+
+  def test_invokebuiltin_delegate
+    assert_compiles '[[], true]', %q{
+      def test = [].clone(freeze: true)
+      r = test
+      [r, r.frozen?]
+    }
+  end
+
   def test_opt_plus_const
     assert_compiles '3', %q{
       def test = 1 + 2
