@@ -799,6 +799,12 @@ rb_yjit_shape_capacity(shape_id_t shape_id)
     return RSHAPE_CAPACITY(shape_id);
 }
 
+attr_index_t
+rb_yjit_shape_index(shape_id_t shape_id)
+{
+    return RSHAPE_INDEX(shape_id);
+}
+
 // Assert that we have the VM lock. Relevant mostly for multi ractor situations.
 // The GC takes the lock before calling us, and this asserts that it indeed happens.
 void

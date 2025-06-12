@@ -380,12 +380,6 @@ rb_shape_each_shape_id(each_shape_callback callback, void *data)
     }
 }
 
-RUBY_FUNC_EXPORTED rb_shape_t *
-rb_shape_lookup(shape_id_t shape_id)
-{
-    return RSHAPE(shape_id);
-}
-
 RUBY_FUNC_EXPORTED shape_id_t
 rb_obj_shape_id(VALUE obj)
 {
