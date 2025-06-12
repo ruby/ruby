@@ -647,17 +647,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      # Don't use Dir.chdir with a block, it warnings a lot because
-      # of a downstream Dir.chdir with a block
-      old = Dir.getwd
-
-      begin
-        Dir.chdir @tempdir
+      Dir.chdir @tempdir do
         assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
-      ensure
-        Dir.chdir old
       end
     end
 
@@ -684,17 +677,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      # Don't use Dir.chdir with a block, it warnings a lot because
-      # of a downstream Dir.chdir with a block
-      old = Dir.getwd
-
-      begin
-        Dir.chdir @tempdir
+      Dir.chdir @tempdir do
         assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
-      ensure
-        Dir.chdir old
       end
     end
 
@@ -720,17 +706,10 @@ ERROR:  Possible alternatives: non_existent_with_hint
     @cmd.options[:args] = %w[a]
 
     use_ui @ui do
-      # Don't use Dir.chdir with a block, it warnings a lot because
-      # of a downstream Dir.chdir with a block
-      old = Dir.getwd
-
-      begin
-        Dir.chdir @tempdir
+      Dir.chdir @tempdir do
         assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
           @cmd.execute
         end
-      ensure
-        Dir.chdir old
       end
     end
 
