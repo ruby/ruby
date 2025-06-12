@@ -778,7 +778,7 @@ VALUE
 rb_object_shape_count(void)
 {
     // next_shape_id starts from 0, so it's the same as the count
-    return ULONG2NUM((unsigned long)rb_shape_tree->next_shape_id);
+    return ULONG2NUM((unsigned long)rb_shape_tree.next_shape_id);
 }
 
 bool

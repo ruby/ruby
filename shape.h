@@ -94,7 +94,7 @@ typedef struct {
 } rb_shape_tree_t;
 
 RUBY_SYMBOL_EXPORT_BEGIN
-RUBY_EXTERN rb_shape_tree_t *rb_shape_tree;
+RUBY_EXTERN rb_shape_tree_t rb_shape_tree;
 RUBY_SYMBOL_EXPORT_END
 
 union rb_attr_index_cache {
@@ -151,7 +151,7 @@ RSHAPE(shape_id_t shape_id)
     uint32_t offset = (shape_id & SHAPE_ID_OFFSET_MASK);
     RUBY_ASSERT(offset != INVALID_SHAPE_ID);
 
-    return &rb_shape_tree->shape_list[offset];
+    return &rb_shape_tree.shape_list[offset];
 }
 
 int32_t rb_shape_id_offset(void);
@@ -240,7 +240,7 @@ RSHAPE_EMBEDDED_CAPACITY(shape_id_t shape_id)
 {
     uint8_t heap_index = rb_shape_heap_index(shape_id);
     if (heap_index) {
-        return rb_shape_tree->capacities[heap_index - 1];
+        return rb_shape_tree.capacities[heap_index - 1];
     }
     return 0;
 }
