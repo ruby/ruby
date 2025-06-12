@@ -260,6 +260,25 @@ RSpec.describe "bundle install from an existing gemspec" do
     expect(out).to eq("WIN")
   end
 
+  it "does not make Gem.try_activate warn when local gem has extensions" do
+    build_lib("foo", path: tmp("foo")) do |s|
+      s.version = "1.0.0"
+      s.add_c_extension
+    end
+    build_repo2
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      gemspec :path => '#{tmp("foo")}'
+    G
+
+    expect(the_bundle).to include_gems "foo 1.0.0"
+
+    run "Gem.try_activate('irb/lc/es/error.rb'); puts 'WIN'"
+    expect(out).to eq("WIN")
+    expect(err).to be_empty
+  end
+
   it "handles downgrades" do
     build_lib "omg", "2.0", path: lib_path("omg")
 

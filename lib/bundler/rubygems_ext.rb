@@ -283,6 +283,18 @@ module Gem
       end
     end
 
+    if Gem.rubygems_version < Gem::Version.new("3.5.22")
+      module FixPathSourceMissingExtensions
+        def missing_extensions?
+          return false if %w[Bundler::Source::Path Bundler::Source::Gemspec].include?(source.class.name)
+
+          super
+        end
+      end
+
+      prepend FixPathSourceMissingExtensions
+    end
+
     private
 
     def dependencies_to_gemfile(dependencies, group = nil)
