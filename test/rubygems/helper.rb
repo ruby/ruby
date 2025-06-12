@@ -683,6 +683,14 @@ class Gem::TestCase < Test::Unit::TestCase
     path
   end
 
+  def write_dummy_extconf(gem_name)
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.puts "require 'mkmf'"
+      yield io if block_given?
+      io.puts "create_makefile '#{gem_name}'"
+    end
+  end
+
   ##
   # Load a YAML string, the psych 3 way
 

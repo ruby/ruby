@@ -1478,12 +1478,7 @@ end
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
-    write_file File.join(@tempdir, "extconf.rb") do |io|
-      io.write <<-RUBY
-        require "mkmf"
-        create_makefile("#{@spec.name}")
-      RUBY
-    end
+    write_dummy_extconf @spec.name
 
     @spec.files += %w[extconf.rb]
 
@@ -1503,12 +1498,7 @@ end
     @spec = setup_base_spec
 
     @spec.extensions << "extconf.rb"
-    write_file File.join(@tempdir, "extconf.rb") do |io|
-      io.write <<-RUBY
-        require "mkmf"
-        create_makefile("#{@spec.name}")
-      RUBY
-    end
+    write_dummy_extconf @spec.name
 
     @spec.files += %w[extconf.rb]
 
@@ -1539,12 +1529,7 @@ end
   def test_install_user_extension_dir
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
-    write_file File.join(@tempdir, "extconf.rb") do |io|
-      io.write <<-RUBY
-        require "mkmf"
-        create_makefile("#{@spec.name}")
-      RUBY
-    end
+    write_dummy_extconf @spec.name
 
     @spec.files += %w[extconf.rb]
 
@@ -1571,15 +1556,13 @@ end
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
-    write_file File.join(@tempdir, "extconf.rb") do |io|
+    write_dummy_extconf @spec.name do |io|
       io.write <<-RUBY
-        require "mkmf"
 
         CONFIG['CC'] = '$(TOUCH) $@ ||'
         CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
         $ruby = '#{Gem.ruby}'
 
-        create_makefile("#{@spec.name}")
       RUBY
     end
 
@@ -1618,12 +1601,7 @@ end
 
     @spec = setup_base_spec
     @spec.extensions << "extconf.rb"
-    write_file File.join(@tempdir, "extconf.rb") do |io|
-      io.write <<-RUBY
-        require "mkmf"
-        create_makefile("#{@spec.name}")
-      RUBY
-    end
+    write_dummy_extconf @spec.name
 
     rb = File.join("lib", "#{@spec.name}.rb")
     @spec.files += [rb]
@@ -1663,15 +1641,13 @@ end
 
       @spec.extensions << "extconf.rb"
 
-      write_file File.join(@tempdir, "extconf.rb") do |io|
+      write_dummy_extconf @spec.name do |io|
         io.write <<-RUBY
-          require "mkmf"
 
           CONFIG['CC'] = '$(TOUCH) $@ ||'
           CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
           $ruby = '#{Gem.ruby}'
 
-          create_makefile("#{@spec.name}")
         RUBY
       end
 
@@ -1698,13 +1674,13 @@ end
     @spec.require_paths = ["."]
     @spec.extensions << "extconf.rb"
 
-    File.write File.join(@tempdir, "extconf.rb"), <<-RUBY
-      require "mkmf"
-      CONFIG['CC'] = '$(TOUCH) $@ ||'
-      CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
-      $ruby = '#{Gem.ruby}'
-      create_makefile("#{@spec.name}")
-    RUBY
+    write_dummy_extconf @spec.name do |io|
+      io.write <<~RUBY
+        CONFIG['CC'] = '$(TOUCH) $@ ||'
+        CONFIG['LDSHARED'] = '$(TOUCH) $@ ||'
+        $ruby = '#{Gem.ruby}'
+      RUBY
+    end
 
     # empty depend file for no auto dependencies
     @spec.files += %W[depend #{@spec.name}.c].each do |file|
