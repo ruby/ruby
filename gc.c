@@ -1909,6 +1909,7 @@ obj_to_id_tbl_compact(void *data)
         st_foreach(obj_to_id_tbl, obj_to_id_tbl_any_moved_p_i, (st_data_t)&any_moved_args);
 
         if (any_moved_args.need_rebuild) {
+            fprintf(stderr, "-- rebyild---\n");
             st_table *new_table;
             DURING_GC_COULD_MALLOC_REGION_START();
             {
@@ -1969,7 +1970,7 @@ class_object_id(VALUE klass)
 static inline VALUE
 object_id_get(VALUE obj, shape_id_t shape_id)
 {
-    VALUE id;
+    VALUE id = Qundef;
 
     switch (rb_shape_has_object_id(shape_id)) {
       case SHAPE_NO_OBJ_ID:
@@ -1995,6 +1996,7 @@ object_id_get(VALUE obj, shape_id_t shape_id)
         {
             RUBY_ASSERT(obj_to_id_tbl);
             unsigned int lock_lev = RB_GC_VM_LOCK();
+            fprintf(stderr, "lookup %"PRIxVALUE"\n", obj);
             st_lookup(obj_to_id_tbl, obj, &id);
 
 #if RUBY_DEBUG
@@ -2027,14 +2029,18 @@ object_id0(VALUE obj, bool shareable)
     attr_index_t capacity = RSHAPE_CAPACITY(shape_id);
     attr_index_t free_capacity = capacity - RSHAPE_LEN(shape_id);
     if (shareable && RB_TYPE_P(obj, T_OBJECT) && capacity && !free_capacity) {
-        // If the object was shared and has no free capacity, we can't safely store the object_id inline.
+        // If the object was shared and has no free capacity, we can't safely store the object_id inline, as it
+        // would require to move the object content into an external buffer.
         // This is only a problem for T_OBJECT, given other types have external fields and can do RCU.
         shape_id_t next_shape_id = rb_shape_transition_object_id_external(obj);
         if (RB_UNLIKELY(!obj_to_id_tbl)) {
             obj_to_id_tbl = st_init_numtable();
             obj_to_id_value = TypedData_Wrap_Struct(0, &obj_to_id_tbl_type, obj_to_id_tbl);
         }
+        fprintf(stderr, "insert %"PRIxVALUE"\n", obj);
+        // This can trigger compaction, which may rebuild the table and then crash....
         st_insert(obj_to_id_tbl, obj, id);
+        fprintf(stderr, "inserted\n");
         RBASIC_SET_SHAPE_ID(obj, next_shape_id);
     }
     else {

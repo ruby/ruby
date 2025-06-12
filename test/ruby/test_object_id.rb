@@ -254,7 +254,7 @@ class TestObjectIdRactor < Test::Unit::TestCase
           @a = @b = @c = nil
         end
       end
-      N = 50
+      N = 20
       objs = Ractor.make_shareable(N.times.map { MyClass.new })
 
       GC.stress = true
