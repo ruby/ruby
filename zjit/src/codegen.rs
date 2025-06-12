@@ -465,6 +465,7 @@ fn gen_send_without_block(
     args: &Vec<InsnId>,
 ) -> Option<lir::Opnd> {
     // Spill locals onto the stack.
+    // TODO: Don't spill locals eagerly; lazily reify frames
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id)?);
