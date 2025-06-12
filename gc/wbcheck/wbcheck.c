@@ -113,30 +113,6 @@ wbcheck_object_list_contains(wbcheck_object_list_t *list, VALUE obj)
     return false;
 }
 
-static wbcheck_object_list_t *
-wbcheck_object_list_merge(wbcheck_object_list_t *list1, wbcheck_object_list_t *list2)
-{
-    wbcheck_object_list_t *merged = wbcheck_object_list_init();
-    
-    // Add all items from list1
-    if (list1) {
-        for (size_t i = 0; i < list1->count; i++) {
-            wbcheck_object_list_append(merged, list1->items[i]);
-        }
-    }
-    
-    // Add items from list2 that are not already in the merged list
-    if (list2) {
-        for (size_t i = 0; i < list2->count; i++) {
-            if (!wbcheck_object_list_contains(merged, list2->items[i])) {
-                wbcheck_object_list_append(merged, list2->items[i]);
-            }
-        }
-    }
-    
-    return merged;
-}
-
 // Information tracked for each object
 typedef struct {
     size_t alloc_size;      // Allocated size (static)
@@ -176,18 +152,21 @@ wbcheck_get_object_info(VALUE obj)
 }
 
 static void
-wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *stored_refs, wbcheck_object_list_t *missed_refs)
+wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *gc_mark_snapshot, wbcheck_object_list_t *writebarrier_children, wbcheck_object_list_t *missed_refs)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
 
     rb_wbcheck_object_info_t *parent_info = wbcheck_get_object_info(parent_obj);
 
+    size_t snapshot_count = gc_mark_snapshot ? gc_mark_snapshot->count : 0;
+    size_t wb_count = writebarrier_children ? writebarrier_children->count : 0;
+    
     fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
     fprintf(stderr, "  Parent object: %p (wb_protected: %s)\n",
            (void *)parent_obj, parent_info->wb_protected ? "true" : "false");
     fprintf(stderr, "    "); rb_obj_info_dump(parent_obj);
-    fprintf(stderr, "  Reference counts - stored: %zu, current: %zu, missed: %zu\n",
-           stored_refs->count, current_refs->count, missed_refs->count);
+    fprintf(stderr, "  Reference counts - snapshot: %zu, writebarrier: %zu, current: %zu, missed: %zu\n",
+           snapshot_count, wb_count, current_refs->count, missed_refs->count);
 
     for (size_t i = 0; i < missed_refs->count; i++) {
         VALUE missed_ref = missed_refs->items[i];
@@ -201,19 +180,21 @@ wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t
 }
 
 static void
-wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *stored_refs)
+wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t *current_refs, wbcheck_object_list_t *gc_mark_snapshot, wbcheck_object_list_t *writebarrier_children)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
-    GC_ASSERT(stored_refs != NULL);
+
+    size_t snapshot_count = gc_mark_snapshot ? gc_mark_snapshot->count : 0;
+    size_t wb_count = writebarrier_children ? writebarrier_children->count : 0;
 
     wbcheck_debug("wbcheck: comparing references for object %p\n", (void *)parent_obj);
-    wbcheck_debug("wbcheck: current refs: %zu, stored refs: %zu\n",
-                 current_refs->count, stored_refs->count);
+    wbcheck_debug("wbcheck: current refs: %zu, snapshot refs: %zu, wb refs: %zu\n",
+                 current_refs->count, snapshot_count, wb_count);
 
     // Collect missed references (lazily allocated)
     wbcheck_object_list_t *missed_refs = NULL;
 
-    // Check each object in current_refs to see if it's in stored_refs
+    // Check each object in current_refs to see if it's in either stored list
     for (size_t i = 0; i < current_refs->count; i++) {
         VALUE current_ref = current_refs->items[i];
 
@@ -227,18 +208,27 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
             continue;
         }
 
-        if (!wbcheck_object_list_contains(stored_refs, current_ref)) {
-            // Lazily allocate missed_refs list on first miss
-            if (!missed_refs) {
-                missed_refs = wbcheck_object_list_init();
-            }
-            wbcheck_object_list_append(missed_refs, current_ref);
+        // Check if reference exists in gc_mark_snapshot
+        if (gc_mark_snapshot && wbcheck_object_list_contains(gc_mark_snapshot, current_ref)) {
+            continue;
         }
+
+        // Check if reference exists in writebarrier_children
+        if (writebarrier_children && wbcheck_object_list_contains(writebarrier_children, current_ref)) {
+            continue;
+        }
+
+        // If we get here, the reference wasn't found in either list
+        // Lazily allocate missed_refs list on first miss
+        if (!missed_refs) {
+            missed_refs = wbcheck_object_list_init();
+        }
+        wbcheck_object_list_append(missed_refs, current_ref);
     }
 
     // Report any errors found
     if (missed_refs) {
-        wbcheck_report_error(objspace_ptr, parent_obj, current_refs, stored_refs, missed_refs);
+        wbcheck_report_error(objspace_ptr, parent_obj, current_refs, gc_mark_snapshot, writebarrier_children, missed_refs);
         wbcheck_object_list_free(missed_refs);
     }
 }
@@ -517,14 +507,8 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     // Get the current references from the object
     wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
 
-    // Merge gc_mark_snapshot and writebarrier_children to get stored references
-    wbcheck_object_list_t *stored_refs = wbcheck_object_list_merge(info->gc_mark_snapshot, info->writebarrier_children);
-
-    // Compare current_refs against stored_refs to detect missed write barriers
-    wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
-
-    // Free the merged stored references
-    wbcheck_object_list_free(stored_refs);
+    // Compare current_refs against both stored lists to detect missed write barriers
+    wbcheck_compare_references(objspace_ptr, obj, current_refs, info->gc_mark_snapshot, info->writebarrier_children);
 
     // Update the snapshot with current references and clear write barrier children
     wbcheck_object_list_free(info->gc_mark_snapshot);
