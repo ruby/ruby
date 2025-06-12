@@ -3128,8 +3128,6 @@ fn gen_set_ivar(
         if new_shape_too_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
-            let current_shape = unsafe { rb_shape_lookup(current_shape_id) };
-
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
@@ -3138,7 +3136,7 @@ fn gen_set_ivar(
             let needs_extension = next_capacity != current_capacity;
 
             // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { (*current_shape).next_field_index } as usize;
+            let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
 
             let needs_extension = if needs_extension {
                 Some((current_capacity, next_capacity))

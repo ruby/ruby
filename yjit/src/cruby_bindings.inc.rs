@@ -688,27 +688,6 @@ pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u16;
 pub type shape_id_t = u32;
-pub type redblack_id_t = u32;
-pub type redblack_node_t = redblack_node;
-#[repr(C)]
-pub struct rb_shape {
-    pub edges: VALUE,
-    pub edge_name: ID,
-    pub ancestor_index: *mut redblack_node_t,
-    pub parent_id: shape_id_t,
-    pub next_field_index: attr_index_t,
-    pub capacity: attr_index_t,
-    pub type_: u8,
-}
-pub type rb_shape_t = rb_shape;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct redblack_node {
-    pub key: ID,
-    pub value: *mut rb_shape_t,
-    pub l: redblack_id_t,
-    pub r: redblack_id_t,
-}
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub index: u32,
@@ -1133,7 +1112,6 @@ extern "C" {
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_shape_lookup(shape_id: shape_id_t) -> *mut rb_shape_t;
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(obj: VALUE, id: ID) -> shape_id_t;
@@ -1265,6 +1243,7 @@ extern "C" {
     pub fn rb_yjit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_yjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
     pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
+    pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_assert_holding_vm_lock();
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
     pub fn rb_yjit_invokeblock_sp_pops(ci: *const rb_callinfo) -> usize;
