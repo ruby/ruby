@@ -27,9 +27,11 @@ class Gem::S3URISigner
   end
 
   attr_accessor :uri
+  attr_accessor :head
 
-  def initialize(uri)
+  def initialize(uri, head)
     @uri = uri
+    @head = head
   end
 
   ##
@@ -73,7 +75,7 @@ class Gem::S3URISigner
 
   def generate_canonical_request(canonical_host, query_params)
     [
-      "GET",
+      head ? "HEAD" : "GET",
       uri.path,
       query_params,
       "host:#{canonical_host}",
