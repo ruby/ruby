@@ -1307,7 +1307,7 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         ASSERT_vm_locking();
-        VALUE field_obj = RCLASS_FIELDS_OBJ(obj);
+        VALUE field_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (field_obj) {
             return rb_obj_field_get(field_obj, target_shape_id);
         }
@@ -1375,7 +1375,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         VALUE val = undef;
         RB_VM_LOCK_ENTER();
         {
-            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 val = rb_ivar_lookup(fields_obj, id, undef);
             }
@@ -1492,7 +1492,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
 
-        VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+        VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (fields_obj) {
             RB_VM_LOCK_ENTER();
             {
@@ -1614,8 +1614,7 @@ static shape_id_t
 obj_transition_too_complex(VALUE obj, st_table *table)
 {
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
-        RUBY_ASSERT(RCLASS_FIELDS_OBJ(obj));
-        return obj_transition_too_complex(RCLASS_FIELDS_OBJ(obj), table);
+        return obj_transition_too_complex(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), table);
     }
 
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
@@ -2062,7 +2061,7 @@ rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id)
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         // Avoid creating the fields_obj just to freeze the class
         if (!(shape_id == SPECIAL_CONST_SHAPE_ID && old_shape_id == ROOT_SHAPE_ID)) {
-            RBASIC_SET_SHAPE_ID(RCLASS_ENSURE_FIELDS_OBJ(obj), shape_id);
+            RBASIC_SET_SHAPE_ID(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), shape_id);
         }
     }
     // FIXME: How to do multi-shape?
@@ -2201,7 +2200,7 @@ rb_ivar_defined(VALUE obj, ID id)
       case T_CLASS:
       case T_MODULE:
         RB_VM_LOCKING() {
-            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 defined = ivar_defined0(fields_obj, id);
             }
@@ -2455,7 +2454,7 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
       case T_MODULE:
         IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
         RB_VM_LOCKING() {
-            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 class_fields_each(fields_obj, func, arg, ivar_only);
             }
@@ -2488,7 +2487,7 @@ rb_ivar_count(VALUE obj)
       case T_CLASS:
       case T_MODULE:
         {
-            VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+            VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (!fields_obj) {
                 return 0;
             }
@@ -4706,7 +4705,7 @@ static int
 class_ivar_set(VALUE obj, ID id, VALUE val)
 {
     bool existing = true;
-    const VALUE original_fields_obj = RCLASS_FIELDS_OBJ(obj);
+    const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     VALUE fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_class_fields_new(obj, 1);
 
     shape_id_t next_shape_id = 0;
@@ -4758,7 +4757,7 @@ class_ivar_set(VALUE obj, ID id, VALUE val)
     }
 
     if (fields_obj != original_fields_obj) {
-        RCLASS_SET_FIELDS_OBJ(obj, fields_obj);
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
         // TODO: What should we set as the T_CLASS shape_id?
         // In most case we can replicate the single `fields_obj` shape
         // but in namespaced case?
@@ -4777,7 +4776,7 @@ too_complex:
 
         if (fields_obj != original_fields_obj) {
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
-            RCLASS_SET_FIELDS_OBJ(obj, fields_obj);
+            RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
             // TODO: What should we set as the T_CLASS shape_id?
             // In most case we can replicate the single `fields_obj` shape
             // but in namespaced case?
@@ -4809,7 +4808,7 @@ static void
 class_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    obj_field_set(RCLASS_ENSURE_FIELDS_OBJ(obj), target_shape_id, val);
+    obj_field_set(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), target_shape_id, val);
 }
 
 static int

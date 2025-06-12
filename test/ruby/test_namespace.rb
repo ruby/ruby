@@ -222,6 +222,26 @@ class TestNamespace < Test::Unit::TestCase
     end;
   end
 
+  def test_instance_variable
+    pend unless Namespace.enabled?
+
+    @n.require_relative('namespace/instance_variables')
+
+    assert_equal [], String.instance_variables
+    assert_equal [:@str_ivar1, :@str_ivar2], @n::StringDelegatorObj.instance_variables
+    assert_equal 111, @n::StringDelegatorObj.str_ivar1
+    assert_equal 222, @n::StringDelegatorObj.str_ivar2
+    assert_equal 222, @n::StringDelegatorObj.instance_variable_get(:@str_ivar2)
+
+    @n::StringDelegatorObj.instance_variable_set(:@str_ivar3, 333)
+    assert_equal 333, @n::StringDelegatorObj.instance_variable_get(:@str_ivar3)
+    @n::StringDelegatorObj.remove_instance_variable(:@str_ivar1)
+    assert_nil @n::StringDelegatorObj.str_ivar1
+    assert_equal [:@str_ivar2, :@str_ivar3], @n::StringDelegatorObj.instance_variables
+
+    assert_equal [], String.instance_variables
+  end
+
   def test_methods_added_in_namespace_are_invisible_globally
     pend unless Namespace.enabled?
 

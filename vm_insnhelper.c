@@ -1248,7 +1248,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 }
             }
 
-            fields_obj = RCLASS_FIELDS_OBJ(obj);
+            fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (!fields_obj) {
                 return default_value;
             }

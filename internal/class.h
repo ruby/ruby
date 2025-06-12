@@ -403,10 +403,6 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
     if (ext)
         return ext;
 
-    if (!rb_shape_obj_too_complex_p(obj)) {
-        rb_evict_ivars_to_hash(obj); // fallback to ivptr for ivars from shapes
-    }
-
     RB_VM_LOCKING() {
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, ns);
@@ -525,21 +521,21 @@ RCLASS_WRITE_SUPER(VALUE klass, VALUE super)
 }
 
 static inline VALUE
-RCLASS_FIELDS_OBJ(VALUE obj)
+RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    return RCLASSEXT_FIELDS_OBJ(RCLASS_EXT_READABLE(obj));
-}
-
-static inline VALUE
-RCLASS_ENSURE_FIELDS_OBJ(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    rb_classext_t *ext = RCLASS_EXT_READABLE(obj);
+    rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
         RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_class_fields_new(obj, 1));
     }
     return ext->fields_obj;
+}
+
+static inline void
+RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+    RB_OBJ_WRITE(obj, &ext->fields_obj, fields_obj);
 }
 
 static inline VALUE
@@ -550,25 +546,19 @@ RCLASS_WRITABLE_FIELDS_OBJ(VALUE obj)
 }
 
 static inline void
-RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RB_OBJ_WRITE(obj, &ext->fields_obj, fields_obj);
-}
-
-static inline void
-RCLASS_SET_FIELDS_OBJ(VALUE obj, VALUE fields_obj)
+RCLASS_WRITABLE_SET_FIELDS_OBJ(VALUE obj, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
 
-    RCLASSEXT_SET_FIELDS_OBJ(obj, RCLASS_EXT_PRIME(obj), fields_obj);
+    RCLASSEXT_SET_FIELDS_OBJ(obj, RCLASS_EXT_WRITABLE(obj), fields_obj);
 }
 
 static inline uint32_t
 RCLASS_FIELDS_COUNT(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    VALUE fields_obj = RCLASS_FIELDS_OBJ(obj);
+
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     if (fields_obj) {
         if (rb_shape_obj_too_complex_p(fields_obj)) {
             return (uint32_t)rb_st_table_size(rb_imemo_class_fields_complex_tbl(fields_obj));
