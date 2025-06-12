@@ -531,18 +531,21 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     return ext->fields_obj;
 }
 
-static inline void
-RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RB_OBJ_WRITE(obj, &ext->fields_obj, fields_obj);
-}
-
 static inline VALUE
 RCLASS_WRITABLE_FIELDS_OBJ(VALUE obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     return RCLASSEXT_FIELDS_OBJ(RCLASS_EXT_WRITABLE(obj));
+}
+
+static inline void
+RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+
+    VALUE old_fields_obj = ext->fields_obj;
+    RUBY_ATOMIC_VALUE_SET(ext->fields_obj, fields_obj);
+    RB_OBJ_WRITTEN(obj, old_fields_obj, fields_obj);
 }
 
 static inline void

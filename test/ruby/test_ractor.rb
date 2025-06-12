@@ -79,6 +79,26 @@ class TestRactor < Test::Unit::TestCase
     end;
   end
 
+  def test_class_instance_variables
+    assert_ractor(<<~'RUBY')
+      # Once we're in multi-ractor mode, the codepaths
+      # for class instance variables are a bit different.
+      Ractor.new {}.value
+
+      class TestClass
+        @a = 1
+        @b = 2
+        @c = 3
+        @d = 4
+      end
+
+      assert_equal 4, TestClass.remove_instance_variable(:@d)
+      assert_nil TestClass.instance_variable_get(:@d)
+      assert_equal 4, TestClass.instance_variable_set(:@d, 4)
+      assert_equal 4, TestClass.instance_variable_get(:@d)
+    RUBY
+  end
+
   def test_require_raises_and_no_ractor_belonging_issue
     assert_ractor(<<~'RUBY')
       require "tempfile"

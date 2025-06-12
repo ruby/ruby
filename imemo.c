@@ -156,7 +156,6 @@ rb_imemo_class_fields_clone(VALUE fields_obj)
     if (rb_shape_too_complex_p(shape_id)) {
         clone = rb_imemo_class_fields_new_complex(CLASS_OF(fields_obj), 0);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
-
         st_table *src_table = rb_imemo_class_fields_complex_tbl(fields_obj);
         st_replace(rb_imemo_class_fields_complex_tbl(clone), src_table);
     }
