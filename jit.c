@@ -428,6 +428,9 @@ rb_vm_call0(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE
 
 VALUE
 rb_zjit_vm_call0_no_splat(rb_execution_context_t *ec, VALUE recv, ID id, int argc, const VALUE *argv, const rb_callable_method_entry_t *cme) {
+    const char *cme_name = rb_id2name(cme->def->original_id);
+    fprintf(stderr, "call0 ec %p recv %p id %p argc %d, argv %p, cme %p name %s\n",
+                    ec, (void*)recv, (void*)id, argc, argv, cme, cme_name);
     return rb_vm_call0(ec, recv, id, argc, argv, cme, /*kw_splat=*/0);
 }
 
