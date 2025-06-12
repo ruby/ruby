@@ -13021,24 +13021,23 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
     VALUE iseqv = (VALUE)iseq;
     unsigned int code_index;
     ibf_offset_t reading_pos = bytecode_offset;
-    VALUE *code = ALLOC_N(VALUE, iseq_size);
+    VALUE *code = ZALLOC_N(VALUE, iseq_size);
 
     struct rb_iseq_constant_body *load_body = ISEQ_BODY(iseq);
     struct rb_call_data *cd_entries = load_body->call_data;
     int ic_index = 0;
 
     load_body->iseq_encoded = code;
-    load_body->iseq_size = 0;
+    load_body->iseq_size = iseq_size;
 
     iseq_bits_t * mark_offset_bits;
-
-    iseq_bits_t tmp[1] = {0};
-
     if (ISEQ_MBITS_BUFLEN(iseq_size) == 1) {
-        mark_offset_bits = tmp;
+        load_body->mark_bits.single = 0;
+        mark_offset_bits = &load_body->mark_bits.single;
     }
     else {
-        mark_offset_bits = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        load_body->mark_bits.list = ZALLOC_N(iseq_bits_t, ISEQ_MBITS_BUFLEN(iseq_size));
+        mark_offset_bits = load_body->mark_bits.list;
     }
     bool needs_bitmap = false;
 
@@ -13160,19 +13159,9 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    load_body->iseq_size = code_index;
-
-    if (ISEQ_MBITS_BUFLEN(load_body->iseq_size) == 1) {
-        load_body->mark_bits.single = mark_offset_bits[0];
-    }
-    else {
-        if (needs_bitmap) {
-            load_body->mark_bits.list = mark_offset_bits;
-        }
-        else {
-            load_body->mark_bits.list = 0;
-            SIZED_FREE_N(mark_offset_bits, ISEQ_MBITS_BUFLEN(iseq_size));
-        }
+    if (!needs_bitmap) {
+        SIZED_FREE_N(load_body->mark_bits.list, ISEQ_MBITS_BUFLEN(iseq_size));
+        load_body->mark_bits.list = NULL;
     }
 
     RUBY_ASSERT(code_index == iseq_size);
