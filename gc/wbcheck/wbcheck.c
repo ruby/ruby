@@ -510,6 +510,19 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     // Compare current_refs against both stored lists to detect missed write barriers
     wbcheck_compare_references(objspace_ptr, obj, current_refs, info->gc_mark_snapshot, info->writebarrier_children);
 
+    // Check for useless write barriers before clearing them
+    if (info->writebarrier_children) {
+        for (size_t i = 0; i < info->writebarrier_children->count; i++) {
+            VALUE wb_ref = info->writebarrier_children->items[i];
+            if (!wbcheck_object_list_contains(current_refs, wb_ref)) {
+                wbcheck_debug("WBCHECK WARNING: Potentially useless write barrier detected for object %p\n", (void *)obj);
+                wbcheck_debug("  Write barrier was recorded for reference to %p, but object didn't reference it on next GC mark\n", (void *)wb_ref);
+                wbcheck_debug("  Parent: "); wbcheck_debug_obj_info_dump(obj);
+                wbcheck_debug("  Unmarked reference: "); wbcheck_debug_obj_info_dump(wb_ref);
+            }
+        }
+    }
+
     // Update the snapshot with current references and clear write barrier children
     wbcheck_object_list_free(info->gc_mark_snapshot);
     wbcheck_object_list_free(info->writebarrier_children);
