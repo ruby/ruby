@@ -520,15 +520,11 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     // Merge gc_mark_snapshot and writebarrier_children to get stored references
     wbcheck_object_list_t *stored_refs = wbcheck_object_list_merge(info->gc_mark_snapshot, info->writebarrier_children);
 
-    if (stored_refs) {
-        // Compare current_refs against stored_refs to detect missed write barriers
-        wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
+    // Compare current_refs against stored_refs to detect missed write barriers
+    wbcheck_compare_references(objspace_ptr, obj, current_refs, stored_refs);
 
-        // Free the merged stored references
-        wbcheck_object_list_free(stored_refs);
-    } else {
-        wbcheck_debug("wbcheck: no stored references to compare against\n");
-    }
+    // Free the merged stored references
+    wbcheck_object_list_free(stored_refs);
 
     // Update the snapshot with current references and clear write barrier children
     wbcheck_object_list_free(info->gc_mark_snapshot);
