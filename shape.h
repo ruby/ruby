@@ -92,7 +92,10 @@ typedef struct {
     redblack_node_t *shape_cache;
     unsigned int cache_size;
 } rb_shape_tree_t;
+
+RUBY_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN rb_shape_tree_t *rb_shape_tree_ptr;
+RUBY_SYMBOL_EXPORT_END
 
 union rb_attr_index_cache {
     uint64_t pack;
@@ -149,7 +152,14 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 #endif
 }
 
-#define RSHAPE rb_shape_lookup
+static inline rb_shape_t *
+RSHAPE(shape_id_t shape_id)
+{
+    uint32_t offset = (shape_id & SHAPE_ID_OFFSET_MASK);
+    RUBY_ASSERT(offset != INVALID_SHAPE_ID);
+
+    return &GET_SHAPE_TREE()->shape_list[offset];
+}
 
 int32_t rb_shape_id_offset(void);
 

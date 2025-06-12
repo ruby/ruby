@@ -383,10 +383,7 @@ rb_shape_each_shape_id(each_shape_callback callback, void *data)
 RUBY_FUNC_EXPORTED rb_shape_t *
 rb_shape_lookup(shape_id_t shape_id)
 {
-    uint32_t offset = (shape_id & SHAPE_ID_OFFSET_MASK);
-    RUBY_ASSERT(offset != INVALID_SHAPE_ID);
-
-    return &GET_SHAPE_TREE()->shape_list[offset];
+    return RSHAPE(shape_id);
 }
 
 RUBY_FUNC_EXPORTED shape_id_t
