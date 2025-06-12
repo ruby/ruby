@@ -1138,9 +1138,7 @@ static inline void *
 compile_data_alloc2(rb_iseq_t *iseq, size_t x, size_t y)
 {
     size_t size = rb_size_mul_or_raise(x, y, rb_eRuntimeError);
-    void *p = compile_data_alloc(iseq, size);
-    memset(p, 0, size);
-    return p;
+    return compile_data_alloc(iseq, size);
 }
 
 static inline void *
@@ -1436,7 +1434,6 @@ new_insn_body(rb_iseq_t *iseq, int line_no, int node_id, enum ruby_vminsn_type i
         for (i = 0; i < argc; i++) {
             VALUE v = va_arg(argv, VALUE);
             operands[i] = v;
-            rb_gc_writebarrier_remember((VALUE)iseq);
         }
         va_end(argv);
     }
