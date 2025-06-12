@@ -557,6 +557,7 @@ fn gen_send_without_block_direct(
     let ret = asm.ccall_with_branch(dummy_ptr, c_args, &branch);
 
     // If a callee side-exits, i.e. returns Qundef, propagate the return value to the caller.
+    // The caller will side-exit the callee into the interpreter.
     // TODO: Let side exit code pop all JIT frames to optimize away this cmp + je.
     asm.cmp(ret, Qundef.into());
     asm.je(ZJITState::get_exit_trampoline().into());
