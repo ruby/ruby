@@ -12,9 +12,6 @@ pub const GC_THREAD_KIND_WORKER: libc::c_int = 1;
 
 const HIDDEN_SIZE_MASK: usize = 0x0000FFFFFFFFFFFF;
 
-// Should keep in sync with C code.
-const RUBY_FL_EXIVAR: usize = 1 << 10;
-
 // An opaque type for the C counterpart.
 #[allow(non_camel_case_types)]
 pub struct st_table;
@@ -91,10 +88,6 @@ impl RubyObjectAccess {
 
     pub fn load_flags(&self) -> usize {
         unsafe { self.flags_field().load::<usize>() }
-    }
-
-    pub fn has_exivar_flag(&self) -> bool {
-        (self.load_flags() & RUBY_FL_EXIVAR) != 0
     }
 
     pub fn prefix_size() -> usize {
