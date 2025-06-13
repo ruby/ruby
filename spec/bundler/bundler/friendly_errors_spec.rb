@@ -2,7 +2,8 @@
 
 require "bundler"
 require "bundler/friendly_errors"
-require "cgi"
+require "cgi/escape"
+require "cgi/util" unless defined?(CGI::EscapeExt)
 
 RSpec.describe Bundler, "friendly errors" do
   context "with invalid YAML in .gemrc" do
