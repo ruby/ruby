@@ -85,7 +85,6 @@ setup_launchable() {
     export LAUNCHABLE_SESSION_DIR=${builddir}
     local github_ref="${GITHUB_REF//\//_}"
     local build_name="${github_ref}"_"${GITHUB_PR_HEAD_SHA}"
-    btests+=--launchable-test-reports="${btest_report_path}"
     launchable record build --name "${build_name}" || true
     launchable record session \
         --build "${build_name}" \
@@ -98,9 +97,8 @@ setup_launchable() {
         --flavor cppflags="${INPUT_CPPFLAGS}" \
         --test-suite btest \
         > "${builddir}"/${btest_session_file} \
-        || true
+        && btests+=--launchable-test-reports="${btest_report_path}" || :
     if [ "$INPUT_CHECK" = "true" ]; then
-        tests+=--launchable-test-reports="${test_report_path}"
         launchable record session \
             --build "${build_name}" \
             --flavor test_task=test-all \
@@ -112,9 +110,8 @@ setup_launchable() {
             --flavor cppflags="${INPUT_CPPFLAGS}" \
             --test-suite test-all \
             > "${builddir}"/${test_all_session_file} \
-            || true
+            && tests+=--launchable-test-reports="${test_report_path}" || :
         mkdir "${builddir}"/"${test_spec_report_path}"
-        spec_opts+=--launchable-test-reports="${test_spec_report_path}"
         launchable record session \
             --build "${build_name}" \
             --flavor test_task=test-spec \
@@ -126,7 +123,7 @@ setup_launchable() {
             --flavor cppflags="${INPUT_CPPFLAGS}" \
             --test-suite test-spec \
             > "${builddir}"/${test_spec_session_file} \
-            || true
+            spec_opts+=--launchable-test-reports="${test_spec_report_path}" || :
     fi
 }
 launchable_record_test() {
@@ -145,11 +142,13 @@ if [ "$LAUNCHABLE_ENABLED" = "true" ]; then
     test_all_session_file='launchable_test_all_session.txt'
     btest_session_file='launchable_btest_session.txt'
     test_spec_session_file='launchable_test_spec_session.txt'
-    setup_launchable & setup_pid=$!
-    (sleep 180; echo "setup_launchable timed out; killing"; kill "$setup_pid" 2> /dev/null) & sleep_pid=$!
+    setup_pid=$$
+    (sleep 180; echo "setup_launchable timed out; killing"; kill -INT "$setup_pid" 2> /dev/null) & sleep_pid=$!
     launchable_failed=false
-    wait -f "$setup_pid" || launchable_failed=true
+    trap "launchable_failed=true" INT
+    setup_launchable
     kill "$sleep_pid" 2> /dev/null
+    trap - INT
     echo "::endgroup::"
     $launchable_failed || trap launchable_record_test EXIT
 fi
