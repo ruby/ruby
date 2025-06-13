@@ -469,6 +469,90 @@ class JSONParserTest < Test::Unit::TestCase
     json = '["\/"]'
     data = [ '/' ]
     assert_equal data, parse(json)
+
+    data = ['"""""""""""""""""""""""""']
+    json = '["\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\"\""]'
+    assert_equal data, parse(json)
+
+    data = '["This is a "test" of the emergency broadcast system."]'
+    json = "\"[\\\"This is a \\\"test\\\" of the emergency broadcast system.\\\"]\""
+    assert_equal data, parse(json)
+
+    data = '\tThis is a test of the emergency broadcast system.'
+    json = "\"\\\\tThis is a test of the emergency broadcast system.\""
+    assert_equal data, parse(json)
+
+    data = 'This\tis a test of the emergency broadcast system.'
+    json = "\"This\\\\tis a test of the emergency broadcast system.\""
+    assert_equal data, parse(json)
+
+    data = 'This is\ta test of the emergency broadcast system.'
+    json = "\"This is\\\\ta test of the emergency broadcast system.\""
+    assert_equal data, parse(json)
+
+    data = 'This is a test of the emergency broadcast\tsystem.'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\""
+    assert_equal data, parse(json)
+
+    data = 'This is a test of the emergency broadcast\tsystem.\n'
+    json = "\"This is a test of the emergency broadcast\\\\tsystem.\\\\n\""
+    assert_equal data, parse(json)
+
+    data = '"' * 15
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\""
+    assert_equal data, parse(json)
+
+    data = "\"\"\"\"\"\"\"\"\"\"\"\"\"\"a"
+    json = "\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"\\\"a\""
+    assert_equal data, parse(json)
+
+    data = "\u0001\u0001\u0001\u0001"
+    json = "\"\\u0001\\u0001\\u0001\\u0001\""
+    assert_equal data, parse(json)
+
+    data = "\u0001a\u0001a\u0001a\u0001a"
+    json = "\"\\u0001a\\u0001a\\u0001a\\u0001a\""
+    assert_equal data, parse(json)
+
+    data = "\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\""
+    assert_equal data, parse(json)
+
+    data = "\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal data, parse(json)
+
+    data = "\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa\u0001aa"
+    json = "\"\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\\u0001aa\""
+    assert_equal data, parse(json)
+
+    data = "\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002\u0001a\u0002"
+    json = "\"\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\\u0001a\\u0002\""
+    assert_equal data, parse(json)
+
+    data = "ab\u0002c"
+    json = "\"ab\\u0002c\""
+    assert_equal data, parse(json)
+
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal data, parse(json)
+
+    data = "ab\u0002cab\u0002cab\u0002cab\u0002cab\u0002cab\u0002c"
+    json = "\"ab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002cab\\u0002c\""
+    assert_equal data, parse(json)
+
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\""
+    assert_equal data, parse(json)
+
+    data = "\n\t\f\b\n\t\f\b\n\t\f\b\n\t\f\b"
+    json = "\"\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\""
+    assert_equal data, parse(json)
+
+    data = "a\n\t\f\b\n\t\f\b\n\t\f\b\n\t"
+    json = "\"a\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\\f\\b\\n\\t\""
+    assert_equal data, parse(json)
   end
 
   class SubArray < Array
