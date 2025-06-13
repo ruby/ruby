@@ -23,6 +23,10 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_ID_HEAP_INDEX_MAX ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1)
 #define SHAPE_ID_HEAP_INDEX_MASK (SHAPE_ID_HEAP_INDEX_MAX << SHAPE_ID_HEAP_INDEX_OFFSET)
 
+// This masks allows to check if a shape_id contains any ivar.
+// It rely on ROOT_SHAPE_WITH_OBJ_ID==1.
+#define SHAPE_ID_HAS_IVAR_MASK (SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1))
+
 // The interpreter doesn't care about frozen status or slot size when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about it.
@@ -325,6 +329,18 @@ static inline bool
 rb_shape_obj_has_id(VALUE obj)
 {
     return rb_shape_has_object_id(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
+rb_shape_has_ivars(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_HAS_IVAR_MASK;
+}
+
+static inline bool
+rb_shape_obj_has_ivars(VALUE obj)
+{
+    return rb_shape_has_ivars(RBASIC_SHAPE_ID(obj));
 }
 
 // For ext/objspace

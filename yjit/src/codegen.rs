@@ -6275,16 +6275,12 @@ fn jit_rb_str_dup(
 
     jit_prepare_call_with_gc(jit, asm);
 
-    // Check !FL_ANY_RAW(str, FL_EXIVAR), which is part of BARE_STRING_P.
     let recv_opnd = asm.stack_pop(1);
     let recv_opnd = asm.load(recv_opnd);
-    let flags_opnd = Opnd::mem(64, recv_opnd, RUBY_OFFSET_RBASIC_FLAGS);
-    asm.test(flags_opnd, Opnd::Imm(RUBY_FL_EXIVAR as i64));
-    asm.jnz(Target::side_exit(Counter::send_str_dup_exivar));
 
     // Call rb_str_dup
     let stack_ret = asm.stack_push(Type::CString);
-    let ret_opnd = asm.ccall(rb_str_dup as *const u8, vec![recv_opnd]);
+    let ret_opnd = asm.ccall(rb_str_dup_m as *const u8, vec![recv_opnd]);
     asm.mov(stack_ret, ret_opnd);
 
     true

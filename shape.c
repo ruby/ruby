@@ -1234,6 +1234,23 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
+    // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
+    if (rb_shape_too_complex_p(shape_id)) {
+        RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
+    }
+    else {
+        attr_index_t ivar_count = RSHAPE_LEN(shape_id);
+        if (has_object_id) {
+            ivar_count--;
+        }
+        if (ivar_count) {
+            RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
+        }
+        else {
+            RUBY_ASSERT(!(shape_id & SHAPE_ID_HAS_IVAR_MASK));
+        }
+    }
+
     uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
     if (RB_TYPE_P(obj, T_OBJECT)) {
         size_t shape_id_slot_size = rb_shape_tree.capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
@@ -1524,6 +1541,7 @@ Init_default_shapes(void)
     root->type = SHAPE_ROOT;
     rb_shape_tree.root_shape = root;
     RUBY_ASSERT(raw_shape_id(rb_shape_tree.root_shape) == ROOT_SHAPE_ID);
+    RUBY_ASSERT(!(raw_shape_id(rb_shape_tree.root_shape) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
     rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
@@ -1531,7 +1549,7 @@ Init_default_shapes(void)
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
-    (void)root_with_obj_id;
+    RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
 }
 
 void

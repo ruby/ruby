@@ -388,12 +388,7 @@ fstring_hash(VALUE str)
 static inline bool
 BARE_STRING_P(VALUE str)
 {
-    if (RBASIC_CLASS(str) != rb_cString) return false;
-
-    if (FL_TEST_RAW(str, FL_EXIVAR)) {
-        return rb_ivar_count(str) == 0;
-    }
-    return true;
+    return RBASIC_CLASS(str) == rb_cString && !rb_shape_obj_has_ivars(str);
 }
 
 static inline st_index_t
@@ -2316,7 +2311,7 @@ VALUE
 rb_str_dup_m(VALUE str)
 {
     if (LIKELY(BARE_STRING_P(str))) {
-        return str_duplicate(rb_obj_class(str), str);
+        return str_duplicate(rb_cString, str);
     }
     else {
         return rb_obj_dup(str);
