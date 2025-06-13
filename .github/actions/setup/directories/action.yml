@@ -183,3 +183,5 @@ runs:
           ${{ steps.clean.outputs.distclean }}
           ${{ steps.clean.outputs.remained-files }}
           ${{ steps.clean.outputs.final }}
+      # rmdir randomly fails due to launchable files
+      continue-on-error: true
