@@ -211,11 +211,6 @@ impl Assembler
         vec![X1_REG, X9_REG, X10_REG, X11_REG, X12_REG, X13_REG, X14_REG, X15_REG]
     }
 
-    /// Get the address that the current frame returns to
-    pub fn return_addr_opnd() -> Opnd {
-        Opnd::Reg(X30_REG)
-    }
-
     /// Split platform-specific instructions
     /// The transformations done here are meant to make our lives simpler in later
     /// stages of the compilation pipeline.

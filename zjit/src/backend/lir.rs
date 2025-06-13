@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VM_ENV_DATA_SIZE};
-use crate::state::ZJITState;
+use crate::codegen::local_size_and_idx_to_ep_offset;
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
 use crate::{cruby::VALUE};
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
@@ -1797,7 +1797,7 @@ impl Assembler
                 asm_comment!(self, "write locals: {locals:?}");
                 for (idx, &opnd) in locals.iter().enumerate() {
                     let opnd = split_store_source(self, opnd);
-                    self.store(Opnd::mem(64, SP, (-(VM_ENV_DATA_SIZE as i32) - locals.len() as i32 + idx as i32) * SIZEOF_VALUE_I32), opnd);
+                    self.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
 
                 asm_comment!(self, "save cfp->pc");
@@ -1809,10 +1809,6 @@ impl Assembler
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
                 self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
 
-                asm_comment!(self, "rewind caller frames");
-                self.mov(C_ARG_OPNDS[0], Assembler::return_addr_opnd());
-                self.ccall(Self::rewind_caller_frames as *const u8, vec![]);
-
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown();
                 self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
@@ -1822,13 +1818,6 @@ impl Assembler
             }
         }
         Some(())
-    }
-
-    #[unsafe(no_mangle)]
-    extern "C" fn rewind_caller_frames(addr: *const u8) {
-        if ZJITState::is_iseq_return_addr(addr) {
-            unimplemented!("Can't side-exit from JIT-JIT call: rewind_caller_frames is not implemented yet");
-        }
     }
 }
 

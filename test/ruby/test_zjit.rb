@@ -102,12 +102,39 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_opt_plus_type_guard_exit_with_locals
+    assert_compiles '[6, 6.0]', %q{
+      def test(a)
+        local = 3
+        1 + a + local
+      end
+      test(1) # profile opt_plus
+      [test(2), test(2.0)]
+    }, call_threshold: 2
+  end
+
   def test_opt_plus_type_guard_nested_exit
-    omit 'rewind_caller_frames is not implemented yet'
-    assert_compiles '[3, 3.0]', %q{
+    assert_compiles '[4, 4.0]', %q{
       def side_exit(n) = 1 + n
       def jit_frame(n) = 1 + side_exit(n)
       def entry(n) = jit_frame(n)
+      entry(2) # profile send
+      [entry(2), entry(2.0)]
+    }, call_threshold: 2
+  end
+
+  def test_opt_plus_type_guard_nested_exit_with_locals
+    assert_compiles '[9, 9.0]', %q{
+      def side_exit(n)
+        local = 2
+        1 + n + local
+      end
+      def jit_frame(n)
+        local = 3
+        1 + side_exit(n) + local
+      end
+      def entry(n) = jit_frame(n)
+      entry(2) # profile send
       [entry(2), entry(2.0)]
     }, call_threshold: 2
   end
@@ -130,7 +157,6 @@ class TestZJIT < Test::Unit::TestCase
   end
 
   def test_opt_mult_overflow
-    omit 'side exits are not implemented yet'
     assert_compiles '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]', %q{
       def test(a, b)
         a * b
@@ -610,6 +636,22 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_send_backtrace
+    backtrace = [
+      "-e:2:in 'Object#jit_frame1'",
+      "-e:3:in 'Object#entry'",
+      "-e:5:in 'block in <main>'",
+      "-e:6:in '<main>'",
+    ]
+    assert_compiles backtrace.inspect, %q{
+      def jit_frame2 = caller     # 1
+      def jit_frame1 = jit_frame2 # 2
+      def entry = jit_frame1      # 3
+      entry # profile send        # 4
+      entry                       # 5
+    }, call_threshold: 2
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
@@ -631,11 +673,7 @@ class TestZJIT < Test::Unit::TestCase
     pipe_fd = 3
 
     script = <<~RUBY
-      _test_proc = -> {
-        RubyVM::ZJIT.assert_compiles
-        #{test_script}
-      }
-      ret_val = _test_proc.call
+      ret_val = (_test_proc = -> { RubyVM::ZJIT.assert_compiles; #{test_script.lstrip} }).call
       result = {
         ret_val:,
         #{ unless insns.empty?
