@@ -1376,7 +1376,7 @@ make_shareable_check_shareable(VALUE obj)
           break;
         default:
           break;
-    } 
+    }
 
     if (!RB_OBJ_FROZEN_RAW(obj)) {
         rb_funcall(obj, idFreeze, 0);
