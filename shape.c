@@ -1550,6 +1550,7 @@ Init_default_shapes(void)
     RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
+    (void)root_with_obj_id;
 }
 
 void
