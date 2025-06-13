@@ -550,6 +550,12 @@ module TestStruct
     CODE
   end
 
+  def test_frozen_subclass
+    test = Class.new(@Struct.new(:a)).freeze.new(a: 0)
+    assert_kind_of(@Struct, test)
+    assert_equal([:a], test.members)
+  end
+
   class TopStruct < Test::Unit::TestCase
     include TestStruct
 
