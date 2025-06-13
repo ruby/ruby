@@ -253,6 +253,21 @@ ruby_fl_type {
                          = 0,
 
     /**
+     * @deprecated  This flag was an implementation detail that should never have
+     *              no been exposed. Exists  here for  backwards
+     *              compatibility only.  You can safely forget about it.
+     */
+    RUBY_FL_EXIVAR
+
+#if defined(RBIMPL_HAVE_ENUM_ATTRIBUTE)
+    RBIMPL_ATTR_DEPRECATED(("FL_EXIVAR is an outdated implementation detail, it shoudl be used."))
+#elif defined(_MSC_VER)
+# pragma deprecated(RUBY_FL_EXIVAR)
+#endif
+
+                         = 0,
+
+    /**
      * This flag has something to do with Ractor.  Multiple Ractors run without
      * protecting each  other.  Sharing an  object among Ractors  are basically
      * dangerous,  disabled by  default.   This  flag is  used  to bypass  that
@@ -286,18 +301,12 @@ ruby_fl_type {
     */
     RUBY_FL_UNUSED9  = (1<<9),
 
-    /**
-     * This flag has something to do with instance variables.  3rd parties need
-     * not  know, but  there are  several ways  to store  an object's  instance
-     * variables.   Objects  with this  flag  use  so-called "generic"  backend
-     * storage.  This  distinction is purely an  implementation detail.  People
-     * need not be aware of this working behind-the-scene.
-     *
-     * @internal
-     *
-     * As of writing everything except ::RObject and RModule use this scheme.
-     */
-    RUBY_FL_EXIVAR       = (1<<10),
+   /**
+    * This flag is no longer in use
+    *
+    * @internal
+    */
+    RUBY_FL_UNUSED10 = (1<<10),
 
     /**
      * This flag has something to do with data immutability.  When this flag is
@@ -399,7 +408,7 @@ enum {
 # pragma deprecated(RUBY_FL_DUPPED)
 #endif
 
-    = (int)RUBY_T_MASK | (int)RUBY_FL_EXIVAR
+    = (int)RUBY_T_MASK
 };
 
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
