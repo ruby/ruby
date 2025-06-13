@@ -1266,6 +1266,13 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
+    if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+        RUBY_ASSERT(rb_obj_has_exivar(obj));
+    }
+    else {
+        RUBY_ASSERT(!rb_obj_has_exivar(obj));
+    }
+
     return true;
 }
 #endif
