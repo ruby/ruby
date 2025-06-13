@@ -297,14 +297,13 @@ struct rb_callcache {
     } aux_;
 };
 
-#define VM_CALLCACHE_UNMARKABLE FL_FREEZE
-#define VM_CALLCACHE_ON_STACK   FL_EXIVAR
-
 /* VM_CALLCACHE_IVAR used for IVAR/ATTRSET/STRUCT_AREF/STRUCT_ASET methods */
 #define VM_CALLCACHE_IVAR       IMEMO_FL_USER0
 #define VM_CALLCACHE_BF         IMEMO_FL_USER1
 #define VM_CALLCACHE_SUPER      IMEMO_FL_USER2
 #define VM_CALLCACHE_REFINEMENT IMEMO_FL_USER3
+#define VM_CALLCACHE_UNMARKABLE IMEMO_FL_USER4
+#define VM_CALLCACHE_ON_STACK   IMEMO_FL_USER5
 
 enum vm_cc_type {
     cc_type_normal, // chained from ccs
