@@ -1270,6 +1270,7 @@ rb_free_generic_ivar(VALUE obj)
             xfree(fields_tbl);
         }
     }
+    FL_UNSET_RAW(obj, FL_EXIVAR);
 }
 
 size_t
@@ -1542,23 +1543,30 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     RUBY_ASSERT(removed_shape_id != INVALID_SHAPE_ID);
 
-    attr_index_t new_fields_count = RSHAPE_LEN(next_shape_id);
-
     attr_index_t removed_index = RSHAPE_INDEX(removed_shape_id);
     val = fields[removed_index];
-    size_t trailing_fields = new_fields_count - removed_index;
 
-    MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
+    attr_index_t new_fields_count = RSHAPE_LEN(next_shape_id);
+    if (new_fields_count) {
+        size_t trailing_fields = new_fields_count - removed_index;
 
-    if (RB_TYPE_P(obj, T_OBJECT) &&
-        !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
-        rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
-        // Re-embed objects when instances become small enough
-        // This is necessary because YJIT assumes that objects with the same shape
-        // have the same embeddedness for efficiency (avoid extra checks)
-        RB_FL_SET_RAW(obj, ROBJECT_EMBED);
-        MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
-        xfree(fields);
+        MEMMOVE(&fields[removed_index], &fields[removed_index + 1], VALUE, trailing_fields);
+
+        if (RB_TYPE_P(obj, T_OBJECT) &&
+            !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
+            rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(obj)) {
+            // Re-embed objects when instances become small enough
+            // This is necessary because YJIT assumes that objects with the same shape
+            // have the same embeddedness for efficiency (avoid extra checks)
+            RB_FL_SET_RAW(obj, ROBJECT_EMBED);
+            MEMCPY(ROBJECT_FIELDS(obj), fields, VALUE, new_fields_count);
+            xfree(fields);
+        }
+    }
+    else {
+        if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+            rb_free_generic_ivar(obj);
+        }
     }
     rb_obj_set_shape_id(obj, next_shape_id);
 
@@ -1881,8 +1889,8 @@ generic_ivar_set_set_shape_id(VALUE obj, shape_id_t shape_id, void *data)
 static shape_id_t
 generic_ivar_set_transition_too_complex(VALUE obj, void *_data)
 {
-    shape_id_t new_shape_id = rb_evict_fields_to_hash(obj);
     FL_SET_RAW(obj, FL_EXIVAR);
+    shape_id_t new_shape_id = rb_evict_fields_to_hash(obj);
     return new_shape_id;
 }
 
@@ -2407,9 +2415,9 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
 
   clear:
     if (FL_TEST(dest, FL_EXIVAR)) {
-        RBASIC_SET_SHAPE_ID(dest, ROOT_SHAPE_ID);
         rb_free_generic_ivar(dest);
         FL_UNSET(dest, FL_EXIVAR);
+        RBASIC_SET_SHAPE_ID(dest, ROOT_SHAPE_ID);
     }
 }
 

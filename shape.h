@@ -136,8 +136,6 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_class_fields));
-    RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
-
 #if RBASIC_SHAPE_ID_FIELD
     RBASIC(obj)->shape_id = (VALUE)shape_id;
 #else
@@ -145,6 +143,7 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RBASIC(obj)->flags &= SHAPE_FLAG_MASK;
     RBASIC(obj)->flags |= ((VALUE)(shape_id) << SHAPE_FLAG_SHIFT);
 #endif
+    RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
 static inline rb_shape_t *
@@ -341,6 +340,34 @@ static inline bool
 rb_shape_obj_has_ivars(VALUE obj)
 {
     return rb_shape_has_ivars(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
+rb_shape_has_fields(shape_id_t shape_id)
+{
+    return shape_id & (SHAPE_ID_OFFSET_MASK | SHAPE_ID_FL_TOO_COMPLEX);
+}
+
+static inline bool
+rb_shape_obj_has_fields(VALUE obj)
+{
+    return rb_shape_has_fields(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
+rb_obj_has_exivar(VALUE obj)
+{
+    switch (TYPE(obj)) {
+        case T_NONE:
+        case T_OBJECT:
+        case T_CLASS:
+        case T_MODULE:
+        case T_IMEMO:
+          return false;
+        default:
+          break;
+    }
+    return rb_shape_obj_has_fields(obj);
 }
 
 // For ext/objspace

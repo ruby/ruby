@@ -2072,7 +2072,6 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
 
     if (FL_TEST_RAW(obj, FL_EXIVAR)) {
         rb_free_generic_ivar((VALUE)obj);
-        FL_UNSET_RAW(obj, FL_EXIVAR);
     }
 
     switch (BUILTIN_TYPE(obj)) {
