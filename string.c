@@ -485,7 +485,6 @@ build_fstring(VALUE str, struct fstr_update_arg *arg)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!FL_TEST_RAW(str, FL_EXIVAR));
     RUBY_ASSERT(!rb_obj_exivar_p(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));

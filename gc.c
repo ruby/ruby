@@ -4010,8 +4010,6 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 
       case ST_DELETE:
         free_gen_fields_tbl((VALUE)key, (struct gen_fields_tbl *)value);
-
-        FL_UNSET((VALUE)key, FL_EXIVAR);
         RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
         return ST_DELETE;
 
