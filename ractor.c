@@ -1357,9 +1357,26 @@ make_shareable_check_shareable(VALUE obj)
         }
     }
 
-    if (RB_TYPE_P(obj, T_IMEMO)) {
-        return traverse_skip;
-    }
+    switch (TYPE(obj)) {
+        case T_IMEMO:
+          return traverse_skip;
+        case T_OBJECT:
+          {
+              // If a T_OBJECT is shared and has no free capacity, we can't safely store the object_id inline,
+              // as it would require to move the object content into an external buffer.
+              // This is only a problem for T_OBJECT, given other types have external fields and can do RCU.
+              // To avoid this issue, we proactively create the object_id.
+              shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+              attr_index_t capacity = RSHAPE_CAPACITY(shape_id);
+              attr_index_t free_capacity = capacity - RSHAPE_LEN(shape_id);
+              if (!rb_shape_has_object_id(shape_id) && capacity && !free_capacity) {
+                  rb_obj_id(obj);
+              }
+          }
+          break;
+        default:
+          break;
+    } 
 
     if (!RB_OBJ_FROZEN_RAW(obj)) {
         rb_funcall(obj, idFreeze, 0);
