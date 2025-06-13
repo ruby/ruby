@@ -123,7 +123,7 @@ class TestRactor < Test::Unit::TestCase
       require "tempfile"
       require "pathname"
       f = Tempfile.new(["file_to_require_from_ractor", ".rb"])
-      f.write("puts 'success'")
+      f.write("")
       f.flush
       result = Ractor.new(f.path) do |path|
         require Pathname.new(path)
