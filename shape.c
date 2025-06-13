@@ -33,9 +33,7 @@
 #define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
-static ID id_frozen;
-static ID id_t_object;
-ID ruby_internal_object_id; // extern
+static ID id_object_id;
 
 #define LEAF 0
 #define BLACK 0x0
@@ -714,7 +712,7 @@ shape_transition_object_id(shape_id_t original_shape_id)
     RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
 
     bool dont_care;
-    rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), ruby_internal_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
         shape = RSHAPE(ROOT_SHAPE_WITH_OBJ_ID);
     }
@@ -1146,7 +1144,7 @@ rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_t
     // obj is TOO_COMPLEX so we can copy its iv_hash
     st_table *table = st_copy(fields_table);
     if (rb_shape_has_object_id(src_shape_id)) {
-        st_data_t id = (st_data_t)ruby_internal_object_id;
+        st_data_t id = (st_data_t)id_object_id;
         st_delete(table, &id, NULL);
     }
     rb_obj_init_too_complex(dest, table);
@@ -1497,9 +1495,7 @@ Init_default_shapes(void)
         rb_memerror();
     }
 
-    id_frozen = rb_make_internal_id();
-    id_t_object = rb_make_internal_id();
-    ruby_internal_object_id = rb_make_internal_id();
+    id_object_id = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1529,11 +1525,12 @@ Init_default_shapes(void)
     rb_shape_tree.root_shape = root;
     RUBY_ASSERT(raw_shape_id(rb_shape_tree.root_shape) == ROOT_SHAPE_ID);
 
-    rb_shape_t *root_with_obj_id = rb_shape_alloc_with_parent_id(0, ROOT_SHAPE_ID);
-    root_with_obj_id->type = SHAPE_OBJ_ID;
-    root_with_obj_id->edge_name = ruby_internal_object_id;
-    root_with_obj_id->next_field_index++;
+    bool dontcare;
+    rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(raw_shape_id(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
+    RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
+    RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
+    RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
 }
 
 void
