@@ -1258,7 +1258,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             break;
         }
       default:
-        if (FL_TEST_RAW(obj, FL_EXIVAR)) {
+        if (rb_obj_exivar_p(obj)) {
             struct gen_fields_tbl *fields_tbl;
             rb_gen_fields_tbl_get(obj, id, &fields_tbl);
             ivar_list = fields_tbl->as.shape.fields;

@@ -1267,10 +1267,10 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     }
 
     if (FL_TEST_RAW(obj, FL_EXIVAR)) {
-        RUBY_ASSERT(rb_obj_has_exivar(obj));
+        RUBY_ASSERT(rb_obj_exivar_p(obj));
     }
     else {
-        RUBY_ASSERT(!rb_obj_has_exivar(obj));
+        RUBY_ASSERT(!rb_obj_exivar_p(obj));
     }
 
     return true;
