@@ -45,8 +45,6 @@ typedef uint32_t redblack_id_t;
 #define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
 #define SPECIAL_CONST_SHAPE_ID          (ROOT_SHAPE_ID | SHAPE_ID_FL_FROZEN)
 
-extern ID ruby_internal_object_id;
-
 typedef struct redblack_node redblack_node_t;
 
 struct rb_shape {
