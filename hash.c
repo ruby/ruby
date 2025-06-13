@@ -1597,10 +1597,11 @@ VALUE
 rb_hash_dup(VALUE hash)
 {
     const VALUE flags = RBASIC(hash)->flags;
-    VALUE ret = hash_dup(hash, rb_obj_class(hash),
-                         flags & (FL_EXIVAR|RHASH_PROC_DEFAULT));
-    if (flags & FL_EXIVAR)
+    VALUE ret = hash_dup(hash, rb_obj_class(hash), flags & RHASH_PROC_DEFAULT);
+
+    if (rb_obj_exivar_p(hash)) {
         rb_copy_generic_ivar(ret, hash);
+    }
     return ret;
 }
 
@@ -2920,7 +2921,7 @@ hash_aset(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 VALUE
 rb_hash_key_str(VALUE key)
 {
-    if (!RB_FL_ANY_RAW(key, FL_EXIVAR) && RBASIC_CLASS(key) == rb_cString) {
+    if (!rb_obj_exivar_p(key) && RBASIC_CLASS(key) == rb_cString) {
         return rb_fstring(key);
     }
     else {

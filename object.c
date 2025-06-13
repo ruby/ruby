@@ -373,9 +373,9 @@ init_copy(VALUE dest, VALUE obj)
     if (OBJ_FROZEN(dest)) {
         rb_raise(rb_eTypeError, "[bug] frozen object (%s) allocated", rb_obj_classname(dest));
     }
-    RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
+    RBASIC(dest)->flags &= ~T_MASK;
     // Copies the shape id from obj to dest
-    RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR);
+    RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
     switch (BUILTIN_TYPE(obj)) {
         case T_IMEMO:
           rb_bug("Unreacheable");

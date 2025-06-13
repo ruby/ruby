@@ -1656,7 +1656,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
 } while (0)
 
-    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+    if (UNLIKELY(rb_obj_exivar_p(obj))) {
         struct gen_fields_tbl *fields_tbl;
         rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
 
@@ -1885,7 +1885,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     rb_gc_obj_id_moved(data->replacement);
 
-    if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
+    if (UNLIKELY(rb_obj_exivar_p(obj))) {
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
