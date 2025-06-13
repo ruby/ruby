@@ -7613,7 +7613,7 @@ d_lite_marshal_load(VALUE self, VALUE a)
 		       HAVE_JD | HAVE_DF);
     }
 
-    rb_copy_generic_ivar(a, self);
+    rb_copy_generic_ivar(self, a);
 
     return self;
 }
