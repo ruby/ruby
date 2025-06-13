@@ -1531,6 +1531,7 @@ Init_default_shapes(void)
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
+    (void)root_with_obj_id;
 }
 
 void
