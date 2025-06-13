@@ -20,6 +20,8 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#include "../simd/simd.h"
+
 #ifndef RB_UNLIKELY
 #define RB_UNLIKELY(expr) expr
 #endif
@@ -879,7 +881,7 @@ static inline VALUE json_push_value(JSON_ParserState *state, JSON_ParserConfig *
     return value;
 }
 
-static const bool string_scan[256] = {
+static const bool string_scan_table[256] = {
     // ASCII Control Characters
      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
      1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -892,32 +894,71 @@ static const bool string_scan[256] = {
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 };
 
+#if (defined(__GNUC__ ) || defined(__clang__))
+#define FORCE_INLINE __attribute__((always_inline))
+#else
+#define FORCE_INLINE
+#endif
+
+#ifdef HAVE_SIMD
+static SIMD_Implementation simd_impl = SIMD_NONE;
+#endif /* HAVE_SIMD */
+
+static inline bool FORCE_INLINE string_scan(JSON_ParserState *state)
+{
+#ifdef HAVE_SIMD
+#if defined(HAVE_SIMD_NEON)
+    
+    uint64_t mask = 0;
+    if (string_scan_simd_neon(&state->cursor, state->end, &mask)) {
+        state->cursor += trailing_zeros64(mask) >> 2;
+        return 1;
+    }
+
+#elif defined(HAVE_SIMD_SSE2)
+    if (simd_impl == SIMD_SSE2) {
+        int mask = 0;
+        if (string_scan_simd_sse2(&state->cursor, state->end, &mask)) {
+            state->cursor += trailing_zeros(mask);
+            return 1;
+        }
+    }
+#endif /* HAVE_SIMD_NEON or HAVE_SIMD_SSE2 */
+#endif /* HAVE_SIMD */
+
+    while (state->cursor < state->end) {
+        if (RB_UNLIKELY(string_scan_table[(unsigned char)*state->cursor])) {
+            return 1;
+        }
+        *state->cursor++;
+    }
+    return 0;
+}
+
 static inline VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
 {
     state->cursor++;
     const char *start = state->cursor;
     bool escaped = false;
 
-    while (state->cursor < state->end) {
-        if (RB_UNLIKELY(string_scan[(unsigned char)*state->cursor])) {
-            switch (*state->cursor) {
-                case '"': {
-                    VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
-                    state->cursor++;
-                    return json_push_value(state, config, string);
-                }
-                case '\\': {
-                    state->cursor++;
-                    escaped = true;
-                    if ((unsigned char)*state->cursor < 0x20) {
-                        raise_parse_error("invalid ASCII control character in string: %s", state);
-                    }
-                    break;
-                }
-                default:
-                    raise_parse_error("invalid ASCII control character in string: %s", state);
-                    break;
+    while (RB_UNLIKELY(string_scan(state))) {
+        switch (*state->cursor) {
+            case '"': {
+                VALUE string = json_decode_string(state, config, start, state->cursor, escaped, is_name);
+                state->cursor++;
+                return json_push_value(state, config, string);
             }
+            case '\\': {
+                state->cursor++;
+                escaped = true;
+                if ((unsigned char)*state->cursor < 0x20) {
+                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                }
+                break;
+            }
+            default:
+                raise_parse_error("invalid ASCII control character in string: %s", state);
+                break;
         }
 
         state->cursor++;
@@ -1459,4 +1500,8 @@ void Init_parser(void)
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();
     enc_utf8 = rb_utf8_encoding();
+
+#ifdef HAVE_SIMD
+    simd_impl = find_simd_implementation();
+#endif
 }
