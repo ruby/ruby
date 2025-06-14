@@ -1540,6 +1540,29 @@ blocking_region_end(rb_thread_t *th, struct rb_blocking_region_buffer *region)
 #endif
 }
 
+/*
+ * Resolve sentinel unblock function values to their actual function pointers
+ * and appropriate data2 values. This centralizes the logic for handling
+ * RUBY_UBF_IO and RUBY_UBF_PROCESS sentinel values.
+ *
+ * @param unblock_function Pointer to unblock function pointer (modified in place)
+ * @param data2 Pointer to data2 pointer (modified in place)
+ * @param thread Thread context for resolving data2 when needed
+ * @return true if sentinel values were resolved, false otherwise
+ */
+bool
+rb_thread_resolve_unblock_function(rb_unblock_function_t **unblock_function, void **data2, struct rb_thread_struct *thread)
+{
+    rb_unblock_function_t *ubf = *unblock_function;
+
+    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
+        *unblock_function = ubf_select;
+        *data2 = thread;
+        return true;
+    }
+    return false;
+}
+
 void *
 rb_nogvl(void *(*func)(void *), void *data1,
          rb_unblock_function_t *ubf, void *data2,
@@ -1566,11 +1589,9 @@ rb_nogvl(void *(*func)(void *), void *data1,
     bool is_main_thread = vm->ractor.main_thread == th;
     int saved_errno = 0;
 
-    if ((ubf == RUBY_UBF_IO) || (ubf == RUBY_UBF_PROCESS)) {
-        ubf = ubf_select;
-        data2 = th;
-    }
-    else if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
+    rb_thread_resolve_unblock_function(&ubf, &data2, th);
+
+    if (ubf && rb_ractor_living_thread_num(th->ractor) == 1 && is_main_thread) {
         if (flags & RB_NOGVL_UBF_ASYNC_SAFE) {
             vm->ubf_async_safe = 1;
         }

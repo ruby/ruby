@@ -83,6 +83,8 @@ RUBY_SYMBOL_EXPORT_END
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
 bool rb_thread_mn_schedulable(VALUE thread);
 
+bool rb_thread_resolve_unblock_function(rb_unblock_function_t **unblock_function, void **data2, struct rb_thread_struct *thread);
+
 // interrupt exec
 
 typedef VALUE (rb_interrupt_exec_func_t)(void *data);
