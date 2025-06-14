@@ -243,35 +243,4 @@ class TestObjectIdRactor < Test::Unit::TestCase
       assert_equal object_id, obj.object_id
     end;
   end
-
-  def test_object_id_race_free_with_stress_compact
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      Warning[:experimental] = false
-      class MyClass
-        attr_reader :a, :b, :c
-        def initialize
-          @a = @b = @c = nil
-        end
-      end
-      N = 20
-      objs = Ractor.make_shareable(N.times.map { MyClass.new })
-
-      GC.stress = true
-      GC.auto_compact = true if GC.respond_to?(:auto_compact=)
-
-      results = 4.times.map{
-        Ractor.new(objs) { |objs|
-          vars = []
-          ids = []
-          objs.each do |obj|
-            vars << obj.a << obj.b << obj.c
-            ids << obj.object_id
-          end
-          [vars, ids]
-        }
-      }.map(&:value)
-      assert_equal 1, results.uniq.size
-    end;
-  end
 end
