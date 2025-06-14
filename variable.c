@@ -1162,22 +1162,6 @@ gen_ivtbl_bytes(size_t n)
     return offsetof(struct gen_ivtbl, as.shape.ivptr) + n * sizeof(VALUE);
 }
 
-static struct gen_ivtbl *
-gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
-{
-    RUBY_ASSERT(n > 0);
-
-    uint32_t len = old ? old->as.shape.numiv : 0;
-    struct gen_ivtbl *ivtbl = xrealloc(old, gen_ivtbl_bytes(n));
-
-    ivtbl->as.shape.numiv = n;
-    for (; len < n; len++) {
-        ivtbl->as.shape.ivptr[len] = Qundef;
-    }
-
-    return ivtbl;
-}
-
 void
 rb_mark_generic_ivar(VALUE obj)
 {
@@ -1632,41 +1616,6 @@ struct gen_ivar_lookup_ensure_size {
     bool resize;
 };
 
-static int
-generic_ivar_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int existing)
-{
-    ASSERT_vm_locking();
-
-    struct gen_ivar_lookup_ensure_size *ivar_lookup = (struct gen_ivar_lookup_ensure_size *)u;
-    struct gen_ivtbl *ivtbl = existing ? (struct gen_ivtbl *)*v : NULL;
-
-    if (!existing || ivar_lookup->resize) {
-        if (existing) {
-            RUBY_ASSERT(ivar_lookup->shape->type == SHAPE_IVAR);
-            RUBY_ASSERT(rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->capacity < ivar_lookup->shape->capacity);
-        }
-        else {
-            FL_SET_RAW((VALUE)*k, FL_EXIVAR);
-        }
-
-        ivtbl = gen_ivtbl_resize(ivtbl, ivar_lookup->shape->capacity);
-        *v = (st_data_t)ivtbl;
-    }
-
-    RUBY_ASSERT(FL_TEST((VALUE)*k, FL_EXIVAR));
-
-    ivar_lookup->ivtbl = ivtbl;
-    if (ivar_lookup->shape) {
-#if SHAPE_IN_BASIC_FLAGS
-        rb_shape_set_shape(ivar_lookup->obj, ivar_lookup->shape);
-#else
-        ivtbl->shape_id = rb_shape_id(ivar_lookup->shape);
-#endif
-    }
-
-    return ST_CONTINUE;
-}
-
 static VALUE *
 generic_ivar_set_shape_ivptr(VALUE obj, void *data)
 {
@@ -1674,9 +1623,48 @@ generic_ivar_set_shape_ivptr(VALUE obj, void *data)
 
     struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
 
+    // We can't use st_update, since when resizing the fields table GC can
+    // happen, which will modify the st_table and may rebuild it
     RB_VM_LOCK_ENTER();
     {
-        st_update(generic_ivtbl(obj, ivar_lookup->id, false), (st_data_t)obj, generic_ivar_lookup_ensure_size, (st_data_t)ivar_lookup);
+        struct gen_ivtbl *ivtbl = NULL;
+        st_table *tbl = generic_ivtbl(obj, ivar_lookup->id, false);
+        int existing = st_lookup(tbl, (st_data_t)obj, (st_data_t *)&ivtbl);
+
+        if (!existing || ivar_lookup->resize) {
+            uint32_t new_capa = ivar_lookup->shape->capacity;
+            uint32_t old_capa = rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->capacity;
+
+            if (existing) {
+                RUBY_ASSERT(ivar_lookup->shape->type == SHAPE_IVAR);
+                RUBY_ASSERT(old_capa < new_capa);
+                RUBY_ASSERT(ivtbl);
+            } else {
+                RUBY_ASSERT(!ivtbl);
+                RUBY_ASSERT(old_capa == 0);
+            }
+            RUBY_ASSERT(new_capa > 0);
+
+            struct gen_ivtbl *old_ivtbl = ivtbl;
+            ivtbl = xmalloc(gen_ivtbl_bytes(new_capa));
+            if (old_ivtbl) {
+                memcpy(ivtbl, old_ivtbl, gen_ivtbl_bytes(old_capa));
+            }
+            ivtbl->as.shape.numiv = new_capa;
+            for (uint32_t i = old_capa; i < new_capa; i++) {
+                ivtbl->as.shape.ivptr[i] = Qundef;
+            }
+
+            st_insert(tbl, (st_data_t)obj, (st_data_t)ivtbl);
+            if (old_ivtbl) {
+                xfree(old_ivtbl);
+            }
+        }
+
+        ivar_lookup->ivtbl = ivtbl;
+        if (ivar_lookup->shape) {
+            rb_shape_set_shape(ivar_lookup->obj, ivar_lookup->shape);
+        }
     }
     RB_VM_LOCK_LEAVE();
 
@@ -2134,8 +2122,8 @@ rb_copy_generic_ivar(VALUE clone, VALUE obj)
             new_ivtbl->as.complex.table = st_copy(obj_ivtbl->as.complex.table);
         }
         else {
-            new_ivtbl = gen_ivtbl_resize(0, obj_ivtbl->as.shape.numiv);
-
+            new_ivtbl = xmalloc(gen_ivtbl_bytes(obj_ivtbl->as.shape.numiv));
+            new_ivtbl->as.shape.numiv = obj_ivtbl->as.shape.numiv;
             for (uint32_t i=0; i<obj_ivtbl->as.shape.numiv; i++) {
                 RB_OBJ_WRITE(clone, &new_ivtbl->as.shape.ivptr[i], obj_ivtbl->as.shape.ivptr[i]);
             }
