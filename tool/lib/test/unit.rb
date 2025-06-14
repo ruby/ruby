@@ -421,6 +421,7 @@ module Test
         end
 
         def kill
+          EnvUtil::Debugger.search&.dump(@pid)
           signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
           Process.kill(signal, @pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
