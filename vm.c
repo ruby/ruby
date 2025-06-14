@@ -120,6 +120,7 @@ VM_CF_BLOCK_HANDLER(const rb_control_frame_t * const cfp)
 {
     const VALUE *ep;
     if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_TOP) {
+        VM_ASSERT(VM_ENV_LOCAL_P(cfp->ep));
         /* Never set black_handler for VM_FRAME_MAGIC_TOP
          * and the specval is used for namespace (rb_namespace_t) in the case
          */
@@ -991,6 +992,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
         // block_handler is always VM_BLOCK_HANDLER_NONE in this case
     }
     else {
+        VM_ASSERT(VM_ENV_LOCAL_P(ep) && !VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_TOP));
         VALUE block_handler = VM_ENV_BLOCK_HANDLER(ep);
 
         if (block_handler != VM_BLOCK_HANDLER_NONE) {
@@ -2988,6 +2990,7 @@ current_namespace_at_control_frame(const rb_control_frame_t *cfp)
     // In case case of local ep, (1) method calls (2) toplevel
     // The toplevel (MAGIC_TOP) doesn't have method definition - check its namespace directly.
     if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP)) {
+        VM_ASSERT(VM_ENV_LOCAL_P(lep));
         return VM_ENV_TOP_NAMESPACE(lep);
     }
     else {

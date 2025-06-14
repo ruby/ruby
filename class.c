@@ -1256,7 +1256,7 @@ ENSURE_EIGENCLASS(VALUE klass)
 static inline VALUE
 make_metaclass(VALUE klass)
 {
-    VALUE super, assoc;
+    VALUE super;
     VALUE metaclass = rb_class_boot(Qundef);
 
     FL_SET(metaclass, FL_SINGLETON);
