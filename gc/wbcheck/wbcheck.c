@@ -224,8 +224,15 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
         }
 
         // Check if reference exists in gc_mark_snapshot
-        if (gc_mark_snapshot && wbcheck_object_list_contains(gc_mark_snapshot, current_ref)) {
-            continue;
+        if (gc_mark_snapshot) {
+            // Fast path: check if the reference is at the same index
+            if (i < gc_mark_snapshot->count && gc_mark_snapshot->items[i] == current_ref) {
+                continue;
+            }
+            // Slow path: search through the entire list
+            if (wbcheck_object_list_contains(gc_mark_snapshot, current_ref)) {
+                continue;
+            }
         }
 
         // Check if reference exists in writebarrier_children
