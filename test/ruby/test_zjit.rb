@@ -652,13 +652,6 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  # We need to support either setconstant or defineclass insns to support ConstBase's
-  # test case, like
-  #
-  # ```
-  # Foo = 1
-  # class Module::Bar; end
-  # ```
   def test_putspecialobject_vm_core_and_cbase
     assert_compiles '10', %q{
       def test
@@ -669,6 +662,20 @@ class TestZJIT < Test::Unit::TestCase
       test
       bar
     }, insns: [:putspecialobject]
+  end
+
+  def test_putspecialobject_const_base
+    assert_compiles '1', %q{
+      Foo = 1
+
+      def test = Foo
+
+      # First call: populates the constant cache
+      test
+      # Second call: triggers ZJIT compilation with warm cache
+      # RubyVM::ZJIT.assert_compiles will panic if this fails to compile
+      test
+    }, call_threshold: 2
   end
 
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
