@@ -643,6 +643,7 @@ class Socket < BasicSocket
   #
   # [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
   # [:connect_timeout] This method sequentially attempts connecting to all candidate destination addresses.<br>The +connect_timeout+ specifies the timeout in seconds from the start of the connection attempt to the last candidate.<br>By default, all connection attempts continue until the timeout occurs.<br>When +fast_fallback:false+ is explicitly specified,<br>a timeout is set for each connection attempt and any connection attempt that exceeds its timeout will be canceled.
+  # [:open_timeout] Specifies the timeout in seconds from the start of the method execution.<br>If this timeout is reached while there are still addresses that have not yet been attempted for connection, no further attempts will be made.
   # [:fast_fallback] Enables the Happy Eyeballs Version 2 algorithm (enabled by default).
   #
   # If a block is given, the block is called with the socket.
@@ -656,11 +657,16 @@ class Socket < BasicSocket
   #     sock.close_write
   #     puts sock.read
   #   }
-  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
+
+    if open_timeout && (connect_timeout || resolv_timeout)
+      raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
+    end
+
     sock = if fast_fallback && !(host && ip_address?(host))
-      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
-      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     end
 
     if block_given?
@@ -674,7 +680,7 @@ class Socket < BasicSocket
     end
   end
 
-  def self.tcp_with_fast_fallback(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil)
+  def self.tcp_with_fast_fallback(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil)
     if local_host || local_port
       local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, timeout: resolv_timeout)
       resolving_family_names = local_addrinfos.map { |lai| ADDRESS_FAMILIES.key(lai.afamily) }.uniq
@@ -692,6 +698,7 @@ class Socket < BasicSocket
     resolution_delay_expires_at = nil
     connection_attempt_delay_expires_at = nil
     user_specified_connect_timeout_at = nil
+    user_specified_open_timeout_at = open_timeout ? now + open_timeout : nil
     last_error = nil
     last_error_from_thread = false
 
@@ -784,7 +791,10 @@ class Socket < BasicSocket
 
       ends_at =
         if resolution_store.any_addrinfos?
-          resolution_delay_expires_at || connection_attempt_delay_expires_at
+          [(resolution_delay_expires_at || connection_attempt_delay_expires_at),
+           user_specified_open_timeout_at].compact.min
+        elsif user_specified_open_timeout_at
+          user_specified_open_timeout_at
         else
           [user_specified_resolv_timeout_at, user_specified_connect_timeout_at].compact.max
         end
@@ -885,6 +895,8 @@ class Socket < BasicSocket
         end
       end
 
+      raise(Errno::ETIMEDOUT, 'user specified timeout') if expired?(now, user_specified_open_timeout_at)
+
       if resolution_store.empty_addrinfos?
         if connecting_sockets.empty? && resolution_store.resolved_all_families?
           if last_error_from_thread
@@ -912,7 +924,7 @@ class Socket < BasicSocket
     end
   end
 
-  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     last_error = nil
     ret = nil
 
@@ -921,7 +933,10 @@ class Socket < BasicSocket
       local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
     end
 
-    Addrinfo.foreach(host, port, nil, :STREAM, timeout: resolv_timeout) {|ai|
+    timeout = open_timeout ? open_timeout : resolv_timeout
+    starts_at = current_clock_time
+
+    Addrinfo.foreach(host, port, nil, :STREAM, timeout:) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
         next unless local_addr
@@ -929,9 +944,10 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
+        timeout = open_timeout ? open_timeout - (current_clock_time - starts_at) : connect_timeout
         sock = local_addr ?
-          ai.connect_from(local_addr, timeout: connect_timeout) :
-          ai.connect(timeout: connect_timeout)
+          ai.connect_from(local_addr, timeout:) :
+          ai.connect(timeout:)
       rescue SystemCallError
         last_error = $!
         next
