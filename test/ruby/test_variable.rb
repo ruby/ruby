@@ -407,6 +407,19 @@ class TestVariable < Test::Unit::TestCase
     }
   end
 
+  def test_exivar_resize_with_compaction_stress
+    objs = 10_000.times.map do
+      ExIvar.new
+    end
+    EnvUtil.under_gc_compact_stress do
+      10.times do
+        x = ExIvar.new
+        x.instance_variable_set(:@resize, 1)
+        x
+      end
+    end
+  end
+
   def test_local_variables_with_kwarg
     bug11674 = '[ruby-core:71437] [Bug #11674]'
     v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)

@@ -1823,34 +1823,6 @@ struct gen_fields_lookup_ensure_size {
     bool resize;
 };
 
-static int
-generic_fields_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int existing)
-{
-    ASSERT_vm_locking();
-
-    struct gen_fields_lookup_ensure_size *fields_lookup = (struct gen_fields_lookup_ensure_size *)u;
-    struct gen_fields_tbl *fields_tbl = existing ? (struct gen_fields_tbl *)*v : NULL;
-
-    if (!existing || fields_lookup->resize) {
-        if (existing) {
-            RUBY_ASSERT(RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_OBJ_ID));
-            RUBY_ASSERT(RSHAPE_CAPACITY(RSHAPE_PARENT(fields_lookup->shape_id)) < RSHAPE_CAPACITY(fields_lookup->shape_id));
-        }
-
-        fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE_CAPACITY(fields_lookup->shape_id));
-        *v = (st_data_t)fields_tbl;
-    }
-
-    fields_lookup->fields_tbl = fields_tbl;
-    if (fields_lookup->shape_id) {
-        rb_obj_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
-    }
-
-    RUBY_ASSERT(rb_obj_exivar_p((VALUE)*k));
-
-    return ST_CONTINUE;
-}
-
 static VALUE *
 generic_ivar_set_shape_fields(VALUE obj, void *data)
 {
@@ -1858,8 +1830,27 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
 
     struct gen_fields_lookup_ensure_size *fields_lookup = data;
 
+    // We can't use st_update, since when resizing the fields table GC can
+    // happen, which will modify the st_table and may rebuild it
     RB_VM_LOCKING() {
-        st_update(generic_fields_tbl(obj, fields_lookup->id, false), (st_data_t)obj, generic_fields_lookup_ensure_size, (st_data_t)fields_lookup);
+        struct gen_fields_tbl *fields_tbl = NULL;
+        st_table *tbl = generic_fields_tbl(obj, fields_lookup->id, false);
+        int existing = st_lookup(tbl, (st_data_t)obj, (st_data_t *)&fields_tbl);
+
+        if (!existing || fields_lookup->resize) {
+            if (existing) {
+                RUBY_ASSERT(RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_OBJ_ID));
+                RUBY_ASSERT(RSHAPE_CAPACITY(RSHAPE_PARENT(fields_lookup->shape_id)) < RSHAPE_CAPACITY(fields_lookup->shape_id));
+            }
+
+            fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE_CAPACITY(fields_lookup->shape_id));
+            st_insert(tbl, (st_data_t)obj, (st_data_t)fields_tbl);
+        }
+
+        fields_lookup->fields_tbl = fields_tbl;
+        if (fields_lookup->shape_id) {
+            rb_obj_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
+        }
     }
 
     return fields_lookup->fields_tbl->as.shape.fields;
