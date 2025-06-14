@@ -3516,7 +3516,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 iobj->insn_id = BIN(opt_hash_freeze);
                 iobj->operand_size = 2;
                 iobj->operands = compile_data_calloc2(iseq, iobj->operand_size, sizeof(VALUE));
-                iobj->operands[0] = rb_cHash_empty_frozen;
+                RB_OBJ_WRITE(iseq, &iobj->operands[0], rb_cHash_empty_frozen);
                 iobj->operands[1] = (VALUE)ci;
                 ELEM_REMOVE(next);
             }
