@@ -642,7 +642,7 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
-    const rb_namespace_t *ns = rb_definition_namespace();
+    const rb_namespace_t *ns = rb_current_namespace();
     size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
 
     // class_alloc is supposed to return a new object that is not promoted yet.
@@ -1225,9 +1225,16 @@ rb_singleton_class_internal_p(VALUE sklass)
  *       i.e. the attached object of the eigenclass is `klass`.
  * @note this macro creates a new eigenclass if necessary.
  */
-#define ENSURE_EIGENCLASS(klass) \
-    (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
+// #define ENSURE_EIGENCLASS(klass)                                      \
+//    (HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass))
+static inline VALUE make_metaclass(VALUE klass);
 
+static VALUE
+ENSURE_EIGENCLASS(VALUE klass)
+{
+    VM_ASSERT(klass);
+    return HAVE_METACLASS_P(klass) ? METACLASS_OF(klass) : make_metaclass(klass);
+}
 
 /**
  * Creates a metaclass of `klass`
