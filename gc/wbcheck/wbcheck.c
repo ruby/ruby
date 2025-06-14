@@ -128,11 +128,20 @@ typedef struct {
     wbcheck_object_list_t *writebarrier_children; // References added via write barriers since last snapshot
 } rb_wbcheck_object_info_t;
 
+// Structure to track objects that need dfree called
+typedef struct wbcheck_zombie {
+    VALUE obj;
+    void (*dfree)(void *);
+    void *data;
+    struct wbcheck_zombie *next;
+} wbcheck_zombie_t;
+
 // wbcheck objspace structure to track all objects
 typedef struct {
     st_table *object_table;  // Hash table to track all allocated objects (VALUE -> rb_wbcheck_object_info_t*)
     wbcheck_object_list_t *objects_to_capture; // Objects that need initial reference capture
     wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
+    wbcheck_zombie_t *zombie_list; // Linked list of objects with dfree functions to call
     bool during_gc;          // True when we're currently marking
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
@@ -166,7 +175,7 @@ wbcheck_report_error(void *objspace_ptr, VALUE parent_obj, wbcheck_object_list_t
 
     size_t snapshot_count = gc_mark_snapshot ? gc_mark_snapshot->count : 0;
     size_t wb_count = writebarrier_children ? writebarrier_children->count : 0;
-    
+
     fprintf(stderr, "WBCHECK ERROR: Missed write barrier detected!\n");
     fprintf(stderr, "  Parent object: %p (wb_protected: %s)\n",
            (void *)parent_obj, parent_info->wb_protected ? "true" : "false");
@@ -290,6 +299,7 @@ rb_gc_impl_objspace_alloc(void)
 
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
+    objspace->zombie_list = NULL;      // No zombies initially
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
@@ -784,7 +794,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         if (!info->writebarrier_children) {
             info->writebarrier_children = wbcheck_object_list_init();
         }
-        
+
         // Add the new reference to the write barrier children list
         wbcheck_object_list_append(info->writebarrier_children, b);
 
@@ -834,7 +844,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
         // (new objects don't need to be re-added since they'll be captured at allocation)
         wbcheck_object_list_append(objspace->objects_to_capture, obj);
     }
-    
+
     // Also clear write barrier children
     if (info->writebarrier_children) {
         wbcheck_object_list_free(info->writebarrier_children);
@@ -937,7 +947,21 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), 
 void
 rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+
+    // Allocate a new zombie entry
+    wbcheck_zombie_t *zombie = malloc(sizeof(wbcheck_zombie_t));
+    if (!zombie) rb_bug("wbcheck: failed to allocate zombie entry");
+
+    zombie->obj = obj;
+    zombie->dfree = dfree;
+    zombie->data = data;
+
+    // Add to the front of the zombie list
+    zombie->next = objspace->zombie_list;
+    objspace->zombie_list = zombie;
+
+    wbcheck_debug("wbcheck: made zombie for object %p with dfree function\n", (void *)obj);
 }
 
 VALUE
@@ -1049,6 +1073,42 @@ wbcheck_verify_all_references_callback(VALUE obj, rb_wbcheck_object_info_t *info
     return ST_CONTINUE;
 }
 
+static int
+wbcheck_shutdown_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, void *data)
+{
+    void *objspace_ptr = data;
+
+    if (rb_gc_shutdown_call_finalizer_p(obj)) {
+        wbcheck_debug("wbcheck: finalizing object during shutdown: %p\n", (void *)obj);
+        rb_gc_obj_free_vm_weak_references(obj);
+        if (rb_gc_obj_free(objspace_ptr, obj)) {
+            RBASIC(obj)->flags = 0;
+        }
+    }
+
+    return ST_CONTINUE;
+}
+
+static void
+wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace)
+{
+    wbcheck_zombie_t *zombie = objspace->zombie_list;
+
+    while (zombie) {
+        wbcheck_zombie_t *next = zombie->next;
+
+        if (zombie->dfree) {
+            wbcheck_debug("wbcheck: calling dfree for zombie object %p\n", (void *)zombie->obj);
+            zombie->dfree(zombie->data);
+        }
+
+        free(zombie);
+        zombie = next;
+    }
+
+    objspace->zombie_list = NULL;
+}
+
 void
 rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 {
@@ -1056,13 +1116,6 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     // Call all finalizers for all objects using our shared iteration helper
     wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
-
-    // HACK: Manually flush stdout and stderr since wbcheck never runs finalizers.
-    // Normally, I/O object finalizers would handle this flushing automatically
-    // when the GC collects them, but since we never run GC, we need to manually
-    // flush during shutdown to prevent output loss in subprocess scenarios.
-    rb_io_flush(rb_stdout);
-    rb_io_flush(rb_stderr);
 
     // After all finalizers have been called, verify all object references
     wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
@@ -1079,6 +1132,18 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     } else {
         wbcheck_debug("wbcheck: no write barrier violations detected\n");
     }
+
+    // Call rb_gc_obj_free on objects that need shutdown finalization (File, Data with dfree, etc.)
+    unsigned int lev = rb_gc_vm_lock();
+    wbcheck_debug("wbcheck: calling rb_gc_obj_free on objects that need shutdown finalization\n");
+    wbcheck_foreach_object(objspace, wbcheck_shutdown_finalizer_callback, objspace_ptr);
+    wbcheck_debug("wbcheck: finished calling rb_gc_obj_free\n");
+
+    // Call dfree functions for all zombie objects (e.g., File objects)
+    wbcheck_debug("wbcheck: finalizing zombie objects\n");
+    wbcheck_finalize_zombies(objspace);
+    wbcheck_debug("wbcheck: finished finalizing zombie objects\n");
+    rb_gc_vm_unlock(lev);
 }
 
 // Forking
