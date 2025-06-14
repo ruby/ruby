@@ -496,7 +496,9 @@ io_buffer_for_yield_instance(VALUE _arguments)
 
     arguments->instance = io_buffer_for_make_instance(arguments->klass, arguments->string, arguments->flags);
 
-    rb_str_locktmp(arguments->string);
+    if (!RB_OBJ_FROZEN(arguments->string)) {
+        rb_str_locktmp(arguments->string);
+    }
 
     return rb_yield(arguments->instance);
 }
@@ -510,7 +512,9 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
         rb_io_buffer_free(arguments->instance);
     }
 
-    rb_str_unlocktmp(arguments->string);
+    if (!RB_OBJ_FROZEN(arguments->string)) {
+        rb_str_unlocktmp(arguments->string);
+    }
 
     return Qnil;
 }
