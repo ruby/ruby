@@ -1923,7 +1923,7 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     // Avoid mutations using bind_call, etc.
     MEMZERO((char *)obj, char, sizeof(struct RBasic));
     RBASIC(obj)->flags = flags;
-    RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+    RBASIC_SET_CLASS(obj, rb_cRactorMovedObject);
     return traverse_cont;
 }
 
