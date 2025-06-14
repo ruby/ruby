@@ -1222,7 +1222,7 @@ describe "C-API String function" do
       -> { str.upcase! }.should raise_error(RuntimeError, 'can\'t modify string; temporarily locked')
     end
 
-    ruby_bug "#20998", ""..."3.6" do # TODO: check when Ruby 3.5 is released
+    ruby_version_is "3.5" do
       it "raises FrozenError if string is frozen" do
         str = -"rb_str_locktmp"
         -> { @s.rb_str_locktmp(str) }.should raise_error(FrozenError)
@@ -1246,7 +1246,7 @@ describe "C-API String function" do
       -> { @s.rb_str_unlocktmp(+"test") }.should raise_error(RuntimeError, 'temporal unlocking already unlocked string')
     end
 
-    ruby_bug "#20998", ""..."3.6" do # TODO: check when Ruby 3.5 is released
+    ruby_version_is "3.5" do
       it "raises FrozenError if string is frozen" do
         str = -"rb_str_locktmp"
         -> { @s.rb_str_unlocktmp(str) }.should raise_error(FrozenError)
