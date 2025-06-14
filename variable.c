@@ -1818,7 +1818,6 @@ general_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val, void *data,
 struct gen_fields_lookup_ensure_size {
     VALUE obj;
     ID id;
-    struct gen_fields_tbl *fields_tbl;
     shape_id_t shape_id;
     bool resize;
 };
@@ -1829,11 +1828,11 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
 
     struct gen_fields_lookup_ensure_size *fields_lookup = data;
+    struct gen_fields_tbl *fields_tbl = NULL;
 
     // We can't use st_update, since when resizing the fields table GC can
     // happen, which will modify the st_table and may rebuild it
     RB_VM_LOCKING() {
-        struct gen_fields_tbl *fields_tbl = NULL;
         st_table *tbl = generic_fields_tbl(obj, fields_lookup->id, false);
         int existing = st_lookup(tbl, (st_data_t)obj, (st_data_t *)&fields_tbl);
 
@@ -1847,13 +1846,12 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
             st_insert(tbl, (st_data_t)obj, (st_data_t)fields_tbl);
         }
 
-        fields_lookup->fields_tbl = fields_tbl;
         if (fields_lookup->shape_id) {
             rb_obj_set_shape_id(fields_lookup->obj, fields_lookup->shape_id);
         }
     }
 
-    return fields_lookup->fields_tbl->as.shape.fields;
+    return fields_tbl->as.shape.fields;
 }
 
 static void
