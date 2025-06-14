@@ -142,6 +142,7 @@ typedef struct {
     wbcheck_object_list_t *objects_to_capture; // Objects that need initial reference capture
     wbcheck_object_list_t *objects_to_verify; // Objects that need verification after write barriers
     wbcheck_zombie_t *zombie_list; // Linked list of objects with dfree functions to call
+    wbcheck_object_list_t *current_refs; // Current list for collecting references during marking
     bool during_gc;          // True when we're currently marking
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
@@ -307,6 +308,7 @@ rb_gc_impl_objspace_alloc(void)
     objspace->objects_to_capture = wbcheck_object_list_init();  // Initialize empty list
     objspace->objects_to_verify = wbcheck_object_list_init();   // Initialize empty list
     objspace->zombie_list = NULL;      // No zombies initially
+    objspace->current_refs = NULL;     // No current refs initially
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
@@ -486,11 +488,21 @@ wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
 static wbcheck_object_list_t *
 wbcheck_collect_references_from_object(VALUE obj)
 {
+    rb_wbcheck_objspace_t *objspace = wbcheck_global_objspace;
+
     // Create a new object list for collection
     wbcheck_object_list_t *new_list = wbcheck_object_list_init();
 
-    // Collect all references into the temporary list
-    rb_objspace_reachable_objects_from(obj, wbcheck_collect_references_from_object_i, (void *)new_list);
+    // Set up objspace state for marking
+    objspace->current_refs = new_list;
+    objspace->during_gc = true;
+
+    // Use the marking infrastructure to collect references
+    rb_gc_mark_children(objspace, obj);
+
+    // Clean up objspace state
+    objspace->during_gc = false;
+    objspace->current_refs = NULL;
 
     if (wbcheck_debug_enabled) {
         wbcheck_debug("wbcheck: collected %zu references from %p\n", new_list->count, (void *)obj);
@@ -714,10 +726,12 @@ gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
     wbcheck_debug("wbcheck: gc_mark called\n");
     wbcheck_debug_obj_info_dump(obj);
 
-    // Mark the finalizers for this object
-    rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
-    if (info->finalizers) {
-        rb_gc_mark(info->finalizers);
+    // Assume we're collecting references
+    GC_ASSERT(objspace->during_gc);
+    GC_ASSERT(objspace->current_refs);
+
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        wbcheck_object_list_append(objspace->current_refs, obj);
     }
 }
 
@@ -1125,9 +1139,11 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
 
     // After all finalizers have been called, verify all object references
+    unsigned int verify_lev = rb_gc_vm_lock();
     wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
     wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
     wbcheck_debug("wbcheck: finished verifying all object references\n");
+    rb_gc_vm_unlock(verify_lev);
 
     // Print summary and exit with error code if violations were found
     if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
