@@ -63,8 +63,10 @@ typedef enum {
 struct rb_fiber_scheduler_blocking_operation {
     void *(*function)(void *);
     void *data;
+
     rb_unblock_function_t *unblock_function;
     void *data2;
+
     int flags;
     struct rb_fiber_scheduler_blocking_operation_state *state;
 
@@ -208,7 +210,10 @@ rb_fiber_scheduler_blocking_operation_execute(rb_fiber_scheduler_blocking_operat
         return -1; // Invalid blocking operation
     }
 
-        // Atomically check if we can transition from QUEUED to EXECUTING
+    // Resolve sentinel values for unblock_function and data2:
+    rb_thread_resolve_unblock_function(&blocking_operation->unblock_function, &blocking_operation->data2, GET_THREAD());
+
+    // Atomically check if we can transition from QUEUED to EXECUTING
     rb_atomic_t expected = RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_QUEUED;
     if (RUBY_ATOMIC_CAS(blocking_operation->status, expected, RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_EXECUTING) != expected) {
         // Already cancelled or in wrong state
@@ -1124,25 +1129,33 @@ rb_fiber_scheduler_blocking_operation_cancel(rb_fiber_scheduler_blocking_operati
 
     rb_atomic_t current_state = RUBY_ATOMIC_LOAD(blocking_operation->status);
 
-        switch (current_state) {
+    switch (current_state) {
         case RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_QUEUED:
-            // Work hasn't started - just mark as cancelled
+            // Work hasn't started - just mark as cancelled:
             if (RUBY_ATOMIC_CAS(blocking_operation->status, current_state, RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_CANCELLED) == current_state) {
-                return 0; // Successfully cancelled before execution
+                // Successfully cancelled before execution:
+                return 0;
             }
             // Fall through if state changed between load and CAS
 
         case RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_EXECUTING:
             // Work is running - mark cancelled AND call unblock function
-            RUBY_ATOMIC_SET(blocking_operation->status, RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_CANCELLED);
-            if (blocking_operation->unblock_function) {
+            if (RUBY_ATOMIC_CAS(blocking_operation->status, current_state, RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_CANCELLED) != current_state) {
+                // State changed between load and CAS - operation may have completed:
+                return 0;
+            }
+            // Otherwise, we successfully marked it as cancelled, so we can call the unblock function:
+            rb_unblock_function_t *unblock_function = blocking_operation->unblock_function;
+            if (unblock_function) {
+                RUBY_ASSERT(unblock_function != (rb_unblock_function_t *)-1 && "unblock_function is still sentinel value -1, should have been resolved earlier");
                 blocking_operation->unblock_function(blocking_operation->data2);
             }
-            return 1; // Cancelled during execution (unblock function called)
+            // Cancelled during execution (unblock function called):
+            return 1;
 
         case RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_COMPLETED:
         case RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_CANCELLED:
-            // Already finished or cancelled
+            // Already finished or cancelled:
             return 0;
     }
 
