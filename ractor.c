@@ -1882,6 +1882,9 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_gc_obj_slot_size(obj) - sizeof(VALUE)
     );
 
+    // We've copied obj's references to the replacement
+    rb_gc_writebarrier_remember(data->replacement);
+
     void rb_replace_generic_ivar(VALUE clone, VALUE obj); // variable.c
 
     rb_gc_obj_id_moved(data->replacement);
