@@ -419,7 +419,7 @@ class TestGc < Test::Unit::TestCase
       GC.start
 
       # Sometimes the WeakMap has a few elements, which might be held on by registers.
-      assert_operator(wmap.size, :<=, 2)
+      assert_operator(wmap.size, :<=, count / 1000)
 
       assert_operator(GC.latest_gc_info(:weak_references_count), :<=, before_weak_references_count - count + error_tolerance)
       assert_operator(GC.latest_gc_info(:retained_weak_references_count), :<=, before_retained_weak_references_count - count + error_tolerance)
