@@ -205,7 +205,7 @@ To match a metacharacter literally, backslash-escape it:
 To match a backslash literally, backslash-escape it:
 
   /\./.match('\.')  # => #<MatchData ".">
-  /\\./.match('\.') # => #<MatchData "\\.">
+  /\\./.match('\.') # => #<MatchData "\.">
 
 Method Regexp.escape returns an escaped string:
 
