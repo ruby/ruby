@@ -50,17 +50,8 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
 
-    rb_namespace_enable_builtin();
-
     // exec
-    if (rb_namespace_available() && rb_mNamespaceRefiner) {
-        rb_iseq_eval_with_refinement(rb_iseq_check(iseq), rb_mNamespaceRefiner);
-    }
-    else {
-        rb_iseq_eval(rb_iseq_check(iseq));
-    }
-
-    rb_namespace_disable_builtin();
+    rb_iseq_eval(rb_iseq_check(iseq), rb_root_namespace()); // builtin functions are loaded in the root namespace
 }
 
 void
