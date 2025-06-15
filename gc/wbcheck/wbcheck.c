@@ -65,14 +65,23 @@ typedef struct {
 
 // Helper functions for object list
 static wbcheck_object_list_t *
-wbcheck_object_list_init(void)
+wbcheck_object_list_init_with_capacity(size_t capacity)
 {
     wbcheck_object_list_t *list = calloc(1, sizeof(wbcheck_object_list_t));
     if (!list) rb_bug("wbcheck: failed to allocate object list structure");
-    list->items = NULL;
+
+    if (capacity < 4) capacity = 4;
+    list->items = malloc(capacity * sizeof(VALUE));
+    if (!list->items) rb_bug("wbcheck: failed to allocate object list array");
+    list->capacity = capacity;
     list->count = 0;
-    list->capacity = 0;
     return list;
+}
+
+static wbcheck_object_list_t *
+wbcheck_object_list_init(void)
+{
+    return wbcheck_object_list_init_with_capacity(4);
 }
 
 static void
@@ -486,12 +495,13 @@ wbcheck_collect_references_from_object_i(VALUE child_obj, void *data)
 }
 
 static wbcheck_object_list_t *
-wbcheck_collect_references_from_object(VALUE obj)
+wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
     rb_wbcheck_objspace_t *objspace = wbcheck_global_objspace;
 
-    // Create a new object list for collection
-    wbcheck_object_list_t *new_list = wbcheck_object_list_init();
+    // Use previous snapshot size as capacity hint if available
+    size_t capacity_hint = (info->gc_mark_snapshot) ? info->gc_mark_snapshot->count : 0;
+    wbcheck_object_list_t *new_list = wbcheck_object_list_init_with_capacity(capacity_hint);
 
     // Set up objspace state for marking
     objspace->current_refs = new_list;
@@ -519,10 +529,9 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
     wbcheck_debug("wbcheck: collecting initial references from %p:\n", obj);
     wbcheck_debug_obj_info_dump(obj);
 
-    wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj);
-
     // Get the object info and set the initial GC mark snapshot
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
+    wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj, info);
     RUBY_ASSERT(!info->gc_mark_snapshot);
     info->gc_mark_snapshot = new_list;  // Set the initial snapshot
 }
@@ -546,7 +555,7 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     wbcheck_debug_obj_info_dump(obj);
 
     // Get the current references from the object
-    wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj);
+    wbcheck_object_list_t *current_refs = wbcheck_collect_references_from_object(obj, info);
 
     // Check for useless write barriers before clearing them
     if (wbcheck_warn_useless_wb_enabled && info->writebarrier_children) {
