@@ -378,7 +378,7 @@ init_copy(VALUE dest, VALUE obj)
     RBASIC(dest)->flags |= RBASIC(obj)->flags & T_MASK;
     switch (BUILTIN_TYPE(obj)) {
         case T_IMEMO:
-          rb_bug("Unreacheable");
+          rb_bug("Unreachable");
           break;
         case T_CLASS:
         case T_MODULE:
