@@ -1215,14 +1215,15 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;
-    if (!SPECIAL_CONST_P(*group)) RB_OBJ_WRITTEN(hash, Qundef, *group);
     return ST_CONTINUE;
 }
 
 static VALUE
 rb_enum_tally_up(VALUE hash, VALUE group)
 {
-    rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash);
+    if (!rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash)) {
+        RB_OBJ_WRITTEN(hash, Qundef, group);
+    }
     return hash;
 }
 
