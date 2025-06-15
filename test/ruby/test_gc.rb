@@ -393,12 +393,10 @@ class TestGc < Test::Unit::TestCase
 
       # Create some objects and place it in a WeakMap
       wmap = ObjectSpace::WeakMap.new
-      ary = Array.new(count)
-      enum = count.times
-      enum.each.with_index do |i|
+      ary = Array.new(count) do |i|
         obj = Object.new
-        ary[i] = obj
         wmap[obj] = nil
+        obj
       end
 
       # Run full GC to collect stats about weak references
