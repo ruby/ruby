@@ -4166,7 +4166,7 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
         break;
       }
       case RB_GC_VM_WEAK_TABLE_COUNT:
-        rb_bug("Unreacheable");
+        rb_bug("Unreachable");
       default:
         rb_bug("rb_gc_vm_weak_table_foreach: unknown table %d", table);
     }
