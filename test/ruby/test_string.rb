@@ -1908,6 +1908,13 @@ CODE
 
     result = []; S("aaa,bbb,ccc,ddd").split(/,/) {|s| result << s.gsub(/./, "A")}
     assert_equal(["AAA"]*4, result)
+
+    s = S("abc ") * 20
+    assert_raise(RuntimeError) {
+      10.times do
+        s.split {s.prepend("xxx" * 100)}
+      end
+    }
   ensure
     EnvUtil.suppress_warning {$; = fs}
   end
