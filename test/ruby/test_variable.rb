@@ -408,6 +408,7 @@ class TestVariable < Test::Unit::TestCase
   end
 
   def test_exivar_resize_with_compaction_stress
+    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     objs = 10_000.times.map do
       ExIvar.new
     end
