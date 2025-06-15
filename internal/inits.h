@@ -32,6 +32,9 @@ void Init_enable_namespace(void);
 void Init_BareVM(void);
 void Init_vm_objects(void);
 
+/* namespace.c */
+void Init_root_namespace(void);
+
 /* vm_backtrace.c */
 void Init_vm_backtrace(void);
 

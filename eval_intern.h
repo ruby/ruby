@@ -296,7 +296,10 @@ VALUE rb_vm_make_jump_tag_but_local_jump(enum ruby_tag_type state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
-VALUE rb_vm_call_cfunc2(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2, VALUE block_handler, VALUE filename);
+VALUE rb_vm_call_cfunc_in_namespace(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2, VALUE filename, const rb_namespace_t *ns);
+void rb_vm_frame_flag_set_ns_require(const rb_execution_context_t *ec);
+const rb_namespace_t *rb_vm_current_namespace(const rb_execution_context_t *ec);
+const rb_namespace_t *rb_vm_loading_namespace(const rb_execution_context_t *ec);
 void rb_vm_set_progname(VALUE filename);
 VALUE rb_vm_cbase(void);
 

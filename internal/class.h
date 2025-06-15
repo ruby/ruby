@@ -390,8 +390,7 @@ RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
 static inline rb_classext_t *
 RCLASS_EXT_READABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
 {
-    if (!ns
-        || NAMESPACE_BUILTIN_P(ns)
+    if (NAMESPACE_ROOT_P(ns)
         || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -405,9 +404,9 @@ RCLASS_EXT_READABLE(VALUE obj)
     if (RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
-    // delay namespace loading to optimize for unmodified classes
+    // delay determining the current namespace to optimize for unmodified classes
     ns = rb_current_namespace();
-    if (!ns || NAMESPACE_BUILTIN_P(ns)) {
+    if (NAMESPACE_ROOT_P(ns)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, ns);
@@ -440,8 +439,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_namespace_t *ns)
 static inline rb_classext_t *
 RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_namespace_t *ns)
 {
-    if (!ns
-        || NAMESPACE_BUILTIN_P(ns)
+    if (NAMESPACE_ROOT_P(ns)
         || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -455,11 +453,9 @@ RCLASS_EXT_WRITABLE(VALUE obj)
     if (LIKELY(RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj))) {
         return RCLASS_EXT_PRIME(obj);
     }
-    // delay namespace loading to optimize for unmodified classes
+    // delay determining the current namespace to optimize for unmodified classes
     ns = rb_current_namespace();
-    if (!ns || NAMESPACE_BUILTIN_P(ns)) {
-        // If no namespace is specified, Ruby VM is in bootstrap
-        // and the clean class definition is under construction.
+    if (NAMESPACE_ROOT_P(ns)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, ns);
