@@ -3060,7 +3060,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
 
     MARK_CHECKPOINT("vm");
     rb_vm_mark(vm);
-    if (vm->self) gc_mark_internal(vm->self);
 
     MARK_CHECKPOINT("end_proc");
     rb_mark_end_proc();
