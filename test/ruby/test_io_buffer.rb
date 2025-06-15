@@ -121,6 +121,16 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_string_mapped_buffer_frozen
+    string = "Hello World".freeze
+    IO::Buffer.for(string) do |buffer|
+      assert_raise IO::Buffer::AccessError, "Buffer is not writable!" do
+        buffer.set_string("abc")
+      end
+      assert_equal "H".ord, buffer.get_value(:U8, 0)
+    end
+  end
+
   def test_non_string
     not_string = Object.new
 

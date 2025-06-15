@@ -3664,6 +3664,7 @@ RUBY_ALIAS_FUNCTION(rb_str_dup_frozen(VALUE str), rb_str_new_frozen, (str))
 VALUE
 rb_str_locktmp(VALUE str)
 {
+    rb_check_frozen(str);
     if (FL_TEST(str, STR_TMPLOCK)) {
         rb_raise(rb_eRuntimeError, "temporal locking already locked string");
     }
@@ -3674,6 +3675,7 @@ rb_str_locktmp(VALUE str)
 VALUE
 rb_str_unlocktmp(VALUE str)
 {
+    rb_check_frozen(str);
     if (!FL_TEST(str, STR_TMPLOCK)) {
         rb_raise(rb_eRuntimeError, "temporal unlocking already unlocked string");
     }
