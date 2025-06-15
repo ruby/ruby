@@ -1599,7 +1599,7 @@ m_ajd(union DateData *x)
 
     if (simple_dat_p(x)) {
 	r = m_real_jd(x);
-	if (FIXNUM_P(r) && FIX2LONG(r) <= (FIXNUM_MAX / 2)) {
+	if (FIXNUM_P(r) && FIX2LONG(r) <= (FIXNUM_MAX / 2) && FIX2LONG(r) >= (FIXNUM_MIN + 1) / 2) {
 	    long ir = FIX2LONG(r);
 	    ir = ir * 2 - 1;
 	    return rb_rational_new2(LONG2FIX(ir), INT2FIX(2));
