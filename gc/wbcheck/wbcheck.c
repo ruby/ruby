@@ -56,6 +56,13 @@ static size_t heap_sizes[HEAP_COUNT + 1] = {
     0
 };
 
+// Object states for verification tracking
+typedef enum {
+    WBCHECK_STATE_CLEAR,    // Just allocated or writebarrier_remember, needs reference capture
+    WBCHECK_STATE_MARKED,   // Has valid snapshot, ready for normal operation
+    WBCHECK_STATE_DIRTY     // Has seen writebarrier since last snapshot, queued for verification
+} wbcheck_object_state_t;
+
 // List of objects
 typedef struct {
     VALUE *items;
@@ -135,6 +142,7 @@ typedef struct {
     VALUE finalizers;       // Ruby Array of finalizers like [finalizer1, finalizer2, ...]
     wbcheck_object_list_t *gc_mark_snapshot; // Snapshot of references from last GC mark
     wbcheck_object_list_t *writebarrier_children; // References added via write barriers since last snapshot
+    wbcheck_object_state_t state; // Current state in verification lifecycle
 } rb_wbcheck_object_info_t;
 
 // Structure to track objects that need dfree called
@@ -280,6 +288,7 @@ wbcheck_register_object(void *objspace_ptr, VALUE obj, size_t alloc_size, bool w
     info->finalizers = 0;  /* No finalizers initially */
     info->gc_mark_snapshot = NULL;  /* No snapshot initially */
     info->writebarrier_children = NULL;  /* No write barrier children initially */
+    info->state = WBCHECK_STATE_CLEAR;  /* Start in clear state */
 
     // Store object info in hash table (VALUE -> rb_wbcheck_object_info_t*)
     st_insert(objspace->object_table, (st_data_t)obj, (st_data_t)info);
@@ -533,7 +542,9 @@ wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     wbcheck_object_list_t *new_list = wbcheck_collect_references_from_object(obj, info);
     RUBY_ASSERT(!info->gc_mark_snapshot);
+    RUBY_ASSERT(info->state == WBCHECK_STATE_CLEAR);
     info->gc_mark_snapshot = new_list;  // Set the initial snapshot
+    info->state = WBCHECK_STATE_MARKED;  // Transition to marked state
 }
 
 static void
@@ -547,7 +558,8 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     }
 
     // We hadn't captured initial references
-    if (!info->gc_mark_snapshot) {
+    if (info->state == WBCHECK_STATE_CLEAR) {
+        RUBY_ASSERT(!info->gc_mark_snapshot);
         return;
     }
 
@@ -578,6 +590,7 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
     wbcheck_object_list_free(info->writebarrier_children);
     info->gc_mark_snapshot = current_refs;
     info->writebarrier_children = NULL;
+    info->state = WBCHECK_STATE_MARKED;  // Back to marked state after verification
 }
 
 static void
@@ -818,8 +831,10 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     // Get the object info for the parent object (a)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(a);
 
-    // Only record the write barrier if gc_mark_snapshot has been initialized
-    if (info->gc_mark_snapshot) {
+    // Only record the write barrier if we have a valid snapshot
+    if (info->state != WBCHECK_STATE_CLEAR) {
+        RUBY_ASSERT(info->gc_mark_snapshot);
+
         // Initialize writebarrier_children list if it doesn't exist
         if (!info->writebarrier_children) {
             info->writebarrier_children = wbcheck_object_list_init();
@@ -831,8 +846,9 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
 
         // If verification after write barrier is enabled, queue the object for verification
-        if (wbcheck_verify_after_wb_enabled) {
+        if (wbcheck_verify_after_wb_enabled && info->state != WBCHECK_STATE_DIRTY) {
             wbcheck_debug("wbcheck: queueing object for verification after write barrier\n");
+            info->state = WBCHECK_STATE_DIRTY;  // Mark as dirty
             wbcheck_object_list_append(objspace->objects_to_verify, a);
         }
     } else {
@@ -880,6 +896,9 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
         wbcheck_object_list_free(info->writebarrier_children);
         info->writebarrier_children = NULL;
     }
+
+    // Reset to clear state
+    info->state = WBCHECK_STATE_CLEAR;
 
     rb_gc_vm_unlock(lev);
 }
