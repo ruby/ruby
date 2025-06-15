@@ -1,6 +1,10 @@
 require_relative 'spec_helper'
 
-require 'fiddle'
+begin
+  require 'fiddle'
+rescue LoadError
+  return
+end
 
 load_extension('digest')
 
