@@ -882,23 +882,26 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
 
     // Clear existing references since they may be stale
-    if (info->gc_mark_snapshot) {
+    if (info->state != WBCHECK_STATE_CLEAR) {
+        RUBY_ASSERT(info->gc_mark_snapshot);
         wbcheck_object_list_free(info->gc_mark_snapshot);
         info->gc_mark_snapshot = NULL;
 
         // Only re-add to objects_to_capture if it had previous snapshot
         // (new objects don't need to be re-added since they'll be captured at allocation)
         wbcheck_object_list_append(objspace->objects_to_capture, obj);
-    }
 
-    // Also clear write barrier children
-    if (info->writebarrier_children) {
-        wbcheck_object_list_free(info->writebarrier_children);
-        info->writebarrier_children = NULL;
-    }
+        // Also clear write barrier children
+        if (info->writebarrier_children) {
+            wbcheck_object_list_free(info->writebarrier_children);
+            info->writebarrier_children = NULL;
+        }
 
-    // Reset to clear state
-    info->state = WBCHECK_STATE_CLEAR;
+        // Reset to clear state
+        info->state = WBCHECK_STATE_CLEAR;
+    }
+    RUBY_ASSERT(!info->gc_mark_snapshot);
+    RUBY_ASSERT(!info->writebarrier_children);
 
     rb_gc_vm_unlock(lev);
 }
