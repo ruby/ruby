@@ -30,9 +30,9 @@ describe "Enumerable#to_set" do
 
   it "does not need explicit `require 'set'`" do
     output = ruby_exe(<<~RUBY, options: '--disable-gems', args: '2>&1')
-      puts [1, 2, 3].to_set
+      puts [1, 2, 3].to_set.to_a.inspect
     RUBY
 
-    output.chomp.should == "#<Set: {1, 2, 3}>"
+    output.chomp.should == "[1, 2, 3]"
   end
 end
