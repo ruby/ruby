@@ -2982,6 +2982,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
+        vm->self = rb_gc_location(vm->self);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->load_path = rb_gc_location(vm->load_path);
         vm->load_path_snapshot = rb_gc_location(vm->load_path_snapshot);
@@ -3067,6 +3068,8 @@ rb_vm_mark(void *ptr)
         for (struct global_object_list *list = vm->global_object_list; list; list = list->next) {
             rb_gc_mark_maybe(*list->varptr);
         }
+
+        rb_gc_mark_movable(vm->self);
 
         if (vm->main_namespace) {
             rb_namespace_entry_mark((void *)vm->main_namespace);
