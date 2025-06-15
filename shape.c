@@ -1262,7 +1262,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     }
     else {
         if (flags_heap_index) {
-            rb_bug("shape_id indicate heap_index > 0 but objet is not T_OBJECT: %s", rb_obj_info(obj));
+            rb_bug("shape_id indicate heap_index > 0 but object is not T_OBJECT: %s", rb_obj_info(obj));
         }
     }
 
