@@ -5238,20 +5238,6 @@ block_proc_is_lambda(const VALUE procval)
     }
 }
 
-static inline const rb_namespace_t *
-block_proc_namespace(const VALUE procval)
-{
-    rb_proc_t *proc;
-
-    if (procval) {
-        GetProcPtr(procval, proc);
-        return proc->ns;
-    }
-    else {
-        return NULL;
-    }
-}
-
 static VALUE
 vm_yield_with_cfunc(rb_execution_context_t *ec,
                     const struct rb_captured_block *captured,
@@ -5407,10 +5393,6 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 
     SET_SP(rsp);
 
-    if (calling->proc_ns) {
-        frame_flag |= VM_FRAME_FLAG_NS_SWITCH;
-    }
-
     vm_push_frame(ec, iseq,
                   frame_flag,
                   captured->self,
@@ -5511,9 +5493,6 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 {
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
         VALUE proc = VM_BH_TO_PROC(block_handler);
-        if (!calling->proc_ns) {
-            calling->proc_ns = block_proc_namespace(proc);
-        }
         is_lambda = block_proc_is_lambda(proc);
         block_handler = vm_proc_to_block_handler(proc);
     }

@@ -683,7 +683,6 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 {
     rb_proc_t *proc;
     cfunc_proc_t *sproc;
-    const rb_namespace_t *ns = rb_current_namespace();
     VALUE procval = TypedData_Make_Struct(klass, cfunc_proc_t, &proc_data_type, sproc);
     VALUE *ep;
 
@@ -698,7 +697,6 @@ cfunc_proc_new(VALUE klass, VALUE ifunc)
 
     /* self? */
     RB_OBJ_WRITE(procval, &proc->block.as.captured.code.ifunc, ifunc);
-    proc->ns = ns;
     proc->is_lambda = TRUE;
     return procval;
 }
