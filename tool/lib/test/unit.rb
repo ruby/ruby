@@ -1299,10 +1299,15 @@ module Test
         parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
           options[:repeat_count] = n
         end
+        options[:keep_repeating] = false
+        parser.on '--[no-]keep-repeating', "Keep repeating even failed" do |n|
+          options[:keep_repeating] = true
+        end
       end
 
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
+        @keep_repeating = @options[:keep_repeating]
         super
       end
     end
@@ -1624,7 +1629,7 @@ module Test
               [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
                 t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
         end while @repeat_count && @@current_repeat_count < @repeat_count &&
-                  report.empty? && failures.zero? && errors.zero?
+                  (@keep_repeating || report.empty? && failures.zero? && errors.zero?)
 
         output.sync = old_sync if sync
 
