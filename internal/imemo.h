@@ -42,7 +42,7 @@ enum imemo_type {
     imemo_callinfo       = 11,
     imemo_callcache      = 12,
     imemo_constcache     = 13,
-    imemo_class_fields   = 14,
+    imemo_fields   = 14,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -258,7 +258,7 @@ MEMO_V2_SET(struct MEMO *m, VALUE v)
     RB_OBJ_WRITE(m, &m->v2, v);
 }
 
-struct rb_class_fields {
+struct rb_fields {
     struct RBasic basic;
     union {
         struct {
@@ -276,20 +276,20 @@ struct rb_class_fields {
 };
 
 #define OBJ_FIELD_EXTERNAL IMEMO_FL_USER0
-#define IMEMO_OBJ_FIELDS(fields) ((struct rb_class_fields *)fields)
+#define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_class_fields_new(VALUE klass, size_t capa);
-VALUE rb_imemo_class_fields_new_complex(VALUE klass, size_t capa);
-VALUE rb_imemo_class_fields_clone(VALUE fields_obj);
+VALUE rb_imemo_fields_new(VALUE klass, size_t capa);
+VALUE rb_imemo_fields_new_complex(VALUE klass, size_t capa);
+VALUE rb_imemo_fields_clone(VALUE fields_obj);
 
 static inline VALUE *
-rb_imemo_class_fields_ptr(VALUE obj_fields)
+rb_imemo_fields_ptr(VALUE obj_fields)
 {
     if (!obj_fields) {
         return NULL;
     }
 
-    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_class_fields));
+    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
 
     if (RB_UNLIKELY(FL_TEST_RAW(obj_fields, OBJ_FIELD_EXTERNAL))) {
         return IMEMO_OBJ_FIELDS(obj_fields)->as.external.ptr;
@@ -300,13 +300,13 @@ rb_imemo_class_fields_ptr(VALUE obj_fields)
 }
 
 static inline st_table *
-rb_imemo_class_fields_complex_tbl(VALUE obj_fields)
+rb_imemo_fields_complex_tbl(VALUE obj_fields)
 {
     if (!obj_fields) {
         return NULL;
     }
 
-    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_class_fields));
+    RUBY_ASSERT(IMEMO_TYPE_P(obj_fields, imemo_fields));
 
     return IMEMO_OBJ_FIELDS(obj_fields)->as.complex.table;
 }

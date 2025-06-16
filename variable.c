@@ -1393,11 +1393,11 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
       case T_IMEMO:
         // Handled like T_OBJECT
         {
-            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_class_fields));
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
             shape_id = RBASIC_SHAPE_ID(obj);
 
             if (rb_shape_too_complex_p(shape_id)) {
-                st_table *iv_table = rb_imemo_class_fields_complex_tbl(obj);
+                st_table *iv_table = rb_imemo_fields_complex_tbl(obj);
                 VALUE val;
                 if (rb_st_lookup(iv_table, (st_data_t)id, (st_data_t *)&val)) {
                     return val;
@@ -1408,7 +1408,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
             }
 
             RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-            ivar_list = rb_imemo_class_fields_ptr(obj);
+            ivar_list = rb_imemo_fields_ptr(obj);
             break;
         }
       case T_OBJECT:
@@ -1486,7 +1486,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         if (fields_obj) {
             if (rb_multi_ractor_p()) {
-                fields_obj = rb_imemo_class_fields_clone(fields_obj);
+                fields_obj = rb_imemo_fields_clone(fields_obj);
                 val = rb_ivar_delete(fields_obj, id, undef);
                 RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, fields_obj);
             }
@@ -1523,8 +1523,8 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         rb_bug("Unreachable");
         break;
       case T_IMEMO:
-        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_class_fields));
-        fields = rb_imemo_class_fields_ptr(obj);
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        fields = rb_imemo_fields_ptr(obj);
         break;
       case T_OBJECT:
         fields = ROBJECT_FIELDS(obj);
@@ -1576,8 +1576,8 @@ too_complex:
             break;
 
           case T_IMEMO:
-            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_class_fields));
-            table = rb_imemo_class_fields_complex_tbl(obj);
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            table = rb_imemo_fields_complex_tbl(obj);
             break;
 
           case T_OBJECT:
@@ -2156,8 +2156,8 @@ ivar_defined0(VALUE obj, ID id)
             break;
 
           case T_IMEMO:
-            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_class_fields));
-            table = rb_imemo_class_fields_complex_tbl(obj);
+            RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+            table = rb_imemo_fields_complex_tbl(obj);
             break;
 
           case T_OBJECT:
@@ -2235,10 +2235,10 @@ iterate_over_shapes_callback(shape_id_t shape_id, void *data)
       case T_MODULE:
         rb_bug("Unreachable");
       case T_IMEMO:
-        RUBY_ASSERT(IMEMO_TYPE_P(itr_data->obj, imemo_class_fields));
+        RUBY_ASSERT(IMEMO_TYPE_P(itr_data->obj, imemo_fields));
         RUBY_ASSERT(!rb_shape_obj_too_complex_p(itr_data->obj));
 
-        iv_list = rb_imemo_class_fields_ptr(itr_data->obj);
+        iv_list = rb_imemo_fields_ptr(itr_data->obj);
         break;
       default:
         iv_list = itr_data->fields_tbl->as.shape.fields;
@@ -2313,7 +2313,7 @@ gen_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
 static void
 class_fields_each(VALUE fields_obj, rb_ivar_foreach_callback_func *func, st_data_t arg, bool ivar_only)
 {
-    IMEMO_TYPE_P(fields_obj, imemo_class_fields);
+    IMEMO_TYPE_P(fields_obj, imemo_fields);
 
     struct iv_itr_data itr_data = {
         .obj = fields_obj,
@@ -2324,10 +2324,10 @@ class_fields_each(VALUE fields_obj, rb_ivar_foreach_callback_func *func, st_data
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
     if (rb_shape_too_complex_p(shape_id)) {
-        rb_st_foreach(rb_imemo_class_fields_complex_tbl(fields_obj), each_hash_iv, (st_data_t)&itr_data);
+        rb_st_foreach(rb_imemo_fields_complex_tbl(fields_obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
-        itr_data.fields = rb_imemo_class_fields_ptr(fields_obj);
+        itr_data.fields = rb_imemo_fields_ptr(fields_obj);
         iterate_over_shapes(shape_id, func, &itr_data);
     }
 }
@@ -2427,7 +2427,7 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
     if (SPECIAL_CONST_P(obj)) return;
     switch (BUILTIN_TYPE(obj)) {
       case T_IMEMO:
-        if (IMEMO_TYPE_P(obj, imemo_class_fields)) {
+        if (IMEMO_TYPE_P(obj, imemo_fields)) {
             class_fields_each(obj, func, arg, ivar_only);
         }
         break;
@@ -2476,7 +2476,7 @@ rb_ivar_count(VALUE obj)
                 return 0;
             }
             if (rb_shape_obj_too_complex_p(fields_obj)) {
-                return rb_st_table_size(rb_imemo_class_fields_complex_tbl(fields_obj));
+                return rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
             }
             return RBASIC_FIELDS_COUNT(fields_obj);
         }
@@ -4690,7 +4690,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 {
     bool existing = true;
     const VALUE original_fields_obj = fields_obj;
-    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_class_fields_new(klass, 1);
+    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(klass, 1);
 
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
     shape_id_t next_shape_id = current_shape_id;
@@ -4711,9 +4711,9 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
         next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
         if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
             attr_index_t current_len = RSHAPE_LEN(current_shape_id);
-            fields_obj = rb_imemo_class_fields_new_complex(klass, current_len + 1);
+            fields_obj = rb_imemo_fields_new_complex(klass, current_len + 1);
             if (current_len) {
-                rb_obj_copy_fields_to_hash_table(original_fields_obj, rb_imemo_class_fields_complex_tbl(fields_obj));
+                rb_obj_copy_fields_to_hash_table(original_fields_obj, rb_imemo_fields_complex_tbl(fields_obj));
                 RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
             }
             goto too_complex;
@@ -4727,9 +4727,9 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
             // We allocate a new fields_obj even when concurrency isn't a concern
             // so that we're embedded as long as possible.
-            fields_obj = rb_imemo_class_fields_new(klass, next_capacity);
+            fields_obj = rb_imemo_fields_new(klass, next_capacity);
             if (original_fields_obj) {
-                MEMCPY(rb_imemo_class_fields_ptr(fields_obj), rb_imemo_class_fields_ptr(original_fields_obj), VALUE, RSHAPE_LEN(current_shape_id));
+                MEMCPY(rb_imemo_fields_ptr(fields_obj), rb_imemo_fields_ptr(original_fields_obj), VALUE, RSHAPE_LEN(current_shape_id));
             }
         }
 
@@ -4737,7 +4737,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
         RUBY_ASSERT(index == (RSHAPE_LEN(next_shape_id) - 1));
     }
 
-    VALUE *fields = rb_imemo_class_fields_ptr(fields_obj);
+    VALUE *fields = rb_imemo_fields_ptr(fields_obj);
     RB_OBJ_WRITE(fields_obj, &fields[index], val);
 
     if (!existing) {
@@ -4749,7 +4749,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
 too_complex:
     {
-        st_table *table = rb_imemo_class_fields_complex_tbl(fields_obj);
+        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
         existing = st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
 
