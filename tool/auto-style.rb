@@ -173,6 +173,10 @@ IGNORED_FILES = [
   %r{\Asample/trick[^/]*/},
 ]
 
+DIFFERENT_STYLE_FILES = %w[
+  addr2line.c io_buffer.c prism*.c scheduler.c
+]
+
 oldrev, newrev, pushref = ARGV
 unless dry_run = pushref.empty?
   branch = IO.popen(['git', 'rev-parse', '--symbolic', '--abbrev-ref', pushref], &:read).strip
@@ -194,7 +198,7 @@ if files.empty?
   exit
 end
 
-trailing = eofnewline = expandtab = false
+trailing = eofnewline = expandtab = indent = false
 
 edited_files = files.select do |f|
   src = File.binread(f) rescue next
@@ -202,6 +206,8 @@ edited_files = files.select do |f|
 
   trailing0 = false
   expandtab0 = false
+  indent0 = false
+
   src.gsub!(/^.*$/).with_index do |line, lineno|
     trailing = trailing0 = true if line.sub!(/[ \t]+$/, '')
     line
@@ -225,7 +231,15 @@ edited_files = files.select do |f|
     end
   end
 
-  if trailing0 or eofnewline0 or expandtab0
+  if File.fnmatch?("*.[ch]", f, File::FNM_PATHNAME) &&
+     !DIFFERENT_STYLE_FILES.any? {|pat| File.fnmatch?(pat, f, File::FNM_PATHNAME)}
+    src.gsub!(/^\w+\([^(\n)]*?\)\K[ \t]*(?=\{$)/, "\n")
+    src.gsub!(/^([ \t]*)\}\K[ \t]*(?=else\b)/, "\n" '\1')
+    src.gsub!(/^[ \t]*\}\n\K\n+(?=[ \t]*else\b)/, '')
+    indent = indent0 = true
+  end
+
+  if trailing0 or eofnewline0 or expandtab0 or indent0
     File.binwrite(f, src)
     true
   end
@@ -236,6 +250,7 @@ else
   msg = [('remove trailing spaces' if trailing),
          ('append newline at EOF' if eofnewline),
          ('expand tabs' if expandtab),
+         ('adjust indents' if indent),
         ].compact
   message = "* #{msg.join(', ')}. [ci skip]"
   if expandtab
