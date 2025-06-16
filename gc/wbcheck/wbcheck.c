@@ -32,6 +32,12 @@ wbcheck_debug(const char *format, ...)
     va_end(args);
 }
 
+#define WBCHECK_DEBUG(...) do { \
+    if (wbcheck_debug_enabled) { \
+        wbcheck_debug(__VA_ARGS__); \
+    } \
+} while (0)
+
 static void
 wbcheck_debug_obj_info_dump(VALUE obj)
 {
@@ -220,8 +226,8 @@ wbcheck_compare_references(void *objspace_ptr, VALUE parent_obj, wbcheck_object_
     size_t snapshot_count = gc_mark_snapshot ? gc_mark_snapshot->count : 0;
     size_t wb_count = writebarrier_children ? writebarrier_children->count : 0;
 
-    wbcheck_debug("wbcheck: comparing references for object %p\n", (void *)parent_obj);
-    wbcheck_debug("wbcheck: current refs: %zu, snapshot refs: %zu, wb refs: %zu\n",
+    WBCHECK_DEBUG("wbcheck: comparing references for object %p\n", (void *)parent_obj);
+    WBCHECK_DEBUG("wbcheck: current refs: %zu, snapshot refs: %zu, wb refs: %zu\n",
                  current_refs->count, snapshot_count, wb_count);
 
     // Collect missed references (lazily allocated)
@@ -524,7 +530,7 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
     objspace->current_refs = NULL;
 
     if (wbcheck_debug_enabled) {
-        wbcheck_debug("wbcheck: collected %zu references from %p\n", new_list->count, (void *)obj);
+        WBCHECK_DEBUG("wbcheck: collected %zu references from %p\n", new_list->count, (void *)obj);
         rb_obj_info_dump(obj);
         wbcheck_object_list_debug_print(new_list);
     }
@@ -535,7 +541,7 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
 static void
 wbcheck_collect_initial_references(void *objspace_ptr, VALUE obj)
 {
-    wbcheck_debug("wbcheck: collecting initial references from %p:\n", obj);
+    WBCHECK_DEBUG("wbcheck: collecting initial references from %p:\n", obj);
     wbcheck_debug_obj_info_dump(obj);
 
     // Get the object info and set the initial GC mark snapshot
@@ -563,7 +569,7 @@ wbcheck_verify_object_references(void *objspace_ptr, VALUE obj)
         return;
     }
 
-    wbcheck_debug("wbcheck: verifying references for object:\n");
+    WBCHECK_DEBUG("wbcheck: verifying references for object:\n");
     wbcheck_debug_obj_info_dump(obj);
 
     // Get the current references from the object
@@ -745,7 +751,7 @@ rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff)
 static void
 gc_mark(rb_wbcheck_objspace_t *objspace, VALUE obj)
 {
-    wbcheck_debug("wbcheck: gc_mark called\n");
+    WBCHECK_DEBUG("wbcheck: gc_mark called\n");
     wbcheck_debug_obj_info_dump(obj);
 
     // Assume we're collecting references
@@ -793,7 +799,7 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
 {
-    wbcheck_debug("wbcheck: rb_gc_impl_mark_weak called\n");
+    WBCHECK_DEBUG("wbcheck: rb_gc_impl_mark_weak called\n");
     wbcheck_debug_obj_info_dump(*ptr);
 }
 
@@ -843,16 +849,16 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         // Add the new reference to the write barrier children list
         wbcheck_object_list_append(info->writebarrier_children, b);
 
-        wbcheck_debug("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
+        WBCHECK_DEBUG("wbcheck: write barrier recorded reference from %p to %p\n", (void *)a, (void *)b);
 
         // If verification after write barrier is enabled, queue the object for verification
         if (wbcheck_verify_after_wb_enabled && info->state != WBCHECK_STATE_DIRTY) {
-            wbcheck_debug("wbcheck: queueing object for verification after write barrier\n");
+            WBCHECK_DEBUG("wbcheck: queueing object for verification after write barrier\n");
             info->state = WBCHECK_STATE_DIRTY;  // Mark as dirty
             wbcheck_object_list_append(objspace->objects_to_verify, a);
         }
     } else {
-        wbcheck_debug("wbcheck: write barrier skipped (snapshot not initialized) from %p to %p\n", (void *)a, (void *)b);
+        WBCHECK_DEBUG("wbcheck: write barrier skipped (snapshot not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
 
     rb_gc_vm_unlock(lev);
@@ -861,7 +867,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 void
 rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
-    wbcheck_debug("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
+    WBCHECK_DEBUG("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
 
     unsigned int lev = rb_gc_vm_lock();
 
@@ -874,7 +880,7 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
-    wbcheck_debug("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
+    WBCHECK_DEBUG("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
 
     unsigned int lev = rb_gc_vm_lock();
 
@@ -1013,7 +1019,7 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     zombie->next = objspace->zombie_list;
     objspace->zombie_list = zombie;
 
-    wbcheck_debug("wbcheck: made zombie for object %p with dfree function\n", (void *)obj);
+    WBCHECK_DEBUG("wbcheck: made zombie for object %p with dfree function\n", (void *)obj);
 }
 
 VALUE
@@ -1131,7 +1137,7 @@ wbcheck_shutdown_finalizer_callback(VALUE obj, rb_wbcheck_object_info_t *info, v
     void *objspace_ptr = data;
 
     if (rb_gc_shutdown_call_finalizer_p(obj)) {
-        wbcheck_debug("wbcheck: finalizing object during shutdown: %p\n", (void *)obj);
+        WBCHECK_DEBUG("wbcheck: finalizing object during shutdown: %p\n", (void *)obj);
         rb_gc_obj_free_vm_weak_references(obj);
         if (rb_gc_obj_free(objspace_ptr, obj)) {
             RBASIC(obj)->flags = 0;
@@ -1150,7 +1156,7 @@ wbcheck_finalize_zombies(rb_wbcheck_objspace_t *objspace)
         wbcheck_zombie_t *next = zombie->next;
 
         if (zombie->dfree) {
-            wbcheck_debug("wbcheck: calling dfree for zombie object %p\n", (void *)zombie->obj);
+            WBCHECK_DEBUG("wbcheck: calling dfree for zombie object %p\n", (void *)zombie->obj);
             zombie->dfree(zombie->data);
         }
 
@@ -1171,9 +1177,9 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     // After all finalizers have been called, verify all object references
     unsigned int verify_lev = rb_gc_vm_lock();
-    wbcheck_debug("wbcheck: verifying references for all objects after finalizers\n");
+    WBCHECK_DEBUG("wbcheck: verifying references for all objects after finalizers\n");
     wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
-    wbcheck_debug("wbcheck: finished verifying all object references\n");
+    WBCHECK_DEBUG("wbcheck: finished verifying all object references\n");
     rb_gc_vm_unlock(verify_lev);
 
     // Print summary and exit with error code if violations were found
@@ -1184,19 +1190,19 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
         exit(1);  // Exit with error code to indicate violations were found
     } else {
-        wbcheck_debug("wbcheck: no write barrier violations detected\n");
+        WBCHECK_DEBUG("wbcheck: no write barrier violations detected\n");
     }
 
     // Call rb_gc_obj_free on objects that need shutdown finalization (File, Data with dfree, etc.)
     unsigned int lev = rb_gc_vm_lock();
-    wbcheck_debug("wbcheck: calling rb_gc_obj_free on objects that need shutdown finalization\n");
+    WBCHECK_DEBUG("wbcheck: calling rb_gc_obj_free on objects that need shutdown finalization\n");
     wbcheck_foreach_object(objspace, wbcheck_shutdown_finalizer_callback, objspace_ptr);
-    wbcheck_debug("wbcheck: finished calling rb_gc_obj_free\n");
+    WBCHECK_DEBUG("wbcheck: finished calling rb_gc_obj_free\n");
 
     // Call dfree functions for all zombie objects (e.g., File objects)
-    wbcheck_debug("wbcheck: finalizing zombie objects\n");
+    WBCHECK_DEBUG("wbcheck: finalizing zombie objects\n");
     wbcheck_finalize_zombies(objspace);
-    wbcheck_debug("wbcheck: finished finalizing zombie objects\n");
+    WBCHECK_DEBUG("wbcheck: finished finalizing zombie objects\n");
     rb_gc_vm_unlock(lev);
 }
 
