@@ -678,6 +678,27 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_uncached_getconstant_path
+    assert_compiles RUBY_COPYRIGHT.dump, %q{
+      def test = RUBY_COPYRIGHT
+      test
+    }, call_threshold: 1, insns: [:opt_getconstant_path]
+  end
+
+  def test_getconstant_path_autoload
+    # A constant-referencing expression can run arbitrary code through Kernel#autoload.
+    Dir.mktmpdir('autoload') do |tmpdir|
+      autoload_path = File.join(tmpdir, 'test_getconstant_path_autoload.rb')
+      File.write(autoload_path, 'X = RUBY_COPYRIGHT')
+
+      assert_compiles RUBY_COPYRIGHT.dump, %Q{
+        Object.autoload(:X, #{File.realpath(autoload_path).inspect})
+        def test = X
+        test
+      }, call_threshold: 1, insns: [:opt_getconstant_path]
+    end
+  end
+
   def test_send_backtrace
     backtrace = [
       "-e:2:in 'Object#jit_frame1'",

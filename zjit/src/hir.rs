@@ -431,7 +431,7 @@ pub enum Insn {
     /// Return C `true` if `val` is `Qnil`, else `false`.
     IsNil { val: InsnId },
     Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId },
-    GetConstantPath { ic: *const iseq_inline_constant_cache },
+    GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
 
     /// Get a global variable named `id`
     GetGlobal { id: ID, state: InsnId },
@@ -651,7 +651,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
             Insn::PatchPoint(invariant) => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
-            Insn::GetConstantPath { ic } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
+            Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::CCall { cfun, args, name, return_type: _, elidable: _ } => {
                 write!(f, "CCall {}@{:p}", name.contents_lossy(), self.ptr_map.map_ptr(cfun))?;
                 for arg in args {
@@ -1355,7 +1355,7 @@ impl Function {
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, call_info, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
                     }
-                    Insn::GetConstantPath { ic } => {
+                    Insn::GetConstantPath { ic, .. } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
                         let ice = unsafe { (*ic).entry };
                         if ice.is_null() {
@@ -1642,10 +1642,14 @@ impl Function {
             if necessary[insn_id.0] { continue; }
             necessary[insn_id.0] = true;
             match self.find(insn_id) {
-                Insn::Const { .. } | Insn::Param { .. }
-                | Insn::PatchPoint(..) | Insn::GetConstantPath { .. }
+                Insn::Const { .. }
+                | Insn::Param { .. }
+                | Insn::PatchPoint(..)
                 | Insn::PutSpecialObject { .. } =>
                     {}
+                Insn::GetConstantPath { ic: _, state } => {
+                    worklist.push_back(state);
+                }
                 Insn::ArrayMax { elements, state }
                 | Insn::NewArray { elements, state } => {
                     worklist.extend(elements);
@@ -2309,7 +2313,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_opt_getconstant_path => {
                     let ic = get_arg(pc, 0).as_ptr();
-                    state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic }));
+                    let snapshot = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::GetConstantPath { ic, state: snapshot }));
                 }
                 YARVINSN_branchunless => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -3745,14 +3750,14 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_opt_new, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject = GetConstantPath 0x1000
-              v3:NilClassExact = Const Value(nil)
-              Jump bb1(v0, v3, v2)
-            bb1(v5:BasicObject, v6:NilClassExact, v7:BasicObject):
-              v10:BasicObject = SendWithoutBlock v7, :new
-              Jump bb2(v5, v10, v6)
-            bb2(v12:BasicObject, v13:BasicObject, v14:NilClassExact):
-              Return v13
+              v3:BasicObject = GetConstantPath 0x1000
+              v4:NilClassExact = Const Value(nil)
+              Jump bb1(v0, v4, v3)
+            bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject):
+              v11:BasicObject = SendWithoutBlock v8, :new
+              Jump bb2(v6, v11, v7)
+            bb2(v13:BasicObject, v14:BasicObject, v15:NilClassExact):
+              Return v14
         "#]]);
     }
 
@@ -5155,9 +5160,9 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject = GetConstantPath 0x1000
-              v3:Fixnum[5] = Const Value(5)
-              Return v3
+              v3:BasicObject = GetConstantPath 0x1000
+              v4:Fixnum[5] = Const Value(5)
+              Return v4
         "#]]);
     }
 
@@ -5226,8 +5231,8 @@ mod opt_tests {
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, M)
               PatchPoint MethodRedefined(Module@0x1008, name@0x1010)
-              v6:Fixnum[1] = Const Value(1)
-              Return v6
+              v7:Fixnum[1] = Const Value(1)
+              Return v7
         "#]]);
     }
 
@@ -5344,8 +5349,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject = GetConstantPath 0x1000
-              Return v2
+              v3:BasicObject = GetConstantPath 0x1000
+              Return v3
         "#]]);
     }
 
@@ -5359,8 +5364,8 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject = GetConstantPath 0x1000
-              Return v2
+              v3:BasicObject = GetConstantPath 0x1000
+              Return v3
         "#]]);
     }
 
@@ -5375,8 +5380,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Kernel)
-              v6:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v6
+              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v7
         "#]]);
     }
 
@@ -5397,8 +5402,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-              v6:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              Return v6
+              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v7
         "#]]);
     }
 
@@ -5414,14 +5419,14 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v19:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v3:NilClassExact = Const Value(nil)
-              Jump bb1(v0, v3, v19)
-            bb1(v5:BasicObject, v6:NilClassExact, v7:BasicObject[VALUE(0x1008)]):
-              v10:BasicObject = SendWithoutBlock v7, :new
-              Jump bb2(v5, v10, v6)
-            bb2(v12:BasicObject, v13:BasicObject, v14:NilClassExact):
-              Return v13
+              v20:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v4:NilClassExact = Const Value(nil)
+              Jump bb1(v0, v4, v20)
+            bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject[VALUE(0x1008)]):
+              v11:BasicObject = SendWithoutBlock v8, :new
+              Jump bb2(v6, v11, v7)
+            bb2(v13:BasicObject, v14:BasicObject, v15:NilClassExact):
+              Return v14
         "#]]);
     }
 
@@ -5441,15 +5446,15 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v21:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v3:NilClassExact = Const Value(nil)
-              v4:Fixnum[1] = Const Value(1)
-              Jump bb1(v0, v3, v21, v4)
-            bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject[VALUE(0x1008)], v9:Fixnum[1]):
-              v12:BasicObject = SendWithoutBlock v8, :new, v9
-              Jump bb2(v6, v12, v7)
-            bb2(v14:BasicObject, v15:BasicObject, v16:NilClassExact):
-              Return v15
+              v22:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v4:NilClassExact = Const Value(nil)
+              v5:Fixnum[1] = Const Value(1)
+              Jump bb1(v0, v4, v22, v5)
+            bb1(v7:BasicObject, v8:NilClassExact, v9:BasicObject[VALUE(0x1008)], v10:Fixnum[1]):
+              v13:BasicObject = SendWithoutBlock v9, :new, v10
+              Jump bb2(v7, v13, v8)
+            bb2(v15:BasicObject, v16:BasicObject, v17:NilClassExact):
+              Return v16
         "#]]);
     }
 
