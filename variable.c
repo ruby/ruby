@@ -4690,7 +4690,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 {
     bool existing = true;
     const VALUE original_fields_obj = fields_obj;
-    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(klass, 1);
+    fields_obj = original_fields_obj ? original_fields_obj : rb_imemo_fields_new(rb_singleton_class(klass), 1);
 
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(fields_obj);
     shape_id_t next_shape_id = current_shape_id;
@@ -4711,7 +4711,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
         next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
         if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
             attr_index_t current_len = RSHAPE_LEN(current_shape_id);
-            fields_obj = rb_imemo_fields_new_complex(klass, current_len + 1);
+            fields_obj = rb_imemo_fields_new_complex(rb_singleton_class(klass), current_len + 1);
             if (current_len) {
                 rb_obj_copy_fields_to_hash_table(original_fields_obj, rb_imemo_fields_complex_tbl(fields_obj));
                 RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
@@ -4727,7 +4727,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
             // We allocate a new fields_obj even when concurrency isn't a concern
             // so that we're embedded as long as possible.
-            fields_obj = rb_imemo_fields_new(klass, next_capacity);
+            fields_obj = rb_imemo_fields_new(rb_singleton_class(klass), next_capacity);
             if (original_fields_obj) {
                 MEMCPY(rb_imemo_fields_ptr(fields_obj), rb_imemo_fields_ptr(original_fields_obj), VALUE, RSHAPE_LEN(current_shape_id));
             }
