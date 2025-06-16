@@ -514,8 +514,10 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
 {
     rb_wbcheck_objspace_t *objspace = wbcheck_global_objspace;
 
-    // Use previous snapshot size as capacity hint if available
-    size_t capacity_hint = (info->gc_mark_snapshot) ? info->gc_mark_snapshot->count : 0;
+    // Use combination of writebarrier children and last snapshot as capacity hint
+    size_t snapshot_count = (info->gc_mark_snapshot) ? info->gc_mark_snapshot->count : 0;
+    size_t wb_children_count = (info->writebarrier_children) ? info->writebarrier_children->count : 0;
+    size_t capacity_hint = snapshot_count + wb_children_count;
     wbcheck_object_list_t *new_list = wbcheck_object_list_init_with_capacity(capacity_hint);
 
     // Set up objspace state for marking
