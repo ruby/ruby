@@ -111,9 +111,6 @@ runs:
         echo test_all_enabled="${test_all_enabled}" >> $GITHUB_OUTPUT
         echo btest_enabled="${btest_enabled}" >> $GITHUB_OUTPUT
         echo test_spec_enabled="${test_spec_enabled}" >> $GITHUB_OUTPUT
-        echo test_all_session_file='launchable_test_all_session.txt' >> $GITHUB_OUTPUT
-        echo btest_session_file='launchable_btest_session.txt' >> $GITHUB_OUTPUT
-        echo test_spec_session_file='launchable_test_spec_session.txt' >> $GITHUB_OUTPUT
         echo test_all_report_file='launchable_test_all_report.json' >> $GITHUB_OUTPUT
         echo btest_report_file='launchable_btest_report.json' >> $GITHUB_OUTPUT
         echo test_spec_report_dir='launchable_test_spec_report' >> $GITHUB_OUTPUT
@@ -171,7 +168,7 @@ runs:
         fi
         launchable record build --name "${build_name}"
         if [ "${test_all_enabled}" = "true" ]; then
-          launchable record session \
+          test_all_session=$(launchable record session \
             --build "${build_name}" \
             --observation \
             --flavor os="${{ inputs.os }}" \
@@ -179,17 +176,18 @@ runs:
             --flavor test_opts="${test_opts}" \
             --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_all_test_suite} \
-            > "${test_all_session_file}"
+            )
           launchable subset \
             --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
-            --session "$(cat "${test_all_session_file}")" \
+            --session "${test_all_session}" \
             raw > /dev/null
+          echo test_all_session="${test_all_session}" >> $GITHUB_OUTPUT
           echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
         fi
         if [ "${btest_enabled}" = "true" ]; then
-          launchable record session \
+          btest_session=$(launchable record session \
             --build "${build_name}" \
             --observation \
             --flavor os="${{ inputs.os }}" \
@@ -197,17 +195,18 @@ runs:
             --flavor test_opts="${test_opts}" \
             --flavor workflow="${{ github.workflow }}" \
             --test-suite ${btest_test_suite} \
-            > "${btest_session_file}"
+            )
           launchable subset \
             --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
-            --session "$(cat "${btest_session_file}")" \
+            --session "${btest_session}" \
             raw > /dev/null
+          echo btest_session="${btest_session}" >> $GITHUB_OUTPUT
           echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
         if [ "${test_spec_enabled}" = "true" ]; then
-          launchable record session \
+          test_spec_session=$(launchable record session \
             --build "${build_name}" \
             --observation \
             --flavor os="${{ inputs.os }}" \
@@ -215,13 +214,14 @@ runs:
             --flavor test_opts="${test_opts}" \
             --flavor workflow="${{ github.workflow }}" \
             --test-suite ${test_spec_test_suite} \
-            > "${test_spec_session_file}"
+            )
           launchable subset \
             --get-tests-from-previous-sessions \
             --non-blocking \
             --target 90% \
-            --session "$(cat "${test_spec_session_file}")" \
+            --session "${test_spec_session}" \
             raw > /dev/null
+          echo test_spec_session="${test_spec_session}" >> $GITHUB_OUTPUT
           echo "SPECOPTS=${SPECOPTS} --launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
         fi
       if: steps.enable-launchable.outputs.enable-launchable
@@ -229,27 +229,9 @@ runs:
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
         test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
-        test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
-        btest_session_file: ${{ steps.global.outputs.btest_session_file }}
-        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
         test_all_report_file: ${{ steps.global.outputs.test_all_report_file }}
         btest_report_file: ${{ steps.global.outputs.btest_report_file }}
         test_spec_report_dir: ${{ steps.global.outputs.test_spec_report_dir }}
-
-    - name: Clean up session files in Launchable
-      uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
-      with:
-        shell: bash
-        working-directory: ${{ inputs.srcdir }}
-        post: |
-          rm -f "${test_all_session_file}"
-          rm -f "${btest_session_file}"
-          rm -f "${test_spec_session_file}"
-      if: always() && steps.setup-launchable.outcome == 'success'
-      env:
-        test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
-        btest_session_file: ${{ steps.global.outputs.btest_session_file }}
-        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
 
     - name: Clean up test results in Launchable
       uses: gacts/run-and-post-run@674528335da98a7afc80915ff2b4b860a0b3553a # v1.4.0
@@ -317,31 +299,31 @@ runs:
         post: |
           if [[ "${test_all_enabled}" = "true" ]]; then \
             launchable record attachment \
-              --session "$(cat "${test_all_session_file}")" \
+              --session "${test_all_session}" \
               "${stdout_report_path}" \
               "${stderr_report_path}"; \
             launchable record tests \
-              --session "$(cat "${test_all_session_file}")" \
+              --session "${test_all_session}" \
               raw "${test_report_path}" || true; \
           fi
 
           if [[ "${btest_enabled}" = "true" ]]; then \
             launchable record attachment \
-              --session "$(cat "${btest_session_file}")" \
+              --session "${btest_session}" \
               "${stdout_report_path}" \
               "${stderr_report_path}"; \
             launchable record tests \
-              --session "$(cat "${btest_session_file}")" \
+              --session "${btest_session}" \
               raw "${btest_report_path}" || true; \
           fi
 
           if [[ "${test_spec_enabled}" = "true" ]]; then \
             launchable record attachment \
-              --session "$(cat "${test_spec_session_file}")" \
+              --session "${test_spec_session}" \
               "${stdout_report_path}" \
               "${stderr_report_path}"; \
             launchable record tests \
-              --session "$(cat "${test_spec_session_file}")" \
+              --session "${test_spec_session}" \
               raw ${test_spec_report_path}/* || true; \
           fi
       if: ${{ always() && steps.enable-launchable.outputs.enable-launchable }}
@@ -352,8 +334,8 @@ runs:
         test_all_enabled: ${{ steps.global.outputs.test_all_enabled }}
         btest_enabled: ${{ steps.global.outputs.btest_enabled }}
         test_spec_enabled: ${{ steps.global.outputs.test_spec_enabled }}
-        test_all_session_file: ${{ steps.global.outputs.test_all_session_file }}
-        btest_session_file: ${{ steps.global.outputs.btest_session_file }}
-        test_spec_session_file: ${{ steps.global.outputs.test_spec_session_file }}
+        test_all_session: ${{ steps.setup-launchable.outputs.test_all_session }}
+        btest_session: ${{ steps.setup-launchable.outputs.btest_session }}
+        test_spec_session: ${{ steps.setup-launchable.outputs.test_spec_session }}
         stdout_report_path: ${{ steps.variables.outputs.stdout_report_path }}
         stderr_report_path: ${{ steps.variables.outputs.stderr_report_path }}
