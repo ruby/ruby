@@ -346,6 +346,10 @@ module Bundler
       redefine_method(gem_class, :finish_resolve) do |*|
         []
       end
+
+      redefine_method(gem_class, :load_plugins) do |*|
+        load_plugin_files specs.flat_map(&:plugins)
+      end
     end
 
     def plain_specs

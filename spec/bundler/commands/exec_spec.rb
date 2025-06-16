@@ -699,6 +699,27 @@ RSpec.describe "bundle exec" do
     end
   end
 
+  describe "running gem commands in presence of rubygems plugins" do
+    before do
+      build_repo4 do
+        build_gem "foo" do |s|
+          s.write "lib/rubygems_plugin.rb", "puts 'FAIL'"
+        end
+      end
+
+      system_gems "foo-1.0", path: default_bundle_path, gem_repo: gem_repo4
+
+      install_gemfile <<-G
+        source "https://gem.repo4"
+      G
+    end
+
+    it "does not load plugins outside of the bundle" do
+      bundle "exec #{gem_cmd} -v"
+      expect(out).not_to include("FAIL")
+    end
+  end
+
   context "`load`ing a ruby file instead of `exec`ing" do
     let(:path) { bundled_app("ruby_executable") }
     let(:shebang) { "#!/usr/bin/env ruby" }
