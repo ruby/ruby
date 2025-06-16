@@ -166,63 +166,38 @@ runs:
           btest_test_suite="yjit-${btest_test_suite}"
           test_spec_test_suite="yjit-${test_spec_test_suite}"
         fi
+        # launchable_setup target var -- refers ${target} prefixed variables
+        launchable_setup() {
+          local target=$1 session
+          eval [ "\${${target}_enabled}" = "true" ] || return
+          eval local suite=\${${target}_test_suite}
+          session=$(launchable record session \
+            --build "${build_name}" \
+            --observation \
+            --flavor os="${{ inputs.os }}" \
+            --flavor test_task="${{ inputs.test-task }}" \
+            --flavor test_opts="${test_opts}" \
+            --flavor workflow="${{ github.workflow }}" \
+            --test-suite ${suite} \
+            )
+          launchable subset \
+            --get-tests-from-previous-sessions \
+            --non-blocking \
+            --target 90% \
+            --session "${session}" \
+            raw > /dev/null
+          echo "${target}_session=${session}" >> $GITHUB_OUTPUT
+        }
+
         launchable record build --name "${build_name}"
-        if [ "${test_all_enabled}" = "true" ]; then
-          test_all_session=$(launchable record session \
-            --build "${build_name}" \
-            --observation \
-            --flavor os="${{ inputs.os }}" \
-            --flavor test_task="${{ inputs.test-task }}" \
-            --flavor test_opts="${test_opts}" \
-            --flavor workflow="${{ github.workflow }}" \
-            --test-suite ${test_all_test_suite} \
-            )
-          launchable subset \
-            --get-tests-from-previous-sessions \
-            --non-blocking \
-            --target 90% \
-            --session "${test_all_session}" \
-            raw > /dev/null
-          echo test_all_session="${test_all_session}" >> $GITHUB_OUTPUT
-          echo "TESTS=${TESTS} --launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
+        if launchable_setup test_all; then
+          echo "TESTS=${TESTS:+$TESTS }--launchable-test-reports=${test_all_report_file}" >> $GITHUB_ENV
         fi
-        if [ "${btest_enabled}" = "true" ]; then
-          btest_session=$(launchable record session \
-            --build "${build_name}" \
-            --observation \
-            --flavor os="${{ inputs.os }}" \
-            --flavor test_task="${{ inputs.test-task }}" \
-            --flavor test_opts="${test_opts}" \
-            --flavor workflow="${{ github.workflow }}" \
-            --test-suite ${btest_test_suite} \
-            )
-          launchable subset \
-            --get-tests-from-previous-sessions \
-            --non-blocking \
-            --target 90% \
-            --session "${btest_session}" \
-            raw > /dev/null
-          echo btest_session="${btest_session}" >> $GITHUB_OUTPUT
-          echo "BTESTS=${BTESTS} --launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
+        if launchable_setup btest; then
+          echo "BTESTS=${BTESTS:+$BTESTS }--launchable-test-reports=${btest_report_file}" >> $GITHUB_ENV
         fi
-        if [ "${test_spec_enabled}" = "true" ]; then
-          test_spec_session=$(launchable record session \
-            --build "${build_name}" \
-            --observation \
-            --flavor os="${{ inputs.os }}" \
-            --flavor test_task="${{ inputs.test-task }}" \
-            --flavor test_opts="${test_opts}" \
-            --flavor workflow="${{ github.workflow }}" \
-            --test-suite ${test_spec_test_suite} \
-            )
-          launchable subset \
-            --get-tests-from-previous-sessions \
-            --non-blocking \
-            --target 90% \
-            --session "${test_spec_session}" \
-            raw > /dev/null
-          echo test_spec_session="${test_spec_session}" >> $GITHUB_OUTPUT
-          echo "SPECOPTS=${SPECOPTS} --launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
+        if launchable_setup test_spec; then
+          echo "SPECOPTS=${SPECOPTS:$SPECOPTS }--launchable-test-reports=${test_spec_report_dir}" >> $GITHUB_ENV
         fi
       if: steps.enable-launchable.outputs.enable-launchable
       env:
