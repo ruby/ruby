@@ -280,7 +280,9 @@ struct rb_fields {
 
 VALUE rb_imemo_fields_new(VALUE klass, size_t capa);
 VALUE rb_imemo_fields_new_complex(VALUE klass, size_t capa);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
+void rb_imemo_fields_clear(VALUE fields_obj);
 
 static inline VALUE *
 rb_imemo_fields_ptr(VALUE obj_fields)

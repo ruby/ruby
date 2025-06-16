@@ -18,7 +18,6 @@
 /* variable.c */
 void rb_gc_mark_global_tbl(void);
 void rb_gc_update_global_tbl(void);
-size_t rb_generic_ivar_memsize(VALUE);
 VALUE rb_search_class_path(VALUE);
 VALUE rb_attr_delete(VALUE, ID);
 void rb_autoload_str(VALUE mod, ID id, VALUE file);
@@ -47,8 +46,7 @@ void rb_gvar_namespace_ready(const char *name);
  */
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
-struct gen_fields_tbl;
-int rb_gen_fields_tbl_get(VALUE obj, ID id, struct gen_fields_tbl **fields_tbl);
+int rb_gen_fields_tbl_get(VALUE obj, ID id, VALUE *fields_obj);
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
 void rb_obj_init_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
