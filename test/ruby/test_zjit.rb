@@ -652,6 +652,32 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_putspecialobject_vm_core_and_cbase
+    assert_compiles '10', %q{
+      def test
+        alias bar test
+        10
+      end
+
+      test
+      bar
+    }, insns: [:putspecialobject]
+  end
+
+  def test_putspecialobject_const_base
+    assert_compiles '1', %q{
+      Foo = 1
+
+      def test = Foo
+
+      # First call: populates the constant cache
+      test
+      # Second call: triggers ZJIT compilation with warm cache
+      # RubyVM::ZJIT.assert_compiles will panic if this fails to compile
+      test
+    }, call_threshold: 2
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order

@@ -138,6 +138,40 @@ impl Invariant {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SpecialObjectType {
+    VMCore = 1,
+    CBase = 2,
+    ConstBase = 3,
+}
+
+impl From<u32> for SpecialObjectType {
+    fn from(value: u32) -> Self {
+        match value {
+            VM_SPECIAL_OBJECT_VMCORE => SpecialObjectType::VMCore,
+            VM_SPECIAL_OBJECT_CBASE => SpecialObjectType::CBase,
+            VM_SPECIAL_OBJECT_CONST_BASE => SpecialObjectType::ConstBase,
+            _ => panic!("Invalid special object type: {}", value),
+        }
+    }
+}
+
+impl From<SpecialObjectType> for u64 {
+    fn from(special_type: SpecialObjectType) -> Self {
+        special_type as u64
+    }
+}
+
+impl std::fmt::Display for SpecialObjectType {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            SpecialObjectType::VMCore => write!(f, "VMCore"),
+            SpecialObjectType::CBase => write!(f, "CBase"),
+            SpecialObjectType::ConstBase => write!(f, "ConstBase"),
+        }
+    }
+}
+
 /// Print adaptor for [`Invariant`]. See [`PtrPrintMap`].
 pub struct InvariantPrinter<'a> {
     inner: Invariant,
@@ -364,6 +398,9 @@ pub enum Insn {
 
     StringCopy { val: InsnId },
     StringIntern { val: InsnId },
+
+    /// Put special object (VMCORE, CBASE, etc.) based on value_type
+    PutSpecialObject { value_type: SpecialObjectType },
 
     /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise.
     ToArray { val: InsnId, state: InsnId },
@@ -645,6 +682,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::SideExit { .. } => write!(f, "SideExit"),
+            Insn::PutSpecialObject { value_type } => {
+                write!(f, "PutSpecialObject {}", value_type)
+            }
             insn => { write!(f, "{insn:?}") }
         }
     }
@@ -958,6 +998,7 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
+            PutSpecialObject { value_type } => PutSpecialObject { value_type: *value_type },
             SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
@@ -1074,6 +1115,7 @@ impl Function {
             Insn::FixnumLe   { .. } => types::BoolExact,
             Insn::FixnumGt   { .. } => types::BoolExact,
             Insn::FixnumGe   { .. } => types::BoolExact,
+            Insn::PutSpecialObject { .. } => types::BasicObject,
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
@@ -1561,7 +1603,8 @@ impl Function {
             necessary[insn_id.0] = true;
             match self.find(insn_id) {
                 Insn::Const { .. } | Insn::Param { .. }
-                | Insn::PatchPoint(..) | Insn::GetConstantPath { .. } =>
+                | Insn::PatchPoint(..) | Insn::GetConstantPath { .. }
+                | Insn::PutSpecialObject { .. } =>
                     {}
                 Insn::ArrayMax { elements, state }
                 | Insn::NewArray { elements, state } => {
@@ -2095,6 +2138,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_nop => {},
                 YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
                 YARVINSN_putobject => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
+                YARVINSN_putspecialobject => {
+                    let value_type = SpecialObjectType::from(get_arg(pc, 0).as_u32());
+                    state.stack_push(fun.push_insn(block, Insn::PutSpecialObject { value_type }));
+                }
                 YARVINSN_putstring | YARVINSN_putchilledstring => {
                     // TODO(max): Do something different for chilled string
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -3523,6 +3570,13 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
+              v3:BasicObject = PutSpecialObject VMCore
+              v5:HashExact = NewHash
+              v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
+              v8:BasicObject = PutSpecialObject VMCore
+              v9:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v10:Fixnum[1] = Const Value(1)
+              v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
               SideExit
         "#]]);
     }
@@ -3953,6 +4007,27 @@ mod tests {
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
               v5:BasicObject = SendWithoutBlock v1, :=~, v2
               Return v5
+        "#]]);
+    }
+
+    #[test]
+    // Tests for ConstBase requires either constant or class definition, both
+    // of which can't be performed inside a method.
+    fn test_putspecialobject_vm_core_and_cbase() {
+        eval("
+            def test
+              alias aliased __callee__
+            end
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:BasicObject = PutSpecialObject VMCore
+              v3:BasicObject = PutSpecialObject CBase
+              v4:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v5:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:BasicObject = SendWithoutBlock v2, :core#set_method_alias, v3, v4, v5
+              Return v7
         "#]]);
     }
 

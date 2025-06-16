@@ -5555,6 +5555,14 @@ vm_get_special_object(const VALUE *const reg_ep,
     }
 }
 
+// ZJIT implementation is using the C function
+// and needs to call a non-static function
+VALUE
+rb_vm_get_special_object(const VALUE *reg_ep, enum vm_special_object_type type)
+{
+    return vm_get_special_object(reg_ep, type);
+}
+
 static VALUE
 vm_concat_array(VALUE ary1, VALUE ary2st)
 {
