@@ -123,7 +123,7 @@ setup_launchable() {
             --flavor cppflags="${INPUT_CPPFLAGS}" \
             --test-suite test-spec \
             > "${builddir}"/${test_spec_session_file} \
-            spec_opts+=--launchable-test-reports="${test_spec_report_path}" || :
+            && spec_opts+=--launchable-test-reports="${test_spec_report_path}" || :
     fi
 }
 launchable_record_test() {
