@@ -75,6 +75,18 @@ tests=''
 spec_opts=''
 
 # Launchable
+launchable_record_session() {
+    launchable record session \
+        --build "${build_name}" \
+        --flavor test_task=$1 \
+        --flavor workflow=Compilations \
+        --flavor with-gcc="${INPUT_WITH_GCC}" \
+        --flavor CFLAGS="${INPUT_CFLAGS}" \
+        --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
+        --flavor optflags="${INPUT_OPTFLAGS}" \
+        --flavor cppflags="${INPUT_CPPFLAGS}" \
+        --test-suite ${2-$1}
+}
 setup_launchable() {
     pushd ${srcdir}
     # To prevent a slowdown in CI, disable request retries when the Launchable server is unstable.
@@ -86,43 +98,13 @@ setup_launchable() {
     local github_ref="${GITHUB_REF//\//_}"
     local build_name="${github_ref}"_"${GITHUB_PR_HEAD_SHA}"
     launchable record build --name "${build_name}" || true
-    btest_session=$(launchable record session \
-        --build "${build_name}" \
-        --flavor test_task=test \
-        --flavor workflow=Compilations \
-        --flavor with-gcc="${INPUT_WITH_GCC}" \
-        --flavor CFLAGS="${INPUT_CFLAGS}" \
-        --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
-        --flavor optflags="${INPUT_OPTFLAGS}" \
-        --flavor cppflags="${INPUT_CPPFLAGS}" \
-        --test-suite btest \
-        ) \
+    btest_session=$(launchable_record_session test btest) \
         && btests+=--launchable-test-reports="${btest_report_path}" || :
     if [ "$INPUT_CHECK" = "true" ]; then
-        test_all_session=$(launchable record session \
-            --build "${build_name}" \
-            --flavor test_task=test-all \
-            --flavor workflow=Compilations \
-            --flavor with-gcc="${INPUT_WITH_GCC}" \
-            --flavor CFLAGS="${INPUT_CFLAGS}" \
-            --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
-            --flavor optflags="${INPUT_OPTFLAGS}" \
-            --flavor cppflags="${INPUT_CPPFLAGS}" \
-            --test-suite test-all \
-            ) \
+        test_all_session=$(launchable_record_session test-all) \
             && tests+=--launchable-test-reports="${test_report_path}" || :
         mkdir "${builddir}"/"${test_spec_report_path}"
-        test_spec_session=$(launchable record session \
-            --build "${build_name}" \
-            --flavor test_task=test-spec \
-            --flavor workflow=Compilations \
-            --flavor with-gcc="${INPUT_WITH_GCC}" \
-            --flavor CFLAGS="${INPUT_CFLAGS}" \
-            --flavor CXXFLAGS="${INPUT_CXXFLAGS}" \
-            --flavor optflags="${INPUT_OPTFLAGS}" \
-            --flavor cppflags="${INPUT_CPPFLAGS}" \
-            --test-suite test-spec \
-            ) \
+        test_spec_session=$(launchable_record_session test-spec) \
             && spec_opts+=--launchable-test-reports="${test_spec_report_path}" || :
     fi
 }
