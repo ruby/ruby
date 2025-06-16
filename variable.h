@@ -12,18 +12,7 @@
 
 #include "shape.h"
 
-struct gen_fields_tbl {
-    union {
-        struct {
-            VALUE fields[1];
-        } shape;
-        struct {
-            st_table *table;
-        } complex;
-    } as;
-};
-
-int rb_ivar_generic_fields_tbl_lookup(VALUE obj, struct gen_fields_tbl **);
+int rb_ivar_generic_fields_tbl_lookup(VALUE obj, VALUE *);
 void rb_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
 void rb_free_rb_global_tbl(void);

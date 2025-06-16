@@ -394,9 +394,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
     dc->cur_obj = obj;
     dc->cur_obj_references = 0;
-    if (BUILTIN_TYPE(obj) == T_NODE || BUILTIN_TYPE(obj) == T_IMEMO) {
+    if (BUILTIN_TYPE(obj) == T_NODE || (BUILTIN_TYPE(obj) == T_IMEMO && !IMEMO_TYPE_P(obj, imemo_fields))) {
         dc->cur_obj_klass = 0;
-    } else {
+    }
+    else {
         dc->cur_obj_klass = RBASIC_CLASS(obj);
     }
 
@@ -414,8 +415,8 @@ dump_object(VALUE obj, struct dump_config *dc)
     dump_append(dc, obj_type(obj));
     dump_append(dc, "\"");
 
-    if (BUILTIN_TYPE(obj) != T_IMEMO) {
-        size_t shape_id = rb_obj_shape_id(obj);
+    if (BUILTIN_TYPE(obj) != T_IMEMO || IMEMO_TYPE_P(obj, imemo_fields)) {
+        size_t shape_id = rb_obj_shape_id(obj) & SHAPE_ID_OFFSET_MASK;
         dump_append(dc, ", \"shape_id\":");
         dump_append_sizet(dc, shape_id);
     }

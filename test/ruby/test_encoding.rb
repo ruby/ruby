@@ -33,7 +33,7 @@ class TestEncoding < Test::Unit::TestCase
     encodings.each do |e|
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
-      assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
+      assert_same(e, Marshal.load(Marshal.dump(e)))
     end
   end
 

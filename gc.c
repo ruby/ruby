@@ -2015,27 +2015,6 @@ object_id_to_ref(void *objspace_ptr, VALUE object_id)
 static inline void
 obj_free_object_id(VALUE obj)
 {
-    if (RB_BUILTIN_TYPE(obj) == T_IMEMO) {
-        return;
-    }
-
-#if RUBY_DEBUG
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        break;
-      default:
-        if (rb_shape_obj_has_id(obj)) {
-            VALUE id = object_id_get(obj, RBASIC_SHAPE_ID(obj)); // Crash if missing
-            if (!(FIXNUM_P(id) || RB_TYPE_P(id, T_BIGNUM))) {
-                rb_p(obj);
-                rb_bug("Corrupted object_id");
-            }
-        }
-        break;
-    }
-#endif
-
     VALUE obj_id = 0;
     if (RB_UNLIKELY(id2ref_tbl)) {
         switch (BUILTIN_TYPE(obj)) {
@@ -2043,21 +2022,32 @@ obj_free_object_id(VALUE obj)
           case T_MODULE:
             obj_id = RCLASS(obj)->object_id;
             break;
-          default: {
+          case T_IMEMO:
+            if (!IMEMO_TYPE_P(obj, imemo_fields)) {
+                return;
+            }
+            // fallthrough
+          case T_OBJECT:
+            {
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
             if (rb_shape_has_object_id(shape_id)) {
                 obj_id = object_id_get(obj, shape_id);
             }
             break;
           }
+          default:
+            // For generic_fields, the T_IMEMO/fields is responsible for freeing the id.
+            return;
         }
 
         if (RB_UNLIKELY(obj_id)) {
             RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
 
             if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // If we're currently building the table then it's not a bug
-                if (id2ref_tbl_built) {
+                // If we're currently building the table then it's not a bug.
+                // The the object is a T_IMEMO/fields, then it's possible the actual object
+                // has been garbage collected already.
+                if (id2ref_tbl_built && !RB_TYPE_P(obj, T_IMEMO)) {
                     rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
                 }
             }
@@ -2071,7 +2061,7 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
     obj_free_object_id(obj);
 
     if (rb_obj_exivar_p(obj)) {
-        rb_free_generic_ivar((VALUE)obj);
+        rb_free_generic_ivar(obj);
     }
 
     switch (BUILTIN_TYPE(obj)) {
@@ -2314,10 +2304,6 @@ rb_obj_memsize_of(VALUE obj)
 
     if (SPECIAL_CONST_P(obj)) {
         return 0;
-    }
-
-    if (rb_obj_exivar_p(obj)) {
-        size += rb_generic_ivar_memsize(obj);
     }
 
     switch (BUILTIN_TYPE(obj)) {
@@ -3935,38 +3921,6 @@ vm_weak_table_foreach_update_weak_value(st_data_t *key, st_data_t *value, st_dat
     return iter_data->update_callback((VALUE *)value, iter_data->data);
 }
 
-static void
-free_gen_fields_tbl(VALUE obj, struct gen_fields_tbl *fields_tbl)
-{
-    if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
-        st_free_table(fields_tbl->as.complex.table);
-    }
-
-    xfree(fields_tbl);
-}
-
-static int
-vm_weak_table_gen_fields_foreach_too_complex_i(st_data_t _key, st_data_t value, st_data_t data, int error)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    GC_ASSERT(!iter_data->weak_only);
-
-    if (SPECIAL_CONST_P((VALUE)value)) return ST_CONTINUE;
-
-    return iter_data->callback((VALUE)value, iter_data->data);
-}
-
-static int
-vm_weak_table_gen_fields_foreach_too_complex_replace_i(st_data_t *_key, st_data_t *value, st_data_t data, int existing)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    GC_ASSERT(!iter_data->weak_only);
-
-    return iter_data->update_callback((VALUE *)value, iter_data->data);
-}
-
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
@@ -4003,60 +3957,50 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 
     int ret = iter_data->callback((VALUE)key, iter_data->data);
 
+    VALUE new_value = (VALUE)value;
+    VALUE new_key = (VALUE)key;
+
     switch (ret) {
       case ST_CONTINUE:
         break;
 
       case ST_DELETE:
-        free_gen_fields_tbl((VALUE)key, (struct gen_fields_tbl *)value);
         RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
         return ST_DELETE;
 
       case ST_REPLACE: {
-        VALUE new_key = (VALUE)key;
         ret = iter_data->update_callback(&new_key, iter_data->data);
-        if (key != new_key) ret = ST_DELETE;
-        DURING_GC_COULD_MALLOC_REGION_START();
-        {
-            st_insert(rb_generic_fields_tbl_get(), (st_data_t)new_key, value);
+        if (key != new_key) {
+            ret = ST_DELETE;
         }
-        DURING_GC_COULD_MALLOC_REGION_END();
-        key = (st_data_t)new_key;
         break;
       }
 
       default:
-        return ret;
+        rb_bug("vm_weak_table_gen_fields_foreach: return value %d not supported", ret);
     }
 
     if (!iter_data->weak_only) {
-        struct gen_fields_tbl *fields_tbl = (struct gen_fields_tbl *)value;
+        int ivar_ret = iter_data->callback(new_value, iter_data->data);
+        switch (ivar_ret) {
+          case ST_CONTINUE:
+            break;
 
-        if (rb_shape_obj_too_complex_p((VALUE)key)) {
-            st_foreach_with_replace(
-                fields_tbl->as.complex.table,
-                vm_weak_table_gen_fields_foreach_too_complex_i,
-                vm_weak_table_gen_fields_foreach_too_complex_replace_i,
-                data
-            );
-        }
-        else {
-            uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID((VALUE)key));
-            for (uint32_t i = 0; i < fields_count; i++) {
-                if (SPECIAL_CONST_P(fields_tbl->as.shape.fields[i])) continue;
+          case ST_REPLACE:
+            iter_data->update_callback(&new_value, iter_data->data);
+            break;
 
-                int ivar_ret = iter_data->callback(fields_tbl->as.shape.fields[i], iter_data->data);
-                switch (ivar_ret) {
-                  case ST_CONTINUE:
-                    break;
-                  case ST_REPLACE:
-                    iter_data->update_callback(&fields_tbl->as.shape.fields[i], iter_data->data);
-                    break;
-                  default:
-                    rb_bug("vm_weak_table_gen_fields_foreach: return value %d not supported", ivar_ret);
-                }
-            }
+          default:
+            rb_bug("vm_weak_table_gen_fields_foreach: return value %d not supported", ivar_ret);
         }
+    }
+
+    if (key != new_key || value != new_value) {
+        DURING_GC_COULD_MALLOC_REGION_START();
+        {
+            st_insert(rb_generic_fields_tbl_get(), (st_data_t)new_key, new_value);
+        }
+        DURING_GC_COULD_MALLOC_REGION_END();
     }
 
     return ret;

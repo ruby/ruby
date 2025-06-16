@@ -1259,9 +1259,11 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
       default:
         if (rb_obj_exivar_p(obj)) {
-            struct gen_fields_tbl *fields_tbl;
-            rb_gen_fields_tbl_get(obj, id, &fields_tbl);
-            ivar_list = fields_tbl->as.shape.fields;
+            VALUE fields_obj = 0;
+            if (!rb_gen_fields_tbl_get(obj, id, &fields_obj)) {
+                return default_value;
+            }
+            ivar_list = rb_imemo_fields_ptr(fields_obj);
         }
         else {
             return default_value;
@@ -1333,9 +1335,9 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 break;
 
               default: {
-                struct gen_fields_tbl *fields_tbl;
-                if (rb_gen_fields_tbl_get(obj, 0, &fields_tbl)) {
-                    table = fields_tbl->as.complex.table;
+                VALUE fields_obj;
+                if (rb_gen_fields_tbl_get(obj, 0, &fields_obj)) {
+                    table = rb_imemo_fields_complex_tbl(fields_obj);
                 }
                 break;
               }
@@ -1456,7 +1458,7 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
 {
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
 
-    struct gen_fields_tbl *fields_tbl = 0;
+    VALUE fields_obj = 0;
 
     // Cache hit case
     if (shape_id == dest_shape_id) {
@@ -1474,13 +1476,13 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    rb_gen_fields_tbl_get(obj, 0, &fields_tbl);
+    rb_gen_fields_tbl_get(obj, 0, &fields_obj);
 
     if (shape_id != dest_shape_id) {
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
     }
 
-    RB_OBJ_WRITE(obj, &fields_tbl->as.shape.fields[index], val);
+    RB_OBJ_WRITE(obj, &rb_imemo_fields_ptr(fields_obj)[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 

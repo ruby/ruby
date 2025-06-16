@@ -1657,8 +1657,8 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 } while (0)
 
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
-        struct gen_fields_tbl *fields_tbl;
-        rb_ivar_generic_fields_tbl_lookup(obj, &fields_tbl);
+        VALUE fields_obj;
+        rb_ivar_generic_fields_tbl_lookup(obj, &fields_obj);
 
         if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
@@ -1667,7 +1667,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 .src = obj,
             };
             rb_st_foreach_with_replace(
-                fields_tbl->as.complex.table,
+                rb_imemo_fields_complex_tbl(fields_obj),
                 obj_iv_hash_traverse_replace_foreach_i,
                 obj_iv_hash_traverse_replace_i,
                 (st_data_t)&d
@@ -1676,8 +1676,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         }
         else {
             uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+            VALUE *fields = rb_imemo_fields_ptr(fields_obj);
             for (uint32_t i = 0; i < fields_count; i++) {
-                CHECK_AND_REPLACE(fields_tbl->as.shape.fields[i]);
+                CHECK_AND_REPLACE(fields[i]);
             }
         }
     }

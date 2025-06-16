@@ -147,6 +147,23 @@ rb_imemo_fields_new_complex(VALUE klass, size_t capa)
     return imemo_fields_new_complex(klass, capa);
 }
 
+static int
+imemo_fields_trigger_wb_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    VALUE field_obj = (VALUE)arg;
+    RB_OBJ_WRITTEN(field_obj, Qundef, (VALUE)value);
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl)
+{
+    VALUE fields = imemo_fields_new(klass, sizeof(struct rb_fields));
+    IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
+    st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
+    return fields;
+}
+
 VALUE
 rb_imemo_fields_clone(VALUE fields_obj)
 {
@@ -166,6 +183,19 @@ rb_imemo_fields_clone(VALUE fields_obj)
     }
 
     return clone;
+}
+
+void
+rb_imemo_fields_clear(VALUE fields_obj)
+{
+    // When replacing an imemo/fields by another one, we must clear
+    // its shape so that gc.c:obj_free_object_id won't be called.
+    if (rb_shape_obj_too_complex_p(fields_obj)) {
+        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_TOO_COMPLEX_SHAPE_ID);
+    }
+    else {
+        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
+    }
 }
 
 /* =========================================================================
