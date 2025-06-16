@@ -526,7 +526,7 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_class_fields_new(obj, 1));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1));
     }
     return ext->fields_obj;
 }
@@ -564,7 +564,7 @@ RCLASS_FIELDS_COUNT(VALUE obj)
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     if (fields_obj) {
         if (rb_shape_obj_too_complex_p(fields_obj)) {
-            return (uint32_t)rb_st_table_size(rb_imemo_class_fields_complex_tbl(fields_obj));
+            return (uint32_t)rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
         }
         else {
             return RSHAPE_LEN(RBASIC_SHAPE_ID(fields_obj));

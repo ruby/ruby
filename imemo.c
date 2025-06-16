@@ -30,7 +30,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(svar);
         IMEMO_NAME(throw_data);
         IMEMO_NAME(tmpbuf);
-        IMEMO_NAME(class_fields);
+        IMEMO_NAME(fields);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -111,16 +111,16 @@ rb_imemo_tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
 }
 
 static VALUE
-imemo_class_fields_new(VALUE klass, size_t capa)
+imemo_fields_new(VALUE klass, size_t capa)
 {
-    size_t embedded_size = offsetof(struct rb_class_fields, as.embed) + capa * sizeof(VALUE);
+    size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     if (rb_gc_size_allocatable_p(embedded_size)) {
-        VALUE fields = rb_imemo_new(imemo_class_fields, klass, embedded_size);
-        RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_class_fields));
+        VALUE fields = rb_imemo_new(imemo_fields, klass, embedded_size);
+        RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
         return fields;
     }
     else {
-        VALUE fields = rb_imemo_new(imemo_class_fields, klass, sizeof(struct rb_class_fields));
+        VALUE fields = rb_imemo_new(imemo_fields, klass, sizeof(struct rb_fields));
         FL_SET_RAW(fields, OBJ_FIELD_EXTERNAL);
         IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
         return fields;
@@ -128,41 +128,41 @@ imemo_class_fields_new(VALUE klass, size_t capa)
 }
 
 VALUE
-rb_imemo_class_fields_new(VALUE klass, size_t capa)
+rb_imemo_fields_new(VALUE klass, size_t capa)
 {
-    return imemo_class_fields_new(rb_singleton_class(klass), capa);
+    return imemo_fields_new(rb_singleton_class(klass), capa);
 }
 
 static VALUE
-imemo_class_fields_new_complex(VALUE klass, size_t capa)
+imemo_fields_new_complex(VALUE klass, size_t capa)
 {
-    VALUE fields = imemo_class_fields_new(klass, sizeof(struct rb_class_fields));
+    VALUE fields = imemo_fields_new(klass, sizeof(struct rb_fields));
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     return fields;
 }
 
 VALUE
-rb_imemo_class_fields_new_complex(VALUE klass, size_t capa)
+rb_imemo_fields_new_complex(VALUE klass, size_t capa)
 {
-    return imemo_class_fields_new_complex(rb_singleton_class(klass), capa);
+    return imemo_fields_new_complex(rb_singleton_class(klass), capa);
 }
 
 VALUE
-rb_imemo_class_fields_clone(VALUE fields_obj)
+rb_imemo_fields_clone(VALUE fields_obj)
 {
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
     VALUE clone;
 
     if (rb_shape_too_complex_p(shape_id)) {
-        clone = rb_imemo_class_fields_new_complex(CLASS_OF(fields_obj), 0);
+        clone = rb_imemo_fields_new_complex(CLASS_OF(fields_obj), 0);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
-        st_table *src_table = rb_imemo_class_fields_complex_tbl(fields_obj);
-        st_replace(rb_imemo_class_fields_complex_tbl(clone), src_table);
+        st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
+        st_replace(rb_imemo_fields_complex_tbl(clone), src_table);
     }
     else {
-        clone = imemo_class_fields_new(CLASS_OF(fields_obj), RSHAPE_CAPACITY(shape_id));
+        clone = imemo_fields_new(CLASS_OF(fields_obj), RSHAPE_CAPACITY(shape_id));
         RBASIC_SET_SHAPE_ID(clone, shape_id);
-        MEMCPY(rb_imemo_class_fields_ptr(clone), rb_imemo_class_fields_ptr(fields_obj), VALUE, RSHAPE_LEN(shape_id));
+        MEMCPY(rb_imemo_fields_ptr(clone), rb_imemo_fields_ptr(fields_obj), VALUE, RSHAPE_LEN(shape_id));
     }
 
     return clone;
@@ -215,7 +215,7 @@ rb_imemo_memsize(VALUE obj)
         size += ((rb_imemo_tmpbuf_t *)obj)->cnt * sizeof(VALUE);
 
         break;
-      case imemo_class_fields:
+      case imemo_fields:
         if (rb_shape_obj_too_complex_p(obj)) {
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
@@ -487,11 +487,11 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         break;
       }
-      case imemo_class_fields: {
+      case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
         if (rb_shape_obj_too_complex_p(obj)) {
-            st_table *tbl = rb_imemo_class_fields_complex_tbl(obj);
+            st_table *tbl = rb_imemo_fields_complex_tbl(obj);
             if (reference_updating) {
                 rb_gc_ref_update_table_values_only(tbl);
             }
@@ -500,7 +500,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             }
         }
         else {
-            VALUE *fields = rb_imemo_class_fields_ptr(obj);
+            VALUE *fields = rb_imemo_fields_ptr(obj);
             attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
             for (attr_index_t i = 0; i < len; i++) {
                 rb_gc_mark_and_move(&fields[i]);
@@ -602,7 +602,7 @@ rb_cc_tbl_free(struct rb_id_table *cc_tbl, VALUE klass)
 }
 
 static inline void
-imemo_class_fields_free(struct rb_class_fields *fields)
+imemo_fields_free(struct rb_fields *fields)
 {
     if (rb_shape_obj_too_complex_p((VALUE)fields)) {
         st_free_table(fields->as.complex.table);
@@ -686,9 +686,9 @@ rb_imemo_free(VALUE obj)
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 
         break;
-      case imemo_class_fields:
-        imemo_class_fields_free(IMEMO_OBJ_FIELDS(obj));
-        RB_DEBUG_COUNTER_INC(obj_imemo_class_fields);
+      case imemo_fields:
+        imemo_fields_free(IMEMO_OBJ_FIELDS(obj));
+        RB_DEBUG_COUNTER_INC(obj_imemo_fields);
         break;
       default:
         rb_bug("unreachable");
