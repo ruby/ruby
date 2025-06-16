@@ -4016,7 +4016,7 @@ mod tests {
     fn test_putspecialobject_vm_core_and_cbase() {
         eval("
             def test
-                alias aliased __callee__
+              alias aliased __callee__
             end
         ");
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
