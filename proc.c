@@ -1562,7 +1562,8 @@ rb_sym_to_proc(VALUE sym)
         RARRAY_ASET(sym_proc_cache, index, procval);
 
         return RB_GC_GUARD(procval);
-    } else {
+    }
+    else {
         return sym_proc_new(rb_cProc, sym);
     }
 }

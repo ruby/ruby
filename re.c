@@ -3507,7 +3507,8 @@ rb_reg_regcomp(VALUE str)
             return reg_cache;
 
         return reg_cache = rb_reg_new_str(str, 0);
-    } else {
+    }
+    else {
         return rb_reg_new_str(str, 0);
     }
 }

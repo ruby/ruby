@@ -13384,7 +13384,8 @@ outer_variable_cmp(const void *a, const void *b, void *arg)
 
     if (!ap->name) {
         return -1;
-    } else if (!bp->name) {
+    }
+    else if (!bp->name) {
         return 1;
     }
 

@@ -6229,7 +6229,8 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         if (task) {
             if (task->flags & rb_interrupt_exec_flag_new_thread) {
                 rb_thread_create(task->func, task->data);
-            } else {
+            }
+            else {
                 (*task->func)(task->data);
             }
             ruby_xfree(task);

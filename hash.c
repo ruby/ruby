@@ -3872,7 +3872,6 @@ rb_hash_values(VALUE hash)
         }
         rb_ary_set_len(values, size);
     }
-
     else {
         rb_hash_foreach(hash, values_i, values);
     }
