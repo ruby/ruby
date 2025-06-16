@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe "fetching dependencies with a not available mirror" do
-  let(:mirror) { @mirror_uri }
-  let(:original) { @server_uri }
-  let(:server_port) { @server_port }
   let(:host) { "127.0.0.1" }
 
   before do
@@ -20,13 +17,13 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a specific fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__HTTP://127__0__0__1:#{server_port}/__FALLBACK_TIMEOUT/" => "true",
-                    "BUNDLE_MIRROR__HTTP://127__0__0__1:#{server_port}/" => mirror)
+      global_config("BUNDLE_MIRROR__HTTP://127__0__0__1:#{@server_port}/__FALLBACK_TIMEOUT/" => "true",
+                    "BUNDLE_MIRROR__HTTP://127__0__0__1:#{@server_port}/" => @mirror_uri)
     end
 
     it "install a gem using the original uri when the mirror is not responding" do
       gemfile <<-G
-        source "#{original}"
+        source "#{@server_uri}"
         gem 'weakling'
       G
 
@@ -41,12 +38,12 @@ RSpec.describe "fetching dependencies with a not available mirror" do
   context "with a global fallback timeout" do
     before do
       global_config("BUNDLE_MIRROR__ALL__FALLBACK_TIMEOUT/" => "1",
-                    "BUNDLE_MIRROR__ALL" => mirror)
+                    "BUNDLE_MIRROR__ALL" => @mirror_uri)
     end
 
     it "install a gem using the original uri when the mirror is not responding" do
       gemfile <<-G
-        source "#{original}"
+        source "#{@server_uri}"
         gem 'weakling'
       G
 
@@ -60,47 +57,47 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a specific mirror without a fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__HTTP://127__0__0__1:#{server_port}/" => mirror)
+      global_config("BUNDLE_MIRROR__HTTP://127__0__0__1:#{@server_port}/" => @mirror_uri)
     end
 
     it "fails to install the gem with a timeout error" do
       gemfile <<-G
-        source "#{original}"
+        source "#{@server_uri}"
         gem 'weakling'
       G
 
       bundle :install, artifice: nil, raise_on_error: false
 
-      expect(out).to include("Fetching source index from #{mirror}")
+      expect(out).to include("Fetching source index from #{@mirror_uri}")
 
       err_lines = err.split("\n")
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ACould not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ACould not fetch specs from #{@mirror_uri}/ due to underlying error <})
     end
   end
 
   context "with a global mirror without a fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__ALL" => mirror)
+      global_config("BUNDLE_MIRROR__ALL" => @mirror_uri)
     end
 
     it "fails to install the gem with a timeout error" do
       gemfile <<-G
-        source "#{original}"
+        source "#{@server_uri}"
         gem 'weakling'
       G
 
       bundle :install, artifice: nil, raise_on_error: false
 
-      expect(out).to include("Fetching source index from #{mirror}")
+      expect(out).to include("Fetching source index from #{@mirror_uri}")
 
       err_lines = err.split("\n")
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{mirror}/ due to underlying error <})
-      expect(err_lines).to include(%r{\ACould not fetch specs from #{mirror}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(2/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(3/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ARetrying fetcher due to error \(4/4\): Bundler::HTTPError Could not fetch specs from #{@mirror_uri}/ due to underlying error <})
+      expect(err_lines).to include(%r{\ACould not fetch specs from #{@mirror_uri}/ due to underlying error <})
     end
   end
 
