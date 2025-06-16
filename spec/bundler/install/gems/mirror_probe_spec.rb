@@ -60,7 +60,7 @@ RSpec.describe "fetching dependencies with a not available mirror" do
       global_config("BUNDLE_MIRROR__HTTP://127__0__0__1:#{@server_port}/" => @mirror_uri)
     end
 
-    it "fails to install the gem with a timeout error" do
+    it "fails to install the gem with a timeout error when the mirror is not responding" do
       gemfile <<-G
         source "#{@server_uri}"
         gem 'weakling'
@@ -83,7 +83,7 @@ RSpec.describe "fetching dependencies with a not available mirror" do
       global_config("BUNDLE_MIRROR__ALL" => @mirror_uri)
     end
 
-    it "fails to install the gem with a timeout error" do
+    it "fails to install the gem with a timeout error when the mirror is not responding" do
       gemfile <<-G
         source "#{@server_uri}"
         gem 'weakling'
