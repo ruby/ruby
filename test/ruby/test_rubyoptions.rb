@@ -847,7 +847,11 @@ class TestRubyOptions < Test::Unit::TestCase
     args.unshift(env)
 
     test_stdin = ""
-    tests = [//, list] unless block
+    if !block
+      tests = [//, list, message]
+    elsif message
+      tests = [[], [], message]
+    end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
                       **SEGVTest::ExecOptions, **opt, &block)
