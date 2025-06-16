@@ -97,11 +97,12 @@ module Test
       end
 
       def assert_in_out_err(args, test_stdin = "", test_stdout = [], test_stderr = [], message = nil,
-                            success: nil, **opt)
+                            success: nil, failed: nil, **opt)
         args = Array(args).dup
         args.insert((Hash === args[0] ? 1 : 0), '--disable=gems')
         stdout, stderr, status = EnvUtil.invoke_ruby(args, test_stdin, true, true, **opt)
-        desc = FailDesc[status, message, stderr]
+        desc = failed[status, message, stderr] if failed
+        desc ||= FailDesc[status, message, stderr]
         if block_given?
           raise "test_stdout ignored, use block only or without block" if test_stdout != []
           raise "test_stderr ignored, use block only or without block" if test_stderr != []

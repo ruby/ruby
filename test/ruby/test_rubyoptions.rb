@@ -787,6 +787,12 @@ class TestRubyOptions < Test::Unit::TestCase
     unless /mswin|mingw/ =~ RUBY_PLATFORM
       opts[:rlimit_core] = 0
     end
+    opts[:failed] = proc do |status, message = "", out = ""|
+      if (sig = status.termsig) && Signal.list["SEGV"] == sig
+        out = ""
+      end
+      Test::Unit::CoreAssertions::FailDesc[status, message]
+    end
     ExecOptions = opts.freeze
 
     # The regexp list that should match the entire stderr output.
