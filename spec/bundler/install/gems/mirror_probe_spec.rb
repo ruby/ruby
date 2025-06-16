@@ -105,13 +105,13 @@ RSpec.describe "fetching dependencies with a not available mirror" do
     @server_port = find_unused_port
     @server_uri = "http://#{host}:#{@server_port}"
 
-    require_relative "../../support/artifice/endpoint"
+    require_relative "../../support/artifice/compact_index"
     require_relative "../../support/silent_logger"
 
     require "rackup/server"
 
     @server_thread = Thread.new do
-      Rackup::Server.start(app: Endpoint,
+      Rackup::Server.start(app: CompactIndexAPI,
                            Host: host,
                            Port: @server_port,
                            server: "webrick",
