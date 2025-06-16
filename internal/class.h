@@ -526,7 +526,7 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(rb_singleton_class(obj), 1));
     }
     return ext->fields_obj;
 }

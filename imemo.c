@@ -130,7 +130,7 @@ imemo_fields_new(VALUE klass, size_t capa)
 VALUE
 rb_imemo_fields_new(VALUE klass, size_t capa)
 {
-    return imemo_fields_new(rb_singleton_class(klass), capa);
+    return imemo_fields_new(klass, capa);
 }
 
 static VALUE
@@ -144,7 +144,7 @@ imemo_fields_new_complex(VALUE klass, size_t capa)
 VALUE
 rb_imemo_fields_new_complex(VALUE klass, size_t capa)
 {
-    return imemo_fields_new_complex(rb_singleton_class(klass), capa);
+    return imemo_fields_new_complex(klass, capa);
 }
 
 VALUE
