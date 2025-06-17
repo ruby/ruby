@@ -714,6 +714,16 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_dupn
+    assert_compiles '[[1], [1, 1], :rhs, [nil, :rhs]]', <<~RUBY, insns: [:dupn]
+      def test(array) = (array[1, 2] ||= :rhs)
+
+      one = [1, 1]
+      start_empty = []
+      [test(one), one, test(start_empty), start_empty]
+    RUBY
+  end
+
   def test_send_backtrace
     backtrace = [
       "-e:2:in 'Object#jit_frame1'",
