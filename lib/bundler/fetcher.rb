@@ -72,7 +72,7 @@ module Bundler
       end
     end
 
-    HTTP_ERRORS = Downloader::HTTP_ERRORS
+    HTTP_ERRORS = (Downloader::HTTP_RETRYABLE_ERRORS + Downloader::HTTP_NON_RETRYABLE_ERRORS).freeze
     deprecate_constant :HTTP_ERRORS
 
     NET_ERRORS = [

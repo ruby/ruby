@@ -3,13 +3,17 @@
 module Bundler
   class Fetcher
     class Downloader
-      HTTP_ERRORS = [
-        Gem::Timeout::Error,
-        EOFError,
+      HTTP_NON_RETRYABLE_ERRORS = [
         SocketError,
         Errno::EADDRNOTAVAIL,
-        Errno::ENETDOWN,
         Errno::ENETUNREACH,
+        Gem::Net::HTTP::Persistent::Error,
+      ].freeze
+
+      HTTP_RETRYABLE_ERRORS = [
+        Gem::Timeout::Error,
+        EOFError,
+        Errno::ENETDOWN,
         Errno::EINVAL,
         Errno::ECONNRESET,
         Errno::ETIMEDOUT,
@@ -17,7 +21,6 @@ module Bundler
         Gem::Net::HTTPBadResponse,
         Gem::Net::HTTPHeaderSyntaxError,
         Gem::Net::ProtocolError,
-        Gem::Net::HTTP::Persistent::Error,
         Zlib::BufError,
         Errno::EHOSTUNREACH,
       ].freeze
@@ -86,18 +89,19 @@ module Bundler
         connection.request(uri, req)
       rescue OpenSSL::SSL::SSLError
         raise CertificateFailureError.new(uri)
-      rescue *HTTP_ERRORS => e
+      rescue *HTTP_NON_RETRYABLE_ERRORS => e
         Bundler.ui.trace e
-        if e.is_a?(SocketError) || e.is_a?(Errno::EADDRNOTAVAIL) || e.is_a?(Errno::ENETUNREACH) || e.is_a?(Gem::Net::HTTP::Persistent::Error)
-          host = uri.host
-          host_port = "#{host}:#{uri.port}"
-          host = host_port if filtered_uri.to_s.include?(host_port)
-          raise NetworkDownError, "Could not reach host #{host}. Check your network " \
-            "connection and try again."
-        else
-          raise HTTPError, "Network error while fetching #{filtered_uri}" \
+
+        host = uri.host
+        host_port = "#{host}:#{uri.port}"
+        host = host_port if filtered_uri.to_s.include?(host_port)
+        raise NetworkDownError, "Could not reach host #{host}. Check your network " \
+          "connection and try again."
+      rescue *HTTP_RETRYABLE_ERRORS => e
+        Bundler.ui.trace e
+
+        raise HTTPError, "Network error while fetching #{filtered_uri}" \
             " (#{e})"
-        end
       end
 
       private
