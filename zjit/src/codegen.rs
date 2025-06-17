@@ -10,7 +10,7 @@ use crate::state::ZJITState;
 use crate::stats::{counter_ptr, with_time_stat, Counter, Counter::compile_time_ns};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, asm_ccall, Assembler, Opnd, SideExitContext, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, NATIVE_BASE_PTR, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SELF_PARAM_IDX};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, Invariant, RangeType, SideExitReason, SideExitReason::*, SpecialObjectType, SpecialBackrefSymbol, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types, Type};
 use crate::options::get_option;
@@ -371,6 +371,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state))?,
+        Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, 0, *symbol_type),
+        Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => return Some(gen_incr_counter(asm, counter)),
         Insn::ArrayExtend { .. }
         | Insn::ArrayMax { .. }
@@ -603,6 +605,54 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     let ep_reg = asm.load(ep_opnd);
 
     asm_ccall!(asm, rb_vm_get_special_object, ep_reg, Opnd::UImm(u64::from(value_type)))
+}
+
+fn gen_getspecial_symbol(asm: &mut Assembler, _key: u64, symbol_type: SpecialBackrefSymbol) -> Opnd {
+    // Fetch a "special" backref based on the symbol type
+
+    // call rb_backref_get()
+    asm_comment!(asm, "call rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    match symbol_type {
+        SpecialBackrefSymbol::LastMatch => {
+            asm_comment!(asm, "rb_reg_last_match");
+            asm.ccall(rb_reg_last_match as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::PreMatch => {
+            asm_comment!(asm, "rb_reg_match_pre");
+            asm.ccall(rb_reg_match_pre as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::PostMatch => {
+            asm_comment!(asm, "rb_reg_match_post");
+            asm.ccall(rb_reg_match_post as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::LastGroup => {
+            asm_comment!(asm, "rb_reg_match_last");
+            asm.ccall(rb_reg_match_last as *const u8, vec![backref])
+        }
+    }
+}
+
+fn gen_getspecial_number(asm: &mut Assembler, nth: u64, state: &FrameState) -> Opnd {
+    // Fetch the N-th match from the last backref based on type shifted by 1
+
+    // call rb_backref_get()
+    asm_comment!(asm, "rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    // Save PC for GC
+    gen_save_pc(asm, state);
+
+    // rb_reg_nth_match((int)(type >> 1), backref);
+    asm_comment!(asm, "rb_reg_nth_match");
+    asm.ccall(
+        rb_reg_nth_match as *const u8,
+        vec![
+            Opnd::Imm((nth >> 1).try_into().unwrap()),
+            backref,
+        ]
+    )
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
