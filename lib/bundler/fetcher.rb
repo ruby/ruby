@@ -73,10 +73,21 @@ module Bundler
     end
 
     HTTP_ERRORS = [
-      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
-      Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
-      Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
-      Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
+      Gem::Timeout::Error,
+      EOFError,
+      SocketError,
+      Errno::ENETDOWN,
+      Errno::ENETUNREACH,
+      Errno::EINVAL,
+      Errno::ECONNRESET,
+      Errno::ETIMEDOUT,
+      Errno::EAGAIN,
+      Gem::Net::HTTPBadResponse,
+      Gem::Net::HTTPHeaderSyntaxError,
+      Gem::Net::ProtocolError,
+      Gem::Net::HTTP::Persistent::Error,
+      Zlib::BufError,
+      Errno::EHOSTUNREACH,
     ].freeze
 
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
