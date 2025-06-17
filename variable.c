@@ -1838,7 +1838,8 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
                 RUBY_ASSERT(RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_OBJ_ID));
                 RUBY_ASSERT(old_capa < new_capa);
                 RUBY_ASSERT(fields_tbl);
-            } else {
+            }
+            else {
                 RUBY_ASSERT(!fields_tbl);
                 RUBY_ASSERT(old_capa == 0);
             }
