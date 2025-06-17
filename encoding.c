@@ -160,9 +160,11 @@ enc_list_lookup(int idx)
     VALUE list, enc = Qnil;
 
     if (idx < ENCODING_LIST_CAPA) {
-        list = rb_encoding_list;
-        RUBY_ASSERT(list);
-        enc = rb_ary_entry(list, idx);
+        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+            list = rb_encoding_list;
+            RUBY_ASSERT(list);
+            enc = rb_ary_entry(list, idx);
+        }
     }
 
     if (NIL_P(enc)) {
@@ -396,15 +398,15 @@ static rb_encoding *
 enc_from_index(struct enc_table *enc_table, int index)
 {
     ASSERT_GLOBAL_ENC_TABLE_LOCKED();
-    if (UNLIKELY(index < 0 || enc_table->count <= (index &= ENC_INDEX_MASK))) {
-        return 0;
-    }
     return enc_table->list[index].enc;
 }
 
 rb_encoding *
 rb_enc_from_index(int index)
 {
+    if (UNLIKELY(index < 0 || global_enc_table.count <= (index &= ENC_INDEX_MASK))) {
+        return 0;
+    }
     rb_encoding *enc;
     switch (index) {
         case ENCINDEX_US_ASCII:
@@ -433,7 +435,7 @@ rb_enc_register(const char *name, rb_encoding *encoding)
         index = enc_registered(enc_table, name);
 
         if (index >= 0) {
-            rb_encoding *oldenc = enc_from_index(enc_table, index);
+            rb_encoding *oldenc = rb_enc_from_index(index);
             if (STRCASECMP(name, rb_enc_name(oldenc))) {
                 index = enc_register(enc_table, name, encoding);
             }
@@ -677,7 +679,7 @@ enc_alias(struct enc_table *enc_table, const char *alias, int idx)
     ASSERT_GLOBAL_ENC_TABLE_LOCKED();
     if (!valid_encoding_name_p(alias)) return -1;
     if (!enc_alias_internal(enc_table, alias, idx))
-        set_encoding_const(alias, enc_from_index(enc_table, idx));
+        set_encoding_const(alias, rb_enc_from_index(idx));
     return idx;
 }
 
@@ -779,16 +781,14 @@ load_encoding(const char *name)
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
 
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        if (loaded < 0 || 1 < loaded) {
-            idx = -1;
-        }
-        else if ((idx = enc_registered(enc_table, name)) < 0) {
-            idx = -1;
-        }
-        else if (rb_enc_autoload_p(enc_table->list[idx].enc)) {
-            idx = -1;
-        }
+    if (loaded < 0 || 1 < loaded) {
+        idx = -1;
+    }
+    else if ((idx = enc_registered(&global_enc_table, name)) < 0) {
+        idx = -1;
+    }
+    else if (rb_enc_autoload_p(global_enc_table.list[idx].enc)) {
+        idx = -1;
     }
 
     return idx;
