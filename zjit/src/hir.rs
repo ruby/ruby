@@ -2127,6 +2127,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             let exit_state = state.clone();
             profiles.profile_stack(&exit_state);
 
+            // TODO: Remove this and implement optional arguments
+            if unsafe { get_iseq_flags_has_opt(iseq) } {
+                let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                fun.push_insn(block, Insn::SideExit { state: exit_id });
+                break;  // End the block
+            }
+
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
@@ -3473,6 +3480,18 @@ mod tests {
               v11:StringExact = StringCopy v10
               v13:BasicObject = SendWithoutBlock v0, :unknown_method, v4, v7, v9, v11
               Return v13
+        "#]]);
+    }
+
+    #[test]
+    fn test_cant_compile_optional_arg() {
+        eval("
+            def test(a=nil) = a
+        ");
+        assert_method_hir("test",  expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              SideExit
         "#]]);
     }
 
