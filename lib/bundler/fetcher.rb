@@ -72,6 +72,13 @@ module Bundler
       end
     end
 
+    HTTP_ERRORS = [
+      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
+      Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
+      Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
+      Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
+    ].freeze
+
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
     NET_ERRORS = [:HTTPBadGateway, :HTTPBadRequest, :HTTPFailedDependency,
@@ -292,13 +299,6 @@ module Bundler
       paths = Bundler.rubygems.spec_cache_dirs.map {|dir| File.join(dir, spec_file_name) }
       paths.find {|path| File.file? path }
     end
-
-    HTTP_ERRORS = [
-      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
-      Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
-      Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
-      Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
-    ].freeze
 
     def bundler_cert_store
       store = OpenSSL::X509::Store.new
