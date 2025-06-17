@@ -3528,10 +3528,10 @@ rb_ec_initialize_vm_stack(rb_execution_context_t *ec, VALUE *stack, size_t size)
 void
 rb_ec_clear_vm_stack(rb_execution_context_t *ec)
 {
-    rb_ec_set_vm_stack(ec, NULL, 0);
-
-    // Avoid dangling pointers:
+    // set cfp to NULL before clearing the stack in case `thread_profile_frames`
+    // gets called in this middle of `rb_ec_set_vm_stack` via signal handler.
     ec->cfp = NULL;
+    rb_ec_set_vm_stack(ec, NULL, 0);
 }
 
 static void
