@@ -179,6 +179,7 @@ jobs:
       - run: nmake
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: windows-${{ matrix.os < 2022 && '2019' || matrix.os }}
@@ -190,9 +191,21 @@ jobs:
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
         timeout-minutes: 3
 
-      - run: nmake ${{ matrix.test_task || 'check' }}
+      - name: make ${{ matrix.test_task || 'check' }}
+        run: |
+          set cmd=nmake ${{ matrix.test_task || 'check' }}
+          ::- cmd.exe does not have syntax like `>()`
+          if not "%LAUNCHABLE_STDOUT%" == "" (
+            set cmd=%cmd% ^| uutils tee "%LAUNCHABLE_STDOUT%"
+          )
+          if not "%LAUNCHABLE_STDERR%" == "" (
+            set cmd=^(^(%cmd:|=^|% ^>^&3^) 2^>^&1 ^| uutils tee "%LAUNCHABLE_STDERR%"^) 3^>^&1
+          )
+          %cmd%
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         timeout-minutes: 70
 
       - uses: ./.github/actions/slack
