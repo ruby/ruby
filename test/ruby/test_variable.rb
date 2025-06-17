@@ -393,18 +393,36 @@ class TestVariable < Test::Unit::TestCase
       @a = 1
       @b = 2
       @c = 3
+      @d = 4
+      @e = 5
+      @f = 6
+      @g = 7
+      @h = 8
     end
 
     def ivars
-      [@a, @b, @c]
+      [@a, @b, @c, @d, @e, @f, @g, @h]
     end
   end
 
   def test_external_ivars
     3.times{
       # check inline cache for external ivar access
-      assert_equal [1, 2, 3], ExIvar.new.ivars
+      assert_equal [1, 2, 3, 4, 5, 6, 7, 8], ExIvar.new.ivars
     }
+  end
+
+  def test_exivar_resize_with_compaction_stress
+    objs = 10_000.times.map do
+      ExIvar.new
+    end
+    EnvUtil.under_gc_compact_stress do
+      10.times do
+        x = ExIvar.new
+        x.instance_variable_set(:@resize, 1)
+        x
+      end
+    end
   end
 
   def test_local_variables_with_kwarg
