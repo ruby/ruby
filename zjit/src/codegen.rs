@@ -276,12 +276,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
+        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SetGlobal { id, val, state: _ } => gen_setglobal(asm, *id, opnd!(val)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(asm, *ic, &function.frame_state(*state)),
-        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
+        Insn::GetSpecialSymbol { key, svar, state: _ } => gen_getspecial_symbol(asm, *key, *svar),
+        Insn::GetSpecialNumber { key, svar, state: _ } => gen_getspecial_number(asm, *key, *svar),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -376,6 +378,53 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     asm.ccall(
         rb_vm_get_special_object as *const u8,
         vec![ep_reg, Opnd::UImm(u64::from(value_type))],
+    )
+}
+
+fn gen_getspecial_symbol(asm: &mut Assembler, _key: u64, svar: u64) -> Opnd {
+    // Fetch a "special" backref based on a char encoded by shifting by 1
+
+    // call rb_backref_get()
+    asm_comment!(asm, "rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    let rt_u8: u8 = (svar >> 1).try_into().unwrap();
+    match rt_u8.into() {
+        '&' => {
+            asm_comment!(asm, "rb_reg_last_match");
+            asm.ccall(rb_reg_last_match as *const u8, vec![backref])
+        }
+        '`' => {
+            asm_comment!(asm, "rb_reg_match_pre");
+            asm.ccall(rb_reg_match_pre as *const u8, vec![backref])
+        }
+        '\'' => {
+            asm_comment!(asm, "rb_reg_match_post");
+            asm.ccall(rb_reg_match_post as *const u8, vec![backref])
+        }
+        '+' => {
+            asm_comment!(asm, "rb_reg_match_last");
+            asm.ccall(rb_reg_match_last as *const u8, vec![backref])
+        }
+        _ => panic!("invalid back-ref"),
+    }
+}
+
+fn gen_getspecial_number(asm: &mut Assembler, _key: u64, svar: u64) -> Opnd {
+    // Fetch the N-th match from the last backref based on type shifted by 1
+
+    // call rb_backref_get()
+    asm_comment!(asm, "rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    // rb_reg_nth_match((int)(type >> 1), backref);
+    asm_comment!(asm, "rb_reg_nth_match");
+    asm.ccall(
+        rb_reg_nth_match as *const u8,
+        vec![
+        Opnd::Imm((svar >> 1).try_into().unwrap()),
+        backref,
+        ]
     )
 }
 
