@@ -150,6 +150,7 @@ enc_list_update(int index, rb_raw_encoding *encoding)
 
     VALUE list = rb_encoding_list;
     if (list && NIL_P(rb_ary_entry(list, index))) {
+        // TODO: use atomic store
         /* initialize encoding data */
         rb_ary_store(list, index, enc_new(encoding));
     }
@@ -1595,14 +1596,16 @@ enc_set_default_encoding(VALUE *def, VALUE encoding, const char *name, bool exte
 
             st_insert(enc_table->names, (st_data_t)name_dup,
                       (st_data_t)UNSPECIFIED_ENCODING);
-            RUBY_ATOMIC_VALUE_SET(*def, Qnil);
+            /*RUBY_ATOMIC_VALUE_SET(*def, Qnil);*/
+            *def = Qnil;
         }
         else {
             rb_encoding *enc = rb_to_encoding(encoding); // checks type of `encoding` (Encoding or String)
             int index = rb_enc_to_index(enc);
             VALUE enc_val = rb_enc_from_encoding(enc);
             enc_alias_internal(enc_table, name, index);
-            RUBY_ATOMIC_VALUE_SET(*def, enc_val);
+            /*RUBY_ATOMIC_VALUE_SET(*def, enc_val);*/
+            *def = enc_val;
         }
 
         if (external) {
@@ -1614,9 +1617,19 @@ enc_set_default_encoding(VALUE *def, VALUE encoding, const char *name, bool exte
 rb_encoding *
 rb_default_external_encoding(void)
 {
-    VALUE def_external = RUBY_ATOMIC_VALUE_LOAD(default_external);
-    if (def_external) {
-        return RDATA(def_external)->data;
+    rb_encoding *enc = NULL;
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        VALUE def_external = default_external;
+        if (def_external) {
+            enc = RDATA(def_external)->data;
+        }
+    }
+    /*VALUE def_external = RUBY_ATOMIC_VALUE_LOAD(default_external);*/
+    /*if (def_external) {*/
+        /*return RDATA(def_external)->data;*/
+    /*}*/
+    if (enc) {
+        return enc;
     }
 
     return rb_locale_encoding();
@@ -1698,13 +1711,21 @@ static VALUE default_internal; // 0 (not set yet), Qnil, or Encoding object
 rb_encoding *
 rb_default_internal_encoding(void)
 {
-    VALUE def_internal = RUBY_ATOMIC_VALUE_LOAD(default_internal);
-    if (def_internal && def_internal != Qnil) {
-        return RDATA(def_internal)->data;
+    /*VALUE def_internal = RUBY_ATOMIC_VALUE_LOAD(default_internal);*/
+    /*if (def_internal && def_internal != Qnil) {*/
+        /*return RDATA(def_internal)->data;*/
+    /*}*/
+    /*else {*/
+        /*return NULL;*/
+    /*}*/
+    rb_encoding *enc = NULL;
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        VALUE def_internal = default_internal;
+        if (def_internal && def_internal != Qnil) {
+            enc = RDATA(def_internal)->data;
+        }
     }
-    else {
-        return NULL;
-    }
+    return enc;
 }
 
 VALUE
