@@ -88,7 +88,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
           /`bundle config set --global www\.uri-to-fetch\.com username:password`.*`BUNDLE_WWW__URI___TO___FETCH__COM`/m)
       end
 
-      context "when the there are credentials provided in the request" do
+      context "when there are credentials provided in the request" do
         let(:uri) { Gem::URI("http://user:password@www.uri-to-fetch.com") }
 
         it "should raise a Bundler::Fetcher::BadAuthenticationError that doesn't contain the password" do
@@ -116,7 +116,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
           to raise_error(Bundler::Fetcher::FallbackError, "Gem::Net::HTTPNotFound: http://www.uri-to-fetch.com/api/v2/endpoint")
       end
 
-      context "when the there are credentials provided in the request" do
+      context "when there are credentials provided in the request" do
         let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
 
         it "should raise a Bundler::Fetcher::FallbackError that doesn't contain the password" do
@@ -233,7 +233,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
             "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (other error about network)")
         end
 
-        context "when the there are credentials provided in the request" do
+        context "when there are credentials provided in the request" do
           let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
           before do
             allow(net_http_get).to receive(:basic_auth).with("username", "password")
