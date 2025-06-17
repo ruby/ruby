@@ -1253,7 +1253,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 return default_value;
             }
             ivar_list = rb_imemo_class_fields_ptr(fields_obj);
-            shape_id = rb_obj_shape_id(fields_obj);
+            shape_id = fields_obj ? RBASIC_SHAPE_ID_FOR_READ(fields_obj) : ROOT_SHAPE_ID;
 
             break;
         }

@@ -432,7 +432,7 @@ static inline rb_classext_t *
 RCLASS_EXT_WRITABLE(VALUE obj)
 {
     const rb_namespace_t *ns;
-    if (RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
+    if (LIKELY(RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj))) {
         return RCLASS_EXT_PRIME(obj);
     }
     // delay namespace loading to optimize for unmodified classes
