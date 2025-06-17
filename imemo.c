@@ -155,6 +155,13 @@ imemo_fields_trigger_wb_i(st_data_t key, st_data_t value, st_data_t arg)
     return ST_CONTINUE;
 }
 
+static int
+imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
+{
+    RB_OBJ_WRITTEN((VALUE)arg, Qundef, (VALUE)value);
+    return ST_CONTINUE;
+}
+
 VALUE
 rb_imemo_fields_new_complex_tbl(VALUE klass, st_table *tbl)
 {
@@ -174,12 +181,19 @@ rb_imemo_fields_clone(VALUE fields_obj)
         clone = rb_imemo_fields_new_complex(CLASS_OF(fields_obj), 0);
         RBASIC_SET_SHAPE_ID(clone, shape_id);
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
-        st_replace(rb_imemo_fields_complex_tbl(clone), src_table);
+        st_table *dest_table = rb_imemo_fields_complex_tbl(clone);
+        st_replace(dest_table, src_table);
+        st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
     }
     else {
         clone = imemo_fields_new(CLASS_OF(fields_obj), RSHAPE_CAPACITY(shape_id));
         RBASIC_SET_SHAPE_ID(clone, shape_id);
-        MEMCPY(rb_imemo_fields_ptr(clone), rb_imemo_fields_ptr(fields_obj), VALUE, RSHAPE_LEN(shape_id));
+        VALUE *fields = rb_imemo_fields_ptr(clone);
+        attr_index_t fields_count = RSHAPE_LEN(shape_id);
+        MEMCPY(fields, rb_imemo_fields_ptr(fields_obj), VALUE, fields_count);
+        for (attr_index_t i = 0; i < fields_count; i++) {
+            RB_OBJ_WRITTEN(clone, Qundef, fields[i]);
+        }
     }
 
     return clone;

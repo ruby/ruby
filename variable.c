@@ -4774,13 +4774,14 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 
     if (new_fields_obj != original_fields_obj) {
         RCLASS_WRITABLE_SET_FIELDS_OBJ(obj, new_fields_obj);
-
-        // TODO: What should we set as the T_CLASS shape_id?
-        // In most case we can replicate the single `fields_obj` shape
-        // but in namespaced case?
-        // Perhaps INVALID_SHAPE_ID?
-        RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
     }
+
+    // TODO: What should we set as the T_CLASS shape_id?
+    // In most case we can replicate the single `fields_obj` shape
+    // but in namespaced case?
+    // Perhaps INVALID_SHAPE_ID?
+    RBASIC_SET_SHAPE_ID(obj, RBASIC_SHAPE_ID(new_fields_obj));
+
     return existing;
 }
 
