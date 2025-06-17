@@ -233,10 +233,11 @@ edited_files = files.select do |f|
 
   if File.fnmatch?("*.[ch]", f, File::FNM_PATHNAME) &&
      !DIFFERENT_STYLE_FILES.any? {|pat| File.fnmatch?(pat, f, File::FNM_PATHNAME)}
+    orig = src.dup
     src.gsub!(/^\w+\([^(\n)]*?\)\K[ \t]*(?=\{$)/, "\n")
     src.gsub!(/^([ \t]*)\}\K[ \t]*(?=else\b)/, "\n" '\1')
     src.gsub!(/^[ \t]*\}\n\K\n+(?=[ \t]*else\b)/, '')
-    indent = indent0 = true
+    indent = indent0 = src != orig
   end
 
   if trailing0 or eofnewline0 or expandtab0 or indent0
