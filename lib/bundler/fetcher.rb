@@ -81,17 +81,31 @@ module Bundler
 
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
-    NET_ERRORS = [:HTTPBadGateway, :HTTPBadRequest, :HTTPFailedDependency,
-                  :HTTPForbidden, :HTTPInsufficientStorage, :HTTPMethodNotAllowed,
-                  :HTTPMovedPermanently, :HTTPNoContent, :HTTPNotFound,
-                  :HTTPNotImplemented, :HTTPPreconditionFailed, :HTTPRequestEntityTooLarge,
-                  :HTTPRequestURITooLong, :HTTPUnauthorized, :HTTPUnprocessableEntity,
-                  :HTTPUnsupportedMediaType, :HTTPVersionNotSupported].freeze
-    FAIL_ERRORS = begin
-      fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError, SecurityError]
-      fail_errors << Gem::Requirement::BadRequirementError
-      fail_errors.concat(NET_ERRORS.map {|e| Gem::Net.const_get(e) })
-    end.freeze
+    FAIL_ERRORS = [
+      AuthenticationRequiredError,
+      BadAuthenticationError,
+      AuthenticationForbiddenError,
+      FallbackError,
+      SecurityError,
+      Gem::Requirement::BadRequirementError,
+      Gem::Net::HTTPBadGateway,
+      Gem::Net::HTTPBadRequest,
+      Gem::Net::HTTPFailedDependency,
+      Gem::Net::HTTPForbidden,
+      Gem::Net::HTTPInsufficientStorage,
+      Gem::Net::HTTPMethodNotAllowed,
+      Gem::Net::HTTPMovedPermanently,
+      Gem::Net::HTTPNoContent,
+      Gem::Net::HTTPNotFound,
+      Gem::Net::HTTPNotImplemented,
+      Gem::Net::HTTPPreconditionFailed,
+      Gem::Net::HTTPRequestEntityTooLarge,
+      Gem::Net::HTTPRequestURITooLong,
+      Gem::Net::HTTPUnauthorized,
+      Gem::Net::HTTPUnprocessableEntity,
+      Gem::Net::HTTPUnsupportedMediaType,
+      Gem::Net::HTTPVersionNotSupported,
+    ].freeze
 
     class << self
       attr_accessor :disable_endpoint, :api_timeout, :redirect_limit, :max_retries
