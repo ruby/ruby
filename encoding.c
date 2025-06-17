@@ -27,7 +27,6 @@
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
-#include "ruby/atomic.h"
 #include "vm_sync.h"
 
 #ifndef ENC_DEBUG
@@ -150,7 +149,6 @@ enc_list_update(int index, rb_raw_encoding *encoding)
 
     VALUE list = rb_encoding_list;
     if (list && NIL_P(rb_ary_entry(list, index))) {
-        // TODO: use atomic store
         /* initialize encoding data */
         rb_ary_store(list, index, enc_new(encoding));
     }
@@ -178,12 +176,7 @@ enc_list_lookup(int idx)
 static VALUE
 rb_enc_from_encoding_index(int idx)
 {
-    VALUE enc;
-    // TODO: remove lock and use ATOMIC_LOAD
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        enc = enc_list_lookup(idx);
-    }
-    return enc;
+    return enc_list_lookup(idx);
 }
 
 VALUE
@@ -409,7 +402,6 @@ enc_from_index(struct enc_table *enc_table, int index)
     return enc_table->list[index].enc;
 }
 
-// looks up rb_encoding* from enc_table->list, given index
 rb_encoding *
 rb_enc_from_index(int index)
 {
@@ -732,30 +724,28 @@ rb_enc_init(struct enc_table *enc_table)
         enc_table->names = st_init_strcasetable_with_size(ENCODING_LIST_CAPA);
     }
 #define OnigEncodingASCII_8BIT OnigEncodingASCII
-#define ENC_REGISTER(enc) enc_register_at(table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
-    GLOBAL_ENC_TABLE_LOCKING(table) {
-        ENC_REGISTER(ASCII_8BIT);
-        ENC_REGISTER(UTF_8);
-        ENC_REGISTER(US_ASCII);
-        global_enc_ascii = table->list[ENCINDEX_ASCII_8BIT].enc;
-        global_enc_utf_8 = table->list[ENCINDEX_UTF_8].enc;
-        global_enc_us_ascii = table->list[ENCINDEX_US_ASCII].enc;
+#define ENC_REGISTER(enc) enc_register_at(enc_table, ENCINDEX_##enc, rb_enc_name(&OnigEncoding##enc), &OnigEncoding##enc)
+    ENC_REGISTER(ASCII_8BIT);
+    ENC_REGISTER(UTF_8);
+    ENC_REGISTER(US_ASCII);
+    global_enc_ascii = enc_table->list[ENCINDEX_ASCII_8BIT].enc;
+    global_enc_utf_8 = enc_table->list[ENCINDEX_UTF_8].enc;
+    global_enc_us_ascii = enc_table->list[ENCINDEX_US_ASCII].enc;
 #undef ENC_REGISTER
 #undef OnigEncodingASCII_8BIT
-#define ENCDB_REGISTER(name, enc) enc_register_at(table, ENCINDEX_##enc, name, NULL)
-        ENCDB_REGISTER("UTF-16BE", UTF_16BE);
-        ENCDB_REGISTER("UTF-16LE", UTF_16LE);
-        ENCDB_REGISTER("UTF-32BE", UTF_32BE);
-        ENCDB_REGISTER("UTF-32LE", UTF_32LE);
-        ENCDB_REGISTER("UTF-16", UTF_16);
-        ENCDB_REGISTER("UTF-32", UTF_32);
-        ENCDB_REGISTER("UTF8-MAC", UTF8_MAC);
+#define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL)
+    ENCDB_REGISTER("UTF-16BE", UTF_16BE);
+    ENCDB_REGISTER("UTF-16LE", UTF_16LE);
+    ENCDB_REGISTER("UTF-32BE", UTF_32BE);
+    ENCDB_REGISTER("UTF-32LE", UTF_32LE);
+    ENCDB_REGISTER("UTF-16", UTF_16);
+    ENCDB_REGISTER("UTF-32", UTF_32);
+    ENCDB_REGISTER("UTF8-MAC", UTF8_MAC);
 
-        ENCDB_REGISTER("EUC-JP", EUC_JP);
-        ENCDB_REGISTER("Windows-31J", Windows_31J);
+    ENCDB_REGISTER("EUC-JP", EUC_JP);
+    ENCDB_REGISTER("Windows-31J", Windows_31J);
 #undef ENCDB_REGISTER
-        enc_table->count = ENCINDEX_BUILTIN_MAX;
-    }
+    enc_table->count = ENCINDEX_BUILTIN_MAX;
 }
 
 rb_encoding *
@@ -767,7 +757,7 @@ rb_enc_get_from_index(int index)
 int rb_require_internal_silent(VALUE fname);
 
 static int
-load_encoding(struct enc_table *enc_table, const char *name)
+load_encoding(const char *name)
 {
     ASSERT_GLOBAL_ENC_TABLE_LOCKED();
     VALUE enclib = rb_sprintf("enc/%s.so", name);
@@ -789,14 +779,16 @@ load_encoding(struct enc_table *enc_table, const char *name)
     ruby_debug = debug;
     rb_set_errinfo(errinfo);
 
-    if (loaded < 0 || loaded > 1) {
-        idx = -1;
-    }
-    else if ((idx = enc_registered(enc_table, name)) < 0) {
-        idx = -1;
-    }
-    else if (rb_enc_autoload_p(enc_table->list[idx].enc)) {
-        idx = -1;
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        if (loaded < 0 || 1 < loaded) {
+            idx = -1;
+        }
+        else if ((idx = enc_registered(enc_table, name)) < 0) {
+            idx = -1;
+        }
+        else if (rb_enc_autoload_p(enc_table->list[idx].enc)) {
+            idx = -1;
+        }
     }
 
     return idx;
@@ -834,7 +826,7 @@ rb_enc_autoload(rb_encoding *enc)
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         i = enc_autoload_body(enc_table, enc);
         if (i == -2) {
-            i = load_encoding(enc_table, rb_enc_name(enc));
+            i = load_encoding(rb_enc_name(enc));
         }
     }
     return i;
@@ -850,7 +842,7 @@ rb_enc_find_index(const char *name)
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         i = enc_registered(enc_table, name);
         if (i < 0) {
-            i = load_encoding(enc_table, name);
+            i = load_encoding(name);
             loaded_encoding = true;
         }
         else {
@@ -1578,15 +1570,26 @@ rb_filesystem_encoding(void)
     return rb_enc_from_index(rb_filesystem_encindex());
 }
 
-#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
-static VALUE default_external; // 0 (not set yet), or Encoding object
+struct default_encoding {
+    int index;			/* -2 => not yet set, -1 => nil */
+    rb_encoding *enc;
+};
 
-static void
-enc_set_default_encoding(VALUE *def, VALUE encoding, const char *name, bool external)
+static struct default_encoding default_external = {0};
+
+static int
+enc_set_default_encoding(struct default_encoding *def, VALUE encoding, const char *name)
 {
+    int overridden = FALSE;
+
+    if (def->index != -2)
+        /* Already set */
+        overridden = TRUE;
+
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        if (NIL_P(encoding)) { // Only Encoding.default_internal can be nil
-            RUBY_ASSERT(!external);
+        if (NIL_P(encoding)) {
+            def->index = -1;
+            def->enc = 0;
             char *name_dup = strdup(name);
 
             st_data_t existing_name = (st_data_t)name_dup;
@@ -1596,22 +1599,19 @@ enc_set_default_encoding(VALUE *def, VALUE encoding, const char *name, bool exte
 
             st_insert(enc_table->names, (st_data_t)name_dup,
                       (st_data_t)UNSPECIFIED_ENCODING);
-            /*RUBY_ATOMIC_VALUE_SET(*def, Qnil);*/
-            *def = Qnil;
         }
         else {
-            rb_encoding *enc = rb_to_encoding(encoding); // checks type of `encoding` (Encoding or String)
-            int index = rb_enc_to_index(enc);
-            VALUE enc_val = rb_enc_from_encoding(enc);
-            enc_alias_internal(enc_table, name, index);
-            /*RUBY_ATOMIC_VALUE_SET(*def, enc_val);*/
-            *def = enc_val;
+            def->index = rb_enc_to_index(rb_to_encoding(encoding));
+            def->enc = 0;
+            enc_alias_internal(enc_table, name, def->index);
         }
 
-        if (external) {
+        if (def == &default_external) {
             enc_alias_internal(enc_table, "filesystem", Init_enc_set_filesystem_encoding());
         }
     }
+
+    return overridden;
 }
 
 rb_encoding *
@@ -1619,20 +1619,18 @@ rb_default_external_encoding(void)
 {
     rb_encoding *enc = NULL;
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        VALUE def_external = default_external;
-        if (def_external) {
-            enc = RDATA(def_external)->data;
+        if (default_external.enc) {
+            enc = default_external.enc;
+        }
+        else if (default_external.index >= 0) {
+            default_external.enc = rb_enc_from_index(default_external.index);
+            enc = default_external.enc;
+        }
+        else {
+            enc = rb_locale_encoding();
         }
     }
-    /*VALUE def_external = RUBY_ATOMIC_VALUE_LOAD(default_external);*/
-    /*if (def_external) {*/
-        /*return RDATA(def_external)->data;*/
-    /*}*/
-    if (enc) {
-        return enc;
-    }
-
-    return rb_locale_encoding();
+    return enc;
 }
 
 VALUE
@@ -1682,7 +1680,7 @@ rb_enc_set_default_external(VALUE encoding)
         rb_raise(rb_eArgError, "default external can not be nil");
     }
     enc_set_default_encoding(&default_external, encoding,
-                            "external", true);
+                            "external");
 }
 
 /*
@@ -1706,26 +1704,19 @@ set_default_external(VALUE klass, VALUE encoding)
     return encoding;
 }
 
-static VALUE default_internal; // 0 (not set yet), Qnil, or Encoding object
+static struct default_encoding default_internal = {-2};
 
 rb_encoding *
 rb_default_internal_encoding(void)
 {
-    /*VALUE def_internal = RUBY_ATOMIC_VALUE_LOAD(default_internal);*/
-    /*if (def_internal && def_internal != Qnil) {*/
-        /*return RDATA(def_internal)->data;*/
-    /*}*/
-    /*else {*/
-        /*return NULL;*/
-    /*}*/
     rb_encoding *enc = NULL;
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        VALUE def_internal = default_internal;
-        if (def_internal && def_internal != Qnil) {
-            enc = RDATA(def_internal)->data;
+        if (!default_internal.enc && default_internal.index >= 0) {
+            default_internal.enc = rb_enc_from_index(default_internal.index);
         }
+        enc = default_internal.enc;
     }
-    return enc;
+    return enc; /* can be NULL */
 }
 
 VALUE
@@ -1773,7 +1764,7 @@ void
 rb_enc_set_default_internal(VALUE encoding)
 {
     enc_set_default_encoding(&default_internal, encoding,
-                            "internal", false);
+                            "internal");
 }
 
 /*
@@ -1874,11 +1865,8 @@ rb_enc_name_list_i(st_data_t name, st_data_t idx, st_data_t arg)
 static VALUE
 rb_enc_name_list(VALUE klass)
 {
-    VALUE ary;
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        ary = rb_ary_new2(enc_table->names->num_entries);
-        st_foreach(enc_table->names, rb_enc_name_list_i, (st_data_t)ary);
-    }
+    VALUE ary = rb_ary_new2(global_enc_table.names->num_entries);
+    st_foreach(global_enc_table.names, rb_enc_name_list_i, (st_data_t)ary);
     return ary;
 }
 
