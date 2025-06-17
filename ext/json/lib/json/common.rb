@@ -268,7 +268,7 @@ module JSON
   # to string interpolation.
   #
   # Note: no validation is performed on the provided string. It is the
-  # responsability of the caller to ensure the string contains valid JSON.
+  # responsibility of the caller to ensure the string contains valid JSON.
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
