@@ -2405,6 +2405,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
+                YARVINSN_dupn => {
+                    // Duplicate the top N element of the stack. As we push, n-1 naturally
+                    // points higher in the original stack.
+                    let n = get_arg(pc, 0).as_usize();
+                    for _ in 0..n {
+                        state.stack_push(state.stack_topn(n-1)?);
+                    }
+                }
                 YARVINSN_swap => {
                     let right = state.stack_pop()?;
                     let left = state.stack_pop()?;
@@ -4312,6 +4320,28 @@ mod tests {
               v6:FalseClassExact = Const Value(false)
               v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
               Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn dupn() {
+        eval("
+            def test(x) = (x[0, 1] ||= 2)
+        ");
+        assert_method_hir_with_opcode("test", YARVINSN_dupn, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v3:NilClassExact = Const Value(nil)
+              v4:Fixnum[0] = Const Value(0)
+              v5:Fixnum[1] = Const Value(1)
+              v7:BasicObject = SendWithoutBlock v1, :[], v4, v5
+              v8:CBool = Test v7
+              IfTrue v8, bb1(v0, v1, v3, v1, v4, v5, v7)
+              v10:Fixnum[2] = Const Value(2)
+              v12:BasicObject = SendWithoutBlock v1, :[]=, v4, v5, v10
+              Return v10
+            bb1(v14:BasicObject, v15:BasicObject, v16:NilClassExact, v17:BasicObject, v18:Fixnum[0], v19:Fixnum[1], v20:BasicObject):
+              Return v20
         "#]]);
     }
 }
