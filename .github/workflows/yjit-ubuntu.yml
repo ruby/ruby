@@ -192,12 +192,12 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
-          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
-
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" MSPECOPT=--debug SPECOPTS="$SPECOPTS" \
-            YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS"
+            YJIT_BENCH_OPTS="$YJIT_BENCH_OPTS" \
+            YJIT_BINDGEN_DIFF_OPTS="$YJIT_BINDGEN_DIFF_OPTS" \
+            ${LAUNCHABLE_STDOUT:+1> >(tee "${LAUNCHABLE_STDOUT}")} \
+            ${LAUNCHABLE_STDERR:+2> >(tee "${LAUNCHABLE_STDERR}" 1>&2)}
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'

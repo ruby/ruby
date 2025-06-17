@@ -124,12 +124,11 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
-          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
-
           $SETARCH make -s ${{ matrix.test_task }} \
-          ${TESTS:+TESTS="$TESTS"} \
-          ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
+            ${TESTS:+TESTS="$TESTS"} \
+            ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }} \
+            ${LAUNCHABLE_STDOUT:+1> >(tee "${LAUNCHABLE_STDOUT}")} \
+            ${LAUNCHABLE_STDERR:+2> >(tee "${LAUNCHABLE_STDERR}" 1>&2)}
         timeout-minutes: ${{ matrix.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
