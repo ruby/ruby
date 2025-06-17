@@ -1227,12 +1227,6 @@ gen_fields_tbl_bytes(size_t n)
     return offsetof(struct gen_fields_tbl, as.shape.fields) + n * sizeof(VALUE);
 }
 
-static struct gen_fields_tbl *
-gen_fields_tbl_resize(struct gen_fields_tbl *old, uint32_t new_capa)
-{
-    RUBY_ASSERT(new_capa > 0);
-    return xrealloc(old, gen_fields_tbl_bytes(new_capa));
-}
 
 void
 rb_mark_generic_ivar(VALUE obj)
@@ -1837,13 +1831,28 @@ generic_ivar_set_shape_fields(VALUE obj, void *data)
         int existing = st_lookup(tbl, (st_data_t)obj, (st_data_t *)&fields_tbl);
 
         if (!existing || fields_lookup->resize) {
+            uint32_t new_capa = RSHAPE_CAPACITY(fields_lookup->shape_id);
+            uint32_t old_capa = RSHAPE_CAPACITY(RSHAPE_PARENT(fields_lookup->shape_id));
+
             if (existing) {
                 RUBY_ASSERT(RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_IVAR) || RSHAPE_TYPE_P(fields_lookup->shape_id, SHAPE_OBJ_ID));
-                RUBY_ASSERT(RSHAPE_CAPACITY(RSHAPE_PARENT(fields_lookup->shape_id)) < RSHAPE_CAPACITY(fields_lookup->shape_id));
+                RUBY_ASSERT(old_capa < new_capa);
+                RUBY_ASSERT(fields_tbl);
+            } else {
+                RUBY_ASSERT(!fields_tbl);
+                RUBY_ASSERT(old_capa == 0);
             }
+            RUBY_ASSERT(new_capa > 0);
 
-            fields_tbl = gen_fields_tbl_resize(fields_tbl, RSHAPE_CAPACITY(fields_lookup->shape_id));
+            struct gen_fields_tbl *old_fields_tbl = fields_tbl;
+            fields_tbl = xmalloc(gen_fields_tbl_bytes(new_capa));
+            if (old_fields_tbl) {
+                memcpy(fields_tbl, old_fields_tbl, gen_fields_tbl_bytes(old_capa));
+            }
             st_insert(tbl, (st_data_t)obj, (st_data_t)fields_tbl);
+            if (old_fields_tbl) {
+                xfree(old_fields_tbl);
+            }
         }
 
         if (fields_lookup->shape_id) {
@@ -2371,7 +2380,9 @@ rb_copy_generic_ivar(VALUE dest, VALUE obj)
             return;
         }
 
-        new_fields_tbl = gen_fields_tbl_resize(0, RSHAPE_CAPACITY(dest_shape_id));
+        uint32_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
+        RUBY_ASSERT(dest_capa > 0);
+        new_fields_tbl = xmalloc(gen_fields_tbl_bytes(dest_capa));
 
         VALUE *src_buf = obj_fields_tbl->as.shape.fields;
         VALUE *dest_buf = new_fields_tbl->as.shape.fields;
