@@ -107,6 +107,10 @@ jobs:
 
       - run: make hello
 
+      - name: runirb
+        run: |
+          echo IRB::VERSION | make runirb RUNOPT="-- -f"
+
       - name: Set test options for skipped tests
         run: |
           set -x

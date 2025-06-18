@@ -99,6 +99,10 @@ jobs:
 
       - run: $SETARCH make hello
 
+      - name: runirb
+        run: |
+          echo IRB::VERSION | $SETARCH make runirb RUNOPT="-- -f"
+
       - name: Set test options for skipped tests
         run: |
           set -x

@@ -1427,8 +1427,8 @@ run: yes-fake miniruby$(EXEEXT) PHONY
 runruby: $(PROGRAM) PHONY
 	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) $(TESTRUN_SCRIPT) $(RUNOPT)
 
-runirb: $(PROGRAM) PHONY
-	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) -r irb -e 'IRB.start("make runirb")' $(RUNOPT)
+runirb: $(PROGRAM) update-default-gemspecs
+	RUBY_ON_BUG='gdb -x $(srcdir)/.gdbinit -p' $(RUNRUBY) $(RUNOPT0) -rrubygems -r irb -e 'IRB.start("make runirb")' $(RUNOPT)
 
 parse: yes-fake miniruby$(EXEEXT) PHONY
 	$(BTESTRUBY) --dump=parsetree_with_comment,insns $(TESTRUN_SCRIPT)
