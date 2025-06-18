@@ -446,6 +446,8 @@ pub enum Insn {
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
+    GetSpecialSymbol { key: u64, svar: u64, state: InsnId },
+    GetSpecialNumber { key: u64, svar: u64, state: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -1047,6 +1049,8 @@ impl Function {
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
+            &GetSpecialSymbol { key, svar, state } => GetSpecialSymbol { key, svar, state },
+            &GetSpecialNumber { key, svar, state } => GetSpecialNumber { key, svar, state },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
@@ -1129,6 +1133,8 @@ impl Function {
             Insn::ArrayMax { .. } => types::BasicObject,
             Insn::GetGlobal { .. } => types::BasicObject,
             Insn::GetIvar { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::BasicObject,
+            Insn::GetSpecialNumber { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
         }
@@ -1743,7 +1749,11 @@ impl Function {
                     worklist.push_back(state);
                 }
                 Insn::GetGlobal { state, .. } |
-                Insn::SideExit { state } => worklist.push_back(state),
+                Insn::GetSpecialSymbol { state, .. }
+                | Insn::GetSpecialNumber { state, .. }
+                | Insn::SideExit { state } => {
+                    worklist.push_back(state);
+                }
             }
         }
         // Now remove all unnecessary instructions
@@ -2613,6 +2623,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let insn_id = fun.push_insn(block, Insn::NewRange { low, high, flag, state: exit_id });
                     state.stack_push(insn_id);
+                }
+                YARVINSN_getspecial => {
+                    let key = get_arg(pc, 0).as_u64();
+                    let svar = get_arg(pc, 1).as_u64();
+                    if svar == 0 {
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id });
+                    } else if svar & 0x01 != 0 {
+                        // Handle symbol backrefs like $&, $`, $\, $+
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        let result = fun.push_insn(block, Insn::GetSpecialSymbol { key, svar, state: exit_id });
+                        state.stack_push(result);
+                    } else {
+                        // Handle number backrefs like $1, $2, $3
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                        let result = fun.push_insn(block, Insn::GetSpecialNumber { key, svar, state: exit_id });
+                        state.stack_push(result);
+                    }
                 }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
