@@ -76,6 +76,7 @@ module Bundler
       Gem::Timeout::Error,
       EOFError,
       SocketError,
+      Errno::EADDRNOTAVAIL,
       Errno::ENETDOWN,
       Errno::ENETUNREACH,
       Errno::EINVAL,
