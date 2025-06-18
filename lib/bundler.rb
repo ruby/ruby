@@ -583,7 +583,6 @@ module Bundler
 
     def reset_paths!
       @bin_path = nil
-      @bundler_major_version = nil
       @bundle_path = nil
       @configure = nil
       @configured_bundle_path = nil
