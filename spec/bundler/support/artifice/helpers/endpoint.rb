@@ -27,7 +27,7 @@ class Endpoint < Sinatra::Base
 
   set :raise_errors, true
   set :show_exceptions, false
-  set :host_authorization, permitted_hosts: [".example.org", ".local", ".repo", ".repo1", ".repo2", ".repo3", ".repo4", ".rubygems.org", ".security", ".source", ".test", "127.0.0.1"]
+  set :host_authorization, permitted_hosts: [".example.org", ".local", ".mirror", ".repo", ".repo1", ".repo2", ".repo3", ".repo4", ".rubygems.org", ".security", ".source", ".test", "127.0.0.1"]
 
   def call!(*)
     super.tap do
