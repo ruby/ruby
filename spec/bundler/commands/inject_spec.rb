@@ -79,11 +79,7 @@ Usage: "bundle inject GEM VERSION"
   context "when frozen" do
     before do
       bundle "install"
-      if Bundler.feature_flag.bundler_4_mode?
-        bundle "config set --local deployment true"
-      else
-        bundle "config set --local frozen true"
-      end
+      bundle "config set --local frozen true"
     end
 
     it "injects anyway" do
