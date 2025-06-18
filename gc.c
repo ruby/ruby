@@ -1286,8 +1286,8 @@ rb_gc_obj_free(void *objspace, VALUE obj)
       case T_CLASS:
         args.klass = obj;
         rb_class_classext_foreach(obj, classext_free, (void *)&args);
-        if (RCLASS(obj)->ns_classext_tbl) {
-            st_free_table(RCLASS(obj)->ns_classext_tbl);
+        if (RCLASS_CLASSEXT_TBL(obj)) {
+            st_free_table(RCLASS_CLASSEXT_TBL(obj));
         }
         (void)RB_DEBUG_COUNTER_INC_IF(obj_module_ptr, BUILTIN_TYPE(obj) == T_MODULE);
         (void)RB_DEBUG_COUNTER_INC_IF(obj_class_ptr, BUILTIN_TYPE(obj) == T_CLASS);
@@ -1390,8 +1390,8 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         args.klass = obj;
 
         rb_class_classext_foreach(obj, classext_iclass_free, (void *)&args);
-        if (RCLASS(obj)->ns_classext_tbl) {
-            st_free_table(RCLASS(obj)->ns_classext_tbl);
+        if (RCLASS_CLASSEXT_TBL(obj)) {
+            st_free_table(RCLASS_CLASSEXT_TBL(obj));
         }
 
         RB_DEBUG_COUNTER_INC(obj_iclass_ptr);
