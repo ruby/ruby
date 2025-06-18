@@ -1038,8 +1038,8 @@ pub mod test_utils {
     }
 
     /// Get the ISeq of a specified method
-    pub fn get_method_iseq(name: &str) -> *const rb_iseq_t {
-        let wrapped_iseq = eval(&format!("RubyVM::InstructionSequence.of(method(:{}))", name));
+    pub fn get_method_iseq(recv: &str, name: &str) -> *const rb_iseq_t {
+        let wrapped_iseq = eval(&format!("RubyVM::InstructionSequence.of({}.method(:{}))", recv, name));
         unsafe { rb_iseqw_to_iseq(wrapped_iseq) }
     }
 

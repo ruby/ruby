@@ -260,6 +260,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
         Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), args, &function.frame_state(*state))?,
+        Insn::InvokeBuiltin { bf, args, state } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -309,6 +310,26 @@ fn gen_get_constant_path(asm: &mut Assembler, ic: *const iseq_inline_constant_ca
         vec![EC, CFP, Opnd::const_ptr(ic as *const u8)],
     );
     val
+}
+
+fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: &Vec<InsnId>) -> Option<lir::Opnd> {
+    // Ensure we have enough room fit ec, self, and arguments
+    // TODO remove this check when we have stack args (we can use Time.new to test it)
+    if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) {
+        return None;
+    }
+
+    gen_save_pc(asm, state);
+
+    let mut cargs = vec![EC];
+    for &arg in args.iter() {
+        let opnd = jit.get_opnd(arg)?;
+        cargs.push(opnd);
+    }
+
+    let val = asm.ccall(bf.func_ptr as *const u8, cargs);
+
+    Some(val)
 }
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know

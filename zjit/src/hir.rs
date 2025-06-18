@@ -9,7 +9,7 @@ use crate::{
 use std::{
     cell::RefCell,
     collections::{HashMap, HashSet, VecDeque},
-    ffi::{c_int, c_void},
+    ffi::{c_int, c_void, CStr},
     mem::{align_of, size_of},
     ptr,
     slice::Iter
@@ -477,6 +477,9 @@ pub enum Insn {
         state: InsnId,
     },
 
+    // Invoke a builtin function
+    InvokeBuiltin { bf: rb_builtin_function, args: Vec<InsnId>, state: InsnId },
+
     /// Control flow instructions
     Return { val: InsnId },
 
@@ -631,6 +634,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
                 write!(f, "Send {self_val}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), call_info.method_name)?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::InvokeBuiltin { bf, args, .. } => {
+                write!(f, "InvokeBuiltin {}", unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap())?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
@@ -1027,6 +1037,7 @@ impl Function {
                 args: args.iter().map(|arg| find!(*arg)).collect(),
                 state: *state,
             },
+            InvokeBuiltin { bf, args, state } => InvokeBuiltin { bf: *bf, args: find_vec!(*args), state: *state },
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
             &HashDup { val , state } => HashDup { val: find!(val), state },
@@ -1123,6 +1134,7 @@ impl Function {
             Insn::SendWithoutBlock { .. } => types::BasicObject,
             Insn::SendWithoutBlockDirect { .. } => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
+            Insn::InvokeBuiltin { .. } => types::BasicObject,
             Insn::Defined { .. } => types::BasicObject,
             Insn::DefinedIvar { .. } => types::BasicObject,
             Insn::GetConstantPath { .. } => types::BasicObject,
@@ -1726,6 +1738,10 @@ impl Function {
                     worklist.push_back(self_val);
                     worklist.extend(args);
                     worklist.push_back(state);
+                }
+                Insn::InvokeBuiltin { args, state, .. } => {
+                    worklist.extend(args);
+                    worklist.push_back(state)
                 }
                 Insn::CCall { args, .. } => worklist.extend(args),
                 Insn::GetIvar { self_val, state, .. } | Insn::DefinedIvar { self_val, state, .. } => {
@@ -2614,6 +2630,35 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let insn_id = fun.push_insn(block, Insn::NewRange { low, high, flag, state: exit_id });
                     state.stack_push(insn_id);
                 }
+                YARVINSN_invokebuiltin => {
+                    let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+
+                    let mut args = vec![];
+                    for _ in 0..bf.argc {
+                        args.push(state.stack_pop()?);
+                    }
+                    args.push(self_param);
+                    args.reverse();
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin { bf, args, state: exit_id });
+                    state.stack_push(insn_id);
+                }
+                YARVINSN_opt_invokebuiltin_delegate |
+                YARVINSN_opt_invokebuiltin_delegate_leave => {
+                    let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    let index = get_arg(pc, 1).as_usize();
+                    let argc = bf.argc as usize;
+
+                    let mut args = vec![self_param];
+                    for &local in state.locals().skip(index).take(argc) {
+                        args.push(local);
+                    }
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let insn_id = fun.push_insn(block, Insn::InvokeBuiltin { bf, args, state: exit_id });
+                    state.stack_push(insn_id);
+                }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
@@ -2907,7 +2952,7 @@ mod tests {
 
     #[track_caller]
     fn assert_method_hir(method: &str, hir: Expect) {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, hir);
@@ -2934,7 +2979,7 @@ mod tests {
 
     #[track_caller]
     fn assert_method_hir_with_opcodes(method: &str, opcodes: &[u32], hir: Expect) {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         for &opcode in opcodes {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
@@ -2956,7 +3001,7 @@ mod tests {
 
     #[track_caller]
     fn assert_compile_fails(method: &str, reason: ParseError) {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let result = iseq_to_hir(iseq);
         assert!(result.is_err(), "Expected an error but succesfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
@@ -4180,6 +4225,44 @@ mod tests {
               Return v10
         "#]]);
     }
+
+    #[test]
+    fn test_invokebuiltin_delegate_with_args() {
+        assert_method_hir_with_opcode("Float", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
+            fn Float:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject):
+              v6:BasicObject = InvokeBuiltin rb_f_float, v0, v1, v2
+              Jump bb1(v0, v1, v2, v3, v6)
+            bb1(v8:BasicObject, v9:BasicObject, v10:BasicObject, v11:BasicObject, v12:BasicObject):
+              Return v12
+        "#]]);
+    }
+
+    #[test]
+    fn test_invokebuiltin_delegate_without_args() {
+        assert_method_hir_with_opcode("class", YARVINSN_opt_invokebuiltin_delegate_leave, expect![[r#"
+            fn class:
+            bb0(v0:BasicObject):
+              v3:BasicObject = InvokeBuiltin _bi20, v0
+              Jump bb1(v0, v3)
+            bb1(v5:BasicObject, v6:BasicObject):
+              Return v6
+        "#]]);
+    }
+
+    #[test]
+    fn test_invokebuiltin_with_args() {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "start"));
+        assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
+        let function = iseq_to_hir(iseq).unwrap();
+        assert_function_hir(function, expect![[r#"
+            fn start:
+            bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
+              v6:FalseClassExact = Const Value(false)
+              v8:BasicObject = InvokeBuiltin gc_start_internal, v0, v1, v2, v3, v6
+              Return v8
+        "#]]);
+    }
 }
 
 #[cfg(test)]
@@ -4190,7 +4273,7 @@ mod opt_tests {
 
     #[track_caller]
     fn assert_optimized_method_hir(method: &str, hir: Expect) {
-        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq(method));
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
