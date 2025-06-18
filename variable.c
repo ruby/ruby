@@ -4726,7 +4726,12 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
             // so that we're embedded as long as possible.
             fields_obj = rb_imemo_fields_new(rb_singleton_class(klass), next_capacity);
             if (original_fields_obj) {
-                MEMCPY(rb_imemo_fields_ptr(fields_obj), rb_imemo_fields_ptr(original_fields_obj), VALUE, RSHAPE_LEN(current_shape_id));
+                VALUE *fields = rb_imemo_fields_ptr(fields_obj);
+                attr_index_t fields_count = RSHAPE_LEN(current_shape_id);
+                MEMCPY(fields, rb_imemo_fields_ptr(original_fields_obj), VALUE, fields_count);
+                for (attr_index_t i = 0; i < fields_count; i++) {
+                    RB_OBJ_WRITTEN(fields_obj, Qundef, fields[i]);
+                }
             }
         }
 
