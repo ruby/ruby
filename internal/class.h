@@ -136,7 +136,6 @@ STATIC_ASSERT(shape_max_variations, SHAPE_MAX_VARIATIONS < (1 << (sizeof(((rb_cl
 
 struct RClass {
     struct RBasic basic;
-    st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
     VALUE object_id;
     /*
      * If ns_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
@@ -144,14 +143,20 @@ struct RClass {
      */
 };
 
-// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
-// On 32bit platforms there is no variable width allocation so it doesn't matter.
-// TODO: restore this assertion after shrinking rb_classext_t
-// STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE || SIZEOF_VALUE < SIZEOF_LONG_LONG);
-
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
+};
+
+#if SIZEOF_VALUE >= SIZEOF_LONG_LONG
+// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
+// On 32bit platforms there is no variable width allocation so it doesn't matter.
+STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 4 * RVALUE_SIZE);
+#endif
+
+struct RClass_namespaceable {
+    struct RClass_and_rb_classext_t base;
+    st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -297,7 +302,8 @@ static inline st_table *
 RCLASS_CLASSEXT_TBL(VALUE klass)
 {
     if (FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE)) {
-        return RCLASS(klass)->ns_classext_tbl;
+        struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
+        return ns_klass->ns_classext_tbl;
     }
     return NULL;
 }
@@ -306,7 +312,8 @@ static inline void
 RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 {
     RUBY_ASSERT(FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
-    RCLASS(klass)->ns_classext_tbl = tbl;
+    struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
+    ns_klass->ns_classext_tbl = tbl;
 }
 
 /* class.c */

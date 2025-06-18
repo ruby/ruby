@@ -394,7 +394,7 @@ class_classext_foreach_i(st_data_t key, st_data_t value, st_data_t arg)
 void
 rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg)
 {
-    st_table *tbl = RCLASS(klass)->ns_classext_tbl;
+    st_table *tbl = RCLASS_CLASSEXT_TBL(klass);
     struct class_classext_foreach_arg foreach_arg;
     if (tbl) {
         foreach_arg.func = func;
@@ -649,7 +649,11 @@ class_alloc(enum ruby_value_type type, VALUE klass)
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
     const rb_namespace_t *ns = rb_definition_namespace();
-    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
+
+    size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
+    if (!ruby_namespace_init_done) {
+        alloc_size = sizeof(struct RClass_namespaceable);
+    }
 
     // class_alloc is supposed to return a new object that is not promoted yet.
     // So, we need to avoid GC after NEWOBJ_OF.
