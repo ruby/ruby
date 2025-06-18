@@ -108,11 +108,11 @@ Note: We're only listing outstanding class updates.
 
 The following bundled gems are promoted from default gems.
 
-* ostruct 0.6.1
+* ostruct 0.6.2
 * pstore 0.2.0
 * benchmark 0.4.1
 * logger 1.7.0
-* rdoc 6.14.0
+* rdoc 6.14.1
 * win32ole 1.9.2
 * irb 1.15.2
 * reline 0.6.1
@@ -153,7 +153,10 @@ The following bundled gems are updated.
 * rexml 3.4.1
 * net-imap 0.5.8
 * net-smtp 0.5.1
+* matrix 0.4.3
+* prime 0.1.4
 * rbs 3.9.4
+* debug 1.11.0
 * base64 0.3.0
 * bigdecimal 3.2.2
 * drb 2.2.3
