@@ -567,7 +567,7 @@ module Bundler
     end
 
     def feature_flag
-      @feature_flag ||= FeatureFlag.new(VERSION)
+      @feature_flag ||= FeatureFlag.new(settings[:simulate_version] || VERSION)
     end
 
     def reset!

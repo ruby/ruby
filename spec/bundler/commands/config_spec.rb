@@ -453,7 +453,7 @@ E
     it "does not make bundler crash and ignores the configuration" do
       bundle "config list --parseable"
 
-      expect(out).to be_empty
+      expect(out).to eq(simulated_version ? "simulate_version=#{simulated_version}" : "")
       expect(err).to be_empty
 
       ruby(<<~RUBY)
@@ -476,26 +476,38 @@ E
   describe "subcommands" do
     it "list" do
       bundle "config list", env: { "BUNDLE_FOO" => "bar" }
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nfoo\nSet via BUNDLE_FOO: \"bar\""
+      expected = "Settings are listed in order of priority. The top value will be used.\nfoo\nSet via BUNDLE_FOO: \"bar\""
+      expected += "\n\nsimulate_version\nSet via BUNDLE_SIMULATE_VERSION: \"#{simulated_version}\"" if simulated_version
+      expect(out).to eq(expected)
 
       bundle "config list", env: { "BUNDLE_FOO" => "bar" }, parseable: true
-      expect(out).to eq "foo=bar"
+      expected = "foo=bar"
+      expected += "\nsimulate_version=#{simulated_version}" if simulated_version
+      expect(out).to eq(expected)
     end
 
     it "list with credentials" do
       bundle "config list", env: { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\""
+      expected = "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\""
+      expected += "\n\nsimulate_version\nSet via BUNDLE_SIMULATE_VERSION: \"#{simulated_version}\"" if simulated_version
+      expect(out).to eq(expected)
 
       bundle "config list", parseable: true, env: { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
-      expect(out).to eq "gems.myserver.com=user:password"
+      expected = "gems.myserver.com=user:password"
+      expected += "\nsimulate_version=#{simulated_version}" if simulated_version
+      expect(out).to eq(expected)
     end
 
     it "list with API token credentials" do
       bundle "config list", env: { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
-      expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\""
+      expected = "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\""
+      expected += "\n\nsimulate_version\nSet via BUNDLE_SIMULATE_VERSION: \"#{simulated_version}\"" if simulated_version
+      expect(out).to eq(expected)
 
       bundle "config list", parseable: true, env: { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
-      expect(out).to eq "gems.myserver.com=api_token:x-oauth-basic"
+      expected = "gems.myserver.com=api_token:x-oauth-basic"
+      expected += "\nsimulate_version=#{simulated_version}" if simulated_version
+      expect(out).to eq(expected)
     end
 
     it "get" do

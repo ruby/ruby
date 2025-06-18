@@ -50,6 +50,8 @@ module Bundler
       @major_version >= target_major_version
     end
 
+    attr_reader :bundler_version
+
     def initialize(bundler_version)
       @bundler_version = Gem::Version.create(bundler_version)
       @major_version = @bundler_version.segments.first

@@ -333,7 +333,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       C
 
       expect(Bundler.ui).not_to receive(:warn)
-      expect(settings.all).to be_empty
+      expect(settings.all).to eq(simulated_version ? ["simulate_version"] : [])
     end
 
     it "converts older keys with dashes" do

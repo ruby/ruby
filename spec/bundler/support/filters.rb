@@ -1,9 +1,8 @@
 # frozen_string_literal: true
 
 class RequirementChecker < Proc
-  def self.against(present, major_only: false)
-    present = present.split(".")[0] if major_only
-    provided = Gem::Version.new(present)
+  def self.against(provided, major_only: false)
+    provided = Gem::Version.new(provided.segments.first) if major_only
 
     new do |required|
       requirement = Gem::Requirement.new(required)
@@ -28,8 +27,8 @@ end
 RSpec.configure do |config|
   config.filter_run_excluding realworld: true
 
-  config.filter_run_excluding bundler: RequirementChecker.against(Bundler::VERSION, major_only: true)
-  config.filter_run_excluding rubygems: RequirementChecker.against(Gem::VERSION)
+  config.filter_run_excluding bundler: RequirementChecker.against(Bundler.feature_flag.bundler_version, major_only: true)
+  config.filter_run_excluding rubygems: RequirementChecker.against(Gem.rubygems_version)
   config.filter_run_excluding ruby_repo: !ENV["GEM_COMMAND"].nil?
   config.filter_run_excluding no_color_tty: Gem.win_platform? || !ENV["GITHUB_ACTION"].nil?
   config.filter_run_excluding permissions: Gem.win_platform?
