@@ -1544,7 +1544,9 @@ RSpec.describe "bundle update --bundler" do
   end
 
   it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo do
-    pristine_system_gems "bundler-2.99.9"
+    bundle "config path.system true"
+
+    pristine_system_gems "bundler-9.0.0"
 
     build_repo4 do
       build_gem "myrack", "1.0"
@@ -1552,13 +1554,16 @@ RSpec.describe "bundle update --bundler" do
       build_bundler "999.0.0"
     end
 
+    checksums = checksums_section do |c|
+      c.checksum(gem_repo4, "myrack", "1.0")
+    end
+
     install_gemfile <<-G
       source "https://gem.repo4"
       gem "myrack"
     G
-    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.99.9")
 
-    bundle :update, bundler: true, verbose: true, env: { "BUNDLER_4_MODE" => nil }
+    bundle :update, bundler: true, verbose: true
 
     expect(out).to include("Updating bundler to 999.0.0")
     expect(out).to include("Running `bundle update --bundler \"> 0.a\" --verbose` with bundler 999.0.0")
@@ -1575,7 +1580,7 @@ RSpec.describe "bundle update --bundler" do
 
       DEPENDENCIES
         myrack
-
+      #{checksums}
       BUNDLED WITH
          999.0.0
     L
