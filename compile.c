@@ -13288,12 +13288,13 @@ ibf_dump_catch_table(struct ibf_dump *dump, const rb_iseq_t *iseq)
     }
 }
 
-static struct iseq_catch_table *
+static void
 ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offset, unsigned int size, const rb_iseq_t *parent_iseq)
 {
     if (size) {
-        struct iseq_catch_table *table = ruby_xmalloc(iseq_catch_table_bytes(size));
+        struct iseq_catch_table *table = ruby_xcalloc(1, iseq_catch_table_bytes(size));
         table->size = size;
+        ISEQ_BODY(parent_iseq)->catch_table = table;
 
         ibf_offset_t reading_pos = catch_table_offset;
 
@@ -13309,10 +13310,9 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
             RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
-        return table;
     }
     else {
-        return NULL;
+        ISEQ_BODY(parent_iseq)->catch_table = NULL;
     }
 }
 
@@ -13825,7 +13825,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->insns_info.body      = ibf_load_insns_info_body(load, insns_info_body_offset, insns_info_size);
     load_body->insns_info.positions = ibf_load_insns_info_positions(load, insns_info_positions_offset, insns_info_size);
     load_body->local_table          = ibf_load_local_table(load, local_table_offset, local_table_size);
-    load_body->catch_table          = ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
+    ibf_load_catch_table(load, catch_table_offset, catch_table_size, iseq);
+
     const rb_iseq_t *parent_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)parent_iseq_index);
     const rb_iseq_t *local_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)local_iseq_index);
     const rb_iseq_t *mandatory_only_iseq = ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)mandatory_only_iseq_index);
