@@ -2606,6 +2606,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let val = state.stack_pop()?;
                     fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, val, state: exit_id });
                 }
+                YARVINSN_opt_reverse => {
+                    // Reverse the order of the top N stack items.
+                    let n = get_arg(pc, 0).as_usize();
+                    for i in 0..n/2 {
+                        let bottom = state.stack_topn(n - 1 - i)?;
+                        let top = state.stack_topn(i)?;
+                        state.stack_setn(i, bottom);
+                        state.stack_setn(n - 1 - i, top);
+                    }
+                }
                 YARVINSN_newrange => {
                     let flag = RangeType::from(get_arg(pc, 0).as_u32());
                     let high = state.stack_pop()?;
@@ -4161,6 +4171,47 @@ mod tests {
               v5:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v7:BasicObject = SendWithoutBlock v2, :core#set_method_alias, v3, v4, v5
               Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn opt_reverse() {
+        eval("
+            def reverse_odd
+              a, b, c = @a, @b, @c
+              [a, b, c]
+            end
+
+            def reverse_even
+              a, b, c, d = @a, @b, @c, @d
+              [a, b, c, d]
+            end
+        ");
+        assert_method_hir_with_opcode("reverse_odd", YARVINSN_opt_reverse, expect![[r#"
+            fn reverse_odd:
+            bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v6:BasicObject = GetIvar v0, :@a
+              v8:BasicObject = GetIvar v0, :@b
+              v10:BasicObject = GetIvar v0, :@c
+              v12:ArrayExact = NewArray v6, v8, v10
+              Return v12
+        "#]]);
+        assert_method_hir_with_opcode("reverse_even", YARVINSN_opt_reverse, expect![[r#"
+            fn reverse_even:
+            bb0(v0:BasicObject):
+              v1:NilClassExact = Const Value(nil)
+              v2:NilClassExact = Const Value(nil)
+              v3:NilClassExact = Const Value(nil)
+              v4:NilClassExact = Const Value(nil)
+              v7:BasicObject = GetIvar v0, :@a
+              v9:BasicObject = GetIvar v0, :@b
+              v11:BasicObject = GetIvar v0, :@c
+              v13:BasicObject = GetIvar v0, :@d
+              v15:ArrayExact = NewArray v7, v9, v11, v13
+              Return v15
         "#]]);
     }
 
