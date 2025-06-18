@@ -47,29 +47,10 @@ static bool tmp_dir_has_dirsep;
 # define DIRSEP "/"
 #endif
 
-static int namespace_availability = 0;
+bool ruby_namespace_enabled = false; // extern
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_namespace_inspect(VALUE obj);
-
-int
-rb_namespace_available(void)
-{
-    const char *env;
-    if (namespace_availability) {
-        return namespace_availability > 0 ? 1 : 0;
-    }
-    env = getenv("RUBY_NAMESPACE");
-    if (env && strlen(env) > 0) {
-        if (strcmp(env, "1") == 0) {
-            namespace_availability = 1;
-            return 1;
-        }
-    }
-    namespace_availability = -1;
-    return 0;
-}
-
 static void namespace_push(rb_thread_t *th, VALUE namespace);
 static VALUE namespace_pop(VALUE th_value);
 
@@ -1029,6 +1010,15 @@ namespace_define_loader_method(const char *name)
 {
     rb_define_private_method(rb_mNamespaceLoader, name, rb_namespace_user_loading_func, -1);
     rb_define_singleton_method(rb_mNamespaceLoader, name, rb_namespace_user_loading_func, -1);
+}
+
+void
+Init_enable_namespace(void)
+{
+    const char *env = getenv("RUBY_NAMESPACE");
+    if (env && strlen(env) == 1 && env[0] == '1') {
+        ruby_namespace_enabled = true;
+    }
 }
 
 void

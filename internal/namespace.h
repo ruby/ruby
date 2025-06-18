@@ -51,7 +51,14 @@ typedef struct rb_namespace_struct rb_namespace_t;
 #define NAMESPACE_CC(cc) (cc ? NAMESPACE_METHOD_ENTRY(cc->cme_) : NULL)
 #define NAMESPACE_CC_ENTRIES(ccs) (ccs ? NAMESPACE_METHOD_ENTRY(ccs->cme) : NULL)
 
-int rb_namespace_available(void);
+RUBY_EXTERN bool ruby_namespace_enabled;
+
+static inline bool
+rb_namespace_available(void)
+{
+    return ruby_namespace_enabled;
+}
+
 void rb_namespace_enable_builtin(void);
 void rb_namespace_disable_builtin(void);
 void rb_namespace_push_loading_namespace(const rb_namespace_t *);
