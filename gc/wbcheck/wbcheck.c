@@ -911,7 +911,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     RUBY_ASSERT(!info->gc_mark_snapshot);
     RUBY_ASSERT(!info->writebarrier_children);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 // Heap walking
@@ -1178,11 +1178,11 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     wbcheck_foreach_object(objspace, wbcheck_shutdown_call_finalizer_callback, NULL);
 
     // After all finalizers have been called, verify all object references
-    unsigned int verify_lev = rb_gc_vm_lock();
+    unsigned int verify_lev = RB_GC_VM_LOCK();
     WBCHECK_DEBUG("wbcheck: verifying references for all objects after finalizers\n");
     wbcheck_foreach_object(objspace, wbcheck_verify_all_references_callback, objspace_ptr);
     WBCHECK_DEBUG("wbcheck: finished verifying all object references\n");
-    rb_gc_vm_unlock(verify_lev);
+    RB_GC_VM_UNLOCK(verify_lev);
 
     // Print summary and exit with error code if violations were found
     if (objspace->missed_write_barrier_parents > 0 || objspace->missed_write_barrier_children > 0) {
@@ -1196,7 +1196,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     }
 
     // Call rb_gc_obj_free on objects that need shutdown finalization (File, Data with dfree, etc.)
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
     WBCHECK_DEBUG("wbcheck: calling rb_gc_obj_free on objects that need shutdown finalization\n");
     wbcheck_foreach_object(objspace, wbcheck_shutdown_finalizer_callback, objspace_ptr);
     WBCHECK_DEBUG("wbcheck: finished calling rb_gc_obj_free\n");
@@ -1205,7 +1205,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
     WBCHECK_DEBUG("wbcheck: finalizing zombie objects\n");
     wbcheck_finalize_zombies(objspace);
     WBCHECK_DEBUG("wbcheck: finished finalizing zombie objects\n");
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 // Forking
