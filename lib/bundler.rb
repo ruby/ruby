@@ -173,7 +173,7 @@ module Bundler
       self_manager.restart_with_locked_bundler_if_needed
     end
 
-    # Automatically install dependencies if Bundler.settings[:auto_install] exists.
+    # Automatically install dependencies if settings[:auto_install] exists.
     # This is set through config cmd `bundle config set --global auto_install 1`.
     #
     # Note that this method `nil`s out the global Definition object, so it
@@ -480,11 +480,11 @@ module Bundler
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
       # the directory to be set as well, via `bundle config set --local bindir foo`.
-      Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
+      settings[:system_bindir] || Bundler.rubygems.gem_bindir
     end
 
     def preferred_gemfile_name
-      Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
+      settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
     end
 
     def use_system_gems?
