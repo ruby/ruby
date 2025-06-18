@@ -133,13 +133,16 @@ module Bundler
         removed_message += suffix if removed_message
       end
 
-      bundler_major_version = Bundler.bundler_major_version
-      if bundler_major_version > major_version
+      require_relative "../bundler"
+
+      feature_flag = Bundler.feature_flag
+
+      if feature_flag.removed_major?(major_version)
         require_relative "errors"
         raise DeprecatedError, "[REMOVED] #{removed_message || message}"
       end
 
-      return unless bundler_major_version >= major_version && prints_major_deprecations?
+      return unless feature_flag.deprecated_major?(major_version) && prints_major_deprecations?
       Bundler.ui.warn("[DEPRECATED] #{message}")
     end
 
@@ -386,7 +389,6 @@ module Bundler
     end
 
     def prints_major_deprecations?
-      require_relative "../bundler"
       return false if Bundler.settings[:silence_deprecations]
       require_relative "deprecate"
       return false if Bundler::Deprecate.skip

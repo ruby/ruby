@@ -42,6 +42,14 @@ module Bundler
 
     settings_option(:default_cli_command) { bundler_4_mode? ? :cli_help : :install }
 
+    def removed_major?(target_major_version)
+      @major_version > target_major_version
+    end
+
+    def deprecated_major?(target_major_version)
+      @major_version >= target_major_version
+    end
+
     def initialize(bundler_version)
       @bundler_version = Gem::Version.create(bundler_version)
       @major_version = @bundler_version.segments.first

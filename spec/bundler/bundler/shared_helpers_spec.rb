@@ -517,7 +517,7 @@ RSpec.describe Bundler::SharedHelpers do
   end
 
   describe "#major_deprecation" do
-    before { allow(Bundler).to receive(:bundler_major_version).and_return(37) }
+    before { allow(Bundler).to receive(:feature_flag).and_return(Bundler::FeatureFlag.new(37)) }
     before { allow(Bundler.ui).to receive(:warn) }
 
     it "prints and raises nothing below the deprecated major version" do
