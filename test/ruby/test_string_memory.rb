@@ -5,16 +5,24 @@ require 'objspace'
 class TestStringMemory < Test::Unit::TestCase
   def capture_allocations(klass)
     allocations = []
+    exclude = Set.new.compare_by_identity
 
     EnvUtil.without_gc do
       GC.start
       generation = GC.count
 
       ObjectSpace.trace_object_allocations do
+        ObjectSpace.each_object(klass) do |instance|
+          next unless ObjectSpace.allocation_generation(instance) == generation
+          exclude << instance
+        end
+
         yield
 
         ObjectSpace.each_object(klass) do |instance|
-          allocations << instance if ObjectSpace.allocation_generation(instance) == generation
+          next unless ObjectSpace.allocation_generation(instance) == generation
+          next if exclude.include?(instance)
+          allocations << instance
         end
       end
 
