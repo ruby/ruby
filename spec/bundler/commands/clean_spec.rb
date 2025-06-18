@@ -151,7 +151,7 @@ RSpec.describe "bundle clean" do
     bundle :clean
 
     digest = Digest(:SHA1).hexdigest(git_path.to_s)
-    cache_path = Bundler::VERSION.start_with?("2.") ? vendored_gems("cache/bundler/git/foo-1.0-#{digest}") : home(".bundle/cache/git/foo-1.0-#{digest}")
+    cache_path = Bundler.feature_flag.global_gem_cache? ? home(".bundle/cache/git/foo-1.0-#{digest}") : vendored_gems("cache/bundler/git/foo-1.0-#{digest}")
     expect(cache_path).to exist
   end
 
