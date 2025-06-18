@@ -52,6 +52,7 @@ typedef struct rb_namespace_struct rb_namespace_t;
 #define NAMESPACE_CC_ENTRIES(ccs) (ccs ? NAMESPACE_METHOD_ENTRY(ccs->cme) : NULL)
 
 RUBY_EXTERN bool ruby_namespace_enabled;
+RUBY_EXTERN bool ruby_namespace_init_done;
 
 static inline bool
 rb_namespace_available(void)
@@ -81,5 +82,5 @@ VALUE rb_namespace_exec(const rb_namespace_t *ns, namespace_exec_func *func, VAL
 VALUE rb_namespace_local_extension(VALUE namespace, VALUE fname, VALUE path);
 
 void rb_initialize_main_namespace(void);
-
+void rb_namespace_init_done(void);
 #endif /* INTERNAL_NAMESPACE_H */

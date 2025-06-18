@@ -48,11 +48,18 @@ static bool tmp_dir_has_dirsep;
 #endif
 
 bool ruby_namespace_enabled = false; // extern
+bool ruby_namespace_init_done = false; // extern
 
 VALUE rb_resolve_feature_path(VALUE klass, VALUE fname);
 static VALUE rb_namespace_inspect(VALUE obj);
 static void namespace_push(rb_thread_t *th, VALUE namespace);
 static VALUE namespace_pop(VALUE th_value);
+
+void
+rb_namespace_init_done(void)
+{
+    ruby_namespace_init_done = true;
+}
 
 void
 rb_namespace_enable_builtin(void)
@@ -1018,6 +1025,9 @@ Init_enable_namespace(void)
     const char *env = getenv("RUBY_NAMESPACE");
     if (env && strlen(env) == 1 && env[0] == '1') {
         ruby_namespace_enabled = true;
+    }
+    else {
+        ruby_namespace_init_done = true;
     }
 }
 
