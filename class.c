@@ -44,6 +44,8 @@
  *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RCLASS_IS_INITIALIZED
  *           Class has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_ICLASS
@@ -51,6 +53,8 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_MODULE
@@ -65,6 +69,8 @@
  *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RCLASS_IS_INITIALIZED
  *           Module has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
@@ -662,6 +668,8 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 
     VALUE flags = type;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+    if (!ruby_namespace_init_done) flags |= RCLASS_NAMESPACEABLE;
+
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
@@ -676,7 +684,7 @@ class_alloc(enum ruby_value_type type, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !rb_namespace_available() || NAMESPACE_USER_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, ruby_namespace_init_done || NAMESPACE_USER_P(ns));
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);

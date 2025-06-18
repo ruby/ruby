@@ -1822,8 +1822,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     GET_VM()->running = 1;
     memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
 
-    ruby_init_prelude();
-
     if (rb_namespace_available())
         rb_initialize_main_namespace();
 
@@ -1844,6 +1842,8 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     Init_builtin_yjit_hook();
 #endif
 
+    rb_namespace_init_done();
+    ruby_init_prelude();
     ruby_set_script_name(opt->script_name);
     require_libraries(&opt->req_list);
 }
