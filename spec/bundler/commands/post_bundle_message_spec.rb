@@ -119,8 +119,8 @@ RSpec.describe "post bundle message" do
           gem "myrack"
           gem "not-a-gem", :group => :development
         G
-        expect(err).to include <<-EOS.strip
-Could not find gem 'not-a-gem' in rubygems repository https://gem.repo1/ or installed locally.
+        expect(err).to include <<~EOS.strip
+          Could not find gem 'not-a-gem' in rubygems repository https://gem.repo1/ or installed locally.
         EOS
       end
 
