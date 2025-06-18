@@ -640,18 +640,18 @@ lock_and_maybe_gc(void *objspace_ptr)
 {
     if (!ruby_native_thread_p()) return;
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
 
     maybe_gc(objspace_ptr);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
 {
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
 
     // Check if we should trigger GC before allocating
@@ -682,19 +682,19 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     wbcheck_object_list_append(objspace->objects_to_capture, obj);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
     return obj;
 }
 
 size_t
 rb_gc_impl_obj_slot_size(VALUE obj)
 {
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     size_t result = info->alloc_size;
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
     return result;
 }
 
@@ -832,7 +832,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     if (RB_SPECIAL_CONST_P(b)) return;
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
@@ -863,7 +863,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         WBCHECK_DEBUG("wbcheck: write barrier skipped (snapshot not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void
@@ -871,12 +871,12 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
     WBCHECK_DEBUG("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     info->wb_protected = false;
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void
@@ -884,7 +884,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     WBCHECK_DEBUG("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -1027,7 +1027,7 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
 VALUE
 rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 {
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -1061,14 +1061,14 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
     }
 
 unlock_and_return:
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
     return result;
 }
 
 void
 rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
 {
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -1078,7 +1078,7 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     info->finalizers = 0;
     FL_UNSET(obj, FL_FINALIZE);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void
@@ -1088,7 +1088,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     rb_wbcheck_object_info_t *src_info = wbcheck_get_object_info(obj);
     rb_wbcheck_object_info_t *dest_info = wbcheck_get_object_info(dest);
@@ -1099,7 +1099,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
         FL_SET(dest, FL_FINALIZE);
     }
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 static VALUE
@@ -1302,13 +1302,13 @@ rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
     GC_ASSERT(wbcheck_global_objspace);
 
-    unsigned int lev = rb_gc_vm_lock();
+    unsigned int lev = RB_GC_VM_LOCK();
 
     // Check if this pointer exists in our object tracking table
     st_data_t value;
     bool result = st_lookup(wbcheck_global_objspace->object_table, (st_data_t)ptr, &value);
 
-    rb_gc_vm_unlock(lev);
+    RB_GC_VM_UNLOCK(lev);
     return result;
 }
 
