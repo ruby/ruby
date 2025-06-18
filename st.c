@@ -1494,7 +1494,16 @@ st_update(st_table *tab, st_data_t key,
         value = entry->record;
     }
     old_key = key;
+
+    unsigned int rebuilds_num = tab->rebuilds_num;
+
     retval = (*func)(&key, &value, arg, existing);
+
+    // We need to make sure that the callback didn't cause a table rebuild
+    // Ideally we would make sure no operations happened
+    assert(rebuilds_num == tab->rebuilds_num);
+    (void)rebuilds_num;
+
     switch (retval) {
       case ST_CONTINUE:
         if (! existing) {
