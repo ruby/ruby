@@ -107,11 +107,9 @@ have commit right, others don't.
 * https://github.com/rubygems/rubygems
 * https://rubygems.org/gems/bundler
 
-#### lib/cgi.rb, lib/cgi/*
+#### lib/cgi/escape.rb
 
 * *unmaintained*
-* https://github.com/ruby/cgi
-* https://rubygems.org/gems/cgi
 
 #### lib/English.rb
 
@@ -312,8 +310,6 @@ have commit right, others don't.
 #### ext/cgi
 
 * Nobuyoshi Nakada ([nobu])
-* https://github.com/ruby/cgi
-* https://rubygems.org/gems/cgi
 
 #### ext/date
 

@@ -34,7 +34,6 @@ of each.
 ## Libraries
 
 - Bundler ([GitHub][bundler]): Manage your Ruby application's gem dependencies
-- CGI ([GitHub][cgi]): Support for the Common Gateway Interface protocol
 - Delegator ([GitHub][delegate]): Provides three abilities to delegate method calls to an object
 - DidYouMean ([GitHub][did_you_mean]): "Did you mean?" experience in Ruby
 - English ([GitHub][English]): Provides references to special global variables with less cryptic names
@@ -137,7 +136,6 @@ of each.
 [benchmark]: https://github.com/ruby/benchmark
 [bigdecimal]: https://github.com/ruby/bigdecimal
 [bundler]: https://github.com/rubygems/rubygems
-[cgi]: https://github.com/ruby/cgi
 [csv]: https://github.com/ruby/csv
 [date]: https://github.com/ruby/date
 [debug]: https://github.com/ruby/debug
