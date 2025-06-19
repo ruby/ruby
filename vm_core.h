@@ -738,7 +738,7 @@ typedef struct rb_vm_struct {
     rb_serial_t fork_gen;
 
     /* set in single-threaded processes only: */
-    volatile int ubf_async_safe;
+    volatile unsigned int ubf_async_safe: 1;
 
     unsigned int running: 1;
     unsigned int thread_abort_on_exception: 1;
