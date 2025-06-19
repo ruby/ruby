@@ -625,6 +625,8 @@ tokens:
     comment: "the end of a string"
   - name: SYMBOL_BEGIN
     comment: "the beginning of a symbol"
+  - name: STAR_STAR_STAR
+    comment: '***'
   - name: TILDE
     comment: "~ or ~@"
   - name: UAMPERSAND
