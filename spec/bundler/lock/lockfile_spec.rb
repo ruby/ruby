@@ -109,7 +109,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, verbose: true, preserve_ruby_flags: true, env: { "BUNDLER_4_MODE" => nil }
+    install_gemfile <<-G, verbose: true, env: { "BUNDLER_4_MODE" => nil }
       source "https://gem.repo4"
 
       gem "myrack"

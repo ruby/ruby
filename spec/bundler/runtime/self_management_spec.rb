@@ -34,7 +34,7 @@ RSpec.describe "Self management" do
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local path.system true"
-      bundle "install", preserve_ruby_flags: true
+      bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
       # It uninstalls the older system bundler
@@ -70,7 +70,7 @@ RSpec.describe "Self management" do
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local path vendor/bundle"
-      bundle "install", preserve_ruby_flags: true
+      bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
 
@@ -107,7 +107,7 @@ RSpec.describe "Self management" do
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local deployment true"
-      bundle "install", preserve_ruby_flags: true
+      bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
 
@@ -162,7 +162,7 @@ RSpec.describe "Self management" do
       lockfile_bundled_with(current_version)
 
       bundle "config set --local version #{previous_minor}"
-      bundle "install", preserve_ruby_flags: true
+      bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
       bundle "-v"

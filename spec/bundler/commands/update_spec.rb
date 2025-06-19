@@ -1558,7 +1558,7 @@ RSpec.describe "bundle update --bundler" do
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.99.9")
 
-    bundle :update, bundler: true, verbose: true, preserve_ruby_flags: true, env: { "BUNDLER_4_MODE" => nil }
+    bundle :update, bundler: true, verbose: true, env: { "BUNDLER_4_MODE" => nil }
 
     expect(out).to include("Updating bundler to 999.0.0")
     expect(out).to include("Running `bundle update --bundler \"> 0.a\" --verbose` with bundler 999.0.0")

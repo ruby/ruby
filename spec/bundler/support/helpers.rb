@@ -71,7 +71,6 @@ module Spec
       bundle_bin ||= installed_bindir.join("bundle")
 
       env = options.delete(:env) || {}
-      preserve_ruby_flags = options.delete(:preserve_ruby_flags)
 
       requires = options.delete(:requires) || []
 
@@ -102,7 +101,6 @@ module Spec
       end.join
 
       cmd = "#{Gem.ruby} #{bundle_bin} #{cmd}#{args}"
-      env["BUNDLER_SPEC_ORIGINAL_CMD"] = "#{Gem.ruby} #{bundle_bin}" if preserve_ruby_flags
       sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
 
