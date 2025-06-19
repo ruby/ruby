@@ -98,7 +98,7 @@ module EnvUtil
     def start(pid, *args) end
 
     def dump(pid, timeout: 60, reprieve: timeout&.div(4))
-      dpid = start(pid, *command_file(File.join(__dir__, "dump.#{name}")))
+      dpid = start(pid, *command_file(File.join(__dir__, "dump.#{name}")), out: :err)
     rescue Errno::ENOENT
       return
     else
@@ -121,8 +121,8 @@ module EnvUtil
     register("gdb") do
       class << self
         def usable?; system(*%w[gdb --batch --quiet --nx -ex exit]); end
-        def start(pid, *args)
-          spawn(*%w[gdb --batch --quiet --pid #{pid}], *args)
+        def start(pid, *args, **opts)
+          spawn(*%W[gdb --batch --quiet --pid #{pid}], *args, **opts)
         end
         def command_file(file) "--command=#{file}"; end
       end
@@ -131,8 +131,8 @@ module EnvUtil
     register("lldb") do
       class << self
         def usable?; system(*%w[lldb -Q --no-lldbinit -o exit]); end
-        def start(pid, *args)
-          spawn(*%w[lldb --batch -Q --attach-pid #{pid}])
+        def start(pid, *args, **opts)
+          spawn(*%W[lldb --batch -Q --attach-pid #{pid}], *args, **opts)
         end
         def command_file(file) ["--source", file]; end
       end
