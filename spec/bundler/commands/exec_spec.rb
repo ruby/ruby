@@ -204,7 +204,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version provided by ruby" do
-        bundle "exec erb --version", artifice: nil
+        bundle "exec erb --version"
 
         expect(stdboth).to eq(default_erb_version)
       end
@@ -227,7 +227,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version specified" do
-        bundle "exec erb --version", artifice: nil
+        bundle "exec erb --version"
 
         expect(stdboth).to eq(specified_erb_version)
       end
@@ -254,7 +254,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses resolved version" do
-        bundle "exec erb --version", artifice: nil
+        bundle "exec erb --version"
 
         expect(stdboth).to eq(indirect_erb_version)
       end
@@ -583,7 +583,7 @@ RSpec.describe "bundle exec" do
     G
 
     bundle "config set auto_install 1"
-    bundle "exec myrackup"
+    bundle "exec myrackup", artifice: "compact_index"
     expect(out).to include("Installing foo 1.0")
   end
 
@@ -598,7 +598,7 @@ RSpec.describe "bundle exec" do
     G
 
     bundle "config set auto_install 1"
-    bundle "exec foo"
+    bundle "exec foo", artifice: "compact_index"
     expect(out).to include("Fetching myrack 0.9.1")
     expect(out).to include("Fetching #{lib_path("foo-1.0")}")
     expect(out.lines).to end_with("1.0")
@@ -625,7 +625,7 @@ RSpec.describe "bundle exec" do
       gem "fastlane"
     G
 
-    bundle "exec fastlane"
+    bundle "exec fastlane", artifice: "compact_index"
     expect(out).to include("Installing optparse 999.999.999")
     expect(out).to include("2.192.0")
   end
@@ -1250,9 +1250,9 @@ RSpec.describe "bundle exec" do
 
         env = { "PATH" => path }
         aggregate_failures do
-          expect(bundle("exec #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
-          expect(bundle("exec bundle exec #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
-          expect(bundle("exec ruby #{file}", artifice: nil, env: env)).to eq(default_openssl_version)
+          expect(bundle("exec #{file}", env: env)).to eq(default_openssl_version)
+          expect(bundle("exec bundle exec #{file}", env: env)).to eq(default_openssl_version)
+          expect(bundle("exec ruby #{file}", env: env)).to eq(default_openssl_version)
           expect(run(file.read, artifice: nil, env: env)).to eq(default_openssl_version)
         end
 

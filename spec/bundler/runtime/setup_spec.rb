@@ -1464,7 +1464,7 @@ end
         install_gemfile "source 'https://gem.repo1'"
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle "exec ./script.rb", artifice: nil, env: { "RUBYOPT" => activation_warning_hack_rubyopt }
+        bundle "exec ./script.rb", env: { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
