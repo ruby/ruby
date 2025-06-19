@@ -1614,6 +1614,7 @@ module Test
           start = Time.now
 
           results = _run_suites suites, type
+          suites.each { |suite| suite.reset_test_methods_ran } if @repeat_count
 
           @test_count      = results.inject(0) { |sum, (tc, _)| sum + tc }
           @assertion_count = results.inject(0) { |sum, (_, ac)| sum + ac }
@@ -1667,6 +1668,8 @@ module Test
           trace = true
         end
 
+        all_test_methods.reject! { |method| suite.test_methods_ran[method] }
+
         assertions = all_test_methods.map { |method|
 
           inst = suite.new method
@@ -1692,6 +1695,7 @@ module Test
 
           _end_method(inst)
 
+          suite.test_methods_ran[method] = true
           inst._assertions
         }
         return assertions.size, assertions.inject(0) { |sum, n| sum + n }
