@@ -999,11 +999,10 @@ static VALUE
 build_cipher_string(VALUE v)
 {
     VALUE str, elem;
-    int i;
 
     if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
-        for (i = 0; i < RARRAY_LEN(v); i++) {
+        for (long i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
             if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
