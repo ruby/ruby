@@ -896,7 +896,7 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
 
 /*
  *  call-seq:
- *     obj.method_missing(symbol [, *args] )   -> result
+ *     obj.method_missing(symbol [, *args, **kwargs, &block] )   -> result
  *
  *  Invoked by Ruby when <i>obj</i> is sent a message it cannot handle.
  *  <i>symbol</i> is the symbol for the method called, and <i>args</i>
@@ -916,12 +916,12 @@ NORETURN(static void raise_method_missing(rb_execution_context_t *ec, int argc, 
  *         # ...
  *       end
  *
- *       def method_missing(symbol, *args)
+ *       def method_missing(symbol, ...)
  *         str = symbol.id2name
  *         begin
  *           roman_to_int(str)
  *         rescue
- *           super(symbol, *args)
+ *           super
  *         end
  *       end
  *     end
