@@ -742,7 +742,7 @@ RSpec.describe "compact index api" do
         gem "myrack"
       G
 
-      bundle :install, env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false, artifice: nil
+      bundle :install, env: { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }, raise_on_error: false, artifice: nil
       expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end

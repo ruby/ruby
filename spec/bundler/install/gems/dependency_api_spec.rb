@@ -712,7 +712,7 @@ RSpec.describe "gemcutter's dependency API" do
         gem "myrack"
       G
 
-      bundle :install, artifice: "fail", env: { "RUBYOPT" => opt_add("-I#{bundled_app("broken_ssl")}", ENV["RUBYOPT"]) }, raise_on_error: false
+      bundle :install, artifice: "fail", env: { "RUBYOPT" => "-I#{bundled_app("broken_ssl")}" }, raise_on_error: false
       expect(err).to include("recompile Ruby").and include("cannot load such file")
     end
   end
