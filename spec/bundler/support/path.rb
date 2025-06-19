@@ -75,6 +75,10 @@ module Spec
       @man_dir ||= lib_dir.join("bundler/man")
     end
 
+    def hax
+      @hax ||= spec_dir.join("support/hax.rb")
+    end
+
     def tracked_files
       @tracked_files ||= git_ls_files(tracked_files_glob)
     end

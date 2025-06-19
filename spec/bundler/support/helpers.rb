@@ -172,7 +172,7 @@ module Spec
         requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
       end
 
-      requires << "#{Path.spec_dir}/support/hax.rb"
+      requires << hax
 
       require_option = requires.map {|r| "-r#{r}" }
 
@@ -186,7 +186,7 @@ module Spec
 
     def gem_command(command, options = {})
       env = options[:env] || {}
-      env["RUBYOPT"] = opt_add(opt_add("-r#{spec_dir}/support/hax.rb", env["RUBYOPT"]), ENV["RUBYOPT"])
+      env["RUBYOPT"] = opt_add(opt_add("-r#{hax}", env["RUBYOPT"]), ENV["RUBYOPT"])
       options[:env] = env
 
       # Sometimes `gem install` commands hang at dns resolution, which has a
