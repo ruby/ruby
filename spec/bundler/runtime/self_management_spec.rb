@@ -82,6 +82,10 @@ RSpec.describe "Self management" do
       bundle "-v"
       expect(out).to eq(previous_minor)
 
+      # Preserves original gem home when auto-switching
+      bundle "exec ruby -e 'puts Bundler.original_env[\"GEM_HOME\"]'"
+      expect(out).to eq(ENV["GEM_HOME"])
+
       # ruby-core test setup has always "lib" in $LOAD_PATH so `require "bundler/setup"` always activate the local version rather than using RubyGems gem activation stuff
       unless ruby_core?
         # App now uses locked version, even when not using the CLI directly
