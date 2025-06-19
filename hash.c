@@ -5073,10 +5073,8 @@ rb_hash_deconstruct_keys(VALUE hash, VALUE keys)
 static int
 add_new_i(st_data_t *key, st_data_t *val, st_data_t arg, int existing)
 {
-    VALUE *args = (VALUE *)arg;
     if (existing) return ST_STOP;
-    RB_OBJ_WRITTEN(args[0], Qundef, (VALUE)*key);
-    RB_OBJ_WRITE(args[0], (VALUE *)val, args[1]);
+    *val = arg;
     return ST_CONTINUE;
 }
 
@@ -5088,22 +5086,25 @@ int
 rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 {
     st_table *tbl;
-    int ret = 0;
-    VALUE args[2];
-    args[0] = hash;
-    args[1] = val;
+    int ret = -1;
 
     if (RHASH_AR_TABLE_P(hash)) {
-        ret = ar_update(hash, (st_data_t)key, add_new_i, (st_data_t)args);
-        if (ret != -1) {
-            return ret;
+        ret = ar_update(hash, (st_data_t)key, add_new_i, (st_data_t)val);
+        if (ret == -1) {
+            ar_force_convert_table(hash, __FILE__, __LINE__);
         }
-        ar_force_convert_table(hash, __FILE__, __LINE__);
     }
 
-    tbl = RHASH_TBL_RAW(hash);
-    return st_update(tbl, (st_data_t)key, add_new_i, (st_data_t)args);
-
+    if (ret == -1) {
+        tbl = RHASH_TBL_RAW(hash);
+        ret = st_update(tbl, (st_data_t)key, add_new_i, (st_data_t)val);
+    }
+    if (!ret) {
+        // Newly inserted
+        RB_OBJ_WRITTEN(hash, Qundef, key);
+        RB_OBJ_WRITTEN(hash, Qundef, val);
+    }
+    return ret;
 }
 
 static st_data_t
