@@ -4542,8 +4542,58 @@ rb_str_cmp(VALUE str1, VALUE str2)
     if (str1 == str2) return 0;
     RSTRING_GETMEM(str1, ptr1, len1);
     RSTRING_GETMEM(str2, ptr2, len2);
+
+    if (ptr1 == ptr2) {
+        long len = lesser(len1, len2);
+        ptr1 += len; len1 -= len;
+        ptr2 += len; len2 -= len;
+    }
+    if (len1 == 0 && len2 == 0) return 0;
+    if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
+        if ((retval = memcmp(ptr1, ptr2, lesser(len1, len2))) == 0) {
+            if (len1 == len2) {
+                if (!rb_str_comparable(str1, str2)) {
+                    if (ENCODING_GET(str1) > ENCODING_GET(str2))
+                        return 1;
+                    return -1;
+                }
+                return 0;
+            }
+            return (len1 > len2) ? 1 : -1;
+        }
+        return (retval > 0) ? 1 : -1;
+    }
+    else {
+        rb_encoding *enc1 = rb_enc_get(str1);
+        rb_encoding *enc2 = rb_enc_get(str2);
+        const char *p1end = ptr1 + len1, *p2end = ptr2 + len2;
+        const char *p1 = ptr1, *p2 = ptr2;
+        unsigned int c1, c2;
+        int r1, r2;
+
+        while (p1 < p1end && p2 < p2end) {
+            if ((r1 = rb_enc_precise_mbclen(p1, p1end, enc1)) <= 0)
+                break;
+            if ((r2 = rb_enc_precise_mbclen(p2, p2end, enc2)) <= 0)
+                break;
+            c1 = rb_enc_mbc_to_codepoint(p1, p1end, enc1);
+            c2 = rb_enc_mbc_to_codepoint(p2, p2end, enc2);
+            p1 += MBCLEN_CHARFOUND_LEN(r1);
+            p2 += MBCLEN_CHARFOUND_LEN(r2);
+            if (c1 != c2) {
+                return c1 < c2 ? -1 : 1;
+            }
+        }
+        len1 = p1end - (ptr1 = p1);
+        len2 = p2end - (ptr2 = p2);
+        if (len1 == 0 && len2 == 0) goto same_binary;
+        if (len1 == 0) return -1;
+        if (len2 == 0) return 1;
+    }
+
     if (ptr1 == ptr2 || (retval = memcmp(ptr1, ptr2, lesser(len1, len2))) == 0) {
         if (len1 == len2) {
+          same_binary:
             if (!rb_str_comparable(str1, str2)) {
                 if (ENCODING_GET(str1) > ENCODING_GET(str2))
                     return 1;
@@ -4712,6 +4762,12 @@ str_casecmp(VALUE str1, VALUE str2)
 
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
+    if (p1 == p2) {
+        len = lesser(p1end-p1, p2end-p2);
+        p1 += len;
+        p2 += len;
+    }
+    if (p1 == p1end && p2 == p2end) return INT2FIX(0);
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
         while (p1 < p1end && p2 < p2end) {
             if (*p1 != *p2) {
@@ -4725,34 +4781,38 @@ str_casecmp(VALUE str1, VALUE str2)
         }
     }
     else {
-        while (p1 < p1end && p2 < p2end) {
-            int l1, c1 = rb_enc_ascget(p1, p1end, &l1, enc);
-            int l2, c2 = rb_enc_ascget(p2, p2end, &l2, enc);
+        rb_encoding *enc1 = rb_enc_get(str1);
+        rb_encoding *enc2 = rb_enc_get(str2);
+        unsigned int c1, c2;
+        int r1, r2;
 
-            if (0 <= c1 && 0 <= c2) {
-                c1 = TOLOWER(c1);
-                c2 = TOLOWER(c2);
-                if (c1 != c2)
-                    return INT2FIX(c1 < c2 ? -1 : 1);
+        while (p1 < p1end && p2 < p2end) {
+            if ((r1 = rb_enc_precise_mbclen(p1, p1end, enc1)) <= 0)
+                break;
+            if ((r2 = rb_enc_precise_mbclen(p2, p2end, enc2)) <= 0)
+                break;
+            c1 = rb_enc_mbc_to_codepoint(p1, p1end, enc1);
+            c2 = rb_enc_mbc_to_codepoint(p2, p2end, enc2);
+            p1 += MBCLEN_CHARFOUND_LEN(r1);
+            p2 += MBCLEN_CHARFOUND_LEN(r2);
+            if (ISASCII(c1)) c1 = TOLOWER(c1);
+            if (ISASCII(c2)) c2 = TOLOWER(c2);
+            if (c1 != c2) {
+                return INT2FIX(c1 < c2 ? -1 : 1);
             }
-            else {
-                int r;
-                l1 = rb_enc_mbclen(p1, p1end, enc);
-                l2 = rb_enc_mbclen(p2, p2end, enc);
-                len = l1 < l2 ? l1 : l2;
-                r = memcmp(p1, p2, len);
-                if (r != 0)
-                    return INT2FIX(r < 0 ? -1 : 1);
-                if (l1 != l2)
-                    return INT2FIX(l1 < l2 ? -1 : 1);
-            }
-            p1 += l1;
-            p2 += l2;
+        }
+        if (p1 < p1end && p2 < p2end) {
+            len = lesser(p1end-p1, p2end-p2);
+            if ((r1 = memcmp(p1, p2, len)) != 0)
+                return INT2FIX(r1 < 0 ? -1 : 1);
+            p1 += len;
+            p2 += len;
         }
     }
-    if (RSTRING_LEN(str1) == RSTRING_LEN(str2)) return INT2FIX(0);
-    if (RSTRING_LEN(str1) > RSTRING_LEN(str2)) return INT2FIX(1);
-    return INT2FIX(-1);
+
+    if (p1 < p1end) return INT2FIX(1);
+    if (p2 < p2end) return INT2FIX(-1);
+    return INT2FIX(0);
 }
 
 /*
