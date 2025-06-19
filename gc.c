@@ -1746,7 +1746,11 @@ rb_objspace_free_objects(void *objspace)
 int
 rb_objspace_garbage_object_p(VALUE obj)
 {
-    return rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
+    void *objspace = rb_gc_get_objspace();
+    if (!rb_gc_impl_pointer_to_heap_p(objspace, (void *)obj)) {
+        return TRUE;
+    }
+    return rb_gc_impl_garbage_object_p(objspace, obj);
 }
 
 bool
