@@ -1508,6 +1508,7 @@ st_update(st_table *tab, st_data_t key,
     switch (retval) {
       case ST_CONTINUE:
         if (! existing) {
+            xfree(xmalloc(1));
             st_add_direct_with_hash(tab, key, value, hash);
             break;
         }
