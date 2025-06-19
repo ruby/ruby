@@ -1101,6 +1101,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (src_info->finalizers) {
         VALUE table = rb_ary_dup(src_info->finalizers);
+        rb_obj_hide(table);
         dest_info->finalizers = table;
         FL_SET(dest, FL_FINALIZE);
     }
@@ -1337,5 +1338,10 @@ rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
 void
 rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
 {
-    // Stub implementation
+    rb_wbcheck_object_info_t *src_info = wbcheck_get_object_info(obj);
+
+    if (!src_info->wb_protected) {
+        rb_gc_impl_writebarrier_unprotect(objspace_ptr, dest);
+    }
+    rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
