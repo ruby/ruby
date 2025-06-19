@@ -34,6 +34,8 @@ Note: We're only listing outstanding class updates.
         conf.inspect #=> #<DatabaseConfig:0x0000000104def350 @host="localhost", @user="root">
         ```
 
+        [[Feature #21219]]
+
 * Binding
 
     * `Binding#local_variables` does no longer include numbered parameters.
@@ -220,6 +222,7 @@ The following bundled gems are updated.
 [Bug #21049]:     https://bugs.ruby-lang.org/issues/21049
 [Feature #21166]: https://bugs.ruby-lang.org/issues/21166
 [Feature #21216]: https://bugs.ruby-lang.org/issues/21216
+[Feature #21219]: https://bugs.ruby-lang.org/issues/21219
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
