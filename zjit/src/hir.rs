@@ -498,6 +498,7 @@ pub enum Insn {
 
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, call_info: CallInfo, cd: *const rb_call_data, state: InsnId },
+    AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
@@ -699,6 +700,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
+            Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { .. } => write!(f, "SideExit"),
             Insn::PutSpecialObject { value_type } => {
                 write!(f, "PutSpecialObject {}", value_type)
@@ -1023,6 +1025,11 @@ impl Function {
                 cd: *cd,
                 state: *state,
             },
+            AnyToString { val, str, state } => AnyToString {
+                val: find!(*val),
+                str: find!(*str),
+                state: *state,
+            },
             SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
@@ -1154,6 +1161,7 @@ impl Function {
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
+            Insn::AnyToString { .. } => types::String,
         }
     }
 
@@ -1398,12 +1406,19 @@ impl Function {
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjToString { val, call_info, cd, state, .. } => {
-                        if self.is_a(val, types::StringExact) {
+                        if self.is_a(val, types::String) {
                             // behaves differently from `SendWithoutBlock` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
                             self.make_equal_to(insn_id, val);
                         } else {
                             let replacement = self.push_insn(block, Insn::SendWithoutBlock { self_val: val, call_info, cd, args: vec![], state });
                             self.make_equal_to(insn_id, replacement)
+                        }
+                    }
+                    Insn::AnyToString { str, .. } => {
+                        if self.is_a(str, types::String) {
+                            self.make_equal_to(insn_id, str);
+                        } else {
+                            self.push_insn_id(block, insn_id); 
                         }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
@@ -1780,6 +1795,11 @@ impl Function {
                 }
                 Insn::ObjToString { val, state, .. } => {
                     worklist.push_back(val);
+                    worklist.push_back(state);
+                }
+                Insn::AnyToString { val, str, state, .. } => {
+                    worklist.push_back(val);
+                    worklist.push_back(str);
                     worklist.push_back(state);
                 }
                 Insn::GetGlobal { state, .. } |
@@ -2720,6 +2740,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, call_info: CallInfo { method_name }, cd, state: exit_id });
                     state.stack_push(objtostring)
+                }
+                YARVINSN_anytostring => {
+                    let str = state.stack_pop()?;
+                    let val = state.stack_pop()?;
+
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
+                    state.stack_push(anytostring);
                 }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
@@ -4390,7 +4418,7 @@ mod tests {
     }
 
     #[test]
-    fn test_objtostring() {
+    fn test_objtostring_anytostring() {
         eval("
             def test = \"#{1}\"
         ");
@@ -4400,6 +4428,7 @@ mod tests {
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
               v5:BasicObject = ObjToString v3
+              v7:String = AnyToString v3, str: v5
               SideExit
         "#]]);
     }
@@ -5963,7 +5992,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_objtostring_string() {
+    fn test_objtostring_anytostring_string() {
         eval(r##"
             def test = "#{('foo')}"
         "##);
@@ -5978,7 +6007,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_objtostring_with_non_string() {
+    fn test_objtostring_anytostring_with_non_string() {
         eval(r##"
             def test = "#{1}"
         "##);
@@ -5987,7 +6016,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v8:BasicObject = SendWithoutBlock v3, :to_s
+              v10:BasicObject = SendWithoutBlock v3, :to_s
+              v7:String = AnyToString v3, str: v10
               SideExit
         "#]]);
     }
