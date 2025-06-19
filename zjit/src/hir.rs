@@ -1813,7 +1813,7 @@ impl Function {
         }
         // Remove branch instruction
         self.blocks[block.0].insns.pop();
-        // Copy target instructions into block
+        // Move target instructions into block
         let target_insns = std::mem::take(&mut self.blocks[target.0].insns);
         self.blocks[block.0].insns.extend(target_insns);
         true
