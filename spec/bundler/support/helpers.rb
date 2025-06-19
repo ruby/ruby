@@ -79,15 +79,14 @@ module Spec
       custom_load_path = options.delete(:load_path)
 
       load_path = []
-      load_path << spec_dir
       load_path << custom_load_path if custom_load_path
 
-      build_ruby_options = { load_path: load_path, requires: requires, env: env }
-      build_ruby_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice) || cmd.start_with?("exec")
+      build_env_options = { load_path: load_path, requires: requires, env: env }
+      build_env_options.merge!(artifice: options.delete(:artifice)) if options.key?(:artifice) || cmd.start_with?("exec")
 
       match_source(cmd)
 
-      env, ruby_cmd = build_ruby_cmd(build_ruby_options)
+      env = build_env(build_env_options)
 
       raise_on_error = options.delete(:raise_on_error)
 
@@ -102,8 +101,8 @@ module Spec
         end
       end.join
 
-      cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
-      env["BUNDLER_SPEC_ORIGINAL_CMD"] = "#{ruby_cmd} #{bundle_bin}" if preserve_ruby_flags
+      cmd = "#{Gem.ruby} #{bundle_bin} #{cmd}#{args}"
+      env["BUNDLER_SPEC_ORIGINAL_CMD"] = "#{Gem.ruby} #{bundle_bin}" if preserve_ruby_flags
       sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
 
@@ -123,10 +122,10 @@ module Spec
     end
 
     def ruby(ruby, options = {})
-      env, ruby_cmd = build_ruby_cmd({ artifice: nil }.merge(options))
+      env = build_env({ artifice: nil }.merge(options))
       escaped_ruby = ruby.shellescape
       options[:env] = env if env
-      sys_exec(%(#{ruby_cmd} -w -e #{escaped_ruby}), options)
+      sys_exec(%(#{Gem.ruby} -w -e #{escaped_ruby}), options)
     end
 
     def load_error_ruby(ruby, name, opts = {})
@@ -139,17 +138,19 @@ module Spec
       R
     end
 
-    def build_ruby_cmd(options = {})
-      libs = options.delete(:load_path)
-      lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
-
+    def build_env(options = {})
       env = options.delete(:env) || {}
+      libs = options.delete(:load_path) || []
+      env["RUBYOPT"] = opt_add("-I#{libs.join(File::PATH_SEPARATOR)}", env["RUBYOPT"]) if libs.any?
+
       current_example = RSpec.current_example
 
       main_source = @gemfile_source if defined?(@gemfile_source)
       compact_index_main_source = main_source&.start_with?("https://gem.repo", "https://gems.security")
 
       requires = options.delete(:requires) || []
+      requires << hax
+
       artifice = options.delete(:artifice) do
         if current_example && current_example.metadata[:realworld]
           "vcr"
@@ -172,11 +173,9 @@ module Spec
         requires << "#{Path.spec_dir}/support/artifice/#{artifice}.rb"
       end
 
-      requires << hax
+      requires.each {|r| env["RUBYOPT"] = opt_add("-r#{r}", env["RUBYOPT"]) }
 
-      require_option = requires.map {|r| "-r#{r}" }
-
-      [env, [Gem.ruby, *lib_option, *require_option].compact.join(" ")]
+      env
     end
 
     def gembin(cmd, options = {})
