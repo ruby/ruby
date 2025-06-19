@@ -46,8 +46,10 @@ describe "Regexps with encoding modifiers" do
     /./n.encoding.should == Encoding::US_ASCII
   end
 
-  it 'uses BINARY when is not initialized' do
-    Regexp.allocate.encoding.should == Encoding::BINARY
+  ruby_version_is ""..."3.3" do
+    it 'uses BINARY when is not initialized' do
+      Regexp.allocate.encoding.should == Encoding::BINARY
+    end
   end
 
   it 'uses BINARY as /n encoding if not all chars are 7-bit' do
