@@ -141,6 +141,7 @@ The following default gems are updated.
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * uri 1.0.3
+* weakref 0.1.4
 
 The following bundled gems are added.
 
