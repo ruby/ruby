@@ -91,6 +91,7 @@ rb_free_global_enc_table(void)
 
 static rb_encoding *global_enc_ascii,
                    *global_enc_utf_8,
+                   *global_enc_utf_16le,
                    *global_enc_us_ascii;
 
 #define GLOBAL_ENC_TABLE_LOCKING(tbl) \
@@ -697,14 +698,16 @@ rb_enc_init(struct enc_table *enc_table)
     ENC_REGISTER(ASCII_8BIT);
     ENC_REGISTER(UTF_8);
     ENC_REGISTER(US_ASCII);
+    ENC_REGISTER(UTF_16LE);
     global_enc_ascii = enc_table->list[ENCINDEX_ASCII_8BIT].enc;
     global_enc_utf_8 = enc_table->list[ENCINDEX_UTF_8].enc;
+    global_enc_utf_16le = enc_table->list[ENCINDEX_UTF_16LE].enc;
     global_enc_us_ascii = enc_table->list[ENCINDEX_US_ASCII].enc;
 #undef ENC_REGISTER
 #undef OnigEncodingASCII_8BIT
 #define ENCDB_REGISTER(name, enc) enc_register_at(enc_table, ENCINDEX_##enc, name, NULL)
     ENCDB_REGISTER("UTF-16BE", UTF_16BE);
-    ENCDB_REGISTER("UTF-16LE", UTF_16LE);
+//    ENCDB_REGISTER("UTF-16LE", UTF_16LE);
     ENCDB_REGISTER("UTF-32BE", UTF_32BE);
     ENCDB_REGISTER("UTF-32LE", UTF_32LE);
     ENCDB_REGISTER("UTF-16", UTF_16);

@@ -7341,6 +7341,65 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     return ret;
 }
 
+/* License: Ruby's */
+ssize_t
+rb_w32_read_console_wchar(int fd, void *buf, size_t size)
+{
+    DWORD read;
+    DWORD err;
+    size_t len;
+    size_t ret;
+
+    // validate fd by using _get_osfhandle() because we cannot access _nhandle
+    if (_get_osfhandle(fd) == -1) {
+        return -1;
+    }
+
+//    if (_osfile(fd) & FTEXT) {
+//        return _read(fd, buf, size);
+//    }
+
+    rb_acrt_lowio_lock_fh(fd);
+
+    if (!(size/2) || _osfile(fd) & FEOFLAG) {
+        _set_osflags(fd, _osfile(fd) & ~FEOFLAG);
+        rb_acrt_lowio_unlock_fh(fd);
+        return 0;
+    }
+
+    ret = 0;
+    len = size / 2;
+
+    if (!ReadConsoleW((HANDLE)_osfhnd(fd), buf, len, &read, NULL)) {
+        err = GetLastError();
+        if (err == ERROR_ACCESS_DENIED)
+            errno = EBADF;
+/*
+        else if (err == ERROR_HANDLE_EOF) {
+            rb_acrt_lowio_unlock_fh(fd);
+            return 0;
+        }
+*/
+        else
+            errno = map_errno(err);
+
+        rb_acrt_lowio_unlock_fh(fd);
+        return -1;
+    }
+    else {
+        err = GetLastError();
+        errno = map_errno(err);
+    }
+
+    ret += read;
+    if (read == 0)
+        _set_osflags(fd, _osfile(fd) | FEOFLAG);
+
+    rb_acrt_lowio_unlock_fh(fd);
+
+    return ret * 2;
+}
+
 #undef write
 /* License: Ruby's */
 static ssize_t

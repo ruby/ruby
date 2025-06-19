@@ -587,6 +587,12 @@ rb_sys_fail_on_write(rb_io_t *fptr)
 /* Windows */
 # define DEFAULT_TEXTMODE FMODE_TEXTMODE
 # define TEXTMODE_NEWLINE_DECORATOR_ON_WRITE ECONV_CRLF_NEWLINE_DECORATOR
+static rb_encoding*io_read_encoding(rb_io_t *fptr);
+/*
+ * When fptr is TTY, a special determination will be required.
+ * IO's input encoding == locale(except UTF-8), use ANSI(multibyte) API, simply read() called.
+ * Otherwise, use WChar API and transcode to input encoding.
+ */
 /*
  * CRLF newline is set as default newline decorator.
  * If only CRLF newline conversion is needed, we use binary IO process
@@ -594,7 +600,10 @@ rb_sys_fail_on_write(rb_io_t *fptr)
  * If encoding conversion is needed or a user sets text mode, we use encoding
  * conversion IO process and universal newline decorator by default.
  */
-#define NEED_READCONV(fptr) ((fptr)->encs.enc2 != NULL || (fptr)->encs.ecflags & ~ECONV_CRLF_NEWLINE_DECORATOR)
+#define NEED_READCONV(fptr) (\
+    ((fptr)->mode & FMODE_TTY) || \
+    ((fptr)->encs.enc2 != NULL || (fptr)->encs.ecflags & ~ECONV_CRLF_NEWLINE_DECORATOR) \
+    )
 #define WRITECONV_MASK ( \
     (ECONV_DECORATOR_MASK & ~ECONV_CRLF_NEWLINE_DECORATOR)|\
     ECONV_STATEFUL_DECORATOR_MASK|\
@@ -1203,7 +1212,15 @@ internal_read_func(void *ptr)
             return -1;
         }
     }
-
+#ifdef _WIN32
+    if (iis->fptr->mode & FMODE_TTY) {
+        // read UTF-16 from console and transcode it
+        // not for binary reading method
+        if (iis->fptr->readconv) {
+            return rb_w32_read_console_wchar(iis->fd, iis->buf, iis->capa);
+        }
+    }
+#endif
   retry:
     result = read(iis->fd, iis->buf, iis->capa);
 
@@ -3167,6 +3184,22 @@ make_readconv(rb_io_t *fptr, int size)
         const char *sname, *dname;
         ecflags = fptr->encs.ecflags & ~ECONV_NEWLINE_DECORATOR_WRITE_MASK;
         ecopts = fptr->encs.ecopts;
+
+#ifdef _WIN32
+        if (fptr->mode & FMODE_TTY) {
+            // console input
+            if (!(fptr->mode & FMODE_BINMODE) &&
+                 (rb_locale_encindex() == ENCINDEX_UTF_8 ||
+                  rb_locale_encindex() != rb_enc_to_index(io_read_encoding(fptr)))) {
+                // transcode from UTF-16LE if codepage != read_encoding
+                // and force using transcode if codepage == UTF-8
+                sname = rb_enc_name(rb_enc_from_index(ENCINDEX_UTF_16LE));
+                dname = rb_enc_name(io_read_encoding(fptr));
+            } else {
+                sname = dname = "";
+            }
+        } else 
+#endif
         if (fptr->encs.enc2) {
             sname = rb_enc_name(fptr->encs.enc2);
             dname = rb_enc_name(io_read_encoding(fptr));
@@ -13596,6 +13629,7 @@ rb_stdio_set_default_encoding(void)
     VALUE val = Qnil;
 
 #ifdef _WIN32
+/*
     if (isatty(fileno(stdin))) {
         rb_encoding *external = rb_locale_encoding();
         rb_encoding *internal = rb_default_internal_encoding();
@@ -13606,6 +13640,7 @@ rb_stdio_set_default_encoding(void)
                         Qnil);
     }
     else
+*/
 #endif
     rb_io_set_encoding(1, &val, rb_stdin);
     rb_io_set_encoding(1, &val, rb_stdout);

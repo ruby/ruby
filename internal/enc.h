@@ -16,4 +16,7 @@ extern rb_encoding OnigEncodingUS_ASCII;
 /* utf_8.c */
 extern rb_encoding OnigEncodingUTF_8;
 
+/* utf_16le.c */
+extern rb_encoding OnigEncodingUTF_16LE;
+
 #endif /* INTERNAL_ENC_H */
