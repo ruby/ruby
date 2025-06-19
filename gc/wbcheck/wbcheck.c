@@ -169,6 +169,7 @@ typedef struct {
     bool during_gc;          // True when we're currently marking
     size_t missed_write_barrier_parents; // Number of parent objects with missed write barriers
     size_t missed_write_barrier_children; // Total number of missed write barriers detected
+    size_t simulated_gc_count; // Simulated GC count incremented on each GC.start
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -336,6 +337,7 @@ rb_gc_impl_objspace_alloc(void)
     objspace->during_gc = false;       // Not marking initially
     objspace->missed_write_barrier_parents = 0;  // No errors found yet
     objspace->missed_write_barrier_children = 0; // No errors found yet
+    objspace->simulated_gc_count = 0;   // Start with GC count of 0
 
     return objspace;
 }
@@ -438,6 +440,10 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 void
 rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
 {
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    if (objspace) {
+        objspace->simulated_gc_count++;
+    }
     lock_and_maybe_gc(objspace_ptr);
 }
 
@@ -1245,7 +1251,10 @@ rb_gc_impl_get_total_time(void *objspace_ptr)
 size_t
 rb_gc_impl_gc_count(void *objspace_ptr)
 {
-    // Stub implementation
+    rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
+    if (objspace) {
+        return objspace->simulated_gc_count;
+    }
     return 0;
 }
 
