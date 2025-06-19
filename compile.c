@@ -13307,7 +13307,7 @@ ibf_load_catch_table(const struct ibf_load *load, ibf_offset_t catch_table_offse
             table->entries[i].sp = (unsigned int)ibf_load_small_value(load, &reading_pos);
 
             rb_iseq_t *catch_iseq = (rb_iseq_t *)ibf_load_iseq(load, (const rb_iseq_t *)(VALUE)iseq_index);
-            RB_OBJ_WRITE(parent_iseq, &table->entries[i].iseq, catch_iseq);
+            RB_OBJ_WRITE(parent_iseq, UNALIGNED_MEMBER_PTR(&table->entries[i], iseq), catch_iseq);
         }
         return table;
     }
