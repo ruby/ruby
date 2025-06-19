@@ -237,7 +237,7 @@ module URI
   #   URI.parse('http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
   #   # => #<URI::HTTP http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
-  # It's recommended to first ::escape string +uri+
+  # It's recommended to first URI::RFC2396_PARSER.escape string +uri+
   # if it may contain invalid URI characters.
   #
   def self.parse(uri)
