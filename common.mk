@@ -13854,6 +13854,7 @@ process.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 process.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 process.$(OBJEXT): $(top_srcdir)/internal/bits.h
 process.$(OBJEXT): $(top_srcdir)/internal/class.h
+process.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
 process.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 process.$(OBJEXT): $(top_srcdir)/internal/dir.h
 process.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -14071,6 +14072,7 @@ process.$(OBJEXT): {$(VPATH)}vm_core.h
 process.$(OBJEXT): {$(VPATH)}vm_debug.h
 process.$(OBJEXT): {$(VPATH)}vm_opts.h
 process.$(OBJEXT): {$(VPATH)}vm_sync.h
+process.$(OBJEXT): {$(VPATH)}yjit.h
 ractor.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 ractor.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h

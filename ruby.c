@@ -222,16 +222,19 @@ cmdline_options_init(ruby_cmdline_options_t *opt)
     return opt;
 }
 
+static struct origarg_struct origarg;
+
+struct origarg_struct
+ruby_get_original_args(void)
+{
+    return origarg;
+}
+
 static VALUE load_file(VALUE parser, VALUE fname, VALUE f, int script,
                        ruby_cmdline_options_t *opt);
 static VALUE open_load_file(VALUE fname_v, int *xflag);
 static void forbid_setid(const char *, const ruby_cmdline_options_t *);
 #define forbid_setid(s) forbid_setid((s), opt)
-
-static struct {
-    int argc;
-    char **argv;
-} origarg;
 
 static const char esc_standout[] = "\n\033[1;7m";
 static const char esc_bold[] = "\033[1m";

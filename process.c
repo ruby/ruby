@@ -99,6 +99,7 @@ int initgroups(const char *, rb_gid_t);
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/cmdlineopt.h"
 #include "internal/dir.h"
 #include "internal/error.h"
 #include "internal/eval.h"
@@ -2911,6 +2912,30 @@ rb_execarg_fail(VALUE execarg_obj, int err, const char *errmsg)
     RB_GC_GUARD(execarg_obj);
 }
 #endif
+
+/*
+ *  call-seq:
+ *     Process.argv    -> array
+ *
+ *  Returns the list of original command line arguments passed to the
+ *  Ruby executable, while +ARGV+ are the arguments for the Ruby program.
+ *
+ *  Example:
+ *
+ *      $ ruby -e 'p Process.argv'
+ *      ["ruby", "-e", "p Process.argv"]
+ *
+ */
+static VALUE
+proc_argv(VALUE mod)
+{
+    struct origarg_struct origarg = ruby_get_original_args();
+    VALUE array = rb_ary_new_capa(origarg.argc);
+    for (int index = 0; index < origarg.argc; index++) {
+        rb_ary_push(array, rb_external_str_new_cstr(origarg.argv[index]));
+    }
+    return array;
+}
 
 VALUE
 rb_f_exec(int argc, const VALUE *argv)
@@ -9212,6 +9237,7 @@ InitVM_process(void)
     rb_define_const(rb_mProcess, "WUNTRACED", INT2FIX(0));
 #endif
 
+    rb_define_singleton_method(rb_mProcess, "argv", proc_argv, 0);
     rb_define_singleton_method(rb_mProcess, "exec", f_exec, -1);
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);

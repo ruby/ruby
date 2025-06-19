@@ -2852,4 +2852,11 @@ EOS
   rescue RuntimeError
     # Ignore.
   end if defined?(fork)
+
+  def test_argv
+    argv = [RUBY, "--enable-frozen-string-literal", "-e", "p Process.argv"]
+    IO.popen(argv) {|io|
+      assert_equal(argv.inspect, io.read.strip)
+    }
+  end
 end
