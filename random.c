@@ -554,18 +554,16 @@ fill_random_bytes_syscall(void *seed, size_t size, int unused)
     }
     return 0;
 }
-#elif defined(HAVE_ARC4RANDOM_BUF)
+#elif defined(HAVE_ARC4RANDOM_BUF) && \
+    ((defined(__OpenBSD__) && OpenBSD >= 201411) || \
+     (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
+     (defined(__FreeBSD__) && __FreeBSD_version >= 1200079))
+// [Bug #15039] arc4random_buf(3) should used only if we know it is fork-safe
 static int
 fill_random_bytes_syscall(void *buf, size_t size, int unused)
 {
-#if (defined(__OpenBSD__) && OpenBSD >= 201411) || \
-    (defined(__NetBSD__)  && __NetBSD_Version__ >= 700000000) || \
-    (defined(__FreeBSD__) && __FreeBSD_version >= 1200079)
     arc4random_buf(buf, size);
     return 0;
-#else
-    return -1;
-#endif
 }
 #elif defined(_WIN32)
 
