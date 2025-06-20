@@ -421,3 +421,10 @@ rb_assert_cme_handle(VALUE handle)
     RUBY_ASSERT_ALWAYS(!rb_objspace_garbage_object_p(handle));
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(handle, imemo_ment));
 }
+
+// YJIT and ZJIT need this function to never allocate and never raise
+VALUE
+rb_yarv_ary_entry_internal(VALUE ary, long offset)
+{
+    return rb_ary_entry_internal(ary, offset);
+}
