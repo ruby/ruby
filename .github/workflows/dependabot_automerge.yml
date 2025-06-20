@@ -13,7 +13,7 @@ jobs:
     if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ruby/ruby'
     steps:
       - name: Dependabot metadata
-        uses: dependabot/fetch-metadata@d7267f607e9d3fb96fc2fbe83e0af444713e90b7 # v2.3.0
+        uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b # v2.4.0
         id: metadata
 
       - name: Wait for status checks
