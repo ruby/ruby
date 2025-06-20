@@ -781,6 +781,7 @@ class TestAllocation < Test::Unit::TestCase
     def test_no_array_allocation_with_splat_and_nonstatic_keywords
       check_allocations(<<~RUBY)
         def self.keyword(a: nil, b: nil#{block}); end
+        def self.Object; Object end
 
         check_allocations(0, 1, "keyword(*nil, a: empty_array#{block})") # LVAR
         check_allocations(0, 1, "keyword(*empty_array, a: empty_array#{block})") # LVAR
@@ -788,7 +789,8 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "$x = empty_array;  keyword(*empty_array, a: $x#{block})") # GVAR
         check_allocations(0, 1, "@x = empty_array; keyword(*empty_array, a: @x#{block})") # IVAR
         check_allocations(0, 1, "self.class.const_set(:X, empty_array); keyword(*empty_array, a: X#{block})") # CONST
-        check_allocations(0, 1, "keyword(*empty_array, a: Object::X#{block})") # COLON2
+        check_allocations(0, 1, "keyword(*empty_array, a: Object::X#{block})") # COLON2 - safe
+        check_allocations(1, 1, "keyword(*empty_array, a: Object()::X#{block})") # COLON2 - unsafe
         check_allocations(0, 1, "keyword(*empty_array, a: ::X#{block})") # COLON3
         check_allocations(0, 1, "T = self; #{'B = block' unless block.empty?}; class Object; @@x = X; T.keyword(*X, a: @@x#{', &B' unless block.empty?}) end") # CVAR
         check_allocations(0, 1, "keyword(*empty_array, a: empty_array, b: 1#{block})") # INTEGER
@@ -850,13 +852,15 @@ class TestAllocation < Test::Unit::TestCase
 
       check_allocations(<<~RUBY)
         keyword = keyword = proc{ |a: nil, b: nil #{block}| }
+        def self.Object; Object end
 
         check_allocations(0, 1, "keyword.(*empty_array, a: empty_array#{block})") # LVAR
         check_allocations(0, 1, "->{keyword.(*empty_array, a: empty_array#{block})}.call") # DVAR
         check_allocations(0, 1, "$x = empty_array;  keyword.(*empty_array, a: $x#{block})") # GVAR
         check_allocations(0, 1, "@x = empty_array; keyword.(*empty_array, a: @x#{block})") # IVAR
         check_allocations(0, 1, "self.class.const_set(:X, empty_array); keyword.(*empty_array, a: X#{block})") # CONST
-        check_allocations(0, 1, "keyword.(*empty_array, a: Object::X#{block})") # COLON2
+        check_allocations(0, 1, "keyword.(*empty_array, a: Object::X#{block})") # COLON2 - safe
+        check_allocations(1, 1, "keyword.(*empty_array, a: Object()::X#{block})") # COLON2 - unsafe
         check_allocations(0, 1, "keyword.(*empty_array, a: ::X#{block})") # COLON3
         check_allocations(0, 1, "T = keyword; #{'B = block' unless block.empty?}; class Object; @@x = X; T.(*X, a: @@x#{', &B' unless block.empty?}) end") # CVAR
         check_allocations(0, 1, "keyword.(*empty_array, a: empty_array, b: 1#{block})") # INTEGER

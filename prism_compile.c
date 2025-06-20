@@ -1855,7 +1855,6 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
     switch (PM_NODE_TYPE(node)) {
       case PM_BACK_REFERENCE_READ_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
-      case PM_CONSTANT_PATH_NODE:
       case PM_CONSTANT_READ_NODE:
       case PM_FALSE_NODE:
       case PM_FLOAT_NODE:
@@ -1874,6 +1873,13 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
         return false;
+      case PM_CONSTANT_PATH_NODE: {
+        const pm_constant_path_node_t *cast = (const pm_constant_path_node_t *) node;
+        if (cast->parent != NULL) {
+            return pm_setup_args_dup_rest_p(cast->parent);
+        }
+        return false;
+      }
       case PM_IMPLICIT_NODE:
         return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
       default:
