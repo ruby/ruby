@@ -6,14 +6,15 @@ module Bundler
       HTTP_NON_RETRYABLE_ERRORS = [
         SocketError,
         Errno::EADDRNOTAVAIL,
+        Errno::ENETDOWN,
         Errno::ENETUNREACH,
         Gem::Net::HTTP::Persistent::Error,
+        Errno::EHOSTUNREACH,
       ].freeze
 
       HTTP_RETRYABLE_ERRORS = [
         Gem::Timeout::Error,
         EOFError,
-        Errno::ENETDOWN,
         Errno::EINVAL,
         Errno::ECONNRESET,
         Errno::ETIMEDOUT,
@@ -22,7 +23,6 @@ module Bundler
         Gem::Net::HTTPHeaderSyntaxError,
         Gem::Net::ProtocolError,
         Zlib::BufError,
-        Errno::EHOSTUNREACH,
       ].freeze
 
       attr_reader :connection
