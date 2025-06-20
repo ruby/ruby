@@ -927,6 +927,7 @@ unsafe extern "C" {
     pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
+    pub fn rb_zjit_ary_elt(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

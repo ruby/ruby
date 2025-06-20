@@ -336,5 +336,17 @@ rb_zjit_shape_obj_too_complex_p(VALUE obj)
     return rb_shape_obj_too_complex_p(obj);
 }
 
+VALUE
+rb_zjit_ary_elt(VALUE ary, long offset)
+// copied from array.c
+{
+    long len = RARRAY_LEN(ary);
+    if (len == 0) return Qnil;
+    if (offset < 0 || len <= offset) {
+        return Qnil;
+    }
+    return RARRAY_AREF(ary, offset);
+}
+
 // Preprocessed zjit.rb generated during build
 #include "zjit.rbinc"
