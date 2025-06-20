@@ -202,11 +202,12 @@ RSpec.describe Bundler::Fetcher::Downloader do
     end
 
     context "when the request response causes an error included in HTTP_ERRORS" do
-      let(:message) { nil }
-      let(:error)   { RuntimeError.new(message) }
+      let(:message) { "error about network" }
+      let(:error_class) { RuntimeError }
+      let(:error) { error_class.new(message) }
 
       before do
-        stub_const("#{described_class}::HTTP_ERRORS", [RuntimeError])
+        stub_const("#{described_class}::HTTP_ERRORS", [error_class])
         allow(connection).to receive(:request).with(uri, net_http_get) { raise error }
       end
 
@@ -216,7 +217,25 @@ RSpec.describe Bundler::Fetcher::Downloader do
         expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError)
       end
 
-      context "when error message is about the host being down" do
+      it "should raise a Bundler::HTTPError" do
+        expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
+          "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (error about network)")
+      end
+
+      context "when there are credentials provided in the request" do
+        let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+        before do
+          allow(net_http_get).to receive(:basic_auth).with("username", "password")
+        end
+
+        it "should raise a Bundler::HTTPError that doesn't contain the password" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
+            "Network error while fetching http://username@www.uri-to-fetch.com/api/v2/endpoint (error about network)")
+        end
+      end
+
+      context "when error is about the host being down" do
+        let(:error_class) { Gem::Net::HTTP::Persistent::Error }
         let(:message) { "host down: http://www.uri-to-fetch.com" }
 
         it "should raise a Bundler::Fetcher::NetworkDownError" do
@@ -225,28 +244,8 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
-      context "when error message is not about host down" do
-        let(:message) { "other error about network" }
-
-        it "should raise a Bundler::HTTPError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-            "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (other error about network)")
-        end
-
-        context "when there are credentials provided in the request" do
-          let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
-          before do
-            allow(net_http_get).to receive(:basic_auth).with("username", "password")
-          end
-
-          it "should raise a Bundler::HTTPError that doesn't contain the password" do
-            expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-              "Network error while fetching http://username@www.uri-to-fetch.com/api/v2/endpoint (other error about network)")
-          end
-        end
-      end
-
       context "when error message is about no route to host" do
+        let(:error_class) { Gem::Net::HTTP::Persistent::Error }
         let(:message) { "Failed to open TCP connection to www.uri-to-fetch.com:443 " }
 
         it "should raise a Bundler::Fetcher::HTTPError" do
