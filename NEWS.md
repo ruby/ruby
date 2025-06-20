@@ -154,7 +154,7 @@ The following bundled gems are updated.
 * rake 13.3.0
 * test-unit 3.6.8
 * rexml 3.4.1
-* net-imap 0.5.8
+* net-imap 0.5.9
 * net-smtp 0.5.1
 * matrix 0.4.3
 * prime 0.1.4
