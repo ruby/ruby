@@ -201,7 +201,18 @@ jobs:
           if not "%LAUNCHABLE_STDERR%" == "" (
             set cmd=^(^(%cmd:|=^|% ^>^&3^) 2^>^&1 ^| uutils tee "%LAUNCHABLE_STDERR%"^) 3^>^&1
           )
+          set cmd
           %cmd%
+
+          ::- done
+          if not "%LAUNCHABLE_STDOUT%" == "" (
+            uutils wc "%LAUNCHABLE_STDOUT%"
+            uutils head "%LAUNCHABLE_STDOUT%"
+          )
+          if not "%LAUNCHABLE_STDERR%" == "" (
+            uutils wc "%LAUNCHABLE_STDERR%"
+            uutils head "%LAUNCHABLE_STDERR%"
+          )
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
