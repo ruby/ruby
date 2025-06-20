@@ -244,13 +244,23 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
-      context "when error message is about no route to host" do
+      context "when error is about connection refused" do
         let(:error_class) { Gem::Net::HTTP::Persistent::Error }
+        let(:message) { "connection refused down: http://www.uri-to-fetch.com" }
+
+        it "should raise a Bundler::Fetcher::NetworkDownError" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
+            /Could not reach host www.uri-to-fetch.com/)
+        end
+      end
+
+      context "when error is about no route to host" do
+        let(:error_class) { SocketError }
         let(:message) { "Failed to open TCP connection to www.uri-to-fetch.com:443 " }
 
-        it "should raise a Bundler::Fetcher::HTTPError" do
-          expect { subject.request(uri, options) }.to raise_error(Bundler::HTTPError,
-            "Network error while fetching http://www.uri-to-fetch.com/api/v2/endpoint (#{message})")
+        it "should raise a Bundler::Fetcher::NetworkDownError" do
+          expect { subject.request(uri, options) }.to raise_error(Bundler::Fetcher::NetworkDownError,
+            /Could not reach host www.uri-to-fetch.com/)
         end
       end
     end

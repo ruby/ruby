@@ -697,7 +697,7 @@ RSpec.describe "bundle install with gem sources" do
         end
       G
 
-      expect(err).to include("Could not fetch specs from http://0.0.0.0:9384/")
+      expect(err).to eq("Could not reach host 0.0.0.0:9384. Check your network connection and try again.")
       expect(err).not_to include("file://")
     end
 

@@ -88,8 +88,11 @@ module Bundler
         raise CertificateFailureError.new(uri)
       rescue *HTTP_ERRORS => e
         Bundler.ui.trace e
-        if e.is_a?(SocketError) || e.message.to_s.include?("host down:")
-          raise NetworkDownError, "Could not reach host #{uri.host}. Check your network " \
+        if e.is_a?(SocketError) || e.is_a?(Errno::EADDRNOTAVAIL) || e.is_a?(Errno::ENETUNREACH) || e.is_a?(Gem::Net::HTTP::Persistent::Error)
+          host = uri.host
+          host_port = "#{host}:#{uri.port}"
+          host = host_port if filtered_uri.to_s.include?(host_port)
+          raise NetworkDownError, "Could not reach host #{host}. Check your network " \
             "connection and try again."
         else
           raise HTTPError, "Network error while fetching #{filtered_uri}" \
