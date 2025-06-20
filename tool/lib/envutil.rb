@@ -158,10 +158,12 @@ module EnvUtil
       pgroup = pid
     end
 
+    dumped = false
     while signal = signals.shift
 
-      if (dbg = Debugger.search) and [:ABRT, :KILL].include?(signal)
-        dbg.dump(pid)
+      if !dumped and [:ABRT, :KILL].include?(signal)
+        Debugger.search&.dump(pid)
+        dumped = true
       end
 
       begin
