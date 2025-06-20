@@ -1792,6 +1792,67 @@ impl Function {
         }
     }
 
+    fn absorb_dst_block(&mut self, num_in_edges: &Vec<u32>, block: BlockId) -> bool {
+        let Some(terminator_id) = self.blocks[block.0].insns.last()
+            else { return false };
+        let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
+            else { return false };
+        if target == block {
+            // Can't absorb self
+            return false;
+        }
+        if num_in_edges[target.0] != 1 {
+            // Can't absorb block if it's the target of more than one branch
+            return false;
+        }
+        // Link up params with block args
+        let params = std::mem::take(&mut self.blocks[target.0].params);
+        assert_eq!(args.len(), params.len());
+        for (arg, param) in args.iter().zip(params) {
+            self.make_equal_to(param, *arg);
+        }
+        // Remove branch instruction
+        self.blocks[block.0].insns.pop();
+        // Move target instructions into block
+        let target_insns = std::mem::take(&mut self.blocks[target.0].insns);
+        self.blocks[block.0].insns.extend(target_insns);
+        true
+    }
+
+    /// Clean up linked lists of blocks A -> B -> C into A (with B's and C's instructions).
+    fn clean_cfg(&mut self) {
+        // num_in_edges is invariant throughout cleaning the CFG:
+        // * we don't allocate new blocks
+        // * blocks that get absorbed are not in RPO anymore
+        // * blocks pointed to by blocks that get absorbed retain the same number of in-edges
+        let mut num_in_edges = vec![0; self.blocks.len()];
+        for block in self.rpo() {
+            for &insn in &self.blocks[block.0].insns {
+                if let Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) = self.find(insn) {
+                    num_in_edges[target.target.0] += 1;
+                }
+            }
+        }
+        let mut changed = false;
+        loop {
+            let mut iter_changed = false;
+            for block in self.rpo() {
+                // Ignore transient empty blocks
+                if self.blocks[block.0].insns.is_empty() { continue; }
+                loop {
+                    let absorbed = self.absorb_dst_block(&num_in_edges, block);
+                    if !absorbed { break; }
+                    iter_changed = true;
+                }
+            }
+            if !iter_changed { break; }
+            changed = true;
+        }
+        if changed {
+            self.infer_types();
+        }
+    }
+
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
     pub fn rpo(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entry_block);
@@ -1831,6 +1892,7 @@ impl Function {
         self.optimize_direct_sends();
         self.optimize_c_calls();
         self.fold_constants();
+        self.clean_cfg();
         self.eliminate_dead_code();
 
         // Dump HIR after optimization
@@ -4455,9 +4517,6 @@ mod opt_tests {
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:FalseClassExact = Const Value(false)
-              Jump bb1(v0, v3)
-            bb1(v8:BasicObject, v9:FalseClassExact):
               v11:Fixnum[4] = Const Value(4)
               Return v11
         "#]]);
@@ -4634,8 +4693,6 @@ mod opt_tests {
             fn test:
             bb0(v0:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-              Jump bb1(v0)
-            bb1(v10:BasicObject):
               v12:Fixnum[4] = Const Value(4)
               Return v12
         "#]]);
@@ -4698,8 +4755,6 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
               PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_NEQ)
-              Jump bb1(v0)
-            bb1(v10:BasicObject):
               v12:Fixnum[4] = Const Value(4)
               Return v12
         "#]]);
@@ -5644,12 +5699,8 @@ mod opt_tests {
               PatchPoint StableConstantNames(0x1000, C)
               v20:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
-              Jump bb1(v0, v4, v20)
-            bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject[VALUE(0x1008)]):
-              v11:BasicObject = SendWithoutBlock v8, :new
-              Jump bb2(v6, v11, v7)
-            bb2(v13:BasicObject, v14:BasicObject, v15:NilClassExact):
-              Return v14
+              v11:BasicObject = SendWithoutBlock v20, :new
+              Return v11
         "#]]);
     }
 
@@ -5672,12 +5723,8 @@ mod opt_tests {
               v22:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
-              Jump bb1(v0, v4, v22, v5)
-            bb1(v7:BasicObject, v8:NilClassExact, v9:BasicObject[VALUE(0x1008)], v10:Fixnum[1]):
-              v13:BasicObject = SendWithoutBlock v9, :new, v10
-              Jump bb2(v7, v13, v8)
-            bb2(v15:BasicObject, v16:BasicObject, v17:NilClassExact):
-              Return v16
+              v13:BasicObject = SendWithoutBlock v22, :new, v5
+              Return v13
         "#]]);
     }
 
