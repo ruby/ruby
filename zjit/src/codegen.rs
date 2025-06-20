@@ -414,7 +414,7 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
         asm.cpush(SP);
     }
 
-    // EC and CFP are pased as arguments
+    // EC and CFP are passed as arguments
     asm.mov(EC, C_ARG_OPNDS[0]);
     asm.mov(CFP, C_ARG_OPNDS[1]);
 

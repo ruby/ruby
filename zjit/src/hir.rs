@@ -3128,7 +3128,7 @@ mod tests {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let result = iseq_to_hir(iseq);
-        assert!(result.is_err(), "Expected an error but succesfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
+        assert!(result.is_err(), "Expected an error but successfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
         assert_eq!(result.unwrap_err(), reason);
     }
 
