@@ -91,6 +91,27 @@ module Bundler
       Errno::EHOSTUNREACH,
     ].freeze
 
+    NET_ERRORS = [
+      :HTTPBadGateway,
+      :HTTPBadRequest,
+      :HTTPFailedDependency,
+      :HTTPForbidden,
+      :HTTPInsufficientStorage,
+      :HTTPMethodNotAllowed,
+      :HTTPMovedPermanently,
+      :HTTPNoContent,
+      :HTTPNotFound,
+      :HTTPNotImplemented,
+      :HTTPPreconditionFailed,
+      :HTTPRequestEntityTooLarge,
+      :HTTPRequestURITooLong,
+      :HTTPUnauthorized,
+      :HTTPUnprocessableEntity,
+      :HTTPUnsupportedMediaType,
+      :HTTPVersionNotSupported,
+    ].freeze
+    deprecate_constant :NET_ERRORS
+
     # Exceptions classes that should bypass retry attempts. If your password didn't work the
     # first time, it's not going to the third time.
     FAIL_ERRORS = [
