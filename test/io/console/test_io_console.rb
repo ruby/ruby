@@ -543,9 +543,7 @@ defined?(IO.console) and TestIO_Console.class_eval do
       File.open(ttyname) {|f| assert_predicate(f, :tty?)}
     end
   end
-end
 
-defined?(IO.console) and TestIO_Console.class_eval do
   case
   when Process.respond_to?(:daemon)
     noctty = [EnvUtil.rubybin, "-e", "Process.daemon(true)"]
