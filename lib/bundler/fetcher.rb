@@ -72,24 +72,8 @@ module Bundler
       end
     end
 
-    HTTP_ERRORS = [
-      Gem::Timeout::Error,
-      EOFError,
-      SocketError,
-      Errno::EADDRNOTAVAIL,
-      Errno::ENETDOWN,
-      Errno::ENETUNREACH,
-      Errno::EINVAL,
-      Errno::ECONNRESET,
-      Errno::ETIMEDOUT,
-      Errno::EAGAIN,
-      Gem::Net::HTTPBadResponse,
-      Gem::Net::HTTPHeaderSyntaxError,
-      Gem::Net::ProtocolError,
-      Gem::Net::HTTP::Persistent::Error,
-      Zlib::BufError,
-      Errno::EHOSTUNREACH,
-    ].freeze
+    HTTP_ERRORS = Downloader::HTTP_ERRORS
+    deprecate_constant :HTTP_ERRORS
 
     NET_ERRORS = [
       :HTTPBadGateway,

@@ -206,7 +206,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
       let(:error)   { RuntimeError.new(message) }
 
       before do
-        stub_const("Bundler::Fetcher::HTTP_ERRORS", [RuntimeError])
+        stub_const("#{described_class}::HTTP_ERRORS", [RuntimeError])
         allow(connection).to receive(:request).with(uri, net_http_get) { raise error }
       end
 

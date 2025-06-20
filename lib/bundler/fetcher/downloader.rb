@@ -3,6 +3,25 @@
 module Bundler
   class Fetcher
     class Downloader
+      HTTP_ERRORS = [
+        Gem::Timeout::Error,
+        EOFError,
+        SocketError,
+        Errno::EADDRNOTAVAIL,
+        Errno::ENETDOWN,
+        Errno::ENETUNREACH,
+        Errno::EINVAL,
+        Errno::ECONNRESET,
+        Errno::ETIMEDOUT,
+        Errno::EAGAIN,
+        Gem::Net::HTTPBadResponse,
+        Gem::Net::HTTPHeaderSyntaxError,
+        Gem::Net::ProtocolError,
+        Gem::Net::HTTP::Persistent::Error,
+        Zlib::BufError,
+        Errno::EHOSTUNREACH,
+      ].freeze
+
       attr_reader :connection
       attr_reader :redirect_limit
 
