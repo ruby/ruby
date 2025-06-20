@@ -5262,10 +5262,10 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
 
 /*
  *  call-seq:
- *    byterindex(object, offset = 0) -> integer or nil
+ *    byterindex(object, offset = self.bytesize) -> integer or nil
  *
  *  Returns the 0-based integer index of a substring of +self+
- *  specified by +object+ (a string or Regexp) and +offset+,
+ *  that is the _last_ match for the given +object+ (a string or Regexp) and +offset+,
  *  or +nil+ if there is no such substring;
  *  the returned index is the count of _bytes_ (not characters).
  *
@@ -5312,7 +5312,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *    $~                       #=> #<MatchData "oo">
  *
  *  \Integer argument +offset+, if given, specifies the 0-based index
- *  of the byte where searching is to begin.
+ *  of the byte where searching is to end.
  *
  *  When +offset+ is non-negative,
  *  searching begins at byte position +offset+:
