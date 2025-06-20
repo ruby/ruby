@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_GITHUB_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - id: gems
         run: true
@@ -31,7 +31,7 @@ jobs:
       - uses: ./.github/actions/setup/directories
         with:
           makeup: true
-          # Skip overwriting MATZBOT_GITHUB_TOKEN
+          # Skip overwriting MATZBOT_AUTO_UPDATE_TOKEN
           checkout: '' # false (ref: https://github.com/actions/runner/issues/2238)
         if: ${{ steps.gems.outcome == 'success' }}
 
