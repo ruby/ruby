@@ -797,19 +797,27 @@ rb_thread_create_timer_thread(void)
         }
         timer_thread.id = w32_create_thread(1024 + (USE_RUBY_DEBUG_LOG ? BUFSIZ : 0),
                                             timer_thread_func, 0);
-        w32_resume_thread(timer_thread.id);
+        if (timer_thread.id == 0) {
+            system_working = 0;
+            rb_warn("Couldn't create timer thread, error:%s", strerror(thread_errno));
+        }
+        else {
+            w32_resume_thread(timer_thread.id);
+        }
     }
 }
 
 static int
 native_stop_timer_thread(void)
 {
-    RUBY_ATOMIC_SET(system_working, 0);
+    if (RUBY_ATOMIC_LOAD(system_working)) {
+        RUBY_ATOMIC_SET(system_working, 0);
 
-    SetEvent(timer_thread.lock);
-    native_thread_join(timer_thread.id);
-    CloseHandle(timer_thread.lock);
-    timer_thread.lock = 0;
+        SetEvent(timer_thread.lock);
+        native_thread_join(timer_thread.id);
+        CloseHandle(timer_thread.lock);
+        timer_thread.lock = 0;
+    }
 
     return 1;
 }
