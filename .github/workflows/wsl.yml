@@ -16,7 +16,7 @@ on:
 
 jobs:
   wsl:
-    runs-on: windows-latest
+    runs-on: windows-2025
 
     if: >-
       ${{!(false
@@ -29,9 +29,6 @@ jobs:
       )}}
 
     steps:
-      - name: Install winget
-        uses: Cyberboss/install-winget@v1
-
       - name: Install or update WSL
         uses: Ubuntu/WSL/.github/actions/wsl-install@main
         with:
