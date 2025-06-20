@@ -78,7 +78,7 @@ RSpec.describe "bundled_gems.rb" do
     ruby(code, options)
   end
 
-  it "Show warning require and LoadError" do
+  it "Show warning on require, but not when LoadError is rescued" do
     script <<-RUBY
       gemfile do
         source "https://rubygems.org"
@@ -91,8 +91,8 @@ RSpec.describe "bundled_gems.rb" do
       require "openssl"
     RUBY
 
-    expect(err).to include(/csv used to be loaded from (.*) since Ruby 3.4.0/)
-    expect(err).to include(/-e:15/)
+    expect(err).not_to include(/csv used to be loaded from (.*) since Ruby 3.4.0/)
+    expect(err).not_to include(/-e:15/)
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/-e:18/)
   end
@@ -117,20 +117,17 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
-  it "Show warning dash gem like net/smtp" do
-    script <<-RUBY
+  it "Show error with dash gem already removed like net/smtp" do
+    script <<-RUBY, raise_on_error: false
       gemfile do
         source "https://rubygems.org"
       end
 
-      begin
-        require "net/smtp"
-      rescue LoadError
-      end
+      require "net/smtp"
     RUBY
 
     expect(err).to include(/net\/smtp used to be loaded from (.*) since Ruby 3.1.0/)
-    expect(err).to include(/-e:15/)
+    expect(err).to include(/-e:14/)
     expect(err).to include("You can add net-smtp")
   end
 
