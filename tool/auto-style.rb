@@ -15,8 +15,10 @@ class Git
     @branch = branch
 
     # GitHub may not fetch github.event.pull_request.base.sha at checkout
-    git('fetch', '--depth=1', 'origin', @oldrev)
-    git('fetch', '--depth=100', 'origin', @newrev)
+    git('log', '--format=%H', '-1', @oldrev, out: IO::NULL, err: [:child, :out]) or
+      git('fetch', '--depth=1', 'origin', @oldrev)
+    git('log', '--format=%H', '-1', "#@newrev~99", out: IO::NULL, err: [:child, :out]) or
+      git('fetch', '--depth=100', 'origin', @newrev)
 
     with_clean_env do
       @revs = {}
@@ -66,12 +68,14 @@ class Git
 
   private
 
-  def git(*args)
+  def git(*args, **opts)
     cmd = ['git', *args].shelljoin
     puts "+ #{cmd}"
-    unless with_clean_env { system('git', *args) }
+    ret = with_clean_env { system('git', *args, **opts) }
+    unless ret or opts[:err]
       abort "Failed to run: #{cmd}"
     end
+    ret
   end
 
   def with_clean_env
