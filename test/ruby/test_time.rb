@@ -1515,4 +1515,17 @@ class TestTime < Test::Unit::TestCase
       assert_equal("-10000-01-01T00:00:00Z", Time.utc(-10000).__send__(method))
     end
   end
+
+  def test_invalid_dates_roll_over_to_valid_ones
+    bug21301 = "[ruby-core:121801]"
+    assert_equal(Time.new(2025, 5, 1, 0, 0, 0, "UTC").to_s, Time.new(2025, 4, 30, 24, 0, 0, "UTC").to_s, bug21301)
+    assert_equal(Time.new(2025, 5, 1, 0, 0, 0, "UTC").to_s, Time.new(2025, 4, 31, 0, 0, 0, "UTC").to_s, bug21301)
+    assert_equal(Time.new(2025, 5, 2, 0, 0, 0, "UTC").to_s, Time.new(2025, 4, 31, 24, 0, 0, "UTC").to_s, bug21301)
+    assert_equal(Time.new(2025, 3, 4, 0, 0, 0, "UTC").to_s, Time.new(2025, 2, 31, 24, 0, 0, "UTC").to_s, bug21301)
+
+    assert_equal(Time.new(2025, 5, 1, 0, 0, 0, "+00:00").to_s, Time.new(2025, 4, 30, 24, 0, 0, "+00:00").to_s)
+    assert_equal(Time.new(2025, 5, 1, 0, 0, 0, "+00:00").to_s, Time.new(2025, 4, 31, 0, 0, 0, "+00:00").to_s)
+    assert_equal(Time.new(2025, 5, 2, 0, 0, 0, "+00:00").to_s, Time.new(2025, 4, 31, 24, 0, 0, "+00:00").to_s)
+    assert_equal(Time.new(2025, 3, 4, 0, 0, 0, "+00:00").to_s, Time.new(2025, 2, 31, 24, 0, 0, "+00:00").to_s)
+  end
 end
