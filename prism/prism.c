@@ -22676,7 +22676,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
             }
 
             search_shebang = false;
-        } else if (options->main_script && !parser->parsing_eval) {
+        } else if (options != NULL && options->main_script && !parser->parsing_eval) {
             search_shebang = true;
         }
     }
