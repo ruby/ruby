@@ -438,7 +438,23 @@ random_init(int argc, VALUE *argv, VALUE obj)
 # define USE_DEV_URANDOM 0
 #endif
 
-#ifdef HAVE_GETENTROPY
+#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
+# ifndef GRND_NONBLOCK
+#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
+# endif
+# define getrandom(ptr, size, flags) \
+    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
+# define HAVE_GETRANDOM 1
+#endif
+
+#if defined(HAVE_GETENTROPY) && !defined(HAVE_GETRANDOM)
+/*
+ * In the case both `getentropy` and `getrandom` are defined, assume
+ * that the former is implemented using the latter, and use the latter
+ * in the `syscall` version.
+ * Otherwise, in the case only `getentropy`, assume it is defined as
+ * the replacement for security purpose of `/dev/urandom`.
+ */
 # define MAX_SEED_LEN_PER_READ 256
 static int
 fill_random_bytes_urandom(void *seed, size_t size)
@@ -492,15 +508,6 @@ fill_random_bytes_urandom(void *seed, size_t size)
 }
 #else
 # define fill_random_bytes_urandom(seed, size) -1
-#endif
-
-#if ! defined HAVE_GETRANDOM && defined __linux__ && defined __NR_getrandom
-# ifndef GRND_NONBLOCK
-#   define GRND_NONBLOCK 0x0001	/* not defined in musl libc */
-# endif
-# define getrandom(ptr, size, flags) \
-    (ssize_t)syscall(__NR_getrandom, (ptr), (size), (flags))
-# define HAVE_GETRANDOM 1
 #endif
 
 #if 0
