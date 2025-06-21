@@ -978,7 +978,7 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
 static int
 rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
 {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
     const void * const *table = rb_vm_get_insns_address_table();
     unsigned int i;
     VALUE *encoded = (VALUE *)ISEQ_BODY(iseq)->iseq_encoded;
@@ -1009,7 +1009,7 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
     original_code = ISEQ_ORIGINAL_ISEQ_ALLOC(iseq, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
+#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE || OPT_TAILCALL_THREADED_CODE
     {
         unsigned int i;
 
