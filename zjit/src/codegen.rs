@@ -388,12 +388,11 @@ fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) ->
 
 /// Emit a special object lookup
 fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> Opnd {
-    asm_comment!(asm, "call rb_vm_get_special_object");
-
     // Get the EP of the current CFP and load it into a register
     let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
     let ep_reg = asm.load(ep_opnd);
 
+    asm_comment!(asm, "call rb_vm_get_special_object");
     asm.ccall(
         rb_vm_get_special_object as *const u8,
         vec![ep_reg, Opnd::UImm(u64::from(value_type))],
@@ -666,11 +665,10 @@ fn gen_array_dup(
     val: lir::Opnd,
     state: &FrameState,
 ) -> lir::Opnd {
-    asm_comment!(asm, "call rb_ary_resurrect");
-
     // Save PC
     gen_save_pc(asm, state);
 
+    asm_comment!(asm, "call rb_ary_resurrect");
     asm.ccall(
         rb_ary_resurrect as *const u8,
         vec![val],
@@ -684,13 +682,12 @@ fn gen_new_array(
     elements: &Vec<InsnId>,
     state: &FrameState,
 ) -> lir::Opnd {
-    asm_comment!(asm, "call rb_ary_new");
-
     // Save PC
     gen_save_pc(asm, state);
 
     let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
+    asm_comment!(asm, "call rb_ary_new");
     let new_array = asm.ccall(
         rb_ary_new_capa as *const u8,
         vec![lir::Opnd::Imm(length)],
@@ -699,6 +696,7 @@ fn gen_new_array(
     for i in 0..elements.len() {
         let insn_id = elements.get(i as usize).expect("Element should exist at index");
         let val = jit.get_opnd(*insn_id).unwrap();
+        asm_comment!(asm, "call rb_ary_push");
         asm.ccall(
             rb_ary_push as *const u8,
             vec![new_array, val]
@@ -716,11 +714,10 @@ fn gen_new_range(
     flag: RangeType,
     state: &FrameState,
 ) -> lir::Opnd {
-    asm_comment!(asm, "call rb_range_new");
-
     // Save PC
     gen_save_pc(asm, state);
 
+    asm_comment!(asm, "call rb_range_new");
     // Call rb_range_new(low, high, flag)
     let new_range = asm.ccall(
         rb_range_new as *const u8,
