@@ -849,8 +849,7 @@ static void
 clone_method(VALUE old_klass, VALUE new_klass, ID mid, const rb_method_entry_t *me)
 {
     if (me->def->type == VM_METHOD_TYPE_ISEQ) {
-        rb_cref_t *new_cref;
-        rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass, &new_cref);
+        rb_cref_t *new_cref = rb_vm_rewrite_cref(me->def->body.iseq.cref, old_klass, new_klass);
         rb_add_method_iseq(new_klass, mid, me->def->body.iseq.iseqptr, new_cref, METHOD_ENTRY_VISI(me));
     }
     else {
@@ -1909,6 +1908,11 @@ ensure_origin(VALUE klass)
         rb_class_set_super(origin, RCLASS_SUPER(klass));
         rb_class_set_super(klass, origin); // writes origin into RCLASS_SUPER(klass)
         RCLASS_WRITE_ORIGIN(klass, origin);
+
+        // RCLASS_WRITE_ORIGIN marks origin as an origin, so this is the first
+        // point that it sees M_TBL and may mark it
+        rb_gc_writebarrier_remember(origin);
+
         class_clear_method_table(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);
