@@ -507,12 +507,14 @@ ractor_free_all_ports(rb_ractor_t *cr)
     }
 }
 
+#if defined(HAVE_WORKING_FORK)
 static void
 ractor_sync_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
 {
     ractor_free_all_ports(r);
     r->sync.legacy = Qnil;
 }
+#endif
 
 // Ractor#monitor
 

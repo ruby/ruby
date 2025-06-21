@@ -106,7 +106,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 static void
 vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_ARGS)
 {
-    rb_ractor_t *cr = vm->ractor.sync.lock_owner;
+    MAYBE_UNUSED(rb_ractor_t *cr = vm->ractor.sync.lock_owner);
 
     RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u%s", vm->ractor.sync.lock_rec,
                     (unsigned int)rb_ractor_id(cr),
