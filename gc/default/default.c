@@ -1107,10 +1107,10 @@ tick(void)
     return val;
 }
 
+#elif defined(__POWERPC__) && defined(__APPLE__)
 /* Implementation for macOS PPC by @nobu
  * See: https://github.com/ruby/ruby/pull/5975#discussion_r890045558
  */
-#elif defined(__POWERPC__) && defined(__APPLE__)
 typedef unsigned long long tick_t;
 #define PRItick "llu"
 
