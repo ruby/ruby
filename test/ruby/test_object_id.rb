@@ -115,6 +115,14 @@ class TestObjectId < Test::Unit::TestCase
     assert_equal 42, copy.instance_variable_get(:@foo)
     refute_predicate copy, :frozen?
   end
+
+  def test_object_id_need_resize
+    (3 - @obj.instance_variables.size).times do |i|
+      @obj.instance_variable_set("@a_#{i}", "[Bug #21445]")
+    end
+    @obj.object_id
+    GC.start
+  end
 end
 
 class TestObjectIdClass < TestObjectId
