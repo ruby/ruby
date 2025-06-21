@@ -1922,7 +1922,7 @@ generic_field_set(VALUE obj, shape_id_t target_shape_id, VALUE val)
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
         if (index >= RSHAPE_CAPACITY(current_shape_id)) {
-            fields_obj = rb_imemo_fields_new(rb_obj_class(obj), index);
+            fields_obj = rb_imemo_fields_new(rb_obj_class(obj), RSHAPE_CAPACITY(target_shape_id));
             if (original_fields_obj) {
                 attr_index_t fields_count = RSHAPE_LEN(current_shape_id);
                 VALUE *fields = rb_imemo_fields_ptr(fields_obj);
