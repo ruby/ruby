@@ -40,11 +40,6 @@
 #define VMDEBUG 0
 #endif
 
-#if 0
-#undef  VMDEBUG
-#define VMDEBUG 3
-#endif
-
 #include "ruby/internal/config.h"
 
 #include <stddef.h>
