@@ -136,7 +136,6 @@ STATIC_ASSERT(shape_max_variations, SHAPE_MAX_VARIATIONS < (1 << (sizeof(((rb_cl
 
 struct RClass {
     struct RBasic basic;
-    st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
     VALUE object_id;
     /*
      * If ns_classext_tbl is NULL, then the prime classext is readable (because no other classext exists).
@@ -144,14 +143,20 @@ struct RClass {
      */
 };
 
-// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
-// On 32bit platforms there is no variable width allocation so it doesn't matter.
-// TODO: restore this assertion after shrinking rb_classext_t
-// STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass) + sizeof(rb_classext_t) <= 4 * RVALUE_SIZE || SIZEOF_VALUE < SIZEOF_LONG_LONG);
-
 struct RClass_and_rb_classext_t {
     struct RClass rclass;
     rb_classext_t classext;
+};
+
+#if SIZEOF_VALUE >= SIZEOF_LONG_LONG
+// Assert that classes can be embedded in heaps[2] (which has 160B slot size)
+// On 32bit platforms there is no variable width allocation so it doesn't matter.
+STATIC_ASSERT(sizeof_rb_classext_t, sizeof(struct RClass_and_rb_classext_t) <= 4 * RVALUE_SIZE);
+#endif
+
+struct RClass_namespaceable {
+    struct RClass_and_rb_classext_t base;
+    st_table *ns_classext_tbl; // ns_object -> (rb_classext_t *)
 };
 
 static const uint16_t RCLASS_MAX_SUPERCLASS_DEPTH = ((uint16_t)-1);
@@ -171,8 +176,6 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE_IN_NS(VALUE obj, const rb_name
 static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 
 // Raw accessor
-#define RCLASS_CLASSEXT_TBL(klass) (RCLASS(klass)->ns_classext_tbl)
-
 #define RCLASSEXT_NS(ext) (ext->ns)
 #define RCLASSEXT_SUPER(ext) (ext->super)
 #define RCLASSEXT_FIELDS(ext) (ext->fields_obj ? ROBJECT_FIELDS(ext->fields_obj) : NULL)
@@ -293,6 +296,25 @@ static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool per
 #define RCLASS_PRIME_CLASSEXT_WRITABLE FL_USER2
 #define RCLASS_IS_INITIALIZED FL_USER3
 // 3 is RMODULE_IS_REFINEMENT for RMODULE
+#define RCLASS_NAMESPACEABLE FL_USER4
+
+static inline st_table *
+RCLASS_CLASSEXT_TBL(VALUE klass)
+{
+    if (FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE)) {
+        struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
+        return ns_klass->ns_classext_tbl;
+    }
+    return NULL;
+}
+
+static inline void
+RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
+{
+    RUBY_ASSERT(FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
+    struct RClass_namespaceable *ns_klass = (struct RClass_namespaceable *)klass;
+    ns_klass->ns_classext_tbl = tbl;
+}
 
 /* class.c */
 rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_namespace_t *ns);
@@ -307,7 +329,8 @@ RCLASS_SET_NAMESPACE_CLASSEXT(VALUE obj, const rb_namespace_t *ns, rb_classext_t
     VM_ASSERT(ns->ns_object);
     VM_ASSERT(RCLASSEXT_NS(ext) == ns);
     if (!tbl) {
-        RCLASS_CLASSEXT_TBL(obj) = tbl = st_init_numtable_with_size(1);
+        tbl = st_init_numtable_with_size(1);
+        RCLASS_SET_CLASSEXT_TBL(obj, tbl);
     }
     if (rb_st_table_size(tbl) == 0) {
         first_set = 1;
@@ -321,7 +344,7 @@ RCLASS_PRIME_CLASSEXT_READABLE_P(VALUE klass)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
     // if the lookup table exists, then it means the prime classext is NOT directly readable.
-    return RCLASS_CLASSEXT_TBL(klass) == NULL;
+    return !FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE) || RCLASS_CLASSEXT_TBL(klass) == NULL;
 }
 
 static inline bool

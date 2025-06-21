@@ -44,6 +44,8 @@
  *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RCLASS_IS_INITIALIZED
  *           Class has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_ICLASS
@@ -51,6 +53,8 @@
  * 2:    RCLASS_PRIME_CLASSEXT_PRIME_WRITABLE
  *           This module's prime classext is the only classext and writable from any namespaces.
  *           If unset, the prime classext is writable only from the root namespace.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 /* Flags of T_MODULE
@@ -65,6 +69,8 @@
  *           If unset, the prime classext is writable only from the root namespace.
  * 3:    RCLASS_IS_INITIALIZED
  *           Module has been initialized.
+ * 4:    RCLASS_NAMESPACEABLE
+ *           Is a builtin class that may be namespaced. It larger than a normal class.
  */
 
 #define METACLASS_OF(k) RBASIC(k)->klass
@@ -388,7 +394,7 @@ class_classext_foreach_i(st_data_t key, st_data_t value, st_data_t arg)
 void
 rb_class_classext_foreach(VALUE klass, rb_class_classext_foreach_callback_func *func, void *arg)
 {
-    st_table *tbl = RCLASS(klass)->ns_classext_tbl;
+    st_table *tbl = RCLASS_CLASSEXT_TBL(klass);
     struct class_classext_foreach_arg foreach_arg;
     if (tbl) {
         foreach_arg.func = func;
@@ -638,12 +644,20 @@ class_switch_superclass(VALUE super, VALUE klass)
  * @note this function is not Class#allocate.
  */
 static VALUE
-class_alloc(enum ruby_value_type type, VALUE klass)
+class_alloc0(enum ruby_value_type type, VALUE klass, bool namespaceable)
 {
     rb_ns_subclasses_t *ns_subclasses;
     rb_subclass_anchor_t *anchor;
     const rb_namespace_t *ns = rb_definition_namespace();
-    size_t alloc_size = sizeof(struct RClass) + sizeof(rb_classext_t);
+
+    if (!ruby_namespace_init_done) {
+        namespaceable = true;
+    }
+
+    size_t alloc_size = sizeof(struct RClass_and_rb_classext_t);
+    if (namespaceable) {
+        alloc_size = sizeof(struct RClass_namespaceable);
+    }
 
     // class_alloc is supposed to return a new object that is not promoted yet.
     // So, we need to avoid GC after NEWOBJ_OF.
@@ -662,6 +676,8 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 
     VALUE flags = type;
     if (RGENGC_WB_PROTECTED_CLASS) flags |= FL_WB_PROTECTED;
+    if (namespaceable) flags |= RCLASS_NAMESPACEABLE;
+
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
@@ -676,7 +692,7 @@ class_alloc(enum ruby_value_type type, VALUE klass)
     RCLASS_PRIME_NS((VALUE)obj) = ns;
     // Classes/Modules defined in user namespaces are
     // writable directly because it exists only in a namespace.
-    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !rb_namespace_available() || NAMESPACE_USER_P(ns) ? true : false);
+    RCLASS_SET_PRIME_CLASSEXT_WRITABLE((VALUE)obj, !namespaceable || NAMESPACE_USER_P(ns));
 
     RCLASS_SET_ORIGIN((VALUE)obj, (VALUE)obj);
     RCLASS_SET_REFINED_CLASS((VALUE)obj, Qnil);
@@ -684,6 +700,12 @@ class_alloc(enum ruby_value_type type, VALUE klass)
     RCLASS_SET_SUBCLASSES((VALUE)obj, anchor);
 
     return (VALUE)obj;
+}
+
+static VALUE
+class_alloc(enum ruby_value_type type, VALUE klass)
+{
+    return class_alloc0(type, klass, false);
 }
 
 static VALUE
@@ -721,6 +743,23 @@ class_clear_method_table(VALUE c)
     RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(c, rb_id_table_create(0));
 }
 
+static VALUE
+class_boot_namespaceable(VALUE super, bool namespaceable)
+{
+    VALUE klass = class_alloc0(T_CLASS, rb_cClass, namespaceable);
+
+    // initialize method table prior to class_associate_super()
+    // because class_associate_super() may cause GC and promote klass
+    class_initialize_method_table(klass);
+
+    class_associate_super(klass, super, true);
+    if (super && !UNDEF_P(super)) {
+        rb_class_set_initialized(klass);
+    }
+
+    return (VALUE)klass;
+}
+
 /**
  * A utility function that wraps class_alloc.
  *
@@ -733,18 +772,7 @@ class_clear_method_table(VALUE c)
 VALUE
 rb_class_boot(VALUE super)
 {
-    VALUE klass = class_alloc(T_CLASS, rb_cClass);
-
-    // initialize method table prior to class_associate_super()
-    // because class_associate_super() may cause GC and promote klass
-    class_initialize_method_table(klass);
-
-    class_associate_super(klass, super, true);
-    if (super && !UNDEF_P(super)) {
-        rb_class_set_initialized(klass);
-    }
-
-    return (VALUE)klass;
+    return class_boot_namespaceable(super, false);
 }
 
 static VALUE *
@@ -1242,7 +1270,7 @@ static inline VALUE
 make_metaclass(VALUE klass)
 {
     VALUE super;
-    VALUE metaclass = rb_class_boot(Qundef);
+    VALUE metaclass = class_boot_namespaceable(Qundef, FL_TEST_RAW(klass, RCLASS_NAMESPACEABLE));
 
     FL_SET(metaclass, FL_SINGLETON);
     rb_singleton_class_attached(metaclass, klass);
@@ -1278,7 +1306,7 @@ static inline VALUE
 make_singleton_class(VALUE obj)
 {
     VALUE orig_class = METACLASS_OF(obj);
-    VALUE klass = rb_class_boot(orig_class);
+    VALUE klass = class_boot_namespaceable(orig_class, FL_TEST_RAW(orig_class, RCLASS_NAMESPACEABLE));
 
     FL_SET(klass, FL_SINGLETON);
     RBASIC_SET_CLASS(obj, klass);
