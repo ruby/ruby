@@ -45,3 +45,4 @@ irb                 1.15.2  https://github.com/ruby/irb 331c4e851296b115db766c29
 reline              0.6.1   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
 fiddle              1.1.8   https://github.com/ruby/fiddle
+tsort               0.2.0   https://github.com/ruby/tsort
