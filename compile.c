@@ -6643,6 +6643,14 @@ setup_args_dup_rest_p(const NODE *argn)
         return false;
       case NODE_COLON2:
         return setup_args_dup_rest_p(RNODE_COLON2(argn)->nd_head);
+      case NODE_LIST:
+        while (argn) {
+            if (setup_args_dup_rest_p(RNODE_LIST(argn)->nd_head)) {
+                return true;
+            }
+            argn = RNODE_LIST(argn)->nd_next;
+        }
+        return false;
       default:
         return true;
     }

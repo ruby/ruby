@@ -807,6 +807,13 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword(*empty_array, a: ->{}#{block})") # LAMBDA
         check_allocations(0, 1, "keyword(*empty_array, a: $1#{block})") # NTH_REF
         check_allocations(0, 1, "keyword(*empty_array, a: $`#{block})") # BACK_REF
+
+        # LIST: Only 1 array (literal [:c]), not 2 (one for [:c] and one for *empty_array)
+        check_allocations(1, 1, "keyword(*empty_array, a: empty_array, b: [:c]#{block})")
+        check_allocations(1, 1, "keyword(*empty_array, a: empty_array, b: [:c, $x]#{block})")
+        # LIST unsafe: 2 (one for [Object()] and one for *empty_array)
+        check_allocations(2, 1, "keyword(*empty_array, a: empty_array, b: [Object()]#{block})")
+        check_allocations(2, 1, "keyword(*empty_array, a: empty_array, b: [:c, $x, Object()]#{block})")
       RUBY
     end
 
@@ -877,6 +884,13 @@ class TestAllocation < Test::Unit::TestCase
         check_allocations(0, 1, "keyword.(*empty_array, a: ->{}#{block})") # LAMBDA
         check_allocations(0, 1, "keyword.(*empty_array, a: $1#{block})") # NTH_REF
         check_allocations(0, 1, "keyword.(*empty_array, a: $`#{block})") # BACK_REF
+
+        # LIST safe: Only 1 array (literal [:c]), not 2 (one for [:c] and one for *empty_array)
+        check_allocations(1, 1, "keyword.(*empty_array, a: empty_array, b: [:c]#{block})")
+        check_allocations(1, 1, "keyword.(*empty_array, a: empty_array, b: [:c, $x]#{block})")
+        # LIST unsafe: 2 (one for [:c] and one for *empty_array)
+        check_allocations(2, 1, "keyword.(*empty_array, a: empty_array, b: [Object()]#{block})")
+        check_allocations(2, 1, "keyword.(*empty_array, a: empty_array, b: [:c, $x, Object()]#{block})")
       RUBY
     end
 

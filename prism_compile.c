@@ -1882,6 +1882,15 @@ pm_setup_args_dup_rest_p(const pm_node_t *node)
       }
       case PM_IMPLICIT_NODE:
         return pm_setup_args_dup_rest_p(((const pm_implicit_node_t *) node)->value);
+      case PM_ARRAY_NODE: {
+        const pm_array_node_t *cast = (const pm_array_node_t *) node;
+        for (size_t index = 0; index < cast->elements.size; index++) {
+            if (pm_setup_args_dup_rest_p(cast->elements.nodes[index])) {
+                return true;
+            }
+        }
+        return false;
+      }
       default:
         return true;
     }
