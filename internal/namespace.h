@@ -40,7 +40,7 @@ struct rb_namespace_struct {
 };
 typedef struct rb_namespace_struct rb_namespace_t;
 
-#define NAMESPACE_OBJ_P(obj) (CLASS_OF(obj) == rb_cNamespace)
+#define NAMESPACE_OBJ_P(obj) (rb_obj_class(obj) == rb_cNamespace)
 
 #define NAMESPACE_ROOT_P(ns) (ns && !ns->is_user)
 #define NAMESPACE_USER_P(ns) (ns && ns->is_user)
