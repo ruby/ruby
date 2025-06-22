@@ -3052,13 +3052,21 @@ current_namespace_on_env(const VALUE *ep)
 const rb_namespace_t *
 rb_vm_current_namespace(const rb_execution_context_t *ec)
 {
-    const rb_control_frame_t *cfp;
+    VM_ASSERT(rb_namespace_available());
+    return current_namespace_on_env(ec->cfp->ep);
+}
 
-    if (!rb_namespace_available() || !ec)
-        return rb_root_namespace();
+const rb_namespace_t *
+rb_vm_caller_namespace(const rb_execution_context_t *ec)
+{
+    const rb_control_frame_t *caller_cfp;
 
-    cfp = ec->cfp;
-    return current_namespace_on_env(cfp->ep);
+    VM_ASSERT(rb_namespace_available());
+
+    // The current control frame is MAGIC_CFUNC to call Namespace.current, but
+    // we want to get the current namespace of its caller.
+    caller_cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp));
+    return current_namespace_on_env(caller_cfp->ep);
 }
 
 const rb_namespace_t *
