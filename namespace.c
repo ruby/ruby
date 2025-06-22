@@ -455,11 +455,12 @@ rb_namespace_s_getenabled(VALUE namespace)
 static VALUE
 rb_namespace_current(VALUE klass)
 {
-    const rb_namespace_t *ns = rb_current_namespace();
+    const rb_namespace_t *ns;
 
     if (!rb_namespace_available())
         return Qnil;
 
+    ns = rb_vm_caller_namespace(GET_EC());
     VM_ASSERT(ns && ns->ns_object);
     return ns->ns_object;
 }
