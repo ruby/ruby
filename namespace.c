@@ -827,7 +827,6 @@ initialize_root_namespace(void)
         CONST_ID(id_namespace_entry, "__namespace_entry__");
 
         root_namespace = rb_obj_alloc(rb_cNamespace);
-        rb_evict_ivars_to_hash(root_namespace);
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(root_namespace, true);
         RCLASS_SET_CONST_TBL(root_namespace, RCLASSEXT_CONST_TBL(RCLASS_EXT_PRIME(rb_cObject)), true);
 
