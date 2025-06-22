@@ -877,7 +877,8 @@ rb_initialize_main_namespace(void)
         namespace_experimental_warned = 1;
     }
 
-    main_ns = rb_class_new_instance_pass_kw(0, NULL, rb_cNamespace);
+    main_ns = rb_class_new_instance(0, NULL, rb_cNamespace);
+    VM_ASSERT(NAMESPACE_OBJ_P(main_ns));
     ns = rb_get_namespace_t(main_ns);
     ns->ns_object = main_ns;
     ns->ns_id = namespace_generate_id();
