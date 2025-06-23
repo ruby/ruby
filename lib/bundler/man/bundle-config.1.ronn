@@ -131,8 +131,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Usually this will happen when changing the `Gemfile` manually and forgetting
    to update the lockfile through `bundle lock` or `bundle install`.
 * `gem.github_username` (`BUNDLE_GEM__GITHUB_USERNAME`):
-   Sets a GitHub username or organization to be used in `README` file when you
-   create a new gem via `bundle gem` command. It can be overridden by passing an
+   Sets a GitHub username or organization to be used in the `README` and `.gemspec` files
+   when you create a new gem via `bundle gem` command. It can be overridden by passing an
    explicit `--github-username` flag to `bundle gem`.
 * `gem.push_key` (`BUNDLE_GEM__PUSH_KEY`):
    Sets the `--key` parameter for `gem push` when using the `rake release`

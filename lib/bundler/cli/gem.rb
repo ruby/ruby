@@ -47,13 +47,16 @@ module Bundler
       git_author_name = use_git ? `git config user.name`.chomp : ""
       git_username = use_git ? `git config github.user`.chomp : ""
       git_user_email = use_git ? `git config user.email`.chomp : ""
+      github_username = github_username(git_username)
 
-      github_username = if options[:github_username].nil?
-        git_username
-      elsif options[:github_username] == false
-        ""
+      if github_username.empty?
+        homepage_uri = "TODO: Put your gem's website or public repo URL here."
+        source_code_uri = "TODO: Put your gem's public repo URL here."
+        changelog_uri = "TODO: Put your gem's CHANGELOG.md URL here."
       else
-        options[:github_username]
+        homepage_uri = "https://github.com/#{github_username}/#{name}"
+        source_code_uri = "https://github.com/#{github_username}/#{name}"
+        changelog_uri = "https://github.com/#{github_username}/#{name}/blob/main/CHANGELOG.md"
       end
 
       config = {
@@ -76,6 +79,9 @@ module Bundler
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
         ignore_paths: %w[bin/],
+        homepage_uri: homepage_uri,
+        source_code_uri: source_code_uri,
+        changelog_uri: changelog_uri,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -478,6 +484,16 @@ module Bundler
 
     def standard_version
       "1.3"
+    end
+
+    def github_username(git_username)
+      if options[:github_username].nil?
+        git_username
+      elsif options[:github_username] == false
+        ""
+      else
+        options[:github_username]
+      end
     end
   end
 end
