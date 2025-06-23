@@ -1328,6 +1328,19 @@ impl Function {
                         }
                         self.push_insn_id(block, insn_id); continue;
                     }
+                    _ => { self.push_insn_id(block, insn_id); }
+                }
+            }
+        }
+        self.infer_types();
+    }
+
+    fn optimize_constants(&mut self) {
+        for block in self.rpo() {
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+            for insn_id in old_insns {
+                match self.find(insn_id) {
                     Insn::GetConstantPath { ic } => {
                         let idlist: *const ID = unsafe { (*ic).segments };
                         let ice = unsafe { (*ic).entry };
@@ -1652,6 +1665,7 @@ impl Function {
     /// Run all the optimization passes we have.
     pub fn optimize(&mut self) {
         // Function is assumed to have types inferred already
+        self.optimize_constants();
         self.optimize_lookup_method();
         self.optimize_direct_sends();
         self.fold_constants();
@@ -5216,9 +5230,9 @@ mod opt_tests {
               v3:NilClassExact = Const Value(nil)
               Jump bb1(v0, v3, v20)
             bb1(v5:BasicObject, v6:NilClassExact, v7:BasicObject[VALUE(0x1008)]):
-              v10:CallableMethodEntry = LookupMethod v7, :new
-              v11:BasicObject = CallMethod v10 (:new), v7
-              Jump bb2(v5, v11, v6)
+              PatchPoint MethodRedefined(Class@0x1010, new@0x1018)
+              v23:BasicObject = CallCFunc 0x1020 (:new), v7
+              Jump bb2(v5, v23, v6)
             bb2(v13:BasicObject, v14:BasicObject, v15:NilClassExact):
               Return v14
         "#]]);
@@ -5245,9 +5259,9 @@ mod opt_tests {
               v4:Fixnum[1] = Const Value(1)
               Jump bb1(v0, v3, v22, v4)
             bb1(v6:BasicObject, v7:NilClassExact, v8:BasicObject[VALUE(0x1008)], v9:Fixnum[1]):
-              v12:CallableMethodEntry = LookupMethod v8, :new
-              v13:BasicObject = CallMethod v12 (:new), v8, v9
-              Jump bb2(v6, v13, v7)
+              PatchPoint MethodRedefined(Class@0x1010, new@0x1018)
+              v25:BasicObject = CallCFunc 0x1020 (:new), v8, v9
+              Jump bb2(v6, v25, v7)
             bb2(v15:BasicObject, v16:BasicObject, v17:NilClassExact):
               Return v16
         "#]]);
