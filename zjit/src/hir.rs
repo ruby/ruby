@@ -2079,9 +2079,9 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
     ((idx as isize) + (offset as isize)) as u32
 }
 
-fn compute_jump_targets(iseq: *const rb_iseq_t) -> Vec<u32> {
+fn compute_jump_targets(iseq: *const rb_iseq_t, start_insn_idx: u32) -> Vec<u32> {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    let mut insn_idx = 0;
+    let mut insn_idx = start_insn_idx;
     let mut jump_targets = HashSet::new();
     while insn_idx < iseq_size {
         // Get the current pc and opcode
@@ -2191,12 +2191,12 @@ impl ProfileOracle {
 pub const SELF_PARAM_IDX: usize = 0;
 
 /// Compile ISEQ into High-level IR
-pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+pub fn iseq_to_hir(iseq: *const rb_iseq_t, start_insn_idx: u32) -> Result<Function, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
     // Compute a map of PC->Block by finding jump targets
-    let jump_targets = compute_jump_targets(iseq);
+    let jump_targets = compute_jump_targets(iseq, start_insn_idx);
     let mut insn_idx_to_block = HashMap::new();
     for insn_idx in jump_targets {
         if insn_idx == 0 {
@@ -2237,7 +2237,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
         fun.param_types.push(param_type);
     }
-    queue.push_back((entry_state, fun.entry_block, /*insn_idx=*/0_u32));
+    queue.push_back((entry_state, fun.entry_block, start_insn_idx));
 
     let mut visited = HashSet::new();
 
@@ -2245,7 +2245,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     while let Some((incoming_state, block, mut insn_idx)) = queue.pop_front() {
         if visited.contains(&block) { continue; }
         visited.insert(block);
-        let (self_param, mut state) = if insn_idx == 0 {
+        let (self_param, mut state) = if insn_idx == start_insn_idx {
             (fun.blocks[fun.entry_block.0].params[SELF_PARAM_IDX], incoming_state.clone())
         } else {
             let self_param = fun.push_insn(block, Insn::Param { idx: SELF_PARAM_IDX });
@@ -3078,7 +3078,15 @@ mod tests {
     fn assert_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir(iseq, 0).unwrap();
+        assert_function_hir(function, hir);
+    }
+
+    #[track_caller]
+    fn assert_method_hir_at_insn_idx(method: &str, start_insn_idx: u32, hir: Expect) {
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let function = iseq_to_hir(iseq, start_insn_idx).unwrap();
         assert_function_hir(function, hir);
     }
 
@@ -3108,7 +3116,7 @@ mod tests {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir(iseq, 0).unwrap();
         assert_function_hir(function, hir);
     }
 
@@ -3127,7 +3135,7 @@ mod tests {
     fn assert_compile_fails(method: &str, reason: ParseError) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let result = iseq_to_hir(iseq);
+        let result = iseq_to_hir(iseq, 0);
         assert!(result.is_err(), "Expected an error but successfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
         assert_eq!(result.unwrap_err(), reason);
     }
@@ -3771,6 +3779,37 @@ mod tests {
               v11:StringExact = StringCopy v10
               v13:BasicObject = SendWithoutBlock v0, :unknown_method, v4, v7, v9, v11
               Return v13
+        "#]]);
+    }
+
+    #[test]
+    fn test_omitting_optional_args() {
+        eval("def test(opt=false) = opt");
+        // Start index 0 when optional arg omitted
+        // 0000 putobject                              false                     (   1)
+        // 0002 setlocal_WC_0                          opt@0
+        // 0004 getlocal_WC_0                          opt@0[Ca]
+        // 0006 leave                                  [Re]
+        assert_method_hir_at_insn_idx("test", 0, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              v3:FalseClassExact = Const Value(false)
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_providing_optional_args() {
+        eval("def test(opt=false) = opt");
+        // Start index 4 when optional arg provided
+        // 0000 putobject                              false                     (   1)
+        // 0002 setlocal_WC_0                          opt@0
+        // 0004 getlocal_WC_0                          opt@0[Ca]
+        // 0006 leave                                  [Re]
+        assert_method_hir_at_insn_idx("test", 4, expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              Return v1
         "#]]);
     }
 
@@ -4419,7 +4458,7 @@ mod tests {
     fn test_invokebuiltin_with_args() {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "start"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir(iseq, 0).unwrap();
         assert_function_hir(function, expect![[r#"
             fn start:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject, v3:BasicObject, v4:BasicObject):
@@ -4477,7 +4516,7 @@ mod opt_tests {
     fn assert_optimized_method_hir(method: &str, hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let mut function = iseq_to_hir(iseq).unwrap();
+        let mut function = iseq_to_hir(iseq, 0).unwrap();
         function.optimize();
         assert_function_hir(function, hir);
     }

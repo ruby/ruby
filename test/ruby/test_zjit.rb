@@ -76,6 +76,20 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_providing_optional_arg
+    assert_compiles 'true', %q{
+      def test(opt=false) = opt
+      test(true)
+    }
+  end
+
+  def test_omitting_optional_arg
+    assert_compiles 'false', %q{
+      def test(opt=false) = opt
+      test
+    }
+  end
+
   def test_invokebuiltin
     assert_compiles '["."]', %q{
       def test = Dir.glob(".")

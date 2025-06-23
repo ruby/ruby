@@ -262,7 +262,7 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 pub type IseqPtr = *const rb_iseq_t;
 
 // Given an ISEQ pointer, convert PC to insn_idx
-pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
+pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u32> {
     let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
     unsafe { pc.offset_from(pc_zero) }.try_into().ok()
 }

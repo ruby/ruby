@@ -71,7 +71,7 @@ impl JITState {
 
 /// CRuby API to compile a given ISEQ
 #[unsafe(no_mangle)]
-pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *const u8 {
+pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr) -> *const u8 {
     // Do not test the JIT code in HIR tests
     if cfg!(test) {
         return std::ptr::null();
@@ -80,7 +80,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     let code_ptr = with_vm_lock(src_loc!(), || {
-        gen_iseq_entry_point(iseq)
+        gen_iseq_entry_point(iseq, ec)
     });
 
     // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled
@@ -93,9 +93,13 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
 }
 
 /// Compile an entry point for a given ISEQ
-fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
+fn gen_iseq_entry_point(iseq: IseqPtr, ec: EcPtr) -> *const u8 {
+    let cfp = unsafe { get_ec_cfp(ec) };
+    let pc: *mut VALUE = unsafe { get_cfp_pc(cfp) };
+    let Some(start_insn_idx) = iseq_pc_to_insn_idx(iseq, pc) else { return std::ptr::null() };
+
     // Compile ISEQ into High-level IR
-    let function = match compile_iseq(iseq) {
+    let function = match compile_iseq(iseq, start_insn_idx) {
         Some(function) => function,
         None => return std::ptr::null(),
     };
@@ -173,7 +177,9 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
     }
 
     // Convert ISEQ into High-level IR and optimize HIR
-    let function = match compile_iseq(iseq) {
+    // TODO: Provide a start_insn_idx for branch iseqs
+    let start_insn_idx = 0;
+    let function = match compile_iseq(iseq, start_insn_idx) {
         Some(function) => function,
         None => return None,
     };
@@ -930,8 +936,8 @@ pub fn local_size_and_idx_to_ep_offset(local_size: usize, local_idx: usize) -> i
 }
 
 /// Convert ISEQ into High-level IR
-fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
-    let mut function = match iseq_to_hir(iseq) {
+fn compile_iseq(iseq: IseqPtr, start_insn_idx: u32) -> Option<Function> {
+    let mut function = match iseq_to_hir(iseq, start_insn_idx) {
         Ok(function) => function,
         Err(err) => {
             debug!("ZJIT: iseq_to_hir: {err:?}");
