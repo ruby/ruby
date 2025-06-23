@@ -715,7 +715,12 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                         }
                         else {
                             RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
-                            loc->pc = pc;
+                            if ((VM_FRAME_TYPE(cfp) & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY) {
+                                loc->pc = NULL; // means location.first_lineno
+                            }
+                            else {
+                                loc->pc = pc;
+                            }
                             bt_backpatch_loc(backpatch_counter, loc-1, iseq, pc);
                             if (do_yield) {
                                 bt_yield_loc(loc - backpatch_counter, backpatch_counter+1, btobj);
@@ -811,22 +816,6 @@ rb_backtrace_to_str_ary(VALUE self)
         RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
     }
     return bt->strary;
-}
-
-void
-rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
-{
-    rb_backtrace_t *bt;
-    rb_backtrace_location_t *loc;
-
-    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
-    VM_ASSERT(bt->backtrace_size > 0);
-
-    loc = &bt->backtrace[0];
-
-    VM_ASSERT(!loc->cme || loc->cme->def->type == VM_METHOD_TYPE_ISEQ);
-
-    loc->pc = NULL; // means location.first_lineno
 }
 
 static VALUE
