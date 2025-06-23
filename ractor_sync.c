@@ -966,34 +966,29 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 }
 #endif
 
-static bool
+static void
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_unlocking(r);
 
     RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
-    bool wakeup_p = false;
+    struct ractor_waiter *waiter;
+    rb_thread_t *th;
+    do  {
+        RACTOR_LOCK(r);
+        {
+            waiter = ccan_list_pop(&r->sync.waiters, struct ractor_waiter, node);
 
-    RACTOR_LOCK(r);
-    while (1) {
-        struct ractor_waiter *waiter = ccan_list_pop(&r->sync.waiters, struct ractor_waiter, node);
-
-        if (waiter) {
-            VM_ASSERT(waiter->wakeup_status == wakeup_none);
-
-            waiter->wakeup_status = wakeup_status;
-            rb_ractor_sched_wakeup(r, waiter->th);
-
-            wakeup_p = true;
+            if (waiter) {
+                VM_ASSERT(waiter->wakeup_status == wakeup_none);
+                waiter->wakeup_status = wakeup_status;
+                th = waiter->th;
+            }
         }
-        else {
-            break;
-        }
-    }
-    RACTOR_UNLOCK(r);
-
-    return wakeup_p;
+        RACTOR_UNLOCK(r);
+        if (waiter) rb_ractor_sched_wakeup(r, th);
+    } while (waiter);
 }
 
 static void
@@ -1010,6 +1005,7 @@ ubf_ractor_wait(void *ptr)
 
     rb_native_mutex_unlock(&th->interrupt_lock);
     {
+        bool should_wake = false;
         RACTOR_LOCK(r);
         {
             if (waiter->wakeup_status == wakeup_none) {
@@ -1017,11 +1013,14 @@ ubf_ractor_wait(void *ptr)
 
                 waiter->wakeup_status = wakeup_by_interrupt;
                 ccan_list_del(&waiter->node);
-
-                rb_ractor_sched_wakeup(r, waiter->th);
+                should_wake = true;
             }
         }
         RACTOR_UNLOCK(r);
+
+        if (should_wake) {
+            rb_ractor_sched_wakeup(r, waiter->th);
+        }
     }
     rb_native_mutex_lock(&th->interrupt_lock);
 }
