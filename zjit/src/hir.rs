@@ -2328,7 +2328,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_putobject => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
                 YARVINSN_putspecialobject => {
                     let value_type = SpecialObjectType::from(get_arg(pc, 0).as_u32());
-                    state.stack_push(fun.push_insn(block, Insn::PutSpecialObject { value_type }));
+                    let insn = if value_type == SpecialObjectType::VMCore {
+                        Insn::Const { val: Const::Value(unsafe { rb_mRubyVMFrozenCore }) }
+                    } else {
+                        Insn::PutSpecialObject { value_type }
+                    };
+                    state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_putstring => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
@@ -3922,11 +3927,11 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:BasicObject = PutSpecialObject VMCore
+              v3:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
               v5:HashExact = NewHash
               v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:BasicObject = PutSpecialObject VMCore
-              v9:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v8:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v9:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v10:Fixnum[1] = Const Value(1)
               v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
               SideExit
@@ -4374,10 +4379,10 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject = PutSpecialObject VMCore
+              v2:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
-              v4:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v5:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v4:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v5:StaticSymbol[VALUE(0x1010)] = Const Value(VALUE(0x1010))
               v7:BasicObject = SendWithoutBlock v2, :core#set_method_alias, v3, v4, v5
               Return v7
         "#]]);
