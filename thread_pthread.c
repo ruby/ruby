@@ -1351,6 +1351,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
     }
 
     thread_sched_lock(sched, th);
+    rb_ractor_unlock_self(cr);
     {
         // setup sleep
         bool can_direct_transfer = !th_has_dedicated_nt(th);
@@ -1358,16 +1359,12 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
         th->status = THREAD_STOPPED_FOREVER;
         RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
         thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-
-        rb_ractor_unlock_self(cr);
-        {
-            // sleep
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-            th->status = THREAD_RUNNABLE;
-        }
-        rb_ractor_lock_self(cr);
+        // sleep
+        thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+        th->status = THREAD_RUNNABLE;
     }
     thread_sched_unlock(sched, th);
+    rb_ractor_lock_self(cr);
 
     ubf_clear(th);
 
