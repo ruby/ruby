@@ -1377,7 +1377,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 void
 rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
 {
-    // ractor lock of r is NOT acquired
+    // ractor lock of r should NOT be acquired by this thread
     struct rb_thread_sched *sched = TH_SCHED(r_th);
 
     RUBY_DEBUG_LOG("r:%u th:%d", (unsigned int)rb_ractor_id(r), r_th->serial);
