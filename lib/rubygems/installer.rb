@@ -953,6 +953,7 @@ TEXT
   end
 
   def ensure_writable_dir(dir) # :nodoc:
+    require "fileutils"
     FileUtils.mkdir_p dir, mode: options[:dir_mode] && 0o755
 
     raise Gem::FilePermissionError.new(dir) unless File.writable? dir
