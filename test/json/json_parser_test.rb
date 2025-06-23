@@ -331,6 +331,15 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal orig, parse(json5)
   end
 
+  def test_parse_duplicate_key
+    expected = {"a" => 2}
+    assert_equal expected, parse('{"a": 1, "a": 2}', allow_duplicate_key: true)
+    assert_raise(ParserError) { parse('{"a": 1, "a": 2}', allow_duplicate_key: false) }
+    assert_deprecated_warning(/duplicate keys/) do
+      assert_equal expected, parse('{"a": 1, "a": 2}')
+    end
+  end
+
   def test_some_wrong_inputs
     assert_raise(ParserError) { parse('[] bla') }
     assert_raise(ParserError) { parse('[] 1') }
