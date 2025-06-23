@@ -845,41 +845,43 @@ set_i_classify(VALUE set)
 
 // Union-find with path compression
 static long
-set_divide_union_find_root(VALUE uf_parents, long index, VALUE tmp_array)
+set_divide_union_find_root(long *uf_parents, long index, long *tmp_array)
 {
-    VALUE i = LONG2FIX(index);
-    VALUE root = RARRAY_AREF(uf_parents, index);
+    long root = uf_parents[index];
     long update_size = 0;
-    while (root != i) {
-        rb_ary_store(tmp_array, update_size++, i);
-        i = root;
-        root = RARRAY_AREF(uf_parents, FIX2LONG(i));
+    while (root != index) {
+        tmp_array[update_size++] = index;
+        index = root;
+        root = uf_parents[index];
     }
     for (long j = 0; j < update_size; j++) {
-        VALUE idx = FIX2LONG(RARRAY_AREF(tmp_array, j));
-        RARRAY_ASET(uf_parents, idx, root);
+        long idx = tmp_array[j];
+        uf_parents[idx] = root;
     }
-    return FIX2LONG(root);
+    return root;
 }
 
 static void
-set_divide_union_find_merge(VALUE uf_parents, long i, long j, VALUE tmp_array)
+set_divide_union_find_merge(long *uf_parents, long i, long j, long *tmp_array)
 {
     long root_i = set_divide_union_find_root(uf_parents, i, tmp_array);
     long root_j = set_divide_union_find_root(uf_parents, j, tmp_array);
-    if (root_i != root_j) RARRAY_ASET(uf_parents, root_j, LONG2FIX(root_i));
+    if (root_i != root_j) uf_parents[root_j] = root_i;
 }
 
 static VALUE
 set_divide_arity2(VALUE set)
 {
-    VALUE items = set_i_to_a(set);
+    VALUE tmp, uf;
+    long size, *uf_parents, *tmp_array;
     VALUE set_class = rb_obj_class(set);
-    long size = RARRAY_LEN(items);
-    VALUE tmp_array = rb_ary_new();
-    VALUE uf_parents = rb_ary_new_capa(size);
+    VALUE items = set_i_to_a(set);
+    rb_ary_freeze(items);
+    size = RARRAY_LEN(items);
+    tmp_array = ALLOCV_N(long, tmp, size);
+    uf_parents = ALLOCV_N(long, uf, size);
     for (long i = 0; i < size; i++) {
-        rb_ary_store(uf_parents, i, LONG2FIX(i));
+        uf_parents[i] = i;
     }
     for (long i = 0; i < size - 1; i++) {
         VALUE item1 = RARRAY_AREF(items, i);
@@ -904,6 +906,8 @@ set_divide_arity2(VALUE set)
         }
         set_i_add(set, v);
     }
+    ALLOCV_END(tmp);
+    ALLOCV_END(uf);
     return final_set;
 }
 
