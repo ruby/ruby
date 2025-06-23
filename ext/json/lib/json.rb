@@ -143,7 +143,22 @@ require 'json/common'
 #   ruby = JSON.parse(source, {allow_nan: true})
 #   ruby # => [NaN, Infinity, -Infinity]
 #
+# ---
+#
+# Option +allow_trailing_comma+ (boolean) specifies whether to allow
+# trailing commas in objects and arrays;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse('[1,]') # unexpected character: ']' at line 1 column 4 (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
+#
 # ====== Output Options
+#
+# Option +freeze+ (boolean) specifies whether the returned objects will be frozen;
+# defaults to +false+.
 #
 # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
 # should be Symbols;
