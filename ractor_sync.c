@@ -983,7 +983,16 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
             VM_ASSERT(waiter->wakeup_status == wakeup_none);
 
             waiter->wakeup_status = wakeup_status;
-            rb_ractor_sched_wakeup(r, waiter->th);
+#ifdef RUBY_THREAD_PTHREAD_H
+            // ractor lock of r should NOT be acquired due to how `rb_ractor_sched_wait()` works
+            RACTOR_UNLOCK(r);
+            {
+#endif
+                rb_ractor_sched_wakeup(r, waiter->th);
+#ifdef RUBY_THREAD_PTHREAD_H
+            }
+            RACTOR_LOCK(r);
+#endif
 
             wakeup_p = true;
         }
