@@ -533,13 +533,6 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
     return rb_str_eql_internal(str1, str2) == Qtrue ? Qfalse : Qtrue;
 }
 
-// YJIT needs this function to never allocate and never raise
-VALUE
-rb_yarv_ary_entry_internal(VALUE ary, long offset)
-{
-    return rb_ary_entry_internal(ary, offset);
-}
-
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
