@@ -5315,7 +5315,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *  of the byte where searching is to end.
  *
  *  When +offset+ is non-negative,
- *  searching begins at byte position +offset+:
+ *  searching ends at byte position +offset+:
  *
  *    s = 'foo'
  *    s.byterindex('o', 0) # => nil
