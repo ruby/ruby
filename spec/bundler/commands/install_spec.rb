@@ -118,7 +118,7 @@ RSpec.describe "bundle install with gem sources" do
 
     it "does not state that it's constantly reinstalling empty gems" do
       build_repo4 do
-        build_gem "empty", "1.0.0", no_default: true, allowed_warning: "no files specified"
+        build_gem "empty", "1.0.0", no_default: true
       end
 
       install_gemfile <<~G
