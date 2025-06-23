@@ -781,6 +781,10 @@ class TC_Set < Test::Unit::TestCase
     ret.each { |s| n += s.size }
     assert_equal(set.size, n)
     assert_equal(set, ret.flatten)
+
+    set = Set[2,12,9,11,13,4,10,15,3,8,5,0,1,7,14]
+    ret = set.divide { |a,b| (a - b).abs == 1 }
+    assert_equal(2, ret.size)
   end
 
   def test_freeze
