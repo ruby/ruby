@@ -460,4 +460,10 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(__FILE__, backtrace[1].path) # not "<internal:kernel>"
     assert_equal("Kernel#tap", backtrace[1].label)
   end
+
+  def test_backtrace_on_argument_error
+    lineno = __LINE__; [1, 2].inject(:tap)
+  rescue ArgumentError
+    assert_equal("#{ __FILE__ }:#{ lineno }:in 'Kernel#tap'", $!.backtrace[0].to_s)
+  end
 end
