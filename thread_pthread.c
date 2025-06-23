@@ -1350,6 +1350,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
         return;
     }
 
+    rb_ractor_unlock_self(cr);
     thread_sched_lock(sched, th);
     {
         // setup sleep
@@ -1358,16 +1359,12 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
         th->status = THREAD_STOPPED_FOREVER;
         RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
         thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-
-        rb_ractor_unlock_self(cr);
-        {
-            // sleep
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-            th->status = THREAD_RUNNABLE;
-        }
-        rb_ractor_lock_self(cr);
+        // sleep
+        thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+        th->status = THREAD_RUNNABLE;
     }
     thread_sched_unlock(sched, th);
+    rb_ractor_lock_self(cr);
 
     ubf_clear(th);
 
@@ -1377,7 +1374,6 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 void
 rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
 {
-    // ractor lock of r is NOT acquired
     struct rb_thread_sched *sched = TH_SCHED(r_th);
 
     RUBY_DEBUG_LOG("r:%u th:%d", (unsigned int)rb_ractor_id(r), r_th->serial);
