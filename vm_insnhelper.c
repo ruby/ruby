@@ -170,7 +170,7 @@ vm_check_frame_detail(VALUE type, int req_block, int req_me, int req_cref, VALUE
         }
         else { /* cref or Qfalse */
             if (cref_or_me != Qfalse && cref_or_me_type != imemo_cref) {
-                if (((type & VM_FRAME_FLAG_LAMBDA) || magic == VM_FRAME_MAGIC_IFUNC) && (cref_or_me_type == imemo_ment)) {
+                if (((type & VM_FRAME_FLAG_LAMBDA) || magic == VM_FRAME_MAGIC_IFUNC || magic == VM_FRAME_MAGIC_DUMMY) && (cref_or_me_type == imemo_ment)) {
                     /* ignore */
                 }
                 else {
@@ -2909,7 +2909,7 @@ vm_call_iseq_setup_tailcall_opt_start(rb_execution_context_t *ec, rb_control_fra
 }
 
 static void
-args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
+args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
                          VALUE *const locals);
 
@@ -2953,7 +2953,7 @@ vm_call_iseq_setup_kwparm_kwarg(rb_execution_context_t *ec, rb_control_frame_t *
     const int lead_num = ISEQ_BODY(iseq)->param.lead_num;
     VALUE * const ci_kws = ALLOCA_N(VALUE, ci_kw_len);
     MEMCPY(ci_kws, argv + lead_num, VALUE, ci_kw_len);
-    args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
+    args_setup_kw_parameters(ec, iseq, vm_cc_cme(cc), ci_kws, ci_kw_len, ci_keywords, klocals);
 
     int param = ISEQ_BODY(iseq)->param.size;
     int local = ISEQ_BODY(iseq)->local_table_size;
@@ -3084,7 +3084,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             CALLER_SETUP_ARG(cfp, calling, ci, lead_num);
 
             if (calling->argc != lead_num) {
-                argument_arity_error(ec, iseq, calling->argc, lead_num, lead_num);
+                argument_arity_error(ec, iseq, vm_cc_cme(cc), calling->argc, lead_num, lead_num);
             }
 
             //VM_ASSERT(ci == calling->cd->ci);
@@ -3114,7 +3114,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             const int opt = argc - lead_num;
 
             if (opt < 0 || opt > opt_num) {
-                argument_arity_error(ec, iseq, argc, lead_num, lead_num + opt_num);
+                argument_arity_error(ec, iseq, vm_cc_cme(cc), argc, lead_num, lead_num + opt_num);
             }
 
             if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_TAILCALL))) {
@@ -3150,7 +3150,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
                     MEMCPY(ci_kws, argv + lead_num, VALUE, ci_kw_len);
 
                     VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
-                    args_setup_kw_parameters(ec, iseq, ci_kws, ci_kw_len, ci_keywords, klocals);
+                    args_setup_kw_parameters(ec, iseq, vm_cc_cme(cc), ci_kws, ci_kw_len, ci_keywords, klocals);
 
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_kwparm_kwarg,
                                     vm_call_cacheable(ci, cc));
@@ -3161,7 +3161,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             else if (argc == lead_num) {
                 /* no kwarg */
                 VALUE *const klocals = argv + kw_param->bits_start - kw_param->num;
-                args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
+                args_setup_kw_parameters(ec, iseq, vm_cc_cme(cc), NULL, 0, NULL, klocals);
 
                 if (klocals[kw_param->num] == INT2FIX(0)) {
                     /* copy from default_values */
@@ -5207,7 +5207,7 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
                 }
             }
             else {
-                argument_arity_error(ec, iseq, calling->argc, ISEQ_BODY(iseq)->param.lead_num, ISEQ_BODY(iseq)->param.lead_num);
+                argument_arity_error(ec, iseq, NULL, calling->argc, ISEQ_BODY(iseq)->param.lead_num, ISEQ_BODY(iseq)->param.lead_num);
             }
         }
 
@@ -5229,6 +5229,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
     calling->kw_splat = (flags & VM_CALL_KW_SPLAT) ?  1 : 0;
     calling->recv = Qundef;
     calling->heap_argv = 0;
+    calling->cc = NULL;
     struct rb_callinfo dummy_ci = VM_CI_ON_STACK(0, flags, 0, 0);
 
     return vm_callee_setup_block_arg(ec, calling, &dummy_ci, iseq, argv, arg_setup_type);
