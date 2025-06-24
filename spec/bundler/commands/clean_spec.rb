@@ -625,7 +625,7 @@ RSpec.describe "bundle clean" do
     expect(out).to eq("1.0")
   end
 
-  it "when using --force, it doesn't remove default gem binaries", :realworld do
+  it "when using --force, it doesn't remove default gem binaries" do
     default_irb_version = ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false
     skip "irb isn't a default gem" if default_irb_version.empty?
 
@@ -633,8 +633,6 @@ RSpec.describe "bundle clean" do
     build_gem "irb", default_irb_version, to_system: true, default: true do |s|
       s.executables = "irb"
     end
-
-    realworld_system_gems "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "https://gem.repo2"
