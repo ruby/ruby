@@ -285,7 +285,7 @@ module Spec
     end
 
     def rake_path
-      Dir["#{base_system_gem_path}/*/*/**/rake*.gem"].first
+      Dir["#{scoped_base_system_gem_path}/**/rake*.gem"].first
     end
 
     def rake_version
