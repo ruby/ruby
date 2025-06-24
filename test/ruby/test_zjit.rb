@@ -62,6 +62,25 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
+  def test_nested_local_access
+    assert_compiles '[1, 2, 3]', %q{
+      1.times do |l2|
+        1.times do |l1|
+          define_method(:test) do
+            l1 = 1
+            l2 = 2
+            l3 = 3
+            [l1, l2, l3]
+          end
+        end
+      end
+
+      test
+      test
+      test
+    }, call_threshold: 3, insns: [:getlocal, :setlocal, :getlocal_WC_0, :setlocal_WC_1]
+  end
+
   def test_send_without_block
     assert_compiles '[1, 2, 3]', %q{
       def foo = 1
@@ -791,7 +810,7 @@ class TestZJIT < Test::Unit::TestCase
       result = {
         ret_val:,
         #{ unless insns.empty?
-          'insns: RubyVM::InstructionSequence.of(_test_proc).enum_for(:each_child).map(&:to_a)'
+          'insns: RubyVM::InstructionSequence.of(method(:test)).to_a'
         end}
       }
       IO.open(#{pipe_fd}).write(Marshal.dump(result))
@@ -805,13 +824,12 @@ class TestZJIT < Test::Unit::TestCase
     assert status.success?, message
 
     result = Marshal.load(result)
-    assert_equal expected, result.fetch(:ret_val).inspect
+    assert_equal(expected, result.fetch(:ret_val).inspect)
 
     unless insns.empty?
-      iseqs = result.fetch(:insns)
-      iseqs.filter! { it[9] == :method } # ISeq type
-      assert_equal 1, iseqs.size, "Opcode assertions tests must define exactly one method"
-      iseq_insns = iseqs.first.last
+      iseq = result.fetch(:insns)
+      assert_equal("YARVInstructionSequence/SimpleDataFormat", iseq.first, "failed to get iseq disassembly")
+      iseq_insns = iseq.last
 
       expected_insns = Set.new(insns)
       iseq_insns.each do
