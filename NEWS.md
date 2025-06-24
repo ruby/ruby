@@ -140,6 +140,7 @@ The following default gems are updated.
 * optparse 0.7.0.dev.2
 * prism 1.4.0
 * psych 5.2.6
+* resolv 0.6.1
 * stringio 3.1.8.dev
 * strscan 3.1.6.dev
 * uri 1.0.3
