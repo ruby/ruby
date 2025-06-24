@@ -1261,6 +1261,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
     if (RB_TYPE_P(obj, T_OBJECT)) {
+        RUBY_ASSERT(flags_heap_index > 0);
         size_t shape_id_slot_size = rb_shape_tree.capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
