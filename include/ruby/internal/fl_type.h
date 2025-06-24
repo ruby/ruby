@@ -442,10 +442,8 @@ RB_FL_ABLE(VALUE obj)
     if (RB_SPECIAL_CONST_P(obj)) {
         return false;
     }
-    else if (RB_TYPE_P(obj, RUBY_T_NODE)) {
-        return false;
-    }
     else {
+        RBIMPL_ASSERT_OR_ASSUME(!RB_TYPE_P(obj, RUBY_T_NODE));
         return true;
     }
 }
