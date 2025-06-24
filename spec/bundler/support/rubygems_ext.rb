@@ -56,9 +56,9 @@ module Spec
     end
 
     def install_test_deps
-      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gems.to_s)
-      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gems.to_s)
-      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gems.to_s)
+      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gem_path.to_s)
+      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gem_path.to_s)
+      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gem_path.to_s)
 
       require_relative "helpers"
       Helpers.install_dev_bundler

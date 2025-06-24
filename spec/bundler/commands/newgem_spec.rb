@@ -15,13 +15,13 @@ RSpec.describe "bundle gem" do
 
   def bundle_exec_rubocop
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    bundle "config set path #{rubocop_gems}", dir: bundled_app(gem_name)
+    bundle "config set path #{rubocop_gem_path}", dir: bundled_app(gem_name)
     bundle "exec rubocop --debug --config .rubocop.yml", dir: bundled_app(gem_name)
   end
 
   def bundle_exec_standardrb
     prepare_gemspec(bundled_app(gem_name, "#{gem_name}.gemspec"))
-    bundle "config set path #{standard_gems}", dir: bundled_app(gem_name)
+    bundle "config set path #{standard_gem_path}", dir: bundled_app(gem_name)
     bundle "exec standardrb --debug", dir: bundled_app(gem_name)
   end
 

@@ -277,9 +277,9 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as base_system_gem_path do
-        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
+      with_gem_path_as scoped_base_system_gem_path do
+        Dir[scoped_base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
+          raise("Could not find rubygems-generate_index lib directory in #{scoped_base_system_gem_path}")
 
         command = "generate_index"
         command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")

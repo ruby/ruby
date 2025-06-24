@@ -175,19 +175,19 @@ module Spec
       bundled_app("Gemfile.lock")
     end
 
-    def base_system_gem_path
-      scoped_gem_path(base_system_gems)
+    def scoped_base_system_gem_path
+      scoped_gem_path(base_system_gem_path)
     end
 
-    def base_system_gems
+    def base_system_gem_path
       tmp_root.join("gems/base")
     end
 
-    def rubocop_gems
+    def rubocop_gem_path
       tmp_root.join("gems/rubocop")
     end
 
-    def standard_gems
+    def standard_gem_path
       tmp_root.join("gems/standard")
     end
 
@@ -285,7 +285,7 @@ module Spec
     end
 
     def rake_path
-      Dir["#{base_system_gems}/*/*/**/rake*.gem"].first
+      Dir["#{base_system_gem_path}/*/*/**/rake*.gem"].first
     end
 
     def rake_version
@@ -303,7 +303,7 @@ module Spec
         logger
         cgi
       ]
-      Dir[base_system_gem_path.join("gems/{#{deps.join(",")}}-*/lib")].map(&:to_s)
+      Dir[scoped_base_system_gem_path.join("gems/{#{deps.join(",")}}-*/lib")].map(&:to_s)
     end
 
     private
