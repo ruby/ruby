@@ -52,7 +52,6 @@ of each.
 - Prism ([GitHub][prism]): A portable, error-tolerant Ruby parser
 - Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
 - SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
-- [Set](rdoc-ref:Set) ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
 - Shellwords ([GitHub][shellwords]): Manipulates strings with the word parsing rules of the UNIX Bourne shell
 - Singleton ([GitHub][singleton]): Implementation of the Singleton pattern for Ruby
 - Tempfile ([GitHub][tempfile]): A utility class for managing temporary files
@@ -193,7 +192,6 @@ of each.
 [rinda]: https://github.com/ruby/rinda
 [rss]: https://github.com/ruby/rss
 [securerandom]: https://github.com/ruby/securerandom
-[set]: https://github.com/ruby/set
 [shellwords]: https://github.com/ruby/shellwords
 [singleton]: https://github.com/ruby/singleton
 [stringio]: https://github.com/ruby/stringio
