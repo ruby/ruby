@@ -101,9 +101,8 @@ RSpec.describe "bundle lock" do
 
   let(:gemfile_with_rails_weakling_and_foo_from_repo4) do
     build_repo4 do
-      FileUtils.cp rake_path, "#{gem_repo4}/gems/"
-
       build_gem "rake", "10.0.1"
+      build_gem "rake", rake_version
 
       %w[2.3.1 2.3.2].each do |version|
         build_gem "rails", version do |s|
