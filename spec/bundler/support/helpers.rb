@@ -303,6 +303,10 @@ module Spec
       bundle :lock, opts
     end
 
+    def base_system_gems(*names, **options)
+      system_gems names.map {|name| find_base_path(name) }, **options
+    end
+
     def system_gems(*gems)
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}

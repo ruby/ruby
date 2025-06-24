@@ -285,7 +285,7 @@ module Spec
     end
 
     def rake_path
-      Dir["#{scoped_base_system_gem_path}/**/rake*.gem"].first
+      find_base_path("rake")
     end
 
     def rake_version
@@ -307,6 +307,10 @@ module Spec
     end
 
     private
+
+    def find_base_path(name)
+      Dir["#{scoped_base_system_gem_path}/**/#{name}-*.gem"].first
+    end
 
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
