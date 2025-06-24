@@ -634,7 +634,7 @@ RSpec.describe "bundle clean" do
       s.executables = "irb"
     end
 
-    realworld_system_gems "tsort --version 0.1.0", "pathname --version 0.1.0", "set --version 1.0.1"
+    realworld_system_gems "pathname --version 0.1.0", "set --version 1.0.1"
 
     install_gemfile <<-G
       source "https://gem.repo2"

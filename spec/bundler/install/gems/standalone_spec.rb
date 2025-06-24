@@ -140,11 +140,6 @@ RSpec.shared_examples "bundle install --standalone" do
   end
 
   describe "with default gems and a lockfile", :ruby_repo do
-    before do
-      necessary_system_gems = ["tsort --version 0.1.0"]
-      realworld_system_gems(*necessary_system_gems)
-    end
-
     it "works and points to the vendored copies, not to the default copies" do
       necessary_gems_in_bundle_path = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.4.3"]
       necessary_gems_in_bundle_path += ["stringio --version 3.1.0"] if Gem.ruby_version < Gem::Version.new("3.4.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
