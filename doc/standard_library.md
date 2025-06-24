@@ -57,6 +57,7 @@ of each.
 - Tempfile ([GitHub][tempfile]): A utility class for managing temporary files
 - Time ([GitHub][time]): Extends the Time class with methods for parsing and conversion
 - Timeout ([GitHub][timeout]): Auto-terminate potentially long-running operations in Ruby
+- TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
 - TSort ([GitHub][tsort]): Topological sorting using Tarjan's algorithm
 - UN ([GitHub][un]): Utilities to replace common UNIX commands
 - URI ([GitHub][uri]): A Ruby module providing support for Uniform Resource Identifiers
@@ -76,7 +77,6 @@ of each.
 - Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
-- TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
 - Zlib ([GitHub][zlib]): Ruby interface for the zlib compression/decompression library
 
 # Bundled gems
