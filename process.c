@@ -114,6 +114,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/st.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ruby/ractor.h"
@@ -4120,6 +4121,10 @@ rb_fork_async_signal_safe(int *status,
 rb_pid_t
 rb_fork_ruby(int *status)
 {
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorIsolationError, "can not fork from non-main Ractors");
+    }
+
     struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
     int try_gc = 1, err = 0;
