@@ -794,7 +794,7 @@ vm_set_top_stack(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_nam
 
     /* for return */
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  ns ? ns->top_self : rb_ec_thread_ptr(ec)->top_self,
+                  rb_ec_thread_ptr(ec)->top_self,
                   GC_GUARDED_PTR(ns),
                   (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
                   ISEQ_BODY(iseq)->iseq_encoded, ec->cfp->sp,
