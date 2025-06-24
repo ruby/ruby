@@ -574,9 +574,8 @@ RSpec.describe "major deprecations" do
     end
   end
 
-  context "bundle viz", :realworld do
+  context "bundle viz" do
     before do
-      realworld_system_gems "ruby-graphviz --version 1.2.5"
       create_file "gems.rb", "source 'https://gem.repo1'"
       bundle "viz"
     end
