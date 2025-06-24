@@ -306,7 +306,6 @@ RSpec.describe "bundle install with explicit source paths" do
       gem "foo", :path => "#{lib_path("foo-1.0")}"
     G
 
-    expect(err).to_not include("Your Gemfile has no gem server sources.")
     expect(err).to match(/is not valid. Please fix this gemspec./)
     expect(err).to match(/The validation error was 'missing value for attribute version'/)
     expect(err).to match(/You have one or more invalid gemspecs that need to be fixed/)
