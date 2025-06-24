@@ -818,6 +818,14 @@ rb_shape_transition_heap(VALUE obj, size_t heap_index)
      return (RBASIC_SHAPE_ID(obj) & (~SHAPE_ID_HEAP_INDEX_MASK)) | rb_shape_root(heap_index);
 }
 
+void
+rb_set_namespaced_class_shape_id(VALUE obj, shape_id_t shape_id)
+{
+    RBASIC_SET_SHAPE_ID(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), shape_id);
+    // FIXME: How to do multi-shape?
+    RBASIC_SET_SHAPE_ID(obj, shape_id);
+}
+
 /*
  * This function is used for assertions where we don't want to increment
  * max_iv_count

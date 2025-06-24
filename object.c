@@ -513,9 +513,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         argv[0] = obj;
         argv[1] = freeze_true_hash;
         rb_funcallv_kw(clone, id_init_clone, 2, argv, RB_PASS_KEYWORDS);
-        RBASIC(clone)->flags |= FL_FREEZE;
-        shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
-        rb_obj_set_shape_id(clone, next_shape_id);
+        OBJ_FREEZE(clone);
         break;
       }
       case Qfalse: {

@@ -14456,7 +14456,7 @@ ibf_dump_object_object(struct ibf_dump *dump, VALUE obj)
     else {
         obj_header.internal = SPECIAL_CONST_P(obj) ? FALSE : (RBASIC_CLASS(obj) == 0) ? TRUE : FALSE;
         obj_header.special_const = FALSE;
-        obj_header.frozen = FL_TEST(obj, FL_FREEZE) ? TRUE : FALSE;
+        obj_header.frozen = OBJ_FROZEN(obj) ? TRUE : FALSE;
         ibf_dump_object_object_header(dump, obj_header);
         (*dump_object_functions[obj_header.type])(dump, obj);
     }
