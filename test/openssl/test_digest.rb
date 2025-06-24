@@ -62,8 +62,17 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_by_oid_and_name
-    check_digest(OpenSSL::ASN1::ObjectId.new("MD5"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA1"))
+    # SHA256
+    o1 = OpenSSL::Digest.digest("SHA256", "")
+    o2 = OpenSSL::Digest.digest("sha256", "")
+    assert_equal(o1, o2)
+    o3 = OpenSSL::Digest.digest("2.16.840.1.101.3.4.2.1", "")
+    assert_equal(o1, o3)
+
+    # An alias for SHA256 recognized by EVP_get_digestbyname(), but not by
+    # EVP_MD_fetch()
+    o4 = OpenSSL::Digest.digest("RSA-SHA256", "")
+    assert_equal(o1, o4)
   end
 
   def encode16(str)
@@ -109,13 +118,6 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(s512, OpenSSL::Digest.hexdigest('SHA3-512', ""))
   end
 
-  def test_digest_by_oid_and_name_sha2
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA224"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA256"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA384"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA512"))
-  end
-
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
 
@@ -131,17 +133,6 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_include digests, "sha1"
     assert_include digests, "sha256"
     assert_include digests, "sha512"
-  end
-
-  private
-
-  def check_digest(oid)
-    d = OpenSSL::Digest.new(oid.sn)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.ln)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.oid)
-    assert_not_nil(d)
   end
 end
 
