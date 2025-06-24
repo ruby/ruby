@@ -11,6 +11,7 @@ use std::{
     collections::{HashMap, HashSet, VecDeque},
     ffi::{c_int, c_void, CStr},
     mem::{align_of, size_of},
+    num::NonZeroU32,
     ptr,
     slice::Iter
 };
@@ -447,6 +448,10 @@ pub enum Insn {
     /// Check whether an instance variable exists on `self_val`
     DefinedIvar { self_val: InsnId, id: ID, pushval: VALUE, state: InsnId },
 
+    /// Get a local variable from a higher scope
+    GetLocal { level: NonZeroU32, ep_offset: u32 },
+    /// Set a local variable in a higher scope
+    SetLocal { level: NonZeroU32, ep_offset: u32, val: InsnId },
 
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
@@ -521,7 +526,8 @@ impl Insn {
             Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. } => false,
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
+            | Insn::SetLocal { .. } => false,
             _ => true,
         }
     }
@@ -696,6 +702,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy().into_owned()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy().into_owned()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy().into_owned()),
+            Insn::GetLocal { level, ep_offset } => write!(f, "GetLocal l{level}, EP@{ep_offset}"),
+            Insn::SetLocal { val, level, ep_offset } => write!(f, "SetLocal l{level}, EP@{ep_offset}, {val}"),
             Insn::ToArray { val, .. } => write!(f, "ToArray {val}"),
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
@@ -987,7 +995,7 @@ impl Function {
         use Insn::*;
         match &self.insns[insn_id.0] {
             result@(Const {..} | Param {..} | GetConstantPath {..}
-                    | PatchPoint {..}) => result.clone(),
+                    | PatchPoint {..} | GetLocal {..}) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -1076,6 +1084,7 @@ impl Function {
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
+            &SetLocal { val, ep_offset, level } => SetLocal { val: find!(val), ep_offset, level },
             &ToArray { val, state } => ToArray { val: find!(val), state },
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
@@ -1107,7 +1116,7 @@ impl Function {
             Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
-            | Insn::ArrayPush { .. } | Insn::SideExit { .. } =>
+            | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } =>
                 panic!("Cannot infer type of instruction with no output"),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -1163,6 +1172,7 @@ impl Function {
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
+            Insn::GetLocal { .. } => types::BasicObject,
         }
     }
 
@@ -1714,6 +1724,7 @@ impl Function {
                 Insn::Const { .. }
                 | Insn::Param { .. }
                 | Insn::PatchPoint(..)
+                | Insn::GetLocal { .. }
                 | Insn::PutSpecialObject { .. } =>
                     {}
                 Insn::GetConstantPath { ic: _, state } => {
@@ -1741,6 +1752,7 @@ impl Function {
                 | Insn::Return { val }
                 | Insn::Defined { v: val, .. }
                 | Insn::Test { val }
+                | Insn::SetLocal { val, .. }
                 | Insn::IsNil { val } =>
                     worklist.push_back(val),
                 Insn::SetGlobal { val, state, .. }
@@ -2174,6 +2186,7 @@ pub enum CallType {
 #[derive(Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
+    MalformedIseq(u32), // insn_idx into iseq_encoded
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -2535,6 +2548,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     state.setlocal(ep_offset, val);
+                }
+                YARVINSN_getlocal_WC_1 => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level: NonZeroU32::new(1).unwrap() }));
+                }
+                YARVINSN_setlocal_WC_1 => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: NonZeroU32::new(1).unwrap() });
+                }
+                YARVINSN_getlocal => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = NonZeroU32::try_from(get_arg(pc, 1).as_u32()).map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    state.stack_push(fun.push_insn(block, Insn::GetLocal { ep_offset, level }));
+                }
+                YARVINSN_setlocal => {
+                    let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = NonZeroU32::try_from(get_arg(pc, 1).as_u32()).map_err(|_| ParseError::MalformedIseq(insn_idx))?;
+                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level });
                 }
                 YARVINSN_pop => { state.stack_pop()?; }
                 YARVINSN_dup => { state.stack_push(state.stack_top()?); }
@@ -3466,6 +3497,46 @@ mod tests {
               v3:Fixnum[1] = Const Value(1)
               Return v3
         "#]]);
+    }
+
+    #[test]
+    fn test_nested_setlocal_getlocal() {
+        eval("
+          l3 = 3
+          _unused = _unused1 = nil
+          1.times do |l2|
+            _ = nil
+            l2 = 2
+            1.times do |l1|
+              l1 = 1
+              define_method(:test) do
+                l1 = l2
+                l2 = l1 + l2
+                l3 = l2 + l3
+              end
+            end
+          end
+        ");
+        assert_method_hir_with_opcodes(
+            "test",
+            &[YARVINSN_getlocal_WC_1, YARVINSN_setlocal_WC_1,
+              YARVINSN_getlocal, YARVINSN_setlocal],
+            expect![[r#"
+                fn block (3 levels) in <compiled>:
+                bb0(v0:BasicObject):
+                  v2:BasicObject = GetLocal l2, 4
+                  SetLocal l1, 3, v2
+                  v4:BasicObject = GetLocal l1, 3
+                  v5:BasicObject = GetLocal l2, 4
+                  v7:BasicObject = SendWithoutBlock v4, :+, v5
+                  SetLocal l2, 4, v7
+                  v9:BasicObject = GetLocal l2, 4
+                  v10:BasicObject = GetLocal l3, 5
+                  v12:BasicObject = SendWithoutBlock v9, :+, v10
+                  SetLocal l3, 5, v12
+                  Return v12
+            "#]]
+        );
     }
 
     #[test]
