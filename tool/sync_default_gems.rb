@@ -136,7 +136,7 @@ module SyncDefaultGems
       cp_r("#{upstream}/bundler/spec", "spec/bundler")
       rm_rf("spec/bundler/bin")
 
-      ["parallel_rspec", "rspec"].each do |binstub|
+      ["bundle", "parallel_rspec", "rspec"].each do |binstub|
         content = File.read("#{upstream}/bundler/bin/#{binstub}").gsub("../spec", "../bundler")
         File.write("spec/bin/#{binstub}", content)
         chmod("+x", "spec/bin/#{binstub}")
