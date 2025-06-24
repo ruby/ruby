@@ -12,3 +12,7 @@ gem "rb_sys"
 gem "fiddle"
 gem "rubygems-generate_index", "~> 1.1"
 gem "ruby-graphviz"
+gem "psych"
+gem "etc", platforms: [:ruby, :windows]
+gem "open3"
+gem "shellwords"

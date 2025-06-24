@@ -402,16 +402,6 @@ module Spec
       system_gems(*gems)
     end
 
-    def realworld_system_gems(*gems)
-      gems = gems.flatten
-      opts = gems.last.is_a?(Hash) ? gems.pop : {}
-      path = opts.fetch(:path, system_gem_path)
-
-      gems.each do |gem|
-        gem_command "install --no-document --verbose --install-dir #{path} #{gem}"
-      end
-    end
-
     def cache_gems(*gems, gem_repo: gem_repo1)
       gems = gems.flatten
 
