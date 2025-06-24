@@ -333,7 +333,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
         if (search->matches_mask > 0) {
             return neon_next_match(search);
         } else {
-            // neon_next_match will only advance search->ptr up to the last matching character. 
+            // neon_next_match will only advance search->ptr up to the last matching character.
             // Skip over any characters in the last chunk that occur after the last match.
             search->has_matches = false;
             search->ptr = search->chunk_end;
@@ -342,40 +342,40 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
 
     /*
     * The code below implements an SIMD-based algorithm to determine if N bytes at a time
-    * need to be escaped. 
-    * 
+    * need to be escaped.
+    *
     * Assume the ptr = "Te\sting!" (the double quotes are included in the string)
-    * 
+    *
     * The explanation will be limited to the first 8 bytes of the string for simplicity. However
     * the vector insructions may work on larger vectors.
-    * 
+    *
     * First, we load three constants 'lower_bound', 'backslash' and 'dblquote" in vector registers.
-    * 
-    * lower_bound: [20 20 20 20 20 20 20 20] 
-    * backslash:   [5C 5C 5C 5C 5C 5C 5C 5C] 
-    * dblquote:    [22 22 22 22 22 22 22 22] 
-    * 
-    * Next we load the first chunk of the ptr: 
+    *
+    * lower_bound: [20 20 20 20 20 20 20 20]
+    * backslash:   [5C 5C 5C 5C 5C 5C 5C 5C]
+    * dblquote:    [22 22 22 22 22 22 22 22]
+    *
+    * Next we load the first chunk of the ptr:
     * [22 54 65 5C 73 74 69 6E] ("  T  e  \  s  t  i  n)
-    * 
+    *
     * First we check if any byte in chunk is less than 32 (0x20). This returns the following vector
     * as no bytes are less than 32 (0x20):
     * [0 0 0 0 0 0 0 0]
-    * 
+    *
     * Next, we check if any byte in chunk is equal to a backslash:
     * [0 0 0 FF 0 0 0 0]
-    * 
+    *
     * Finally we check if any byte in chunk is equal to a double quote:
-    * [FF 0 0 0 0 0 0 0] 
-    * 
+    * [FF 0 0 0 0 0 0 0]
+    *
     * Now we have three vectors where each byte indicates if the corresponding byte in chunk
     * needs to be escaped. We combine these vectors with a series of logical OR instructions.
     * This is the needs_escape vector and it is equal to:
-    * [FF 0 0 FF 0 0 0 0] 
-    * 
+    * [FF 0 0 FF 0 0 0 0]
+    *
     * Next we compute the bitwise AND between each byte and 0x1 and compute the horizontal sum of
     * the values in the vector. This computes how many bytes need to be escaped within this chunk.
-    * 
+    *
     * Finally we compute a mask that indicates which bytes need to be escaped. If the mask is 0 then,
     * no bytes need to be escaped and we can continue to the next chunk. If the mask is not 0 then we
     * have at least one byte that needs to be escaped.
@@ -394,7 +394,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
         return neon_next_match(search);
     }
 
-    // There are fewer than 16 bytes left. 
+    // There are fewer than 16 bytes left.
     unsigned long remaining = (search->end - search->ptr);
     if (remaining >= SIMD_MINIMUM_THRESHOLD) {
         char *s = copy_remaining_bytes(search, sizeof(uint8x16_t), remaining);
@@ -402,7 +402,7 @@ static inline unsigned char search_escape_basic_neon(search_state *search)
         uint64_t mask = neon_rules_update(s);
 
         if (!mask) {
-            // Nothing to escape, ensure search_flush doesn't do anything by setting 
+            // Nothing to escape, ensure search_flush doesn't do anything by setting
             // search->cursor to search->ptr.
             fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;
@@ -476,7 +476,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
         if (search->matches_mask > 0) {
             return sse2_next_match(search);
         } else {
-            // sse2_next_match will only advance search->ptr up to the last matching character. 
+            // sse2_next_match will only advance search->ptr up to the last matching character.
             // Skip over any characters in the last chunk that occur after the last match.
             search->has_matches = false;
             if (RB_UNLIKELY(search->chunk_base + sizeof(__m128i) >= search->end)) {
@@ -501,7 +501,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
         return sse2_next_match(search);
     }
 
-    // There are fewer than 16 bytes left. 
+    // There are fewer than 16 bytes left.
     unsigned long remaining = (search->end - search->ptr);
     if (remaining >= SIMD_MINIMUM_THRESHOLD) {
         char *s = copy_remaining_bytes(search, sizeof(__m128i), remaining);
@@ -509,7 +509,7 @@ static inline TARGET_SSE2 FORCE_INLINE unsigned char search_escape_basic_sse2(se
         int needs_escape_mask = sse2_update(s);
 
         if (needs_escape_mask == 0) {
-            // Nothing to escape, ensure search_flush doesn't do anything by setting 
+            // Nothing to escape, ensure search_flush doesn't do anything by setting
             // search->cursor to search->ptr.
             fbuffer_consumed(search->buffer, remaining);
             search->ptr = search->end;

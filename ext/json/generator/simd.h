@@ -87,7 +87,7 @@ uint8x16x4_t load_uint8x16_4(const unsigned char *table) {
 static SIMD_Implementation find_simd_implementation(void) {
 
 #if defined(__GNUC__ ) || defined(__clang__)
-#ifdef __GNUC__ 
+#ifdef __GNUC__
     __builtin_cpu_init();
 #endif /* __GNUC__  */
 
