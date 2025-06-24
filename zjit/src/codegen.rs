@@ -283,6 +283,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
+        Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
             return None;
@@ -812,6 +813,17 @@ fn gen_fixnum_gt(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Opti
 fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Option<lir::Opnd> {
     asm.cmp(left, right);
     Some(asm.csel_ge(Qtrue.into(), Qfalse.into()))
+}
+
+fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
+    // Save PC
+    gen_save_pc(asm, state);
+    
+    asm_comment!(asm, "call rb_obj_as_string_result");
+    Some(asm.ccall(
+        rb_obj_as_string_result as *const u8,
+        vec![str, val],
+    ))
 }
 
 /// Evaluate if a value is truthy
