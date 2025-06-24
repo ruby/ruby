@@ -2065,15 +2065,7 @@ rb_obj_set_shape_id(VALUE obj, shape_id_t shape_id)
         return false;
     }
 
-    if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
-        // Avoid creating the fields_obj just to freeze the class
-        if (!(shape_id == SPECIAL_CONST_SHAPE_ID && old_shape_id == ROOT_SHAPE_ID)) {
-            RBASIC_SET_SHAPE_ID(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(obj), shape_id);
-        }
-    }
-    // FIXME: How to do multi-shape?
-    RBASIC_SET_SHAPE_ID(obj, shape_id);
-
+    RB_SET_SHAPE_ID(obj, shape_id);
     return true;
 }
 
@@ -2085,8 +2077,7 @@ void rb_obj_freeze_inline(VALUE x)
             RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
         }
 
-        shape_id_t next_shape_id = rb_shape_transition_frozen(x);
-        rb_obj_set_shape_id(x, next_shape_id);
+        RB_SET_SHAPE_ID(x, rb_shape_transition_frozen(x));
 
         if (RBASIC_CLASS(x)) {
             rb_freeze_singleton_class(x);

@@ -1911,8 +1911,8 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
     if (STR_EMBED_P(tmp)) {
         RUBY_ASSERT(OBJ_FROZEN_RAW(tmp));
     }
-    else if (FL_TEST_RAW(orig, STR_SHARED) &&
-            !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
+    else if (FL_TEST_RAW(orig, STR_SHARED | STR_TMPLOCK) == STR_TMPLOCK &&
+            !OBJ_FROZEN_RAW(orig)) {
         VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
         if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
@@ -2259,7 +2259,7 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     if (FL_TEST_RAW(str, STR_SHARED)) {
         root = RSTRING(str)->as.heap.aux.shared;
     }
-    else if (UNLIKELY(!(flags & FL_FREEZE))) {
+    else if (UNLIKELY(!OBJ_FROZEN_RAW(str))) {
         root = str = str_new_frozen(klass, str);
         flags = FL_TEST_RAW(str, flag_mask);
     }
