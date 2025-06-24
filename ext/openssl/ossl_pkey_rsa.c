@@ -349,7 +349,7 @@ ossl_rsa_to_der(VALUE self)
 static VALUE
 ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
 {
-    VALUE digest, data, options, kwargs[2], signature;
+    VALUE digest, data, options, kwargs[2], signature, mgf1md_holder, md_holder;
     static ID kwargs_ids[2];
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pkey_ctx;
@@ -370,11 +370,11 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
 	salt_len = -1; /* RSA_PSS_SALTLEN_DIGEST */
     else
 	salt_len = NUM2INT(kwargs[0]);
-    mgf1md = ossl_evp_get_digestbyname(kwargs[1]);
+    mgf1md = ossl_evp_md_fetch(kwargs[1], &mgf1md_holder);
 
     pkey = GetPrivPKeyPtr(self);
     buf_len = EVP_PKEY_size(pkey);
-    md = ossl_evp_get_digestbyname(digest);
+    md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
     signature = rb_str_new(NULL, (long)buf_len);
 
@@ -436,7 +436,7 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
 {
-    VALUE digest, signature, data, options, kwargs[2];
+    VALUE digest, signature, data, options, kwargs[2], mgf1md_holder, md_holder;
     static ID kwargs_ids[2];
     EVP_PKEY *pkey;
     EVP_PKEY_CTX *pkey_ctx;
@@ -456,10 +456,10 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
 	salt_len = -1; /* RSA_PSS_SALTLEN_DIGEST */
     else
 	salt_len = NUM2INT(kwargs[0]);
-    mgf1md = ossl_evp_get_digestbyname(kwargs[1]);
+    mgf1md = ossl_evp_md_fetch(kwargs[1], &mgf1md_holder);
 
     GetPKey(self, pkey);
-    md = ossl_evp_get_digestbyname(digest);
+    md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(signature);
     StringValue(data);
 
@@ -485,17 +485,16 @@ ossl_rsa_verify_pss(int argc, VALUE *argv, VALUE self)
     result = EVP_DigestVerifyFinal(md_ctx,
 				   (unsigned char *)RSTRING_PTR(signature),
 				   RSTRING_LEN(signature));
+    EVP_MD_CTX_free(md_ctx);
 
     switch (result) {
       case 0:
 	ossl_clear_error();
-	EVP_MD_CTX_free(md_ctx);
 	return Qfalse;
       case 1:
-	EVP_MD_CTX_free(md_ctx);
 	return Qtrue;
       default:
-	goto err;
+        ossl_raise(eRSAError, "EVP_DigestVerifyFinal");
     }
 
   err:

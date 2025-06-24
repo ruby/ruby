@@ -349,17 +349,14 @@ ossl_x509crl_sign(VALUE self, VALUE key, VALUE digest)
     X509_CRL *crl;
     EVP_PKEY *pkey;
     const EVP_MD *md;
+    VALUE md_holder;
 
     GetX509CRL(self, crl);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    if (NIL_P(digest)) {
-	md = NULL; /* needed for some key types, e.g. Ed25519 */
-    } else {
-	md = ossl_evp_get_digestbyname(digest);
-    }
-    if (!X509_CRL_sign(crl, pkey, md)) {
-	ossl_raise(eX509CRLError, NULL);
-    }
+    /* NULL needed for some key types, e.g. Ed25519 */
+    md = NIL_P(digest) ? NULL : ossl_evp_md_fetch(digest, &md_holder);
+    if (!X509_CRL_sign(crl, pkey, md))
+        ossl_raise(eX509CRLError, "X509_CRL_sign");
 
     return self;
 }

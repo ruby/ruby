@@ -264,7 +264,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
     const EVP_MD *digest;
-    VALUE vpass, vsalt, viter, vdigest;
+    VALUE vpass, vsalt, viter, vdigest, md_holder;
     unsigned char key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH], *salt = NULL;
     int iter;
 
@@ -279,7 +279,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
     if (iter <= 0)
 	rb_raise(rb_eArgError, "iterations must be a positive integer");
-    digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_get_digestbyname(vdigest);
+    digest = NIL_P(vdigest) ? EVP_md5() : ossl_evp_md_fetch(vdigest, &md_holder);
     GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
 		   (unsigned char *)RSTRING_PTR(vpass), RSTRING_LENINT(vpass), iter, key, iv);

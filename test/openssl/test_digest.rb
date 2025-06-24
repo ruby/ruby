@@ -124,6 +124,13 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(s512, OpenSSL::Digest.hexdigest('SHA3-512', ""))
   end
 
+  def test_fetched_evp_md
+    # Pre-NIST Keccak is an example of a digest algorithm that doesn't have an
+    # NID and requires dynamic allocation of EVP_MD
+    hex = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+    assert_equal(hex, OpenSSL::Digest.hexdigest("KECCAK-256", ""))
+  end if openssl?(3, 2, 0)
+
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
 

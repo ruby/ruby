@@ -21,6 +21,7 @@
  */
 static VALUE cDigest;
 static VALUE eDigestError;
+static ID id_md_holder;
 
 static VALUE ossl_digest_alloc(VALUE klass);
 
@@ -38,35 +39,62 @@ static const rb_data_type_t ossl_digest_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
+#ifdef OSSL_USE_PROVIDER
+static void
+ossl_evp_md_free(void *ptr)
+{
+    // This is safe to call against const EVP_MD * returned by
+    // EVP_get_digestbyname()
+    EVP_MD_free(ptr);
+}
+
+static const rb_data_type_t ossl_evp_md_holder_type = {
+    "OpenSSL/EVP_MD",
+    {
+        .dfree = ossl_evp_md_free,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+};
+#endif
+
 /*
  * Public
  */
 const EVP_MD *
-ossl_evp_get_digestbyname(VALUE obj)
+ossl_evp_md_fetch(VALUE obj, volatile VALUE *holder)
 {
-    const EVP_MD *md;
-    ASN1_OBJECT *oid = NULL;
-
-    if (RB_TYPE_P(obj, T_STRING)) {
-    	const char *name = StringValueCStr(obj);
-
-	md = EVP_get_digestbyname(name);
-	if (!md) {
-	    oid = OBJ_txt2obj(name, 0);
-	    md = EVP_get_digestbyobj(oid);
-	    ASN1_OBJECT_free(oid);
-	}
-        if (!md)
-            ossl_raise(eDigestError, "unsupported digest algorithm: %"PRIsVALUE,
-                       obj);
-    } else {
+    *holder = Qnil;
+    if (rb_obj_is_kind_of(obj, cDigest)) {
         EVP_MD_CTX *ctx;
-
         GetDigest(obj, ctx);
-
-        md = EVP_MD_CTX_get0_md(ctx);
+        EVP_MD *md = (EVP_MD *)EVP_MD_CTX_get0_md(ctx);
+#ifdef OSSL_USE_PROVIDER
+        *holder = TypedData_Wrap_Struct(0, &ossl_evp_md_holder_type, NULL);
+        if (!EVP_MD_up_ref(md))
+            ossl_raise(eDigestError, "EVP_MD_up_ref");
+        RTYPEDDATA_DATA(*holder) = md;
+#endif
+        return md;
     }
 
+    const char *name = StringValueCStr(obj);
+    EVP_MD *md = (EVP_MD *)EVP_get_digestbyname(name);
+    if (!md) {
+        ASN1_OBJECT *oid = OBJ_txt2obj(name, 0);
+        md = (EVP_MD *)EVP_get_digestbyobj(oid);
+        ASN1_OBJECT_free(oid);
+    }
+#ifdef OSSL_USE_PROVIDER
+    if (!md) {
+        ossl_clear_error();
+        *holder = TypedData_Wrap_Struct(0, &ossl_evp_md_holder_type, NULL);
+        md = EVP_MD_fetch(NULL, name, NULL);
+        RTYPEDDATA_DATA(*holder) = md;
+    }
+#endif
+    if (!md)
+        ossl_raise(eDigestError, "unsupported digest algorithm: %"PRIsVALUE,
+                   obj);
     return md;
 }
 
@@ -76,6 +104,9 @@ ossl_digest_new(const EVP_MD *md)
     VALUE ret;
     EVP_MD_CTX *ctx;
 
+    // NOTE: This does not set id_md_holder because this function should
+    // only be called from ossl_engine.c, which will not use any
+    // reference-counted digests.
     ret = ossl_digest_alloc(cDigest);
     ctx = EVP_MD_CTX_new();
     if (!ctx)
@@ -122,10 +153,10 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 {
     EVP_MD_CTX *ctx;
     const EVP_MD *md;
-    VALUE type, data;
+    VALUE type, data, md_holder;
 
     rb_scan_args(argc, argv, "11", &type, &data);
-    md = ossl_evp_get_digestbyname(type);
+    md = ossl_evp_md_fetch(type, &md_holder);
     if (!NIL_P(data)) StringValue(data);
 
     TypedData_Get_Struct(self, EVP_MD_CTX, &ossl_digest_type, ctx);
@@ -137,6 +168,7 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
 
     if (!EVP_DigestInit_ex(ctx, md, NULL))
 	ossl_raise(eDigestError, "Digest initialization failed");
+    rb_ivar_set(self, id_md_holder, md_holder);
 
     if (!NIL_P(data)) return ossl_digest_update(self, data);
     return self;
@@ -443,4 +475,6 @@ Init_ossl_digest(void)
     rb_define_method(cDigest, "block_length", ossl_digest_block_length, 0);
 
     rb_define_method(cDigest, "name", ossl_digest_name, 0);
+
+    id_md_holder = rb_intern_const("EVP_MD_holder");
 }

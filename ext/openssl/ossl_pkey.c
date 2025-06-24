@@ -1111,7 +1111,7 @@ static VALUE
 ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, data, options, sig;
+    VALUE digest, data, options, sig, md_holder;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
     EVP_PKEY_CTX *pctx;
@@ -1121,7 +1121,7 @@ ossl_pkey_sign(int argc, VALUE *argv, VALUE self)
     pkey = GetPrivPKeyPtr(self);
     rb_scan_args(argc, argv, "21", &digest, &data, &options);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
 
     ctx = EVP_MD_CTX_new();
@@ -1190,7 +1190,7 @@ static VALUE
 ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, data, options;
+    VALUE digest, sig, data, options, md_holder;
     const EVP_MD *md = NULL;
     EVP_MD_CTX *ctx;
     EVP_PKEY_CTX *pctx;
@@ -1200,7 +1200,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "31", &digest, &sig, &data, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
     StringValue(data);
 
@@ -1269,7 +1269,7 @@ static VALUE
 ossl_pkey_sign_raw(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, data, options, sig;
+    VALUE digest, data, options, sig, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     size_t outlen;
@@ -1278,7 +1278,7 @@ ossl_pkey_sign_raw(int argc, VALUE *argv, VALUE self)
     GetPKey(self, pkey);
     rb_scan_args(argc, argv, "21", &digest, &data, &options);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
 
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);
@@ -1345,7 +1345,7 @@ static VALUE
 ossl_pkey_verify_raw(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, data, options;
+    VALUE digest, sig, data, options, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     int state, ret;
@@ -1354,7 +1354,7 @@ ossl_pkey_verify_raw(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "31", &digest, &sig, &data, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
     StringValue(data);
 
@@ -1408,7 +1408,7 @@ static VALUE
 ossl_pkey_verify_recover(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    VALUE digest, sig, options, out;
+    VALUE digest, sig, options, out, md_holder;
     const EVP_MD *md = NULL;
     EVP_PKEY_CTX *ctx;
     int state;
@@ -1418,7 +1418,7 @@ ossl_pkey_verify_recover(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "21", &digest, &sig, &options);
     ossl_pkey_check_public_key(pkey);
     if (!NIL_P(digest))
-        md = ossl_evp_get_digestbyname(digest);
+        md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(sig);
 
     ctx = EVP_PKEY_CTX_new(pkey, /* engine */NULL);

@@ -283,13 +283,13 @@ ossl_spki_sign(VALUE self, VALUE key, VALUE digest)
     NETSCAPE_SPKI *spki;
     EVP_PKEY *pkey;
     const EVP_MD *md;
+    VALUE md_holder;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
-    md = ossl_evp_get_digestbyname(digest);
+    md = ossl_evp_md_fetch(digest, &md_holder);
     GetSPKI(self, spki);
-    if (!NETSCAPE_SPKI_sign(spki, pkey, md)) {
-	ossl_raise(eSPKIError, NULL);
-    }
+    if (!NETSCAPE_SPKI_sign(spki, pkey, md))
+        ossl_raise(eSPKIError, "NETSCAPE_SPKI_sign");
 
     return self;
 }

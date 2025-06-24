@@ -68,6 +68,7 @@ static VALUE cPKCS7;
 static VALUE cPKCS7Signer;
 static VALUE cPKCS7Recipient;
 static VALUE ePKCS7Error;
+static ID id_md_holder;
 
 static void
 ossl_pkcs7_free(void *ptr)
@@ -968,14 +969,15 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
     EVP_PKEY *pkey;
     X509 *x509;
     const EVP_MD *md;
+    VALUE md_holder;
 
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
-    md = ossl_evp_get_digestbyname(digest);
+    md = ossl_evp_md_fetch(digest, &md_holder);
     GetPKCS7si(self, p7si);
-    if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {
-	ossl_raise(ePKCS7Error, NULL);
-    }
+    if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md)))
+        ossl_raise(ePKCS7Error, "PKCS7_SIGNER_INFO_set");
+    rb_ivar_set(self, id_md_holder, md_holder);
 
     return self;
 }
@@ -1161,4 +1163,6 @@ Init_ossl_pkcs7(void)
     DefPKCS7Const(BINARY);
     DefPKCS7Const(NOATTR);
     DefPKCS7Const(NOSMIMECAP);
+
+    id_md_holder = rb_intern_const("EVP_MD_holder");
 }
