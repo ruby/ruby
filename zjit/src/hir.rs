@@ -1440,7 +1440,7 @@ impl Function {
                         if self.is_a(str, types::String) {
                             self.make_equal_to(insn_id, str);
                         } else {
-                            self.push_insn_id(block, insn_id); 
+                            self.push_insn_id(block, insn_id);
                         }
                     }
                     _ => { self.push_insn_id(block, insn_id); }

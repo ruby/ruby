@@ -191,7 +191,7 @@ updated_files = git.updated_paths
 files = updated_files.select {|l|
   /^\d/ !~ l and /\.bat\z/ !~ l and
   (/\A(?:config|[Mm]akefile|GNUmakefile|README)/ =~ File.basename(l) or
-   /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|)\z/ =~ File.extname(l))
+   /\A\z|\.(?:[chsy]|\d+|e?rb|tmpl|bas[eh]|z?sh|in|ma?k|def|src|trans|rdoc|ja|en|el|sed|awk|p[ly]|scm|mspec|html|rs)\z/ =~ File.extname(l))
 }
 files.select! {|n| File.file?(n) }
 files.reject! do |f|

@@ -818,7 +818,7 @@ fn gen_fixnum_ge(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> Opti
 fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &FrameState) -> Option<lir::Opnd> {
     // Save PC
     gen_save_pc(asm, state);
-    
+
     asm_comment!(asm, "call rb_obj_as_string_result");
     Some(asm.ccall(
         rb_obj_as_string_result as *const u8,
