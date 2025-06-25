@@ -3159,10 +3159,10 @@ mod tests {
     #[track_caller]
     fn assert_method_hir_with_opcodes(method: &str, opcodes: &[u32], hir: Expect) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         for &opcode in opcodes {
             assert!(iseq_contains_opcode(iseq, opcode), "iseq {method} does not contain {}", insn_name(opcode as usize));
         }
-        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let function = iseq_to_hir(iseq).unwrap();
         assert_function_hir(function, hir);
     }
