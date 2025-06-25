@@ -5303,7 +5303,7 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
  *
  *    s = 'foo'
  *    s.byterindex(/(?<!o)o+/) # => 1
- *    $!                       # => nil
+ *    $~                       # => #<MatchData "oo">
  *
  *  Or use method #byteindex with negative lookahead:
  *
