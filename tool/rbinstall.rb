@@ -661,6 +661,16 @@ module RbInstall
           "#{srcdir}/lib"
         end
       end
+
+      class UnpackedGem < self
+        def collect
+          base = @srcdir or return []
+          Dir.glob("**/*", File::FNM_DOTMATCH, base: base).select do |n|
+            case File.basename(n); when ".", ".."; next; end
+            !File.directory?(File.join(base, n))
+          end
+        end
+      end
     end
   end
 
@@ -772,6 +782,14 @@ module RbInstall
         $installed_list.puts(d+"/") if $installed_list
       end
     end
+
+    def load_plugin
+      # Suppress warnings for constant re-assignment
+      verbose, $VERBOSE = $VERBOSE, nil
+      super
+    ensure
+      $VERBOSE = verbose
+    end
   end
 end
 
@@ -779,17 +797,11 @@ def load_gemspec(file, base = nil)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
 
-  files = []
-  Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
-    case File.basename(n); when ".", ".."; next; end
-    next if File.directory?(File.join(base, n))
-    files << n.dump
-  end if base
   code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split(\([^\)]*\))?/m) do
-    "[" + files.join(", ") + "]"
+    "[]"
   end
   code.gsub!(/IO\.popen\(.*git.*?\)/) do
-    "[" + files.join(", ") + "] || itself"
+    "[] || itself"
   end
 
   spec = eval(code, binding, file)
@@ -797,7 +809,7 @@ def load_gemspec(file, base = nil)
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
   spec.loaded_from = base ? File.join(base, File.basename(file)) : file
-  spec.files.reject! {|n| n.end_with?(".gemspec") or n.start_with?(".git")}
+  spec.files.clear
   spec.date = RUBY_RELEASE_DATE
 
   spec
@@ -1135,6 +1147,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   # the newly installed ruby.
   ENV.delete('RUBYOPT')
 
+  collector = RbInstall::Specs::FileCollector::UnpackedGem
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
@@ -1153,7 +1166,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       skipped[gem_name] = "gemspec not found"
       next
     end
-    spec = load_gemspec(path, "#{srcdir}/.bundle/gems/#{gem_name}")
+    base = "#{srcdir}/.bundle/gems/#{gem_name}"
+    spec = load_gemspec(path, base)
     unless spec.platform == Gem::Platform::RUBY
       skipped[gem_name] = "not ruby platform (#{spec.platform})"
       next
@@ -1168,6 +1182,10 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       next
     end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
+
+    # Override files with the actual files included in the gem
+    spec.files = collector.new(path, base, nil).collect
+
     package = RbInstall::DirPackage.new spec
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
