@@ -879,6 +879,8 @@ method_definition_reset(const rb_method_entry_t *me)
     }
 }
 
+static rb_atomic_t method_serial = 1;
+
 rb_method_definition_t *
 rb_method_definition_create(rb_method_type_t type, ID mid)
 {
@@ -886,8 +888,7 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def = ZALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
-    static uintptr_t method_serial = 1;
-    def->method_serial = method_serial++;
+    def->method_serial = (uintptr_t)RUBY_ATOMIC_FETCH_ADD(method_serial, 1);
     def->ns = rb_current_namespace();
     return def;
 }
