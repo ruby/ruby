@@ -38,7 +38,7 @@ jobs:
       matrix:
         include:
           - vs: 2022
-            vcvers: 10.0.22621.0 -vcvars_ver=14.2
+            vcvers: -vcvars_ver=14.2
       fail-fast: false
 
     runs-on: windows-${{ matrix.vs }}
