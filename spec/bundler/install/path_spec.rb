@@ -44,13 +44,13 @@ RSpec.describe "bundle install" do
       expect(out).to include("gems are installed into `./vendor/bundle`")
     end
 
-    it "disallows --path vendor/bundle --system", bundler: "2" do
+    it "disallows --path vendor/bundle --system" do
       bundle "install --path vendor/bundle --system", raise_on_error: false
       expect(err).to include("Please choose only one option.")
       expect(exitstatus).to eq(15)
     end
 
-    it "remembers to disable system gems after the first time with bundle --path vendor/bundle", bundler: "2" do
+    it "remembers to disable system gems after the first time with bundle --path vendor/bundle" do
       bundle "install --path vendor/bundle"
       FileUtils.rm_r bundled_app("vendor")
       bundle "install"
@@ -62,7 +62,7 @@ RSpec.describe "bundle install" do
     context "with path_relative_to_cwd set to true" do
       before { bundle "config set path_relative_to_cwd true" }
 
-      it "installs the bundle relatively to current working directory", bundler: "2" do
+      it "installs the bundle relatively to current working directory" do
         bundle "install --gemfile='#{bundled_app}/Gemfile' --path vendor/bundle", dir: bundled_app.parent
         expect(out).to include("installed into `./vendor/bundle`")
         expect(bundled_app("../vendor/bundle")).to be_directory

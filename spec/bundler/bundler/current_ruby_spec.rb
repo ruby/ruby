@@ -139,13 +139,13 @@ RSpec.describe Bundler::CurrentRuby do
   end
 
   describe "Deprecated platform" do
-    it "Outputs a deprecation warning when calling maglev?", bundler: "2" do
+    it "Outputs a deprecation warning when calling maglev?" do
       expect(Bundler.ui).to receive(:warn).with(/`CurrentRuby#maglev\?` is deprecated with no replacement./)
 
       Bundler.current_ruby.maglev?
     end
 
-    it "Outputs a deprecation warning when calling maglev_31?", bundler: "2" do
+    it "Outputs a deprecation warning when calling maglev_31?" do
       expect(Bundler.ui).to receive(:warn).with(/`CurrentRuby#maglev_31\?` is deprecated with no replacement./)
 
       Bundler.current_ruby.maglev_31?

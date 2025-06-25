@@ -96,7 +96,7 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/myrackup")).not_to exist
   end
 
-  it "allows you to stop installing binstubs", bundler: "2" do
+  it "allows you to stop installing binstubs" do
     skip "delete permission error" if Gem.win_platform?
 
     bundle "install --binstubs bin/"
@@ -109,7 +109,7 @@ RSpec.describe "Running bin/* commands" do
     expect(out).to include("You have not configured a value for `bin`")
   end
 
-  it "remembers that the option was specified", bundler: "2" do
+  it "remembers that the option was specified" do
     gemfile <<-G
       source "https://gem.repo1"
       gem "activesupport"

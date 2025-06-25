@@ -646,7 +646,7 @@ G
       expect(out).to eq(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
-    it "fails if ruby version doesn't match", bundler: "2" do
+    it "fails if ruby version doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "rails"
@@ -658,7 +658,7 @@ G
       should_be_ruby_version_incorrect
     end
 
-    it "fails if engine doesn't match", bundler: "2" do
+    it "fails if engine doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "rails"
@@ -670,7 +670,7 @@ G
       should_be_engine_incorrect
     end
 
-    it "fails if engine version doesn't match", bundler: "2", jruby_only: true do
+    it "fails if engine version doesn't match", jruby_only: true do
       gemfile <<-G
         source "https://gem.repo1"
         gem "rails"
@@ -682,7 +682,7 @@ G
       should_be_engine_version_incorrect
     end
 
-    it "fails when patchlevel doesn't match", bundler: "2" do
+    it "fails when patchlevel doesn't match" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"

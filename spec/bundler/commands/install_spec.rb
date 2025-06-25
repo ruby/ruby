@@ -29,7 +29,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(bundled_app_lock).to exist
     end
 
-    it "does not create ./.bundle by default", bundler: "2" do
+    it "does not create ./.bundle by default" do
       gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -334,14 +334,14 @@ RSpec.describe "bundle install with gem sources" do
         expect(the_bundle).to include_gems "myrack 1.0"
       end
 
-      it "allows running bundle install --system without deleting foo", bundler: "2" do
+      it "allows running bundle install --system without deleting foo" do
         bundle "install --path vendor"
         bundle "install --system"
         FileUtils.rm_r(bundled_app("vendor"))
         expect(the_bundle).to include_gems "myrack 1.0"
       end
 
-      it "allows running bundle install --system after deleting foo", bundler: "2" do
+      it "allows running bundle install --system after deleting foo" do
         bundle "install --path vendor"
         FileUtils.rm_r(bundled_app("vendor"))
         bundle "install --system"
@@ -349,7 +349,7 @@ RSpec.describe "bundle install with gem sources" do
       end
     end
 
-    it "finds gems in multiple sources", bundler: "2" do
+    it "finds gems in multiple sources" do
       build_repo2 do
         build_gem "myrack", "1.2" do |s|
           s.executables = "myrackup"
