@@ -1010,29 +1010,59 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
 }
 
 static bool
-shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+shape_cache_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
 {
     if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
         redblack_node_t *node = redblack_find(shape->ancestor_index, id);
         if (node) {
-            rb_shape_t *shape = redblack_value(node);
-            *value = shape->next_field_index - 1;
-
-#if RUBY_DEBUG
-            attr_index_t shape_tree_index;
-            RUBY_ASSERT(shape_get_iv_index(shape, id, &shape_tree_index));
-            RUBY_ASSERT(shape_tree_index == *value);
-#endif
+            *ivar_shape = redblack_value(node);
 
             return true;
         }
-
-        /* Verify the cache is correct by checking that this instance variable
-         * does not exist in the shape tree either. */
-        RUBY_ASSERT(!shape_get_iv_index(shape, id, value));
     }
 
     return false;
+}
+
+static bool
+shape_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
+{
+    while (shape->parent_id != INVALID_SHAPE_ID) {
+        if (shape->edge_name == id) {
+            RUBY_ASSERT(shape->type == SHAPE_IVAR);
+            *ivar_shape = shape;
+            return true;
+        }
+
+        shape = RSHAPE(shape->parent_id);
+    }
+
+    return false;
+}
+
+bool
+rb_shape_find_ivar(shape_id_t current_shape_id, ID id, shape_id_t *ivar_shape_id)
+{
+    RUBY_ASSERT(!rb_shape_too_complex_p(current_shape_id));
+
+    rb_shape_t *shape = RSHAPE(current_shape_id);
+    rb_shape_t *ivar_shape;
+
+    if (!shape_cache_find_ivar(shape, id, &ivar_shape)) {
+        // If it wasn't in the ancestor cache, then don't do a linear search
+        if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
+            return false;
+        }
+        else {
+            if (!shape_find_ivar(shape, id, &ivar_shape)) {
+                return false;
+            }
+        }
+    }
+
+    *ivar_shape_id = shape_id(ivar_shape, current_shape_id);
+
+    return true;
 }
 
 bool
@@ -1042,19 +1072,12 @@ rb_shape_get_iv_index(shape_id_t shape_id, ID id, attr_index_t *value)
     // on an object that is "too complex" as it uses a hash for storing IVs
     RUBY_ASSERT(!rb_shape_too_complex_p(shape_id));
 
-    rb_shape_t *shape = RSHAPE(shape_id);
-
-    if (!shape_cache_get_iv_index(shape, id, value)) {
-        // If it wasn't in the ancestor cache, then don't do a linear search
-        if (shape->ancestor_index && shape->next_field_index >= ANCESTOR_CACHE_THRESHOLD) {
-            return false;
-        }
-        else {
-            return shape_get_iv_index(shape, id, value);
-        }
+    shape_id_t ivar_shape_id;
+    if (rb_shape_find_ivar(shape_id, id, &ivar_shape_id)) {
+        *value = RSHAPE_INDEX(ivar_shape_id);
+        return true;
     }
-
-    return true;
+    return false;
 }
 
 int32_t
