@@ -77,6 +77,9 @@ Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle inst
 \fBconsole\fR (\fBBUNDLE_CONSOLE\fR)
 The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
 .TP
+\fBdefault_cli_command\fR (\fBBUNDLE_DEFAULT_CLI_COMMAND\fR)
+The command that running \fBbundle\fR without arguments should run\. Defaults to \fBcli_help\fR since Bundler 4, but can also be \fBinstall\fR which was the previous default\.
+.TP
 \fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR)
 Equivalent to setting \fBfrozen\fR to \fBtrue\fR and \fBpath\fR to \fBvendor/bundle\fR\.
 .TP

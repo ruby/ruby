@@ -99,6 +99,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
+* `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
+   The command that running `bundle` without arguments should run. Defaults to
+   `cli_help` since Bundler 4, but can also be `install` which was the previous
+   default.
 * `deployment` (`BUNDLE_DEPLOYMENT`):
    Equivalent to setting `frozen` to `true` and `path` to `vendor/bundle`.
 * `disable_checksum_validation` (`BUNDLE_DISABLE_CHECKSUM_VALIDATION`):
