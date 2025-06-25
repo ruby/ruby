@@ -4954,7 +4954,7 @@ str_ensure_byte_pos(VALUE str, long pos)
  *
  *    s = 'foo'          # => "foo"
  *    s.size             # => 3 # Three 1-byte characters.
-      s.bytesize         # => 3 # Three bytes.
+ *    s.bytesize         # => 3 # Three bytes.
  *    s.byteindex('f')   # => 0
  *    s.byteindex('o')   # => 1
  *    s.byteindex('oo')  # => 1
@@ -5260,65 +5260,90 @@ rb_str_byterindex(VALUE str, VALUE sub, long pos)
     return str_rindex(str, sub, s, enc);
 }
 
-
 /*
  *  call-seq:
- *    byterindex(substring, offset = self.bytesize) -> integer or nil
- *    byterindex(regexp, offset = self.bytesize) -> integer or nil
+ *    byterindex(object, offset = self.bytesize) -> integer or nil
  *
- *  Returns the Integer byte-based index of the _last_ occurrence of the given +substring+,
- *  or +nil+ if none found:
+ *  Returns the 0-based integer index of a substring of +self+
+ *  that is the _last_ match for the given +object+ (a string or Regexp) and +offset+,
+ *  or +nil+ if there is no such substring;
+ *  the returned index is the count of _bytes_ (not characters).
  *
- *    'foo'.byterindex('f') # => 0
- *    'foo'.byterindex('o') # => 2
- *    'foo'.byterindex('oo') # => 1
- *    'foo'.byterindex('ooo') # => nil
+ *  When +object+ is a string,
+ *  returns the index of the _last_ found substring equal to +object+:
  *
- *  Returns the Integer byte-based index of the _last_ match for the given Regexp +regexp+,
- *  or +nil+ if none found:
+ *    s = 'foo'           # => "foo"
+ *    s.size              # => 3 # Three 1-byte characters.
+ *    s.bytesize          # => 3 # Three bytes.
+ *    s.byterindex('f')   # => 0
+      s.byterindex('o')   # => 2
+      s.byterindex('oo')  # => 1
+      s.byterindex('ooo') # => nil
  *
- *    'foo'.byterindex(/f/) # => 0
- *    'foo'.byterindex(/o/) # => 2
- *    'foo'.byterindex(/oo/) # => 1
- *    'foo'.byterindex(/ooo/) # => nil
+ *  When +object+ is a Regexp,
+ *  returns the index of the last found substring matching +object+;
+ *  updates {Regexp-related global variables}[rdoc-ref:Regexp@Global+Variables]:
  *
- *  The _last_ match means starting at the possible last position, not
- *  the last of longest matches.
+ *    s = 'foo'
+ *    s.byterindex(/f/)   # => 0
+ *    $~                  # => #<MatchData "f">
+ *    s.byterindex(/o/)   # => 2
+ *    s.byterindex(/oo/)  # => 1
+ *    s.byterindex(/ooo/) # => nil
+ *    $~                  # => nil
  *
- *    'foo'.byterindex(/o+/) # => 2
- *    $~ #=> #<MatchData "o">
+ *  The last match means starting at the possible last position,
+ *  not the last of the longest matches:
  *
- *  To get the last longest match, needs to combine with negative
- *  lookbehind.
+ *    s = 'foo'
+ *    s.byterindex(/o+/) # => 2
+ *    $~                 #=> #<MatchData "o">
  *
- *    'foo'.byterindex(/(?<!o)o+/) # => 1
- *    $~ #=> #<MatchData "oo">
+ *  To get the last longest match, use a negative lookbehind:
  *
- *  Or String#byteindex with negative lookforward.
+ *    s = 'foo'
+ *    s.byterindex(/(?<!o)o+/) # => 1
+ *    $~                       # => #<MatchData "oo">
  *
- *    'foo'.byteindex(/o+(?!.*o)/) # => 1
- *    $~ #=> #<MatchData "oo">
+ *  Or use method #byteindex with negative lookahead:
  *
- *  Integer argument +offset+, if given and non-negative, specifies the maximum starting byte-based position in the
- *  string to _end_ the search:
+ *    s = 'foo'
+ *    s.byteindex(/o+(?!.*o)/) # => 1
+ *    $~                       #=> #<MatchData "oo">
  *
- *    'foo'.byterindex('o', 0) # => nil
- *    'foo'.byterindex('o', 1) # => 1
- *    'foo'.byterindex('o', 2) # => 2
- *    'foo'.byterindex('o', 3) # => 2
+ *  \Integer argument +offset+, if given, specifies the 0-based index
+ *  of the byte where searching is to end.
  *
- *  If +offset+ is a negative Integer, the maximum starting position in the
- *  string to _end_ the search is the sum of the string's length and +offset+:
+ *  When +offset+ is non-negative,
+ *  searching ends at byte position +offset+:
  *
- *    'foo'.byterindex('o', -1) # => 2
- *    'foo'.byterindex('o', -2) # => 1
- *    'foo'.byterindex('o', -3) # => nil
- *    'foo'.byterindex('o', -4) # => nil
+ *    s = 'foo'
+ *    s.byterindex('o', 0) # => nil
+ *    s.byterindex('o', 1) # => 1
+ *    s.byterindex('o', 2) # => 2
+ *    s.byterindex('o', 3) # => 2
  *
- *  If +offset+ does not land on character (codepoint) boundary, +IndexError+ is
- *  raised.
+ *  When +offset+ is negative, counts backward from the end of +self+:
  *
- *  Related: String#byteindex.
+ *    s = 'foo'
+ *    s.byterindex('o', -1) # => 2
+ *    s.byterindex('o', -2) # => 1
+ *    s.byterindex('o', -3) # => nil
+ *
+ *  Raises IndexError if the byte at +offset+ is not the first byte of a character:
+ *
+ *    s = "\uFFFF\uFFFF"        # => "\uFFFF\uFFFF"
+ *    s.size                    # => 2 # Two 3-byte characters.
+ *    s.bytesize                # => 6 # Six bytes.
+ *    s.byterindex("\uFFFF")    # => 3
+ *    s.byterindex("\uFFFF", 1) # Raises IndexError
+ *    s.byterindex("\uFFFF", 2) # Raises IndexError
+ *    s.byterindex("\uFFFF", 3) # => 3
+ *    s.byterindex("\uFFFF", 4) # Raises IndexError
+ *    s.byterindex("\uFFFF", 5) # Raises IndexError
+ *    s.byterindex("\uFFFF", 6) # => nil
+ *
+ *  Related: see {Querying}[rdoc-ref:String@Querying].
  */
 
 static VALUE
