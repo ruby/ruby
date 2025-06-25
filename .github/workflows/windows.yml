@@ -32,9 +32,8 @@ jobs:
           - vc: 2022
             os: 2025
             test_task: check
-          - vc: 2019
-            os: 2022
-            vcvars: '-vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
+          - vc: 2022
+            os: 2025
             test_task: test-bundled-gems
       fail-fast: false
 
