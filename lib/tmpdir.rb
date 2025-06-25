@@ -139,7 +139,7 @@ class Dir
     end
 
     # Unusable characters as path name
-    UNUSABLE_CHARS = "^,-.0-9A-Z_a-z~"
+    UNUSABLE_CHARS = "^,-.0-9A-Z_a_z~".freeze
 
     # Dedicated random number generator
     RANDOM = Object.new
