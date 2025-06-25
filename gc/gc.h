@@ -130,7 +130,7 @@ RBIMPL_WARNING_IGNORED(-Wunused-function)
 #endif
 
 #ifndef GC_ASSERT
-# define GC_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr)
+# define GC_ASSERT(expr, ...) RUBY_ASSERT_MESG_WHEN(RGENGC_CHECK_MODE > 0, expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #endif
 
 static int
