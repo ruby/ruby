@@ -27,15 +27,14 @@ jobs:
         include:
           - vc: 2019
             os: 2022
-            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
+            vcvars: '-vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
             test_task: check
           - vc: 2022
             os: 2025
-            vcvars: '10.0.22621.0' # The default version of winsdk is broken.
             test_task: check
           - vc: 2019
             os: 2022
-            vcvars: '10.0.22621.0 -vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
+            vcvars: '-vcvars_ver=14.2' # The default version of MSVC in windows-2022 is broken.
             test_task: test-bundled-gems
       fail-fast: false
 
