@@ -27,7 +27,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
       end
 
-      it "refuses to install mismatched checksum because one gem has been tampered with", bundler: "2" do
+      it "refuses to install mismatched checksum because one gem has been tampered with" do
         lockfile <<~L
           GEM
             remote: https://gem.repo3/
@@ -71,7 +71,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           bundle "config set --local disable_checksum_validation true"
         end
 
-        it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first", bundler: "2" do
+        it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first" do
           bundle :install, artifice: "compact_index"
 
           expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
@@ -79,7 +79,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(the_bundle).to include_gems("myrack-obama 1.0.0", "myrack 1.0.0", source: "remote1")
         end
 
-        it "does not use the full index unnecessarily", bundler: "2" do
+        it "does not use the full index unnecessarily" do
           bundle :install, artifice: "compact_index", verbose: true
 
           expect(out).to include("https://gem.repo1/versions")
@@ -108,7 +108,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
       end
 
-      it "warns about ambiguous gems, but installs anyway", bundler: "2" do
+      it "warns about ambiguous gems, but installs anyway" do
         bundle :install, artifice: "compact_index"
         expect(err).to include("Warning: the gem 'myrack' was found in multiple sources.")
         expect(err).to include("Installed from: https://gem.repo1")
@@ -145,7 +145,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
     end
 
-    it "works in standalone mode", bundler: "2" do
+    it "works in standalone mode" do
       gem_checksum = checksum_digest(gem_repo4, "foo", "1.0")
       bundle "install --standalone", artifice: "compact_index", env: { "BUNDLER_SPEC_FOO_CHECKSUM" => gem_checksum }
     end
@@ -325,7 +325,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           G
         end
 
-        it "fails when the two sources don't have the same checksum", bundler: "2" do
+        it "fails when the two sources don't have the same checksum" do
           bundle :install, artifice: "compact_index", raise_on_error: false
 
           expect(err).to eq(<<~E.strip)
@@ -347,7 +347,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(exitstatus).to eq(37)
         end
 
-        it "fails when the two sources agree, but the local gem calculates a different checksum", bundler: "2" do
+        it "fails when the two sources agree, but the local gem calculates a different checksum" do
           myrack_checksum = "c0ffee11" * 8
           bundle :install, artifice: "compact_index", env: { "BUNDLER_SPEC_MYRACK_CHECKSUM" => myrack_checksum }, raise_on_error: false
 
@@ -370,7 +370,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(exitstatus).to eq(37)
         end
 
-        it "installs from the other source and warns about ambiguous gems when the sources have the same checksum", bundler: "2" do
+        it "installs from the other source and warns about ambiguous gems when the sources have the same checksum" do
           gem_checksum = checksum_digest(gem_repo2, "myrack", "1.0.0")
           bundle :install, artifice: "compact_index", env: { "BUNDLER_SPEC_MYRACK_CHECKSUM" => gem_checksum, "DEBUG" => "1" }
 
@@ -410,7 +410,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(lockfile).to eq(previous_lockfile)
         end
 
-        it "installs from the other source and warns about ambiguous gems when checksum validation is disabled", bundler: "2" do
+        it "installs from the other source and warns about ambiguous gems when checksum validation is disabled" do
           bundle "config set --local disable_checksum_validation true"
           bundle :install, artifice: "compact_index"
 
@@ -475,7 +475,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           G
         end
 
-        it "installs the dependency from the pinned source without warning", bundler: "2" do
+        it "installs the dependency from the pinned source without warning" do
           bundle :install, artifice: "compact_index"
 
           expect(err).not_to include("Warning: the gem 'myrack' was found in multiple sources.")
@@ -524,7 +524,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     end
 
-    context "when an indirect dependency can't be found in the aggregate rubygems source", bundler: "2" do
+    context "when an indirect dependency can't be found in the aggregate rubygems source" do
       before do
         build_repo2
 
@@ -896,7 +896,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         L
       end
 
-      it "does not install newer versions or generate lockfile changes when running bundle install in frozen mode, and warns", bundler: "2" do
+      it "does not install newer versions or generate lockfile changes when running bundle install in frozen mode, and warns" do
         initial_lockfile = lockfile
 
         bundle "config set --local frozen true"
@@ -1264,7 +1264,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         lockfile aggregate_gem_section_lockfile
       end
 
-      it "installs the existing lockfile but prints a warning when checksum validation is disabled", bundler: "2" do
+      it "installs the existing lockfile but prints a warning when checksum validation is disabled" do
         bundle "config set --local deployment true"
         bundle "config set --local disable_checksum_validation true"
 
@@ -1275,7 +1275,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(the_bundle).to include_gems("myrack 0.9.1", source: "remote3")
       end
 
-      it "prints a checksum warning when the checksums from both sources do not match", bundler: "2" do
+      it "prints a checksum warning when the checksums from both sources do not match" do
         bundle "config set --local deployment true"
 
         bundle "install", artifice: "compact_index", raise_on_error: false
@@ -1583,7 +1583,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     expect(err).to include("Could not reach host gem.repo4. Check your network connection and try again.")
   end
 
-  context "when an indirect dependency is available from multiple ambiguous sources", bundler: "2" do
+  context "when an indirect dependency is available from multiple ambiguous sources" do
     it "succeeds but warns, suggesting a source block" do
       build_repo4 do
         build_gem "depends_on_myrack" do |s|

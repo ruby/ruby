@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "bundle install with explicit source paths" do
-  it "fetches gems with a global path source", bundler: "2" do
+  it "fetches gems with a global path source" do
     build_lib "foo"
 
     install_gemfile <<-G

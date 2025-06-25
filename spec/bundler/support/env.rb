@@ -9,9 +9,5 @@ module Spec
     def rubylib
       ENV["RUBYLIB"].to_s.split(File::PATH_SEPARATOR)
     end
-
-    def simulated_version
-      ENV["BUNDLE_SIMULATE_VERSION"]
-    end
   end
 end

@@ -155,7 +155,7 @@ RSpec.describe "post bundle message" do
     end
   end
 
-  describe "for second bundle install run after first run using --without", bundler: "2" do
+  describe "for second bundle install run after first run using --without" do
     it "with --without one group" do
       bundle "install --without emo"
       bundle :install

@@ -136,7 +136,7 @@ RSpec.describe "env helpers" do
     it_behaves_like "an unbundling helper"
   end
 
-  describe "Bundler.clean_env", bundler: "2" do
+  describe "Bundler.clean_env" do
     let(:modified_env) { "Bundler.clean_env" }
 
     it_behaves_like "an unbundling helper"
@@ -158,7 +158,7 @@ RSpec.describe "env helpers" do
     end
   end
 
-  describe "Bundler.with_clean_env", bundler: "2" do
+  describe "Bundler.with_clean_env" do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
 
@@ -209,7 +209,7 @@ RSpec.describe "env helpers" do
     end
   end
 
-  describe "Bundler.clean_system", bundler: "2" do
+  describe "Bundler.clean_system" do
     before do
       create_file("source.rb", <<-'RUBY')
         Bundler.ui.silence { Bundler.clean_system("ruby", "-e", "exit(42) unless ENV['BUNDLE_FOO'] == 'bar'") }
@@ -260,7 +260,7 @@ RSpec.describe "env helpers" do
     end
   end
 
-  describe "Bundler.clean_exec", bundler: "2" do
+  describe "Bundler.clean_exec" do
     before do
       create_file("source.rb", <<-'RUBY')
         Process.fork do
