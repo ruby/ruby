@@ -574,6 +574,12 @@ module URI
       @password
     end
 
+    # Returns the authority info (array of user, password, host and
+    # port), if any is set.  Or returns +nil+.
+    def authority
+      return @user, @password, @host, @port if @user || @password || @host || @port
+    end
+
     # Returns the user component after URI decoding.
     def decoded_user
       URI.decode_uri_component(@user) if @user
@@ -614,6 +620,13 @@ module URI
       @host = v
     end
     protected :set_host
+
+    # Protected setter for the authority info (+user+, +password+, +host+
+    # and +port+).  If +port+ is +nil+, +default_port+ will be set.
+    #
+    protected def set_authority(user, password, host, port = nil)
+      @user, @password, @host, @port = user, password, host, port || self.default_port
+    end
 
     #
     # == Args
@@ -1123,7 +1136,7 @@ module URI
 
       base = self.dup
 
-      authority = rel.userinfo || rel.host || rel.port
+      authority = rel.authority
 
       # RFC2396, Section 5.2, 2)
       if (rel.path.nil? || rel.path.empty?) && !authority && !rel.query
@@ -1136,9 +1149,7 @@ module URI
 
       # RFC2396, Section 5.2, 4)
       if authority
-        base.set_userinfo(rel.userinfo)
-        base.set_host(rel.host)
-        base.set_port(rel.port || base.default_port)
+        base.set_authority(*authority)
         base.set_path(rel.path)
       elsif base.path && rel.path
         base.set_path(merge_path(base.path, rel.path))
