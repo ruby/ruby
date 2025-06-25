@@ -209,7 +209,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config list` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old get interface" do
@@ -221,7 +221,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config get waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface" do
@@ -233,7 +233,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --local" do
@@ -245,7 +245,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --local waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old set interface with --global" do
@@ -257,7 +257,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config set --global waka wakapun` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface" do
@@ -269,7 +269,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --local" do
@@ -281,7 +281,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --local waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
 
     describe "old unset interface with --global" do
@@ -293,7 +293,7 @@ RSpec.describe "major deprecations" do
         expect(deprecations).to include("Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle config unset --global waka` instead.")
       end
 
-      pending "fails with a helpful error", bundler: "4"
+      pending "fails with a helpful error", bundler: "5"
     end
   end
 
@@ -310,7 +310,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include("Pass --all to `bundle update` to update everything")
     end
 
-    pending "fails with a helpful error when no options are given", bundler: "4"
+    pending "fails with a helpful error when no options are given", bundler: "5"
 
     it "does not warn when --all is passed" do
       bundle "update --all"
