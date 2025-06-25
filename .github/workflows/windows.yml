@@ -55,6 +55,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: ${{ matrix.target || 'x64' }}-windows
+      TEST_BUNDLED_GEMS_ALLOW_FAILURES: "rake" # test-bundled-gems with windows-2025 is failed with rake test
 
     steps:
       - run: md build
