@@ -859,6 +859,23 @@ rb_namespace_require_relative(VALUE namespace, VALUE fname)
     return rb_ensure(rb_require_relative_entrypoint, fname, namespace_both_pop, (VALUE)&arg);
 }
 
+static VALUE
+rb_namespace_eval_string(VALUE str)
+{
+    return rb_eval_string(RSTRING_PTR(str));
+}
+
+static VALUE
+rb_namespace_eval(VALUE namespace, VALUE str)
+{
+    rb_thread_t *th = GET_THREAD();
+
+    StringValue(str);
+
+    namespace_push(th, namespace);
+    return rb_ensure(rb_namespace_eval_string, str, namespace_pop, (VALUE)th);
+}
+
 static int namespace_experimental_warned = 0;
 
 void
@@ -1061,6 +1078,7 @@ Init_Namespace(void)
     rb_define_method(rb_cNamespace, "load", rb_namespace_load, -1);
     rb_define_method(rb_cNamespace, "require", rb_namespace_require, 1);
     rb_define_method(rb_cNamespace, "require_relative", rb_namespace_require_relative, 1);
+    rb_define_method(rb_cNamespace, "eval", rb_namespace_eval, 1);
 
     rb_define_method(rb_cNamespace, "inspect", rb_namespace_inspect, 0);
 

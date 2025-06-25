@@ -533,4 +533,86 @@ class TestNamespace < Test::Unit::TestCase
     assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank1.rb'))
     assert !$LOADED_FEATURES.include?(File.join(namespace_dir, 'blank2.rb'))
   end
+
+  def test_eval_basic
+    pend unless Namespace.enabled?
+
+    # Test basic evaluation
+    result = @n.eval("1 + 1")
+    assert_equal 2, result
+
+    # Test string evaluation
+    result = @n.eval("'hello ' + 'world'")
+    assert_equal "hello world", result
+  end
+
+  def test_eval_with_constants
+    pend unless Namespace.enabled?
+
+    # Define a constant in the namespace via eval
+    @n.eval("TEST_CONST = 42")
+    assert_equal 42, @n::TEST_CONST
+
+    # Constant should not be visible in main namespace
+    assert_raise(NameError) { TEST_CONST }
+  end
+
+  def test_eval_with_classes
+    pend unless Namespace.enabled?
+
+    # Define a class in the namespace via eval
+    @n.eval("class TestClass; def hello; 'from namespace'; end; end")
+
+    # Class should be accessible in the namespace
+    instance = @n::TestClass.new
+    assert_equal "from namespace", instance.hello
+
+    # Class should not be visible in main namespace
+    assert_raise(NameError) { TestClass }
+  end
+
+  def test_eval_isolation
+    pend unless Namespace.enabled?
+
+    # Create another namespace
+    n2 = Namespace.new
+
+    # Define different constants in each namespace
+    @n.eval("ISOLATION_TEST = 'first'")
+    n2.eval("ISOLATION_TEST = 'second'")
+
+    # Each namespace should have its own constant
+    assert_equal "first", @n::ISOLATION_TEST
+    assert_equal "second", n2::ISOLATION_TEST
+
+    # Constants should not interfere with each other
+    assert_not_equal @n::ISOLATION_TEST, n2::ISOLATION_TEST
+  end
+
+  def test_eval_with_variables
+    pend unless Namespace.enabled?
+
+    # Test local variable access (should work within the eval context)
+    result = @n.eval("x = 10; y = 20; x + y")
+    assert_equal 30, result
+  end
+
+  def test_eval_error_handling
+    pend unless Namespace.enabled?
+
+    # Test syntax error
+    assert_raise(SyntaxError) { @n.eval("1 +") }
+
+    # Test name error
+    assert_raise(NameError) { @n.eval("undefined_variable") }
+
+    # Test that namespace is properly restored after error
+    begin
+      @n.eval("raise RuntimeError, 'test error'")
+    rescue RuntimeError
+      # Should be able to continue using the namespace
+      result = @n.eval("2 + 2")
+      assert_equal 4, result
+    end
+  end
 end
