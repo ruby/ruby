@@ -78,6 +78,10 @@ require 'open3/version'
 # - An optional hash of execution options;
 #   see {Execution Options}[rdoc-ref:Process@Execution+Options].
 #
+# Note: When using methods that set up pipes for I/O streams,
+# the corresponding redirection options in the execution options
+# will be ignored for those streams.
+#
 module Open3
 
   # :call-seq:
@@ -147,6 +151,9 @@ module Open3
   # If the last argument is a hash, it becomes trailing argument +options+
   # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Note: The redirection options :in, :out, and :err will be ignored
+  # because popen3 sets up pipes for stdin, stdout, and stderr.
   #
   # The single required argument is one of the following:
   #
@@ -301,6 +308,9 @@ module Open3
   # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: The redirection options :in and :out will be ignored
+  # because popen2 sets up pipes for stdin and stdout.
+  #
   # The single required argument is one of the following:
   #
   # - +command_line+ if it is a string,
@@ -445,6 +455,9 @@ module Open3
   # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: The redirection options :in and [:out, :err] will be ignored
+  # because popen2e sets up pipes for stdin and merged stdout/stderr.
+  #
   # The single required argument is one of the following:
   #
   # - +command_line+ if it is a string,
@@ -583,6 +596,9 @@ module Open3
   # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: The redirection options :in, :out, and :err will be ignored
+  # because capture3 manages stdin, stdout, and stderr internally.
+  #
   # The hash +options+ is given;
   # two options have local effect in method Open3.capture3:
   #
@@ -708,6 +724,9 @@ module Open3
   # If the last argument is a hash, it becomes trailing argument +options+
   # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Note: The redirection options :in and :out will be ignored
+  # because capture2 manages stdin and stdout internally.
   #
   # The hash +options+ is given;
   # two options have local effect in method Open3.capture2:
@@ -836,6 +855,9 @@ module Open3
   # If the last argument is a hash, it becomes trailing argument +options+
   # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Note: The redirection options :in and [:out, :err] will be ignored
+  # because capture2e manages stdin and merged stdout/stderr internally.
   #
   # The hash +options+ is given;
   # two options have local effect in method Open3.capture2e:
@@ -1001,6 +1023,10 @@ module Open3
   # in each call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: The redirection options for the first process's stdin (:in)
+  # and the last process's stdout (:out) will be ignored
+  # because pipeline_rw sets up pipes for these.
+  #
   # Each remaining argument in +cmds+ is one of:
   #
   # - A +command_line+: a string that begins with a shell reserved word
@@ -1090,6 +1116,9 @@ module Open3
   # If the last argument is a hash, it becomes trailing argument +options+
   # in each call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Note: The redirection option for the last process's stdout (:out)
+  # will be ignored because pipeline_r sets up a pipe for it.
   #
   # Each remaining argument in +cmds+ is one of:
   #
@@ -1182,6 +1211,9 @@ module Open3
   # in each call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: The redirection option for the first process's stdin (:in)
+  # will be ignored because pipeline_w sets up a pipe for it.
+  #
   # Each remaining argument in +cmds+ is one of:
   #
   # - A +command_line+: a string that begins with a shell reserved word
@@ -1259,6 +1291,9 @@ module Open3
   # in each call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
+  # Note: All redirection options are honored because pipeline_start
+  # does not set up any pipes automatically.
+  #
   # Each remaining argument in +cmds+ is one of:
   #
   # - A +command_line+: a string that begins with a shell reserved word
@@ -1318,8 +1353,11 @@ module Open3
   # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
   #
   # If the last argument is a hash, it becomes trailing argument +options+
-  # in each call to Process.spawn'
+  # in each call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Note: Redirection options are generally honored, but pipes between
+  # commands are automatically managed.
   #
   # Each remaining argument in +cmds+ is one of:
   #
