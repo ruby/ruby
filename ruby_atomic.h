@@ -3,6 +3,8 @@
 
 #include "ruby/atomic.h"
 
+#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
+
 /* shim macros only */
 #define ATOMIC_ADD(var, val) RUBY_ATOMIC_ADD(var, val)
 #define ATOMIC_CAS(var, oldval, newval) RUBY_ATOMIC_CAS(var, oldval, newval)

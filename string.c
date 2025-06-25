@@ -645,8 +645,6 @@ fstring_table_probe_next(struct fstring_table_probe *probe)
 }
 #endif
 
-#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
-
 static void
 fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VALUE value)
 {
