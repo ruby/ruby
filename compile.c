@@ -2484,7 +2484,7 @@ array_to_idlist(VALUE arr)
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
     long size = RARRAY_LEN(arr);
     ID *ids = (ID *)ALLOC_N(ID, size + 1);
-    for (int i = 0; i < size; i++) {
+    for (long i = 0; i < size; i++) {
         VALUE sym = RARRAY_AREF(arr, i);
         ids[i] = SYM2ID(sym);
     }
