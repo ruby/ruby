@@ -141,8 +141,10 @@ module Open3
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
-  # Unlike Process.spawn, this method waits for the child process to exit
-  # before returning, so the caller need not do so.
+  # Blocking behavior:
+  # - With a block: waits for the child process to exit before returning.
+  # - Without a block: returns immediately without waiting for the child process;
+  #   the caller must call +wait_thread.join+ to wait for the process to exit.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in the call to Process.spawn;
@@ -297,8 +299,10 @@ module Open3
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
-  # Unlike Process.spawn, this method waits for the child process to exit
-  # before returning, so the caller need not do so.
+  # Blocking behavior:
+  # - With a block: waits for the child process to exit before returning.
+  # - Without a block: returns immediately without waiting for the child process;
+  #   the caller must call +wait_thread.join+ to wait for the process to exit.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in the call to Process.spawn;
@@ -444,8 +448,10 @@ module Open3
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
-  # Unlike Process.spawn, this method waits for the child process to exit
-  # before returning, so the caller need not do so.
+  # Blocking behavior:
+  # - With a block: waits for the child process to exit before returning.
+  # - Without a block: returns immediately without waiting for the child process;
+  #   the caller must call +wait_thread.join+ to wait for the process to exit.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in the call to Process.spawn;
@@ -994,15 +1000,14 @@ module Open3
   #
   # With a block given, calls the block with the +stdin+ stream of the first child,
   # the +stdout+ stream  of the last child,
-  # and an array of the wait processes:
+  # and an array of the wait processes.
+  # The method automatically waits for all processes to exit after the block returns.
   #
   #   Open3.pipeline_rw('sort', 'cat -n') do |first_stdin, last_stdout, wait_threads|
   #     first_stdin.puts "foo\nbar\nbaz"
   #     first_stdin.close # send EOF to sort.
   #     puts last_stdout.read
-  #     wait_threads.each do |wait_thread|
-  #       wait_thread.join
-  #     end
+  #     # No need to join wait_threads - the method handles it automatically
   #   end
   #
   # Output:
@@ -1091,13 +1096,12 @@ module Open3
   #
   # With a block given, calls the block with the +stdout+ stream
   # of the last child process,
-  # and an array of the wait processes:
+  # and an array of the wait processes.
+  # The method automatically waits for all processes to exit after the block returns.
   #
   #   Open3.pipeline_r('ls', 'grep R') do |last_stdout, wait_threads|
   #     puts last_stdout.read
-  #     wait_threads.each do |wait_thread|
-  #       wait_thread.join
-  #     end
+  #     # No need to join wait_threads - the method handles it automatically
   #   end
   #
   # Output:
@@ -1183,14 +1187,13 @@ module Open3
   #
   # With a block given, calls the block with the +stdin+ stream
   # of the first child process,
-  # and an array of the wait processes:
+  # and an array of the wait processes.
+  # The method automatically waits for all processes to exit after the block returns.
   #
   #   Open3.pipeline_w('sort', 'cat -n') do |first_stdin, wait_threads|
   #     first_stdin.puts("foo\nbar\nbaz")
   #     first_stdin.close # Send EOF to sort.
-  #     wait_threads.each do |wait_thread|
-  #       wait_thread.join
-  #     end
+  #     # No need to join wait_threads - the method handles it automatically
   #   end
   #
   # Output:
@@ -1266,12 +1269,11 @@ module Open3
   #   Rakefile
   #   README.md
   #
-  # With a block given, calls the block with an array of the wait processes:
+  # With a block given, calls the block with an array of the wait processes.
+  # The method automatically waits for all processes to exit after the block returns.
   #
   #   Open3.pipeline_start('ls', 'grep R') do |wait_threads|
-  #     wait_threads.each do |wait_thread|
-  #       wait_thread.join
-  #     end
+  #     # No need to join wait_threads - the method handles it automatically
   #   end
   #
   # Output:
