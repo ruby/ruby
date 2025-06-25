@@ -994,8 +994,14 @@ impl Function {
         let insn_id = find!(insn_id);
         use Insn::*;
         match &self.insns[insn_id.0] {
-            result@(Const {..} | Param {..} | GetConstantPath {..}
-                    | PatchPoint {..} | GetLocal {..}) => result.clone(),
+            result@(Const {..}
+                    | Param {..}
+                    | GetConstantPath {..}
+                    | PatchPoint {..}
+                    | PutSpecialObject {..}
+                    | GetGlobal {..}
+                    | GetLocal {..}
+                    | SideExit {..}) => result.clone(),
             Snapshot { state: FrameState { iseq, insn_idx, pc, stack, locals } } =>
                 Snapshot {
                     state: FrameState {
@@ -1027,7 +1033,6 @@ impl Function {
             FixnumGe { left, right } => FixnumGe { left: find!(*left), right: find!(*right) },
             FixnumLt { left, right } => FixnumLt { left: find!(*left), right: find!(*right) },
             FixnumLe { left, right } => FixnumLe { left: find!(*left), right: find!(*right) },
-            PutSpecialObject { value_type } => PutSpecialObject { value_type: *value_type },
             ObjToString { val, call_info, cd, state } => ObjToString {
                 val: find!(*val),
                 call_info: call_info.clone(),
@@ -1080,7 +1085,6 @@ impl Function {
             }
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             ArrayMax { elements, state } => ArrayMax { elements: find_vec!(*elements), state: find!(*state) },
-            &GetGlobal { id, state } => GetGlobal { id, state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, state } => GetIvar { self_val: find!(self_val), id, state },
             &SetIvar { self_val, id, val, state } => SetIvar { self_val: find!(self_val), id, val, state },
@@ -1089,7 +1093,6 @@ impl Function {
             &ToNewArray { val, state } => ToNewArray { val: find!(val), state },
             &ArrayExtend { left, right, state } => ArrayExtend { left: find!(left), right: find!(right), state },
             &ArrayPush { array, val, state } => ArrayPush { array: find!(array), val: find!(val), state },
-            &SideExit { state } => SideExit { state },
         }
     }
 
