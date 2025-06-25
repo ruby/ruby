@@ -1851,8 +1851,6 @@ static const rb_data_type_t id2ref_tbl_type = {
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-#define RUBY_ATOMIC_VALUE_LOAD(x) (VALUE)(RUBY_ATOMIC_PTR_LOAD(x))
-
 static VALUE
 class_object_id(VALUE klass)
 {
