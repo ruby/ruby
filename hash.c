@@ -880,10 +880,11 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 return 0;
               case ST_REPLACE:
                 if (replace) {
+                    ar_table_pair *orig_pair = pair;
                     (*replace)(&key, &val, arg, TRUE);
 
-                    // TODO: pair should be same as pair before.
                     pair = RHASH_AR_TABLE_REF(hash, i);
+                    HASH_ASSERT(orig_pair == pair);
                     pair->key = (VALUE)key;
                     pair->val = (VALUE)val;
                 }
