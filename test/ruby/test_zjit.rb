@@ -781,6 +781,29 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_defined_yield
+    assert_compiles "nil", "defined?(yield)"
+    assert_compiles '[nil, nil, "yield"]', %q{
+      def test = defined?(yield)
+      [test, test, test{}]
+    }, call_threshold: 2, insns: [:defined]
+  end
+
+  def test_defined_yield_from_block
+    # This will do some EP hopping to find the local EP,
+    # so it's slightly different than doing it outside of a block.
+
+    omit 'Test fails at the moment due to missing Send codegen'
+
+    assert_compiles '[nil, nil, "yield"]', %q{
+      def test
+        yield_self { yield_self { defined?(yield) } }
+      end
+
+      [test, test, test{}]
+    }, call_threshold: 2, insns: [:defined]
+  end
+
   def test_putspecialobject_vm_core_and_cbase
     assert_compiles '10', %q{
       def test
