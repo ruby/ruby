@@ -2543,11 +2543,17 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_getlocal_WC_0 => {
+                    // TODO(alan): This implementation doesn't read from EP, so will miss writes
+                    // from nested ISeqs. This will need to be amended when we add codegen for
+                    // Send.
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.getlocal(ep_offset);
                     state.stack_push(val);
                 }
                 YARVINSN_setlocal_WC_0 => {
+                    // TODO(alan): This implementation doesn't write to EP, where nested scopes
+                    // read, so they'll miss these writes. This will need to be amended when we
+                    // add codegen for Send.
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let val = state.stack_pop()?;
                     state.setlocal(ep_offset, val);
@@ -3527,16 +3533,16 @@ mod tests {
             expect![[r#"
                 fn block (3 levels) in <compiled>:
                 bb0(v0:BasicObject):
-                  v2:BasicObject = GetLocal l2, 4
-                  SetLocal l1, 3, v2
-                  v4:BasicObject = GetLocal l1, 3
-                  v5:BasicObject = GetLocal l2, 4
+                  v2:BasicObject = GetLocal l2, EP@4
+                  SetLocal l1, EP@3, v2
+                  v4:BasicObject = GetLocal l1, EP@3
+                  v5:BasicObject = GetLocal l2, EP@4
                   v7:BasicObject = SendWithoutBlock v4, :+, v5
-                  SetLocal l2, 4, v7
-                  v9:BasicObject = GetLocal l2, 4
-                  v10:BasicObject = GetLocal l3, 5
+                  SetLocal l2, EP@4, v7
+                  v9:BasicObject = GetLocal l2, EP@4
+                  v10:BasicObject = GetLocal l3, EP@5
                   v12:BasicObject = SendWithoutBlock v9, :+, v10
-                  SetLocal l3, 5, v12
+                  SetLocal l3, EP@5, v12
                   Return v12
             "#]]
         );
