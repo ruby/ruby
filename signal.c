@@ -673,6 +673,10 @@ signal_ignored(int sig)
     (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
     if (sigaction(sig, NULL, &old) < 0) return FALSE;
     func = old.sa_handler;
+#elif defined SIG_GET
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
+    // SIG_GET: Returns the current value of the signal.
+    func = signal(sig, SIG_GET);
 #else
     // TODO: this is not a thread-safe way to do it. Needs lock.
     sighandler_t old = signal(sig, SIG_DFL);
