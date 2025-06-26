@@ -442,3 +442,23 @@ rb_yarv_ary_entry_internal(VALUE ary, long offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
+
+const uint32_t
+RB_SPECIAL_CONST_SHAPE_ID = SPECIAL_CONST_SHAPE_ID;
+
+const uint32_t
+RB_INVALID_SHAPE_ID = INVALID_SHAPE_ID;
+
+bool
+rb_zjit_singleton_class_p(VALUE klass)
+{
+    return RCLASS_SINGLETON_P(klass);
+}
+
+uint64_t
+rb_get_iseq_flags(const rb_iseq_t *iseq)
+{
+    uint64_t flags = 0;
+    memcpy(&flags, &iseq->body->param.flags, sizeof(iseq->body->param.flags));
+    return flags;
+}
