@@ -47,6 +47,11 @@ Note: We're only listing outstanding class updates.
     * `IO.select` accepts +Float::INFINITY+ as a timeout argument.
       [[Feature #20610]]
 
+* Socket
+
+    * `Socket.tcp` accepts `open_timeout` as a keyword argument to specify
+      the timeout for the initial connection. [[Feature #21347]]
+
 * Ractor
 
     * `Ractor::Port` class was added for a new synchronization mechanism
@@ -227,3 +232,4 @@ The following bundled gems are updated.
 [Feature #21258]: https://bugs.ruby-lang.org/issues/21258
 [Feature #21262]: https://bugs.ruby-lang.org/issues/21262
 [Feature #21287]: https://bugs.ruby-lang.org/issues/21287
+[Feature #21347]: https://bugs.ruby-lang.org/issues/21347
