@@ -3745,29 +3745,31 @@ rb_const_remove(VALUE mod, ID id)
 
     rb_check_frozen(mod);
 
-    ce = rb_const_lookup(mod, id);
-    if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
-        if (rb_const_defined_at(mod, id)) {
-            rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
+    RB_VM_LOCKING() {
+        ce = rb_const_lookup(mod, id);
+        if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
+            if (rb_const_defined_at(mod, id)) {
+                rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
+            }
+
+            undefined_constant(mod, ID2SYM(id));
         }
 
-        undefined_constant(mod, ID2SYM(id));
+        rb_const_warn_if_deprecated(ce, mod, id);
+        rb_clear_constant_cache_for_id(id);
+
+        val = ce->value;
+
+        if (UNDEF_P(val)) {
+            autoload_delete(mod, id);
+            val = Qnil;
+        }
+
+        if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
+            ruby_xfree(ce);
+        }
+        // else - skip free'ing the ce because it still exists in the prime classext
     }
-
-    rb_const_warn_if_deprecated(ce, mod, id);
-    rb_clear_constant_cache_for_id(id);
-
-    val = ce->value;
-
-    if (UNDEF_P(val)) {
-        autoload_delete(mod, id);
-        val = Qnil;
-    }
-
-    if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
-        ruby_xfree(ce);
-    }
-    // else - skip free'ing the ce because it still exists in the prime classext
 
     return val;
 }
