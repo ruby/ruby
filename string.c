@@ -35,6 +35,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/ractor_safe_set.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
@@ -356,33 +357,11 @@ mustnot_wchar(VALUE str)
     }
 }
 
-static int fstring_cmp(VALUE a, VALUE b);
-
 static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
 #define PRECOMPUTED_FAKESTR_HASH 1
 #else
-#endif
-
-#ifdef PRECOMPUTED_FAKESTR_HASH
-static st_index_t
-fstring_hash(VALUE str)
-{
-    st_index_t h;
-    if (FL_TEST_RAW(str, STR_FAKESTR)) {
-        // register_fstring precomputes the hash and stores it in capa for fake strings
-        h = (st_index_t)RSTRING(str)->as.heap.aux.capa;
-    }
-    else {
-        h = rb_str_hash(str);
-    }
-    // rb_str_hash doesn't include the encoding for ascii only strings, so
-    // we add it to avoid common collisions between `:sym.name` (ASCII) and `"sym"` (UTF-8)
-    return rb_hash_end(rb_hash_uint32(h, (uint32_t)ENCODING_GET_INLINED(str)));
-}
-#else
-#define fstring_hash rb_str_hash
 #endif
 
 static inline bool
@@ -421,14 +400,91 @@ str_store_precomputed_hash(VALUE str, st_index_t hash)
     return str;
 }
 
-struct fstr_update_arg {
+VALUE
+rb_fstring(VALUE str)
+{
+    VALUE fstr;
+    int bare;
+
+    Check_Type(str, T_STRING);
+
+    if (FL_TEST(str, RSTRING_FSTR))
+        return str;
+
+    bare = BARE_STRING_P(str);
+    if (!bare) {
+        if (STR_EMBED_P(str)) {
+            OBJ_FREEZE(str);
+            return str;
+        }
+
+        if (FL_TEST_RAW(str, STR_SHARED_ROOT | STR_SHARED) == STR_SHARED_ROOT) {
+            RUBY_ASSERT(OBJ_FROZEN(str));
+            return str;
+        }
+    }
+
+    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED))
+        rb_str_resize(str, RSTRING_LEN(str));
+
+    fstr = register_fstring(str, false, false);
+
+    if (!bare) {
+        str_replace_shared_without_enc(str, fstr);
+        OBJ_FREEZE(str);
+        return str;
+    }
+    return fstr;
+}
+
+static VALUE fstring_table_obj;
+
+static VALUE
+fstring_ractor_safe_set_hash(VALUE str)
+{
+#ifdef PRECOMPUTED_FAKESTR_HASH
+    st_index_t h;
+    if (FL_TEST_RAW(str, STR_FAKESTR)) {
+        // register_fstring precomputes the hash and stores it in capa for fake strings
+        h = (st_index_t)RSTRING(str)->as.heap.aux.capa;
+    }
+    else {
+        h = rb_str_hash(str);
+    }
+    // rb_str_hash doesn't include the encoding for ascii only strings, so
+    // we add it to avoid common collisions between `:sym.name` (ASCII) and `"sym"` (UTF-8)
+    return (VALUE)rb_hash_end(rb_hash_uint32(h, (uint32_t)ENCODING_GET_INLINED(str)));
+#else
+    return (VALUE)rb_str_hash(str);
+#endif
+}
+
+static bool
+fstring_ractor_safe_set_cmp(VALUE a, VALUE b)
+{
+    long alen, blen;
+    const char *aptr, *bptr;
+
+    RUBY_ASSERT(RB_TYPE_P(a, T_STRING));
+    RUBY_ASSERT(RB_TYPE_P(b, T_STRING));
+
+    RSTRING_GETMEM(a, aptr, alen);
+    RSTRING_GETMEM(b, bptr, blen);
+    return (alen == blen &&
+            ENCODING_GET(a) == ENCODING_GET(b) &&
+            memcmp(aptr, bptr, alen) == 0);
+}
+
+struct fstr_create_arg {
     bool copy;
     bool force_precompute_hash;
 };
 
 static VALUE
-build_fstring(VALUE str, struct fstr_update_arg *arg)
+fstring_ractor_safe_set_create(VALUE str, void *data)
 {
+    struct fstr_create_arg *arg = data;
+
     // Unless the string is empty or binary, its coderange has been precomputed.
     int coderange = ENC_CODERANGE(str);
 
@@ -492,375 +548,23 @@ build_fstring(VALUE str, struct fstr_update_arg *arg)
     return str;
 }
 
-VALUE
-rb_fstring(VALUE str)
-{
-    VALUE fstr;
-    int bare;
-
-    Check_Type(str, T_STRING);
-
-    if (FL_TEST(str, RSTRING_FSTR))
-        return str;
-
-    bare = BARE_STRING_P(str);
-    if (!bare) {
-        if (STR_EMBED_P(str)) {
-            OBJ_FREEZE(str);
-            return str;
-        }
-
-        if (FL_TEST_RAW(str, STR_SHARED_ROOT | STR_SHARED) == STR_SHARED_ROOT) {
-            RUBY_ASSERT(OBJ_FROZEN(str));
-            return str;
-        }
-    }
-
-    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED))
-        rb_str_resize(str, RSTRING_LEN(str));
-
-    fstr = register_fstring(str, false, false);
-
-    if (!bare) {
-        str_replace_shared_without_enc(str, fstr);
-        OBJ_FREEZE(str);
-        return str;
-    }
-    return fstr;
-}
-
-#define FSTRING_TABLE_EMPTY     Qfalse
-#define FSTRING_TABLE_TOMBSTONE Qtrue
-#define FSTRING_TABLE_MOVED     Qundef
-
-struct fstring_table_entry {
-    VALUE str;
-    VALUE hash;
+static struct rb_ractor_safe_set_funcs fstring_ractor_safe_set_funcs = {
+    .hash = fstring_ractor_safe_set_hash,
+    .cmp = fstring_ractor_safe_set_cmp,
+    .create = fstring_ractor_safe_set_create,
 };
-
-struct fstring_table_struct {
-    struct fstring_table_entry *entries;
-    unsigned int capacity;
-    unsigned int deleted_entries;
-    rb_atomic_t count; // TODO: pad to own cache line?
-};
-
-static void
-fstring_table_free(void *ptr)
-{
-    struct fstring_table_struct *table = ptr;
-    xfree(table->entries);
-}
-
-static size_t
-fstring_table_size(const void *ptr)
-{
-    const struct fstring_table_struct *table = ptr;
-    return sizeof(struct fstring_table_struct) + sizeof(struct fstring_table_entry) * table->capacity;
-}
-
-// We declare a type for the table so that we can lean on Ruby's GC for deferred reclamation
-static const rb_data_type_t fstring_table_type = {
-    .wrap_struct_name = "VM/fstring_table",
-    .function = {
-        .dmark = NULL,
-        .dfree = fstring_table_free,
-        .dsize = fstring_table_size,
-    },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
-};
-
-
-static VALUE fstring_table_obj;
-
-static VALUE
-new_fstring_table(int capacity)
-{
-    VALUE obj;
-    struct fstring_table_struct *table;
-    obj = TypedData_Make_Struct(0, struct fstring_table_struct, &fstring_table_type, table);
-    table->capacity = capacity;
-    table->count = 0;
-    table->entries = ZALLOC_N(struct fstring_table_entry, capacity);
-    return obj;
-}
 
 void
 Init_fstring_table(void)
 {
-    fstring_table_obj = new_fstring_table(8192);
+    fstring_table_obj = rb_ractor_safe_set_new(&fstring_ractor_safe_set_funcs, 8192);
     rb_gc_register_address(&fstring_table_obj);
-}
-
-#if 0
-
-// Linear probe
-struct fstring_table_probe {
-    int idx;
-    int mask;
-};
-
-static int
-fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code)
-{
-    RUBY_ASSERT((table->capacity & (table->capacity - 1)) == 0);
-    probe->mask = table->capacity - 1;
-    probe->idx = hash_code & probe->mask;
-    return probe->idx;
-}
-
-static int
-fstring_table_probe_next(struct fstring_table_probe *probe)
-{
-    probe->idx = (probe->idx + 1) & probe->mask;
-    return probe->idx;
-}
-
-#else
-
-// Struct containing probe information. Intended that the compiler should always inline this
-// Quadratic probing
-struct fstring_table_probe {
-    int idx;
-    int d;
-    int mask;
-};
-
-static int
-fstring_table_probe_start(struct fstring_table_probe *probe, struct fstring_table_struct *table, VALUE hash_code)
-{
-    RUBY_ASSERT((table->capacity & (table->capacity - 1)) == 0);
-    probe->d = 0;
-    probe->mask = table->capacity - 1;
-    probe->idx = hash_code & probe->mask;
-    return probe->idx;
-}
-
-static int
-fstring_table_probe_next(struct fstring_table_probe *probe)
-{
-    probe->d++;
-    probe->idx = (probe->idx + probe->d) & probe->mask;
-    return probe->idx;
-}
-#endif
-
-static void
-fstring_insert_on_resize(struct fstring_table_struct *table, VALUE hash_code, VALUE value)
-{
-    struct fstring_table_probe probe;
-    int idx = fstring_table_probe_start(&probe, table, hash_code);
-
-    for (;;) {
-        struct fstring_table_entry *entry = &table->entries[idx];
-        VALUE candidate = entry->str;
-
-        RUBY_ASSERT(candidate != FSTRING_TABLE_TOMBSTONE);
-        RUBY_ASSERT(candidate != FSTRING_TABLE_MOVED);
-
-        if (candidate == FSTRING_TABLE_EMPTY) {
-            table->count++;
-
-            RUBY_ASSERT(table->count < table->capacity / 2);
-            RUBY_ASSERT(entry->hash == 0);
-
-            entry->str = value;
-            entry->hash = hash_code;
-            return;
-        }
-
-        idx = fstring_table_probe_next(&probe);
-    }
-}
-
-// Rebuilds the table
-static void
-fstring_try_resize_without_locking(VALUE old_table_obj)
-{
-    // Check if another thread has already resized
-    if (RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj) != old_table_obj) {
-        goto end;
-    }
-
-    struct fstring_table_struct *old_table = RTYPEDDATA_GET_DATA(old_table_obj);
-
-    // This may overcount by up to the number of threads concurrently attempting to insert
-    // GC may also happen between now and the table being rebuilt
-    int expected_count = RUBY_ATOMIC_LOAD(old_table->count) - old_table->deleted_entries;
-
-    struct fstring_table_entry *old_entries = old_table->entries;
-    int old_capacity = old_table->capacity;
-    int new_capacity = old_capacity * 2;
-    if (new_capacity > expected_count * 8) {
-        new_capacity = old_capacity / 2;
-    }
-    else if (new_capacity > expected_count * 4) {
-        new_capacity = old_capacity;
-    }
-
-    // May cause GC and therefore deletes, so must hapen first
-    VALUE new_table_obj = new_fstring_table(new_capacity);
-    struct fstring_table_struct *new_table = RTYPEDDATA_GET_DATA(new_table_obj);
-
-    for (int i = 0; i < old_capacity; i++) {
-        struct fstring_table_entry *entry = &old_entries[i];
-        VALUE val = RUBY_ATOMIC_VALUE_EXCHANGE(entry->str, FSTRING_TABLE_MOVED);
-        RUBY_ASSERT(val != FSTRING_TABLE_MOVED);
-        if (val == FSTRING_TABLE_EMPTY)     continue;
-        if (val == FSTRING_TABLE_TOMBSTONE) continue;
-        if (rb_objspace_garbage_object_p(val)) continue;
-
-        VALUE hash_code = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
-        if (hash_code == 0) {
-            // Either in-progress insert or extremely unlikely 0 hash
-            // Re-calculate the hash ourselves
-            hash_code = fstring_hash(val);
-        }
-        RUBY_ASSERT(hash_code == fstring_hash(val));
-        fstring_insert_on_resize(new_table, hash_code, val);
-    }
-
-#if 0
-    fprintf(stderr, "resized: %p(%i) -> %p(%i) (count: %i->%i)\n", old_table, old_table->capacity, new_table, new_table->capacity, old_table->count, new_table->count);
-#endif
-
-    RUBY_ATOMIC_VALUE_SET(fstring_table_obj, new_table_obj);
-
-end:
-    RB_GC_GUARD(old_table_obj);
-}
-
-static void
-fstring_try_resize(VALUE old_table_obj)
-{
-    RB_VM_LOCKING() {
-        fstring_try_resize_without_locking(old_table_obj);
-    }
-}
-
-static VALUE
-fstring_find_or_insert(VALUE hash_code, VALUE value, struct fstr_update_arg *arg)
-{
-    struct fstring_table_probe probe;
-    bool inserting = false;
-    int idx;
-    VALUE table_obj;
-    struct fstring_table_struct *table;
-
-  retry:
-    table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
-    RUBY_ASSERT(table_obj);
-    table = RTYPEDDATA_GET_DATA(table_obj);
-    idx = fstring_table_probe_start(&probe, table, hash_code);
-
-    for (;;) {
-        struct fstring_table_entry *entry = &table->entries[idx];
-        VALUE candidate = RUBY_ATOMIC_VALUE_LOAD(entry->str);
-
-        if (candidate == FSTRING_TABLE_EMPTY) {
-            // Not in table
-            if (!inserting) {
-                // Prepare a string suitable for inserting into the table
-                value = build_fstring(value, arg);
-                RUBY_ASSERT(hash_code == fstring_hash(value));
-                inserting = true;
-            }
-
-            unsigned int prev_count = RUBY_ATOMIC_FETCH_ADD(table->count, 1);
-
-            if (UNLIKELY(prev_count > table->capacity / 2)) {
-                fstring_try_resize(table_obj);
-                goto retry;
-            }
-
-            VALUE found = RUBY_ATOMIC_VALUE_CAS(entry->str, FSTRING_TABLE_EMPTY, value);
-            if (found == FSTRING_TABLE_EMPTY) {
-                // Success! Our value was inserted
-
-                // Also set the hash code
-                RUBY_ATOMIC_VALUE_SET(entry->hash, hash_code);
-
-                RB_GC_GUARD(table_obj);
-                return value;
-            }
-            else {
-                // Nothing was inserted
-                RUBY_ATOMIC_DEC(table->count); // we didn't end up inserting
-
-                // Another thread won the race, try again at the same location
-                continue;
-            }
-        }
-        else if (candidate == FSTRING_TABLE_TOMBSTONE) {
-            // Deleted entry, continue searching
-        }
-        else if (candidate == FSTRING_TABLE_MOVED) {
-            // Wait
-            RB_VM_LOCKING();
-
-            goto retry;
-        }
-        else {
-            VALUE candidate_hash = RUBY_ATOMIC_VALUE_LOAD(entry->hash);
-            if ((candidate_hash == hash_code || candidate_hash == 0) && !fstring_cmp(candidate, value)) {
-                // We've found a match
-                if (UNLIKELY(rb_objspace_garbage_object_p(candidate))) {
-                    // This is a weakref table, so after marking but before sweeping is complete we may find a matching garbage object.
-                    // Skip it and mark it as a tombstone to help other threads out
-                    RUBY_ATOMIC_VALUE_CAS(entry->str, candidate, FSTRING_TABLE_TOMBSTONE);
-
-                    // Fall through and continue our search
-                }
-                else {
-                    RB_GC_GUARD(table_obj);
-                    return candidate;
-                }
-            }
-        }
-
-        idx = fstring_table_probe_next(&probe);
-    }
-}
-
-
-// Removes an fstring from the table. Compares by identity
-static void
-fstring_delete(VALUE hash_code, VALUE value)
-{
-    // Delete is never called concurrently, so atomic operations are unnecessary
-    VALUE table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
-    RUBY_ASSERT_ALWAYS(table_obj);
-    struct fstring_table_struct *table = RTYPEDDATA_GET_DATA(table_obj);
-
-    struct fstring_table_probe probe;
-    int idx = fstring_table_probe_start(&probe, table, hash_code);
-
-    for (;;) {
-        struct fstring_table_entry *entry = &table->entries[idx];
-        VALUE candidate = entry->str;
-
-        // Allocations should only occur at the beginning of the resize
-        RUBY_ASSERT(candidate != FSTRING_TABLE_MOVED);
-
-        if (candidate == FSTRING_TABLE_EMPTY) {
-            // We didn't find our string to delete
-            return;
-        }
-        else if (candidate == value) {
-            // We found our string, replace it with a tombstone and increment the count
-            entry->str = FSTRING_TABLE_TOMBSTONE;
-            table->deleted_entries++;
-            return;
-        }
-
-        idx = fstring_table_probe_next(&probe);
-    }
 }
 
 static VALUE
 register_fstring(VALUE str, bool copy, bool force_precompute_hash)
 {
-    struct fstr_update_arg args = {
+    struct fstr_create_arg args = {
         .copy = copy,
         .force_precompute_hash = force_precompute_hash
     };
@@ -873,8 +577,7 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     }
 #endif
 
-    VALUE hash_code = fstring_hash(str);
-    VALUE result = fstring_find_or_insert(hash_code, str, &args);
+    VALUE result = rb_ractor_safe_set_find_or_insert(&fstring_table_obj, str, &args);
 
     RUBY_ASSERT(!rb_objspace_garbage_object_p(result));
     RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
@@ -883,47 +586,6 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     RUBY_ASSERT(RBASIC_CLASS(result) == rb_cString);
 
     return result;
-}
-
-void
-rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
-{
-    // Assume locking and barrier (which there is no assert for)
-    ASSERT_vm_locking();
-
-    VALUE table_obj = RUBY_ATOMIC_VALUE_LOAD(fstring_table_obj);
-    if (!table_obj) {
-        // Table not yet initialized. Nothing to iterate over
-        return;
-    }
-    struct fstring_table_struct *table = RTYPEDDATA_GET_DATA(table_obj);
-
-    for (unsigned int i = 0; i < table->capacity; i++) {
-        VALUE key = table->entries[i].str;
-        if(key == FSTRING_TABLE_EMPTY) continue;
-        if(key == FSTRING_TABLE_TOMBSTONE) continue;
-
-        enum st_retval retval;
-        retval = (*func)(key, key, arg, 0);
-
-        if (retval == ST_REPLACE && replace) {
-            st_data_t value = key;
-            retval = (*replace)(&key, &value, arg, TRUE);
-            table->entries[i].str = key;
-        }
-        switch (retval) {
-            case ST_REPLACE:
-            case ST_CONTINUE:
-                break;
-            case ST_CHECK:
-                rb_bug("unsupported");
-            case ST_STOP:
-                return;
-            case ST_DELETE:
-                table->entries[i].str = FSTRING_TABLE_TOMBSTONE;
-                break;
-        }
-    }
 }
 
 bool
@@ -940,12 +602,19 @@ rb_gc_free_fstring(VALUE obj)
     // Assume locking and barrier (which there is no assert for)
     ASSERT_vm_locking();
 
-    VALUE str_hash = fstring_hash(obj);
-    fstring_delete(str_hash, obj);
+    rb_ractor_safe_set_delete_by_identity(fstring_table_obj, obj);
 
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
 
     FL_UNSET(obj, RSTRING_FSTR);
+}
+
+void
+rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *data)
+{
+    if (fstring_table_obj) {
+        rb_ractor_safe_set_foreach_with_replace(fstring_table_obj, callback, data);
+    }
 }
 
 static VALUE
@@ -1000,22 +669,6 @@ VALUE
 rb_fstring_cstr(const char *ptr)
 {
     return rb_fstring_new(ptr, strlen(ptr));
-}
-
-static int
-fstring_cmp(VALUE a, VALUE b)
-{
-    long alen, blen;
-    const char *aptr, *bptr;
-
-    RUBY_ASSERT(RB_TYPE_P(a, T_STRING));
-    RUBY_ASSERT(RB_TYPE_P(b, T_STRING));
-
-    RSTRING_GETMEM(a, aptr, alen);
-    RSTRING_GETMEM(b, bptr, blen);
-    return (alen != blen ||
-            ENCODING_GET(a) != ENCODING_GET(b) ||
-            memcmp(aptr, bptr, alen) != 0);
 }
 
 static inline bool
@@ -13097,16 +12750,21 @@ rb_yjit_str_concat_codepoint(VALUE str, VALUE codepoint)
 }
 #endif
 
+static int
+fstring_set_class_i(VALUE *str, void *data)
+{
+    RBASIC_SET_CLASS(*str, rb_cString);
+
+    return ST_CONTINUE;
+}
+
 void
 Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
-    struct fstring_table_struct *fstring_table = RTYPEDDATA_GET_DATA(fstring_table_obj);
-    for (unsigned int i = 0; i < fstring_table->capacity; i++) {
-        VALUE str = fstring_table->entries[i].str;
-        if (!str) continue;
-        RBASIC_SET_CLASS(str, rb_cString);
-    }
+
+    rb_ractor_safe_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
+
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
