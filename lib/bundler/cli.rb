@@ -77,7 +77,7 @@ module Bundler
       self.options ||= {}
       unprinted_warnings = Bundler.ui.unprinted_warnings
       Bundler.ui = UI::Shell.new(options)
-      Bundler.ui.level = "debug" if options[:verbose]
+      Bundler.ui.level = "debug" if options[:verbose] || Bundler.settings[:verbose]
       unprinted_warnings.each {|w| Bundler.ui.warn(w) }
     end
 

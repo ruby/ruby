@@ -214,6 +214,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
    The custom user agent fragment Bundler includes in API requests.
+* `verbose` (`BUNDLE_VERBOSE`):
+   Whether Bundler should print verbose output. Defaults to `false`, unless the
+   `--verbose` CLI flag is used.
 * `version` (`BUNDLE_VERSION`):
    The version of Bundler to use when running under Bundler environment.
    Defaults to `lockfile`. You can also specify `system` or `x.y.z`.

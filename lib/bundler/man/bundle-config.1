@@ -203,6 +203,9 @@ Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be u
 \fBuser_agent\fR (\fBBUNDLE_USER_AGENT\fR)
 The custom user agent fragment Bundler includes in API requests\.
 .TP
+\fBverbose\fR (\fBBUNDLE_VERBOSE\fR)
+Whether Bundler should print verbose output\. Defaults to \fBfalse\fR, unless the \fB\-\-verbose\fR CLI flag is used\.
+.TP
 \fBversion\fR (\fBBUNDLE_VERSION\fR)
 The version of Bundler to use when running under Bundler environment\. Defaults to \fBlockfile\fR\. You can also specify \fBsystem\fR or \fBx\.y\.z\fR\. \fBlockfile\fR will use the Bundler version specified in the \fBGemfile\.lock\fR, \fBsystem\fR will use the system version of Bundler, and \fBx\.y\.z\fR will use the specified version of Bundler\.
 .TP

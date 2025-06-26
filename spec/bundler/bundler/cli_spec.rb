@@ -131,6 +131,18 @@ RSpec.describe "bundle executable" do
     end
   end
 
+  context "with verbose configuration" do
+    before do
+      bundle "config verbose true"
+    end
+
+    it "prints the running command" do
+      gemfile "source 'https://gem.repo1'"
+      bundle "info bundler"
+      expect(out).to start_with("Running `bundle info bundler` with bundler #{Bundler::VERSION}")
+    end
+  end
+
   describe "bundle outdated" do
     let(:run_command) do
       bundle "install"
