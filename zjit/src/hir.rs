@@ -11,6 +11,7 @@ use std::{
 };
 use crate::hir_type::{Type, types};
 use crate::bitset::BitSet;
+use crate::profile::{TypeDistributionSummary, ProfiledType};
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -1357,19 +1358,23 @@ impl Function {
     /// Return the interpreter-profiled type of the HIR instruction at the given ISEQ instruction
     /// index, if it is known. This historical type record is not a guarantee and must be checked
     /// with a GuardType or similar.
-    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<Type> {
+    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
         let Some(ref profiles) = self.profiles else { return None };
         let Some(entries) = profiles.types.get(&iseq_insn_idx) else { return None };
-        for &(entry_insn, entry_type) in entries {
-            if self.union_find.borrow().find_const(entry_insn) == self.union_find.borrow().find_const(insn) {
-                return Some(entry_type);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.union_find.borrow().find_const(*entry_insn) == self.union_find.borrow().find_const(insn) {
+                if entry_type_summary.is_monomorphic() || entry_type_summary.is_skewed_polymorphic() {
+                    return Some(entry_type_summary.bucket(0));
+                } else {
+                    return None;
+                }
             }
         }
         None
     }
 
-    fn likely_is_fixnum(&self, val: InsnId, profiled_type: Type) -> bool {
-        return self.is_a(val, types::Fixnum) || profiled_type.is_subtype(types::Fixnum);
+    fn likely_is_fixnum(&self, val: InsnId, profiled_type: ProfiledType) -> bool {
+        return self.is_a(val, types::Fixnum) || profiled_type.is_fixnum();
     }
 
     fn coerce_to_fixnum(&mut self, block: BlockId, val: InsnId, state: InsnId) -> InsnId {
@@ -1380,8 +1385,8 @@ impl Function {
     fn arguments_likely_fixnums(&mut self, left: InsnId, right: InsnId, state: InsnId) -> bool {
         let frame_state = self.frame_state(state);
         let iseq_insn_idx = frame_state.insn_idx as usize;
-        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(types::BasicObject);
-        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(types::BasicObject);
+        let left_profiled_type = self.profiled_type_of_at(left, iseq_insn_idx).unwrap_or(ProfiledType::empty());
+        let right_profiled_type = self.profiled_type_of_at(right, iseq_insn_idx).unwrap_or(ProfiledType::empty());
         self.likely_is_fixnum(left, left_profiled_type) && self.likely_is_fixnum(right, right_profiled_type)
     }
 
@@ -1510,15 +1515,16 @@ impl Function {
                         self.try_rewrite_aref(block, insn_id, self_val, args[0], state),
                     Insn::SendWithoutBlock { mut self_val, cd, args, state } => {
                         let frame_state = self.frame_state(state);
-                        let (klass, guard_equal_to) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
+                        let (klass, profiled_type) = if let Some(klass) = self.type_of(self_val).runtime_exact_ruby_class() {
                             // If we know the class statically, use it to fold the lookup at compile-time.
                             (klass, None)
                         } else {
-                            // If we know that self is top-self from profile information, guard and use it to fold the lookup at compile-time.
-                            match self.profiled_type_of_at(self_val, frame_state.insn_idx) {
-                                Some(self_type) if self_type.is_top_self() => (self_type.exact_ruby_class().unwrap(), self_type.ruby_object()),
-                                _ => { self.push_insn_id(block, insn_id); continue; }
-                            }
+                            // If we know that self is reasonably monomorphic from profile information, guard and use it to fold the lookup at compile-time.
+                            // TODO(max): Figure out how to handle top self?
+                            let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
+                                self.push_insn_id(block, insn_id); continue;
+                            };
+                            (recv_type.class(), Some(recv_type))
                         };
                         let ci = unsafe { get_call_data_ci(cd) }; // info about the call site
                         let mid = unsafe { vm_ci_mid(ci) };
@@ -1542,8 +1548,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                        if let Some(expected) = guard_equal_to {
-                            self_val = self.push_insn(block, Insn::GuardBitEquals { val: self_val, expected, state });
+                        if let Some(profiled_type) = profiled_type {
+                            self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
                         let send_direct = self.push_insn(block, Insn::SendWithoutBlockDirect { self_val, cd, cme, iseq, args, state });
                         self.make_equal_to(insn_id, send_direct);
@@ -1611,17 +1617,12 @@ impl Function {
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
             // If we have info about the class of the receiver
-            //
-            // TODO(alan): there was a seemingly a miscomp here if you swap with
-            // `inexact_ruby_class`. Theoretically it can call a method too general
-            // for the receiver. Confirm and add a test.
-            let (recv_class, guard_type) = if let Some(klass) = self_type.runtime_exact_ruby_class() {
-                (klass, None)
+            let (recv_class, profiled_type) = if let Some(class) = self_type.runtime_exact_ruby_class() {
+                (class, None)
             } else {
                 let iseq_insn_idx = fun.frame_state(state).insn_idx;
                 let Some(recv_type) = fun.profiled_type_of_at(self_val, iseq_insn_idx) else { return Err(()) };
-                let Some(recv_class) = recv_type.runtime_exact_ruby_class() else { return Err(()) };
-                (recv_class, Some(recv_type.unspecialized()))
+                (recv_type.class(), Some(recv_type))
             };
 
             // Do method lookup
@@ -1661,9 +1662,9 @@ impl Function {
                     if ci_flags & VM_CALL_ARGS_SIMPLE != 0 {
                         // Commit to the replacement. Put PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme: method }, state });
-                        if let Some(guard_type) = guard_type {
+                        if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
-                            self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type, state });
+                            self_val = fun.push_insn(block, Insn::GuardType { val: self_val, guard_type: Type::from_profiled_type(profiled_type), state });
                         }
                         let cfun = unsafe { get_mct_func(cfunc) }.cast();
                         let mut cfunc_args = vec![self_val];
@@ -2506,7 +2507,7 @@ struct ProfileOracle {
     /// instruction index. At a given ISEQ instruction, the interpreter has profiled the stack
     /// operands to a given ISEQ instruction, and this list of pairs of (InsnId, Type) map that
     /// profiling information into HIR instructions.
-    types: HashMap<usize, Vec<(InsnId, Type)>>,
+    types: HashMap<usize, Vec<(InsnId, TypeDistributionSummary)>>,
 }
 
 impl ProfileOracle {
@@ -2521,9 +2522,9 @@ impl ProfileOracle {
         let entry = self.types.entry(iseq_insn_idx).or_insert_with(|| vec![]);
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
-        for (idx, &insn_type) in operand_types.iter().rev().enumerate() {
+        for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
             let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
-            entry.push((insn, insn_type))
+            entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
     }
 }
@@ -5548,8 +5549,8 @@ mod opt_tests {
             fn test@<compiled>:5:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
+              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
     }
@@ -5588,8 +5589,8 @@ mod opt_tests {
             fn test@<compiled>:6:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
+              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
     }
@@ -5607,8 +5608,8 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:Fixnum[3] = Const Value(3)
               PatchPoint MethodRedefined(Object@0x1000, Integer@0x1008, cme:0x1010)
-              v7:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1040), v2
+              v7:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v8:BasicObject = SendWithoutBlockDirect v7, :Integer (0x1038), v2
               Return v8
         "#]]);
     }
@@ -5629,8 +5630,8 @@ mod opt_tests {
               v2:Fixnum[1] = Const Value(1)
               v3:Fixnum[2] = Const Value(2)
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040), v2, v3
+              v8:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1038), v2, v3
               Return v9
         "#]]);
     }
@@ -5652,11 +5653,11 @@ mod opt_tests {
             fn test@<compiled>:7:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v8:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1040)
-              PatchPoint MethodRedefined(Object@0x1000, bar@0x1048, cme:0x1050)
-              v11:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v12:BasicObject = SendWithoutBlockDirect v11, :bar (0x1040)
+              v8:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v9:BasicObject = SendWithoutBlockDirect v8, :foo (0x1038)
+              PatchPoint MethodRedefined(Object@0x1000, bar@0x1040, cme:0x1048)
+              v11:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v12:BasicObject = SendWithoutBlockDirect v11, :bar (0x1038)
               Return v12
         "#]]);
     }
@@ -7385,8 +7386,8 @@ mod opt_tests {
             fn test@<compiled>:3:
             bb0(v0:BasicObject):
               PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-              v6:BasicObject[VALUE(0x1038)] = GuardBitEquals v0, VALUE(0x1038)
-              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1040)
+              v6:BasicObject[class_exact*:Object@VALUE(0x1000)] = GuardType v0, BasicObject[class_exact*:Object@VALUE(0x1000)]
+              v7:BasicObject = SendWithoutBlockDirect v6, :foo (0x1038)
               Return v7
         "#]]);
     }

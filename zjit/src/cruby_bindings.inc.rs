@@ -720,6 +720,8 @@ pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 pub type rb_iseq_param_keyword_struct = rb_iseq_constant_body__bindgen_ty_1_rb_iseq_param_keyword;
+pub const RB_SPECIAL_CONST_SHAPE_ID: u32 = 33554432;
+pub const RB_INVALID_SHAPE_ID: u32 = 4294967295;
 unsafe extern "C" {
     pub fn ruby_xfree(ptr: *mut ::std::os::raw::c_void);
     pub fn rb_class_attached_object(klass: VALUE) -> VALUE;
@@ -1017,4 +1019,5 @@ unsafe extern "C" {
     pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
+    pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
 }

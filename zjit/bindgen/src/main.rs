@@ -351,11 +351,14 @@ fn main() {
         .allowlist_function("rb_optimized_call")
         .allowlist_function("rb_zjit_icache_invalidate")
         .allowlist_function("rb_zjit_print_exception")
+        .allowlist_function("rb_zjit_singleton_class_p")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
 
         // From jit.c
         .allowlist_function("rb_assert_holding_vm_lock")
+        .allowlist_var("RB_SPECIAL_CONST_SHAPE_ID")
+        .allowlist_var("RB_INVALID_SHAPE_ID")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

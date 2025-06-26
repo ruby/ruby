@@ -1,12 +1,13 @@
 #![allow(non_upper_case_globals)]
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS, RUBY_T_MODULE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
 use crate::cruby::rb_obj_class;
 use crate::hir::PtrPrintMap;
+use crate::profile::ProfiledType;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 /// Specialization of the type. If we know additional information about the object, we put it here.
@@ -74,8 +75,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
+        // TODO(max): Ensure singleton classes never have Type specialization
+        Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
+            write!(f, "[class*:{}@{}]", get_class_name(val), val.print(printer.ptr_map)),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(val)),
-        Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(val)),
+        Specialization::TypeExact(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
+            write!(f, "[class_exact*:{}@{}]", get_class_name(val), val.print(printer.ptr_map)),
+        Specialization::TypeExact(val) =>
+            write!(f, "[class_exact:{}]", get_class_name(val)),
         Specialization::Int(val) if ty.is_subtype(types::CBool) => write!(f, "[{}]", val != 0),
         Specialization::Int(val) if ty.is_subtype(types::CInt8) => write!(f, "[{}]", (val as i64) >> 56),
         Specialization::Int(val) if ty.is_subtype(types::CInt16) => write!(f, "[{}]", (val as i64) >> 48),
@@ -231,6 +238,20 @@ impl Type {
         }
     }
 
+    pub fn from_profiled_type(val: ProfiledType) -> Type {
+        if val.is_fixnum() { types::Fixnum }
+        else if val.is_flonum() { types::Flonum }
+        else if val.is_static_symbol() { types::StaticSymbol }
+        else if val.is_nil() { types::NilClass }
+        else if val.is_true() { types::TrueClass }
+        else if val.is_false() { types::FalseClass }
+        else if val.class() == unsafe { rb_cString } { types::StringExact }
+        else {
+            // TODO(max): Add more cases for inferring type bits from built-in types
+            Type { bits: bits::BasicObject, spec: Specialization::TypeExact(val.class()) }
+        }
+    }
+
     /// Private. Only for creating type globals.
     const fn from_bits(bits: u64) -> Type {
         Type {
@@ -272,12 +293,6 @@ impl Type {
     /// Return true if the value with this type is definitely falsy.
     pub fn is_known_falsy(&self) -> bool {
         self.is_subtype(types::NilClass) || self.is_subtype(types::FalseClass)
-    }
-
-    /// Top self is the Ruby global object, where top-level method definitions go. Return true if
-    /// this Type has a Ruby object specialization that is the top-level self.
-    pub fn is_top_self(&self) -> bool {
-        self.ruby_object() == Some(unsafe { crate::cruby::rb_vm_top_self() })
     }
 
     /// Return the object specialization, if any.
