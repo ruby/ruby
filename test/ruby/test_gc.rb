@@ -701,6 +701,11 @@ class TestGc < Test::Unit::TestCase
         allocate_large_object
       end
 
+      # Running GC here is required to prevent this test from being flaky because
+      # the heap for the small transient objects may not have been cleared by the
+      # GC causing heap_available_slots to be slightly over 2 * COUNT.
+      GC.start
+
       heap_available_slots = GC.stat(:heap_available_slots)
 
       assert_operator(heap_available_slots, :<, COUNT * 2, "GC.stat: #{GC.stat}\nGC.stat_heap: #{GC.stat_heap}")
