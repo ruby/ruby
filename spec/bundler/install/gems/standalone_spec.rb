@@ -141,8 +141,8 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with default gems and a lockfile", :ruby_repo do
     it "works and points to the vendored copies, not to the default copies" do
-      necessary_gems_in_bundle_path = ["psych --version 3.3.2", "etc --version 1.4.3"]
-      necessary_gems_in_bundle_path += ["stringio --version 3.1.0"] if Gem.ruby_version < Gem::Version.new("3.4.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
+      necessary_gems_in_bundle_path = ["psych --version 5.2.3", "etc --version 1.4.5"]
+      necessary_gems_in_bundle_path += ["stringio --version 3.1.6"] if Gem.ruby_version < Gem::Version.new("3.4.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
       realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
 
       build_gem "foo", "1.0.0", to_system: true, default: true do |s|
@@ -180,8 +180,8 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "works for gems with extensions and points to the vendored copies, not to the default copies" do
       simulate_platform "arm64-darwin-23" do
-        necessary_gems_in_bundle_path = ["psych --version 3.3.2", "etc --version 1.4.3", "shellwords --version 0.2.0", "open3 --version 0.2.1"]
-        necessary_gems_in_bundle_path += ["stringio --version 3.1.0"] if Gem.ruby_version < Gem::Version.new("3.4.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
+        necessary_gems_in_bundle_path = ["psych --version 5.2.3", "etc --version 1.4.5", "shellwords --version 0.2.2", "open3 --version 0.2.1"]
+        necessary_gems_in_bundle_path += ["stringio --version 3.1.6"] if Gem.ruby_version < Gem::Version.new("3.4.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
         realworld_system_gems(*necessary_gems_in_bundle_path, path: scoped_gem_path(bundled_app("bundle")))
 
         build_gem "baz", "1.0.0", to_system: true, default: true, &:add_c_extension
