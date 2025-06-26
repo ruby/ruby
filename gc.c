@@ -4005,16 +4005,24 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static int
-vm_weak_table_frozen_strings_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
+vm_weak_table_frozen_strings_foreach(VALUE *str, void *data)
 {
-    int retval = vm_weak_table_foreach_weak_key(key, value, data, error);
-    if (retval == ST_DELETE) {
-        FL_UNSET((VALUE)key, RSTRING_FSTR);
+    // int retval = vm_weak_table_foreach_weak_key(key, value, data, error);
+    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
+    int retval = iter_data->callback(*str, iter_data->data);
+
+    if (retval == ST_REPLACE) {
+        retval = iter_data->update_callback(str, iter_data->data);
     }
+
+    if (retval == ST_DELETE) {
+        FL_UNSET(*str, RSTRING_FSTR);
+    }
+
     return retval;
 }
 
-void rb_fstring_foreach_with_replace(st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
+void rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *data);
 void
 rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
                             vm_table_update_callback_func update_callback,
@@ -4090,8 +4098,7 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
       case RB_GC_VM_FROZEN_STRINGS_TABLE: {
         rb_fstring_foreach_with_replace(
             vm_weak_table_frozen_strings_foreach,
-            vm_weak_table_foreach_update_weak_key,
-            (st_data_t)&foreach_data
+            &foreach_data
         );
         break;
       }
