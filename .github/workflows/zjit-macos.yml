@@ -107,39 +107,39 @@ jobs:
         run: |
           RUST_BACKTRACE=1 ruby --disable=gems ../src/bootstraptest/runner.rb --ruby="./miniruby -I../src/lib -I. -I.ext/common --zjit-call-threshold=1" \
           ../src/bootstraptest/test_attr.rb \
+          ../src/bootstraptest/test_autoload.rb \
           ../src/bootstraptest/test_constant_cache.rb \
           ../src/bootstraptest/test_env.rb \
+          ../src/bootstraptest/test_fiber.rb \
           ../src/bootstraptest/test_finalizer.rb \
           ../src/bootstraptest/test_flip.rb \
+          ../src/bootstraptest/test_flow.rb \
+          ../src/bootstraptest/test_fork.rb \
+          ../src/bootstraptest/test_io.rb \
+          ../src/bootstraptest/test_jump.rb \
           ../src/bootstraptest/test_literal.rb \
           ../src/bootstraptest/test_literal_suffix.rb \
+          ../src/bootstraptest/test_marshal.rb \
+          ../src/bootstraptest/test_objectspace.rb \
           ../src/bootstraptest/test_string.rb \
           ../src/bootstraptest/test_struct.rb \
+          ../src/bootstraptest/test_syntax.rb \
           ../src/bootstraptest/test_yjit_30k_ifelse.rb \
-          ../src/bootstraptest/test_yjit_30k_methods.rb
-        # ../src/bootstraptest/test_autoload.rb \
+          ../src/bootstraptest/test_yjit_30k_methods.rb \
+          ../src/bootstraptest/test_yjit_rust_port.rb
         # ../src/bootstraptest/test_block.rb \
         # ../src/bootstraptest/test_class.rb \
         # ../src/bootstraptest/test_eval.rb \
         # ../src/bootstraptest/test_exception.rb \
-        # ../src/bootstraptest/test_fiber.rb \
-        # ../src/bootstraptest/test_flow.rb \
-        # ../src/bootstraptest/test_fork.rb \
         # ../src/bootstraptest/test_gc.rb \
         # ../src/bootstraptest/test_insns.rb \
-        # ../src/bootstraptest/test_io.rb \
-        # ../src/bootstraptest/test_jump.rb \
         # ../src/bootstraptest/test_load.rb \
-        # ../src/bootstraptest/test_marshal.rb \
         # ../src/bootstraptest/test_massign.rb \
         # ../src/bootstraptest/test_method.rb \
-        # ../src/bootstraptest/test_objectspace.rb \
         # ../src/bootstraptest/test_proc.rb \
         # ../src/bootstraptest/test_ractor.rb \
-        # ../src/bootstraptest/test_syntax.rb \
         # ../src/bootstraptest/test_thread.rb \
         # ../src/bootstraptest/test_yjit.rb \
-        # ../src/bootstraptest/test_yjit_rust_port.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
       - name: make ${{ matrix.test_task }}
