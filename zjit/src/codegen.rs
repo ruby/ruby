@@ -221,7 +221,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
         for &insn_id in block.insns() {
             let insn = function.find(insn_id);
             if gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn).is_none() {
-                debug!("Failed to compile insn: {insn_id} {insn:?}");
+                debug!("Failed to compile insn: {insn_id} {insn}");
                 return None;
             }
         }
@@ -288,7 +288,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         _ => {
-            debug!("ZJIT: gen_function: unexpected insn {:?}", insn);
+            debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
         }
     };
