@@ -81,6 +81,28 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 3, insns: [:getlocal, :setlocal, :getlocal_WC_0, :setlocal_WC_1]
   end
 
+  def test_read_local_written_by_children_iseqs
+    omit "This test fails right now because Send doesn't compile."
+
+    assert_compiles '[1, 2]', %q{
+      def test
+        l1 = nil
+        l2 = nil
+        tap do |_|
+          l1 = 1
+          tap do |_|
+            l2 = 2
+          end
+        end
+
+        [l1, l2]
+      end
+
+      test
+      test
+    }, call_threshold: 2
+  end
+
   def test_send_without_block
     assert_compiles '[1, 2, 3]', %q{
       def foo = 1
