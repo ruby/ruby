@@ -999,6 +999,7 @@ copy_tables(VALUE clone, VALUE orig)
         arg.klass = clone;
         rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
+        rb_gc_writebarrier_remember(clone);
     }
 }
 
