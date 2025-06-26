@@ -514,26 +514,6 @@ module Spec
       ENV["GEM_HOME"] = old_gem_home
     end
 
-    def wait_for_server(host, port, seconds = 15)
-      tries = 0
-      sleep 0.5
-      TCPSocket.new(host, port)
-    rescue StandardError => e
-      raise(e) if tries > (seconds * 2)
-      tries += 1
-      retry
-    end
-
-    def find_unused_port
-      port = 21_453
-      begin
-        port += 1 while TCPSocket.new("127.0.0.1", port)
-      rescue StandardError
-        false
-      end
-      port
-    end
-
     def exit_status_for_signal(signal_number)
       # For details see: https://en.wikipedia.org/wiki/Exit_status#Shell_and_scripts
       128 + signal_number
