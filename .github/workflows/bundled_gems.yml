@@ -104,7 +104,7 @@ jobs:
         timeout-minutes: 30
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof,rbs,repl_type_completor,power_assert'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'power_assert'
         if: ${{ steps.diff.outputs.gems }}
 
       - name: Commit
