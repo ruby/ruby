@@ -115,7 +115,7 @@ module URI
 
       def register(name, klass)
         unless scheme = escape(name)
-          raise ArgumentError, "invalid characater as scheme - #{name}"
+          raise ArgumentError, "invalid character as scheme - #{name}"
         end
         const_set(scheme, klass)
       end
