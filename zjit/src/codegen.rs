@@ -429,7 +429,7 @@ fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
     let self_param = gen_param(asm, SELF_PARAM_IDX);
     asm.mov(self_param, Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
 
-    let num_params = entry_block.params().len();
+    let num_params = entry_block.params().len() - 1; // -1 to exclude self
     if num_params > 0 {
         asm_comment!(asm, "set method params: {num_params}");
 
