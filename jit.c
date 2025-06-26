@@ -173,6 +173,12 @@ rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
     return iseq->body->local_iseq;
 }
 
+const rb_iseq_t *
+rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
+{
+    return iseq->body->parent_iseq;
+}
+
 unsigned int
 rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {

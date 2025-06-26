@@ -287,6 +287,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
+        Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
@@ -299,6 +300,25 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     jit.opnds[insn_id.0] = Some(out_opnd);
 
     Some(())
+}
+
+/// Gets the EP of the ISeq of the containing method, or "local level".
+/// Equivalent of GET_LEP() macro.
+fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
+    // Equivalent of get_lvar_level() in compile.c
+    fn get_lvar_level(mut iseq: IseqPtr) -> u32 {
+        let local_iseq = unsafe { rb_get_iseq_body_local_iseq(iseq) };
+        let mut level = 0;
+        while iseq != local_iseq {
+            iseq = unsafe { rb_get_iseq_body_parent_iseq(iseq) };
+            level += 1;
+        }
+
+        level
+    }
+
+    let level = get_lvar_level(jit.iseq);
+    gen_get_ep(asm, level)
 }
 
 // Get EP at `level` from CFP
@@ -318,6 +338,27 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     }
 
     ep_opnd
+}
+
+fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE, pushval: VALUE, _tested_value: Opnd) -> Option<Opnd> {
+    match op_type as defined_type {
+        DEFINED_YIELD => {
+            // `yield` goes to the block handler stowed in the "local" iseq which is
+            // the current iseq or a parent. Only the "method" iseq type can be passed a
+            // block handler. (e.g. `yield` in the top level script is a syntax error.)
+            let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
+            if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
+                let lep = gen_get_lep(jit, asm);
+                let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
+                let pushval = asm.load(pushval.into());
+                asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
+                Some(asm.csel_e(Qnil.into(), pushval.into()))
+            } else {
+                Some(Qnil.into())
+            }
+        }
+        _ => None
+    }
 }
 
 /// Get a local variable from a higher scope. `local_ep_offset` is in number of VALUEs.

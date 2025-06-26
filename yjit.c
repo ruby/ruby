@@ -454,12 +454,6 @@ rb_get_def_bmethod_proc(rb_method_definition_t *def)
     return def->body.bmethod.proc;
 }
 
-const rb_iseq_t *
-rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
-{
-    return iseq->body->parent_iseq;
-}
-
 VALUE
 rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
