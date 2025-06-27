@@ -10668,7 +10668,7 @@ argf_readlines(int argc, VALUE *argv, VALUE argf)
  *    $ `date`                 # => "Wed Apr  9 08:56:30 CDT 2003\n"
  *    $ `echo oops && exit 99` # => "oops\n"
  *    $ $?                     # => #<Process::Status: pid 17088 exit 99>
- *    $ $?.exitstatus          # => 99>
+ *    $ $?.exitstatus          # => 99
  *
  *  The built-in syntax <tt>%x{...}</tt> uses this method.
  *
