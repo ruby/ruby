@@ -86,6 +86,7 @@ module Bundler
       gemfile
       path
       shebang
+      simulate_version
       system_bindir
       trust-policy
       version

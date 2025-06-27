@@ -192,6 +192,10 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    be changed in the next major version.
 * `silence_root_warning` (`BUNDLE_SILENCE_ROOT_WARNING`):
    Silence the warning Bundler prints when installing gems as root.
+* `simulate_version` (`BUNDLE_SIMULATE_VERSION`):
+   The virtual version Bundler should use for activating feature flags. Can be
+   used to simulate all the new functionality that will be enabled in a future
+   major version.
 * `ssl_ca_cert` (`BUNDLE_SSL_CA_CERT`):
    Path to a designated CA certificate file or folder containing multiple
    certificates for trusted CAs in PEM format.
