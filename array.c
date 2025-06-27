@@ -2925,6 +2925,8 @@ rb_ary_join(VALUE ary, VALUE sep)
     return result;
 }
 
+static VALUE rb_ary_collect(VALUE ary);
+
 /*
  *  call-seq:
  *    join(separator = $,) -> new_string
@@ -2947,6 +2949,13 @@ rb_ary_join(VALUE ary, VALUE sep)
  *    a = [:foo, 'bar', 2]
  *    a.join("\n") # => "foo\nbar\n2"
  *
+ *  With a block given, applies the block to each element and joins the results:
+ *
+ *    a = ['Hello', 'world', '!']
+ *    a.join { |s| s.upcase } # => "HELLOWORLD!"
+ *    a.join(' ') { |s| s.upcase } # => "HELLO WORLD !"
+ *    a.join(' ', &:upcase) # => "HELLO WORLD !"
+ *
  *  Joins recursively for nested arrays:
  *
  *   a = [:foo, [:bar, [:baz, :bat]]]
@@ -2966,7 +2975,12 @@ rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
         }
     }
 
-    return rb_ary_join(ary, sep);
+    if (rb_block_given_p()) {
+        return rb_ary_join(rb_ary_collect(ary), sep);
+    }
+    else {
+        return rb_ary_join(ary, sep);
+    }
 }
 
 static VALUE
