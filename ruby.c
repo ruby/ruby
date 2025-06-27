@@ -757,8 +757,6 @@ ruby_init_loadpath(void)
         rb_ary_push(load_path, path);
         paths += len + 1;
     }
-
-    rb_const_set(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"), ruby_prefix_path);
 }
 
 
@@ -1772,7 +1770,6 @@ static void
 ruby_init_prelude(void)
 {
     Init_builtin_features();
-    rb_const_remove(rb_cObject, rb_intern_const("TMP_RUBY_PREFIX"));
 }
 
 void rb_call_builtin_inits(void);
