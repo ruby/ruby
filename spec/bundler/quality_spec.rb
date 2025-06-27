@@ -144,6 +144,7 @@ RSpec.describe "The library itself" do
       gem.coc
       gem.linter
       gem.mit
+      gem.bundle
       gem.rubocop
       gem.test
       git.allow_insecure
