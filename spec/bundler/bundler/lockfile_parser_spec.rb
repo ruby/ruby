@@ -129,8 +129,8 @@ RSpec.describe Bundler::LockfileParser do
         it "shows deprecation warning for replacement" do
           expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(
             2,
-            "Found x64-mingw32 in lockfile, which is deprecated. Using x64-mingw-ucrt, the replacement for x64-mingw32 in modern rubies, instead. Support for x64-mingw32 will be removed in Bundler 3.0.",
-            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 3.0."
+            "Found x64-mingw32 in lockfile, which is deprecated. Using x64-mingw-ucrt, the replacement for x64-mingw32 in modern rubies, instead. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0."
           )
           subject
         end
@@ -183,8 +183,8 @@ RSpec.describe Bundler::LockfileParser do
         it "shows deprecation warning for removing legacy platform" do
           expect(Bundler::SharedHelpers).to receive(:major_deprecation).with(
             2,
-            "Found x64-mingw32 in lockfile, which is deprecated. Removing it. Support for x64-mingw32 will be removed in Bundler 3.0.",
-            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 3.0."
+            "Found x64-mingw32 in lockfile, which is deprecated. Removing it. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0."
           )
           subject
         end

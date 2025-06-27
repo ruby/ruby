@@ -66,7 +66,7 @@ Automatically run \fBbundle install\fR when gems are missing\.
 Install executables from gems in the bundle to the specified directory\. Defaults to \fBfalse\fR\.
 .TP
 \fBcache_all\fR (\fBBUNDLE_CACHE_ALL\fR)
-Cache all gems, including path and git gems\. This needs to be explicitly configured on bundler 1 and bundler 2, but will be the default on bundler 3\.
+Cache all gems, including path and git gems\. This needs to be explicitly before bundler 4, but will be the default on bundler 4\.
 .TP
 \fBcache_all_platforms\fR (\fBBUNDLE_CACHE_ALL_PLATFORMS\fR)
 Cache gems for all platforms\.
@@ -214,7 +214,7 @@ A space\-separated or \fB:\fR\-separated list of groups whose gems bundler shoul
 .SH "REMEMBERING OPTIONS"
 Flags passed to \fBbundle install\fR or the Bundler runtime, such as \fB\-\-path foo\fR or \fB\-\-without production\fR, are remembered between commands and saved to your local application's configuration (normally, \fB\./\.bundle/config\fR)\.
 .P
-However, this will be changed in bundler 3, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
+However, this will be changed in bundler 4, so it's better not to rely on this behavior\. If these options must be remembered, it's better to set them using \fBbundle config\fR (e\.g\., \fBbundle config set \-\-local path foo\fR)\.
 .P
 The flags that can be configured are:
 .TP
