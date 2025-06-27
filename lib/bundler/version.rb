@@ -10,4 +10,12 @@ module Bundler
   def self.gem_version
     @gem_version ||= Gem::Version.create(VERSION)
   end
+
+  def self.verbose_version
+    @verbose_version ||= "#{VERSION}#{simulated_version ? " (simulating Bundler #{simulated_version})" : ""}"
+  end
+
+  def self.simulated_version
+    @simulated_version ||= Bundler.settings[:simulate_version]
+  end
 end
