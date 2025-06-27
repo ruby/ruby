@@ -838,7 +838,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     if (RB_SPECIAL_CONST_P(b)) return;
 
-    unsigned int lev = RB_GC_VM_LOCK();
+    unsigned int lev = RB_GC_VM_LOCK_NO_BARRIER();
 
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
@@ -869,7 +869,7 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         WBCHECK_DEBUG("wbcheck: write barrier skipped (snapshot not initialized) from %p to %p\n", (void *)a, (void *)b);
     }
 
-    RB_GC_VM_UNLOCK(lev);
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
 void
@@ -877,12 +877,12 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 {
     WBCHECK_DEBUG("wbcheck: writebarrier_unprotect called on object %p\n", (void *)obj);
 
-    unsigned int lev = RB_GC_VM_LOCK();
+    unsigned int lev = RB_GC_VM_LOCK_NO_BARRIER();
 
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
     info->wb_protected = false;
 
-    RB_GC_VM_UNLOCK(lev);
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
 void
@@ -890,7 +890,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     WBCHECK_DEBUG("wbcheck: writebarrier_remember called on object %p\n", (void *)obj);
 
-    unsigned int lev = RB_GC_VM_LOCK();
+    unsigned int lev = RB_GC_VM_LOCK_NO_BARRIER();
 
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     rb_wbcheck_object_info_t *info = wbcheck_get_object_info(obj);
@@ -917,7 +917,7 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
     RUBY_ASSERT(!info->gc_mark_snapshot);
     RUBY_ASSERT(!info->writebarrier_children);
 
-    RB_GC_VM_UNLOCK(lev);
+    RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
 // Heap walking
