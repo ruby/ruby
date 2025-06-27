@@ -167,7 +167,7 @@ RSpec.describe "bundle gem" do
     end
     it "generates a gem skeleton with bundle install" do
       gem_skeleton_assertions
-      expect(Kernel).to receive(:system).with("bundle", "install").once
+      expect(out).to include("Running bundle install in the new gem directory.")
     end
   end
 
@@ -177,7 +177,7 @@ RSpec.describe "bundle gem" do
     end
     it "generates a gem skeleton without bundle install" do
       gem_skeleton_assertions
-      expect(Kernel).not_to receive(:system).with("bundle", "install")
+      expect(out).to_not include("Running bundle install in the new gem directory.")
     end
   end
 
