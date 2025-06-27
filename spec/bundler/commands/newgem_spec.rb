@@ -1604,6 +1604,24 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  context "testing --bundle option against git and bundle config settings" do
+    context "with bundle option in bundle config settings set to true" do
+      before do
+        global_config "BUNDLE_GEM__BUNDLE" => "true"
+      end
+      it_behaves_like "--bundle flag"
+      it_behaves_like "--no-bundle flag"
+    end
+
+    context "with bundle option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__BUNDLE" => "false"
+      end
+      it_behaves_like "--bundle flag"
+      it_behaves_like "--no-bundle flag"
+    end
+  end
+
   context "testing --github-username option against git and bundle config settings" do
     context "without git config set" do
       before do
