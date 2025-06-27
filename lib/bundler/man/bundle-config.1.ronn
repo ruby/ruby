@@ -89,7 +89,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `false`.
 * `cache_all` (`BUNDLE_CACHE_ALL`):
    Cache all gems, including path and git gems. This needs to be explicitly
-   configured on bundler 1 and bundler 2, but will be the default on bundler 3.
+   before bundler 4, but will be the default on bundler 4.
 * `cache_all_platforms` (`BUNDLE_CACHE_ALL_PLATFORMS`):
    Cache gems for all platforms.
 * `cache_path` (`BUNDLE_CACHE_PATH`):
@@ -229,7 +229,7 @@ Flags passed to `bundle install` or the Bundler runtime, such as `--path foo` or
 `--without production`, are remembered between commands and saved to your local
 application's configuration (normally, `./.bundle/config`).
 
-However, this will be changed in bundler 3, so it's better not to rely on this
+However, this will be changed in bundler 4, so it's better not to rely on this
 behavior. If these options must be remembered, it's better to set them using
 `bundle config` (e.g., `bundle config set --local path foo`).
 

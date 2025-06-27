@@ -145,13 +145,13 @@ module Bundler
         if @platforms.include?(Gem::Platform::X64_MINGW)
           @platforms.delete(Gem::Platform::X64_MINGW_LEGACY)
           SharedHelpers.major_deprecation(2,
-            "Found x64-mingw32 in lockfile, which is deprecated. Removing it. Support for x64-mingw32 will be removed in Bundler 3.0.",
-            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 3.0.")
+            "Found x64-mingw32 in lockfile, which is deprecated. Removing it. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0.")
         else
           @platforms[@platforms.index(Gem::Platform::X64_MINGW_LEGACY)] = Gem::Platform::X64_MINGW
           SharedHelpers.major_deprecation(2,
-            "Found x64-mingw32 in lockfile, which is deprecated. Using x64-mingw-ucrt, the replacement for x64-mingw32 in modern rubies, instead. Support for x64-mingw32 will be removed in Bundler 3.0.",
-            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 3.0.")
+            "Found x64-mingw32 in lockfile, which is deprecated. Using x64-mingw-ucrt, the replacement for x64-mingw32 in modern rubies, instead. Support for x64-mingw32 will be removed in Bundler 4.0.",
+            removed_message: "Found x64-mingw32 in lockfile, which is no longer supported as of Bundler 4.0.")
         end
       end
 
