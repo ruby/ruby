@@ -19,6 +19,7 @@ void (*ruby_posix_signal(int, void (*)(int)))(int);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* signal.c (export) */
+void rb_signal_atfork(void);
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_SIGNAL_H */
