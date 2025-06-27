@@ -142,6 +142,12 @@ configuration file using the following names:
   Open the resulting GEM_NAME.gemspec in EDIT, or the default editor if not
   specified. The default is `$BUNDLER_EDITOR`, `$VISUAL`, or `$EDITOR`.
 
+* `--bundle`:
+  Run `bundle install` after creating the gem.
+
+* `--no-bundle`:
+  Do not run `bundle install` after creating the gem.
+
 ## SEE ALSO
 
 * [bundle config(1)](bundle-config.1.html)
