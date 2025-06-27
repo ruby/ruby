@@ -3,16 +3,27 @@ bundle-doctor(1) -- Checks the bundle for common problems
 
 ## SYNOPSIS
 
-`bundle doctor` [--quiet]
-                [--gemfile=GEMFILE]
+`bundle doctor [diagnose]` [--quiet]
+                           [--gemfile=GEMFILE]
+                           [--ssl]<br>
+`bundle doctor ssl` [--host=HOST]
+                    [--tls-version=VERSION]
+                    [--verify-mode=MODE]<br>
+`bundle doctor` help [COMMAND]
 
 ## DESCRIPTION
+
+You can diagnose common Bundler problems with this command such as checking gem environment or SSL/TLS issue.
+
+## SUB-COMMANDS
+
+### diagnose (default command)
 
 Checks your Gemfile and gem environment for common problems. If issues
 are detected, Bundler prints them and exits status 1. Otherwise,
 Bundler prints a success message and exits status 0.
 
-Examples of common problems caught by bundle-doctor include:
+Examples of common problems caught include:
 
 * Invalid Bundler settings
 * Mismatched Ruby versions
@@ -20,7 +31,7 @@ Examples of common problems caught by bundle-doctor include:
 * Uninstalled gems
 * Missing dependencies
 
-## OPTIONS
+**OPTIONS**
 
 * `--quiet`:
   Only output warnings and errors.
@@ -31,3 +42,36 @@ Examples of common problems caught by bundle-doctor include:
   will assume that the location of the Gemfile(5) is also the project's
   root and will try to find `Gemfile.lock` and `vendor/cache` relative
   to this location.
+
+* `--ssl`:
+  Diagnose common SSL problems when connecting to https://rubygems.org.
+
+  This flag runs the `bundle doctor ssl` subcommand with default values
+  underneath.
+
+### ssl
+
+If you've experienced issues related to SSL certificates and/or TLS versions while connecting
+to https://rubygems.org, this command can help troubleshoot common problems.
+The diagnostic will perform a few checks such as:
+
+* Verify the Ruby OpenSSL version installed on your system.
+* Check the OpenSSL library version used for compilation.
+* Ensure CA certificates are correctly setup on your machine.
+* Open a TLS connection and verify the outcome.
+
+**OPTIONS**
+
+* `--host=HOST`:
+  Perform the diagnostic on HOST. Defaults to `rubygems.org`.
+
+* `--tls-version=VERSION`:
+  Specify the TLS version when opening the connection to HOST.
+
+  Accepted values are: `1.1` or `1.2`.
+
+* `--verify-mode=MODE`:
+  Specify the TLS verify mode when opening the connection to HOST.
+  Defaults to `SSL_VERIFY_PEER`.
+
+  Accepted values are: `CLIENT_ONCE`, `FAIL_IF_NO_PEER_CERT`, `NONE`, `PEER`.
