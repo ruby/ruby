@@ -12602,8 +12602,13 @@ static ibf_offset_t
 ibf_dump_write(struct ibf_dump *dump, const void *buff, unsigned long size)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
+#if SIZEOF_LONG > SIZEOF_INT
+    /* ensure the resulting dump does not exceed UINT_MAX */
+    if (size >= UINT_MAX || pos + size >= UINT_MAX) {
+        rb_raise(rb_eRuntimeError, "dump size exceeds");
+    }
+#endif
     rb_str_cat(dump->current_buffer->str, (const char *)buff, size);
-    /* TODO: overflow check */
     return pos;
 }
 
