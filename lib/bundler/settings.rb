@@ -27,6 +27,7 @@ module Bundler
       gem.changelog
       gem.coc
       gem.mit
+      gem.bundle
       git.allow_insecure
       global_gem_cache
       ignore_messages
