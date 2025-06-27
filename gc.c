@@ -4933,6 +4933,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
 
 #undef C
 
+#ifdef RUBY_ASAN_ENABLED
 void
 rb_asan_poison_object(VALUE obj)
 {
@@ -4953,6 +4954,7 @@ rb_asan_poisoned_object_p(VALUE obj)
     MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
     return __asan_region_is_poisoned(ptr, rb_gc_obj_slot_size(obj));
 }
+#endif
 
 static void
 raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
