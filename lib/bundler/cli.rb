@@ -714,12 +714,7 @@ module Bundler
       command_name = cmd.name
       return if PARSEABLE_COMMANDS.include?(command_name)
       command = ["bundle", command_name] + args
-      options_to_print = options.dup
-      options_to_print.delete_if do |k, v|
-        next unless o = cmd.options[k]
-        o.default == v
-      end
-      command << Thor::Options.to_switches(options_to_print.sort_by(&:first)).strip
+      command << Thor::Options.to_switches(options.sort_by(&:first)).strip
       command.reject!(&:empty?)
       Bundler.ui.info "Running `#{command * " "}` with bundler #{Bundler::VERSION}"
     end

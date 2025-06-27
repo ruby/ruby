@@ -116,10 +116,8 @@ RSpec.describe "bundle executable" do
       gemfile "source 'https://gem.repo1'"
       bundle "info bundler", verbose: true
       expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION}")
-    end
 
-    it "doesn't print defaults" do
-      install_gemfile "source 'https://gem.repo1'", verbose: true
+      bundle "install", verbose: true
       expect(out).to start_with("Running `bundle install --verbose` with bundler #{Bundler::VERSION}")
     end
   end
