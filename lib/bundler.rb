@@ -113,13 +113,13 @@ module Bundler
     end
 
     def configured_bundle_path
-      @configured_bundle_path ||= settings.path.tap(&:validate!)
+      @configured_bundle_path ||= Bundler.settings.path.tap(&:validate!)
     end
 
     # Returns absolute location of where binstubs are installed to.
     def bin_path
       @bin_path ||= begin
-        path = settings[:bin] || "bin"
+        path = Bundler.settings[:bin] || "bin"
         path = Pathname.new(path).expand_path(root).expand_path
         mkdir_p(path)
         path
@@ -180,7 +180,7 @@ module Bundler
     # should be called first, before you instantiate anything like an
     # `Installer` that'll keep a reference to the old one instead.
     def auto_install
-      return unless settings[:auto_install]
+      return unless Bundler.settings[:auto_install]
 
       begin
         definition.specs
@@ -238,10 +238,10 @@ module Bundler
     end
 
     def frozen_bundle?
-      frozen = settings[:frozen]
+      frozen = Bundler.settings[:frozen]
       return frozen unless frozen.nil?
 
-      settings[:deployment]
+      Bundler.settings[:deployment]
     end
 
     def locked_gems
@@ -342,7 +342,7 @@ module Bundler
 
     def app_cache(custom_path = nil)
       path = custom_path || root
-      Pathname.new(path).join(settings.app_cache_path)
+      Pathname.new(path).join(Bundler.settings.app_cache_path)
     end
 
     def tmp(name = Process.pid.to_s)
@@ -454,7 +454,7 @@ module Bundler
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform]
+      return Gem::Platform::RUBY if Bundler.settings[:force_ruby_platform]
       Gem::Platform.local
     end
 
@@ -480,11 +480,11 @@ module Bundler
       # install binstubs there instead. Unfortunately, RubyGems doesn't expose
       # that directory at all, so rather than parse .gemrc ourselves, we allow
       # the directory to be set as well, via `bundle config set --local bindir foo`.
-      settings[:system_bindir] || Bundler.rubygems.gem_bindir
+      Bundler.settings[:system_bindir] || Bundler.rubygems.gem_bindir
     end
 
     def preferred_gemfile_name
-      settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
+      Bundler.settings[:init_gems_rb] ? "gems.rb" : "Gemfile"
     end
 
     def use_system_gems?
@@ -567,7 +567,7 @@ module Bundler
     end
 
     def feature_flag
-      @feature_flag ||= FeatureFlag.new(settings[:simulate_version] || VERSION)
+      @feature_flag ||= FeatureFlag.new(Bundler.settings[:simulate_version] || VERSION)
     end
 
     def reset!
