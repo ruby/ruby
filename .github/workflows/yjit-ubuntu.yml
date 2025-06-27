@@ -201,7 +201,7 @@ jobs:
         timeout-minutes: 90
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'power_assert'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
