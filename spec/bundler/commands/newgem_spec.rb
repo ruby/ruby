@@ -1611,6 +1611,11 @@ RSpec.describe "bundle gem" do
       end
       it_behaves_like "--bundle flag"
       it_behaves_like "--no-bundle flag"
+
+      it "runs bundle install" do
+        bundle "gem #{gem_name}"
+        expect(out).to include("Running bundle install in the new gem directory.")
+      end
     end
 
     context "with bundle option in bundle config settings set to false" do
@@ -1619,6 +1624,11 @@ RSpec.describe "bundle gem" do
       end
       it_behaves_like "--bundle flag"
       it_behaves_like "--no-bundle flag"
+
+      it "does not run bundle install" do
+        bundle "gem #{gem_name}"
+        expect(out).to_not include("Running bundle install in the new gem directory.")
+      end
     end
   end
 
