@@ -3952,46 +3952,14 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
     return Qnil;
 }
 
-/*
- * call-seq:
- *   aseq.first -> num or nil
- *   aseq.first(n) -> an_array
- *
- * Returns the first number in this arithmetic sequence,
- * or an array of the first +n+ elements.
- */
 static VALUE
-arith_seq_first(int argc, VALUE *argv, VALUE self)
+arith_seq_take(VALUE self, VALUE num)
 {
     VALUE b, e, s, ary;
     long n;
     int x;
 
-    rb_check_arity(argc, 0, 1);
-
-    b = arith_seq_begin(self);
-    e = arith_seq_end(self);
-    s = arith_seq_step(self);
-    if (argc == 0) {
-        if (NIL_P(b)) {
-            return Qnil;
-        }
-        if (!NIL_P(e)) {
-            VALUE zero = INT2FIX(0);
-            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
-            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
-                return Qnil;
-            }
-            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
-                return Qnil;
-            }
-        }
-        return b;
-    }
-
-    // TODO: the following code should be extracted as arith_seq_take
-
-    n = NUM2LONG(argv[0]);
+    n = NUM2LONG(num);
     if (n < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
     }
@@ -3999,6 +3967,9 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return rb_ary_new_capa(0);
     }
 
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
     x = arith_seq_exclude_end_p(self);
 
     if (FIXNUM_P(b) && NIL_P(e) && FIXNUM_P(s)) {
@@ -4093,7 +4064,49 @@ arith_seq_first(int argc, VALUE *argv, VALUE self)
         return ary;
     }
 
-    return rb_call_super(argc, argv);
+    {
+        VALUE argv[1];
+        argv[0] = num;
+        return rb_call_super(1, argv);
+    }
+}
+
+/*
+ * call-seq:
+ *   aseq.first -> num or nil
+ *   aseq.first(n) -> an_array
+ *
+ * Returns the first number in this arithmetic sequence,
+ * or an array of the first +n+ elements.
+ */
+static VALUE
+arith_seq_first(int argc, VALUE *argv, VALUE self)
+{
+    VALUE b, e, s;
+
+    rb_check_arity(argc, 0, 1);
+
+    b = arith_seq_begin(self);
+    e = arith_seq_end(self);
+    s = arith_seq_step(self);
+    if (argc == 0) {
+        if (NIL_P(b)) {
+            return Qnil;
+        }
+        if (!NIL_P(e)) {
+            VALUE zero = INT2FIX(0);
+            int r = rb_cmpint(rb_num_coerce_cmp(s, zero, idCmp), s, zero);
+            if (r > 0 && RTEST(rb_funcall(b, '>', 1, e))) {
+                return Qnil;
+            }
+            if (r < 0 && RTEST(rb_funcall(b, '<', 1, e))) {
+                return Qnil;
+            }
+        }
+        return b;
+    }
+
+    return arith_seq_take(self, argv[0]);
 }
 
 static inline VALUE
