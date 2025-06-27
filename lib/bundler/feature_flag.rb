@@ -36,7 +36,6 @@ module Bundler
     settings_flag(:lockfile_checksums) { bundler_4_mode? }
     settings_flag(:path_relative_to_cwd) { bundler_4_mode? }
     settings_flag(:plugins) { @bundler_version >= Gem::Version.new("1.14") }
-    settings_flag(:print_only_version_number) { bundler_4_mode? }
     settings_flag(:setup_makes_kernel_gem_public) { !bundler_4_mode? }
     settings_flag(:update_requires_all_flag) { bundler_5_mode? }
 

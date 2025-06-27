@@ -489,7 +489,7 @@ module Bundler
         build_info = " (#{BuildMetadata.built_at} commit #{BuildMetadata.git_commit_sha})"
       end
 
-      if !cli_help && Bundler.feature_flag.print_only_version_number?
+      if !cli_help && Bundler.feature_flag.bundler_4_mode?
         Bundler.ui.info "#{Bundler::VERSION}#{build_info}"
       else
         Bundler.ui.info "Bundler version #{Bundler::VERSION}#{build_info}"

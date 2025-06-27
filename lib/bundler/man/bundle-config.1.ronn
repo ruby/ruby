@@ -177,8 +177,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (BUNDLE_PREFER_PATCH):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
-* `print_only_version_number` (`BUNDLE_PRINT_ONLY_VERSION_NUMBER`):
-   Print only version number from `bundler --version`.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):
