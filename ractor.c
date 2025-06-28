@@ -1653,10 +1653,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         obj = replacement;
     }
 
-#define CHECK_AND_REPLACE(v) do { \
+#define CHECK_AND_REPLACE(parent_obj, v) do { \
     VALUE _val = (v); \
     if (obj_traverse_replace_i(_val, data)) { return 1; } \
-    else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
+    else if (data->replacement != _val)     { RB_OBJ_WRITE(parent_obj, &v, data->replacement); } \
 } while (0)
 
     if (UNLIKELY(rb_obj_exivar_p(obj))) {
@@ -1681,7 +1681,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             uint32_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
             VALUE *fields = rb_imemo_fields_ptr(fields_obj);
             for (uint32_t i = 0; i < fields_count; i++) {
-                CHECK_AND_REPLACE(fields[i]);
+                CHECK_AND_REPLACE(fields_obj, fields[i]);
             }
         }
     }
@@ -1720,7 +1720,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
                 VALUE *ptr = ROBJECT_FIELDS(obj);
 
                 for (uint32_t i = 0; i < len; i++) {
-                    CHECK_AND_REPLACE(ptr[i]);
+                    CHECK_AND_REPLACE(obj, ptr[i]);
                 }
             }
         }
@@ -1773,18 +1773,18 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
             for (long i=0; i<len; i++) {
-                CHECK_AND_REPLACE(ptr[i]);
+                CHECK_AND_REPLACE(obj, ptr[i]);
             }
         }
         break;
 
       case T_RATIONAL:
-        CHECK_AND_REPLACE(RRATIONAL(obj)->num);
-        CHECK_AND_REPLACE(RRATIONAL(obj)->den);
+        CHECK_AND_REPLACE(obj, RRATIONAL(obj)->num);
+        CHECK_AND_REPLACE(obj, RRATIONAL(obj)->den);
         break;
       case T_COMPLEX:
-        CHECK_AND_REPLACE(RCOMPLEX(obj)->real);
-        CHECK_AND_REPLACE(RCOMPLEX(obj)->imag);
+        CHECK_AND_REPLACE(obj, RCOMPLEX(obj)->real);
+        CHECK_AND_REPLACE(obj, RCOMPLEX(obj)->imag);
         break;
 
       case T_DATA:
