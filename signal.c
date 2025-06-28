@@ -664,6 +664,10 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+static rb_nativethread_lock_t sig_check_lock;
+#endif
+
 static int
 signal_ignored(int sig)
 {
@@ -678,9 +682,11 @@ signal_ignored(int sig)
     // SIG_GET: Returns the current value of the signal.
     func = signal(sig, SIG_GET);
 #else
-    // TODO: this is not a thread-safe way to do it. Needs lock.
-    sighandler_t old = signal(sig, SIG_DFL);
+    sighandler_t old;
+    rb_native_mutex_lock(&sig_check_lock);
+    old = signal(sig, SIG_DFL);
     signal(sig, old);
+    rb_native_mutex_unlock(&sig_check_lock);
     func = old;
 #endif
     if (func == SIG_IGN) return 1;
@@ -1509,6 +1515,9 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
+#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 
     // It should be ready to call rb_signal_exec()
     VM_ASSERT(GET_THREAD()->pending_interrupt_queue);
@@ -1560,4 +1569,12 @@ Init_signal(void)
 #endif
 
     rb_enable_interrupt();
+}
+
+void
+rb_signal_atfork(void)
+{
+#if defined(HAVE_WORKING_FORK) && !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+    rb_native_mutex_initialize(&sig_check_lock);
+#endif
 }
