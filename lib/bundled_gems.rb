@@ -124,24 +124,24 @@ module Gem::BUNDLED_GEMS # :nodoc:
     return if WARNED[name]
     WARNED[name] = true
 
-    level = RUBY_VERSION < SINCE[name] ? "warning" : "error"
+    level = RUBY_VERSION < SINCE[name] ? :warning : :error
 
     if subfeature
       "#{feature} is found in #{name}, which"
     else
-      "#{feature} #{level == "warning" ? "was loaded" : "used to be loaded"} from the standard library, but"
+      "#{feature} #{level == :warning ? "was loaded" : "used to be loaded"} from the standard library, but"
     end + build_message(name, level)
   end
 
   def self.build_message(name, level)
-    msg = if level == "warning"
+    msg = if level == :warning
       " will no longer be part of the default gems starting from Ruby #{SINCE[name]}"
     else
       " is not part of the default gems since Ruby #{SINCE[name]}."
     end
 
     if defined?(Bundler)
-      motivation = level == "warning" ? "silence this warning" : "fix this error"
+      motivation = level == :warning ? "silence this warning" : "fix this error"
       msg += "\nYou can add #{name} to your Gemfile or gemspec to #{motivation}."
 
       # We detect the gem name from caller_locations. First we walk until we find `require`
@@ -236,7 +236,7 @@ class LoadError
 
     name = path.tr("/", "-")
     if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[name] && !Gem::BUNDLED_GEMS::WARNED[name]
-      warn name + Gem::BUNDLED_GEMS.build_message(name, "error"), uplevel: Gem::BUNDLED_GEMS.uplevel
+      warn name + Gem::BUNDLED_GEMS.build_message(name, :error), uplevel: Gem::BUNDLED_GEMS.uplevel
     end
     super
   end
