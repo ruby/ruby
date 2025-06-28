@@ -2178,15 +2178,13 @@ iseq_set_local_table(rb_iseq_t *iseq, const rb_ast_id_table_t *tbl, const NODE *
         // then its local table should only be `...`
         // FIXME: I think this should be fixed in the AST rather than special case here.
         if (args->forwarding && args->pre_args_num == 0 && !args->opt_args) {
+            CHECK(size >= 3);
             size -= 3;
             offset += 3;
         }
     }
 
     if (size > 0) {
-#if SIZEOF_INT >= SIZEOF_SIZE_T
-        ASSUME(size < SIZE_MAX / sizeof(ID)); /* checked in xmalloc2_size */
-#endif
         ID *ids = ALLOC_N(ID, size);
         MEMCPY(ids, tbl->ids + offset, ID, size);
         ISEQ_BODY(iseq)->local_table = ids;
