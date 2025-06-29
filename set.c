@@ -114,7 +114,7 @@ static ID id_set_iter_lev;
 #define RSET_SIZE(set) set_table_size(RSET_TABLE(set))
 #define RSET_EMPTY(set) (RSET_SIZE(set) == 0)
 #define RSET_SIZE_NUM(set) SIZET2NUM(RSET_SIZE(set))
-#define RSET_IS_MEMBER(sobj, item) set_lookup(RSET_TABLE(set), (st_data_t)(item))
+#define RSET_IS_MEMBER(sobj, item) set_table_lookup(RSET_TABLE(set), (st_data_t)(item))
 #define RSET_COMPARE_BY_IDENTITY(set) (RSET_TABLE(set)->type == &identhash)
 
 struct set_object {
@@ -133,7 +133,7 @@ static void
 set_mark(void *ptr)
 {
     struct set_object *sobj = ptr;
-    if (sobj->table.entries) set_foreach(&sobj->table, mark_key, 0);
+    if (sobj->table.entries) set_table_foreach(&sobj->table, mark_key, 0);
 }
 
 static void
@@ -689,7 +689,7 @@ set_i_add(VALUE set, VALUE item)
 {
     rb_check_frozen(set);
     if (set_iterating_p(set)) {
-        if (!set_lookup(RSET_TABLE(set), (st_data_t)item)) {
+        if (!set_table_lookup(RSET_TABLE(set), (st_data_t)item)) {
             no_new_item();
         }
     }
@@ -715,7 +715,7 @@ set_i_add_p(VALUE set, VALUE item)
 {
     rb_check_frozen(set);
     if (set_iterating_p(set)) {
-        if (!set_lookup(RSET_TABLE(set), (st_data_t)item)) {
+        if (!set_table_lookup(RSET_TABLE(set), (st_data_t)item)) {
             no_new_item();
         }
         return Qnil;
@@ -736,7 +736,7 @@ static VALUE
 set_i_delete(VALUE set, VALUE item)
 {
     rb_check_frozen(set);
-    if (set_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
         set_compact_after_delete(set);
     }
     return set;
@@ -753,7 +753,7 @@ static VALUE
 set_i_delete_p(VALUE set, VALUE item)
 {
     rb_check_frozen(set);
-    if (set_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
         set_compact_after_delete(set);
         return set;
     }
@@ -986,7 +986,7 @@ set_i_clear(VALUE set)
         set_iter(set, set_clear_i, 0);
     }
     else {
-        set_clear(RSET_TABLE(set));
+        set_table_clear(RSET_TABLE(set));
         set_compact_after_delete(set);
     }
     return set;
@@ -1002,7 +1002,7 @@ static int
 set_intersection_i(st_data_t key, st_data_t tmp)
 {
     struct set_intersection_data *data = (struct set_intersection_data *)tmp;
-    if (set_lookup(data->other, key)) {
+    if (set_table_lookup(data->other, key)) {
         set_table_insert_wb(data->into, data->set, key, NULL);
     }
 
@@ -1252,7 +1252,7 @@ set_xor_i(st_data_t key, st_data_t data)
     VALUE set = (VALUE)data;
     set_table *table = RSET_TABLE(set);
     if (set_table_insert_wb(table, set, element, &element)) {
-        set_delete(table, &element);
+        set_table_delete(table, &element);
     }
     return ST_CONTINUE;
 }
@@ -1304,7 +1304,7 @@ set_i_union(VALUE set, VALUE other)
 static int
 set_remove_i(st_data_t key, st_data_t from)
 {
-    set_delete((struct set_table *)from, (st_data_t *)&key);
+    set_table_delete((struct set_table *)from, (st_data_t *)&key);
     return ST_CONTINUE;
 }
 
@@ -1312,7 +1312,7 @@ static VALUE
 set_remove_block(RB_BLOCK_CALL_FUNC_ARGLIST(key, set))
 {
     rb_check_frozen(set);
-    set_delete(RSET_TABLE(set), (st_data_t *)&key);
+    set_table_delete(RSET_TABLE(set), (st_data_t *)&key);
     return key;
 }
 
@@ -1414,7 +1414,7 @@ static int
 set_keep_if_i(st_data_t key, st_data_t into)
 {
     if (!RTEST(rb_yield((VALUE)key))) {
-        set_delete((set_table *)into, &key);
+        set_table_delete((set_table *)into, &key);
     }
     return ST_CONTINUE;
 }
@@ -1486,7 +1486,7 @@ set_i_replace(VALUE set, VALUE other)
         // make sure enum is enumerable before calling clear
         enum_method_id(other);
 
-        set_clear(RSET_TABLE(set));
+        set_table_clear(RSET_TABLE(set));
         set_merge_enum_into(set, other);
     }
 
@@ -1597,7 +1597,7 @@ static int
 set_le_i(st_data_t key, st_data_t arg)
 {
     struct set_subset_data *data = (struct set_subset_data *)arg;
-    if (set_lookup(data->table, key)) return ST_CONTINUE;
+    if (set_table_lookup(data->table, key)) return ST_CONTINUE;
     data->result = Qfalse;
     return ST_STOP;
 }
@@ -1673,7 +1673,7 @@ static int
 set_intersect_i(st_data_t key, st_data_t arg)
 {
     VALUE *args = (VALUE *)arg;
-    if (set_lookup((set_table *)args[0], key)) {
+    if (set_table_lookup((set_table *)args[0], key)) {
         args[1] = Qtrue;
         return ST_STOP;
     }
@@ -1782,7 +1782,7 @@ set_eql_i(st_data_t item, st_data_t arg)
 {
     struct set_equal_data *data = (struct set_equal_data *)arg;
 
-    if (!set_lookup(RSET_TABLE(data->set), item)) {
+    if (!set_table_lookup(RSET_TABLE(data->set), item)) {
         data->result = Qfalse;
         return ST_STOP;
     }
