@@ -32,8 +32,6 @@
 
 #include <errno.h>
 
-RUBY_EXTERN VALUE rb_cSet; // defined in set.c and it's not exposed yet
-
 uint32_t
 rb_zjit_get_page_size(void)
 {
