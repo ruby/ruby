@@ -3038,7 +3038,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     if (!strict_unused_block) {
         key = (st_data_t)cme->def->original_id;
 
-        if (set_lookup(dup_check_table, key)) {
+        if (set_table_lookup(dup_check_table, key)) {
             return;
         }
     }

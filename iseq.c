@@ -113,7 +113,7 @@ remove_from_constant_cache(ID id, IC ic)
 
     if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
-        set_delete(ics, &ic_data);
+        set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check

@@ -142,7 +142,7 @@ rb_clear_constant_cache_for_id(ID id)
 
     if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
-        set_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
+        set_table_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
         ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
 
@@ -549,7 +549,7 @@ rb_vm_delete_cc_refinement(const struct rb_callcache *cc)
     rb_vm_t *vm = GET_VM();
     st_data_t key = (st_data_t)cc;
 
-    rb_set_delete(vm->cc_refinement_table, &key);
+    rb_set_table_delete(vm->cc_refinement_table, &key);
 }
 
 void
@@ -559,8 +559,8 @@ rb_clear_all_refinement_method_cache(void)
 
     RB_VM_LOCK_ENTER();
     {
-        rb_set_foreach(vm->cc_refinement_table, invalidate_cc_refinement, (st_data_t)NULL);
-        rb_set_clear(vm->cc_refinement_table);
+        rb_set_table_foreach(vm->cc_refinement_table, invalidate_cc_refinement, (st_data_t)NULL);
+        rb_set_table_clear(vm->cc_refinement_table);
         rb_set_compact_table(vm->cc_refinement_table);
     }
     RB_VM_LOCK_LEAVE();
