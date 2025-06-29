@@ -1300,7 +1300,7 @@ XXX
   private def strip_ext(name)  # :nodoc:
     exts = /#{
       require "rbconfig"
-      Regexp.union(RbConfig::CONFIG["EXECUTABLE_EXTS"])
+      Regexp.union(*RbConfig::CONFIG["EXECUTABLE_EXTS"]&.split(" "))
     }\z/o
     name.sub(exts, "")
   end
