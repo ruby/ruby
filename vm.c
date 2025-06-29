@@ -3065,8 +3065,22 @@ rb_vm_caller_namespace(const rb_execution_context_t *ec)
 
     // The current control frame is MAGIC_CFUNC to call Namespace.current, but
     // we want to get the current namespace of its caller.
-    caller_cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ec->cfp));
+    caller_cfp = vm_get_ruby_level_caller_cfp(ec, ec->cfp);
     return current_namespace_on_env(caller_cfp->ep);
+}
+
+static const rb_control_frame_t *
+find_loader_control_frame(const rb_control_frame_t *cfp, const rb_control_frame_t *end_cfp)
+{
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
+        if (!VM_ENV_FRAME_TYPE_P(cfp->ep, VM_FRAME_MAGIC_CFUNC))
+            break;
+        if (!NAMESPACE_ROOT_P(current_namespace_on_env(cfp->ep)))
+            break;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    VM_ASSERT(RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp));
+    return cfp;
 }
 
 const rb_namespace_t *
@@ -3082,14 +3096,14 @@ rb_vm_loading_namespace(const rb_execution_context_t *ec)
     end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
-        if (VM_FRAME_RUBYFRAME_P(cfp)) {
-            if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE)) {
-                if (RTEST(cfp->self) && NAMESPACE_OBJ_P(cfp->self)) {
-                    // Namespace#require (, require_relative, load)
-                    return rb_get_namespace_t(cfp->self);
-                }
-                return current_namespace_on_env(cfp->ep);
+        if (VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_NS_REQUIRE)) {
+            if (RTEST(cfp->self) && NAMESPACE_OBJ_P(cfp->self)) {
+                // Namespace#require, #require_relative, #load
+                return rb_get_namespace_t(cfp->self);
             }
+            // Kernel#require, #require_relative, #load
+            cfp = find_loader_control_frame(cfp, end_cfp);
+            return current_namespace_on_env(cfp->ep);
         }
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
