@@ -128,6 +128,7 @@ gc_hook.o: $(hdrdir)/ruby/internal/intern/re.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/ruby.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/select.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+gc_hook.o: $(hdrdir)/ruby/internal/intern/set.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/signal.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 gc_hook.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -288,6 +289,7 @@ tracepoint.o: $(hdrdir)/ruby/internal/intern/re.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/ruby.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/select.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+tracepoint.o: $(hdrdir)/ruby/internal/intern/set.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/signal.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 tracepoint.o: $(hdrdir)/ruby/internal/intern/string.h

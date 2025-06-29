@@ -142,6 +142,7 @@ generator.o: $(hdrdir)/ruby/internal/intern/re.h
 generator.o: $(hdrdir)/ruby/internal/intern/ruby.h
 generator.o: $(hdrdir)/ruby/internal/intern/select.h
 generator.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+generator.o: $(hdrdir)/ruby/internal/intern/set.h
 generator.o: $(hdrdir)/ruby/internal/intern/signal.h
 generator.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 generator.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -129,6 +129,7 @@ postponed_job.o: $(hdrdir)/ruby/internal/intern/re.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/ruby.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/select.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+postponed_job.o: $(hdrdir)/ruby/internal/intern/set.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/signal.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/string.h

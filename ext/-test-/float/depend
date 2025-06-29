@@ -131,6 +131,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -291,6 +292,7 @@ nextafter.o: $(hdrdir)/ruby/internal/intern/re.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/ruby.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/select.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+nextafter.o: $(hdrdir)/ruby/internal/intern/set.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/signal.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 nextafter.o: $(hdrdir)/ruby/internal/intern/string.h

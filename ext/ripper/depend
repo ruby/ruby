@@ -181,6 +181,7 @@ eventids1.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids1.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -352,6 +353,7 @@ eventids2.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids2.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -532,6 +534,7 @@ ripper.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -772,6 +775,7 @@ ripper_init.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper_init.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/string.h
