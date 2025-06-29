@@ -1569,11 +1569,12 @@ io_open_descriptor_fallback(VALUE klass, int descriptor, int mode, VALUE path, V
 
 #ifndef HAVE_RB_IO_CLOSED_P
 static VALUE
-rb_io_closed_p(VALUE io)
+rb_io_closed_p_fallback(VALUE io)
 {
     rb_io_t *fptr = RFILE(io)->fptr;
     return fptr->fd == -1 ? Qtrue : Qfalse;
 }
+#define rb_io_closed_p rb_io_closed_p_fallback
 #endif
 
 #if defined(RB_EXT_RACTOR_SAFE) && defined(HAVE_RB_RACTOR_LOCAL_STORAGE_VALUE_NEWKEY)
