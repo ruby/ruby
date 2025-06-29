@@ -138,6 +138,7 @@ pathname.o: $(hdrdir)/ruby/internal/intern/re.h
 pathname.o: $(hdrdir)/ruby/internal/intern/ruby.h
 pathname.o: $(hdrdir)/ruby/internal/intern/select.h
 pathname.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+pathname.o: $(hdrdir)/ruby/internal/intern/set.h
 pathname.o: $(hdrdir)/ruby/internal/intern/signal.h
 pathname.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 pathname.o: $(hdrdir)/ruby/internal/intern/string.h

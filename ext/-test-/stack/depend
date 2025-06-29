@@ -139,6 +139,7 @@ stack.o: $(hdrdir)/ruby/internal/intern/re.h
 stack.o: $(hdrdir)/ruby/internal/intern/ruby.h
 stack.o: $(hdrdir)/ruby/internal/intern/select.h
 stack.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+stack.o: $(hdrdir)/ruby/internal/intern/set.h
 stack.o: $(hdrdir)/ruby/internal/intern/signal.h
 stack.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 stack.o: $(hdrdir)/ruby/internal/intern/string.h

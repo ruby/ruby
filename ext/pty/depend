@@ -138,6 +138,7 @@ pty.o: $(hdrdir)/ruby/internal/intern/re.h
 pty.o: $(hdrdir)/ruby/internal/intern/ruby.h
 pty.o: $(hdrdir)/ruby/internal/intern/select.h
 pty.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+pty.o: $(hdrdir)/ruby/internal/intern/set.h
 pty.o: $(hdrdir)/ruby/internal/intern/signal.h
 pty.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 pty.o: $(hdrdir)/ruby/internal/intern/string.h

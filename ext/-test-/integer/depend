@@ -128,6 +128,7 @@ core_ext.o: $(hdrdir)/ruby/internal/intern/re.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/ruby.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/select.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+core_ext.o: $(hdrdir)/ruby/internal/intern/set.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/signal.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -296,6 +297,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -456,6 +458,7 @@ my_integer.o: $(hdrdir)/ruby/internal/intern/re.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/ruby.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/select.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+my_integer.o: $(hdrdir)/ruby/internal/intern/set.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/signal.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/string.h

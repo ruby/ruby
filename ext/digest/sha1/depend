@@ -131,6 +131,7 @@ sha1.o: $(hdrdir)/ruby/internal/intern/re.h
 sha1.o: $(hdrdir)/ruby/internal/intern/ruby.h
 sha1.o: $(hdrdir)/ruby/internal/intern/select.h
 sha1.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+sha1.o: $(hdrdir)/ruby/internal/intern/set.h
 sha1.o: $(hdrdir)/ruby/internal/intern/signal.h
 sha1.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 sha1.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -293,6 +294,7 @@ sha1init.o: $(hdrdir)/ruby/internal/intern/re.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/select.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+sha1init.o: $(hdrdir)/ruby/internal/intern/set.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/signal.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/string.h

@@ -127,6 +127,7 @@ dataerror.o: $(hdrdir)/ruby/internal/intern/re.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/ruby.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/select.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+dataerror.o: $(hdrdir)/ruby/internal/intern/set.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/signal.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 dataerror.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -297,6 +298,7 @@ enc_raise.o: $(hdrdir)/ruby/internal/intern/re.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/ruby.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/select.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+enc_raise.o: $(hdrdir)/ruby/internal/intern/set.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/signal.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 enc_raise.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -459,6 +461,7 @@ ensured.o: $(hdrdir)/ruby/internal/intern/re.h
 ensured.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ensured.o: $(hdrdir)/ruby/internal/intern/select.h
 ensured.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ensured.o: $(hdrdir)/ruby/internal/intern/set.h
 ensured.o: $(hdrdir)/ruby/internal/intern/signal.h
 ensured.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ensured.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -619,6 +622,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
