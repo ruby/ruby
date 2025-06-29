@@ -216,4 +216,16 @@ class TestOptionParser < Test::Unit::TestCase
       end
     end
   end
+
+  def test_program_name
+    program = $0
+    $0 = "rdbg3.5"
+    assert_equal "rdbg3.5", OptionParser.new.program_name
+    RbConfig::CONFIG["EXECUTABLE_EXTS"].split(" ") do |ext|
+      $0 = "rdbg3.5" + ext
+      assert_equal "rdbg3.5", OptionParser.new.program_name
+    end
+  ensure
+    $0 = program
+  end
 end

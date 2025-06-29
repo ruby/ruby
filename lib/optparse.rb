@@ -1294,7 +1294,15 @@ XXX
   # to $0.
   #
   def program_name
-    @program_name || File.basename($0, '.*')
+    @program_name || strip_ext(File.basename($0))
+  end
+
+  private def strip_ext(name)  # :nodoc:
+    exts = /#{
+      require "rbconfig"
+      Regexp.union(RbConfig::CONFIG["EXECUTABLE_EXTS"])
+    }\z/o
+    name.sub(exts, "")
   end
 
   # for experimental cascading :-)
