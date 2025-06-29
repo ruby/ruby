@@ -128,6 +128,7 @@ ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/re.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/select.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/set.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/signal.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ensure_and_callcc.o: $(hdrdir)/ruby/internal/intern/string.h

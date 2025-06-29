@@ -128,6 +128,7 @@ resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/re.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/ruby.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/select.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/set.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/signal.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 resolve_symbol_resolver.o: $(hdrdir)/ruby/internal/intern/string.h

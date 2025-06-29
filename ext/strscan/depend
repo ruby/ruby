@@ -138,6 +138,7 @@ strscan.o: $(hdrdir)/ruby/internal/intern/re.h
 strscan.o: $(hdrdir)/ruby/internal/intern/ruby.h
 strscan.o: $(hdrdir)/ruby/internal/intern/select.h
 strscan.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+strscan.o: $(hdrdir)/ruby/internal/intern/set.h
 strscan.o: $(hdrdir)/ruby/internal/intern/signal.h
 strscan.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 strscan.o: $(hdrdir)/ruby/internal/intern/string.h

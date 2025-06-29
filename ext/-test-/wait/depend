@@ -137,6 +137,7 @@ wait.o: $(hdrdir)/ruby/internal/intern/re.h
 wait.o: $(hdrdir)/ruby/internal/intern/ruby.h
 wait.o: $(hdrdir)/ruby/internal/intern/select.h
 wait.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+wait.o: $(hdrdir)/ruby/internal/intern/set.h
 wait.o: $(hdrdir)/ruby/internal/intern/signal.h
 wait.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 wait.o: $(hdrdir)/ruby/internal/intern/string.h

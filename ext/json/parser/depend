@@ -141,6 +141,7 @@ parser.o: $(hdrdir)/ruby/internal/intern/re.h
 parser.o: $(hdrdir)/ruby/internal/intern/ruby.h
 parser.o: $(hdrdir)/ruby/internal/intern/select.h
 parser.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+parser.o: $(hdrdir)/ruby/internal/intern/set.h
 parser.o: $(hdrdir)/ruby/internal/intern/signal.h
 parser.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 parser.o: $(hdrdir)/ruby/internal/intern/string.h

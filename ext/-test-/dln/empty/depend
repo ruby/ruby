@@ -128,6 +128,7 @@ empty.o: $(hdrdir)/ruby/internal/intern/re.h
 empty.o: $(hdrdir)/ruby/internal/intern/ruby.h
 empty.o: $(hdrdir)/ruby/internal/intern/select.h
 empty.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+empty.o: $(hdrdir)/ruby/internal/intern/set.h
 empty.o: $(hdrdir)/ruby/internal/intern/signal.h
 empty.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 empty.o: $(hdrdir)/ruby/internal/intern/string.h
