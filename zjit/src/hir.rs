@@ -488,6 +488,7 @@ pub enum Insn {
 
     /// Control flow instructions
     Return { val: InsnId },
+    Throw { state: u32, val: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=
     FixnumAdd  { left: InsnId, right: InsnId, state: InsnId },
@@ -527,7 +528,7 @@ impl Insn {
             | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
-            | Insn::SetLocal { .. } => false,
+            | Insn::SetLocal { .. } | Insn::Throw { .. } => false,
             _ => true,
         }
     }
@@ -535,7 +536,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Jump(_) | Insn::Return { .. } | Insn::SideExit { .. } => true,
+            Insn::Jump(_) | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
             _ => false,
         }
     }
@@ -711,8 +712,25 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { .. } => write!(f, "SideExit"),
-            Insn::PutSpecialObject { value_type } => {
-                write!(f, "PutSpecialObject {}", value_type)
+            Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
+            Insn::Throw { state, val } => {
+                let mut state_string = match state & VM_THROW_STATE_MASK {
+                    RUBY_TAG_NONE => "TAG_NONE".to_string(),
+                    RUBY_TAG_RETURN => "TAG_RETURN".to_string(),
+                    RUBY_TAG_BREAK => "TAG_BREAK".to_string(),
+                    RUBY_TAG_NEXT => "TAG_NEXT".to_string(),
+                    RUBY_TAG_RETRY => "TAG_RETRY".to_string(),
+                    RUBY_TAG_REDO => "TAG_REDO".to_string(),
+                    RUBY_TAG_RAISE => "TAG_RAISE".to_string(),
+                    RUBY_TAG_THROW => "TAG_THROW".to_string(),
+                    RUBY_TAG_FATAL => "TAG_FATAL".to_string(),
+                    tag => format!("{tag}")
+                };
+                if state & VM_THROW_NO_ESCAPE_FLAG != 0 {
+                    use std::fmt::Write;
+                    write!(state_string, "|NO_ESCAPE")?;
+                }
+                write!(f, "Throw {state_string}, {val}")
             }
             insn => { write!(f, "{insn:?}") }
         }
@@ -1013,6 +1031,7 @@ impl Function {
                     }
                 },
             Return { val } => Return { val: find!(*val) },
+            &Throw { state, val } => Throw { state, val: find!(val) },
             StringCopy { val, chilled } => StringCopy { val: find!(*val), chilled: *chilled },
             StringIntern { val } => StringIntern { val: find!(*val) },
             Test { val } => Test { val: find!(*val) },
@@ -1072,7 +1091,7 @@ impl Function {
             ArraySet { array, idx, val } => ArraySet { array: find!(*array), idx: *idx, val: find!(*val) },
             ArrayDup { val , state } => ArrayDup { val: find!(*val), state: *state },
             &HashDup { val , state } => HashDup { val: find!(val), state },
-            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun: cfun, args: find_vec!(args), name: name, return_type: return_type, elidable },
+            &CCall { cfun, ref args, name, return_type, elidable } => CCall { cfun, args: find_vec!(args), name, return_type, elidable },
             &Defined { op_type, obj, pushval, v } => Defined { op_type, obj, pushval, v: find!(v) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             NewArray { elements, state } => NewArray { elements: find_vec!(*elements), state: find!(*state) },
@@ -1117,7 +1136,7 @@ impl Function {
         match &self.insns[insn.0] {
             Insn::Param { .. } => unimplemented!("params should not be present in block.insns"),
             Insn::SetGlobal { .. } | Insn::ArraySet { .. } | Insn::Snapshot { .. } | Insn::Jump(_)
-            | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. }
+            | Insn::IfTrue { .. } | Insn::IfFalse { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. } =>
                 panic!("Cannot infer type of instruction with no output"),
@@ -1753,6 +1772,7 @@ impl Function {
                 Insn::StringCopy { val, .. }
                 | Insn::StringIntern { val }
                 | Insn::Return { val }
+                | Insn::Throw { val, .. }
                 | Insn::Defined { v: val, .. }
                 | Insn::Test { val }
                 | Insn::SetLocal { val, .. }
@@ -2694,6 +2714,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    break;  // Don't enqueue the next block as a successor
+                }
+                YARVINSN_throw => {
+                    fun.push_insn(block, Insn::Throw { state: get_arg(pc, 0).as_u32(), val: state.stack_pop()? });
                     break;  // Don't enqueue the next block as a successor
                 }
 
@@ -4599,6 +4623,26 @@ mod tests {
               v5:BasicObject = ObjToString v3
               v7:String = AnyToString v3, str: v5
               SideExit
+        "#]]);
+    }
+
+    #[test]
+    fn throw() {
+        eval("
+            define_method(:throw_return) { return 1 }
+            define_method(:throw_break) { break 2 }
+        ");
+        assert_method_hir_with_opcode("throw_return", YARVINSN_throw, expect![[r#"
+            fn block in <compiled>:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              Throw TAG_RETURN, v2
+        "#]]);
+        assert_method_hir_with_opcode("throw_break", YARVINSN_throw, expect![[r#"
+            fn block in <compiled>:
+            bb0(v0:BasicObject):
+              v2:Fixnum[2] = Const Value(2)
+              Throw TAG_BREAK, v2
         "#]]);
     }
 }
