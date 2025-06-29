@@ -132,6 +132,7 @@ rat.o: $(hdrdir)/ruby/internal/intern/re.h
 rat.o: $(hdrdir)/ruby/internal/intern/ruby.h
 rat.o: $(hdrdir)/ruby/internal/intern/select.h
 rat.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+rat.o: $(hdrdir)/ruby/internal/intern/set.h
 rat.o: $(hdrdir)/ruby/internal/intern/signal.h
 rat.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 rat.o: $(hdrdir)/ruby/internal/intern/string.h
