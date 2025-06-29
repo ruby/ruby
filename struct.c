@@ -52,7 +52,8 @@ struct_ivar_get(VALUE c, ID id)
         RUBY_ASSERT(RB_TYPE_P(c, T_CLASS));
         ivar = rb_attr_get(c, id);
         if (!NIL_P(ivar)) {
-            return rb_ivar_set(orig, id, ivar);
+            if (!OBJ_FROZEN(orig)) rb_ivar_set(orig, id, ivar);
+            return ivar;
         }
     }
 }
