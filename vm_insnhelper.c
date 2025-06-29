@@ -976,7 +976,8 @@ rb_vm_rewrite_cref(rb_cref_t *cref, VALUE old_klass, VALUE new_klass)
     #define ADD_NEW_CREF(new_cref) \
         if (new_cref_tail) { \
             RB_OBJ_WRITE(new_cref_tail, &new_cref_tail->next, new_cref); \
-        } else { \
+        } \
+        else { \
             new_cref_head = new_cref; \
         } \
         new_cref_tail = new_cref;
