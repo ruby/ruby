@@ -439,7 +439,7 @@ namespace_initialize(VALUE namespace)
  *  Returns +true+ if namespace is enabled.
  */
 static VALUE
-rb_namespace_s_getenabled(VALUE namespace)
+rb_namespace_s_getenabled(VALUE recv)
 {
     return RBOOL(rb_namespace_available());
 }
@@ -453,7 +453,7 @@ rb_namespace_s_getenabled(VALUE namespace)
  *  Returns +false+ if namespace is not enabled.
  */
 static VALUE
-rb_namespace_current(VALUE klass)
+rb_namespace_s_current(VALUE recv)
 {
     const rb_namespace_t *ns;
 
@@ -472,7 +472,7 @@ rb_namespace_current(VALUE klass)
  *  Returns +true+ if +klass+ is only in a user namespace.
  */
 static VALUE
-rb_namespace_s_is_builtin_p(VALUE namespace, VALUE klass)
+rb_namespace_s_is_builtin_p(VALUE recv, VALUE klass)
 {
     if (RCLASS_PRIME_CLASSEXT_READABLE_P(klass) && !RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass))
         return Qtrue;
@@ -982,7 +982,7 @@ Init_Namespace(void)
     }
 
     rb_define_singleton_method(rb_cNamespace, "enabled?", rb_namespace_s_getenabled, 0);
-    rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_current, 0);
+    rb_define_singleton_method(rb_cNamespace, "current", rb_namespace_s_current, 0);
     rb_define_singleton_method(rb_cNamespace, "is_builtin?", rb_namespace_s_is_builtin_p, 1);
 
     rb_define_method(rb_cNamespace, "load_path", rb_namespace_load_path, 0);
