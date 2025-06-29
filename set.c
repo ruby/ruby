@@ -1913,6 +1913,56 @@ compat_loader(VALUE self, VALUE a)
     return set_i_from_hash(self, rb_ivar_get(a, id_i_hash));
 }
 
+/* C-API functions */
+
+void
+rb_set_foreach(VALUE set, int (*func)(VALUE element, VALUE arg), VALUE arg)
+{
+    set_iter(set, func, arg);
+}
+
+VALUE
+rb_set_new(void)
+{
+    return set_alloc_with_size(rb_cSet, 0);
+}
+
+VALUE
+rb_set_new_capa(size_t capa)
+{
+    return set_alloc_with_size(rb_cSet, (st_index_t)capa);
+}
+
+bool
+rb_set_lookup(VALUE set, VALUE element)
+{
+    return RSET_IS_MEMBER(set, element);
+}
+
+bool
+rb_set_add(VALUE set, VALUE element)
+{
+    return set_i_add_p(set, element) != Qnil;
+}
+
+VALUE
+rb_set_clear(VALUE set)
+{
+    return set_i_clear(set);
+}
+
+bool
+rb_set_delete(VALUE set, VALUE element)
+{
+    return set_i_delete_p(set, element) != Qnil;
+}
+
+size_t
+rb_set_size(VALUE set)
+{
+    return RSET_SIZE(set);
+}
+
 /*
  *  Document-class: Set
  *

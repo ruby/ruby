@@ -93,6 +93,7 @@ RUBY_EXTERN VALUE rb_cRandom;                 /**< `Random` class. */
 RUBY_EXTERN VALUE rb_cRange;                  /**< `Range` class. */
 RUBY_EXTERN VALUE rb_cRational;               /**< `Rational` class. */
 RUBY_EXTERN VALUE rb_cRegexp;                 /**< `Regexp` class. */
+RUBY_EXTERN VALUE rb_cSet;                    /**< `Set` class. */
 RUBY_EXTERN VALUE rb_cStat;                   /**< `File::Stat` class. */
 RUBY_EXTERN VALUE rb_cString;                 /**< `String` class. */
 RUBY_EXTERN VALUE rb_cStruct;                 /**< `Struct` class. */
