@@ -52,7 +52,7 @@ spec = Gem::Specification.new do |s|
     s.files += Dir["lib/json/ext/**/*.jar"]
   else
     s.extensions = Dir["ext/json/**/extconf.rb"]
-    s.files += Dir["ext/json/**/*.{c,h}"]
+    s.files += Dir["ext/json/**/*.{c,h,rb}"]
   end
 end
 
