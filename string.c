@@ -6990,7 +6990,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
     else {
         beg = NUM2LONG(argv[0]);
         len = NUM2LONG(argv[1]);
-        val = argv[2]
+        val = argv[2];
         StringValue(val);
         if (argc == 3) {
             /* bytesplice(index, length, str) */
