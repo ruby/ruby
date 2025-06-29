@@ -48,7 +48,7 @@ void rb_set_foreach(VALUE set, int (*func)(VALUE element, VALUE arg), VALUE arg)
 VALUE rb_set_new(void);
 
 /**
- * Identical to rb_set_new(), except it additionally specifies how many elements 
+ * Identical to rb_set_new(), except it additionally specifies how many elements
  * it is expected to contain. This way you can create a set that is large enough
  * for your need. For large sets, it means it won't need to be reallocated
  * much, improving performance.
