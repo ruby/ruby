@@ -11,7 +11,7 @@ class Git
 
   def initialize(oldrev, newrev, branch = nil)
     @oldrev = oldrev
-    @newrev = newrev
+    @newrev = newrev.empty? ? 'HEAD' : newrev
     @branch = branch
 
     # GitHub may not fetch github.event.pull_request.base.sha at checkout
