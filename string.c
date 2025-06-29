@@ -4443,7 +4443,6 @@ static VALUE
 str_casecmp_p(VALUE str1, VALUE str2)
 {
     rb_encoding *enc;
-    VALUE folded_str1, folded_str2;
     VALUE fold_opt = sym_fold;
 
     enc = rb_enc_compatible(str1, str2);
@@ -4451,8 +4450,14 @@ str_casecmp_p(VALUE str1, VALUE str2)
         return Qnil;
     }
 
-    folded_str1 = rb_str_downcase(1, &fold_opt, str1);
-    folded_str2 = rb_str_downcase(1, &fold_opt, str2);
+    if (ENC_CODERANGE(str1) == ENC_CODERANGE_7BIT &&
+        ENC_CODERANGE(str2) == ENC_CODERANGE_7BIT) {
+        VALUE cmp = str_casecmp(str1, str2);
+        return RBOOL(cmp == INT2FIX(0));
+    }
+
+    VALUE folded_str1 = rb_str_downcase(1, &fold_opt, str1);
+    VALUE folded_str2 = rb_str_downcase(1, &fold_opt, str2);
 
     return rb_str_eql(folded_str1, folded_str2);
 }
