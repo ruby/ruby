@@ -63,7 +63,7 @@ RSpec.describe "bundled_gems.rb" do
       Gem::BUNDLED_GEMS.send(:remove_const, :SINCE)
       Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
-      Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "csv" => "3.4.0", "net-smtp" => "3.1.0" })
+      Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "csv" => "3.4.0" })
     STUB
   }
 
@@ -115,23 +115,6 @@ RSpec.describe "bundled_gems.rb" do
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
-  end
-
-  it "Show warning dash gem like net/smtp" do
-    script <<-RUBY
-      gemfile do
-        source "https://rubygems.org"
-      end
-
-      begin
-        require "net/smtp"
-      rescue LoadError
-      end
-    RUBY
-
-    expect(err).to include(/net\/smtp used to be loaded from (.*) since Ruby 3.1.0/)
-    expect(err).to include(/-e:15/)
-    expect(err).to include("You can add net-smtp")
   end
 
   it "Show warning sub-feature like openssl/bn" do
@@ -339,25 +322,6 @@ RSpec.describe "bundled_gems.rb" do
       end
 
       require "openssl/bn"
-    RUBY
-
-    expect(err).to be_empty
-  end
-
-  it "Don't show warning with net/smtp when net-smtp on Gemfile" do
-    build_lib "net-smtp", "1.0.0" do |s|
-      s.write "lib/net/smtp.rb", "puts 'net-smtp'"
-    end
-
-    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
-      gemfile do
-        source "https://gem.repo1"
-        path "#{lib_path}" do
-          gem "net-smtp"
-        end
-      end
-
-      require "net/smtp"
     RUBY
 
     expect(err).to be_empty

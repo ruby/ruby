@@ -99,13 +99,12 @@ module Gem::BUNDLED_GEMS # :nodoc:
       # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
       feature.delete_prefix!(ARCHDIR)
       feature.delete_prefix!(LIBDIR)
-      segments = feature.split("/")
+      # 1. A segment for the EXACT mapping and SINCE check
+      # 2. A segment to check if there's a subfeature
+      segments = feature.split("/", 2)
       name = segments.shift
       name = EXACT[name] || name
-      if !SINCE[name]
-        name = [name, segments.shift].join("-")
-        return unless SINCE[name]
-      end
+      return unless SINCE[name]
       segments.any?
     else
       name = EXACT[feature] || feature
