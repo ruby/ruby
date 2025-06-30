@@ -4452,8 +4452,13 @@ str_casecmp_p(VALUE str1, VALUE str2)
 
     if (ENC_CODERANGE(str1) == ENC_CODERANGE_7BIT &&
         ENC_CODERANGE(str2) == ENC_CODERANGE_7BIT) {
-        VALUE cmp = str_casecmp(str1, str2);
-        return RBOOL(cmp == INT2FIX(0));
+        static const long break_even_point = 120;
+        long len1 = RSTRING_LEN(str1);
+        if (len1 != RSTRING_LEN(str2)) return Qfalse;
+        if (len1 < break_even_point) {
+            VALUE cmp = str_casecmp(str1, str2);
+            return RBOOL(cmp == INT2FIX(0));
+        }
     }
 
     VALUE folded_str1 = rb_str_downcase(1, &fold_opt, str1);
