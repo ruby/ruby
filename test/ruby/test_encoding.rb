@@ -144,7 +144,9 @@ class TestEncoding < Test::Unit::TestCase
       rs = []
       100.times do
         rs << Ractor.new do
-          "abc".force_encoding(Encoding.list.shuffle.first)
+          10_000.times do
+            "abc".force_encoding(Encoding.list.shuffle.first)
+          end
         end
       end
       while rs.any?
