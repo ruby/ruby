@@ -1446,6 +1446,9 @@ pub fn gen_single_block(
 
     // Compile code into the code block
     let (_, gc_offsets) = asm.compile(cb, Some(jit.get_ocb())).ok_or(())?;
+    let gc_addresses =  gc_offsets.into_iter().map(|offset| {
+        cb.get_ptr(offset.as_usize()).raw_ptr(cb)
+    }).collect::<Vec<_>>();
     let end_addr = cb.get_write_ptr();
 
     // Flush perf symbols after asm.compile() writes addresses
@@ -1459,7 +1462,7 @@ pub fn gen_single_block(
     }
 
     // Block compiled successfully
-    Ok(jit.into_block(end_insn_idx, block_start_addr, end_addr, gc_offsets))
+    Ok(jit.into_block(end_insn_idx, block_start_addr, end_addr, gc_addresses))
 }
 
 fn gen_nop(

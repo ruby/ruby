@@ -1644,9 +1644,8 @@ pub struct Block {
     // Infrequently mutated for control flow graph edits for saving memory.
     outgoing: MutableBranchList,
 
-    // FIXME: should these be code pointers instead?
-    // Offsets for GC managed objects in the mainline code block
-    gc_obj_offsets: Box<[u32]>,
+    // Pointers to references to GC managed objects in the mainline code block
+    gc_obj_addresses: Box<[*const u8]>,
 
     // CME dependencies of this block, to help to remove all pointers to this
     // block in the system.
@@ -1925,27 +1924,23 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         }
     };
 
-    // For marking VALUEs written into the inline code block.
-    // We don't write VALUEs in the outlined block.
-    let cb: &CodeBlock = CodegenGlobals::get_inline_cb();
-
     for versions in &payload.version_map {
         for block in versions {
             // SAFETY: all blocks inside version_map are initialized.
             let block = unsafe { block.as_ref() };
-            mark_block(block, cb, false);
+            mark_block(block, false);
         }
     }
     // Mark dead blocks, since there could be stubs pointing at them
     for blockref in &payload.dead_blocks {
         // SAFETY: dead blocks come from version_map, which only have initialized blocks
         let block = unsafe { blockref.as_ref() };
-        mark_block(block, cb, true);
+        mark_block(block, true);
     }
 
     return;
 
-    fn mark_block(block: &Block, cb: &CodeBlock, dead: bool) {
+    fn mark_block(block: &Block, dead: bool) {
         unsafe { rb_gc_mark_movable(block.iseq.get().into()) };
 
         // Mark method entry dependencies
@@ -1979,8 +1974,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         // Mark references to objects in generated code.
         // Skip for dead blocks since they shouldn't run.
         if !dead {
-            for offset in block.gc_obj_offsets.iter() {
-                let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr(cb);
+            for value_address in block.gc_obj_addresses.iter().copied() {
                 // Creating an unaligned pointer is well defined unlike in C.
                 let value_address = value_address as *const VALUE;
 
@@ -2018,33 +2012,23 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
     // Also acts as an assert that we hold the VM lock.
     unsafe { rb_vm_barrier() };
 
-    // For updating VALUEs written into the inline code block.
-    let cb = CodegenGlobals::get_inline_cb();
-
     for versions in &payload.version_map {
         for version in versions {
             // SAFETY: all blocks inside version_map are initialized
             let block = unsafe { version.as_ref() };
-            block_update_references(block, cb, false);
+            block_update_references(block, false);
         }
     }
     // Update dead blocks, since there could be stubs pointing at them
     for blockref in &payload.dead_blocks {
         // SAFETY: dead blocks come from version_map, which only have initialized blocks
         let block = unsafe { blockref.as_ref() };
-        block_update_references(block, cb, true);
+        block_update_references(block, true);
     }
-
-    // Note that we would have returned already if YJIT is off.
-    cb.mark_all_executable();
-
-    CodegenGlobals::get_outlined_cb()
-        .unwrap()
-        .mark_all_executable();
 
     return;
 
-    fn block_update_references(block: &Block, cb: &mut CodeBlock, dead: bool) {
+    fn block_update_references(block: &Block, dead: bool) {
         block.iseq.set(unsafe { rb_gc_location(block.iseq.get().into()) }.as_iseq());
 
         // Update method entry dependencies
@@ -2085,10 +2069,7 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
         // Skip for dead blocks since they shouldn't run and
         // so there is no potential of writing over invalidation jumps
         if !dead {
-            for offset in block.gc_obj_offsets.iter() {
-                let offset_to_value = offset.as_usize();
-                let value_code_ptr = cb.get_ptr(offset_to_value);
-                let value_ptr: *const u8 = value_code_ptr.raw_ptr(cb);
+            for value_ptr in block.gc_obj_addresses.iter().copied() {
                 // Creating an unaligned pointer is well defined unlike in C.
                 let value_ptr = value_ptr as *mut VALUE;
 
@@ -2098,15 +2079,39 @@ pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
 
                 // Only write when the VALUE moves, to be copy-on-write friendly.
                 if new_addr != object {
-                    for (byte_idx, &byte) in new_addr.as_u64().to_le_bytes().iter().enumerate() {
-                        let byte_code_ptr = value_code_ptr.add_bytes(byte_idx);
-                        cb.write_mem(byte_code_ptr, byte)
-                            .expect("patching existing code should be within bounds");
-                    }
+                    unsafe { value_ptr.write_unaligned(new_addr) };
                 }
             }
         }
 
+    }
+}
+
+/// Mark all code memory as writable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_writeable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_writeable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_writeable();
+    }
+}
+
+/// Mark all code memory as executable.
+/// This function is useful for garbage collectors that update references in JIT-compiled code in
+/// bulk.
+#[no_mangle]
+pub extern "C" fn rb_yjit_mark_all_executable() {
+    if CodegenGlobals::has_instance() {
+        CodegenGlobals::get_inline_cb().mark_all_executable();
+
+        CodegenGlobals::get_outlined_cb()
+            .unwrap()
+            .mark_all_executable();
     }
 }
 
@@ -2342,8 +2347,7 @@ unsafe fn add_block_version(blockref: BlockRef, cb: &CodeBlock) {
     }
 
     // Run write barriers for all objects in generated code.
-    for offset in block.gc_obj_offsets.iter() {
-        let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr(cb);
+    for value_address in block.gc_obj_addresses.iter() {
         // Creating an unaligned pointer is well defined unlike in C.
         let value_address: *const VALUE = value_address.cast();
 
@@ -2378,11 +2382,11 @@ fn remove_block_version(blockref: &BlockRef) {
 impl<'a> JITState<'a> {
     // Finish compiling and turn a jit state into a block
     // note that the block is still not in shape.
-    pub fn into_block(self, end_insn_idx: IseqIdx, start_addr: CodePtr, end_addr: CodePtr, gc_obj_offsets: Vec<u32>) -> BlockRef {
+    pub fn into_block(self, end_insn_idx: IseqIdx, start_addr: CodePtr, end_addr: CodePtr, gc_obj_addresses: Vec<*const u8>) -> BlockRef {
         // Allocate the block and get its pointer
         let blockref: *mut MaybeUninit<Block> = Box::into_raw(Box::new(MaybeUninit::uninit()));
 
-        incr_counter_by!(num_gc_obj_refs, gc_obj_offsets.len());
+        incr_counter_by!(num_gc_obj_refs, gc_obj_addresses.len());
 
         let ctx = Context::encode(&self.get_starting_ctx());
 
@@ -2394,7 +2398,7 @@ impl<'a> JITState<'a> {
             ctx,
             end_addr: Cell::new(end_addr),
             incoming: MutableBranchList(Cell::default()),
-            gc_obj_offsets: gc_obj_offsets.into_boxed_slice(),
+            gc_obj_addresses: gc_obj_addresses.into_boxed_slice(),
             entry_exit: self.get_block_entry_exit(),
             cme_dependencies: self.method_lookup_assumptions.into_iter().map(Cell::new).collect(),
             // Pending branches => actual branches
