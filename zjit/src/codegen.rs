@@ -258,7 +258,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
         Insn::LookupMethod { self_val, method_id, state } => gen_lookup_method(jit, asm, opnd!(self_val), *method_id, &function.frame_state(*state))?,
-        Insn::CallMethod { callable, cd, self_val, args, state } => gen_call_method(jit, asm, opnd!(callable), *cd, opnd!(self_val), args, &function.frame_state(*state))?,
+        Insn::CallMethod { callable, cd, self_val, args, state } => gen_call_method(jit, asm, opnd!(callable), *cd, *self_val, args, &function.frame_state(*state))?,
         Insn::CallCFunc { cfunc, self_val, args, .. } => gen_call_cfunc(jit, asm, *cfunc, opnd!(self_val), args)?,
         Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
         Insn::Return { val } => return Some(gen_return(asm, opnd!(val))?),
@@ -485,31 +485,46 @@ fn gen_call_method(
     asm: &mut Assembler,
     callable: Opnd,
     cd: CallDataPtr,
-    recv: Opnd,
+    recv: InsnId,
     args: &Vec<InsnId>,
     state: &FrameState,
 ) -> Option<Opnd> {
+    // Spill the receiver and the arguments onto the stack.
+    // They need to be on the interpreter stack to let the interpreter access them.
+    // TODO: Avoid spilling operands that have been spilled before.
+    asm_comment!(asm, "spill receiver and arguments");
+    for (idx, &insn_id) in [recv].iter().chain(args.iter()).enumerate() {
+        // Currently, we don't move the SP register. So it's equal to the base pointer.
+        let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
+        asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
+    }
+
     // Don't push recv; it is passed in separately.
     asm_comment!(asm, "make stack-allocated array of {} args", args.len());
-    for &arg in args.iter().rev() {
-        asm.cpush(jit.get_opnd(arg)?);
+    let sp_adjust = if args.len() % 2 == 0 { args.len() } else { args.len() + 1 };
+    let new_sp = asm.sub(NATIVE_STACK_PTR, (sp_adjust*SIZEOF_VALUE).into());
+    asm.mov(NATIVE_STACK_PTR, new_sp);
+    for (idx, &arg) in args.iter().rev().enumerate() {
+        asm.mov(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, ((idx)*SIZEOF_VALUE).try_into().unwrap()), jit.get_opnd(arg)?);
     }
     // Save PC for GC
     gen_save_pc(asm, state);
+    gen_save_sp(asm, 1 + args.len()); // +1 for receiver
     // Call rb_zjit_vm_call0_no_splat, which will push a frame
     // TODO(max): Figure out if we need to manually handle stack alignment and how to do it
     let call_info = unsafe { rb_get_call_data_ci(cd) };
     let method_id = unsafe { rb_vm_ci_mid(call_info) };
     asm_comment!(asm, "get stack pointer");
-    let sp = asm.lea(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, 0));
+    let sp = asm.lea(Opnd::mem(VALUE_BITS, NATIVE_STACK_PTR, VALUE_BITS.into()));
     asm_comment!(asm, "call rb_zjit_vm_call0_no_splat");
+    let recv = jit.get_opnd(recv)?;
     let result = asm.ccall(
         rb_zjit_vm_call0_no_splat as *const u8,
         vec![EC, recv, Opnd::UImm(method_id.0), Opnd::UImm(args.len().try_into().unwrap()), sp, callable],
     );
     // Pop all the args off the stack
     asm_comment!(asm, "clear stack-allocated array of {} args", args.len());
-    let new_sp = asm.add(NATIVE_STACK_PTR, (args.len()*SIZEOF_VALUE).into());
+    let new_sp = asm.add(NATIVE_STACK_PTR, (sp_adjust*SIZEOF_VALUE).into());
     asm.mov(NATIVE_STACK_PTR, new_sp);
     Some(result)
 }
