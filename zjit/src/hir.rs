@@ -570,6 +570,7 @@ impl Insn {
             Insn::FixnumLe   { .. } => false,
             Insn::FixnumGt   { .. } => false,
             Insn::FixnumGe   { .. } => false,
+            Insn::GetLocal   { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             _ => true,
         }
