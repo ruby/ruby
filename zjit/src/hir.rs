@@ -3377,8 +3377,8 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_newhash, expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject, v2:BasicObject):
-              v4:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-              v5:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v4:StaticSymbol[:a] = Const Value(VALUE(0x1000))
+              v5:StaticSymbol[:b] = Const Value(VALUE(0x1008))
               v7:HashExact = NewHash v4: v1, v5: v2
               Return v7
         "#]]);
@@ -3435,7 +3435,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_putobject, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:StaticSymbol[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              v2:StaticSymbol[:foo] = Const Value(VALUE(0x1000))
               Return v2
         "#]]);
     }
@@ -4029,7 +4029,7 @@ mod tests {
               v5:HashExact = NewHash
               v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
               v8:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
-              v9:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
               v10:Fixnum[1] = Const Value(1)
               v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
               SideExit
@@ -4479,8 +4479,8 @@ mod tests {
             bb0(v0:BasicObject):
               v2:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
-              v4:StaticSymbol[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-              v5:StaticSymbol[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+              v4:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
+              v5:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
               v7:BasicObject = SendWithoutBlock v2, :core#set_method_alias, v3, v4, v5
               Return v7
         "#]]);
