@@ -111,6 +111,7 @@ jobs:
           ../src/bootstraptest/test_class.rb \
           ../src/bootstraptest/test_constant_cache.rb \
           ../src/bootstraptest/test_env.rb \
+          ../src/bootstraptest/test_exception.rb \
           ../src/bootstraptest/test_fiber.rb \
           ../src/bootstraptest/test_finalizer.rb \
           ../src/bootstraptest/test_flip.rb \
@@ -120,6 +121,7 @@ jobs:
           ../src/bootstraptest/test_jump.rb \
           ../src/bootstraptest/test_literal.rb \
           ../src/bootstraptest/test_literal_suffix.rb \
+          ../src/bootstraptest/test_load.rb \
           ../src/bootstraptest/test_marshal.rb \
           ../src/bootstraptest/test_objectspace.rb \
           ../src/bootstraptest/test_string.rb \
@@ -130,10 +132,8 @@ jobs:
           ../src/bootstraptest/test_yjit_rust_port.rb
         # ../src/bootstraptest/test_block.rb \
         # ../src/bootstraptest/test_eval.rb \
-        # ../src/bootstraptest/test_exception.rb \
         # ../src/bootstraptest/test_gc.rb \
         # ../src/bootstraptest/test_insns.rb \
-        # ../src/bootstraptest/test_load.rb \
         # ../src/bootstraptest/test_massign.rb \
         # ../src/bootstraptest/test_method.rb \
         # ../src/bootstraptest/test_proc.rb \
