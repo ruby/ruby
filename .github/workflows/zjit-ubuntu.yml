@@ -140,6 +140,7 @@ jobs:
           ../src/bootstraptest/test_flip.rb \
           ../src/bootstraptest/test_flow.rb \
           ../src/bootstraptest/test_fork.rb \
+          ../src/bootstraptest/test_gc.rb \
           ../src/bootstraptest/test_io.rb \
           ../src/bootstraptest/test_jump.rb \
           ../src/bootstraptest/test_literal.rb \
@@ -151,16 +152,15 @@ jobs:
           ../src/bootstraptest/test_string.rb \
           ../src/bootstraptest/test_struct.rb \
           ../src/bootstraptest/test_syntax.rb \
+          ../src/bootstraptest/test_thread.rb \
           ../src/bootstraptest/test_yjit_30k_ifelse.rb \
           ../src/bootstraptest/test_yjit_30k_methods.rb \
           ../src/bootstraptest/test_yjit_rust_port.rb
         # ../src/bootstraptest/test_eval.rb \
-        # ../src/bootstraptest/test_gc.rb \
         # ../src/bootstraptest/test_insns.rb \
         # ../src/bootstraptest/test_method.rb \
         # ../src/bootstraptest/test_proc.rb \
         # ../src/bootstraptest/test_ractor.rb \
-        # ../src/bootstraptest/test_thread.rb \
         # ../src/bootstraptest/test_yjit.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
