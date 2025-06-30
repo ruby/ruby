@@ -186,6 +186,7 @@ fn main() {
         .allowlist_var("rb_cThread")
         .allowlist_var("rb_cArray")
         .allowlist_var("rb_cHash")
+        .allowlist_var("rb_cSet")
         .allowlist_var("rb_cClass")
         .allowlist_var("rb_cISeq")
 

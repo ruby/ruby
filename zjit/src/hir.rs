@@ -6235,4 +6235,24 @@ mod opt_tests {
               Return v11
         "#]]);
     }
+
+    #[test]
+    fn test_set_type_from_constant() {
+        eval("
+            MY_SET = Set.new
+
+            def test = MY_SET
+
+            test
+            test
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, MY_SET)
+              v7:SetExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v7
+        "#]]);
+    }
 }

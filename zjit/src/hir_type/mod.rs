@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::rb_mRubyVMFrozenCore;
@@ -194,6 +194,9 @@ impl Type {
         }
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
+        }
+        else if val.class_of() == unsafe { rb_cSet } {
+            Type { bits: bits::SetExact, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cObject } {
             Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
@@ -394,6 +397,7 @@ impl Type {
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
         if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
+        if self.is_subtype(types::SetExact) { return Some(unsafe { rb_cSet }); }
         if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
         if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }
         if self.is_subtype(types::TrueClassExact) { return Some(unsafe { rb_cTrueClass }); }
@@ -583,6 +587,21 @@ mod tests {
         assert_eq!(types::Fixnum.inexact_ruby_class(), None);
         assert_eq!(types::IntegerExact.inexact_ruby_class(), None);
         assert_eq!(types::Integer.inexact_ruby_class(), None);
+    }
+
+    #[test]
+    fn set() {
+        assert_subtype(types::SetExact, types::Set);
+        assert_subtype(types::SetSubclass, types::Set);
+    }
+
+    #[test]
+    fn set_has_ruby_class() {
+        crate::cruby::with_rubyvm(|| {
+            assert_eq!(types::SetExact.runtime_exact_ruby_class(), Some(unsafe { rb_cSet }));
+            assert_eq!(types::Set.runtime_exact_ruby_class(), None);
+            assert_eq!(types::SetSubclass.runtime_exact_ruby_class(), None);
+        });
     }
 
     #[test]
