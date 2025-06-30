@@ -8,7 +8,7 @@ use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX, SpecialObjectType};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX, SpecialObjectType, SpecialBackrefSymbol};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -278,16 +278,18 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
+        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SetGlobal { id, val, state: _ } => gen_setglobal(asm, *id, opnd!(val)),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_nested_getlocal(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_nested_setlocal(asm, opnd!(val), *ep_offset, *level),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(asm, *ic, &function.frame_state(*state)),
-        Insn::SetIvar { self_val, id, val, state: _ } => return gen_setivar(asm, opnd!(self_val), *id, opnd!(val)),
         Insn::SideExit { state } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
+        Insn::GetSpecialSymbol { symbol_type, state: _ } => { gen_getspecial_symbol(asm, 0, *symbol_type) },
+        Insn::GetSpecialNumber { svar, state: _ } => gen_getspecial_number(asm, 0, *svar),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
@@ -475,6 +477,51 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     asm.ccall(
         rb_vm_get_special_object as *const u8,
         vec![ep_reg, Opnd::UImm(u64::from(value_type))],
+    )
+}
+
+fn gen_getspecial_symbol(asm: &mut Assembler, _key: u64, symbol_type: SpecialBackrefSymbol) -> Opnd {
+    // Fetch a "special" backref based on the symbol type
+
+    // call rb_backref_get()
+    asm_comment!(asm, "rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    match symbol_type {
+        SpecialBackrefSymbol::LastMatch => {
+            asm_comment!(asm, "rb_reg_last_match");
+            asm.ccall(rb_reg_last_match as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::PreMatch => {
+            asm_comment!(asm, "rb_reg_match_pre");
+            asm.ccall(rb_reg_match_pre as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::PostMatch => {
+            asm_comment!(asm, "rb_reg_match_post");
+            asm.ccall(rb_reg_match_post as *const u8, vec![backref])
+        }
+        SpecialBackrefSymbol::LastGroup => {
+            asm_comment!(asm, "rb_reg_match_last");
+            asm.ccall(rb_reg_match_last as *const u8, vec![backref])
+        }
+    }
+}
+
+fn gen_getspecial_number(asm: &mut Assembler, _key: u64, svar: u64) -> Opnd {
+    // Fetch the N-th match from the last backref based on type shifted by 1
+
+    // call rb_backref_get()
+    asm_comment!(asm, "rb_backref_get");
+    let backref = asm.ccall(rb_backref_get as *const u8, vec![]);
+
+    // rb_reg_nth_match((int)(type >> 1), backref);
+    asm_comment!(asm, "rb_reg_nth_match");
+    asm.ccall(
+        rb_reg_nth_match as *const u8,
+        vec![
+            Opnd::Imm((svar >> 1).try_into().unwrap()),
+            backref,
+        ]
     )
 }
 
