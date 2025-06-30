@@ -99,6 +99,34 @@ bar)
  d   
 ]
 
+%w[
+  foo\nbar baz\n\n\
+  bat\n\\\n\foo
+]
+
+%W[
+  foo\nbar baz\n\n\
+  bat\n\\\n\foo
+]
+
+%w[foo\
+  bar
+  baz\\
+  bat
+  1\n
+  2
+  3\\n
+]
+
+%W[foo\
+  bar
+  baz\\
+  bat
+  1\n
+  2
+  3\\n
+]
+
 %W[f\u{006f 006f}]
 
 %W[a b#{c}d e]

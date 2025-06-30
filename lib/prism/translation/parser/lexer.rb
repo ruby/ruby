@@ -425,7 +425,12 @@ module Prism
                   end
 
                   current_string << unescape_string(value, quote_stack.last)
-                  if (backslash_count = token.value[/(\\{1,})\n/, 1]&.length).nil? || backslash_count.even? || !interpolation?(quote_stack.last)
+                  relevant_backslash_count = if quote_stack.last.start_with?("%W", "%I")
+                                               0 # the last backslash escapes the newline
+                                             else
+                                               token.value[/(\\{1,})\n/, 1]&.length || 0
+                                             end
+                  if relevant_backslash_count.even? || !interpolation?(quote_stack.last)
                     tokens << [:tSTRING_CONTENT, [current_string, range(start_offset, start_offset + current_length)]]
                     break
                   end
