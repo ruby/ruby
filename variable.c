@@ -2355,6 +2355,7 @@ rb_replace_generic_ivar(VALUE clone, VALUE obj)
         st_data_t fields_tbl, obj_data = (st_data_t)obj;
         if (st_delete(generic_fields_tbl_, &obj_data, &fields_tbl)) {
             st_insert(generic_fields_tbl_, (st_data_t)clone, fields_tbl);
+            RB_OBJ_WRITTEN(clone, Qundef, fields_tbl);
         }
         else {
             rb_bug("unreachable");
