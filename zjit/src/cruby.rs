@@ -738,6 +738,11 @@ fn ruby_str_to_rust(v: VALUE) -> String {
     }
 }
 
+pub fn ruby_sym_to_rust(v: VALUE) -> String {
+    let ruby_str = unsafe { rb_sym2str(v) };
+    ruby_str_to_rust(ruby_str)
+}
+
 /// A location in Rust code for integrating with debugging facilities defined in C.
 /// Use the [src_loc!] macro to crate an instance.
 pub struct SourceLocation {

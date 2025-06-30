@@ -228,6 +228,7 @@ fn main() {
         .allowlist_function("rb_sym2id")
         .allowlist_function("rb_str_intern")
         .allowlist_function("rb_id2str")
+        .allowlist_function("rb_sym2str")
 
         // From internal/numeric.h
         .allowlist_function("rb_fix_aref")
