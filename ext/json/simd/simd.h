@@ -59,7 +59,7 @@ static inline int trailing_zeros(int input) {
 #include <arm_neon.h>
 
 #define FIND_SIMD_IMPLEMENTATION_DEFINED 1
-static SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void) {
     return SIMD_NEON;
 }
 
@@ -161,7 +161,7 @@ static inline TARGET_SSE2 FORCE_INLINE int string_scan_simd_sse2(const char **pt
 #include <cpuid.h>
 #endif /* HAVE_CPUID_H */
 
-static SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void) {
 
 #if defined(__GNUC__ ) || defined(__clang__)
 #ifdef __GNUC__
@@ -183,7 +183,7 @@ static SIMD_Implementation find_simd_implementation(void) {
 #endif /* JSON_ENABLE_SIMD */
 
 #ifndef FIND_SIMD_IMPLEMENTATION_DEFINED
-static SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void) {
     return SIMD_NONE;
 }
 #endif
