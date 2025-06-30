@@ -900,6 +900,7 @@ unsafe extern "C" {
         lines: *mut ::std::os::raw::c_int,
     ) -> ::std::os::raw::c_int;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub static mut rb_cSet: VALUE;
     pub fn rb_zjit_get_page_size() -> u32;
     pub fn rb_zjit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
