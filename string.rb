@@ -391,6 +391,7 @@
 #
 # _Substitution_
 #
+# - #bytesplice: Replaces bytes of +self+ with bytes from a given string; returns +self+.
 # - #sub!: Replaces the first substring that matches a given pattern with a given replacement string;
 #   returns +self+ if any changes, +nil+ otherwise.
 # - #gsub!: Replaces each substring that matches a given pattern with a given replacement string;
