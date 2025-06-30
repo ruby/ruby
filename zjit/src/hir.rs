@@ -571,6 +571,7 @@ impl Insn {
             Insn::FixnumGt   { .. } => false,
             Insn::FixnumGe   { .. } => false,
             Insn::GetLocal   { .. } => false,
+            Insn::IsNil      { .. } => false,
             Insn::CCall { elidable, .. } => !elidable,
             _ => true,
         }
@@ -6191,6 +6192,42 @@ mod opt_tests {
               v10:BasicObject = SendWithoutBlock v3, :to_s
               v7:String = AnyToString v3, str: v10
               SideExit
+        "#]]);
+    }
+
+    #[test]
+    fn test_branchnil_nil() {
+        eval("
+            def test
+              x = nil
+              x&.itself
+            end
+        ");
+
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:NilClassExact = Const Value(nil)
+              Return v3
+        "#]]);
+    }
+
+    #[test]
+    fn test_branchnil_truthy() {
+        eval("
+            def test
+              x = 1
+              x&.itself
+            end
+        ");
+
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v3:Fixnum[1] = Const Value(1)
+              PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008)
+              v15:BasicObject = CCall itself@0x1010, v3
+              Return v15
         "#]]);
     }
 
