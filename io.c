@@ -14918,7 +14918,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - \File +t.rb+:
  *
  *     p "ARGV: #{ARGV}"
- *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
+ *     p "Read: #{ARGF.read}" # Read everything from all specified streams.
  *
  * - Command and output:
  *
