@@ -831,6 +831,15 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_branchnil
+    assert_compiles '[2, nil]', %q{
+      def test(x)
+        x&.succ
+      end
+      [test(1), test(nil)]
+    }, call_threshold: 1, insns: [:branchnil]
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
