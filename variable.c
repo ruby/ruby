@@ -4665,12 +4665,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
         next_shape_id = rb_shape_transition_add_ivar(fields_obj, id);
         if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
-            attr_index_t current_len = RSHAPE_LEN(current_shape_id);
-            fields_obj = rb_imemo_fields_new_complex(rb_singleton_class(klass), current_len + 1);
-            if (current_len) {
-                rb_obj_copy_fields_to_hash_table(original_fields_obj, rb_imemo_fields_complex_tbl(fields_obj));
-                RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
-            }
+            fields_obj = imemo_fields_complex_from_obj(rb_singleton_class(klass), fields_obj, next_shape_id);
             goto too_complex;
         }
 
