@@ -138,6 +138,7 @@ stringio.o: $(hdrdir)/ruby/internal/intern/re.h
 stringio.o: $(hdrdir)/ruby/internal/intern/ruby.h
 stringio.o: $(hdrdir)/ruby/internal/intern/select.h
 stringio.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+stringio.o: $(hdrdir)/ruby/internal/intern/set.h
 stringio.o: $(hdrdir)/ruby/internal/intern/signal.h
 stringio.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 stringio.o: $(hdrdir)/ruby/internal/intern/string.h

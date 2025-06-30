@@ -127,6 +127,7 @@ monitor.o: $(hdrdir)/ruby/internal/intern/re.h
 monitor.o: $(hdrdir)/ruby/internal/intern/ruby.h
 monitor.o: $(hdrdir)/ruby/internal/intern/select.h
 monitor.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+monitor.o: $(hdrdir)/ruby/internal/intern/set.h
 monitor.o: $(hdrdir)/ruby/internal/intern/signal.h
 monitor.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 monitor.o: $(hdrdir)/ruby/internal/intern/string.h

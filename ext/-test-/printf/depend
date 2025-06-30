@@ -138,6 +138,7 @@ printf.o: $(hdrdir)/ruby/internal/intern/re.h
 printf.o: $(hdrdir)/ruby/internal/intern/ruby.h
 printf.o: $(hdrdir)/ruby/internal/intern/select.h
 printf.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+printf.o: $(hdrdir)/ruby/internal/intern/set.h
 printf.o: $(hdrdir)/ruby/internal/intern/signal.h
 printf.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 printf.o: $(hdrdir)/ruby/internal/intern/string.h

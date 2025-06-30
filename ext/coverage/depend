@@ -140,6 +140,7 @@ coverage.o: $(hdrdir)/ruby/internal/intern/re.h
 coverage.o: $(hdrdir)/ruby/internal/intern/ruby.h
 coverage.o: $(hdrdir)/ruby/internal/intern/select.h
 coverage.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+coverage.o: $(hdrdir)/ruby/internal/intern/set.h
 coverage.o: $(hdrdir)/ruby/internal/intern/signal.h
 coverage.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 coverage.o: $(hdrdir)/ruby/internal/intern/string.h

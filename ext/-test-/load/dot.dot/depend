@@ -128,6 +128,7 @@ dot.dot.o: $(hdrdir)/ruby/internal/intern/re.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/ruby.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/select.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+dot.dot.o: $(hdrdir)/ruby/internal/intern/set.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/signal.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/string.h
