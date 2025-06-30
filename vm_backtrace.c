@@ -461,6 +461,7 @@ location_format(VALUE file, int lineno, VALUE name)
     else {
         rb_str_catf(s, "'%s'", RSTRING_PTR(name));
     }
+    RB_GC_GUARD(name);
     return s;
 }
 
