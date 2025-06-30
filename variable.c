@@ -4747,14 +4747,6 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
     return !existing;
 }
 
-static int
-tbl_copy_i(ID key, VALUE val, st_data_t dest)
-{
-    rb_class_ivar_set((VALUE)dest, key, val);
-
-    return ST_CONTINUE;
-}
-
 void
 rb_fields_tbl_copy(VALUE dst, VALUE src)
 {
@@ -4762,7 +4754,11 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
     RUBY_ASSERT(RB_TYPE_P(dst, T_CLASS) || RB_TYPE_P(dst, T_MODULE));
     RUBY_ASSERT(RSHAPE_TYPE_P(RBASIC_SHAPE_ID(dst), SHAPE_ROOT));
 
-    rb_ivar_foreach(src, tbl_copy_i, dst);
+    VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(src);
+    if (fields_obj) {
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, rb_imemo_fields_clone(fields_obj));
+        RBASIC_SET_SHAPE_ID(dst, RBASIC_SHAPE_ID(src));
+    }
 }
 
 static rb_const_entry_t *
