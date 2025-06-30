@@ -71,7 +71,7 @@ module Bundler
               raise Bundler::GemRequireError.new e,
                 "There was an error while trying to load the gem '#{file}'."
             end
-          rescue RuntimeError => e
+          rescue StandardError => e
             raise Bundler::GemRequireError.new e,
               "There was an error while trying to load the gem '#{file}'."
           end
