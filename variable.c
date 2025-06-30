@@ -1670,6 +1670,22 @@ imemo_fields_complex_from_obj(VALUE klass, VALUE source_fields_obj, shape_id_t s
     return fields_obj;
 }
 
+static VALUE
+imemo_fields_copy_capa(VALUE klass, VALUE source_fields_obj, attr_index_t new_size)
+{
+    VALUE fields_obj = rb_imemo_fields_new(klass, new_size);
+    if (source_fields_obj) {
+        attr_index_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(source_fields_obj));
+        VALUE *fields = rb_imemo_fields_ptr(fields_obj);
+        MEMCPY(fields, rb_imemo_fields_ptr(source_fields_obj), VALUE, fields_count);
+        RBASIC_SET_SHAPE_ID(fields_obj, RBASIC_SHAPE_ID(source_fields_obj));
+        for (attr_index_t i = 0; i < fields_count; i++) {
+            RB_OBJ_WRITTEN(fields_obj, Qundef, fields[i]);
+        }
+    }
+    return fields_obj;
+}
+
 void rb_obj_copy_fields_to_hash_table(VALUE obj, st_table *table);
 
 // Copy all object fields, including ivars and internal object_id, etc
@@ -1846,15 +1862,7 @@ imemo_fields_set(VALUE klass, VALUE fields_obj, shape_id_t target_shape_id, ID f
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
         if (concurrent || index >= RSHAPE_CAPACITY(current_shape_id)) {
-            fields_obj = rb_imemo_fields_new(klass, RSHAPE_CAPACITY(target_shape_id));
-            if (original_fields_obj) {
-                attr_index_t fields_count = RSHAPE_LEN(current_shape_id);
-                VALUE *fields = rb_imemo_fields_ptr(fields_obj);
-                MEMCPY(fields, rb_imemo_fields_ptr(original_fields_obj), VALUE, fields_count);
-                for (attr_index_t i = 0; i < fields_count; i++) {
-                    RB_OBJ_WRITTEN(fields_obj, Qundef, fields[i]);
-                }
-            }
+            fields_obj = imemo_fields_copy_capa(klass, original_fields_obj, RSHAPE_CAPACITY(target_shape_id));
         }
 
         VALUE *table = rb_imemo_fields_ptr(fields_obj);
@@ -4677,15 +4685,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
             // We allocate a new fields_obj even when concurrency isn't a concern
             // so that we're embedded as long as possible.
-            fields_obj = rb_imemo_fields_new(rb_singleton_class(klass), next_capacity);
-            if (original_fields_obj) {
-                VALUE *fields = rb_imemo_fields_ptr(fields_obj);
-                attr_index_t fields_count = RSHAPE_LEN(current_shape_id);
-                MEMCPY(fields, rb_imemo_fields_ptr(original_fields_obj), VALUE, fields_count);
-                for (attr_index_t i = 0; i < fields_count; i++) {
-                    RB_OBJ_WRITTEN(fields_obj, Qundef, fields[i]);
-                }
-            }
+            fields_obj = imemo_fields_copy_capa(rb_singleton_class(klass), fields_obj, next_capacity);
         }
 
         RUBY_ASSERT(RSHAPE(next_shape_id)->type == SHAPE_IVAR);
