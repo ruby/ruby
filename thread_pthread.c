@@ -3169,20 +3169,26 @@ rb_thread_create_timer_thread(void)
         timer_thread_setup_mn();
     }
 
-    pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
+    if (pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM()) != 0) {
+        system_working = 0;
+        // NOTE: safe to call into VM here even if we're in the middle of a call to `rb_fork_ruby()`
+        rb_warn("Couldn't create timer thread, error: %s", strerror(errno));
+    }
 }
 
 static int
 native_stop_timer_thread(void)
 {
-    RUBY_ATOMIC_SET(system_working, 0);
+    if (RUBY_ATOMIC_LOAD(system_working)) {
+        RUBY_ATOMIC_SET(system_working, 0);
 
-    RUBY_DEBUG_LOG("wakeup send %d", timer_th.comm_fds[1]);
-    timer_thread_wakeup_force();
-    RUBY_DEBUG_LOG("wakeup sent");
-    pthread_join(timer_th.pthread_id, NULL);
+        RUBY_DEBUG_LOG("wakeup send %d", timer_th.comm_fds[1]);
+        timer_thread_wakeup_force();
+        RUBY_DEBUG_LOG("wakeup sent");
+        pthread_join(timer_th.pthread_id, NULL);
 
-    if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
+        if (TT_DEBUG) fprintf(stderr, "stop timer thread\n");
+    }
 
     return 1;
 }
