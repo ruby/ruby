@@ -2187,8 +2187,14 @@ pub enum CallType {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum ParameterType {
+    Optional,
+}
+
+#[derive(Debug, PartialEq)]
 pub enum ParseError {
     StackUnderflow(FrameState),
+    UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
 }
 
@@ -2248,8 +2254,14 @@ impl ProfileOracle {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
+fn filter_unknown_parameter_type(iseq: *const rb_iseq_t) -> Result<(), ParseError> {
+    if unsafe { rb_get_iseq_body_param_opt_num(iseq) } != 0 { return Err(ParseError::UnknownParameterType(ParameterType::Optional)); }
+    Ok(())
+}
+
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    filter_unknown_parameter_type(iseq)?;
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
@@ -3227,6 +3239,11 @@ mod tests {
         assert_eq!(result.unwrap_err(), reason);
     }
 
+    #[test]
+    fn test_cant_compile_optional() {
+        eval("def test(x=1) = 123");
+        assert_compile_fails("test", ParseError::UnknownParameterType(ParameterType::Optional));
+    }
 
     #[test]
     fn test_putobject() {
