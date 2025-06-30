@@ -3,7 +3,7 @@ use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY
 use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
-use crate::cruby::ruby_sym_to_rust;
+use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
 use crate::hir::PtrPrintMap;
 
@@ -71,7 +71,7 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
     match ty.spec {
         Specialization::Any | Specialization::Empty => { Ok(()) },
         Specialization::Object(val) if val == unsafe { rb_mRubyVMFrozenCore } => write!(f, "[VMFrozenCore]"),
-        Specialization::Object(val) if ty.is_subtype(types::SymbolExact) => write!(f, "[:{}]", ruby_sym_to_rust(val)),
+        Specialization::Object(val) if ty.is_subtype(types::SymbolExact) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         Specialization::Type(val) => write!(f, "[class:{}]", get_class_name(val)),
         Specialization::TypeExact(val) => write!(f, "[class_exact:{}]", get_class_name(val)),
