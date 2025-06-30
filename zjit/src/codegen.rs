@@ -278,7 +278,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
-        Insn::SetGlobal { id, val, state: _ } => return gen_setglobal(asm, *id, opnd!(val)),
+        Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
         &Insn::GetLocal { ep_offset, level } => gen_nested_getlocal(asm, ep_offset, level)?,
         Insn::SetLocal { val, ep_offset, level } => return gen_nested_setlocal(asm, opnd!(val), *ep_offset, *level),
@@ -451,10 +451,9 @@ fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
 }
 
 /// Set global variables
-fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) -> Option<()> {
+fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) {
     asm_comment!(asm, "call rb_gvar_set");
     asm.ccall(rb_gvar_set as *const u8, vec![Opnd::UImm(id.0), val]);
-    Some(())
 }
 
 /// Side-exit into the interpreter
