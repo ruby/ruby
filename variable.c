@@ -3023,9 +3023,10 @@ static VALUE
 autoload_synchronized(VALUE _arguments)
 {
     struct autoload_arguments *arguments = (struct autoload_arguments *)_arguments;
+    rb_const_entry_t constant_entry = {0};
 
-    rb_const_entry_t *constant_entry = rb_const_lookup(arguments->module, arguments->name);
-    if (constant_entry && !UNDEF_P(constant_entry->value)) {
+    rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name, &constant_entry);
+    if (ce && !UNDEF_P(constant_entry.value)) {
         return Qfalse;
     }
 
@@ -3226,13 +3227,15 @@ autoloading_const_entry(VALUE mod, ID id)
     return 0;
 }
 
+
 static int
 autoload_defined_p(VALUE mod, ID id)
 {
-    rb_const_entry_t *ce = rb_const_lookup(mod, id);
+    rb_const_entry_t ce_out = {0};
+    rb_const_entry_t *ce = rb_const_lookup(mod, id, &ce_out);
 
     // If there is no constant or the constant is not undefined (special marker for autoloading):
-    if (!ce || !UNDEF_P(ce->value)) {
+    if (!ce || !UNDEF_P(ce_out.value)) {
         // We are not autoloading:
         return 0;
     }
@@ -3421,11 +3424,12 @@ autoload_try_load(VALUE _arguments)
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     VALUE result = autoload_feature_require(_arguments);
+    rb_const_entry_t ce_out = {0};
 
     // After we loaded the feature, if the constant is not defined, we remove it completely:
-    rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
+    rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name, &ce_out);
 
-    if (!ce || UNDEF_P(ce->value)) {
+    if (!ce || UNDEF_P(ce_out.value)) {
         result = Qfalse;
 
         rb_const_remove(arguments->module, arguments->name);
@@ -3457,10 +3461,11 @@ autoload_try_load(VALUE _arguments)
 VALUE
 rb_autoload_load(VALUE module, ID name)
 {
-    rb_const_entry_t *ce = rb_const_lookup(module, name);
+    rb_const_entry_t ce_out = {0};
+    rb_const_entry_t *ce = rb_const_lookup(module, name, &ce_out);
 
     // We bail out as early as possible without any synchronisation:
-    if (!ce || !UNDEF_P(ce->value)) {
+    if (!ce || !UNDEF_P(ce_out.value)) {
         return Qfalse;
     }
 
@@ -3478,7 +3483,7 @@ rb_autoload_load(VALUE module, ID name)
     // This confirms whether autoloading is required or not:
     if (autoload_const_value == Qfalse) return autoload_const_value;
 
-    arguments.flag = ce->flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
+    arguments.flag = ce_out.flag & (CONST_DEPRECATED | CONST_VISIBILITY_MASK);
 
     // Only one thread will enter here at a time:
     VALUE result = rb_mutex_synchronize(arguments.mutex, autoload_try_load, (VALUE)&arguments);
@@ -3549,6 +3554,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
 {
     VALUE value, current;
     bool first_iteration = true;
+    rb_const_entry_t ce_out = {0};
 
     for (current = klass;
             RTEST(current);
@@ -3570,13 +3576,13 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-        while ((ce = rb_const_lookup(tmp, id))) {
-            if (visibility && RB_CONST_PRIVATE_P(ce)) {
+        while ((ce = rb_const_lookup(tmp, id, &ce_out))) {
+            if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
             }
-            rb_const_warn_if_deprecated(ce, tmp, id);
-            value = ce->value;
+            rb_const_warn_if_deprecated(&ce_out, tmp, id);
+            value = ce_out.value;
             if (UNDEF_P(value)) {
                 struct autoload_const *ac;
                 if (am == tmp) break;
@@ -3656,16 +3662,17 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
 {
     while (RTEST(klass)) {
         rb_const_entry_t *ce;
+        rb_const_entry_t ce_out = {0};
 
-        while ((ce = rb_const_lookup(klass, id))) {
-            if (visibility && RB_CONST_PRIVATE_P(ce)) {
+        while ((ce = rb_const_lookup(klass, id, &ce_out))) {
+            if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 return Qnil;
             }
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
 
-            if (UNDEF_P(ce->value)) { // autoload
+            if (UNDEF_P(ce_out.value)) { // autoload
                 VALUE autoload_const_value = autoload_data(klass, id);
                 if (RTEST(autoload_const_value)) {
                     struct autoload_const *autoload_const;
@@ -3677,8 +3684,8 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
                 }
             }
 
-            if (NIL_P(ce->file)) return rb_ary_new();
-            return rb_assoc_new(ce->file, INT2NUM(ce->line));
+            if (NIL_P(ce_out.file)) return rb_ary_new();
+            return rb_assoc_new(ce_out.file, INT2NUM(ce_out.line));
         }
         if (!recurse) break;
         klass = RCLASS_SUPER(klass);
@@ -3735,18 +3742,19 @@ rb_mod_remove_const(VALUE mod, VALUE name)
     return rb_const_remove(mod, id);
 }
 
-static rb_const_entry_t * const_lookup(struct rb_id_table *tbl, ID id);
+static rb_const_entry_t * const_lookup(struct rb_id_table *tbl, ID id, rb_const_entry_t *ce_out);
 
 VALUE
 rb_const_remove(VALUE mod, ID id)
 {
     VALUE val;
     rb_const_entry_t *ce;
+    rb_const_entry_t ce_out = {0};
 
     rb_check_frozen(mod);
 
     RB_VM_LOCKING() {
-        ce = rb_const_lookup(mod, id);
+        ce = rb_const_lookup(mod, id, &ce_out);
         if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
             if (rb_const_defined_at(mod, id)) {
                 rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
@@ -3758,14 +3766,14 @@ rb_const_remove(VALUE mod, ID id)
         rb_const_warn_if_deprecated(ce, mod, id);
         rb_clear_constant_cache_for_id(id);
 
-        val = ce->value;
+        val = ce_out.value;
 
         if (UNDEF_P(val)) {
             autoload_delete(mod, id);
             val = Qnil;
         }
 
-        if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id)) {
+        if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id, NULL)) {
             ruby_xfree(ce);
         }
         // else - skip free'ing the ce because it still exists in the prime classext
@@ -3909,15 +3917,16 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE tmp;
     int mod_retry = 0;
     rb_const_entry_t *ce;
+    rb_const_entry_t ce_out = {0};
 
     tmp = klass;
   retry:
     while (tmp) {
-        if ((ce = rb_const_lookup(tmp, id))) {
-            if (visibility && RB_CONST_PRIVATE_P(ce)) {
+        if ((ce = rb_const_lookup(tmp, id, &ce_out))) {
+            if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 return (int)Qfalse;
             }
-            if (UNDEF_P(ce->value) && !check_autoload_required(tmp, id, 0) &&
+            if (UNDEF_P(ce_out.value) && !check_autoload_required(tmp, id, 0) &&
                 !rb_autoloading_value(tmp, id, NULL, NULL))
                 return (int)Qfalse;
 
@@ -4045,8 +4054,8 @@ const_set(VALUE klass, ID id, VALUE val)
             RCLASS_WRITE_CONST_TBL(klass, tbl, false);
             rb_clear_constant_cache_for_id(id);
             ce = ZALLOC(rb_const_entry_t);
-            rb_id_table_insert(tbl, id, (VALUE)ce);
             setup_const_entry(ce, klass, val, CONST_PUBLIC);
+            rb_id_table_insert(tbl, id, (VALUE)ce);
         }
         else {
             struct autoload_const ac = {
@@ -4059,6 +4068,7 @@ const_set(VALUE klass, ID id, VALUE val)
         }
     }
 
+    // TODO: I think this needs to be locked
     /*
      * Resolve and cache class name immediately to resolve ambiguity
      * and avoid order-dependency on const_tbl
@@ -4123,6 +4133,8 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
     rb_const_flag_t visibility = ac->flag;
     rb_const_entry_t *ce;
 
+    ASSERT_vm_locking();
+
     if (rb_id_table_lookup(tbl, id, &value)) {
         ce = (rb_const_entry_t *)value;
         if (UNDEF_P(ce->value)) {
@@ -4169,8 +4181,8 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
         rb_clear_constant_cache_for_id(id);
 
         ce = ZALLOC(rb_const_entry_t);
-        rb_id_table_insert(tbl, id, (VALUE)ce);
         setup_const_entry(ce, klass, val, visibility);
+        rb_id_table_insert(tbl, id, (VALUE)ce);
     }
 }
 
@@ -4218,29 +4230,31 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
         return;
     }
 
-    for (i = 0; i < argc; i++) {
-        struct autoload_const *ac;
-        VALUE val = argv[i];
-        id = rb_check_id(&val);
-        if (!id) {
-            undefined_constant(mod, val);
-        }
-        if ((ce = rb_const_lookup(mod, id))) {
-            ce->flag &= ~mask;
-            ce->flag |= flag;
-            if (UNDEF_P(ce->value)) {
-                struct autoload_data *ele;
-
-                ele = autoload_data_for_named_constant(mod, id, &ac);
-                if (ele) {
-                    ac->flag &= ~mask;
-                    ac->flag |= flag;
-                }
+    RB_VM_LOCKING() {
+        for (i = 0; i < argc; i++) {
+            struct autoload_const *ac;
+            VALUE val = argv[i];
+            id = rb_check_id(&val);
+            if (!id) {
+                undefined_constant(mod, val);
             }
-        rb_clear_constant_cache_for_id(id);
-        }
-        else {
-            undefined_constant(mod, ID2SYM(id));
+            if ((ce = rb_const_lookup(mod, id, NULL))) {
+                ce->flag &= ~mask;
+                ce->flag |= flag;
+                if (UNDEF_P(ce->value)) {
+                    struct autoload_data *ele;
+
+                    ele = autoload_data_for_named_constant(mod, id, &ac);
+                    if (ele) {
+                        ac->flag &= ~mask;
+                        ac->flag |= flag;
+                    }
+                }
+                rb_clear_constant_cache_for_id(id);
+            }
+            else {
+                undefined_constant(mod, ID2SYM(id));
+            }
         }
     }
 }
@@ -4256,10 +4270,12 @@ rb_deprecate_constant(VALUE mod, const char *name)
     if (!(id = rb_check_id_cstr(name, len, NULL))) {
         undefined_constant(mod, rb_fstring_new(name, len));
     }
-    if (!(ce = rb_const_lookup(mod, id))) {
-        undefined_constant(mod, ID2SYM(id));
+    RB_VM_LOCKING() {
+        if (!(ce = rb_const_lookup(mod, id, NULL))) {
+            undefined_constant(mod, ID2SYM(id));
+        }
+        ce->flag |= CONST_DEPRECATED;
     }
-    ce->flag |= CONST_DEPRECATED;
 }
 
 /*
@@ -4812,23 +4828,30 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
 }
 
 static rb_const_entry_t *
-const_lookup(struct rb_id_table *tbl, ID id)
+const_lookup(struct rb_id_table *tbl, ID id, rb_const_entry_t *entry_out)
 {
     if (tbl) {
+        rb_const_entry_t *ce;
         VALUE val;
         bool r;
         RB_VM_LOCKING() {
             r = rb_id_table_lookup(tbl, id, &val);
+            if (r) {
+                ce = (rb_const_entry_t*)val;
+                if (entry_out) *entry_out = *ce;
+            }
         }
 
-        if (r) return (rb_const_entry_t *)val;
+        if (r) {
+            return ce;
+        }
     }
     return NULL;
 }
 
 rb_const_entry_t *
-rb_const_lookup(VALUE klass, ID id)
+rb_const_lookup(VALUE klass, ID id, rb_const_entry_t *entry_out)
 {
-    return const_lookup(RCLASS_CONST_TBL(klass), id);
+    return const_lookup(RCLASS_CONST_TBL(klass), id, entry_out);
 }
 
