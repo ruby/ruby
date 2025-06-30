@@ -4704,6 +4704,10 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
 too_complex:
     {
+        if (concurrent && fields_obj == original_fields_obj) {
+            // If we're in the multi-ractor mode, we can't directly insert in the table.
+            fields_obj = rb_imemo_fields_clone(fields_obj);
+        }
         st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
         existing = st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
