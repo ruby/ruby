@@ -6,7 +6,6 @@ use crate::backend::current::{Reg, ALLOC_REGS};
 use crate::profile::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::invariants::{iseq_escapes_ep, track_no_ep_escape_assumption};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX, SpecialObjectType};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
@@ -58,15 +57,6 @@ impl JITState {
                 label
             }
         }
-    }
-
-    /// Assume that this ISEQ doesn't escape EP. Return false if it's known to escape EP.
-    fn assume_no_ep_escape(iseq: IseqPtr) -> bool {
-        if iseq_escapes_ep(iseq) {
-            return false;
-        }
-        track_no_ep_escape_assumption(iseq);
-        true
     }
 }
 
@@ -145,7 +135,7 @@ fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_pt
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
-    gen_method_params(&mut asm, iseq, function.block(BlockId(0)));
+    gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
 
     // Jump to the first block using a call instruction
     asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
@@ -501,7 +491,7 @@ fn gen_entry_prologue(asm: &mut Assembler, iseq: IseqPtr) {
 }
 
 /// Assign method arguments to basic block arguments at JIT entry
-fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
+fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
     let self_param = gen_param(asm, SELF_PARAM_IDX);
     asm.mov(self_param, Opnd::mem(VALUE_BITS, CFP, RUBY_OFFSET_CFP_SELF));
 
@@ -516,7 +506,7 @@ fn gen_method_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
 
         // Assign local variables to the basic block arguments
         for (idx, &param) in params.iter().enumerate() {
-            let local = gen_getlocal(asm, iseq, idx);
+            let local = gen_entry_param(asm, iseq, idx);
             asm.load_into(param, local);
         }
     }
@@ -535,11 +525,13 @@ fn gen_branch_params(jit: &mut JITState, asm: &mut Assembler, branch: &BranchEdg
     Some(())
 }
 
-/// Get the local variable at the given index
-fn gen_getlocal(asm: &mut Assembler, iseq: IseqPtr, local_idx: usize) -> lir::Opnd {
+/// Get a method parameter on JIT entry. As of entry, whether EP is escaped or not solely
+/// depends on the ISEQ type.
+fn gen_entry_param(asm: &mut Assembler, iseq: IseqPtr, local_idx: usize) -> lir::Opnd {
     let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
 
-    if JITState::assume_no_ep_escape(iseq) {
+    // If the ISEQ does not escape EP, we can optimize the local variable access using the SP register.
+    if !iseq_entry_escapes_ep(iseq) {
         // Create a reference to the local variable using the SP register. We assume EP == BP.
         // TODO: Implement the invalidation in rb_zjit_invalidate_ep_is_bp()
         let offs = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
@@ -1055,6 +1047,20 @@ fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
         locals,
     };
     Some(target)
+}
+
+/// Return true if a given ISEQ is known to escape EP to the heap on entry.
+///
+/// As of vm_push_frame(), EP is always equal to BP. However, after pushing
+/// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
+fn iseq_entry_escapes_ep(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // <main> frame is always associated to TOPLEVEL_BINDING.
+        ISEQ_TYPE_MAIN |
+        // Kernel#eval uses a heap EP when a Binding argument is not nil.
+        ISEQ_TYPE_EVAL => true,
+        _ => false,
+    }
 }
 
 impl Assembler {

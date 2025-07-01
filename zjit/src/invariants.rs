@@ -40,6 +40,8 @@ pub extern "C" fn rb_zjit_invalidate_ep_is_bp(iseq: IseqPtr) {
     invariants.ep_escape_iseqs.insert(iseq);
 
     // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
+    // Note: Nobody calls track_no_ep_escape_assumption() for now, so this is always false.
+    // TODO: Add a PatchPoint that assumes EP == BP in HIR and invalidate it here.
     if invariants.no_ep_escape_iseqs.contains(&iseq) {
         unimplemented!("Invalidation on EP escape is not implemented yet");
     }
