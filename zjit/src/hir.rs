@@ -6315,7 +6315,6 @@ mod opt_tests {
     fn test_regexp_type() {
         eval("
             def test = /a/
-            test
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
