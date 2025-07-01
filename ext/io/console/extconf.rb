@@ -6,11 +6,11 @@ version = ["../../..", "."].find do |dir|
 rescue
 end
 
-have_func("rb_io_path")
-have_func("rb_io_descriptor")
-have_func("rb_io_get_write_io")
-have_func("rb_io_closed_p")
-have_func("rb_io_open_descriptor")
+have_func("rb_io_path", "ruby/io.h")
+have_func("rb_io_descriptor", "ruby/io.h")
+have_func("rb_io_get_write_io", "ruby/io.h")
+have_func("rb_io_closed_p", "ruby/io.h")
+have_func("rb_io_open_descriptor", "ruby/io.h")
 
 ok = true if RUBY_ENGINE == "ruby" || RUBY_ENGINE == "truffleruby"
 hdr = nil
