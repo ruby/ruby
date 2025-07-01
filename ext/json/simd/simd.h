@@ -162,17 +162,10 @@ static inline TARGET_SSE2 FORCE_INLINE int string_scan_simd_sse2(const char **pt
 #endif /* HAVE_CPUID_H */
 
 static inline SIMD_Implementation find_simd_implementation(void) {
-
-#if defined(__GNUC__ ) || defined(__clang__)
-#ifdef __GNUC__
-    __builtin_cpu_init();
-#endif /* __GNUC__  */
-
     // TODO Revisit. I think the SSE version now only uses SSE2 instructions.
     if (__builtin_cpu_supports("sse2")) {
         return SIMD_SSE2;
     }
-#endif /* __GNUC__ || __clang__*/
 
     return SIMD_NONE;
 }
