@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
 
-  spec.files         = Dir["{doc,lib,misc}/**/{*,.document}"] +
+  spec.files         = Dir.glob("{doc,lib,misc}/**/{*,.document}", base: File.expand_path("..", __FILE__)) +
                        %w[README.md ChangeLog COPYING .document .rdoc_options]
   spec.bindir        = "exe"
   spec.executables   = []
