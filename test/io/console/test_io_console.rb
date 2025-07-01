@@ -7,6 +7,11 @@ rescue LoadError
 end
 
 class TestIO_Console < Test::Unit::TestCase
+  HOST_OS = RbConfig::CONFIG['host_os']
+  private def host_os?(os)
+    HOST_OS =~ os
+  end
+
   begin
     PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   rescue Encoding::CompatibilityError
@@ -26,7 +31,7 @@ class TestIO_Console < Test::Unit::TestCase
   # But it does not occur in `make test-all > /dev/null`, so
   # there should be an additional factor, I guess.
   def set_winsize_setup
-    @old_ttou = trap(:TTOU, 'IGNORE') if RUBY_PLATFORM =~ /freebsd/i
+    @old_ttou = trap(:TTOU, 'IGNORE') if host_os?(/freebsd/)
   end
 
   def set_winsize_teardown
@@ -387,7 +392,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
     # <"25"> expected but was
     # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
-    omit if /freebsd/ =~ RUBY_PLATFORM
+    omit if host_os?(/freebsd/)
 
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
@@ -413,7 +418,7 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
       if cc = ctrl["intr"]
         assert_ctrl("#{cc.ord}", cc, r, w)
         assert_ctrl("#{cc.ord}", cc, r, w)
-        assert_ctrl("Interrupt", cc, r, w) unless /linux/ =~ RUBY_PLATFORM
+        assert_ctrl("Interrupt", cc, r, w) unless host_os?(/linux/)
       end
       if cc = ctrl["dsusp"]
         assert_ctrl("#{cc.ord}", cc, r, w)
