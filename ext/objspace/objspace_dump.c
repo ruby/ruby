@@ -820,6 +820,8 @@ shape_id_i(shape_id_t shape_id, void *data)
         break;
       case SHAPE_OBJ_ID:
         dump_append(dc, ", \"shape_type\":\"OBJ_ID\"");
+      case SHAPE_OLD_ADDRESS:
+        dump_append(dc, ", \"shape_type\":\"OLD_ADDRESS\"");
         break;
     }
 

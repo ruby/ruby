@@ -33,7 +33,7 @@
 #define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
-static ID id_object_id;
+static ID id_object_id, id_old_address;
 
 #define LEAF 0
 #define BLACK 0x0
@@ -308,6 +308,17 @@ shape_tree_mark(void *data)
     }
 }
 
+static inline void
+shape_compact(rb_shape_t *shape)
+{
+    if (shape->edges && !SINGLE_CHILD_P(shape->edges)) {
+        VALUE new_edges = rb_gc_location(shape->edges);
+        if (new_edges != shape->edges) {
+            shape->edges = new_edges;
+        }
+    }
+}
+
 static void
 shape_tree_compact(void *data)
 {
@@ -319,6 +330,12 @@ shape_tree_compact(void *data)
         }
         cursor++;
     }
+}
+
+void
+rb_shape_update_references(shape_id_t shape_id)
+{
+    shape_compact(RSHAPE(shape_id));
 }
 
 static size_t
@@ -504,6 +521,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 
     switch (shape_type) {
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
       case SHAPE_IVAR:
         if (UNLIKELY(shape->next_field_index >= shape->capacity)) {
             RUBY_ASSERT(shape->next_field_index == shape->capacity);
@@ -726,6 +744,21 @@ rb_shape_transition_object_id(VALUE obj)
 }
 
 shape_id_t
+rb_shape_transition_old_address(shape_id_t original_shape_id)
+{
+    RUBY_ASSERT(!rb_shape_has_old_address(original_shape_id));
+
+    bool dont_care;
+    rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_old_address, SHAPE_OLD_ADDRESS, &dont_care, true);
+    if (!shape) {
+        shape = RSHAPE(ROOT_SHAPE_WITH_OLD_ADDRESS);
+    }
+
+    RUBY_ASSERT(shape);
+    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OLD_ADDRESS;
+}
+
+shape_id_t
 rb_shape_object_id(shape_id_t original_shape_id)
 {
     RUBY_ASSERT(rb_shape_has_object_id(original_shape_id));
@@ -739,6 +772,22 @@ rb_shape_object_id(shape_id_t original_shape_id)
     }
 
     return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
+}
+
+shape_id_t
+rb_shape_old_address(shape_id_t original_shape_id)
+{
+    RUBY_ASSERT(rb_shape_has_old_address(original_shape_id));
+
+    rb_shape_t *shape = RSHAPE(original_shape_id);
+    while (shape->type != SHAPE_OLD_ADDRESS) {
+        if (UNLIKELY(shape->parent_id == INVALID_SHAPE_ID)) {
+            rb_bug("Missing old_address in shape tree");
+        }
+        shape = RSHAPE(shape->parent_id);
+    }
+
+    return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OLD_ADDRESS;
 }
 
 static inline shape_id_t
@@ -860,6 +909,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
               case SHAPE_ROOT:
                 return false;
               case SHAPE_OBJ_ID:
+              case SHAPE_OLD_ADDRESS:
                 rb_bug("Ivar should not exist on transition");
             }
         }
@@ -1111,6 +1161,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
         midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
         break;
       case SHAPE_OBJ_ID:
+      case SHAPE_OLD_ADDRESS:
       case SHAPE_ROOT:
         break;
     }
@@ -1242,11 +1293,16 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     rb_shape_t *shape = RSHAPE(shape_id);
 
     bool has_object_id = false;
+    bool has_old_address = false;
+
     while (shape->parent_id != INVALID_SHAPE_ID) {
         if (shape->type == SHAPE_OBJ_ID) {
             has_object_id = true;
-            break;
         }
+        else if (shape->type == SHAPE_OLD_ADDRESS) {
+            has_old_address = true;
+        }
+
         shape = RSHAPE(shape->parent_id);
     }
 
@@ -1263,6 +1319,19 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
 
+    if (rb_shape_has_old_address(shape_id)) {
+        if (!has_old_address) {
+            rb_p(obj);
+            rb_bug("shape_id claim having has_old_address but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+        }
+    }
+    else {
+        if (has_old_address) {
+            rb_p(obj);
+            rb_bug("shape_id claim not having has_old_address but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
+        }
+    }
+
     // Make sure SHAPE_ID_HAS_IVAR_MASK is valid.
     if (rb_shape_too_complex_p(shape_id)) {
         RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
@@ -1272,6 +1341,11 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         if (has_object_id) {
             ivar_count--;
         }
+
+        if (has_old_address) {
+            ivar_count--;
+        }
+
         if (ivar_count) {
             RUBY_ASSERT(shape_id & SHAPE_ID_HAS_IVAR_MASK);
         }
@@ -1543,6 +1617,7 @@ Init_default_shapes(void)
     }
 
     id_object_id = rb_make_internal_id();
+    id_old_address = rb_make_internal_id();
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
@@ -1581,6 +1656,22 @@ Init_default_shapes(void)
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;
+
+    rb_shape_t *root_with_old_address = get_next_shape_internal(root, id_old_address, SHAPE_OLD_ADDRESS, &dontcare, true);
+    RUBY_ASSERT(raw_shape_id(root_with_old_address) == ROOT_SHAPE_WITH_OLD_ADDRESS);
+    RUBY_ASSERT(root_with_old_address->type == SHAPE_OLD_ADDRESS);
+    RUBY_ASSERT(root_with_old_address->edge_name == id_old_address);
+    RUBY_ASSERT(root_with_old_address->next_field_index == 1);
+    RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
+    (void)root_with_old_address;
+
+    rb_shape_t *root_with_obj_id_and_old_address = get_next_shape_internal(root_with_obj_id, id_old_address, SHAPE_OLD_ADDRESS, &dontcare, true);
+    RUBY_ASSERT(raw_shape_id(root_with_obj_id_and_old_address) == ROOT_SHAPE_WITH_OBJ_ID_AND_OLD_ADDRESS);
+    RUBY_ASSERT(root_with_obj_id_and_old_address->type == SHAPE_OLD_ADDRESS);
+    RUBY_ASSERT(root_with_obj_id_and_old_address->edge_name == id_old_address);
+    RUBY_ASSERT(root_with_obj_id_and_old_address->next_field_index == 2);
+    RUBY_ASSERT(!(raw_shape_id(root_with_obj_id_and_old_address) & SHAPE_ID_HAS_IVAR_MASK));
+    (void)root_with_obj_id_and_old_address;
 }
 
 void

@@ -312,17 +312,25 @@ rb_objid_hash(st_index_t index)
 }
 
 static st_index_t
-objid_hash(VALUE obj)
+stable_obj_address_hash(VALUE obj)
 {
-    VALUE object_id = rb_obj_id(obj);
-    if (!FIXNUM_P(object_id))
-        object_id = rb_big_hash(object_id);
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        return (st_index_t)st_index_hash(rb_obj_stable_address(obj));
+    }
+    else {
+        VALUE object_id = rb_obj_id(obj);
+        if (UNLIKELY(!FIXNUM_P(object_id))) {
+            object_id = rb_big_hash(object_id);
+        }
 
 #if SIZEOF_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LONG(object_id));
+        return (st_index_t)NUM2LONG(object_id);
 #elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
-    return (st_index_t)st_index_hash((st_index_t)NUM2LL(object_id));
+        return (st_index_t)NUM2LL(object_id);
+#else
+#error "Unexpected VALUE size"
 #endif
+    }
 }
 
 /**
@@ -363,7 +371,7 @@ objid_hash(VALUE obj)
 VALUE
 rb_obj_hash(VALUE obj)
 {
-    long hnum = any_hash(obj, objid_hash);
+    long hnum = any_hash(obj, stable_obj_address_hash);
     return ST2FIX(hnum);
 }
 

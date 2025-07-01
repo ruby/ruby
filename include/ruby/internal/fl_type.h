@@ -216,12 +216,15 @@ ruby_fl_type {
      */
     RUBY_FL_PROMOTED    = (1<<5),
 
-    /**
-     * This flag is no longer in use
-     *
-     * @internal
-     */
-    RUBY_FL_UNUSED6    = (1<<6),
+
+   /**
+    * This flag is used to mark when an object address has been observed by
+    * `rb_obj_hash` or similar. This indicates to the GC that the old address
+    * must be recorded inside the moved object to keep `rb_obj_hash` stable.
+    *
+    * @internal
+    */
+    RUBY_FL_ADDRESS_SEEN = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
