@@ -373,10 +373,10 @@ defined?(PTY) and defined?(IO.console) and TestIO_Console.class_eval do
     w.flush
     result = EnvUtil.timeout(3) {r.gets}
     if result
-      case cc
-      when 0..31
+      case cc.chr
+      when "\C-A".."\C-_"
         cc = "^" + (cc.ord | 0x40).chr
-      when 127
+      when "\C-?"
         cc = "^?"
       end
       result.sub!(cc, "")
