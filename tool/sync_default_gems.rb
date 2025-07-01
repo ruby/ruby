@@ -276,7 +276,7 @@ module SyncDefaultGems
       rm_rf(%w[lib/erb* test/erb libexec/erb])
       cp_r("#{upstream}/lib/erb.rb", "lib")
       cp_r("#{upstream}/test/erb", "test")
-      cp_r("#{upstream}/erb.gemspec", "lib")
+      cp_r("#{upstream}/erb.gemspec", "lib/erb")
       cp_r("#{upstream}/libexec/erb", "libexec")
     when "pathname"
       rm_rf(%w[ext/pathname test/pathname])
