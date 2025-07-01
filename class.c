@@ -980,20 +980,15 @@ copy_tables(VALUE clone, VALUE orig)
     rb_id_table_free(RCLASS_M_TBL(clone));
     RCLASS_WRITE_M_TBL_EVEN_WHEN_PROMOTED(clone, 0);
     if (!RB_TYPE_P(clone, T_ICLASS)) {
-        st_data_t id;
-
         rb_fields_tbl_copy(clone, orig);
-        CONST_ID(id, "__tmp_classpath__");
-        rb_attr_delete(clone, id);
-        CONST_ID(id, "__classpath__");
-        rb_attr_delete(clone, id);
     }
     if (RCLASS_CONST_TBL(orig)) {
         struct clone_const_arg arg;
         struct rb_id_table *const_tbl;
-        arg.tbl = const_tbl = rb_id_table_create(0);
+        struct rb_id_table *orig_tbl = RCLASS_CONST_TBL(orig);
+        arg.tbl = const_tbl = rb_id_table_create(rb_id_table_size(orig_tbl));
         arg.klass = clone;
-        rb_id_table_foreach(RCLASS_CONST_TBL(orig), clone_const_i, &arg);
+        rb_id_table_foreach(orig_tbl, clone_const_i, &arg);
         RCLASS_WRITE_CONST_TBL(clone, const_tbl, false);
     }
 }
