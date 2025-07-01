@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::mem::take;
-use crate::codegen::local_size_and_idx_to_ep_offset;
-use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE, SIZEOF_VALUE_I32};
+use crate::codegen::{aligned_stack_bytes, local_size_and_idx_to_ep_offset};
+use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
 use crate::{cruby::VALUE};
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
@@ -1812,7 +1812,7 @@ impl Assembler
 
                 if c_stack_size > 0 {
                     asm_comment!(self, "restore C stack pointer");
-                    self.add_into(NATIVE_STACK_PTR, (c_stack_size * SIZEOF_VALUE).into());
+                    self.add_into(NATIVE_STACK_PTR, aligned_stack_bytes(c_stack_size).into());
                 }
 
                 asm_comment!(self, "exit to the interpreter");

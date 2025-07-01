@@ -203,7 +203,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             // Bump the C stack pointer for basic block arguments
             if jit.c_stack_size > 0 {
                 asm_comment!(asm, "bump C stack pointer");
-                let new_sp = asm.sub(NATIVE_STACK_PTR, (jit.c_stack_size * SIZEOF_VALUE).into());
+                let new_sp = asm.sub(NATIVE_STACK_PTR, aligned_stack_bytes(jit.c_stack_size).into());
                 asm.mov(NATIVE_STACK_PTR, new_sp);
             }
         }
@@ -831,7 +831,7 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     // Restore the C stack pointer bumped for basic block arguments
     if jit.c_stack_size > 0 {
         asm_comment!(asm, "restore C stack pointer");
-        let new_sp = asm.add(NATIVE_STACK_PTR, (jit.c_stack_size * SIZEOF_VALUE).into());
+        let new_sp = asm.add(NATIVE_STACK_PTR, aligned_stack_bytes(jit.c_stack_size).into());
         asm.mov(NATIVE_STACK_PTR, new_sp);
     }
 
@@ -1099,6 +1099,19 @@ fn max_num_params(function: &Function) -> usize {
         let block = function.block(block_id);
         block.params().len()
     }).max().unwrap_or(0)
+}
+
+/// Given the number of spill slots needed for a function, return the number of bytes
+/// the function needs to allocate on the stack for the stack frame.
+pub fn aligned_stack_bytes(size: usize) -> usize {
+    // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
+    // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
+    let size = if size % 2 == 0 {
+        size
+    } else {
+        size + 1
+    };
+    size * SIZEOF_VALUE
 }
 
 impl Assembler {
