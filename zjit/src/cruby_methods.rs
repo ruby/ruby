@@ -80,6 +80,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cModule, "===", types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cNilClass, "nil?", types::TrueClassExact, no_gc, leaf, elidable);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs)
