@@ -17412,6 +17412,14 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
             // If we found a label, we need to immediately return to the caller.
             if (pm_symbol_node_label_p(node)) return node;
 
+            // Call nodes (arithmetic operations) are not allowed in patterns
+            if (PM_NODE_TYPE(node) == PM_CALL_NODE) {
+                pm_parser_err_node(parser, node, diag_id);
+                pm_missing_node_t *missing_node = pm_missing_node_create(parser, node->location.start, node->location.end);
+                pm_node_destroy(parser, node);
+                return (pm_node_t *) missing_node;
+            }
+
             // Now that we have a primitive, we need to check if it's part of a range.
             if (accept2(parser, PM_TOKEN_DOT_DOT, PM_TOKEN_DOT_DOT_DOT)) {
                 pm_token_t operator = parser->previous;
