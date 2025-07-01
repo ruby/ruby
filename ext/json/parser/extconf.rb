@@ -1,8 +1,8 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-have_func("rb_enc_raise", "ruby.h")
-have_func("rb_enc_interned_str", "ruby.h")
+have_func("rb_enc_raise", "ruby/encoding.h")
+have_func("rb_enc_interned_str", "ruby/encoding.h")
 
 # checking if String#-@ (str_uminus) dedupes... '
 begin
