@@ -6402,18 +6402,34 @@ mod opt_tests {
     }
 
     #[test]
-    fn test_object_nil_specialized_to_send() {
+    fn test_non_nil_nil_specialized_to_ccall() {
         eval("
-            def test = Object.new.nil?
+            def test = 1.nil?
         ");
         assert_optimized_method_hir("test", expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v3:BasicObject = GetConstantPath 0x1000
-              v4:NilClassExact = Const Value(nil)
-              v11:BasicObject = SendWithoutBlock v3, :new
-              v18:BasicObject = SendWithoutBlock v11, :nil?
-              Return v18
-       "#]]);
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v7:FalseClassExact = CCall nil?@0x1010, v2
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_non_nil_nil_specialized_to_ccall() {
+        eval("
+            def test
+              1.nil?
+              2
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v5:Fixnum[2] = Const Value(2)
+              Return v5
+        "#]]);
     }
 }

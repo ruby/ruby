@@ -844,19 +844,14 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles 'true', %q{
       def test = nil.nil?
       test
-      test
-    }
+    }, insns: [:opt_nil_p]
   end
 
-  def test_obsolete_nil_nil
-    assert_compiles '1', %q{
-      def test
-        nil.nil?
-        1
-      end
+  def test_non_nil_nil
+    assert_compiles 'false', %q{
+      def test = 1.nil?
       test
-      test
-    }
+    }, insns: [:opt_nil_p]
   end
 
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
