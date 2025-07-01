@@ -693,6 +693,40 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 5, num_profiles: 3
   end
 
+  def test_too_many_basic_block_args
+    assert_compiles '55', %q{
+      def test(n1, n2)
+        n3 = 3
+        n4 = 4
+        n5 = 5
+        n6 = 6
+        n7 = 7
+        n8 = 8
+        n9 = 9
+        n10 = 10
+        if n1 < n2
+          n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10
+        end
+      end
+      test(1, 2)
+    }
+  end
+
+  def test_too_many_method_args
+    omit 'CCall with too many arguments is not implemented yet'
+    assert_compiles '55', %q{
+      def foo(n1, n2, n3, n4, n5, n6, n7, n8, n9, n10)
+        n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10
+      end
+
+      def test
+        foo(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+      end
+
+      test
+    }
+  end
+
   def test_opt_aref_with
     assert_compiles ':ok', %q{
       def aref_with(hash) = hash["key"]
