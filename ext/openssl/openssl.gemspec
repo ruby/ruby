@@ -13,7 +13,8 @@ Gem::Specification.new do |spec|
     spec.files       = []
     spec.add_runtime_dependency('jruby-openssl', '~> 0.14')
   else
-    spec.files         = Dir["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md", "BSDL", "COPYING"]
+    spec.files         = Dir.glob(["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md"], base: File.expand_path("..", __FILE__)) +
+                         ["BSDL", "COPYING"]
     spec.require_paths = ["lib"]
     spec.extensions    = ["ext/openssl/extconf.rb"]
   end
