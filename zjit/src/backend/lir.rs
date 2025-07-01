@@ -1523,7 +1523,12 @@ impl Assembler
             // Convert live_ranges to live_regs: the number of live registers at each index
             let mut live_regs: Vec<usize> = vec![];
             for insn_idx in 0..insns.len() {
-                let live_count = live_ranges.iter().filter(|range| range.start() <= insn_idx && insn_idx <= range.end()).count();
+                let live_count = live_ranges.iter().filter(|range|
+                    match (range.start, range.end) {
+                        (Some(start), Some(end)) => start <= insn_idx && insn_idx <= end,
+                        _ => false,
+                    }
+                ).count();
                 live_regs.push(live_count);
             }
 
@@ -1559,7 +1564,8 @@ impl Assembler
                     // If C_RET_REG is in use, move it to another register.
                     // This must happen before last-use registers are deallocated.
                     if let Some(vreg_idx) = pool.vreg_for(&C_RET_REG) {
-                        let new_reg = pool.alloc_reg(vreg_idx).unwrap(); // TODO: support spill
+                        let new_reg = pool.alloc_reg(vreg_idx)
+                            .expect("spilling VReg is not implemented yet, can't evacuate C_RET_REG on CCall"); // TODO: support spilling VReg
                         asm.mov(Opnd::Reg(new_reg), C_RET_OPND);
                         pool.dealloc_reg(&C_RET_REG);
                         reg_mapping[vreg_idx] = Some(new_reg);
