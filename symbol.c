@@ -926,7 +926,7 @@ rb_sym2id(VALUE sym)
     }
     else if (DYNAMIC_SYM_P(sym)) {
         GLOBAL_SYMBOLS_LOCKING(symbols) {
-            sym = dsymbol_check(symbols, sym);
+            RUBY_ASSERT(!rb_objspace_garbage_object_p(sym));
             id = RSYMBOL(sym)->id;
 
             if (UNLIKELY(!(id & ~ID_SCOPE_MASK))) {
