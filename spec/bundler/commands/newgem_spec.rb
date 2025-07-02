@@ -37,6 +37,8 @@ RSpec.describe "bundle gem" do
 
   let(:require_path) { "mygem" }
 
+  let(:require_relative_path) { "mygem" }
+
   let(:minitest_test_file_path) { "test/test_mygem.rb" }
 
   let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
@@ -1499,6 +1501,8 @@ RSpec.describe "bundle gem" do
       end
     end
   end
+
+  include_examples "generating a gem"
 
   context "testing --mit and --coc options against bundle config settings" do
     let(:gem_name) { "test-gem" }
