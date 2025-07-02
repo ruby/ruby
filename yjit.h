@@ -37,7 +37,7 @@ void rb_yjit_collect_binding_alloc(void);
 void rb_yjit_collect_binding_set(void);
 void rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception);
 void rb_yjit_init(bool yjit_enabled);
-void rb_yjit_free_at_exit();
+void rb_yjit_free_at_exit(void);
 void rb_yjit_bop_redefined(int redefined_flag, enum ruby_basic_operators bop);
 void rb_yjit_constant_state_changed(ID id);
 void rb_yjit_iseq_mark(void *payload);
