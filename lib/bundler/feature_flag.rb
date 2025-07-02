@@ -29,7 +29,6 @@ module Bundler
 
     settings_flag(:allow_offline_install) { bundler_4_mode? }
     settings_flag(:cache_all) { bundler_4_mode? }
-    settings_flag(:default_install_uses_path) { bundler_4_mode? }
     settings_flag(:forget_cli_options) { bundler_4_mode? }
     settings_flag(:global_gem_cache) { bundler_4_mode? }
     settings_flag(:lockfile_checksums) { bundler_4_mode? }

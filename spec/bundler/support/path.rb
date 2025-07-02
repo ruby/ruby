@@ -136,7 +136,7 @@ module Spec
     end
 
     def default_bundle_path(*path)
-      if Bundler.feature_flag.default_install_uses_path?
+      if Bundler.feature_flag.bundler_4_mode?
         local_gem_path(*path)
       else
         system_gem_path(*path)

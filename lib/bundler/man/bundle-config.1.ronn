@@ -99,9 +99,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
-* `default_install_uses_path` (`BUNDLE_DEFAULT_INSTALL_USES_PATH`):
-   Whether a `bundle install` without an explicit `--path` argument defaults
-   to installing gems in `.bundle`.
 * `deployment` (`BUNDLE_DEPLOYMENT`):
    Equivalent to setting `frozen` to `true` and `path` to `vendor/bundle`.
 * `disable_checksum_validation` (`BUNDLE_DISABLE_CHECKSUM_VALIDATION`):
@@ -166,7 +163,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `path` (`BUNDLE_PATH`):
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
-   will be installed by `bundle install`. Defaults to `Gem.dir`.
+   will be installed by `bundle install`. Defaults to `.bundle` relative to
+   repository root in Bundler 4, and to the default system path (`Gem.dir`)
+   before Bundler 4.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `path_relative_to_cwd` (`BUNDLE_PATH_RELATIVE_TO_CWD`):

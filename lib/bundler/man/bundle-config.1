@@ -77,9 +77,6 @@ Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle inst
 \fBconsole\fR (\fBBUNDLE_CONSOLE\fR)
 The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
 .TP
-\fBdefault_install_uses_path\fR (\fBBUNDLE_DEFAULT_INSTALL_USES_PATH\fR)
-Whether a \fBbundle install\fR without an explicit \fB\-\-path\fR argument defaults to installing gems in \fB\.bundle\fR\.
-.TP
 \fBdeployment\fR (\fBBUNDLE_DEPLOYMENT\fR)
 Equivalent to setting \fBfrozen\fR to \fBtrue\fR and \fBpath\fR to \fBvendor/bundle\fR\.
 .TP
@@ -144,7 +141,7 @@ Whether Bundler should leave outdated gems unpruned when caching\.
 A space\-separated list of groups to install only gems of the specified groups\.
 .TP
 \fBpath\fR (\fBBUNDLE_PATH\fR)
-The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fBGem\.dir\fR\.
+The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. Defaults to \fB\.bundle\fR relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\.
 .TP
 \fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR)
 Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.

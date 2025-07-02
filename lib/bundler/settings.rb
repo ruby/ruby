@@ -12,7 +12,6 @@ module Bundler
       cache_all
       cache_all_platforms
       clean
-      default_install_uses_path
       deployment
       disable_checksum_validation
       disable_exec_load
@@ -275,7 +274,7 @@ module Bundler
       def use_system_gems?
         return true if system_path
         return false if explicit_path
-        !Bundler.feature_flag.default_install_uses_path?
+        !Bundler.feature_flag.bundler_4_mode?
       end
 
       def base_path
