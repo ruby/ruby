@@ -6,8 +6,8 @@ RSpec.describe "bundle gem" do
     expect(bundled_app("#{gem_name}/README.md")).to exist
     expect(bundled_app("#{gem_name}/Gemfile")).to exist
     expect(bundled_app("#{gem_name}/Rakefile")).to exist
-    expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
-    expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
+    expect(bundled_app("#{gem_name}/lib/#{gem_name}.rb")).to exist
+    expect(bundled_app("#{gem_name}/lib/#{gem_name}/version.rb")).to exist
 
     expect(ignore_paths).to include("bin/")
     expect(ignore_paths).to include("Gemfile")
@@ -34,14 +34,6 @@ RSpec.describe "bundle gem" do
   let(:generated_gemspec) { Bundler.load_gemspec_uncached(bundled_app(gem_name).join("#{gem_name}.gemspec")) }
 
   let(:gem_name) { "mygem" }
-
-  let(:require_path) { "mygem" }
-
-  let(:require_relative_path) { "mygem" }
-
-  let(:minitest_test_file_path) { "test/test_mygem.rb" }
-
-  let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
 
   before do
     git("config --global user.name 'Bundler User'")
@@ -449,9 +441,9 @@ RSpec.describe "bundle gem" do
   shared_examples_for "test framework is absent" do
     it "does not create any test framework files" do
       expect(bundled_app("#{gem_name}/.rspec")).to_not exist
-      expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to_not exist
+      expect(bundled_app("#{gem_name}/spec/#{gem_name}_spec.rb")).to_not exist
       expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to_not exist
-      expect(bundled_app("#{gem_name}/test/#{require_path}.rb")).to_not exist
+      expect(bundled_app("#{gem_name}/test/#{gem_name}.rb")).to_not exist
       expect(bundled_app("#{gem_name}/test/test_helper.rb")).to_not exist
     end
 
@@ -628,6 +620,29 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  it "generates a gem skeleton" do
+    bundle "gem #{gem_name}"
+
+    expect(bundled_app("#{gem_name}/#{gem_name}.gemspec")).to exist
+    expect(bundled_app("#{gem_name}/Gemfile")).to exist
+    expect(bundled_app("#{gem_name}/Rakefile")).to exist
+    expect(bundled_app("#{gem_name}/lib/#{gem_name}.rb")).to exist
+    expect(bundled_app("#{gem_name}/lib/#{gem_name}/version.rb")).to exist
+    expect(bundled_app("#{gem_name}/sig/#{gem_name}.rbs")).to exist
+    expect(bundled_app("#{gem_name}/.gitignore")).to exist
+
+    expect(bundled_app("#{gem_name}/bin/setup")).to exist
+    expect(bundled_app("#{gem_name}/bin/console")).to exist
+
+    unless Gem.win_platform?
+      expect(bundled_app("#{gem_name}/bin/setup")).to be_executable
+      expect(bundled_app("#{gem_name}/bin/console")).to be_executable
+    end
+
+    expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
+    expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
+  end
+
   it "includes bin/ into ignore list" do
     bundle "gem #{gem_name}"
 
@@ -644,6 +659,18 @@ RSpec.describe "bundle gem" do
     bundle "gem #{gem_name}"
 
     expect(ignore_paths).to include(".gitignore")
+  end
+
+  it "starts with version 0.1.0" do
+    bundle "gem #{gem_name}"
+
+    expect(bundled_app("#{gem_name}/lib/#{gem_name}/version.rb").read).to match(/VERSION = "0.1.0"/)
+  end
+
+  it "declare String type for VERSION constant" do
+    bundle "gem #{gem_name}"
+
+    expect(bundled_app("#{gem_name}/sig/#{gem_name}.rbs").read).to match(/VERSION: String/)
   end
 
   context "git config user.{name,email} is set" do
@@ -689,6 +716,97 @@ RSpec.describe "bundle gem" do
     expect(generated_gemspec.required_ruby_version.to_s).to start_with(">=")
   end
 
+  it "does not include the gemspec file in files" do
+    bundle "gem #{gem_name}"
+
+    bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
+
+    expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
+  end
+
+  it "does not include the Gemfile file in files" do
+    bundle "gem #{gem_name}"
+
+    bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
+
+    expect(bundler_gemspec.files).not_to include("Gemfile")
+  end
+
+  it "runs rake without problems" do
+    bundle "gem #{gem_name}"
+
+    system_gems ["rake-#{rake_version}"]
+
+    rakefile = <<~RAKEFILE
+      task :default do
+        puts 'SUCCESS'
+      end
+    RAKEFILE
+    File.open(bundled_app("#{gem_name}/Rakefile"), "w") do |file|
+      file.puts rakefile
+    end
+
+    sys_exec(rake, dir: bundled_app(gem_name))
+    expect(out).to include("SUCCESS")
+  end
+
+  context "--exe parameter set" do
+    before do
+      bundle "gem #{gem_name} --exe"
+    end
+
+    it "builds exe skeleton" do
+      expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
+      unless Gem.win_platform?
+        expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to be_executable
+      end
+    end
+  end
+
+  context "--bin parameter set" do
+    before do
+      bundle "gem #{gem_name} --bin"
+    end
+
+    it "builds exe skeleton" do
+      expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
+    end
+  end
+
+  context "no --test parameter" do
+    before do
+      bundle "gem #{gem_name}"
+    end
+
+    it_behaves_like "test framework is absent"
+  end
+
+  context "--test parameter set to rspec" do
+    before do
+      bundle "gem #{gem_name} --test=rspec"
+    end
+
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/.rspec")).to exist
+      expect(bundled_app("#{gem_name}/spec/#{gem_name}_spec.rb")).to exist
+      expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+    end
+
+    it "includes .rspec and spec/ into ignore list" do
+      expect(ignore_paths).to include(".rspec")
+      expect(ignore_paths).to include("spec/")
+    end
+
+    it "depends on a specific version of rspec in generated Gemfile" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      builder = Bundler::Dsl.new
+      builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+      builder.dependencies
+      rspec_dep = builder.dependencies.find {|d| d.name == "rspec" }
+      expect(rspec_dep).to be_specific
+    end
+  end
+
   context "init_gems_rb setting to true" do
     before do
       bundle "config set init_gems_rb true"
@@ -725,6 +843,79 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  context "gem.test setting set to rspec" do
+    before do
+      bundle "config set gem.test rspec"
+      bundle "gem #{gem_name}"
+    end
+
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/.rspec")).to exist
+      expect(bundled_app("#{gem_name}/spec/#{gem_name}_spec.rb")).to exist
+      expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+    end
+
+    it "includes .rspec and spec/ into ignore list" do
+      expect(ignore_paths).to include(".rspec")
+      expect(ignore_paths).to include("spec/")
+    end
+  end
+
+  context "gem.test setting set to rspec and --test is set to minitest" do
+    before do
+      bundle "config set gem.test rspec"
+      bundle "gem #{gem_name} --test=minitest"
+    end
+
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/test/test_#{gem_name}.rb")).to exist
+      expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
+    end
+
+    it "includes test/ into ignore list" do
+      expect(ignore_paths).to include("test/")
+    end
+  end
+
+  context "--test parameter set to minitest" do
+    before do
+      bundle "gem #{gem_name} --test=minitest"
+    end
+
+    it "depends on a specific version of minitest" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      builder = Bundler::Dsl.new
+      builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+      builder.dependencies
+      minitest_dep = builder.dependencies.find {|d| d.name == "minitest" }
+      expect(minitest_dep).to be_specific
+    end
+
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/test/test_#{gem_name}.rb")).to exist
+      expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
+    end
+
+    it "includes test/ into ignore list" do
+      expect(ignore_paths).to include("test/")
+    end
+
+    it "creates a default rake task to run the test suite" do
+      rakefile = <<~RAKEFILE
+        # frozen_string_literal: true
+
+        require "bundler/gem_tasks"
+        require "minitest/test_task"
+
+        Minitest::TestTask.create
+
+        task default: :test
+      RAKEFILE
+
+      expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+    end
+  end
+
   context "gem.test setting set to minitest" do
     before do
       bundle "config set gem.test minitest"
@@ -747,21 +938,27 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  context "--test parameter set to an invalid value" do
+  context "--test parameter set to test-unit" do
     before do
-      bundle "gem #{gem_name} --test=foo", raise_on_error: false
+      bundle "gem #{gem_name} --test=test-unit"
     end
 
-    it "fails loudly" do
-      expect(last_command).to be_failure
-      expect(err).to match(/Expected '--test' to be one of .*; got foo/)
+    it "depends on a specific version of test-unit" do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+      builder = Bundler::Dsl.new
+      builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
+      builder.dependencies
+      test_unit_dep = builder.dependencies.find {|d| d.name == "test-unit" }
+      expect(test_unit_dep).to be_specific
     end
-  end
 
-  context "gem.test setting set to test-unit" do
-    before do
-      bundle "config set gem.test test-unit"
-      bundle "gem #{gem_name}"
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/test/#{gem_name}_test.rb")).to exist
+      expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
+    end
+
+    it "includes test/ into ignore list" do
+      expect(ignore_paths).to include("test/")
     end
 
     it "creates a default rake task to run the test suite" do
@@ -782,6 +979,88 @@ RSpec.describe "bundle gem" do
 
       expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
     end
+  end
+
+  context "--test parameter set to an invalid value" do
+    before do
+      bundle "gem #{gem_name} --test=foo", raise_on_error: false
+    end
+
+    it "fails loudly" do
+      expect(last_command).to be_failure
+      expect(err).to match(/Expected '--test' to be one of .*; got foo/)
+    end
+  end
+
+  context "gem.test set to rspec and --test with no arguments" do
+    before do
+      bundle "config set gem.test rspec"
+      bundle "gem #{gem_name} --test"
+    end
+
+    it "builds spec skeleton" do
+      expect(bundled_app("#{gem_name}/.rspec")).to exist
+      expect(bundled_app("#{gem_name}/spec/#{gem_name}_spec.rb")).to exist
+      expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
+    end
+
+    it "includes .rspec and spec/ into ignore list" do
+      expect(ignore_paths).to include(".rspec")
+      expect(ignore_paths).to include("spec/")
+    end
+
+    it "hints that --test is already configured" do
+      expect(out).to match("rspec is already configured, ignoring --test flag.")
+    end
+  end
+
+  context "gem.test setting set to false and --test with no arguments", :readline do
+    before do
+      bundle "config set gem.test false"
+      bundle "gem #{gem_name} --test" do |input, _, _|
+        input.puts
+      end
+    end
+
+    it "asks to generate test files" do
+      expect(out).to match("Do you want to generate tests with your gem?")
+    end
+
+    it "hints that the choice will only be applied to the current gem" do
+      expect(out).to match("Your choice will only be applied to this gem.")
+    end
+
+    it_behaves_like "test framework is absent"
+  end
+
+  context "gem.test setting not set and --test with no arguments", :readline do
+    before do
+      global_config "BUNDLE_GEM__TEST" => nil
+      bundle "gem #{gem_name} --test" do |input, _, _|
+        input.puts
+      end
+    end
+
+    it "asks to generate test files" do
+      expect(out).to match("Do you want to generate tests with your gem?")
+    end
+
+    it "hints that the choice will be applied to future bundle gem calls" do
+      hint = "Future `bundle gem` calls will use your choice. " \
+             "This setting can be changed anytime with `bundle config gem.test`."
+      expect(out).to match(hint)
+    end
+
+    it_behaves_like "test framework is absent"
+  end
+
+  context "gem.test setting set to a test framework and --no-test" do
+    before do
+      bundle "config set gem.test rspec"
+      bundle "gem #{gem_name} --no-test"
+    end
+
+    it_behaves_like "test framework is absent"
   end
 
   context "--ci with no argument" do
@@ -1165,52 +1444,16 @@ RSpec.describe "bundle gem" do
     end
   end
 
-  shared_examples_for "generating a gem" do
-    it "generates a gem skeleton" do
+  shared_examples_for "paths that depend on gem name" do
+    it "generates entrypoint, version file and signatures file at the proper path, with the proper content" do
       bundle "gem #{gem_name}"
 
-      expect(bundled_app("#{gem_name}/#{gem_name}.gemspec")).to exist
-      expect(bundled_app("#{gem_name}/Gemfile")).to exist
-      expect(bundled_app("#{gem_name}/Rakefile")).to exist
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb")).to exist
+      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require_relative "#{require_relative_path}/version"})
+      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
+
       expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb")).to exist
       expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs")).to exist
-      expect(bundled_app("#{gem_name}/.gitignore")).to exist
-
-      expect(bundled_app("#{gem_name}/bin/setup")).to exist
-      expect(bundled_app("#{gem_name}/bin/console")).to exist
-
-      unless Gem.win_platform?
-        expect(bundled_app("#{gem_name}/bin/setup")).to be_executable
-        expect(bundled_app("#{gem_name}/bin/console")).to be_executable
-      end
-
-      expect(bundled_app("#{gem_name}/bin/setup").read).to start_with("#!")
-      expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
-    end
-
-    it "starts with version 0.1.0" do
-      bundle "gem #{gem_name}"
-
-      expect(bundled_app("#{gem_name}/lib/#{require_path}/version.rb").read).to match(/VERSION = "0.1.0"/)
-    end
-
-    it "declare String type for VERSION constant" do
-      bundle "gem #{gem_name}"
-
-      expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs").read).to match(/VERSION: String/)
-    end
-
-    it "requires the version file" do
-      bundle "gem #{gem_name}"
-
-      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(%r{require_relative "#{require_relative_path}/version"})
-    end
-
-    it "creates a base error class" do
-      bundle "gem #{gem_name}"
-
-      expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
     end
 
     context "--exe parameter set" do
@@ -1218,14 +1461,8 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --exe"
       end
 
-      it "builds exe skeleton" do
+      it "builds an exe file that requires the proper entrypoint" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
-        unless Gem.win_platform?
-          expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to be_executable
-        end
-      end
-
-      it "requires the main file" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}").read).to match(/require "#{require_path}"/)
       end
     end
@@ -1235,21 +1472,10 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --bin"
       end
 
-      it "builds exe skeleton" do
+      it "builds an exe file that requires the proper entrypoint" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}")).to exist
-      end
-
-      it "requires the main file" do
         expect(bundled_app("#{gem_name}/exe/#{gem_name}").read).to match(/require "#{require_path}"/)
       end
-    end
-
-    context "no --test parameter" do
-      before do
-        bundle "gem #{gem_name}"
-      end
-
-      it_behaves_like "test framework is absent"
     end
 
     context "--test parameter set to rspec" do
@@ -1257,66 +1483,11 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --test=rspec"
       end
 
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/.rspec")).to exist
-        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
+      it "builds a spec helper that requires the proper entrypoint, and a default test in the proper path which fails" do
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
-      end
-
-      it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include(".rspec")
-        expect(ignore_paths).to include("spec/")
-      end
-
-      it "depends on a specific version of rspec in generated Gemfile" do
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        builder = Bundler::Dsl.new
-        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
-        builder.dependencies
-        rspec_dep = builder.dependencies.find {|d| d.name == "rspec" }
-        expect(rspec_dep).to be_specific
-      end
-
-      it "requires the main file" do
         expect(bundled_app("#{gem_name}/spec/spec_helper.rb").read).to include(%(require "#{require_path}"))
-      end
-
-      it "creates a default test which fails" do
-        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb").read).to include("expect(false).to eq(true)")
-      end
-    end
-
-    context "gem.test setting set to rspec" do
-      before do
-        bundle "config set gem.test rspec"
-        bundle "gem #{gem_name}"
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/.rspec")).to exist
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
-        expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
-      end
-
-      it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include(".rspec")
-        expect(ignore_paths).to include("spec/")
-      end
-    end
-
-    context "gem.test setting set to rspec and --test is set to minitest" do
-      before do
-        bundle "config set gem.test rspec"
-        bundle "gem #{gem_name} --test=minitest"
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
-        expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
-      end
-
-      it "includes test/ into ignore list" do
-        expect(ignore_paths).to include("test/")
+        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb").read).to include("expect(false).to eq(true)")
       end
     end
 
@@ -1325,37 +1496,13 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --test=minitest"
       end
 
-      it "depends on a specific version of minitest" do
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        builder = Bundler::Dsl.new
-        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
-        builder.dependencies
-        minitest_dep = builder.dependencies.find {|d| d.name == "minitest" }
-        expect(minitest_dep).to be_specific
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
+      it "builds a test helper that requires the proper entrypoint, and default test file in the proper path that defines the proper test class name, requires helper, and fails" do
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
-      end
-
-      it "includes test/ into ignore list" do
-        expect(ignore_paths).to include("test/")
-      end
-
-      it "requires the main file" do
         expect(bundled_app("#{gem_name}/test/test_helper.rb").read).to include(%(require "#{require_path}"))
-      end
 
-      it "requires 'test_helper'" do
-        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(%(require "test_helper"))
-      end
-
-      it "defines valid test class name" do
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}")).to exist
         expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(minitest_test_class_name)
-      end
-
-      it "creates a default test which fails" do
+        expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include(%(require "test_helper"))
         expect(bundled_app("#{gem_name}/#{minitest_test_file_path}").read).to include("assert false")
       end
     end
@@ -1365,110 +1512,15 @@ RSpec.describe "bundle gem" do
         bundle "gem #{gem_name} --test=test-unit"
       end
 
-      it "depends on a specific version of test-unit" do
-        allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
-        builder = Bundler::Dsl.new
-        builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
-        builder.dependencies
-        test_unit_dep = builder.dependencies.find {|d| d.name == "test-unit" }
-        expect(test_unit_dep).to be_specific
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
+      it "builds a test helper that requires the proper entrypoint, and default test file in the proper path which requires helper and fails" do
         expect(bundled_app("#{gem_name}/test/test_helper.rb")).to exist
-      end
-
-      it "includes test/ into ignore list" do
-        expect(ignore_paths).to include("test/")
-      end
-
-      it "requires the main file" do
         expect(bundled_app("#{gem_name}/test/test_helper.rb").read).to include(%(require "#{require_path}"))
-      end
-
-      it "requires 'test_helper'" do
+        expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb")).to exist
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include(%(require "test_helper"))
-      end
-
-      it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert_equal(\"expected\", \"actual\")")
       end
     end
-
-    context "gem.test set to rspec and --test with no arguments" do
-      before do
-        bundle "config set gem.test rspec"
-        bundle "gem #{gem_name} --test"
-      end
-
-      it "builds spec skeleton" do
-        expect(bundled_app("#{gem_name}/.rspec")).to exist
-        expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb")).to exist
-        expect(bundled_app("#{gem_name}/spec/spec_helper.rb")).to exist
-      end
-
-      it "includes .rspec and spec/ into ignore list" do
-        expect(ignore_paths).to include(".rspec")
-        expect(ignore_paths).to include("spec/")
-      end
-
-      it "hints that --test is already configured" do
-        expect(out).to match("rspec is already configured, ignoring --test flag.")
-      end
-    end
-
-    context "gem.test setting set to false and --test with no arguments", :readline do
-      before do
-        bundle "config set gem.test false"
-        bundle "gem #{gem_name} --test" do |input, _, _|
-          input.puts
-        end
-      end
-
-      it "asks to generate test files" do
-        expect(out).to match("Do you want to generate tests with your gem?")
-      end
-
-      it "hints that the choice will only be applied to the current gem" do
-        expect(out).to match("Your choice will only be applied to this gem.")
-      end
-
-      it_behaves_like "test framework is absent"
-    end
-
-    context "gem.test setting not set and --test with no arguments", :readline do
-      before do
-        global_config "BUNDLE_GEM__TEST" => nil
-        bundle "gem #{gem_name} --test" do |input, _, _|
-          input.puts
-        end
-      end
-
-      it "asks to generate test files" do
-        expect(out).to match("Do you want to generate tests with your gem?")
-      end
-
-      it "hints that the choice will be applied to future bundle gem calls" do
-        hint = "Future `bundle gem` calls will use your choice. " \
-               "This setting can be changed anytime with `bundle config gem.test`."
-        expect(out).to match(hint)
-      end
-
-      it_behaves_like "test framework is absent"
-    end
-
-    context "gem.test setting set to a test framework and --no-test" do
-      before do
-        bundle "config set gem.test rspec"
-        bundle "gem #{gem_name} --no-test"
-      end
-
-      it_behaves_like "test framework is absent"
-    end
   end
-
-  include_examples "generating a gem"
 
   context "with mit option in bundle config settings set to true" do
     before do
@@ -1632,6 +1684,18 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  context "standard gem naming" do
+    let(:require_path) { gem_name }
+
+    let(:require_relative_path) { gem_name }
+
+    let(:minitest_test_file_path) { "test/test_#{gem_name}.rb" }
+
+    let(:minitest_test_class_name) { "class TestMygem < Minitest::Test" }
+
+    include_examples "paths that depend on gem name"
+  end
+
   context "gem naming with underscore" do
     let(:gem_name) { "test_gem" }
 
@@ -1651,7 +1715,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/module TestGem/)
     end
 
-    include_examples "generating a gem"
+    include_examples "paths that depend on gem name"
 
     context "--ext parameter with no value" do
       context "is deprecated" do
@@ -1781,7 +1845,7 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/module Test\n  module Gem/)
     end
 
-    include_examples "generating a gem"
+    include_examples "paths that depend on gem name"
   end
 
   describe "uncommon gem names" do
