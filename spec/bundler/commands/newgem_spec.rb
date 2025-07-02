@@ -190,7 +190,7 @@ RSpec.describe "bundle gem" do
 
       it "generates a gem skeleton with rubocop" do
         gem_skeleton_assertions
-        expect(bundled_app("test-gem/Rakefile")).to read_as(
+        expect(bundled_app("#{gem_name}/Rakefile")).to read_as(
           include("# frozen_string_literal: true").
           and(include('require "rubocop/rake_task"').
           and(include("RuboCop::RakeTask.new").
@@ -227,8 +227,8 @@ RSpec.describe "bundle gem" do
 
       it "generates a gem skeleton without rubocop" do
         gem_skeleton_assertions
-        expect(bundled_app("test-gem/Rakefile")).to read_as(exclude("rubocop"))
-        expect(bundled_app("test-gem/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
+        expect(bundled_app("#{gem_name}/Rakefile")).to read_as(exclude("rubocop"))
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
       end
 
       it "does not include rubocop in generated Gemfile" do
@@ -257,7 +257,7 @@ RSpec.describe "bundle gem" do
 
     it "generates a gem skeleton with rubocop" do
       gem_skeleton_assertions
-      expect(bundled_app("test-gem/Rakefile")).to read_as(
+      expect(bundled_app("#{gem_name}/Rakefile")).to read_as(
         include("# frozen_string_literal: true").
         and(include('require "rubocop/rake_task"').
         and(include("RuboCop::RakeTask.new").
@@ -290,7 +290,7 @@ RSpec.describe "bundle gem" do
 
     it "generates a gem skeleton with standard" do
       gem_skeleton_assertions
-      expect(bundled_app("test-gem/Rakefile")).to read_as(
+      expect(bundled_app("#{gem_name}/Rakefile")).to read_as(
         include('require "standard/rake"').
         and(match(/default:.+:standard/))
       )
@@ -323,8 +323,8 @@ RSpec.describe "bundle gem" do
 
     it "generates a gem skeleton without rubocop" do
       gem_skeleton_assertions
-      expect(bundled_app("test-gem/Rakefile")).to read_as(exclude("rubocop"))
-      expect(bundled_app("test-gem/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
+      expect(bundled_app("#{gem_name}/Rakefile")).to read_as(exclude("rubocop"))
+      expect(bundled_app("#{gem_name}/#{gem_name}.gemspec")).to read_as(exclude("rubocop"))
     end
 
     it "does not include rubocop in generated Gemfile" do
