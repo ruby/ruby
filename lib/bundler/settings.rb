@@ -34,7 +34,6 @@ module Bundler
       lockfile_checksums
       no_install
       no_prune
-      path_relative_to_cwd
       path.system
       plugins
       prefer_patch

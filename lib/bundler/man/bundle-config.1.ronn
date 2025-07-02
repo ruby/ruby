@@ -168,8 +168,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    before Bundler 4.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
-* `path_relative_to_cwd` (`BUNDLE_PATH_RELATIVE_TO_CWD`):
-   Makes `--path` relative to the CWD instead of the `Gemfile`.
 * `plugins` (`BUNDLE_PLUGINS`):
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (BUNDLE_PREFER_PATCH):

@@ -160,9 +160,7 @@ module Bundler
       Bundler.settings.set_command_option_if_given :path, options[:path]
 
       if options["standalone"] && Bundler.settings[:path].nil? && !options["local"]
-        Bundler.settings.temporary(path_relative_to_cwd: false) do
-          Bundler.settings.set_command_option :path, "bundle"
-        end
+        Bundler.settings.set_command_option :path, "bundle"
       end
 
       bin_option = options["binstubs"]
