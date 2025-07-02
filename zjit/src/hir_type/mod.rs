@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
 use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
@@ -197,6 +197,9 @@ impl Type {
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
         }
+        else if val.class_of() == unsafe { rb_cRegexp } {
+            Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
+        }
         else if val.class_of() == unsafe { rb_cSet } {
             Type { bits: bits::SetExact, spec: Specialization::Object(val) }
         }
@@ -292,6 +295,7 @@ impl Type {
         if class == unsafe { rb_cNilClass } { return true; }
         if class == unsafe { rb_cObject } { return true; }
         if class == unsafe { rb_cRange } { return true; }
+        if class == unsafe { rb_cRegexp } { return true; }
         if class == unsafe { rb_cString } { return true; }
         if class == unsafe { rb_cSymbol } { return true; }
         if class == unsafe { rb_cTrueClass } { return true; }

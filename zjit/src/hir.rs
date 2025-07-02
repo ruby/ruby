@@ -6310,4 +6310,17 @@ mod opt_tests {
               Return v7
         "#]]);
     }
+
+    #[test]
+    fn test_regexp_type() {
+        eval("
+            def test = /a/
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+              Return v2
+        "#]]);
+    }
 }

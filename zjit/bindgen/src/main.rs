@@ -188,6 +188,7 @@ fn main() {
         .allowlist_var("rb_cHash")
         .allowlist_var("rb_cSet")
         .allowlist_var("rb_cClass")
+        .allowlist_var("rb_cRegexp")
         .allowlist_var("rb_cISeq")
 
         // From include/ruby/internal/fl_type.h
