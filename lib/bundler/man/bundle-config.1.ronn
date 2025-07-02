@@ -180,9 +180,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):
    The number of times to retry failed network requests. Defaults to `3`.
-* `setup_makes_kernel_gem_public` (`BUNDLE_SETUP_MAKES_KERNEL_GEM_PUBLIC`):
-   Have `Bundler.setup` make the `Kernel#gem` method public, even though
-   RubyGems declares it as private.
 * `shebang` (`BUNDLE_SHEBANG`):
    The program name that should be invoked for generated binstubs. Defaults to
    the ruby install name used to generate the binstub.

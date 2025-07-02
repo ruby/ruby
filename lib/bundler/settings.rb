@@ -37,7 +37,6 @@ module Bundler
       path.system
       plugins
       prefer_patch
-      setup_makes_kernel_gem_public
       silence_deprecations
       silence_root_warning
       update_requires_all_flag

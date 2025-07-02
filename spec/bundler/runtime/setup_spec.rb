@@ -1524,22 +1524,7 @@ end
   end
 
   describe "after setup" do
-    it "allows calling #gem on random objects" do
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-
-      ruby <<-RUBY
-        require "bundler/setup"
-        Object.new.gem "myrack"
-        puts Gem.loaded_specs["myrack"].full_name
-      RUBY
-
-      expect(out).to eq("myrack-1.0.0")
-    end
-
-    it "keeps Kernel#gem private", bundler: "4" do
+    it "keeps Kernel#gem private" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
