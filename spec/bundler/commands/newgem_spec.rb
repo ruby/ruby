@@ -541,8 +541,7 @@ RSpec.describe "bundle gem" do
       build_dummy_irb "9.9.9"
     end
     gems = ["rake-#{rake_version}", "irb-9.9.9"]
-    path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(base: bundled_app("newgem")) : system_gem_path
-    system_gems gems, path: path, gem_repo: gem_repo2
+    system_gems gems, path: system_gem_path, gem_repo: gem_repo2
     bundle "exec rake build", dir: bundled_app("newgem")
 
     expect(stdboth).not_to include("ERROR")
