@@ -628,6 +628,543 @@ RSpec.describe "bundle gem" do
     end
   end
 
+  it "includes bin/ into ignore list" do
+    bundle "gem #{gem_name}"
+
+    expect(ignore_paths).to include("bin/")
+  end
+
+  it "includes Gemfile into ignore list" do
+    bundle "gem #{gem_name}"
+
+    expect(ignore_paths).to include("Gemfile")
+  end
+
+  it "includes .gitignore into ignore list" do
+    bundle "gem #{gem_name}"
+
+    expect(ignore_paths).to include(".gitignore")
+  end
+
+  context "git config user.{name,email} is set" do
+    before do
+      bundle "gem #{gem_name}"
+    end
+
+    it "sets gemspec author to git user.name if available" do
+      expect(generated_gemspec.authors.first).to eq("Bundler User")
+    end
+
+    it "sets gemspec email to git user.email if available" do
+      expect(generated_gemspec.email.first).to eq("user@example.com")
+    end
+  end
+
+  context "git config user.{name,email} is not set" do
+    before do
+      git("config --global --unset user.name")
+      git("config --global --unset user.email")
+      bundle "gem #{gem_name}"
+    end
+
+    it "sets gemspec author to default message if git user.name is not set or empty" do
+      expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
+    end
+
+    it "sets gemspec email to default message if git user.email is not set or empty" do
+      expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
+    end
+  end
+
+  it "sets gemspec metadata['allowed_push_host']" do
+    bundle "gem #{gem_name}"
+
+    expect(generated_gemspec.metadata["allowed_push_host"]).
+      to match(/example\.com/)
+  end
+
+  it "sets a minimum ruby version" do
+    bundle "gem #{gem_name}"
+
+    expect(generated_gemspec.required_ruby_version.to_s).to start_with(">=")
+  end
+
+  context "init_gems_rb setting to true" do
+    before do
+      bundle "config set init_gems_rb true"
+      bundle "gem #{gem_name}"
+    end
+
+    it "generates gems.rb instead of Gemfile" do
+      expect(bundled_app("#{gem_name}/gems.rb")).to exist
+      expect(bundled_app("#{gem_name}/Gemfile")).to_not exist
+    end
+
+    it "includes gems.rb and gems.locked into ignore list" do
+      expect(ignore_paths).to include("gems.rb")
+      expect(ignore_paths).to include("gems.locked")
+      expect(ignore_paths).not_to include("Gemfile")
+    end
+  end
+
+  context "init_gems_rb setting to false" do
+    before do
+      bundle "config set init_gems_rb false"
+      bundle "gem #{gem_name}"
+    end
+
+    it "generates Gemfile instead of gems.rb" do
+      expect(bundled_app("#{gem_name}/gems.rb")).to_not exist
+      expect(bundled_app("#{gem_name}/Gemfile")).to exist
+    end
+
+    it "includes Gemfile into ignore list" do
+      expect(ignore_paths).to include("Gemfile")
+      expect(ignore_paths).not_to include("gems.rb")
+      expect(ignore_paths).not_to include("gems.locked")
+    end
+  end
+
+  context "gem.test setting set to minitest" do
+    before do
+      bundle "config set gem.test minitest"
+      bundle "gem #{gem_name}"
+    end
+
+    it "creates a default rake task to run the test suite" do
+      rakefile = <<~RAKEFILE
+        # frozen_string_literal: true
+
+        require "bundler/gem_tasks"
+        require "minitest/test_task"
+
+        Minitest::TestTask.create
+
+        task default: :test
+      RAKEFILE
+
+      expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+    end
+  end
+
+  context "--test parameter set to an invalid value" do
+    before do
+      bundle "gem #{gem_name} --test=foo", raise_on_error: false
+    end
+
+    it "fails loudly" do
+      expect(last_command).to be_failure
+      expect(err).to match(/Expected '--test' to be one of .*; got foo/)
+    end
+  end
+
+  context "gem.test setting set to test-unit" do
+    before do
+      bundle "config set gem.test test-unit"
+      bundle "gem #{gem_name}"
+    end
+
+    it "creates a default rake task to run the test suite" do
+      rakefile = <<~RAKEFILE
+        # frozen_string_literal: true
+
+        require "bundler/gem_tasks"
+        require "rake/testtask"
+
+        Rake::TestTask.new(:test) do |t|
+          t.libs << "test"
+          t.libs << "lib"
+          t.test_files = FileList["test/**/*_test.rb"]
+        end
+
+        task default: :test
+      RAKEFILE
+
+      expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
+    end
+  end
+
+  context "--ci with no argument" do
+    before do
+      bundle "gem #{gem_name}"
+    end
+
+    it "does not generate any CI config" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+    end
+
+    it "does not add any CI config files into ignore list" do
+      expect(ignore_paths).not_to include(".github/")
+      expect(ignore_paths).not_to include(".gitlab-ci.yml")
+      expect(ignore_paths).not_to include(".circleci/")
+    end
+  end
+
+  context "--ci set to github" do
+    before do
+      bundle "gem #{gem_name} --ci=github"
+    end
+
+    it "generates a GitHub Actions config file" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+    end
+
+    it "includes .github/ into ignore list" do
+      expect(ignore_paths).to include(".github/")
+    end
+  end
+
+  context "--ci set to gitlab" do
+    before do
+      bundle "gem #{gem_name} --ci=gitlab"
+    end
+
+    it "generates a GitLab CI config file" do
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
+    end
+
+    it "includes .gitlab-ci.yml into ignore list" do
+      expect(ignore_paths).to include(".gitlab-ci.yml")
+    end
+  end
+
+  context "--ci set to circle" do
+    before do
+      bundle "gem #{gem_name} --ci=circle"
+    end
+
+    it "generates a CircleCI config file" do
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+    end
+
+    it "includes .circleci/ into ignore list" do
+      expect(ignore_paths).to include(".circleci/")
+    end
+  end
+
+  context "--ci set to an invalid value" do
+    before do
+      bundle "gem #{gem_name} --ci=foo", raise_on_error: false
+    end
+
+    it "fails loudly" do
+      expect(last_command).to be_failure
+      expect(err).to match(/Expected '--ci' to be one of .*; got foo/)
+    end
+  end
+
+  context "gem.ci setting set to none" do
+    it "doesn't generate any CI config" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+    end
+  end
+
+  context "gem.ci setting set to github" do
+    it "generates a GitHub Actions config file" do
+      bundle "config set gem.ci github"
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+    end
+  end
+
+  context "gem.ci setting set to gitlab" do
+    it "generates a GitLab CI config file" do
+      bundle "config set gem.ci gitlab"
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
+    end
+  end
+
+  context "gem.ci setting set to circle" do
+    it "generates a CircleCI config file" do
+      bundle "config set gem.ci circle"
+      bundle "gem #{gem_name}"
+
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
+    end
+  end
+
+  context "gem.ci set to github and --ci with no arguments" do
+    before do
+      bundle "config set gem.ci github"
+      bundle "gem #{gem_name} --ci"
+    end
+
+    it "generates a GitHub Actions config file" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
+    end
+
+    it "hints that --ci is already configured" do
+      expect(out).to match("github is already configured, ignoring --ci flag.")
+    end
+  end
+
+  context "gem.ci setting set to false and --ci with no arguments", :readline do
+    before do
+      bundle "config set gem.ci false"
+      bundle "gem #{gem_name} --ci" do |input, _, _|
+        input.puts "github"
+      end
+    end
+
+    it "asks to setup CI" do
+      expect(out).to match("Do you want to set up continuous integration for your gem?")
+    end
+
+    it "hints that the choice will only be applied to the current gem" do
+      expect(out).to match("Your choice will only be applied to this gem.")
+    end
+  end
+
+  context "gem.ci setting not set and --ci with no arguments", :readline do
+    before do
+      global_config "BUNDLE_GEM__CI" => nil
+      bundle "gem #{gem_name} --ci" do |input, _, _|
+        input.puts "github"
+      end
+    end
+
+    it "asks to setup CI" do
+      expect(out).to match("Do you want to set up continuous integration for your gem?")
+    end
+
+    it "hints that the choice will be applied to future bundle gem calls" do
+      hint = "Future `bundle gem` calls will use your choice. " \
+             "This setting can be changed anytime with `bundle config gem.ci`."
+      expect(out).to match(hint)
+    end
+  end
+
+  context "gem.ci setting set to a CI service and --no-ci" do
+    before do
+      bundle "config set gem.ci github"
+      bundle "gem #{gem_name} --no-ci"
+    end
+
+    it "does not generate any CI config" do
+      expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
+    end
+  end
+
+  context "--linter with no argument" do
+    before do
+      bundle "gem #{gem_name}"
+    end
+
+    it "does not generate any linter config" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+    end
+
+    it "does not add any linter config files into ignore list" do
+      expect(ignore_paths).not_to include(".rubocop.yml")
+      expect(ignore_paths).not_to include(".standard.yml")
+    end
+  end
+
+  context "--linter set to rubocop" do
+    before do
+      bundle "gem #{gem_name} --linter=rubocop"
+    end
+
+    it "generates a RuboCop config" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+      expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+    end
+
+    it "includes .rubocop.yml into ignore list" do
+      expect(ignore_paths).to include(".rubocop.yml")
+      expect(ignore_paths).not_to include(".standard.yml")
+    end
+  end
+
+  context "--linter set to standard" do
+    before do
+      bundle "gem #{gem_name} --linter=standard"
+    end
+
+    it "generates a Standard config" do
+      expect(bundled_app("#{gem_name}/.standard.yml")).to exist
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+    end
+
+    it "includes .standard.yml into ignore list" do
+      expect(ignore_paths).to include(".standard.yml")
+      expect(ignore_paths).not_to include(".rubocop.yml")
+    end
+  end
+
+  context "--linter set to an invalid value" do
+    before do
+      bundle "gem #{gem_name} --linter=foo", raise_on_error: false
+    end
+
+    it "fails loudly" do
+      expect(last_command).to be_failure
+      expect(err).to match(/Expected '--linter' to be one of .*; got foo/)
+    end
+  end
+
+  context "gem.linter setting set to none" do
+    before do
+      bundle "gem #{gem_name}"
+    end
+
+    it "doesn't generate any linter config" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+    end
+
+    it "does not add any linter config files into ignore list" do
+      expect(ignore_paths).not_to include(".rubocop.yml")
+      expect(ignore_paths).not_to include(".standard.yml")
+    end
+  end
+
+  context "gem.linter setting set to rubocop" do
+    before do
+      bundle "config set gem.linter rubocop"
+      bundle "gem #{gem_name}"
+    end
+
+    it "generates a RuboCop config file" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+    end
+
+    it "includes .rubocop.yml into ignore list" do
+      expect(ignore_paths).to include(".rubocop.yml")
+    end
+  end
+
+  context "gem.linter setting set to standard" do
+    before do
+      bundle "config set gem.linter standard"
+      bundle "gem #{gem_name}"
+    end
+
+    it "generates a Standard config file" do
+      expect(bundled_app("#{gem_name}/.standard.yml")).to exist
+    end
+
+    it "includes .standard.yml into ignore list" do
+      expect(ignore_paths).to include(".standard.yml")
+    end
+  end
+
+  context "gem.rubocop setting set to true" do
+    before do
+      global_config "BUNDLE_GEM__LINTER" => nil
+      bundle "config set gem.rubocop true"
+      bundle "gem #{gem_name}"
+    end
+
+    it "generates rubocop config" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+    end
+
+    it "includes .rubocop.yml into ignore list" do
+      expect(ignore_paths).to include(".rubocop.yml")
+    end
+
+    it "unsets gem.rubocop" do
+      bundle "config gem.rubocop"
+      expect(out).to include("You have not configured a value for `gem.rubocop`")
+    end
+
+    it "sets gem.linter=rubocop instead" do
+      bundle "config gem.linter"
+      expect(out).to match(/Set for the current user .*: "rubocop"/)
+    end
+  end
+
+  context "gem.linter set to rubocop and --linter with no arguments" do
+    before do
+      bundle "config set gem.linter rubocop"
+      bundle "gem #{gem_name} --linter"
+    end
+
+    it "generates a RuboCop config file" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
+    end
+
+    it "includes .rubocop.yml into ignore list" do
+      expect(ignore_paths).to include(".rubocop.yml")
+    end
+
+    it "hints that --linter is already configured" do
+      expect(out).to match("rubocop is already configured, ignoring --linter flag.")
+    end
+  end
+
+  context "gem.linter setting set to false and --linter with no arguments", :readline do
+    before do
+      bundle "config set gem.linter false"
+      bundle "gem #{gem_name} --linter" do |input, _, _|
+        input.puts "rubocop"
+      end
+    end
+
+    it "asks to setup a linter" do
+      expect(out).to match("Do you want to add a code linter and formatter to your gem?")
+    end
+
+    it "hints that the choice will only be applied to the current gem" do
+      expect(out).to match("Your choice will only be applied to this gem.")
+    end
+  end
+
+  context "gem.linter setting not set and --linter with no arguments", :readline do
+    before do
+      global_config "BUNDLE_GEM__LINTER" => nil
+      bundle "gem #{gem_name} --linter" do |input, _, _|
+        input.puts "rubocop"
+      end
+    end
+
+    it "asks to setup a linter" do
+      expect(out).to match("Do you want to add a code linter and formatter to your gem?")
+    end
+
+    it "hints that the choice will be applied to future bundle gem calls" do
+      hint = "Future `bundle gem` calls will use your choice. " \
+             "This setting can be changed anytime with `bundle config gem.linter`."
+      expect(out).to match(hint)
+    end
+  end
+
+  context "gem.linter setting set to a linter and --no-linter" do
+    before do
+      bundle "config set gem.linter rubocop"
+      bundle "gem #{gem_name} --no-linter"
+    end
+
+    it "does not generate any linter config" do
+      expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
+      expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
+    end
+
+    it "does not add any linter config files into ignore list" do
+      expect(ignore_paths).not_to include(".rubocop.yml")
+      expect(ignore_paths).not_to include(".standard.yml")
+    end
+  end
+
+  context "--edit option" do
+    it "opens the generated gemspec in the user's text editor" do
+      output = bundle "gem #{gem_name} --edit=echo"
+      gemspec_path = File.join(bundled_app, gem_name, "#{gem_name}.gemspec")
+      expect(output).to include("echo \"#{gemspec_path}\"")
+    end
+  end
+
   shared_examples_for "generating a gem" do
     it "generates a gem skeleton" do
       bundle "gem #{gem_name}"
@@ -652,24 +1189,6 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/bin/console").read).to start_with("#!")
     end
 
-    it "includes bin/ into ignore list" do
-      bundle "gem #{gem_name}"
-
-      expect(ignore_paths).to include("bin/")
-    end
-
-    it "includes Gemfile into ignore list" do
-      bundle "gem #{gem_name}"
-
-      expect(ignore_paths).to include("Gemfile")
-    end
-
-    it "includes .gitignore into ignore list" do
-      bundle "gem #{gem_name}"
-
-      expect(ignore_paths).to include(".gitignore")
-    end
-
     it "starts with version 0.1.0" do
       bundle "gem #{gem_name}"
 
@@ -682,49 +1201,6 @@ RSpec.describe "bundle gem" do
       expect(bundled_app("#{gem_name}/sig/#{require_path}.rbs").read).to match(/VERSION: String/)
     end
 
-    context "git config user.{name,email} is set" do
-      before do
-        bundle "gem #{gem_name}"
-      end
-
-      it "sets gemspec author to git user.name if available" do
-        expect(generated_gemspec.authors.first).to eq("Bundler User")
-      end
-
-      it "sets gemspec email to git user.email if available" do
-        expect(generated_gemspec.email.first).to eq("user@example.com")
-      end
-    end
-
-    context "git config user.{name,email} is not set" do
-      before do
-        git("config --global --unset user.name")
-        git("config --global --unset user.email")
-        bundle "gem #{gem_name}"
-      end
-
-      it "sets gemspec author to default message if git user.name is not set or empty" do
-        expect(generated_gemspec.authors.first).to eq("TODO: Write your name")
-      end
-
-      it "sets gemspec email to default message if git user.email is not set or empty" do
-        expect(generated_gemspec.email.first).to eq("TODO: Write your email address")
-      end
-    end
-
-    it "sets gemspec metadata['allowed_push_host']" do
-      bundle "gem #{gem_name}"
-
-      expect(generated_gemspec.metadata["allowed_push_host"]).
-        to match(/example\.com/)
-    end
-
-    it "sets a minimum ruby version" do
-      bundle "gem #{gem_name}"
-
-      expect(generated_gemspec.required_ruby_version.to_s).to start_with(">=")
-    end
-
     it "requires the version file" do
       bundle "gem #{gem_name}"
 
@@ -735,40 +1211,6 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/lib/#{require_path}.rb").read).to match(/class Error < StandardError; end$/)
-    end
-
-    it "does not include the gemspec file in files" do
-      bundle "gem #{gem_name}"
-
-      bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
-
-      expect(bundler_gemspec.files).not_to include("#{gem_name}.gemspec")
-    end
-
-    it "does not include the Gemfile file in files" do
-      bundle "gem #{gem_name}"
-
-      bundler_gemspec = Bundler::GemHelper.new(bundled_app(gem_name), gem_name).gemspec
-
-      expect(bundler_gemspec.files).not_to include("Gemfile")
-    end
-
-    it "runs rake without problems" do
-      bundle "gem #{gem_name}"
-
-      system_gems ["rake-#{rake_version}"]
-
-      rakefile = <<~RAKEFILE
-        task :default do
-          puts 'SUCCESS'
-        end
-      RAKEFILE
-      File.open(bundled_app("#{gem_name}/Rakefile"), "w") do |file|
-        file.puts rakefile
-      end
-
-      sys_exec(rake, dir: bundled_app(gem_name))
-      expect(out).to include("SUCCESS")
     end
 
     context "--exe parameter set" do
@@ -841,42 +1283,6 @@ RSpec.describe "bundle gem" do
 
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/spec/#{require_path}_spec.rb").read).to include("expect(false).to eq(true)")
-      end
-    end
-
-    context "init_gems_rb setting to true" do
-      before do
-        bundle "config set init_gems_rb true"
-        bundle "gem #{gem_name}"
-      end
-
-      it "generates gems.rb instead of Gemfile" do
-        expect(bundled_app("#{gem_name}/gems.rb")).to exist
-        expect(bundled_app("#{gem_name}/Gemfile")).to_not exist
-      end
-
-      it "includes gems.rb and gems.locked into ignore list" do
-        expect(ignore_paths).to include("gems.rb")
-        expect(ignore_paths).to include("gems.locked")
-        expect(ignore_paths).not_to include("Gemfile")
-      end
-    end
-
-    context "init_gems_rb setting to false" do
-      before do
-        bundle "config set init_gems_rb false"
-        bundle "gem #{gem_name}"
-      end
-
-      it "generates Gemfile instead of gems.rb" do
-        expect(bundled_app("#{gem_name}/gems.rb")).to_not exist
-        expect(bundled_app("#{gem_name}/Gemfile")).to exist
-      end
-
-      it "includes Gemfile into ignore list" do
-        expect(ignore_paths).to include("Gemfile")
-        expect(ignore_paths).not_to include("gems.rb")
-        expect(ignore_paths).not_to include("gems.locked")
       end
     end
 
@@ -954,28 +1360,6 @@ RSpec.describe "bundle gem" do
       end
     end
 
-    context "gem.test setting set to minitest" do
-      before do
-        bundle "config set gem.test minitest"
-        bundle "gem #{gem_name}"
-      end
-
-      it "creates a default rake task to run the test suite" do
-        rakefile = <<~RAKEFILE
-          # frozen_string_literal: true
-
-          require "bundler/gem_tasks"
-          require "minitest/test_task"
-
-          Minitest::TestTask.create
-
-          task default: :test
-        RAKEFILE
-
-        expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
-      end
-    end
-
     context "--test parameter set to test-unit" do
       before do
         bundle "gem #{gem_name} --test=test-unit"
@@ -1009,43 +1393,6 @@ RSpec.describe "bundle gem" do
 
       it "creates a default test which fails" do
         expect(bundled_app("#{gem_name}/test/#{require_path}_test.rb").read).to include("assert_equal(\"expected\", \"actual\")")
-      end
-    end
-
-    context "--test parameter set to an invalid value" do
-      before do
-        bundle "gem #{gem_name} --test=foo", raise_on_error: false
-      end
-
-      it "fails loudly" do
-        expect(last_command).to be_failure
-        expect(err).to match(/Expected '--test' to be one of .*; got foo/)
-      end
-    end
-
-    context "gem.test setting set to test-unit" do
-      before do
-        bundle "config set gem.test test-unit"
-        bundle "gem #{gem_name}"
-      end
-
-      it "creates a default rake task to run the test suite" do
-        rakefile = <<~RAKEFILE
-          # frozen_string_literal: true
-
-          require "bundler/gem_tasks"
-          require "rake/testtask"
-
-          Rake::TestTask.new(:test) do |t|
-            t.libs << "test"
-            t.libs << "lib"
-            t.test_files = FileList["test/**/*_test.rb"]
-          end
-
-          task default: :test
-        RAKEFILE
-
-        expect(bundled_app("#{gem_name}/Rakefile").read).to eq(rakefile)
       end
     end
 
@@ -1118,387 +1465,6 @@ RSpec.describe "bundle gem" do
       end
 
       it_behaves_like "test framework is absent"
-    end
-
-    context "--ci with no argument" do
-      before do
-        bundle "gem #{gem_name}"
-      end
-
-      it "does not generate any CI config" do
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
-      end
-
-      it "does not add any CI config files into ignore list" do
-        expect(ignore_paths).not_to include(".github/")
-        expect(ignore_paths).not_to include(".gitlab-ci.yml")
-        expect(ignore_paths).not_to include(".circleci/")
-      end
-    end
-
-    context "--ci set to github" do
-      before do
-        bundle "gem #{gem_name} --ci=github"
-      end
-
-      it "generates a GitHub Actions config file" do
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
-      end
-
-      it "includes .github/ into ignore list" do
-        expect(ignore_paths).to include(".github/")
-      end
-    end
-
-    context "--ci set to gitlab" do
-      before do
-        bundle "gem #{gem_name} --ci=gitlab"
-      end
-
-      it "generates a GitLab CI config file" do
-        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
-      end
-
-      it "includes .gitlab-ci.yml into ignore list" do
-        expect(ignore_paths).to include(".gitlab-ci.yml")
-      end
-    end
-
-    context "--ci set to circle" do
-      before do
-        bundle "gem #{gem_name} --ci=circle"
-      end
-
-      it "generates a CircleCI config file" do
-        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
-      end
-
-      it "includes .circleci/ into ignore list" do
-        expect(ignore_paths).to include(".circleci/")
-      end
-    end
-
-    context "--ci set to an invalid value" do
-      before do
-        bundle "gem #{gem_name} --ci=foo", raise_on_error: false
-      end
-
-      it "fails loudly" do
-        expect(last_command).to be_failure
-        expect(err).to match(/Expected '--ci' to be one of .*; got foo/)
-      end
-    end
-
-    context "gem.ci setting set to none" do
-      it "doesn't generate any CI config" do
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
-      end
-    end
-
-    context "gem.ci setting set to github" do
-      it "generates a GitHub Actions config file" do
-        bundle "config set gem.ci github"
-        bundle "gem #{gem_name}"
-
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
-      end
-    end
-
-    context "gem.ci setting set to gitlab" do
-      it "generates a GitLab CI config file" do
-        bundle "config set gem.ci gitlab"
-        bundle "gem #{gem_name}"
-
-        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
-      end
-    end
-
-    context "gem.ci setting set to circle" do
-      it "generates a CircleCI config file" do
-        bundle "config set gem.ci circle"
-        bundle "gem #{gem_name}"
-
-        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
-      end
-    end
-
-    context "gem.ci set to github and --ci with no arguments" do
-      before do
-        bundle "config set gem.ci github"
-        bundle "gem #{gem_name} --ci"
-      end
-
-      it "generates a GitHub Actions config file" do
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
-      end
-
-      it "hints that --ci is already configured" do
-        expect(out).to match("github is already configured, ignoring --ci flag.")
-      end
-    end
-
-    context "gem.ci setting set to false and --ci with no arguments", :readline do
-      before do
-        bundle "config set gem.ci false"
-        bundle "gem #{gem_name} --ci" do |input, _, _|
-          input.puts "github"
-        end
-      end
-
-      it "asks to setup CI" do
-        expect(out).to match("Do you want to set up continuous integration for your gem?")
-      end
-
-      it "hints that the choice will only be applied to the current gem" do
-        expect(out).to match("Your choice will only be applied to this gem.")
-      end
-    end
-
-    context "gem.ci setting not set and --ci with no arguments", :readline do
-      before do
-        global_config "BUNDLE_GEM__CI" => nil
-        bundle "gem #{gem_name} --ci" do |input, _, _|
-          input.puts "github"
-        end
-      end
-
-      it "asks to setup CI" do
-        expect(out).to match("Do you want to set up continuous integration for your gem?")
-      end
-
-      it "hints that the choice will be applied to future bundle gem calls" do
-        hint = "Future `bundle gem` calls will use your choice. " \
-               "This setting can be changed anytime with `bundle config gem.ci`."
-        expect(out).to match(hint)
-      end
-    end
-
-    context "gem.ci setting set to a CI service and --no-ci" do
-      before do
-        bundle "config set gem.ci github"
-        bundle "gem #{gem_name} --no-ci"
-      end
-
-      it "does not generate any CI config" do
-        expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.circleci/config.yml")).to_not exist
-      end
-    end
-
-    context "--linter with no argument" do
-      before do
-        bundle "gem #{gem_name}"
-      end
-
-      it "does not generate any linter config" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
-      end
-
-      it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include(".rubocop.yml")
-        expect(ignore_paths).not_to include(".standard.yml")
-      end
-    end
-
-    context "--linter set to rubocop" do
-      before do
-        bundle "gem #{gem_name} --linter=rubocop"
-      end
-
-      it "generates a RuboCop config" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
-      end
-
-      it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include(".rubocop.yml")
-        expect(ignore_paths).not_to include(".standard.yml")
-      end
-    end
-
-    context "--linter set to standard" do
-      before do
-        bundle "gem #{gem_name} --linter=standard"
-      end
-
-      it "generates a Standard config" do
-        expect(bundled_app("#{gem_name}/.standard.yml")).to exist
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
-      end
-
-      it "includes .standard.yml into ignore list" do
-        expect(ignore_paths).to include(".standard.yml")
-        expect(ignore_paths).not_to include(".rubocop.yml")
-      end
-    end
-
-    context "--linter set to an invalid value" do
-      before do
-        bundle "gem #{gem_name} --linter=foo", raise_on_error: false
-      end
-
-      it "fails loudly" do
-        expect(last_command).to be_failure
-        expect(err).to match(/Expected '--linter' to be one of .*; got foo/)
-      end
-    end
-
-    context "gem.linter setting set to none" do
-      before do
-        bundle "gem #{gem_name}"
-      end
-
-      it "doesn't generate any linter config" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
-      end
-
-      it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include(".rubocop.yml")
-        expect(ignore_paths).not_to include(".standard.yml")
-      end
-    end
-
-    context "gem.linter setting set to rubocop" do
-      before do
-        bundle "config set gem.linter rubocop"
-        bundle "gem #{gem_name}"
-      end
-
-      it "generates a RuboCop config file" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-      end
-
-      it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include(".rubocop.yml")
-      end
-    end
-
-    context "gem.linter setting set to standard" do
-      before do
-        bundle "config set gem.linter standard"
-        bundle "gem #{gem_name}"
-      end
-
-      it "generates a Standard config file" do
-        expect(bundled_app("#{gem_name}/.standard.yml")).to exist
-      end
-
-      it "includes .standard.yml into ignore list" do
-        expect(ignore_paths).to include(".standard.yml")
-      end
-    end
-
-    context "gem.rubocop setting set to true" do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => nil
-        bundle "config set gem.rubocop true"
-        bundle "gem #{gem_name}"
-      end
-
-      it "generates rubocop config" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-      end
-
-      it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include(".rubocop.yml")
-      end
-
-      it "unsets gem.rubocop" do
-        bundle "config gem.rubocop"
-        expect(out).to include("You have not configured a value for `gem.rubocop`")
-      end
-
-      it "sets gem.linter=rubocop instead" do
-        bundle "config gem.linter"
-        expect(out).to match(/Set for the current user .*: "rubocop"/)
-      end
-    end
-
-    context "gem.linter set to rubocop and --linter with no arguments" do
-      before do
-        bundle "config set gem.linter rubocop"
-        bundle "gem #{gem_name} --linter"
-      end
-
-      it "generates a RuboCop config file" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to exist
-      end
-
-      it "includes .rubocop.yml into ignore list" do
-        expect(ignore_paths).to include(".rubocop.yml")
-      end
-
-      it "hints that --linter is already configured" do
-        expect(out).to match("rubocop is already configured, ignoring --linter flag.")
-      end
-    end
-
-    context "gem.linter setting set to false and --linter with no arguments", :readline do
-      before do
-        bundle "config set gem.linter false"
-        bundle "gem #{gem_name} --linter" do |input, _, _|
-          input.puts "rubocop"
-        end
-      end
-
-      it "asks to setup a linter" do
-        expect(out).to match("Do you want to add a code linter and formatter to your gem?")
-      end
-
-      it "hints that the choice will only be applied to the current gem" do
-        expect(out).to match("Your choice will only be applied to this gem.")
-      end
-    end
-
-    context "gem.linter setting not set and --linter with no arguments", :readline do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => nil
-        bundle "gem #{gem_name} --linter" do |input, _, _|
-          input.puts "rubocop"
-        end
-      end
-
-      it "asks to setup a linter" do
-        expect(out).to match("Do you want to add a code linter and formatter to your gem?")
-      end
-
-      it "hints that the choice will be applied to future bundle gem calls" do
-        hint = "Future `bundle gem` calls will use your choice. " \
-               "This setting can be changed anytime with `bundle config gem.linter`."
-        expect(out).to match(hint)
-      end
-    end
-
-    context "gem.linter setting set to a linter and --no-linter" do
-      before do
-        bundle "config set gem.linter rubocop"
-        bundle "gem #{gem_name} --no-linter"
-      end
-
-      it "does not generate any linter config" do
-        expect(bundled_app("#{gem_name}/.rubocop.yml")).to_not exist
-        expect(bundled_app("#{gem_name}/.standard.yml")).to_not exist
-      end
-
-      it "does not add any linter config files into ignore list" do
-        expect(ignore_paths).not_to include(".rubocop.yml")
-        expect(ignore_paths).not_to include(".standard.yml")
-      end
-    end
-
-    context "--edit option" do
-      it "opens the generated gemspec in the user's text editor" do
-        output = bundle "gem #{gem_name} --edit=echo"
-        gemspec_path = File.join(bundled_app, gem_name, "#{gem_name}.gemspec")
-        expect(output).to include("echo \"#{gemspec_path}\"")
-      end
     end
   end
 
