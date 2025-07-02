@@ -566,9 +566,7 @@ RCLASSEXT_SET_FIELDS_OBJ(VALUE obj, rb_classext_t *ext, VALUE fields_obj)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
 
-    VALUE old_fields_obj = ext->fields_obj;
-    RUBY_ATOMIC_VALUE_SET(ext->fields_obj, fields_obj);
-    RB_OBJ_WRITTEN(obj, old_fields_obj, fields_obj);
+    RB_OBJ_ATOMIC_WRITE(obj, &ext->fields_obj, fields_obj);
 }
 
 static inline void

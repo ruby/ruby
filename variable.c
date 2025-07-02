@@ -1844,6 +1844,9 @@ imemo_fields_set(VALUE klass, VALUE fields_obj, shape_id_t target_shape_id, ID f
     if (UNLIKELY(rb_shape_too_complex_p(target_shape_id))) {
         if (rb_shape_too_complex_p(current_shape_id)) {
             if (concurrent) {
+                // In multi-ractor case, we must always work on a copy because
+                // even if the field already exist, inserting in a st_table may
+                // cause a rebuild.
                 fields_obj = rb_imemo_fields_clone(fields_obj);
             }
         }
@@ -4680,9 +4683,7 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
         attr_index_t next_capacity = RSHAPE_CAPACITY(next_shape_id);
         attr_index_t current_capacity = RSHAPE_CAPACITY(current_shape_id);
 
-        if (concurrent || next_capacity != current_capacity) {
-            RUBY_ASSERT(concurrent || next_capacity > current_capacity);
-
+        if (next_capacity > current_capacity) {
             // We allocate a new fields_obj even when concurrency isn't a concern
             // so that we're embedded as long as possible.
             fields_obj = imemo_fields_copy_capa(rb_singleton_class(klass), fields_obj, next_capacity);
@@ -4693,7 +4694,18 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
     }
 
     VALUE *fields = rb_imemo_fields_ptr(fields_obj);
-    RB_OBJ_WRITE(fields_obj, &fields[index], val);
+
+    if (concurrent && original_fields_obj == fields_obj) {
+        // In the concurrent case, if we're mutating the existing
+        // fields_obj, we must use an atomic write, because if we're
+        // adding a new field, the shape_id must be written after the field
+        // and if we're updating an existing field, we at least need a relaxed
+        // write to avoid reaping.
+        RB_OBJ_ATOMIC_WRITE(fields_obj, &fields[index], val);
+    }
+    else {
+        RB_OBJ_WRITE(fields_obj, &fields[index], val);
+    }
 
     if (!existing) {
         RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
@@ -4705,9 +4717,12 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 too_complex:
     {
         if (concurrent && fields_obj == original_fields_obj) {
-            // If we're in the multi-ractor mode, we can't directly insert in the table.
+            // In multi-ractor case, we must always work on a copy because
+            // even if the field already exist, inserting in a st_table may
+            // cause a rebuild.
             fields_obj = rb_imemo_fields_clone(fields_obj);
         }
+
         st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
         existing = st_insert(table, (st_data_t)id, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
