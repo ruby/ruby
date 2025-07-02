@@ -54,11 +54,14 @@ init_inetsock_internal(VALUE v)
     int status = 0, local = 0;
     int family = AF_UNSPEC;
     const char *syscall = 0;
+    VALUE resolv_timeout = arg->resolv_timeout;
     VALUE connect_timeout = arg->connect_timeout;
+
+    unsigned int t = NIL_P(resolv_timeout) ? 0 : rsock_value_timeout_to_msec(resolv_timeout);
 
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
                                      family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0);
+                                     (type == INET_SERVER) ? AI_PASSIVE : 0, t);
 
 
     /*
@@ -67,7 +70,7 @@ init_inetsock_internal(VALUE v)
 
     if (type != INET_SERVER && (!NIL_P(arg->local.host) || !NIL_P(arg->local.serv))) {
         arg->local.res = rsock_addrinfo(arg->local.host, arg->local.serv,
-                                        family, SOCK_STREAM, 0);
+                                        family, SOCK_STREAM, 0, 0);
     }
 
     VALUE io = Qnil;
@@ -557,12 +560,15 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
+        unsigned int t = NIL_P(resolv_timeout) ? 0 : rsock_value_timeout_to_msec(resolv_timeout);
+
         arg->remote.res = rsock_addrinfo(
             arg->remote.host,
             arg->remote.serv,
             family,
             SOCK_STREAM,
-            0
+            0,
+            t
         );
 
         if (family == AF_INET6) {
@@ -1237,6 +1243,7 @@ rsock_init_inetsock(VALUE self, VALUE remote_host, VALUE remote_serv, VALUE loca
                     local_serv,
                     AF_UNSPEC,
                     SOCK_STREAM,
+                    0,
                     0
                 );
 
@@ -1492,7 +1499,7 @@ static VALUE
 ip_s_getaddress(VALUE obj, VALUE host)
 {
     union_sockaddr addr;
-    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0);
+    struct rb_addrinfo *res = rsock_addrinfo(host, Qnil, AF_UNSPEC, SOCK_STREAM, 0, 0);
     socklen_t len = res->ai->ai_addrlen;
 
     /* just take the first one */
