@@ -141,8 +141,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with default gems and a lockfile", :ruby_repo do
     it "works and points to the vendored copies, not to the default copies" do
-      base_system_gems "psych", "etc", path: scoped_gem_path(bundled_app("bundle"))
-      base_system_gems "stringio", path: scoped_gem_path(bundled_app("bundle")) if Gem.ruby_version < Gem::Version.new("3.3.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
+      base_system_gems "stringio", "psych", "etc", path: scoped_gem_path(bundled_app("bundle"))
 
       build_gem "foo", "1.0.0", to_system: true, default: true do |s|
         s.add_dependency "bar"
@@ -179,8 +178,7 @@ RSpec.shared_examples "bundle install --standalone" do
 
     it "works for gems with extensions and points to the vendored copies, not to the default copies" do
       simulate_platform "arm64-darwin-23" do
-        base_system_gems "psych", "etc", "shellwords", "open3", path: scoped_gem_path(bundled_app("bundle"))
-        base_system_gems "stringio", path: scoped_gem_path(bundled_app("bundle")) if Gem.ruby_version < Gem::Version.new("3.3.0.a") || Gem.rubygems_version < Gem::Version.new("3.6.0.a")
+        base_system_gems "stringio", "psych", "etc", "shellwords", "open3", path: scoped_gem_path(bundled_app("bundle"))
 
         build_gem "baz", "1.0.0", to_system: true, default: true, &:add_c_extension
 
