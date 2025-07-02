@@ -576,7 +576,10 @@ fn gen_const(val: VALUE) -> lir::Opnd {
 
 /// Compile a basic block argument
 fn gen_param(asm: &mut Assembler, idx: usize) -> lir::Opnd {
+    // Allocate a register or a stack slot
     match param_opnd(idx) {
+        // If it's a register, insert LiveReg instruction to reserve the register
+        // in the register pool for register allocation.
         param @ Opnd::Reg(_) => asm.live_reg_opnd(param),
         param => param,
     }
