@@ -316,7 +316,7 @@ module Spec
         gem_name = g.to_s
         if gem_name.start_with?("bundler")
           version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-          with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
+          with_built_bundler(version, released: options.fetch(:released, false)) {|gem_path| install_gem(gem_path, install_dir, default) }
         elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
           install_gem(gem_name, install_dir, default)
         else
@@ -341,10 +341,10 @@ module Spec
       gem_command "install #{args} '#{path}'"
     end
 
-    def with_built_bundler(version = nil, &block)
+    def with_built_bundler(version = nil, opts = {}, &block)
       require_relative "builders"
 
-      Builders::BundlerBuilder.new(self, "bundler", version)._build(&block)
+      Builders::BundlerBuilder.new(self, "bundler", version)._build(opts, &block)
     end
 
     def with_gem_path_as(path)
