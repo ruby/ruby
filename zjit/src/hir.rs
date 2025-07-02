@@ -6368,4 +6368,68 @@ mod opt_tests {
               Return v2
         "#]]);
     }
+
+    #[test]
+    fn test_nil_nil_specialized_to_ccall() {
+        eval("
+            def test = nil.nil?
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:NilClassExact = Const Value(nil)
+              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
+              v7:TrueClassExact = CCall nil?@0x1010, v2
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_nil_nil_specialized_to_ccall() {
+        eval("
+            def test
+              nil.nil?
+              1
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint MethodRedefined(NilClass@0x1000, nil?@0x1008)
+              v5:Fixnum[1] = Const Value(1)
+              Return v5
+        "#]]);
+    }
+
+    #[test]
+    fn test_non_nil_nil_specialized_to_ccall() {
+        eval("
+            def test = 1.nil?
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              v2:Fixnum[1] = Const Value(1)
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v7:FalseClassExact = CCall nil?@0x1010, v2
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn test_eliminate_non_nil_nil_specialized_to_ccall() {
+        eval("
+            def test
+              1.nil?
+              2
+            end
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint MethodRedefined(Integer@0x1000, nil?@0x1008)
+              v5:Fixnum[2] = Const Value(2)
+              Return v5
+        "#]]);
+    }
 }
