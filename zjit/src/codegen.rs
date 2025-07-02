@@ -1025,7 +1025,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
 
 /// Return an operand we use for the basic block argument at a given index
 fn param_opnd(idx: usize) -> Opnd {
-    // To simplify the implementation, allocate a fixed register for each basic block argument for now.
+    // To simplify the implementation, allocate a fixed register or a stack slot for each basic block argument for now.
     // TODO: Allow allocating arbitrary registers for basic block arguments
     if idx < ALLOC_REGS.len() {
         Opnd::Reg(ALLOC_REGS[idx])
