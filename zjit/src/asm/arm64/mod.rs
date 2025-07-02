@@ -936,7 +936,7 @@ pub fn stur(cb: &mut CodeBlock, rt: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt, rn) {
         (A64Opnd::Reg(rt), A64Opnd::Mem(rn)) => {
             assert!(rn.num_bits == 32 || rn.num_bits == 64);
-            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement to be 9 bits or less");
+            assert!(mem_disp_fits_bits(rn.disp), "Expected displacement {} to be 9 bits or less", rn.disp);
 
             LoadStore::stur(rt.reg_no, rn.base_reg_no, rn.disp as i16, rn.num_bits).into()
         },
