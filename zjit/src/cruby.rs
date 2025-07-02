@@ -218,6 +218,9 @@ pub use rb_vm_get_special_object as vm_get_special_object;
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
+    if opcode >= VM_INSTRUCTION_SIZE.try_into().unwrap() {
+        return "<unknown>".into();
+    }
     unsafe {
         // Look up Ruby's NULL-terminated insn name string
         let op_name = raw_insn_name(VALUE(opcode));
