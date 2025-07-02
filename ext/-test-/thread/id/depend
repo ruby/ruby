@@ -128,6 +128,7 @@ id.o: $(hdrdir)/ruby/internal/intern/re.h
 id.o: $(hdrdir)/ruby/internal/intern/ruby.h
 id.o: $(hdrdir)/ruby/internal/intern/select.h
 id.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+id.o: $(hdrdir)/ruby/internal/intern/set.h
 id.o: $(hdrdir)/ruby/internal/intern/signal.h
 id.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 id.o: $(hdrdir)/ruby/internal/intern/string.h

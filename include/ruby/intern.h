@@ -51,6 +51,7 @@
 #include "ruby/internal/intern/re.h"
 #include "ruby/internal/intern/ruby.h"
 #include "ruby/internal/intern/select.h"
+#include "ruby/internal/intern/set.h"
 #include "ruby/internal/intern/signal.h"
 #include "ruby/internal/intern/sprintf.h"
 #include "ruby/internal/intern/string.h"

@@ -127,6 +127,7 @@ extract.o: $(hdrdir)/ruby/internal/intern/re.h
 extract.o: $(hdrdir)/ruby/internal/intern/ruby.h
 extract.o: $(hdrdir)/ruby/internal/intern/select.h
 extract.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+extract.o: $(hdrdir)/ruby/internal/intern/set.h
 extract.o: $(hdrdir)/ruby/internal/intern/signal.h
 extract.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 extract.o: $(hdrdir)/ruby/internal/intern/string.h

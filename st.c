@@ -2488,7 +2488,7 @@ set_table_size(const struct set_table *tbl)
 
 /* Make table TAB empty.  */
 void
-set_clear(set_table *tab)
+set_table_clear(set_table *tab)
 {
     set_make_tab_empty(tab);
     tab->rebuilds_num++;
@@ -2857,7 +2857,7 @@ set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
 /* Find an entry with KEY in table TAB.  Return non-zero if we found
    it.  */
 int
-set_lookup(set_table *tab, st_data_t key)
+set_table_lookup(set_table *tab, st_data_t key)
 {
     st_index_t bin;
     st_hash_t hash = set_do_hash(key, tab);
@@ -2997,7 +2997,7 @@ set_update_range_for_deleted(set_table *tab, st_index_t n)
 /* Delete entry with KEY from table TAB, and return non-zero.  If
    there is no entry with KEY in the table, return zero.  */
 int
-set_delete(set_table *tab, st_data_t *key)
+set_table_delete(set_table *tab, st_data_t *key)
 {
     set_table_entry *entry;
     st_index_t bin;
@@ -3155,7 +3155,7 @@ set_apply_functor(st_data_t k, st_data_t d, int _)
 }
 
 int
-set_foreach(set_table *tab, set_foreach_callback_func *func, st_data_t arg)
+set_table_foreach(set_table *tab, set_foreach_callback_func *func, st_data_t arg)
 {
     const struct set_functor f = { func, arg };
     return set_general_foreach(tab, set_apply_functor, NULL, (st_data_t)&f, FALSE);

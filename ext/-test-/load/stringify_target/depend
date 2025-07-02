@@ -128,6 +128,7 @@ stringify_target.o: $(hdrdir)/ruby/internal/intern/re.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/ruby.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/select.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+stringify_target.o: $(hdrdir)/ruby/internal/intern/set.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/signal.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 stringify_target.o: $(hdrdir)/ruby/internal/intern/string.h

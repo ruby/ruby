@@ -128,6 +128,7 @@ to_ary_concat.o: $(hdrdir)/ruby/internal/intern/re.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/ruby.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/select.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+to_ary_concat.o: $(hdrdir)/ruby/internal/intern/set.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/signal.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 to_ary_concat.o: $(hdrdir)/ruby/internal/intern/string.h
