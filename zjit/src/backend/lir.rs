@@ -16,6 +16,7 @@ pub const SP: Opnd = _SP;
 
 pub const C_ARG_OPNDS: [Opnd; 6] = _C_ARG_OPNDS;
 pub const C_RET_OPND: Opnd = _C_RET_OPND;
+pub const NATIVE_STACK_PTR: Opnd = _NATIVE_STACK_PTR;
 pub use crate::backend::current::{Reg, C_RET_REG};
 
 // Memory operand base
@@ -277,7 +278,7 @@ pub enum Target
     /// Pointer to a piece of ZJIT-generated code
     CodePtr(CodePtr),
     // Side exit with a counter
-    SideExit { pc: *const VALUE, stack: Vec<Opnd>, locals: Vec<Opnd> },
+    SideExit { pc: *const VALUE, stack: Vec<Opnd>, locals: Vec<Opnd>, c_stack_bytes: usize },
     /// A label within the generated code
     Label(Label),
 }
@@ -1774,7 +1775,7 @@ impl Assembler
         for (idx, target) in targets {
             // Compile a side exit. Note that this is past the split pass and alloc_regs(),
             // so you can't use a VReg or an instruction that needs to be split.
-            if let Target::SideExit { pc, stack, locals } = target {
+            if let Target::SideExit { pc, stack, locals, c_stack_bytes } = target {
                 let side_exit_label = self.new_label("side_exit".into());
                 self.write_label(side_exit_label.clone());
 
@@ -1810,6 +1811,11 @@ impl Assembler
                 let cfp_sp = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
                 self.store(cfp_sp, Opnd::Reg(Assembler::SCRATCH_REG));
 
+                if c_stack_bytes > 0 {
+                    asm_comment!(self, "restore C stack pointer");
+                    self.add_into(NATIVE_STACK_PTR, c_stack_bytes.into());
+                }
+
                 asm_comment!(self, "exit to the interpreter");
                 self.frame_teardown();
                 self.mov(C_RET_OPND, Opnd::UImm(Qundef.as_u64()));
@@ -1840,6 +1846,11 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Add { left, right, out });
         out
+    }
+
+    pub fn add_into(&mut self, left: Opnd, right: Opnd) -> Opnd {
+        self.push_insn(Insn::Add { left, right, out: left });
+        left
     }
 
     #[must_use]
