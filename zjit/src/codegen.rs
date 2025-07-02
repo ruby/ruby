@@ -1103,15 +1103,15 @@ fn max_num_params(function: &Function) -> usize {
 
 /// Given the number of spill slots needed for a function, return the number of bytes
 /// the function needs to allocate on the stack for the stack frame.
-pub fn aligned_stack_bytes(size: usize) -> usize {
+pub fn aligned_stack_bytes(num_slots: usize) -> usize {
     // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
     // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
-    let size = if size % 2 == 0 {
-        size
+    let num_slots = if num_slots % 2 == 0 {
+        num_slots
     } else {
-        size + 1
+        num_slots + 1
     };
-    size * SIZEOF_VALUE
+    num_slots * SIZEOF_VALUE
 }
 
 impl Assembler {
