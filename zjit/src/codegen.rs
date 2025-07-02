@@ -26,19 +26,19 @@ struct JITState {
     /// Branches to an ISEQ that need to be compiled later
     branch_iseqs: Vec<(Rc<Branch>, IseqPtr)>,
 
-    /// The number of basic block arguments we need to spill onto the C stack
-    c_stack_size: usize,
+    /// The number of bytes allocated for basic block arguments spilled onto the C stack
+    c_stack_bytes: usize,
 }
 
 impl JITState {
     /// Create a new JITState instance
-    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize, c_stack_size: usize) -> Self {
+    fn new(iseq: IseqPtr, num_insns: usize, num_blocks: usize, c_stack_bytes: usize) -> Self {
         JITState {
             iseq,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
             branch_iseqs: Vec::default(),
-            c_stack_size,
+            c_stack_bytes,
         }
     }
 
@@ -183,7 +183,8 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr) -> Option<(CodePtr, Vec<(Rc<Branc
 
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Option<(CodePtr, Vec<(Rc<Branch>, IseqPtr)>)> {
-    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), max_num_params(function).saturating_sub(ALLOC_REGS.len()));
+    let c_stack_bytes = aligned_stack_bytes(max_num_params(function).saturating_sub(ALLOC_REGS.len()));
+    let mut jit = JITState::new(iseq, function.num_insns(), function.num_blocks(), c_stack_bytes);
     let mut asm = Assembler::new();
 
     // Compile each basic block
@@ -201,9 +202,9 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
             asm.frame_setup();
 
             // Bump the C stack pointer for basic block arguments
-            if jit.c_stack_size > 0 {
+            if jit.c_stack_bytes > 0 {
                 asm_comment!(asm, "bump C stack pointer");
-                let new_sp = asm.sub(NATIVE_STACK_PTR, aligned_stack_bytes(jit.c_stack_size).into());
+                let new_sp = asm.sub(NATIVE_STACK_PTR, jit.c_stack_bytes.into());
                 asm.mov(NATIVE_STACK_PTR, new_sp);
             }
         }
@@ -829,9 +830,9 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
     asm.mov(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Restore the C stack pointer bumped for basic block arguments
-    if jit.c_stack_size > 0 {
+    if jit.c_stack_bytes > 0 {
         asm_comment!(asm, "restore C stack pointer");
-        let new_sp = asm.add(NATIVE_STACK_PTR, aligned_stack_bytes(jit.c_stack_size).into());
+        let new_sp = asm.add(NATIVE_STACK_PTR, jit.c_stack_bytes.into());
         asm.mov(NATIVE_STACK_PTR, new_sp);
     }
 
@@ -1073,7 +1074,7 @@ fn side_exit(jit: &mut JITState, state: &FrameState) -> Option<Target> {
         pc: state.pc,
         stack,
         locals,
-        c_stack_size: jit.c_stack_size,
+        c_stack_bytes: jit.c_stack_bytes,
     };
     Some(target)
 }
@@ -1103,7 +1104,7 @@ fn max_num_params(function: &Function) -> usize {
 
 /// Given the number of spill slots needed for a function, return the number of bytes
 /// the function needs to allocate on the stack for the stack frame.
-pub fn aligned_stack_bytes(num_slots: usize) -> usize {
+fn aligned_stack_bytes(num_slots: usize) -> usize {
     // Both x86_64 and arm64 require the stack to be aligned to 16 bytes.
     // Since SIZEOF_VALUE is 8 bytes, we need to round up the size to the nearest even number.
     let num_slots = if num_slots % 2 == 0 {
