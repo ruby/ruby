@@ -1504,185 +1504,165 @@ RSpec.describe "bundle gem" do
 
   include_examples "generating a gem"
 
-  context "testing --mit and --coc options against bundle config settings" do
-    let(:gem_name) { "test-gem" }
-
-    let(:require_path) { "test/gem" }
-
-    context "with mit option in bundle config settings set to true" do
-      before do
-        global_config "BUNDLE_GEM__MIT" => "true"
-      end
-      it_behaves_like "--mit flag"
-      it_behaves_like "--no-mit flag"
+  context "with mit option in bundle config settings set to true" do
+    before do
+      global_config "BUNDLE_GEM__MIT" => "true"
     end
+    it_behaves_like "--mit flag"
+    it_behaves_like "--no-mit flag"
+  end
 
-    context "with mit option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__MIT" => "false"
-      end
-      it_behaves_like "--mit flag"
-      it_behaves_like "--no-mit flag"
+  context "with mit option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__MIT" => "false"
     end
+    it_behaves_like "--mit flag"
+    it_behaves_like "--no-mit flag"
+  end
 
-    context "with coc option in bundle config settings set to true" do
-      before do
-        global_config "BUNDLE_GEM__COC" => "true"
-      end
-      it_behaves_like "--coc flag"
-      it_behaves_like "--no-coc flag"
+  context "with coc option in bundle config settings set to true" do
+    before do
+      global_config "BUNDLE_GEM__COC" => "true"
     end
+    it_behaves_like "--coc flag"
+    it_behaves_like "--no-coc flag"
+  end
 
-    context "with coc option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__COC" => "false"
-      end
-      it_behaves_like "--coc flag"
-      it_behaves_like "--no-coc flag"
+  context "with coc option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__COC" => "false"
     end
+    it_behaves_like "--coc flag"
+    it_behaves_like "--no-coc flag"
+  end
 
-    context "with rubocop option in bundle config settings set to true" do
-      before do
-        global_config "BUNDLE_GEM__RUBOCOP" => "true"
-      end
-      it_behaves_like "--linter=rubocop flag"
-      it_behaves_like "--linter=standard flag"
-      it_behaves_like "--no-linter flag"
-      it_behaves_like "--rubocop flag"
-      it_behaves_like "--no-rubocop flag"
+  context "with rubocop option in bundle config settings set to true" do
+    before do
+      global_config "BUNDLE_GEM__RUBOCOP" => "true"
     end
+    it_behaves_like "--linter=rubocop flag"
+    it_behaves_like "--linter=standard flag"
+    it_behaves_like "--no-linter flag"
+    it_behaves_like "--rubocop flag"
+    it_behaves_like "--no-rubocop flag"
+  end
 
-    context "with rubocop option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__RUBOCOP" => "false"
-      end
-      it_behaves_like "--linter=rubocop flag"
-      it_behaves_like "--linter=standard flag"
-      it_behaves_like "--no-linter flag"
-      it_behaves_like "--rubocop flag"
-      it_behaves_like "--no-rubocop flag"
+  context "with rubocop option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__RUBOCOP" => "false"
     end
+    it_behaves_like "--linter=rubocop flag"
+    it_behaves_like "--linter=standard flag"
+    it_behaves_like "--no-linter flag"
+    it_behaves_like "--rubocop flag"
+    it_behaves_like "--no-rubocop flag"
+  end
 
-    context "with linter option in bundle config settings set to rubocop" do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => "rubocop"
-      end
-      it_behaves_like "--linter=rubocop flag"
-      it_behaves_like "--linter=standard flag"
-      it_behaves_like "--no-linter flag"
+  context "with linter option in bundle config settings set to rubocop" do
+    before do
+      global_config "BUNDLE_GEM__LINTER" => "rubocop"
     end
+    it_behaves_like "--linter=rubocop flag"
+    it_behaves_like "--linter=standard flag"
+    it_behaves_like "--no-linter flag"
+  end
 
-    context "with linter option in bundle config settings set to standard" do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => "standard"
-      end
-      it_behaves_like "--linter=rubocop flag"
-      it_behaves_like "--linter=standard flag"
-      it_behaves_like "--no-linter flag"
+  context "with linter option in bundle config settings set to standard" do
+    before do
+      global_config "BUNDLE_GEM__LINTER" => "standard"
     end
+    it_behaves_like "--linter=rubocop flag"
+    it_behaves_like "--linter=standard flag"
+    it_behaves_like "--no-linter flag"
+  end
 
-    context "with linter option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__LINTER" => "false"
-      end
-      it_behaves_like "--linter=rubocop flag"
-      it_behaves_like "--linter=standard flag"
-      it_behaves_like "--no-linter flag"
+  context "with linter option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__LINTER" => "false"
     end
+    it_behaves_like "--linter=rubocop flag"
+    it_behaves_like "--linter=standard flag"
+    it_behaves_like "--no-linter flag"
+  end
 
-    context "with changelog option in bundle config settings set to true" do
-      before do
-        global_config "BUNDLE_GEM__CHANGELOG" => "true"
-      end
-      it_behaves_like "--changelog flag"
-      it_behaves_like "--no-changelog flag"
+  context "with changelog option in bundle config settings set to true" do
+    before do
+      global_config "BUNDLE_GEM__CHANGELOG" => "true"
     end
+    it_behaves_like "--changelog flag"
+    it_behaves_like "--no-changelog flag"
+  end
 
-    context "with changelog option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__CHANGELOG" => "false"
-      end
-      it_behaves_like "--changelog flag"
-      it_behaves_like "--no-changelog flag"
+  context "with changelog option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__CHANGELOG" => "false"
+    end
+    it_behaves_like "--changelog flag"
+    it_behaves_like "--no-changelog flag"
+  end
+
+  context "with bundle option in bundle config settings set to true" do
+    before do
+      global_config "BUNDLE_GEM__BUNDLE" => "true"
+    end
+    it_behaves_like "--bundle flag"
+    it_behaves_like "--no-bundle flag"
+
+    it "runs bundle install" do
+      bundle "gem #{gem_name}"
+      expect(out).to include("Running bundle install in the new gem directory.")
     end
   end
 
-  context "testing --bundle option against git and bundle config settings" do
-    context "with bundle option in bundle config settings set to true" do
-      before do
-        global_config "BUNDLE_GEM__BUNDLE" => "true"
-      end
-      it_behaves_like "--bundle flag"
-      it_behaves_like "--no-bundle flag"
-
-      it "runs bundle install" do
-        bundle "gem #{gem_name}"
-        expect(out).to include("Running bundle install in the new gem directory.")
-      end
+  context "with bundle option in bundle config settings set to false" do
+    before do
+      global_config "BUNDLE_GEM__BUNDLE" => "false"
     end
+    it_behaves_like "--bundle flag"
+    it_behaves_like "--no-bundle flag"
 
-    context "with bundle option in bundle config settings set to false" do
-      before do
-        global_config "BUNDLE_GEM__BUNDLE" => "false"
-      end
-      it_behaves_like "--bundle flag"
-      it_behaves_like "--no-bundle flag"
-
-      it "does not run bundle install" do
-        bundle "gem #{gem_name}"
-        expect(out).to_not include("Running bundle install in the new gem directory.")
-      end
+    it "does not run bundle install" do
+      bundle "gem #{gem_name}"
+      expect(out).to_not include("Running bundle install in the new gem directory.")
     end
   end
 
-  context "testing --github-username option against git and bundle config settings" do
-    context "without git config set" do
+  context "without git config set" do
+    before do
+      git("config --global --unset github.user")
+    end
+    context "with github-username option in bundle config settings set to some value" do
       before do
-        git("config --global --unset github.user")
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
       end
-      context "with github-username option in bundle config settings set to some value" do
-        before do
-          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
-        end
-        it_behaves_like "--github-username option", "gh_user"
-      end
-
-      context "with github-username option in bundle config settings set to false" do
-        before do
-          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
-        end
-        it_behaves_like "--github-username option", "gh_user"
-      end
+      it_behaves_like "--github-username option", "gh_user"
     end
 
-    context "with git config set" do
-      context "with github-username option in bundle config settings set to some value" do
-        before do
-          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
-        end
-        it_behaves_like "--github-username option", "gh_user"
-      end
+    it_behaves_like "github_username configuration"
 
-      context "with github-username option in bundle config settings set to false" do
-        before do
-          global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
-        end
-        it_behaves_like "--github-username option", "gh_user"
+    context "with github-username option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
       end
+      it_behaves_like "--github-username option", "gh_user"
     end
   end
 
-  context "testing github_username bundle config against git config settings" do
-    context "without git config set" do
+  context "with git config set" do
+    context "with github-username option in bundle config settings set to some value" do
       before do
-        git("config --global --unset github.user")
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
       end
-
-      it_behaves_like "github_username configuration"
+      it_behaves_like "--github-username option", "gh_user"
     end
 
-    context "with git config set" do
-      it_behaves_like "github_username configuration"
+    it_behaves_like "github_username configuration"
+
+    context "with github-username option in bundle config settings set to false" do
+      before do
+        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+      end
+      it_behaves_like "--github-username option", "gh_user"
     end
   end
 
