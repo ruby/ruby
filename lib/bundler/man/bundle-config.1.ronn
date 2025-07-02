@@ -79,9 +79,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
 * `allow_offline_install` (`BUNDLE_ALLOW_OFFLINE_INSTALL`):
    Allow Bundler to use cached data when installing without network access.
-* `auto_clean_without_path` (`BUNDLE_AUTO_CLEAN_WITHOUT_PATH`):
-   Automatically run `bundle clean` after installing when an explicit `path`
-   has not been set and Bundler is not installing into the system gems.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):
    Automatically run `bundle install` when gems are missing.
 * `bin` (`BUNDLE_BIN`):
@@ -98,7 +95,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
-   `bundle install`.
+   `bundle install`. Defaults to `true` in Bundler 4, as long as `path` is not
+   explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
 * `default_install_uses_path` (`BUNDLE_DEFAULT_INSTALL_USES_PATH`):

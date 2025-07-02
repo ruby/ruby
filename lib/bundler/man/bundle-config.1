@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-CONFIG" "1" "June 2025" ""
+.TH "BUNDLE\-CONFIG" "1" "July 2025" ""
 .SH "NAME"
 \fBbundle\-config\fR \- Set bundler configuration options
 .SH "SYNOPSIS"
@@ -56,9 +56,6 @@ The following is a list of all configuration keys and their purpose\. You can le
 \fBallow_offline_install\fR (\fBBUNDLE_ALLOW_OFFLINE_INSTALL\fR)
 Allow Bundler to use cached data when installing without network access\.
 .TP
-\fBauto_clean_without_path\fR (\fBBUNDLE_AUTO_CLEAN_WITHOUT_PATH\fR)
-Automatically run \fBbundle clean\fR after installing when an explicit \fBpath\fR has not been set and Bundler is not installing into the system gems\.
-.TP
 \fBauto_install\fR (\fBBUNDLE_AUTO_INSTALL\fR)
 Automatically run \fBbundle install\fR when gems are missing\.
 .TP
@@ -75,7 +72,7 @@ Cache gems for all platforms\.
 The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
 .TP
 \fBclean\fR (\fBBUNDLE_CLEAN\fR)
-Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\.
+Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\. Defaults to \fBtrue\fR in Bundler 4, as long as \fBpath\fR is not explicitly configured\.
 .TP
 \fBconsole\fR (\fBBUNDLE_CONSOLE\fR)
 The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.

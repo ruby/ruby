@@ -28,7 +28,6 @@ module Bundler
     (1..10).each {|v| define_method("bundler_#{v}_mode?") { @major_version >= v } }
 
     settings_flag(:allow_offline_install) { bundler_4_mode? }
-    settings_flag(:auto_clean_without_path) { bundler_4_mode? }
     settings_flag(:cache_all) { bundler_4_mode? }
     settings_flag(:default_install_uses_path) { bundler_4_mode? }
     settings_flag(:forget_cli_options) { bundler_4_mode? }

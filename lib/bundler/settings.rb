@@ -8,7 +8,6 @@ module Bundler
 
     BOOL_KEYS = %w[
       allow_offline_install
-      auto_clean_without_path
       auto_install
       cache_all
       cache_all_platforms
