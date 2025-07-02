@@ -72,6 +72,14 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, _ec: EcPtr) -> *co
         return std::ptr::null();
     }
 
+    // Reject ISEQs with very large temp stacks.
+    // We cannot encode too large offsets to access locals in arm64.
+    let stack_max = unsafe { rb_get_iseq_body_stack_max(iseq) };
+    if stack_max >= i8::MAX as u32 {
+        debug!("ISEQ stack too large: {stack_max}");
+        return std::ptr::null();
+    }
+
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     let code_ptr = with_vm_lock(src_loc!(), || {
