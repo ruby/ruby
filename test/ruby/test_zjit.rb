@@ -693,7 +693,7 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 5, num_profiles: 3
   end
 
-  def test_too_many_basic_block_args
+  def test_spilled_basic_block_args
     assert_compiles '55', %q{
       def test(n1, n2)
         n3 = 3
@@ -712,8 +712,8 @@ class TestZJIT < Test::Unit::TestCase
     }
   end
 
-  def test_too_many_method_args
-    omit 'CCall with too many arguments is not implemented yet'
+  def test_spilled_method_args
+    omit 'CCall with spilled arguments is not implemented yet'
     assert_compiles '55', %q{
       def foo(n1, n2, n3, n4, n5, n6, n7, n8, n9, n10)
         n1 + n2 + n3 + n4 + n5 + n6 + n7 + n8 + n9 + n10
