@@ -1321,9 +1321,16 @@ impl Function {
                             }
                             if def_type == VM_METHOD_TYPE_CFUNC {
                                 let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cme, cd, self_val, args, return_type, elidable, state });
-                                self.make_equal_to(insn_id, replacement);
-                                continue;
+                                let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+                                if cfunc_argc >= 0 {
+                                    // C variadic args (argc==-1) are annoying
+                                    // Ruby variadic args (argc==-2) are annoying
+                                    // Both require passing some kind of array, which we would
+                                    // rather not do yet
+                                    let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cme, cd, self_val, args, return_type, elidable, state });
+                                    self.make_equal_to(insn_id, replacement);
+                                    continue;
+                                }
                             }
                             // Fall through for cases we don't currently optimize
                         }

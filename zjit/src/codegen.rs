@@ -257,7 +257,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::LookupMethod { self_val, method_id, state } => gen_lookup_method(jit, asm, opnd!(self_val), *method_id, &function.frame_state(*state))?,
+        Insn::LookupMethod { .. } => gen_lookup_method(),
         Insn::CallMethod { callable, cd, self_val, args, state } => gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), self_val, args)?,
         Insn::CallCFunc { cfunc, cme, self_val, args, state, .. } => gen_call_cfunc(jit, asm, *cfunc, *cme, opnd!(self_val), args, &function.frame_state(*state))?,
         Insn::CallIseq { iseq, self_val, args, .. } => gen_send_without_block_direct(cb, jit, asm, *iseq, opnd!(self_val), args)?,
@@ -457,27 +457,8 @@ fn gen_if_false(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, branch:
 }
 
 /// Compile a dynamic dispatch without block
-fn gen_lookup_method(
-    jit: &mut JITState,
-    asm: &mut Assembler,
-    recv: Opnd,
-    method_id: ID,
-    state: &FrameState,
-) -> Option<lir::Opnd> {
-    asm_comment!(asm, "get the class of the receiver with rb_obj_class");
-    let class = asm.ccall(rb_obj_class as *const u8, vec![recv]);
-    // TODO(max): Figure out if we need to do anything here to save state to CFP
-    let method_opnd = Opnd::UImm(method_id.0.into());
-    asm_comment!(asm, "call rb_callable_method_entry");
-    let result = asm.ccall(
-        rb_callable_method_entry as *const u8,
-        vec![class, method_opnd],
-    );
-    // rb_callable_method_entry may be NULL, and we don't want to handle method_missing shenanigans
-    // in JIT code.
-    asm.test(result, result);
-    asm.jz(side_exit(jit, state)?);
-    Some(result)
+fn gen_lookup_method() -> lir::Opnd {
+    Opnd::UImm(0)
 }
 
 fn gen_send_without_block(
@@ -575,12 +556,13 @@ fn gen_call_cfunc(
     state: &FrameState,
 ) -> Option<lir::Opnd> {
     let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+    assert!(cfunc_argc >= 0, "C variadic args and Ruby variadic args are not yet supported");
     // NB: The presence of self is assumed (no need for +1).
     if args.len() != cfunc_argc as usize {
         // TODO(max): We should check this at compile-time. If we have an arity mismatch at this
         // point, we should side-exit (we're definitely going to raise) and if we don't, we should
         // not check anything.
-        todo!("Arity mismatch");
+        todo!("Arity mismatch: have {} args but expected is {} args", args.len(), cfunc_argc);
     }
 
     // Save PC for GC
