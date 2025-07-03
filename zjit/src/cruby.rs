@@ -423,7 +423,7 @@ impl VALUE {
     }
 
     pub fn string_p(self) -> bool {
-        self.class_of() == unsafe { rb_cString }
+        self.class_of() == Some(unsafe { rb_cString })
     }
 
     /// Read the flags bits from the RBasic object, then return a Ruby type enum (e.g. RUBY_T_ARRAY)
@@ -440,14 +440,17 @@ impl VALUE {
         flags_bits
     }
 
-    pub fn class_of(self) -> VALUE {
+    pub fn class_of(self) -> Option<VALUE> {
         if !self.special_const_p() {
             let builtin_type = self.builtin_type();
-            assert_ne!(builtin_type, RUBY_T_NONE, "ZJIT should only see live objects");
-            assert_ne!(builtin_type, RUBY_T_MOVED, "ZJIT should only see live objects");
+            if builtin_type == RUBY_T_NONE || builtin_type == RUBY_T_MOVED {
+                // Objects observed during profiling cycles may have been GCed when we look at the
+                // profiling data on compilation. In that case, we can't know what the class was.
+                return None;
+            }
         }
 
-        unsafe { rb_yarv_class_of(self) }
+        Some(unsafe { rb_yarv_class_of(self) })
     }
 
     /// Check if `self` is a subclass of `other`. Assumes both `self` and `other` are class
