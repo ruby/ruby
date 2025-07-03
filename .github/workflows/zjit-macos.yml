@@ -128,6 +128,7 @@ jobs:
           ../src/bootstraptest/test_massign.rb \
           ../src/bootstraptest/test_method.rb \
           ../src/bootstraptest/test_objectspace.rb \
+          ../src/bootstraptest/test_proc.rb \
           ../src/bootstraptest/test_ractor.rb \
           ../src/bootstraptest/test_string.rb \
           ../src/bootstraptest/test_struct.rb \
@@ -138,7 +139,6 @@ jobs:
           ../src/bootstraptest/test_yjit_rust_port.rb
         # ../src/bootstraptest/test_eval.rb \
         # ../src/bootstraptest/test_insns.rb \
-        # ../src/bootstraptest/test_proc.rb \
         # ../src/bootstraptest/test_yjit.rb \
         if: ${{ matrix.test_task == 'btest' }}
 
