@@ -20,13 +20,20 @@ class Downloader
   end
 
   class GNU < self
+    Mirrors = %w[
+      https://raw.githubusercontent.com/autotools-mirror/autoconf/refs/heads/master/build-aux/
+      https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master
+    ]
+
     def self.download(name, *rest, **options)
-      begin
-        super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest, **options)
+      Mirrors.each_with_index do |url, i|
+        super("#{url}/#{name}", name, *rest, **options)
       rescue => e
+        raise if i + 1 == Mirrors.size # no more URLs
         m1, m2 = e.message.split("\n", 2)
         STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
-        super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest, **options)
+      else
+        return
       end
     end
   end
