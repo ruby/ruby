@@ -191,13 +191,7 @@ class Downloader
     mtime = nil
     options = options.merge(http_options(file, since.nil? ? true : since))
     begin
-      data = with_retry(10) do
-        data = url.read(options)
-        if mtime = data.meta["last-modified"]
-          mtime = Time.httpdate(mtime)
-        end
-        data
-      end
+      data = with_retry(10) {url.read(options)}
     rescue OpenURI::HTTPError => http_error
       case http_error.message
       when /^304 / # 304 Not Modified
@@ -225,6 +219,10 @@ class Downloader
         return file.to_path
       end
       raise
+    else
+      if mtime = data.meta["last-modified"]
+        mtime = Time.httpdate(mtime)
+      end
     end
     dest = (cache_save && cache && !cache.exist? ? cache : file)
     dest.parent.mkpath
