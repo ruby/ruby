@@ -2008,7 +2008,7 @@ impl Function {
 
 
     /// Validates the following:
-    /// 1. Basic block jump args match parameter arity. 
+    /// 1. Basic block jump args match parameter arity.
     /// 2. Every terminator must be in the last position.
     /// 3. Every block must have a terminator.
     fn validate_block_terminators_and_jumps(&self) {
@@ -2042,7 +2042,7 @@ impl Function {
     fn validate_block_uses(&self) {
         // TODO(kenjin): Need to validate all uses and kills are properly gen-ed.
     }
-    
+
     /// Run all validation passes we have.
     pub fn validate(&self) {
         self.validate_block_terminators_and_jumps();
