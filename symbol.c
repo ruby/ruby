@@ -1208,13 +1208,7 @@ rb_check_symbol(volatile VALUE *namep)
         return name;
     }
     else if (DYNAMIC_SYM_P(name)) {
-        if (!SYMBOL_PINNED_P(name)) {
-            GLOBAL_SYMBOLS_LOCKING(symbols) {
-                name = dsymbol_check(symbols, name);
-            }
-
-            *namep = name;
-        }
+        RUBY_ASSERT(!rb_objspace_garbage_object_p(name));
         return name;
     }
     else if (!RB_TYPE_P(name, T_STRING)) {
