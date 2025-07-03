@@ -1297,7 +1297,7 @@ impl Assembler
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Option<(CodePtr, Vec<u32>)> {
         let asm = self.arm64_split();
-        let mut asm = asm.alloc_regs(regs);
+        let mut asm = asm.alloc_regs(regs)?;
         asm.compile_side_exits()?;
 
         // Create label instances in the code block
