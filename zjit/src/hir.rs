@@ -3130,6 +3130,72 @@ mod rpo_tests {
 }
 
 #[cfg(test)]
+mod validation_tests {
+    use super::*;
+
+    #[track_caller]
+    fn assert_matches_err(res: Result<(), ValidationError>, expected: ValidationError) {
+        match res {
+            Err(validation_err) => {
+                assert_eq!(validation_err, expected);
+            }
+            Ok(_) => assert!(false, "Expected validation error"),
+        }
+    }
+
+    #[test]
+    fn one_block_no_terminator() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        assert_matches_err(function.validate(), ValidationError::BlockHasNoTerminator(format!("{:?}", function), entry));
+    }
+
+    #[test]
+    fn one_block_terminator_not_at_end() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let insn_id = function.push_insn(entry, Insn::Return { val });
+        function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        assert_matches_err(function.validate(), ValidationError::TerminatorNotAtEnd(format!("{:?}", function), entry, insn_id, 1));
+    }
+
+    #[test]
+    fn iftrue_mismatch_args() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let side = function.new_block();
+        let exit = function.new_block();
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
+    }
+
+    #[test]
+    fn iffalse_mismatch_args() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let side = function.new_block();
+        let exit = function.new_block();
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
+    }
+
+    #[test]
+    fn jump_mismatch_args() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let side = function.new_block();
+        let exit = function.new_block();
+        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
+        assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(format!("{:?}", function), entry, 0, 3));
+    }
+}
+
+#[cfg(test)]
 mod infer_tests {
     use super::*;
 
