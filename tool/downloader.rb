@@ -1,41 +1,12 @@
 # Used by configure and make to download or update mirrored Ruby and GCC
-# files. This will use HTTPS if possible, falling back to HTTP.
+# files.
 
 # -*- frozen-string-literal: true -*-
 
 require 'fileutils'
 require 'open-uri'
 require 'pathname'
-begin
-  require 'net/https'
-rescue LoadError
-  https = 'http'
-else
-  https = 'https'
-
-  # open-uri of ruby 2.2.0 accepts an array of PEMs as ssl_ca_cert, but old
-  # versions do not.  so, patching OpenSSL::X509::Store#add_file instead.
-  class OpenSSL::X509::Store
-    alias orig_add_file add_file
-    def add_file(pems)
-      Array(pems).each do |pem|
-        if File.directory?(pem)
-          add_path pem
-        else
-          orig_add_file pem
-        end
-      end
-    end
-  end
-  # since open-uri internally checks ssl_ca_cert using File.directory?,
-  # allow to accept an array.
-  class <<File
-    alias orig_directory? directory?
-    def File.directory? files
-      files.is_a?(Array) ? false : orig_directory?(files)
-    end
-  end
-end
+require 'net/https'
 
 class Downloader
   def self.find(dlname)
@@ -44,34 +15,18 @@ class Downloader
     end
   end
 
-  def self.https=(https)
-    @@https = https
-  end
-
-  def self.https?
-    @@https == 'https'
-  end
-
-  def self.https
-    @@https
-  end
-
   def self.get_option(argv, options)
     false
   end
 
   class GNU < self
     def self.download(name, *rest, **options)
-      if https?
-        begin
-          super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest, **options)
-        rescue => e
-          m1, m2 = e.message.split("\n", 2)
-          STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
-          super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest, **options)
-        end
-      else
-        super("https://repo.or.cz/official-gcc.git/blob_plain/HEAD:/#{name}", name, *rest, **options)
+      begin
+        super("https://cdn.jsdelivr.net/gh/gcc-mirror/gcc@master/#{name}", name, *rest, **options)
+      rescue => e
+        m1, m2 = e.message.split("\n", 2)
+        STDERR.puts "Download failed (#{m1}), try another URL\n#{m2}"
+        super("https://raw.githubusercontent.com/gcc-mirror/gcc/master/#{name}", name, *rest, **options)
       end
     end
   end
@@ -221,11 +176,6 @@ class Downloader
     end
     if link_cache(cache, file, name, verbose: verbose)
       return file.to_path
-    end
-    if !https? and URI::HTTPS === url
-      warn "*** using http instead of https ***"
-      url.scheme = 'http'
-      url = URI(url.to_s)
     end
     if verbose
       $stdout.print "downloading #{name} ... "
@@ -385,8 +335,6 @@ class Downloader
   end
   private_class_method :with_retry
 end
-
-Downloader.https = https.freeze
 
 if $0 == __FILE__
   since = true
