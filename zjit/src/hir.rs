@@ -4051,10 +4051,10 @@ mod tests {
         assert_method_hir("test",  expect![[r#"
             fn test:
             bb0(v0:BasicObject, v1:BasicObject):
-              v3:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v3:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
               v5:HashExact = NewHash
               v7:BasicObject = SendWithoutBlock v3, :core#hash_merge_kwd, v5, v1
-              v8:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v8:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
               v9:StaticSymbol[:b] = Const Value(VALUE(0x1008))
               v10:Fixnum[1] = Const Value(1)
               v12:BasicObject = SendWithoutBlock v8, :core#hash_merge_ptr, v7, v9, v10
@@ -4503,7 +4503,7 @@ mod tests {
         assert_method_hir_with_opcode("test", YARVINSN_putspecialobject, expect![[r#"
             fn test:
             bb0(v0:BasicObject):
-              v2:BasicObject[VMFrozenCore] = Const Value(VALUE(0x1000))
+              v2:ClassExact[VMFrozenCore] = Const Value(VALUE(0x1000))
               v3:BasicObject = PutSpecialObject CBase
               v4:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
               v5:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
@@ -5732,6 +5732,69 @@ mod opt_tests {
     }
 
     #[test]
+    fn normal_class_type_inference() {
+        eval("
+            class C; end
+            def test = C
+            test # Warm the constant cache
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, C)
+              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              Return v7
+        "#]]);
+    }
+
+    #[test]
+    fn core_classes_type_inference() {
+        eval("
+            def test = [String, Class, Module, BasicObject]
+            test # Warm the constant cache
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, String)
+              v15:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1010, Class)
+              v18:ClassExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1020, Module)
+              v21:ClassExact[VALUE(0x1028)] = Const Value(VALUE(0x1028))
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1030, BasicObject)
+              v24:ClassExact[VALUE(0x1038)] = Const Value(VALUE(0x1038))
+              v11:ArrayExact = NewArray v15, v18, v21, v24
+              Return v11
+        "#]]);
+    }
+
+    #[test]
+    fn module_instances_not_class_exact() {
+        eval("
+            def test = [Enumerable, Kernel]
+            test # Warm the constant cache
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject):
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1000, Enumerable)
+              v11:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              PatchPoint SingleRactorMode
+              PatchPoint StableConstantNames(0x1010, Kernel)
+              v14:BasicObject[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              v7:ArrayExact = NewArray v11, v14
+              Return v7
+        "#]]);
+    }
+
+    #[test]
     fn eliminate_array_size() {
         eval("
             def test
@@ -5880,7 +5943,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Foo::Bar::C)
-              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
@@ -5897,7 +5960,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v20:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v20:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v11:BasicObject = SendWithoutBlock v20, :new
               Return v11
@@ -5920,7 +5983,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, C)
-              v22:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v22:ClassExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:NilClassExact = Const Value(nil)
               v5:Fixnum[1] = Const Value(1)
               v13:BasicObject = SendWithoutBlock v22, :new, v5
