@@ -421,7 +421,7 @@ pub enum Insn {
     /// Call the given ISEQ.
     CallIseq { iseq: IseqPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
     /// Call the given CFunc.
-    CallCFunc { cfunc: CFuncPtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
+    CallCFunc { cfunc: CFuncPtr, cme: CmePtr, cd: CallDataPtr, self_val: InsnId, args: Vec<InsnId>, return_type: Type, elidable: bool, state: InsnId },
 
     /// Control flow instructions
     Return { val: InsnId },
@@ -998,8 +998,9 @@ impl Function {
                 elidable,
                 state: find!(state),
             },
-            &CallCFunc { cfunc, self_val, cd, ref args, return_type, elidable, state } => CallCFunc {
+            &CallCFunc { cfunc, cme, self_val, cd, ref args, return_type, elidable, state } => CallCFunc {
                 cfunc,
+                cme,
                 self_val: find!(self_val),
                 cd,
                 args: args.iter().map(|arg| find!(*arg)).collect(),
@@ -1320,7 +1321,7 @@ impl Function {
                             }
                             if def_type == VM_METHOD_TYPE_CFUNC {
                                 let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cd, self_val, args, return_type, elidable, state });
+                                let replacement = self.push_insn(block, Insn::CallCFunc { cfunc, cme, cd, self_val, args, return_type, elidable, state });
                                 self.make_equal_to(insn_id, replacement);
                                 continue;
                             }
