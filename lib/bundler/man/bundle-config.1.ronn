@@ -144,8 +144,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    will search up from the current working directory until it finds a
    `Gemfile`.
 * `global_gem_cache` (`BUNDLE_GLOBAL_GEM_CACHE`):
-   Whether Bundler should cache all gems globally, rather than locally to the
-   configured installation path.
+   Whether Bundler should cache all gems and compiled extensions globally,
+   rather than locally to the configured installation path.
 * `ignore_funding_requests` (`BUNDLE_IGNORE_FUNDING_REQUESTS`):
    When set, no funding requests will be printed.
 * `ignore_messages` (`BUNDLE_IGNORE_MESSAGES`):
