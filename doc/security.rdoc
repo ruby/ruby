@@ -53,9 +53,8 @@ method, variable and constant names. The reason for this is that symbols are
 simply integers with names attached to them, so they are faster to look up in
 hashtables.
 
-Starting in version 2.2, most symbols can be garbage collected; these are
-called _mortal_ symbols. Most symbols you create (e.g. by calling
-+to_sym+) are mortal.
+Most symbols can be garbage collected; these are called _mortal_
+symbols. Most symbols you create (e.g. by calling +to_sym+) are mortal.
 
 _Immortal_ symbols on the other hand will never be garbage collected.
 They are created when modifying code:
@@ -64,8 +63,6 @@ They are created when modifying code:
 * creating a variable or constant (e.g. with +const_set+)
 C extensions that have not been updated and are still calling +SYM2ID+
 will create immortal symbols.
-Bugs in 2.2.0: +send+ and +__send__+ also created immortal symbols,
-and calling methods with keyword arguments could also create some.
 
 Don't create immortal symbols from user inputs. Otherwise, this would
 allow a user to mount a denial of service attack against your application by
