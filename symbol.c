@@ -173,8 +173,21 @@ rb_id_attrset(ID id)
         }
     }
 
-    /* make new symbol and ID */
-    if (!(str = lookup_id_str(id))) {
+    bool error = false;
+    GLOBAL_SYMBOLS_LOCKING(symbols) {
+        /* make new symbol and ID */
+        if ((str = lookup_id_str(id))) {
+            str = rb_str_dup(str);
+            rb_str_cat(str, "=", 1);
+            sym = lookup_str_sym(str);
+            id = sym ? rb_sym2id(sym) : intern_str(str, 1);
+        }
+        else {
+            error = true;
+        }
+    }
+
+    if (error) {
         RBIMPL_ATTR_NONSTRING_ARRAY() static const char id_types[][8] = {
             "local",
             "instance",
@@ -188,10 +201,7 @@ rb_id_attrset(ID id)
         rb_name_error(id, "cannot make anonymous %.*s ID %"PRIxVALUE" attrset",
                       (int)sizeof(id_types[0]), id_types[scope], (VALUE)id);
     }
-    str = rb_str_dup(str);
-    rb_str_cat(str, "=", 1);
-    sym = lookup_str_sym(str);
-    id = sym ? rb_sym2id(sym) : intern_str(str, 1);
+
     return id;
 }
 
@@ -765,10 +775,20 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
     struct RString fake_str;
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
     OBJ_FREEZE(str);
-    sym = lookup_str_sym(str);
-    if (sym) return rb_sym2id(sym);
-    str = rb_enc_str_new(name, len, enc); /* make true string */
-    return intern_str(str, 1);
+    ID id;
+
+    GLOBAL_SYMBOLS_LOCKING(symbols) {
+        sym = lookup_str_sym(str);
+        if (sym) {
+            id = rb_sym2id(sym);
+        }
+        else {
+            str = rb_enc_str_new(name, len, enc); /* make true string */
+            id = intern_str(str, 1);
+        }
+    }
+
+    return id;
 }
 
 static ID
@@ -801,6 +821,8 @@ next_id_base(void)
 static ID
 intern_str(VALUE str, int mutable)
 {
+    ASSERT_vm_locking();
+
     ID id;
     ID nid;
 
@@ -836,13 +858,18 @@ rb_intern(const char *name)
 ID
 rb_intern_str(VALUE str)
 {
-    VALUE sym = lookup_str_sym(str);
-
-    if (sym) {
-        return SYM2ID(sym);
+    ID id;
+    GLOBAL_SYMBOLS_LOCKING(symbols) {
+        VALUE sym = lookup_str_sym(str);
+        if (sym) {
+            id = SYM2ID(sym);
+        }
+        else {
+            id = intern_str(str, 0);
+        }
     }
 
-    return intern_str(str, 0);
+    return id;
 }
 
 void
