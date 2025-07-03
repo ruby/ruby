@@ -2005,6 +2005,49 @@ impl Function {
             None => {},
         }
     }
+
+
+    /// Validates the following:
+    /// 1. Basic block jump args match parameter arity. 
+    /// 2. Every terminator must be in the last position.
+    /// 3. Every block must have a terminator.
+    fn validate_block_terminators_and_jumps(&self) {
+        for block_id in self.rpo() {
+            let mut block_has_terminator = false;
+            let insns = &self.blocks[block_id.0].insns;
+            for (idx, insn_id) in insns.iter().enumerate() {
+                let insn = self.find(*insn_id);
+                if !insn.is_terminator() {
+                    continue;
+                }
+                if let Insn::Jump(BranchEdge{target, args}) = &insn {
+                    let target_block = &self.blocks[target.0];
+                    let target_len = target_block.params.len();
+                    let args_len = args.len();
+                    if target_len != args_len {
+                        panic!("Block jump target != number of incoming arguments: {} != {}.", target_len, args_len);
+                    }
+                }
+                block_has_terminator = true;
+                if idx != insns.len() - 1 {
+                    panic!("Terminator {} not at last position in block {}.", insn, block_id);
+                }
+            }
+            if !block_has_terminator {
+                panic!("Block ID has no terminator: {}", block_id)
+            }
+        }
+    }
+
+    fn validate_block_uses(&self) {
+        // TODO(kenjin): Need to validate all uses and kills are properly gen-ed.
+    }
+    
+    /// Run all validation passes we have.
+    pub fn validate(&self) {
+        self.validate_block_terminators_and_jumps();
+        self.validate_block_uses();
+    }
 }
 
 impl<'a> std::fmt::Display for FunctionPrinter<'a> {
@@ -4701,6 +4744,7 @@ mod opt_tests {
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
+        function.validate();
         assert_function_hir(function, hir);
     }
 

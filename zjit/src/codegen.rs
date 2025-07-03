@@ -1066,6 +1066,7 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
         }
     };
     function.optimize();
+    function.validate();
     Some(function)
 }
 
