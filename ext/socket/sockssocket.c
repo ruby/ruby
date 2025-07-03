@@ -30,7 +30,8 @@ socks_init(VALUE sock, VALUE host, VALUE port)
     static int init = 0;
 
     if (init == 0) {
-        SOCKSinit("ruby");
+        char progname[] = "ruby";
+        SOCKSinit(progname);
         init = 1;
     }
 
