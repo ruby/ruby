@@ -891,4 +891,8 @@ def yjit_enabled?
   ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
 end
 
+def zjit_enabled?
+  ENV.key?('RUBY_ZJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('zjit') || BT.ruby.include?('zjit')
+end
+
 exit main
