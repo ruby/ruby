@@ -915,6 +915,12 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_require_rubygems
+    assert_runs 'true', %q{
+      require 'rubygems'
+    }, call_threshold: 2
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

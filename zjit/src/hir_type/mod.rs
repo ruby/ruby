@@ -128,21 +128,21 @@ impl std::fmt::Display for Type {
 
 fn is_array_exact(val: VALUE) -> bool {
     // Prism hides array values in the constant pool from the GC, so class_of will return 0
-    val.class_of() == unsafe { rb_cArray } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_ARRAY)
+    val.class_of() == Some(unsafe { rb_cArray }) || (val.class_of() == Some(VALUE(0)) && val.builtin_type() == RUBY_T_ARRAY)
 }
 
 fn is_string_exact(val: VALUE) -> bool {
     // Prism hides string values in the constant pool from the GC, so class_of will return 0
-    val.class_of() == unsafe { rb_cString } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_STRING)
+    val.class_of() == Some(unsafe { rb_cString }) || (val.class_of() == Some(VALUE(0)) && val.builtin_type() == RUBY_T_STRING)
 }
 
 fn is_hash_exact(val: VALUE) -> bool {
     // Prism hides hash values in the constant pool from the GC, so class_of will return 0
-    val.class_of() == unsafe { rb_cHash } || (val.class_of() == VALUE(0) && val.builtin_type() == RUBY_T_HASH)
+    val.class_of() == Some(unsafe { rb_cHash }) || (val.class_of() == Some(VALUE(0)) && val.builtin_type() == RUBY_T_HASH)
 }
 
 fn is_range_exact(val: VALUE) -> bool {
-    val.class_of() == unsafe { rb_cRange }
+    val.class_of() == Some(unsafe { rb_cRange })
 }
 
 impl Type {
@@ -176,13 +176,13 @@ impl Type {
             // valid on imemo.
             Type { bits: bits::CallableMethodEntry, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cInteger } {
+        else if val.class_of() == Some(unsafe { rb_cInteger }) {
             Type { bits: bits::Bignum, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cFloat } {
+        else if val.class_of() == Some(unsafe { rb_cFloat }) {
             Type { bits: bits::HeapFloat, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cSymbol } {
+        else if val.class_of() == Some(unsafe { rb_cSymbol }) {
             Type { bits: bits::DynamicSymbol, spec: Specialization::Object(val) }
         }
         else if is_array_exact(val) {
@@ -197,13 +197,13 @@ impl Type {
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cRegexp } {
+        else if val.class_of() == Some(unsafe { rb_cRegexp }) {
             Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cSet } {
+        else if val.class_of() == Some(unsafe { rb_cSet }) {
             Type { bits: bits::SetExact, spec: Specialization::Object(val) }
         }
-        else if val.class_of() == unsafe { rb_cObject } {
+        else if val.class_of() == Some(unsafe { rb_cObject }) {
             Type { bits: bits::ObjectExact, spec: Specialization::Object(val) }
         }
         else {
@@ -371,7 +371,7 @@ impl Type {
     pub fn exact_ruby_class(&self) -> Option<VALUE> {
         match self.spec {
             // If we're looking at a precise object, we can pull out its class.
-            Specialization::Object(val) => Some(val.class_of()),
+            Specialization::Object(val) => val.class_of(),
             Specialization::TypeExact(val) => Some(val),
             _ => None,
         }
@@ -382,7 +382,7 @@ impl Type {
     pub fn inexact_ruby_class(&self) -> Option<VALUE> {
         match self.spec {
             // If we're looking at a precise object, we can pull out its class.
-            Specialization::Object(val) => Some(val.class_of()),
+            Specialization::Object(val) => val.class_of(),
             Specialization::TypeExact(val) | Specialization::Type(val) => Some(val),
             _ => None,
         }
