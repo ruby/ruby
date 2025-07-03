@@ -3,11 +3,12 @@ use std::rc::Rc;
 use std::num::NonZeroU32;
 
 use crate::backend::current::{Reg, ALLOC_REGS};
+use crate::invariants::track_bop_assumption;
 use crate::profile::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
-use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, RangeType, SELF_PARAM_IDX, SpecialObjectType};
+use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
 use crate::options::get_option;
@@ -286,7 +287,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Test { val } => gen_test(asm, opnd!(val))?,
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
-        Insn::PatchPoint(_) => return Some(()), // For now, rb_zjit_bop_redefined() panics. TODO: leave a patch point and fix rb_zjit_bop_redefined()
+        Insn::PatchPoint(invariant) => return gen_patch_point(asm, invariant),
         Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
@@ -420,6 +421,24 @@ fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState
     let val = asm.ccall(bf.func_ptr as *const u8, cargs);
 
     Some(val)
+}
+
+/// Record a patch point that should be invalidated on a given invariant
+fn gen_patch_point(asm: &mut Assembler, invariant: &Invariant) -> Option<()> {
+    let invariant = invariant.clone();
+    asm.pos_marker(move |code_ptr, _cb| {
+        match invariant {
+            Invariant::BOPRedefined { klass, bop } => {
+                track_bop_assumption(klass, bop, code_ptr);
+            }
+            _ => {
+                debug!("ZJIT: gen_patch_point: unimplemented invariant {invariant:?}");
+                return;
+            }
+        }
+    });
+    // TODO: Make sure patch points do not overlap with each other.
+    Some(())
 }
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know

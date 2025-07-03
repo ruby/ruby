@@ -484,10 +484,6 @@ pub enum Insn {
     // binary OR operation.
     Or { left: Opnd, right: Opnd, out: Opnd },
 
-    /// Pad nop instructions to accommodate Op::Jmp in case the block or the insn
-    /// is invalidated.
-    PadInvalPatch,
-
     // Mark a position in the generated code
     PosMarker(PosMarkerFn),
 
@@ -607,7 +603,6 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PadInvalPatch => "PadEntryExit",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
             Insn::Store { .. } => "Store",
@@ -801,7 +796,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
 
             Insn::CPopInto(opnd) |
@@ -956,7 +950,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CPushAll |
             Insn::FrameSetup |
             Insn::FrameTeardown |
-            Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
 
             Insn::CPopInto(opnd) |
@@ -2169,10 +2162,6 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&[left, right]));
         self.push_insn(Insn::Or { left, right, out });
         out
-    }
-
-    pub fn pad_inval_patch(&mut self) {
-        self.push_insn(Insn::PadInvalPatch);
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)

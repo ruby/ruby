@@ -62,7 +62,7 @@ pub trait Allocator {
 
 /// Pointer into a [VirtualMemory] represented as an offset from the base.
 /// Note: there is no NULL constant for [CodePtr]. You should use `Option<CodePtr>` instead.
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Debug)]
 #[repr(C, packed)]
 pub struct CodePtr(u32);
 
