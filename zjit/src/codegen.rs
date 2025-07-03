@@ -1066,7 +1066,10 @@ fn compile_iseq(iseq: IseqPtr) -> Option<Function> {
         }
     };
     function.optimize();
-    function.validate();
+    if let Err(err) = function.validate() {
+        debug!("ZJIT: compile_iseq: {err:?}");
+        return None;
+    }
     Some(function)
 }
 

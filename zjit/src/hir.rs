@@ -900,6 +900,17 @@ impl<T: Copy + Into<usize> + PartialEq> UnionFind<T> {
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum ValidationError {
+    // All validation errors come with the function's representation as the first argument.
+    BlockHasNoTerminator(String, BlockId),
+    // The terminator and its actual position
+    TerminatorNotAtEnd(String, BlockId, InsnId, usize),
+    /// Expected length, actual length
+    MismatchedBlockArity(String, BlockId, usize, usize),
+}
+
+
 /// A [`Function`], which is analogous to a Ruby ISeq, is a control-flow graph of [`Block`]s
 /// containing instructions.
 #[derive(Debug)]
@@ -2011,42 +2022,44 @@ impl Function {
     /// 1. Basic block jump args match parameter arity.
     /// 2. Every terminator must be in the last position.
     /// 3. Every block must have a terminator.
-    fn validate_block_terminators_and_jumps(&self) {
+    fn validate_block_terminators_and_jumps(&self) -> Result<(), ValidationError> {
         for block_id in self.rpo() {
             let mut block_has_terminator = false;
             let insns = &self.blocks[block_id.0].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
                 let insn = self.find(*insn_id);
+                match &insn {
+                    Insn::Jump(BranchEdge{target, args})
+                    | Insn::IfTrue { val: _, target: BranchEdge{target, args} }
+                    | Insn::IfFalse { val: _, target: BranchEdge{target, args}} => {
+                        let target_block = &self.blocks[target.0];
+                        let target_len = target_block.params.len();
+                        let args_len = args.len();
+                        if target_len != args_len {
+                            return Err(ValidationError::MismatchedBlockArity(format!("{:?}", self), block_id, target_len, args_len))
+                        }
+                    }
+                    _ => {}
+                }
                 if !insn.is_terminator() {
                     continue;
                 }
-                if let Insn::Jump(BranchEdge{target, args}) = &insn {
-                    let target_block = &self.blocks[target.0];
-                    let target_len = target_block.params.len();
-                    let args_len = args.len();
-                    if target_len != args_len {
-                        panic!("Block jump target != number of incoming arguments: {} != {}.", target_len, args_len);
-                    }
-                }
                 block_has_terminator = true;
                 if idx != insns.len() - 1 {
-                    panic!("Terminator {} not at last position in block {}.", insn, block_id);
+                    return Err(ValidationError::TerminatorNotAtEnd(format!("{:?}", self), block_id, *insn_id, idx));
                 }
             }
             if !block_has_terminator {
-                panic!("Block ID has no terminator: {}", block_id)
+                return Err(ValidationError::BlockHasNoTerminator(format!("{:?}", self), block_id));
             }
         }
-    }
-
-    fn validate_block_uses(&self) {
-        // TODO(kenjin): Need to validate all uses and kills are properly gen-ed.
+        Ok(())
     }
 
     /// Run all validation passes we have.
-    pub fn validate(&self) {
-        self.validate_block_terminators_and_jumps();
-        self.validate_block_uses();
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        self.validate_block_terminators_and_jumps()?;
+        Ok(())
     }
 }
 
@@ -2284,6 +2297,7 @@ pub enum ParseError {
     StackUnderflow(FrameState),
     UnknownParameterType(ParameterType),
     MalformedIseq(u32), // insn_idx into iseq_encoded
+    Validation(ValidationError),
 }
 
 /// Return the number of locals in the current ISEQ (includes parameters)
@@ -3009,6 +3023,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     }
 
     fun.profiles = Some(profiles);
+    if let Err(e) = fun.validate() {
+        return Err(ParseError::Validation(e));
+    }
     Ok(fun)
 }
 
@@ -4744,7 +4761,7 @@ mod opt_tests {
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
         let mut function = iseq_to_hir(iseq).unwrap();
         function.optimize();
-        function.validate();
+        function.validate().unwrap();
         assert_function_hir(function, hir);
     }
 
