@@ -1923,6 +1923,60 @@ assert_equal 'ok', %q{
   roundtripped_obj.instance_variable_get(:@array) == [1] ? :ok : roundtripped_obj
 }
 
+# move object with many generic ivars
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  0.upto(300) do |i|
+    obj.instance_variable_set(:"@array#{i}", [i])
+  end
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# move object with complex generic ivars
+assert_equal 'ok', %q{
+  # Make Array too_complex
+  30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
+
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array1, [1])
+
+  ractor.send(obj, move: true)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# copy object with complex generic ivars
+assert_equal 'ok', %q{
+  # Make Array too_complex
+  30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
+
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  obj.instance_variable_set(:@array1, [1])
+
+  ractor.send(obj)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
+# copy object with many generic ivars
+assert_equal 'ok', %q{
+  ractor = Ractor.new { Ractor.receive }
+  obj = Array.new(10, 42)
+  0.upto(300) do |i|
+    obj.instance_variable_set(:"@array#{i}", [i])
+  end
+
+  ractor.send(obj)
+  roundtripped_obj = ractor.value
+  roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
+}
+
 # moved composite types move their non-shareable parts properly
 assert_equal 'ok', %q{
   k, v = String.new("key"), String.new("value")

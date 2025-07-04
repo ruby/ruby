@@ -1667,7 +1667,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
-                .src = obj,
+                .src = fields_obj,
             };
             rb_st_foreach_with_replace(
                 rb_imemo_fields_complex_tbl(fields_obj),
