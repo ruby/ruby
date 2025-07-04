@@ -396,7 +396,7 @@ fn gen_get_constant_path(asm: &mut Assembler, ic: *const iseq_inline_constant_ca
     // Save PC since the call can allocate an IC
     gen_save_pc(asm, state);
 
-    ccall![rb_vm_opt_getconstant_path(EC, CFP, Opnd::const_ptr(ic as *const u8)), asm]
+    ccall![rb_vm_opt_getconstant_path(EC, CFP, Opnd::const_ptr(ic)), asm]
 }
 
 fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: &Vec<InsnId>) -> Option<lir::Opnd> {
@@ -952,7 +952,7 @@ fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
     asm_comment!(asm, "save PC to CFP");
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc as *const u8));
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
 }
 
 /// Save the current SP on the CFP
