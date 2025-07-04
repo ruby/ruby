@@ -1090,10 +1090,9 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
 
             if (!NIL_P(klass)) {
                 VALUE av, am = 0;
-                rb_const_entry_t *ce;
                 rb_const_entry_t ce_out = {0};
               search_continue:
-                if ((ce = rb_const_lookup(klass, id, &ce_out))) {
+                if (rb_const_lookup_unlocked(klass, id, &ce_out)) {
                     rb_const_warn_if_deprecated(&ce_out, klass, id);
                     val = ce_out.value;
                     if (UNDEF_P(val)) {
