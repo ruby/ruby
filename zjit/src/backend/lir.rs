@@ -2243,6 +2243,15 @@ macro_rules! asm_comment {
 }
 pub(crate) use asm_comment;
 
+/// Convenience macro over [`Assembler::ccall`] that also adds a comment with the function name.
+macro_rules! ccall {
+    [$fn_name:ident ( $($args:expr),* ) , $asm: ident] => {{
+        $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
+        $asm.ccall($fn_name as *const u8, vec![$($args),*])
+    }};
+}
+pub(crate) use ccall;
+
 #[cfg(test)]
 mod tests {
     use super::*;
