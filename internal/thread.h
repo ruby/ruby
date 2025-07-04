@@ -50,7 +50,6 @@ int rb_thread_to_be_killed(VALUE thread);
 void rb_thread_acquire_fork_lock(void);
 void rb_thread_release_fork_lock(void);
 void rb_thread_reset_fork_lock(void);
-void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
