@@ -44,7 +44,8 @@ void rb_free_const_table(struct rb_id_table *tbl);
 VALUE rb_const_source_location(VALUE, ID);
 
 int rb_autoloading_value(VALUE mod, ID id, VALUE *value, rb_const_flag_t *flag);
-rb_const_entry_t *rb_const_lookup(VALUE klass, ID id, rb_const_entry_t *entry_out);
+rb_const_entry_t *rb_const_lookup_locked(VALUE klass, ID id);
+bool rb_const_lookup_unlocked(VALUE klass, ID id, rb_const_entry_t *entry_out);
 VALUE rb_public_const_get_at(VALUE klass, ID id);
 VALUE rb_public_const_get_from(VALUE klass, ID id);
 int rb_public_const_defined_from(VALUE klass, ID id);

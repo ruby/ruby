@@ -3025,8 +3025,8 @@ autoload_synchronized(VALUE _arguments)
     struct autoload_arguments *arguments = (struct autoload_arguments *)_arguments;
     rb_const_entry_t constant_entry = {0};
 
-    rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name, &constant_entry);
-    if (ce && !UNDEF_P(constant_entry.value)) {
+    bool found = rb_const_lookup_unlocked(arguments->module, arguments->name, &constant_entry);
+    if (found && !UNDEF_P(constant_entry.value)) {
         return Qfalse;
     }
 
@@ -3232,10 +3232,10 @@ static int
 autoload_defined_p(VALUE mod, ID id)
 {
     rb_const_entry_t ce_out = {0};
-    rb_const_entry_t *ce = rb_const_lookup(mod, id, &ce_out);
+    bool found = rb_const_lookup_unlocked(mod, id, &ce_out);
 
     // If there is no constant or the constant is not undefined (special marker for autoloading):
-    if (!ce || !UNDEF_P(ce_out.value)) {
+    if (!found || !UNDEF_P(ce_out.value)) {
         // We are not autoloading:
         return 0;
     }
@@ -3424,35 +3424,36 @@ autoload_try_load(VALUE _arguments)
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     VALUE result = autoload_feature_require(_arguments);
-    rb_const_entry_t ce_out = {0};
 
-    // After we loaded the feature, if the constant is not defined, we remove it completely:
-    rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name, &ce_out);
+    RB_VM_LOCKING() {
+        // After we loaded the feature, if the constant is not defined, we remove it completely:
+        rb_const_entry_t *ce = rb_const_lookup_locked(arguments->module, arguments->name);
 
-    if (!ce || UNDEF_P(ce_out.value)) {
-        result = Qfalse;
+        if (!ce || UNDEF_P(ce->value)) {
+            result = Qfalse;
 
-        rb_const_remove(arguments->module, arguments->name);
+            rb_const_remove(arguments->module, arguments->name);
 
-        if (arguments->module == rb_cObject) {
-            rb_warning(
-                "Expected %"PRIsVALUE" to define %"PRIsVALUE" but it didn't",
-                arguments->autoload_data->feature,
-                ID2SYM(arguments->name)
-            );
+            if (arguments->module == rb_cObject) {
+                rb_warning(
+                    "Expected %"PRIsVALUE" to define %"PRIsVALUE" but it didn't",
+                    arguments->autoload_data->feature,
+                    ID2SYM(arguments->name)
+                );
+            }
+            else {
+                rb_warning(
+                    "Expected %"PRIsVALUE" to define %"PRIsVALUE"::%"PRIsVALUE" but it didn't",
+                    arguments->autoload_data->feature,
+                    arguments->module,
+                    ID2SYM(arguments->name)
+                );
+            }
         }
         else {
-            rb_warning(
-                "Expected %"PRIsVALUE" to define %"PRIsVALUE"::%"PRIsVALUE" but it didn't",
-                arguments->autoload_data->feature,
-                arguments->module,
-                ID2SYM(arguments->name)
-            );
+            // Otherwise, it was loaded, copy the flags from the autoload constant:
+            ce->flag |= arguments->flag;
         }
-    }
-    else {
-        // Otherwise, it was loaded, copy the flags from the autoload constant:
-        ce->flag |= arguments->flag;
     }
 
     return result;
@@ -3462,10 +3463,10 @@ VALUE
 rb_autoload_load(VALUE module, ID name)
 {
     rb_const_entry_t ce_out = {0};
-    rb_const_entry_t *ce = rb_const_lookup(module, name, &ce_out);
+    bool found = rb_const_lookup_unlocked(module, name, &ce_out);
 
     // We bail out as early as possible without any synchronisation:
-    if (!ce || !UNDEF_P(ce_out.value)) {
+    if (!found || !UNDEF_P(ce_out.value)) {
         return Qfalse;
     }
 
@@ -3561,7 +3562,6 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
             current = RCLASS_SUPER(current), first_iteration = false) {
         VALUE tmp;
         VALUE am = 0;
-        rb_const_entry_t *ce;
 
         if (!first_iteration && RCLASS_ORIGIN(current) != current) {
             // This item in the super chain has an origin iclass
@@ -3576,7 +3576,7 @@ rb_const_search_from(VALUE klass, ID id, int exclude, int recurse, int visibilit
         if (BUILTIN_TYPE(tmp) == T_ICLASS) tmp = RBASIC(tmp)->klass;
 
         // Do the lookup. Loop in case of autoload.
-        while ((ce = rb_const_lookup(tmp, id, &ce_out))) {
+        while (rb_const_lookup_unlocked(tmp, id, &ce_out)) {
             if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 GET_EC()->private_const_reference = tmp;
                 return Qundef;
@@ -3661,10 +3661,8 @@ static VALUE
 rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     while (RTEST(klass)) {
-        rb_const_entry_t *ce;
         rb_const_entry_t ce_out = {0};
-
-        while ((ce = rb_const_lookup(klass, id, &ce_out))) {
+        while (rb_const_lookup_unlocked(klass, id, &ce_out)) {
             if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 return Qnil;
             }
@@ -3742,19 +3740,17 @@ rb_mod_remove_const(VALUE mod, VALUE name)
     return rb_const_remove(mod, id);
 }
 
-static rb_const_entry_t * const_lookup(struct rb_id_table *tbl, ID id, rb_const_entry_t *ce_out);
+static rb_const_entry_t * const_lookup_locked(struct rb_id_table *tbl, ID id);
 
 VALUE
 rb_const_remove(VALUE mod, ID id)
 {
     VALUE val;
     rb_const_entry_t *ce;
-    rb_const_entry_t ce_out = {0};
-
     rb_check_frozen(mod);
 
     RB_VM_LOCKING() {
-        ce = rb_const_lookup(mod, id, &ce_out);
+        ce = rb_const_lookup_locked(mod, id);
         if (!ce || !rb_id_table_delete(RCLASS_WRITABLE_CONST_TBL(mod), id)) {
             if (rb_const_defined_at(mod, id)) {
                 rb_name_err_raise("cannot remove %2$s::%1$s", mod, ID2SYM(id));
@@ -3766,14 +3762,14 @@ rb_const_remove(VALUE mod, ID id)
         rb_const_warn_if_deprecated(ce, mod, id);
         rb_clear_constant_cache_for_id(id);
 
-        val = ce_out.value;
+        val = ce->value;
 
         if (UNDEF_P(val)) {
             autoload_delete(mod, id);
             val = Qnil;
         }
 
-        if (ce != const_lookup(RCLASS_PRIME_CONST_TBL(mod), id, NULL)) {
+        if (ce != const_lookup_locked(RCLASS_PRIME_CONST_TBL(mod), id)) {
             ruby_xfree(ce);
         }
         // else - skip free'ing the ce because it still exists in the prime classext
@@ -3916,13 +3912,12 @@ rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
 {
     VALUE tmp;
     int mod_retry = 0;
-    rb_const_entry_t *ce;
     rb_const_entry_t ce_out = {0};
 
     tmp = klass;
   retry:
     while (tmp) {
-        if ((ce = rb_const_lookup(tmp, id, &ce_out))) {
+        if (rb_const_lookup_unlocked(tmp, id, &ce_out)) {
             if (visibility && RB_CONST_PRIVATE_P(&ce_out)) {
                 return (int)Qfalse;
             }
@@ -4238,7 +4233,7 @@ set_const_visibility(VALUE mod, int argc, const VALUE *argv,
             if (!id) {
                 undefined_constant(mod, val);
             }
-            if ((ce = rb_const_lookup(mod, id, NULL))) {
+            if ((ce = rb_const_lookup_locked(mod, id))) {
                 ce->flag &= ~mask;
                 ce->flag |= flag;
                 if (UNDEF_P(ce->value)) {
@@ -4271,7 +4266,7 @@ rb_deprecate_constant(VALUE mod, const char *name)
         undefined_constant(mod, rb_fstring_new(name, len));
     }
     RB_VM_LOCKING() {
-        if (!(ce = rb_const_lookup(mod, id, NULL))) {
+        if (!(ce = rb_const_lookup_locked(mod, id))) {
             undefined_constant(mod, ID2SYM(id));
         }
         ce->flag |= CONST_DEPRECATED;
@@ -4827,13 +4822,13 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
     rb_ivar_foreach(src, tbl_copy_i, dst);
 }
 
-static rb_const_entry_t *
-const_lookup(struct rb_id_table *tbl, ID id, rb_const_entry_t *entry_out)
+static bool
+const_lookup_unlocked(struct rb_id_table *tbl, ID id, rb_const_entry_t *entry_out)
 {
     if (tbl) {
-        rb_const_entry_t *ce;
-        VALUE val;
         bool r;
+        VALUE val;
+        rb_const_entry_t *ce;
         RB_VM_LOCKING() {
             r = rb_id_table_lookup(tbl, id, &val);
             if (r) {
@@ -4843,15 +4838,36 @@ const_lookup(struct rb_id_table *tbl, ID id, rb_const_entry_t *entry_out)
         }
 
         if (r) {
-            return ce;
+            return true;
+        }
+    }
+    return false;
+}
+
+static rb_const_entry_t *
+const_lookup_locked(struct rb_id_table *tbl, ID id)
+{
+    ASSERT_vm_locking();
+    if (tbl) {
+        bool r;
+        VALUE val;
+        r = rb_id_table_lookup(tbl, id, &val);
+        if (r) {
+            return (rb_const_entry_t*)val;
         }
     }
     return NULL;
 }
 
-rb_const_entry_t *
-rb_const_lookup(VALUE klass, ID id, rb_const_entry_t *entry_out)
+bool
+rb_const_lookup_unlocked(VALUE klass, ID id, rb_const_entry_t *entry_out)
 {
-    return const_lookup(RCLASS_CONST_TBL(klass), id, entry_out);
+    return const_lookup_unlocked(RCLASS_CONST_TBL(klass), id, entry_out);
+}
+
+rb_const_entry_t*
+rb_const_lookup_locked(VALUE klass, ID id)
+{
+    return const_lookup_locked(RCLASS_CONST_TBL(klass), id);
 }
 
