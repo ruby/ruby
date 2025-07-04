@@ -5,7 +5,7 @@ use crate::codegen::local_size_and_idx_to_ep_offset;
 use crate::cruby::{Qundef, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32};
 use crate::hir::SideExitReason;
 use crate::options::{debug, get_option};
-use crate::{cruby::VALUE};
+use crate::cruby::VALUE;
 use crate::backend::current::*;
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -2277,6 +2277,15 @@ macro_rules! asm_comment {
     };
 }
 pub(crate) use asm_comment;
+
+/// Convenience macro over [`Assembler::ccall`] that also adds a comment with the function name.
+macro_rules! asm_ccall {
+    [$asm: ident, $fn_name:ident, $($args:expr),* ] => {{
+        $crate::backend::lir::asm_comment!($asm, concat!("call ", stringify!($fn_name)));
+        $asm.ccall($fn_name as *const u8, vec![$($args),*])
+    }};
+}
+pub(crate) use asm_ccall;
 
 #[cfg(test)]
 mod tests {
