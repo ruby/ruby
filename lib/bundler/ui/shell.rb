@@ -80,11 +80,11 @@ module Bundler
       end
 
       def ask(msg)
-        @shell.ask(msg)
+        @shell.ask(msg, :green)
       end
 
       def yes?(msg)
-        @shell.yes?(msg)
+        @shell.yes?(msg, :green)
       end
 
       def no?(msg)

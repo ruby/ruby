@@ -279,13 +279,13 @@ module Bundler
       SharedHelpers.pwd.join(name).basename.to_s
     end
 
-    def ask_and_set(key, header, message)
+    def ask_and_set(key, prompt, explanation)
       choice = options[key]
       choice = Bundler.settings["gem.#{key}"] if choice.nil?
 
       if choice.nil?
-        Bundler.ui.confirm header
-        choice = Bundler.ui.yes? "#{message} y/(n):"
+        Bundler.ui.info explanation
+        choice = Bundler.ui.yes? "#{prompt} y/(n):"
         Bundler.settings.set_global("gem.#{key}", choice)
       end
 
@@ -307,7 +307,7 @@ module Bundler
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
-        Bundler.ui.confirm "Do you want to generate tests with your gem?"
+        Bundler.ui.info "Do you want to generate tests with your gem?"
         Bundler.ui.info hint_text("test")
 
         result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
@@ -347,7 +347,7 @@ module Bundler
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
+        Bundler.ui.info "Do you want to set up continuous integration for your gem? " \
           "Supported services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
@@ -380,7 +380,7 @@ module Bundler
       linter_template = deprecated_rubocop_option if linter_template.nil?
 
       if linter_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to add a code linter and formatter to your gem? " \
+        Bundler.ui.info "Do you want to add a code linter and formatter to your gem? " \
           "Supported Linters:\n" \
           "* RuboCop:       https://rubocop.org\n" \
           "* Standard:      https://github.com/standardrb/standard\n" \

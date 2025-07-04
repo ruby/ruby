@@ -1939,7 +1939,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       expect(bundled_app("foobar/.github/workflows/main.yml")).to exist
     end
 
-    it "asks about MIT license" do
+    it "asks about MIT license just once" do
       global_config "BUNDLE_GEM__MIT" => nil
 
       bundle "config list"
@@ -1949,9 +1949,10 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/LICENSE.txt")).to exist
+      expect(out).to include("Using a MIT license means").once
     end
 
-    it "asks about CoC" do
+    it "asks about CoC just once" do
       global_config "BUNDLE_GEM__COC" => nil
 
       bundle "gem foobar" do |input, _, _|
@@ -1959,9 +1960,10 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/CODE_OF_CONDUCT.md")).to exist
+      expect(out).to include("Codes of conduct can increase contributions to your project").once
     end
 
-    it "asks about CHANGELOG" do
+    it "asks about CHANGELOG just once" do
       global_config "BUNDLE_GEM__CHANGELOG" => nil
 
       bundle "gem foobar" do |input, _, _|
@@ -1969,6 +1971,7 @@ Usage: "bundle gem NAME [OPTIONS]"
       end
 
       expect(bundled_app("foobar/CHANGELOG.md")).to exist
+      expect(out).to include("A changelog is a file which contains").once
     end
   end
 
