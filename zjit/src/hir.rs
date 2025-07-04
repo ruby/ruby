@@ -550,6 +550,7 @@ pub enum Insn {
     // Distinct from `SendWithoutBlock` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, call_info: CallInfo, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
+    ConcatStrings { strings: Vec<InsnId>, state: InsnId },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId },
@@ -730,7 +731,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
-            },
+            }
+            Insn::ConcatStrings { strings, state: _ } => {
+                write!(f, "ConcatStrings {}", strings[0])?;
+                for string in strings.iter().skip(1) {
+                    write!(f, ", {string}")?;
+                }
+                Ok(())
+            }
             Insn::Snapshot { state } => write!(f, "Snapshot {}", state),
             Insn::Defined { op_type, v, .. } => {
                 // op_type (enum defined_type) printing logic from iseq.c.
@@ -1138,6 +1146,7 @@ impl Function {
                 str: find!(*str),
                 state: *state,
             },
+            ConcatStrings { state, strings } => ConcatStrings { state: *state, strings: find_vec!(strings) },
             SendWithoutBlock { self_val, call_info, cd, args, state } => SendWithoutBlock {
                 self_val: find!(*self_val),
                 call_info: call_info.clone(),
@@ -1271,6 +1280,7 @@ impl Function {
             Insn::ToArray { .. } => types::ArrayExact,
             Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
+            Insn::ConcatStrings { .. } => types::StringExact,
             Insn::GetLocal { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
@@ -1902,7 +1912,8 @@ impl Function {
                 worklist.extend(args);
                 worklist.push_back(state);
             }
-            &Insn::InvokeBuiltin { ref args, state, .. } => {
+            &Insn::InvokeBuiltin { ref args, state, .. }
+            | &Insn::ConcatStrings { strings: ref args, state } => {
                 worklist.extend(args);
                 worklist.push_back(state)
             }
@@ -3161,6 +3172,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state });
                     let anytostring = fun.push_insn(block, Insn::AnyToString { val, str, state: exit_id });
                     state.stack_push(anytostring);
+                }
+                YARVINSN_concatstrings => {
+                    let num = get_arg(pc, 0).as_u32();
+                    let mut strings = Vec::with_capacity(num.as_usize());
+                    for _ in 0..num {
+                        strings.push(state.stack_pop()?);
+                    }
+                    strings.reverse();
+                    let snapshot = fun.push_insn(block, Insn::Snapshot { state: exit_state });
+                    state.stack_push(fun.push_insn(block, Insn::ConcatStrings { state: snapshot, strings }));
                 }
                 _ => {
                     // Unknown opcode; side-exit into the interpreter
@@ -5046,7 +5067,8 @@ mod tests {
               v3:Fixnum[1] = Const Value(1)
               v5:BasicObject = ObjToString v3
               v7:String = AnyToString v3, str: v5
-              SideExit UnknownOpcode(concatstrings)
+              v9:StringExact = ConcatStrings v2, v7
+              Return v9
         "#]]);
     }
 
@@ -6827,7 +6849,8 @@ mod opt_tests {
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               v4:StringExact = StringCopy v3
-              SideExit UnknownOpcode(concatstrings)
+              v10:StringExact = ConcatStrings v2, v4
+              Return v10
         "#]]);
     }
 
@@ -6841,9 +6864,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               v2:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
               v3:Fixnum[1] = Const Value(1)
-              v10:BasicObject = SendWithoutBlock v3, :to_s
-              v7:String = AnyToString v3, str: v10
-              SideExit UnknownOpcode(concatstrings)
+              v11:BasicObject = SendWithoutBlock v3, :to_s
+              v7:String = AnyToString v3, str: v11
+              v9:StringExact = ConcatStrings v2, v7
+              Return v9
         "#]]);
     }
 
