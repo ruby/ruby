@@ -59,52 +59,31 @@ class Git
 end
 
 DEFAULT_GEM_LIBS = %w[
-  abbrev
-  base64
-  benchmark
   bundler
-  cmath
-  csv
-  debug
   delegate
   did_you_mean
   english
   erb
+  error_highlight
   fileutils
   find
   forwardable
-  getoptlong
   ipaddr
-  irb
-  logger
-  mutex_m
   net-http
   net-protocol
-  observer
   open3
   open-uri
   optparse
   ostruct
   pp
   prettyprint
-  prime
-  pstore
-  rdoc
-  readline
-  reline
+  prism
   resolv
-  resolv-replace
-  rexml
-  rinda
-  rss
   rubygems
-  scanf
   securerandom
-  set
   shellwords
   singleton
   tempfile
-  thwait
   time
   timeout
   tmpdir
@@ -116,27 +95,19 @@ DEFAULT_GEM_LIBS = %w[
 ]
 
 DEFAULT_GEM_EXTS = %w[
-  bigdecimal
-  cgi
   date
   digest
   etc
   fcntl
-  fiddle
   io-console
   io-nonblock
   io-wait
   json
-  nkf
   openssl
   pathname
   psych
-  racc
-  readline-ext
   stringio
   strscan
-  syslog
-  win32ole
   zlib
 ]
 
