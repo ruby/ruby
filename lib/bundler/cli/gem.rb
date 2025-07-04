@@ -162,9 +162,9 @@ module Bundler
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
-        "This means that any other developer or company will be legally allowed to use your code " \
-        "for free as long as they admit you created it. You can read more about the MIT license " \
-        "at https://choosealicense.com/licenses/mit.")
+        "Using a MIT license means that any other developer or company will be legally allowed " \
+        "to use your code for free as long as they admit you created it. You can read more about " \
+        "the MIT license at https://choosealicense.com/licenses/mit.")
         config[:mit] = true
         Bundler.ui.info "MIT License enabled in config"
         templates.merge!("LICENSE.txt.tt" => "LICENSE.txt")
