@@ -237,7 +237,7 @@ module Bundler
       end
 
       if use_git
-        Bundler.ui.info "Initializing git repo in #{target}"
+        Bundler.ui.info "\nInitializing git repo in #{target}"
         require "shellwords"
         `git init #{target.to_s.shellescape}`
 
@@ -269,7 +269,7 @@ module Bundler
       # Open gemspec in editor
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
-      Bundler.ui.info "Gem '#{name}' was successfully created. " \
+      Bundler.ui.info "\nGem '#{name}' was successfully created. " \
         "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
     end
 
@@ -284,7 +284,7 @@ module Bundler
       choice = Bundler.settings["gem.#{key}"] if choice.nil?
 
       if choice.nil?
-        Bundler.ui.info explanation
+        Bundler.ui.info "\n#{explanation}"
         choice = Bundler.ui.yes? "#{prompt} y/(n):"
         Bundler.settings.set_global("gem.#{key}", choice)
       end
@@ -307,7 +307,7 @@ module Bundler
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
-        Bundler.ui.info "Do you want to generate tests with your gem?"
+        Bundler.ui.info "\nDo you want to generate tests with your gem?"
         Bundler.ui.info hint_text("test")
 
         result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
@@ -347,12 +347,11 @@ module Bundler
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
-        Bundler.ui.info "Do you want to set up continuous integration for your gem? " \
+        Bundler.ui.info "\nDo you want to set up continuous integration for your gem? " \
           "Supported services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
-          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
-          "\n"
+          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n"
         Bundler.ui.info hint_text("ci")
 
         result = Bundler.ui.ask "Enter a CI service. github/gitlab/circle/(none):"
@@ -380,11 +379,10 @@ module Bundler
       linter_template = deprecated_rubocop_option if linter_template.nil?
 
       if linter_template.to_s.empty?
-        Bundler.ui.info "Do you want to add a code linter and formatter to your gem? " \
+        Bundler.ui.info "\nDo you want to add a code linter and formatter to your gem? " \
           "Supported Linters:\n" \
           "* RuboCop:       https://rubocop.org\n" \
-          "* Standard:      https://github.com/standardrb/standard\n" \
-          "\n"
+          "* Standard:      https://github.com/standardrb/standard\n"
         Bundler.ui.info hint_text("linter")
 
         result = Bundler.ui.ask "Enter a linter. rubocop/standard/(none):"
