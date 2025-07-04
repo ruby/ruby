@@ -299,6 +299,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason: _ } => return gen_side_exit(jit, asm, &function.frame_state(*state)),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
+        Insn::ConcatStrings { strings, state } => gen_concatstrings(jit, asm, strings, &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
@@ -312,6 +313,43 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     jit.opnds[insn_id.0] = Some(out_opnd);
 
     Some(())
+}
+
+fn gen_concatstrings(jit: &JITState, asm: &mut Assembler, strings: &[InsnId], state: &FrameState) -> Option<Opnd> {
+    // In practice, concatstrings with 0 strings doesn't seem to happen.
+    if strings.len() == 0 {
+        return None;
+    }
+
+    // Put the strings onto the stack
+    for (i, string) in strings.iter().enumerate() {
+        let dest = Opnd::mem(64, NATIVE_STACK_PTR, i32::try_from(strings.len() - i).ok()? * -SIZEOF_VALUE_I32);
+        asm.mov(dest, jit.get_opnd(*string)?);
+    }
+    // Write, then move the SP, since the source might be from the stack
+    let stack_growth = aligned_stack_bytes(strings.len());
+    let new_sp = asm.sub(NATIVE_STACK_PTR, stack_growth.into());
+    asm.mov(NATIVE_STACK_PTR, new_sp);
+
+    // Save PC since the call allocates and can raise
+    gen_save_pc(asm, state);
+
+    // We've moved the SP, so the array is at SP or one element above
+    // if we grew the stack with extra space for alignment.
+    let str_array = if strings.len() % 2 == 0 {
+        NATIVE_STACK_PTR
+    } else {
+        asm.add(NATIVE_STACK_PTR, SIZEOF_VALUE.into())
+    };
+
+    // Call rb_str_concat_literals()
+    let new_string = asm.ccall(rb_str_concat_literals as _, vec![strings.len().into(), str_array]);
+
+    // Undo C SP change
+    let prev_sp = asm.add(NATIVE_STACK_PTR, stack_growth.into());
+    asm.mov(NATIVE_STACK_PTR, prev_sp);
+
+    Some(new_string)
 }
 
 /// Gets the EP of the ISeq of the containing method, or "local level".
