@@ -112,22 +112,27 @@ ZJIT_ALL_RUBY_TESTS := $(wildcard $(top_srcdir)/test/ruby/test_*.rb $(top_srcdir
 # Filter out excluded tests
 ZJIT_RUBY_TESTS := $(filter-out $(addprefix $(top_srcdir)/,$(ZJIT_EXCLUDED_TESTS)),$(ZJIT_ALL_RUBY_TESTS))
 
-# Run all Ruby tests with ZJIT enabled, excluding known failing tests
-.PHONY: zjit-test-all-ruby
-zjit-test-all-ruby:
+# Run all Ruby tests with ZJIT enabled (temporarily excluding known failing tests)
+.PHONY: zjit-test-ruby-all
+zjit-test-ruby-all:
 	$(MAKE) test-all TESTS='$(ZJIT_RUBY_TESTS)'
 
-# Gives quick feedback about ZJIT. Not a replacement for a full test run.
-.PHONY: zjit-test-all
-zjit-test-all:
-	$(MAKE) zjit-test
+# Run only the ZJIT-specific Ruby tests
+.PHONY: zjit-test-ruby
+zjit-test-ruby:
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
+
+# Gives quick feedback about ZJIT. Not a replacement for a full test run.
+.PHONY: zjit-test-suite
+zjit-test-suite:
+	$(MAKE) zjit-test-rust
+	$(MAKE) zjit-test-ruby
 ZJIT_BINDGEN_DIFF_OPTS =
 
 # Generate Rust bindings. See source for details.
 # Needs `./configure --enable-zjit=dev` and Clang.
 ifneq ($(strip $(CARGO)),) # if configure found Cargo
-.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test zjit-test-lldb
+.PHONY: zjit-bindgen zjit-bindgen-show-unused zjit-test-rust zjit-test-rust-lldb
 zjit-bindgen: zjit.$(OBJEXT)
 	ZJIT_SRC_ROOT_PATH='$(top_srcdir)' BINDGEN_JIT_NAME=zjit $(CARGO) run --manifest-path '$(top_srcdir)/zjit/bindgen/Cargo.toml' -- $(CFLAGS) $(XCFLAGS) $(CPPFLAGS)
 	$(Q) if [ 'x$(HAVE_GIT)' = xyes ]; then $(GIT) -C "$(top_srcdir)" diff $(ZJIT_BINDGEN_DIFF_OPTS) zjit/src/cruby_bindings.inc.rs; fi
@@ -138,14 +143,14 @@ zjit-bindgen: zjit.$(OBJEXT)
 #
 # On darwin, it's available through `brew install cargo-nextest`. See
 # https://nexte.st/docs/installation/pre-built-binaries/ otherwise.
-zjit-test: libminiruby.a
+zjit-test-rust: libminiruby.a
 	RUBY_BUILD_DIR='$(TOP_BUILD_DIR)' \
 	    RUBY_LD_FLAGS='$(LDFLAGS) $(XLDFLAGS) $(MAINLIBS)' \
 	    CARGO_TARGET_DIR='$(CARGO_TARGET_DIR)' \
 	    $(CARGO) nextest run --manifest-path '$(top_srcdir)/zjit/Cargo.toml' $(ZJIT_TESTS)
 
 # Run a ZJIT test written with Rust #[test] under LLDB
-zjit-test-lldb: libminiruby.a
+zjit-test-rust-lldb: libminiruby.a
 	$(Q)set -eu; \
 	    if [ -z '$(ZJIT_TESTS)' ]; then \
 		echo "Please pass a ZJIT_TESTS=... filter to make."; \

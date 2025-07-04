@@ -1,4 +1,4 @@
-// This build script is only used for `make zjit-test` for building
+// This build script is only used for `make zjit-test-rust` for building
 // the test binary; ruby builds don't use this.
 fn main() {
     use std::env;
