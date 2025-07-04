@@ -125,12 +125,3 @@ Note that the use of +public_send+ is also dangerous, as +send+ itself is
 public:
 
   1.public_send("send", "eval", "...ruby code to be executed...")
-
-== DRb
-
-As DRb allows remote clients to invoke arbitrary methods, it is not suitable to
-expose to untrusted clients.
-
-When using DRb, try to avoid exposing it over the network if possible. If this
-isn't possible and you need to expose DRb to the world, you *must* configure an
-appropriate security policy with +DRb::ACL+.

@@ -68,7 +68,6 @@ DEFAULT_GEM_LIBS = %w[
   debug
   delegate
   did_you_mean
-  drb
   english
   erb
   fileutils
