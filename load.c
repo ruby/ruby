@@ -1525,6 +1525,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
 int
 rb_require_internal_silent(VALUE fname)
 {
+    if (!rb_ractor_main_p()) {
+        return NUM2INT(rb_ractor_require(fname, true));
+    }
+
     rb_execution_context_t *ec = GET_EC();
     return require_internal(ec, fname, 1, false);
 }
@@ -1561,7 +1565,7 @@ rb_require_string_internal(VALUE fname, bool resurrect)
     // main ractor check
     if (!rb_ractor_main_p()) {
         if (resurrect) fname = rb_str_resurrect(fname);
-        return rb_ractor_require(fname);
+        return rb_ractor_require(fname, false);
     }
     else {
         int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));

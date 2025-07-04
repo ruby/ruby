@@ -725,38 +725,12 @@ rb_enc_get_from_index(int index)
 
 int rb_require_internal_silent(VALUE fname);
 
-static VALUE
-require_silent_safe(VALUE fname)
-{
-    return INT2NUM(rb_require_internal_silent(fname));
-}
-
-static int
-require_silent_sync(VALUE fname)
-{
-    int state;
-    VALUE retval;
-    RB_VM_LOCKING() {
-        VALUE debug = ruby_debug;
-        VALUE errinfo = rb_errinfo();
-
-        ruby_debug = Qfalse;
-
-        retval = rb_protect(require_silent_safe, fname, &state);
-
-        ruby_debug = debug;
-        rb_set_errinfo(errinfo);
-    }
-    if (state) {
-        rb_jump_tag(state);
-    }
-    return NUM2INT(retval);
-}
-
 static int
 load_encoding(const char *name)
 {
     VALUE enclib = rb_sprintf("enc/%s.so", name);
+    VALUE debug = ruby_debug;
+    VALUE errinfo;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
     int loaded;
     int idx;
@@ -767,7 +741,11 @@ load_encoding(const char *name)
         ++s;
     }
     enclib = rb_fstring(enclib);
-    loaded = require_silent_sync(enclib);
+    ruby_debug = Qfalse;
+    errinfo = rb_errinfo();
+    loaded = rb_require_internal_silent(enclib);
+    ruby_debug = debug;
+    rb_set_errinfo(errinfo);
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         if (loaded < 0 || 1 < loaded) {
@@ -785,36 +763,47 @@ load_encoding(const char *name)
 }
 
 static int
-enc_autoload_body(struct enc_table *enc_table, rb_encoding *enc)
+enc_autoload_body(rb_encoding *enc)
 {
-    rb_encoding *base = enc_table->list[ENC_TO_ENCINDEX(enc)].base;
+    rb_encoding *base;
+    int i = 0;
+
+    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        base = enc_table->list[ENC_TO_ENCINDEX(enc)].base;
+        if (base) {
+            do {
+                if (i >= enc_table->count) {
+                    i = -1;
+                    break;
+                }
+            } while (enc_table->list[i].enc != base && (++i, 1));
+        }
+    }
+
+    if (i == -1) return -1;
 
     if (base) {
-        int i = 0;
-        do {
-            if (i >= enc_table->count) return -1;
-        } while (enc_table->list[i].enc != base && (++i, 1));
         if (rb_enc_autoload_p(base)) {
             if (rb_enc_autoload(base) < 0) return -1;
         }
         i = enc->ruby_encoding_index;
-        enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
+
+        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+            enc_register_at(enc_table, i & ENC_INDEX_MASK, rb_enc_name(enc), base);
+        }
+
         ((rb_raw_encoding *)enc)->ruby_encoding_index = i;
         i &= ENC_INDEX_MASK;
         return i;
     }
-    else {
-        return -2;
-    }
+
+    return -2;
 }
 
 int
 rb_enc_autoload(rb_encoding *enc)
 {
-    int i;
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        i = enc_autoload_body(enc_table, enc);
-    }
+    int i = enc_autoload_body(enc);
     if (i == -2) {
         i = load_encoding(rb_enc_name(enc));
     }
