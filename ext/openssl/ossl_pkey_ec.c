@@ -47,11 +47,8 @@ static VALUE eEC_GROUP;
 static VALUE cEC_POINT;
 static VALUE eEC_POINT;
 
-static ID s_GFp, s_GF2m;
-
-static ID ID_uncompressed;
-static ID ID_compressed;
-static ID ID_hybrid;
+static VALUE sym_GFp, sym_GF2m;
+static VALUE sym_uncompressed, sym_compressed, sym_hybrid;
 
 static ID id_i_group;
 
@@ -674,19 +671,20 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
         break;
     case 4:
         if (SYMBOL_P(arg1)) {
-            ID id = SYM2ID(arg1);
             EC_GROUP *(*new_curve)(const BIGNUM *, const BIGNUM *, const BIGNUM *, BN_CTX *) = NULL;
             const BIGNUM *p = GetBNPtr(arg2);
             const BIGNUM *a = GetBNPtr(arg3);
             const BIGNUM *b = GetBNPtr(arg4);
 
-            if (id == s_GFp) {
+            if (arg1 == sym_GFp) {
                 new_curve = EC_GROUP_new_curve_GFp;
+            }
 #if !defined(OPENSSL_NO_EC2M)
-            } else if (id == s_GF2m) {
+            else if (arg1 == sym_GF2m) {
                 new_curve = EC_GROUP_new_curve_GF2m;
+            }
 #endif
-            } else {
+            else {
                 ossl_raise(rb_eArgError, "unknown symbol, must be :GFp or :GF2m");
             }
 
@@ -958,37 +956,36 @@ static VALUE ossl_ec_group_set_asn1_flag(VALUE self, VALUE flag_v)
  */
 static VALUE ossl_ec_group_get_point_conversion_form(VALUE self)
 {
-    EC_GROUP *group = NULL;
+    EC_GROUP *group;
     point_conversion_form_t form;
-    VALUE ret;
 
     GetECGroup(self, group);
     form = EC_GROUP_get_point_conversion_form(group);
 
     switch (form) {
-    case POINT_CONVERSION_UNCOMPRESSED:	ret = ID_uncompressed; break;
-    case POINT_CONVERSION_COMPRESSED:	ret = ID_compressed; break;
-    case POINT_CONVERSION_HYBRID:	ret = ID_hybrid; break;
-    default:	ossl_raise(eEC_GROUP, "unsupported point conversion form: %d, this module should be updated", form);
+      case POINT_CONVERSION_UNCOMPRESSED:
+        return sym_uncompressed;
+      case POINT_CONVERSION_COMPRESSED:
+        return sym_compressed;
+      case POINT_CONVERSION_HYBRID:
+        return sym_hybrid;
+      default:
+        ossl_raise(eEC_GROUP, "unsupported point conversion form: %d, " \
+                   "this module should be updated", form);
     }
-
-   return ID2SYM(ret);
 }
 
 static point_conversion_form_t
 parse_point_conversion_form_symbol(VALUE sym)
 {
-    ID id = SYM2ID(sym);
-
-    if (id == ID_uncompressed)
+    if (sym == sym_uncompressed)
 	return POINT_CONVERSION_UNCOMPRESSED;
-    else if (id == ID_compressed)
+    if (sym == sym_compressed)
 	return POINT_CONVERSION_COMPRESSED;
-    else if (id == ID_hybrid)
+    if (sym == sym_hybrid)
 	return POINT_CONVERSION_HYBRID;
-    else
-	ossl_raise(rb_eArgError, "unsupported point conversion form %+"PRIsVALUE
-		   " (expected :compressed, :uncompressed, or :hybrid)", sym);
+    ossl_raise(rb_eArgError, "unsupported point conversion form %+"PRIsVALUE
+               " (expected :compressed, :uncompressed, or :hybrid)", sym);
 }
 
 /*
@@ -1557,12 +1554,12 @@ void Init_ossl_ec(void)
     eEC_GROUP = rb_define_class_under(cEC_GROUP, "Error", eOSSLError);
     eEC_POINT = rb_define_class_under(cEC_POINT, "Error", eOSSLError);
 
-    s_GFp = rb_intern("GFp");
-    s_GF2m = rb_intern("GF2m");
+    sym_GFp = ID2SYM(rb_intern_const("GFp"));
+    sym_GF2m = ID2SYM(rb_intern_const("GF2m"));
 
-    ID_uncompressed = rb_intern("uncompressed");
-    ID_compressed = rb_intern("compressed");
-    ID_hybrid = rb_intern("hybrid");
+    sym_uncompressed = ID2SYM(rb_intern_const("uncompressed"));
+    sym_compressed = ID2SYM(rb_intern_const("compressed"));
+    sym_hybrid = ID2SYM(rb_intern_const("hybrid"));
 
     rb_define_const(cEC, "NAMED_CURVE", INT2NUM(OPENSSL_EC_NAMED_CURVE));
     rb_define_const(cEC, "EXPLICIT_CURVE", INT2NUM(OPENSSL_EC_EXPLICIT_CURVE));
