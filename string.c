@@ -8056,7 +8056,7 @@ upcase_single(VALUE str)
 
 /*
  *  call-seq:
- *    upcase!(*options) -> self or nil
+ *    upcase!(mapping) -> self or nil
  *
  *  Upcases the characters in +self+;
  *  returns +self+ if any changes were made, +nil+ otherwise:
@@ -8066,7 +8066,7 @@ upcase_single(VALUE str)
  *    s                  # => "HELLO WORLD!"
  *    s.upcase!          # => nil
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#upcase, String#downcase, String#downcase!.
@@ -8098,14 +8098,14 @@ rb_str_upcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    upcase(*options) -> string
+ *    upcase(mapping) -> string
  *
  *  Returns a string containing the upcased characters in +self+:
  *
  *     s = 'Hello World!' # => "Hello World!"
  *     s.upcase           # => "HELLO WORLD!"
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#upcase!, String#downcase, String#downcase!.
@@ -8158,7 +8158,7 @@ downcase_single(VALUE str)
 
 /*
  *  call-seq:
- *    downcase!(*options) -> self or nil
+ *    downcase!(mapping) -> self or nil
  *
  *  Downcases the characters in +self+;
  *  returns +self+ if any changes were made, +nil+ otherwise:
@@ -8168,7 +8168,7 @@ downcase_single(VALUE str)
  *    s                  # => "hello world!"
  *    s.downcase!        # => nil
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#downcase, String#upcase, String#upcase!.
@@ -8200,14 +8200,14 @@ rb_str_downcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    downcase(*options) -> string
+ *    downcase(mapping) -> string
  *
  *  Returns a string containing the downcased characters in +self+:
  *
  *     s = 'Hello World!' # => "Hello World!"
  *     s.downcase         # => "hello world!"
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#downcase!, String#upcase, String#upcase!.
@@ -8242,7 +8242,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize!(*options) -> self or nil
+ *    capitalize!(mapping) -> self or nil
  *
  *  Upcases the first character in +self+;
  *  downcases the remaining characters;
@@ -8253,7 +8253,7 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
  *    s                  # => "Hello world!"
  *    s.capitalize!      # => nil
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#capitalize.
@@ -8282,7 +8282,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(*options) -> string
+ *    capitalize(mapping) -> string
  *
  *  Returns a string containing the characters in +self+;
  *  the first character is upcased;
@@ -8291,7 +8291,7 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *     s = 'hello World!' # => "hello World!"
  *     s.capitalize       # => "Hello world!"
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#capitalize!.
@@ -8321,7 +8321,7 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase!(*options) -> self or nil
+ *    swapcase!(mapping) -> self or nil
  *
  *  Upcases each lowercase character in +self+;
  *  downcases uppercase character;
@@ -8332,7 +8332,7 @@ rb_str_capitalize(int argc, VALUE *argv, VALUE str)
  *    s                  # => "hELLO wORLD!"
  *    ''.swapcase!       # => nil
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#swapcase.
@@ -8360,7 +8360,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    swapcase(*options) -> string
+ *    swapcase(mapping) -> string
  *
  *  Returns a string containing the characters in +self+, with cases reversed;
  *  each uppercase character is downcased;
@@ -8369,7 +8369,7 @@ rb_str_swapcase_bang(int argc, VALUE *argv, VALUE str)
  *     s = 'Hello World!' # => "Hello World!"
  *     s.swapcase         # => "hELLO wORLD!"
  *
- *  The casing may be affected by the given +options+;
+ *  The casing may be affected by the given +mapping+;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
  *  Related: String#swapcase!.
@@ -12482,7 +12482,7 @@ sym_empty(VALUE sym)
 
 /*
  *  call-seq:
- *    upcase(*options) -> symbol
+ *    upcase(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.upcase.to_sym</tt>.
  *
@@ -12498,7 +12498,7 @@ sym_upcase(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    downcase(*options) -> symbol
+ *    downcase(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.downcase.to_sym</tt>.
  *
@@ -12516,7 +12516,7 @@ sym_downcase(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    capitalize(*options) -> symbol
+ *    capitalize(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.capitalize.to_sym</tt>.
  *
@@ -12532,7 +12532,7 @@ sym_capitalize(int argc, VALUE *argv, VALUE sym)
 
 /*
  *  call-seq:
- *    swapcase(*options) -> symbol
+ *    swapcase(mapping) -> symbol
  *
  *  Equivalent to <tt>sym.to_s.swapcase.to_sym</tt>.
  *
