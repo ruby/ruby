@@ -1,6 +1,6 @@
 #![allow(non_upper_case_globals)]
-use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp};
+use crate::cruby::{Qfalse, Qnil, Qtrue, VALUE, RUBY_T_ARRAY, RUBY_T_STRING, RUBY_T_HASH, RUBY_T_CLASS};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cObject, rb_cTrueClass, rb_cFalseClass, rb_cNilClass, rb_cRange, rb_cSet, rb_cRegexp, rb_cClass, rb_cModule};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::ruby_sym_to_rust_string;
@@ -145,6 +145,11 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
+fn is_class_exact(val: VALUE) -> bool {
+    // Objects with RUBY_T_CLASS type and not instances of Module
+    val.builtin_type() == RUBY_T_CLASS && val.class_of() != unsafe { rb_cModule }
+}
+
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -196,6 +201,9 @@ impl Type {
         }
         else if is_string_exact(val) {
             Type { bits: bits::StringExact, spec: Specialization::Object(val) }
+        }
+        else if is_class_exact(val) {
+            Type { bits: bits::ClassExact, spec: Specialization::Object(val) }
         }
         else if val.class_of() == unsafe { rb_cRegexp } {
             Type { bits: bits::RegexpExact, spec: Specialization::Object(val) }
@@ -288,6 +296,7 @@ impl Type {
 
     fn is_builtin(class: VALUE) -> bool {
         if class == unsafe { rb_cArray } { return true; }
+        if class == unsafe { rb_cClass } { return true; }
         if class == unsafe { rb_cFalseClass } { return true; }
         if class == unsafe { rb_cFloat } { return true; }
         if class == unsafe { rb_cHash } { return true; }
@@ -396,6 +405,7 @@ impl Type {
             return Some(val);
         }
         if self.is_subtype(types::ArrayExact) { return Some(unsafe { rb_cArray }); }
+        if self.is_subtype(types::ClassExact) { return Some(unsafe { rb_cClass }); }
         if self.is_subtype(types::FalseClassExact) { return Some(unsafe { rb_cFalseClass }); }
         if self.is_subtype(types::FloatExact) { return Some(unsafe { rb_cFloat }); }
         if self.is_subtype(types::HashExact) { return Some(unsafe { rb_cHash }); }
@@ -403,6 +413,7 @@ impl Type {
         if self.is_subtype(types::NilClassExact) { return Some(unsafe { rb_cNilClass }); }
         if self.is_subtype(types::ObjectExact) { return Some(unsafe { rb_cObject }); }
         if self.is_subtype(types::RangeExact) { return Some(unsafe { rb_cRange }); }
+        if self.is_subtype(types::RegexpExact) { return Some(unsafe { rb_cRegexp }); }
         if self.is_subtype(types::SetExact) { return Some(unsafe { rb_cSet }); }
         if self.is_subtype(types::StringExact) { return Some(unsafe { rb_cString }); }
         if self.is_subtype(types::SymbolExact) { return Some(unsafe { rb_cSymbol }); }

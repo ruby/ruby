@@ -71,6 +71,8 @@ of each.
 - Etc ([GitHub][etc]): Provides access to information typically stored in the UNIX /etc directory
 - Fcntl ([GitHub][fcntl]): Loads constants defined in the OS fcntl.h C header file
 - IO.console ([GitHub][io-console]): Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
+- IO#nonblock ([GitHub][io-nonblock]): Enable non-blocking mode with IO class.
+- IO#wait ([GitHub][io-wait]): Provides the feature for waiting until IO is readable or writable without blocking.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
 - Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
@@ -153,6 +155,8 @@ of each.
 [forwardable]: https://github.com/ruby/forwardable
 [getoptlong]: https://github.com/ruby/getoptlong
 [io-console]: https://github.com/ruby/io-console
+[io-nonblock]: https://github.com/ruby/io-nonblock
+[io-wait]: https://github.com/ruby/io-wait
 [ipaddr]: https://github.com/ruby/ipaddr
 [irb]: https://github.com/ruby/irb
 [json]: https://github.com/ruby/json

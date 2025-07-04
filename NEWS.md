@@ -119,7 +119,7 @@ The following bundled gems are promoted from default gems.
 * pstore 0.2.0
 * benchmark 0.4.1
 * logger 1.7.0
-* rdoc 6.14.1
+* rdoc 6.14.2
 * win32ole 1.9.2
 * irb 1.15.2
 * reline 0.6.1

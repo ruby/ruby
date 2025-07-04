@@ -815,6 +815,21 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
+  def test_bop_invalidation
+    omit 'Invalidation on BOP redefinition is not implemented yet'
+    assert_compiles '', %q{
+      def test
+        eval(<<~RUBY)
+          class Integer
+            def +(_) = 100
+          end
+        RUBY
+        1 + 2
+      end
+      test
+    }
+  end
+
   def test_defined_yield
     assert_compiles "nil", "defined?(yield)"
     assert_compiles '[nil, nil, "yield"]', %q{

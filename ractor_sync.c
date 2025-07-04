@@ -729,19 +729,9 @@ static rb_ractor_t *
 ractor_set_successor_once(rb_ractor_t *r, rb_ractor_t *cr)
 {
     if (r->sync.successor == NULL) {
-        RACTOR_LOCK(r);
-        {
-            if (r->sync.successor != NULL) {
-                // already `value`ed
-            }
-            else {
-                r->sync.successor = cr;
-            }
-        }
-        RACTOR_UNLOCK(r);
+        rb_ractor_t *successor = ATOMIC_PTR_CAS(r->sync.successor, NULL, cr);
+        return successor == NULL ? cr : successor;
     }
-
-    VM_ASSERT(r->sync.successor != NULL);
 
     return r->sync.successor;
 }
