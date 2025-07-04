@@ -372,6 +372,8 @@ features_index_add_single(vm_ns_t *vm_ns, const char* str, size_t len, VALUE off
 static void
 features_index_add(vm_ns_t *vm_ns, VALUE feature, VALUE offset)
 {
+    RUBY_ASSERT(rb_ractor_main_p());
+
     const char *feature_str, *feature_end, *ext, *p;
     bool rb = false;
 

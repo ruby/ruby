@@ -725,12 +725,38 @@ rb_enc_get_from_index(int index)
 
 int rb_require_internal_silent(VALUE fname);
 
+static VALUE
+require_silent_safe(VALUE fname)
+{
+    return INT2NUM(rb_require_internal_silent(fname));
+}
+
+static int
+require_silent_sync(VALUE fname)
+{
+    int state;
+    VALUE retval;
+    RB_VM_LOCKING() {
+        VALUE debug = ruby_debug;
+        VALUE errinfo = rb_errinfo();
+
+        ruby_debug = Qfalse;
+
+        retval = rb_protect(require_silent_safe, fname, &state);
+
+        ruby_debug = debug;
+        rb_set_errinfo(errinfo);
+    }
+    if (state) {
+        rb_jump_tag(state);
+    }
+    return NUM2INT(retval);
+}
+
 static int
 load_encoding(const char *name)
 {
     VALUE enclib = rb_sprintf("enc/%s.so", name);
-    VALUE debug = ruby_debug;
-    VALUE errinfo;
     char *s = RSTRING_PTR(enclib) + 4, *e = RSTRING_END(enclib) - 3;
     int loaded;
     int idx;
@@ -741,11 +767,7 @@ load_encoding(const char *name)
         ++s;
     }
     enclib = rb_fstring(enclib);
-    ruby_debug = Qfalse;
-    errinfo = rb_errinfo();
-    loaded = rb_require_internal_silent(enclib);
-    ruby_debug = debug;
-    rb_set_errinfo(errinfo);
+    loaded = require_silent_sync(enclib);
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
         if (loaded < 0 || 1 < loaded) {
