@@ -363,7 +363,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         dest_buf = ROBJECT_FIELDS(dest);
     }
 
-    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, obj, src_buf, src_shape_id);
+    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
     rb_obj_set_shape_id(dest, dest_shape_id);
 }
 

@@ -1136,7 +1136,7 @@ rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 }
 
 void
-rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE src, VALUE *src_buf, shape_id_t src_shape_id)
+rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id)
 {
     rb_shape_t *dest_shape = RSHAPE(dest_shape_id);
     rb_shape_t *src_shape = RSHAPE(src_shape_id);
