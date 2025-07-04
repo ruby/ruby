@@ -346,6 +346,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringConcat { strings, .. } if strings.is_empty() => return None,
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
+        Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param { idx } => unreachable!("block.insns should not have Insn::Param({idx})"),
         Insn::Snapshot { .. } => return Some(()), // we don't need to do anything for this instruction at the moment
         Insn::Jump(branch) => no_output!(gen_jump(jit, asm, branch)),
@@ -1595,36 +1596,58 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Option<CodePtr> {
     })
 }
 
-fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+fn gen_push_opnds(jit: &mut JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::Opnd {
+    let n = opnds.len();
 
     // Calculate the compile-time NATIVE_STACK_PTR offset from NATIVE_BASE_PTR
     // At this point, frame_setup(&[], jit.c_stack_slots) has been called,
     // which allocated aligned_stack_bytes(jit.c_stack_slots) on the stack
     let frame_size = aligned_stack_bytes(jit.c_stack_slots);
-    let n = strings.len();
     let allocation_size = aligned_stack_bytes(n);
 
-    asm_comment!(asm, "allocate {} bytes on C stack for {} strings", allocation_size, n);
+    asm_comment!(asm, "allocate {} bytes on C stack for {} values", allocation_size, n);
     asm.sub_into(NATIVE_STACK_PTR, allocation_size.into());
 
     // Calculate the total offset from NATIVE_BASE_PTR to our buffer
     let total_offset_from_base = (frame_size + allocation_size) as i32;
 
-    for (idx, &string_opnd) in strings.iter().enumerate() {
+    for (idx, &opnd) in opnds.iter().enumerate() {
         let slot_offset = -total_offset_from_base + (idx as i32 * SIZEOF_VALUE_I32);
         asm.mov(
             Opnd::mem(VALUE_BITS, NATIVE_BASE_PTR, slot_offset),
-            string_opnd
+            opnd
         );
     }
 
-    let first_string_ptr = asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base));
+    asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -total_offset_from_base))
+}
 
-    let result = asm_ccall!(asm, rb_str_concat_literals, n.into(), first_string_ptr);
-
+fn gen_pop_opnds(asm: &mut Assembler, opnds: &[Opnd]) {
     asm_comment!(asm, "restore C stack pointer");
+    let allocation_size = aligned_stack_bytes(opnds.len());
     asm.add_into(NATIVE_STACK_PTR, allocation_size.into());
+}
+
+fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec<Opnd>, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let first_opnd_ptr = gen_push_opnds(jit, asm, &values);
+
+    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
+    let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
+    asm_ccall!(asm, rb_ary_clear, tmp_ary);
+
+    gen_pop_opnds(asm, &values);
+
+    result
+}
+
+fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, strings: Vec<Opnd>, state: &FrameState) -> Opnd {
+    gen_prepare_non_leaf_call(jit, asm, state);
+
+    let first_string_ptr = gen_push_opnds(jit, asm, &strings);
+    let result = asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr);
+    gen_pop_opnds(asm, &strings);
 
     result
 }

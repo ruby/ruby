@@ -290,11 +290,6 @@ rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
 
 #define KCODE_FIXED FL_USER4
 
-#define ARG_REG_OPTION_MASK \
-    (ONIG_OPTION_IGNORECASE|ONIG_OPTION_MULTILINE|ONIG_OPTION_EXTEND)
-#define ARG_ENCODING_FIXED    16
-#define ARG_ENCODING_NONE     32
-
 static int
 char_to_option(int c)
 {
