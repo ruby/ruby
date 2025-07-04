@@ -117,7 +117,7 @@ impl Opnd
     }
 
     /// Constructor for constant pointer operand
-    pub fn const_ptr(ptr: *const u8) -> Self {
+    pub fn const_ptr<T>(ptr: *const T) -> Self {
         Opnd::UImm(ptr as u64)
     }
 
@@ -1836,7 +1836,7 @@ impl Assembler
                 }
 
                 asm_comment!(self, "save cfp->pc");
-                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc as *const u8));
+                self.load_into(Opnd::Reg(Assembler::SCRATCH_REG), Opnd::const_ptr(pc));
                 self.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::Reg(Assembler::SCRATCH_REG));
 
                 asm_comment!(self, "save cfp->sp");
