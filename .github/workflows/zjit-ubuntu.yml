@@ -47,6 +47,9 @@ jobs:
           - test_task: 'btest'
             configure: '--enable-zjit=dev'
 
+          - test_task: 'zjit-test-ruby-all'
+            configure: '--enable-zjit=dev'
+
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.zjit_opts }}
