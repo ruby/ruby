@@ -48,12 +48,88 @@ update-zjit-bench:
 	$(Q) $(tooldir)/git-refresh -C $(srcdir) --branch main \
 		https://github.com/Shopify/zjit-bench zjit-bench $(GIT_OPTS)
 
+# List of test files to exclude for ZJIT
+ZJIT_EXCLUDED_TESTS = \
+	test/ruby/bug-11928.rb \
+	test/ruby/namespace/call_toplevel.rb \
+	test/ruby/namespace/current.rb \
+	test/ruby/namespace/ns.rb \
+	test/ruby/namespace/raise.rb \
+	test/ruby/namespace/string_ext_calling.rb \
+	test/ruby/namespace/string_ext_eval_caller.rb \
+	test/ruby/test_alias.rb \
+	test/ruby/test_allocation.rb \
+	test/ruby/test_ast.rb \
+	test/ruby/test_autoload.rb \
+	test/ruby/test_backtrace.rb \
+	test/ruby/test_beginendblock.rb \
+	test/ruby/test_call.rb \
+	test/ruby/test_class.rb \
+	test/ruby/test_compile_prism.rb \
+	test/ruby/test_complex.rb \
+	test/ruby/test_data.rb \
+	test/ruby/test_defined.rb \
+	test/ruby/test_dir_m17n.rb \
+	test/ruby/test_env.rb \
+	test/ruby/test_enumerator.rb \
+	test/ruby/test_exception.rb \
+	test/ruby/test_fiber.rb \
+	test/ruby/test_file.rb \
+	test/ruby/test_file_exhaustive.rb \
+	test/ruby/test_float.rb \
+	test/ruby/test_gc.rb \
+	test/ruby/test_hash.rb \
+	test/ruby/test_io.rb \
+	test/ruby/test_iseq.rb \
+	test/ruby/test_keyword.rb \
+	test/ruby/test_lambda.rb \
+	test/ruby/test_literal.rb \
+	test/ruby/test_marshal.rb \
+	test/ruby/test_memory_view.rb \
+	test/ruby/test_method.rb \
+	test/ruby/test_module.rb \
+	test/ruby/test_namespace.rb \
+	test/ruby/test_object.rb \
+	test/ruby/test_object_id.rb \
+	test/ruby/test_objectspace.rb \
+	test/ruby/test_optimization.rb \
+	test/ruby/test_parse.rb \
+	test/ruby/test_proc.rb \
+	test/ruby/test_process.rb \
+	test/ruby/test_ractor.rb \
+	test/ruby/test_range.rb \
+	test/ruby/test_rational.rb \
+	test/ruby/test_regexp.rb \
+	test/ruby/test_rubyoptions.rb \
+	test/ruby/test_set.rb \
+	test/ruby/test_settracefunc.rb \
+	test/ruby/test_super.rb \
+	test/ruby/test_string.rb \
+	test/ruby/test_struct.rb \
+	test/ruby/test_symbol.rb \
+	test/ruby/test_syntax.rb \
+	test/ruby/test_thread.rb \
+	test/ruby/test_time_tz.rb \
+	test/ruby/test_variable.rb \
+	test/ruby/test_vm_dump.rb \
+	test/ruby/test_yjit.rb
+
+# Get all test files in test/ruby directory
+ZJIT_ALL_RUBY_TESTS := $(wildcard $(top_srcdir)/test/ruby/*.rb $(top_srcdir)/test/ruby/*/*.rb)
+
+# Filter out excluded tests
+ZJIT_RUBY_TESTS := $(filter-out $(addprefix $(top_srcdir)/,$(ZJIT_EXCLUDED_TESTS)),$(ZJIT_ALL_RUBY_TESTS))
+
+# Run all Ruby tests with ZJIT enabled, excluding known failing tests
+.PHONY: zjit-test-all-ruby
+zjit-test-all-ruby:
+	$(MAKE) test-all TESTS='$(ZJIT_RUBY_TESTS)'
+
 # Gives quick feedback about ZJIT. Not a replacement for a full test run.
 .PHONY: zjit-test-all
 zjit-test-all:
 	$(MAKE) zjit-test
 	$(MAKE) test-all TESTS='$(top_srcdir)/test/ruby/test_zjit.rb'
-
 ZJIT_BINDGEN_DIFF_OPTS =
 
 # Generate Rust bindings. See source for details.
