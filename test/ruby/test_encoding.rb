@@ -136,22 +136,4 @@ class TestEncoding < Test::Unit::TestCase
       assert "[Bug #19562]"
     end;
   end
-
-  def test_ractor_force_encoding_parallel
-    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
-    begin;
-      $-w = nil
-      rs = []
-      100.times do
-        rs << Ractor.new do
-          "abc".force_encoding(Encoding.list.shuffle.first)
-        end
-      end
-      while rs.any?
-        r, _obj = Ractor.select(*rs)
-        rs.delete(r)
-      end
-      assert rs.empty?
-    end;
-  end
 end
