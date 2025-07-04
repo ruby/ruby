@@ -28,26 +28,26 @@ in a way that can be easily shared with other team members.
 
 Make sure you have a `--enable-zjit=dev` build, and run `brew install cargo-nextest` first.
 
-### make zjit-test-all
+### make zjit-test-suite
 
-This command runs all ZJIT tests: `make zjit-test` and `test/ruby/test_zjit.rb`.
+This command runs all ZJIT tests: `make zjit-test-rust` and `test/ruby/test_zjit.rb`.
 
 ```
-make zjit-test-all
+make zjit-test-suite
 ```
 
-### make zjit-test
+### make zjit-test-rust
 
 This command runs Rust unit tests.
 
 ```
-make zjit-test
+make zjit-test-rust
 ```
 
 You can also run a single test case by specifying the function name:
 
 ```
-make zjit-test ZJIT_TESTS=test_putobject
+make zjit-test-rust ZJIT_TESTS=test_putobject
 ```
 
 If you expect that your changes cause tests to fail and they do, you can have
@@ -55,14 +55,14 @@ If you expect that your changes cause tests to fail and they do, you can have
 before your test command, like so:
 
 ```
-UPDATE_EXPECT=1 make zjit-test ZJIT_TESTS=test_putobject
+UPDATE_EXPECT=1 make zjit-test-rust ZJIT_TESTS=test_putobject
 ```
 
 Test changes will be reviewed alongside code changes.
 
 <details>
 
-<summary>Setting up zjit-test</summary>
+<summary>Setting up zjit-test-rust</summary>
 
 ZJIT uses `cargo-nextest` for Rust unit tests instead of `cargo test`.
 `cargo-nextest` runs each test in its own process, which is valuable since
@@ -72,7 +72,7 @@ to <https://nexte.st/docs/installation/pre-built-binaries/> for installation
 instructions.
 
 Since it uses Cargo, you'll also need a `configure --enable-zjit=dev ...` build
-for `make zjit-test`. Since the tests need to link against CRuby, directly
+for `make zjit-test-rust`. Since the tests need to link against CRuby, directly
 calling `cargo test`, or `cargo nextest` likely won't build. Make sure to
 use `make`.
 
