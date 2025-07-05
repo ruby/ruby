@@ -5797,7 +5797,7 @@ mod opt_tests {
     }
 
     #[test]
-    fn module_instances_not_class_exact() {
+    fn module_instances_are_module_exact() {
         eval("
             def test = [Enumerable, Kernel]
             test # Warm the constant cache
@@ -5807,10 +5807,10 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Enumerable)
-              v11:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v11:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1010, Kernel)
-              v14:BasicObject[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+              v14:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
               v7:ArrayExact = NewArray v11, v14
               Return v7
         "#]]);
@@ -5943,7 +5943,7 @@ mod opt_tests {
             bb0(v0:BasicObject):
               PatchPoint SingleRactorMode
               PatchPoint StableConstantNames(0x1000, Kernel)
-              v7:BasicObject[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+              v7:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
               Return v7
         "#]]);
     }
