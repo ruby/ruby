@@ -8282,20 +8282,29 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize(mapping) -> string
+ *    capitalize(mapping = :ascii) -> string
  *
- *  Returns a string containing the characters in +self+;
- *  the first character is upcased;
- *  the remaining characters are downcased:
+ *  Returns a string containing the characters in +self+,
+ *  each with possibly changed case:
  *
- *     s = 'hello World!' # => "hello World!"
- *     s.capitalize       # => "Hello world!"
+ *  - The first character is upcased.
+ *  - Other characters are downcased.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
+ *  Examples:
  *
- *  Related: String#capitalize!.
+ *    'hello'.capitalize # => "Hello"
+ *    'HELLO'.capitalize # => "Hello"
  *
+ *  Some characters do not have upcase and downcase, and so are not changed;
+ *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
+ *
+ *    '1, 2, 3, ...'.capitalize # => "1, 2, 3, ..."
+ *
+ *  The casing is affected by the given +mapping+,
+ *  which may be +:ascii+, +:fold+, or +:turkic+;
+ *  see {Case Mappings}[rdoc-ref:case_mapping.rdoc@Case+Mappings].
+ *
+ *  Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].
  */
 
 static VALUE
