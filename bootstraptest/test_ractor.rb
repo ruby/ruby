@@ -408,8 +408,8 @@ assert_equal "allocator undefined for Thread", %q{
     r = Ractor.new obj do |msg|
       msg
     end
-  rescue TypeError => e
-    e.message #=> no _dump_data is defined for class Thread
+  rescue Ractor::IsolationError => e
+    e.cause.message #=> no _dump_data is defined for class Thread
   else
     'ng'
   end
@@ -1403,7 +1403,7 @@ assert_equal "ok", %q{
   end
   begin
     Ractor.new{} << err
-  rescue TypeError
+  rescue Ractor::IsolationError
     'ok'
   end
 }
