@@ -436,12 +436,14 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#else
+#elif defined(__sun) && defined(HAVE_ATOMIC_H)
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
     rbimpl_atomic_fetch_add(tmp, val);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -505,12 +507,14 @@ rbimpl_atomic_size_add(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
     rbimpl_atomic_add(tmp, val);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -532,8 +536,7 @@ rbimpl_atomic_inc(volatile rb_atomic_t *ptr)
     atomic_inc_uint(ptr);
 
 #else
-    rbimpl_atomic_add(ptr, 1);
-
+# error Unsupported platform.
 #endif
 }
 
@@ -554,11 +557,13 @@ rbimpl_atomic_size_inc(volatile size_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_inc_ulong(ptr);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     rbimpl_atomic_size_add(ptr, 1);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -641,12 +646,14 @@ rbimpl_atomic_size_sub(volatile size_t *ptr, size_t val)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, neg * val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
     rbimpl_atomic_sub(tmp, val);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -668,8 +675,7 @@ rbimpl_atomic_dec(volatile rb_atomic_t *ptr)
     atomic_dec_uint(ptr);
 
 #else
-    rbimpl_atomic_sub(ptr, 1);
-
+# error Unsupported platform.
 #endif
 }
 
@@ -690,11 +696,13 @@ rbimpl_atomic_size_dec(volatile size_t *ptr)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     atomic_dec_ulong(ptr);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     rbimpl_atomic_size_sub(ptr, 1);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -790,13 +798,15 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_swap_ulong(ptr, val);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
     const rb_atomic_t ret = rbimpl_atomic_exchange(tmp, val);
     return RBIMPL_CAST((size_t)ret);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
@@ -983,12 +993,14 @@ rbimpl_atomic_size_cas(volatile size_t *ptr, size_t oldval, size_t newval)
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
     return atomic_cas_ulong(ptr, oldval, newval);
 
-#else
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_size_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
     return rbimpl_atomic_cas(tmp, oldval, newval);
 
+#else
+# error Unsupported platform.
 #endif
 }
 
