@@ -627,10 +627,7 @@ enum_join_map(int argc, VALUE *argv, VALUE obj)
     rb_scan_args(argc, argv, "01", &sep);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
-    if (NIL_P(sep)) {
-        sep = rb_str_new_cstr("");
-    }
-    else {
+    if (!NIL_P(sep)) {
         StringValue(sep);
     }
 
