@@ -915,6 +915,51 @@ class TestZJIT < Test::Unit::TestCase
     end
   end
 
+  def test_module_name_with_guard_passes
+    assert_compiles '"Integer"', %q{
+      def test(mod)
+        mod.name
+      end
+
+      test(String)
+      test(Integer)
+    }, call_threshold: 2
+  end
+
+  def test_string_bytesize_with_guard
+    assert_compiles '5', %q{
+      def test(str)
+        str.bytesize
+      end
+
+      test('hello')
+      test('world')
+    }, call_threshold: 2
+  end
+
+  def test_guard_type_side_exit
+    # This test demonstrates that the guard side exit works correctly
+    # In this case, when we call with a non-Class object, it should fall back to interpreter
+    assert_compiles '["String", "Integer", "Foo"]', %q{
+      class Foo
+        def name
+          "Foo"
+        end
+      end
+
+      def test(mod)
+        mod.name
+      end
+
+      results = []
+      results << test(String)
+      results << test(Integer)
+      results << test(Foo.new)
+
+      results
+    }, call_threshold: 2
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

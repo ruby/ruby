@@ -6517,4 +6517,44 @@ mod opt_tests {
               Return v5
         "#]]);
     }
+
+    #[test]
+    fn test_guard_class_for_module_name() {
+        eval("
+            def test(mod)
+              mod.name
+            end
+            # Profile with Class objects
+            test(String)
+            test(Integer)
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(Class@0x1000, name@0x1008)
+              v7:ClassExact = GuardType v1, ClassExact
+              v8:StringExact|NilClassExact = CCall name@0x1010, v7
+              Return v8
+        "#]]);
+    }
+
+    #[test]
+    fn test_guard_string_for_bytesize() {
+        eval("
+            def test(str)
+              str.bytesize
+            end
+            # Profile with String objects
+            test('hello')
+            test('world')
+        ");
+        assert_optimized_method_hir("test", expect![[r#"
+            fn test:
+            bb0(v0:BasicObject, v1:BasicObject):
+              PatchPoint MethodRedefined(String@0x1000, bytesize@0x1008)
+              v7:StringExact = GuardType v1, StringExact
+              v8:Fixnum = CCall bytesize@0x1010, v7
+              Return v8
+        "#]]);
+    }
 }
