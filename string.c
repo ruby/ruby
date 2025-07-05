@@ -8242,22 +8242,14 @@ rb_str_downcase(int argc, VALUE *argv, VALUE str)
 
 /*
  *  call-seq:
- *    capitalize!(mapping) -> self or nil
+ *    capitalize!(mapping = :ascii) -> self or nil
  *
- *  Upcases the first character in +self+;
- *  downcases the remaining characters;
- *  returns +self+ if any changes were made, +nil+ otherwise:
+ *  Like String#capitalize, except that:
  *
- *    s = 'hello World!' # => "hello World!"
- *    s.capitalize!      # => "Hello world!"
- *    s                  # => "Hello world!"
- *    s.capitalize!      # => nil
+ *  - Changes character casings in +self+ (not in a copy of +self+).
+ *  - Returns +self+ if any changes are made, +nil+ otherwise.
  *
- *  The casing may be affected by the given +mapping+;
- *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc].
- *
- *  Related: String#capitalize.
- *
+ *  Related: See {Modifying}[rdoc-ref:String@Modifying].
  */
 
 static VALUE
