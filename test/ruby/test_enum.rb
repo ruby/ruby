@@ -1365,6 +1365,10 @@ class TestEnumerable < Test::Unit::TestCase
 
     @obj = [false, true, nil, 0, ""]
     assert_equal("false true  0 ", @obj.join_map(" ") { |x| x })
+    
+    @obj = [[1, 2], 3]
+    assert_equal("1|2|3", @obj.join_map("|") { |n| [n] })
+    assert_equal("1|2|3", @obj.join_map("|") { |n| n })
   end
 
   def test_ruby_svar

@@ -585,7 +585,7 @@ join_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     VALUE result = memo->v1;
     VALUE sep = memo->v2;
-    VALUE val;
+    VALUE val, tmp;
 
     ENUM_WANT_SVALUE();
 
@@ -594,7 +594,13 @@ join_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     if (memo->u3.cnt > 0 && !NIL_P(sep)) {
         rb_str_buf_append(result, sep);
     }
-    rb_str_buf_append(result, rb_obj_as_string(val));
+    if (RB_TYPE_P(val, T_ARRAY)) {
+        tmp = rb_ary_join(val, sep);
+        rb_str_buf_append(result, tmp);
+    }
+    else {
+        rb_str_buf_append(result, rb_obj_as_string(val));
+    }
     memo->u3.cnt++;
 
     return Qnil;
