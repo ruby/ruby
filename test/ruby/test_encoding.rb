@@ -136,4 +136,25 @@ class TestEncoding < Test::Unit::TestCase
       assert "[Bug #19562]"
     end;
   end
+
+  def test_ractor_lazy_load_encoding_concurrently
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze
+      7.times do
+        rs << Ractor.new(autoload_encodings) do |encodings|
+          str = "abc".dup
+          encodings.each do |enc|
+            str.force_encoding(enc)
+          end
+        end
+      end
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert rs.empty?
+    end;
+  end
 end
