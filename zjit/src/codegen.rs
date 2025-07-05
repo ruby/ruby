@@ -308,6 +308,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state))?,
         Insn::Defined { op_type, obj, pushval, v } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v))?,
+        Insn::CheckInterrupts { state } => return gen_check_interrupts(jit, asm, &function.frame_state(*state)),
         _ => {
             debug!("ZJIT: gen_function: unexpected insn {insn}");
             return None;
@@ -379,6 +380,19 @@ fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, _obj: VALUE,
         }
         _ => None
     }
+}
+
+/// Generate code to check for interrupts and take a side-exit.
+fn gen_check_interrupts(jit: &mut JITState, asm: &mut Assembler, state: &FrameState) -> Option<()> {
+    // Check for interrupts
+    // see RUBY_VM_CHECK_INTS(ec) macro
+    asm_comment!(asm, "RUBY_VM_CHECK_INTS(ec)");
+    // Not checking interrupt_mask since it's zero outside finalize_deferred_heap_pages,
+    // signal_exec, or rb_postponed_job_flush.
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG));
+    asm.test(interrupt_flag, interrupt_flag);
+    asm.jnz(side_exit(jit, state)?);
+    Some(())
 }
 
 /// Get a local variable from a higher scope. `local_ep_offset` is in number of VALUEs.
@@ -861,6 +875,7 @@ fn gen_return(jit: &JITState, asm: &mut Assembler, val: lir::Opnd) -> Option<()>
         asm.mov(NATIVE_STACK_PTR, new_sp);
     }
 
+    // TODO(max): Check for interrupts
     asm.frame_teardown();
 
     // Return from the function
