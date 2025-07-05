@@ -58,12 +58,7 @@ ZJIT_EXCLUDED_TESTS = \
 	test/ruby/namespace/string_ext_calling.rb \
 	test/ruby/namespace/string_ext_eval_caller.rb \
 	test/ruby/test_allocation.rb \
-	test/ruby/test_autoload.rb \
-	test/ruby/test_backtrace.rb \
-	test/ruby/test_beginendblock.rb \
-	test/ruby/test_compile_prism.rb \
 	test/ruby/test_complex.rb \
-	test/ruby/test_data.rb \
 	test/ruby/test_defined.rb \
 	test/ruby/test_dir_m17n.rb \
 	test/ruby/test_env.rb \
@@ -72,13 +67,10 @@ ZJIT_EXCLUDED_TESTS = \
 	test/ruby/test_fiber.rb \
 	test/ruby/test_file.rb \
 	test/ruby/test_file_exhaustive.rb \
-	test/ruby/test_float.rb \
 	test/ruby/test_gc.rb \
 	test/ruby/test_io.rb \
 	test/ruby/test_iseq.rb \
 	test/ruby/test_keyword.rb \
-	test/ruby/test_lambda.rb \
-	test/ruby/test_literal.rb \
 	test/ruby/test_marshal.rb \
 	test/ruby/test_memory_view.rb \
 	test/ruby/test_method.rb \
