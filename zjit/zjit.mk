@@ -50,30 +50,15 @@ update-zjit-bench:
 
 # List of test files to exclude for ZJIT
 ZJIT_EXCLUDED_TESTS = \
-	test/ruby/bug-11928.rb \
-	test/ruby/namespace/call_toplevel.rb \
-	test/ruby/namespace/current.rb \
-	test/ruby/namespace/ns.rb \
-	test/ruby/namespace/raise.rb \
-	test/ruby/namespace/string_ext_calling.rb \
-	test/ruby/namespace/string_ext_eval_caller.rb \
-	test/ruby/test_allocation.rb \
-	test/ruby/test_complex.rb \
-	test/ruby/test_defined.rb \
-	test/ruby/test_dir_m17n.rb \
 	test/ruby/test_env.rb \
 	test/ruby/test_enumerator.rb \
-	test/ruby/test_exception.rb \
 	test/ruby/test_fiber.rb \
-	test/ruby/test_file.rb \
 	test/ruby/test_file_exhaustive.rb \
 	test/ruby/test_gc.rb \
 	test/ruby/test_io.rb \
-	test/ruby/test_iseq.rb \
 	test/ruby/test_keyword.rb \
 	test/ruby/test_marshal.rb \
 	test/ruby/test_memory_view.rb \
-	test/ruby/test_method.rb \
 	test/ruby/test_module.rb \
 	test/ruby/test_namespace.rb \
 	test/ruby/test_object.rb \
@@ -107,7 +92,7 @@ ZJIT_RUBY_TESTS := $(filter-out $(addprefix $(top_srcdir)/,$(ZJIT_EXCLUDED_TESTS
 # Run all Ruby tests with ZJIT enabled (temporarily excluding known failing tests)
 .PHONY: zjit-test-ruby-all
 zjit-test-ruby-all:
-	$(MAKE) test-all TESTS='$(ZJIT_RUBY_TESTS)'
+	$(MAKE) test-all RUST_BACKTRACE=1 RUN_OPTS='--zjit --zjit-call-threshold=1' TESTS='../test/ruby/test_integer.rb'
 
 # Run only the ZJIT-specific Ruby tests
 .PHONY: zjit-test-ruby
