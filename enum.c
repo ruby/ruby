@@ -586,17 +586,17 @@ join_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     VALUE result = memo->v1;
     VALUE sep = memo->v2;
     VALUE val;
-    
+
     ENUM_WANT_SVALUE();
-    
+
     val = enum_yield(argc, i);
-    
+
     if (memo->u3.cnt > 0 && !NIL_P(sep)) {
         rb_str_buf_append(result, sep);
     }
     rb_str_buf_append(result, rb_obj_as_string(val));
     memo->u3.cnt++;
-    
+
     return Qnil;
 }
 
@@ -623,21 +623,21 @@ enum_join_map(int argc, VALUE *argv, VALUE obj)
 {
     VALUE sep, result;
     struct MEMO *memo;
-    
+
     rb_scan_args(argc, argv, "01", &sep);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
-    
+
     if (NIL_P(sep)) {
         sep = rb_str_new_cstr("");
     }
     else {
         StringValue(sep);
     }
-    
+
     result = rb_str_buf_new(0);
     memo = MEMO_NEW(result, sep, 0);
     rb_block_call(obj, id_each, 0, 0, join_map_i, (VALUE)memo);
-    
+
     return result;
 }
 
