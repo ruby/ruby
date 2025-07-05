@@ -1,8 +1,10 @@
 #!ruby -W0
 
-rdoc_path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/rdoc-*").first
-$LOAD_PATH.unshift("#{rdoc_path}/lib")
-require 'rdoc/rdoc'
+%w[rdoc tsort].each do |lib|
+  lib_path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/#{lib}-*").first
+  $LOAD_PATH.unshift("#{lib_path}/lib")
+end
+require "rdoc/rdoc"
 
 # Make only the output directory relative to the invoked directory.
 invoked = Dir.pwd
