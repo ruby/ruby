@@ -18,7 +18,8 @@ typedef enum {
   #define HAVE_BUILTIN_CTZLL 0
 #endif
 
-static inline uint32_t trailing_zeros64(uint64_t input) {
+static inline uint32_t trailing_zeros64(uint64_t input)
+{
 #if HAVE_BUILTIN_CTZLL
   return __builtin_ctzll(input);
 #else
@@ -32,7 +33,8 @@ static inline uint32_t trailing_zeros64(uint64_t input) {
 #endif
 }
 
-static inline int trailing_zeros(int input) {
+static inline int trailing_zeros(int input)
+{
   #if HAVE_BUILTIN_CTZLL
     return __builtin_ctz(input);
   #else
@@ -59,7 +61,8 @@ static inline int trailing_zeros(int input) {
 #include <arm_neon.h>
 
 #define FIND_SIMD_IMPLEMENTATION_DEFINED 1
-static inline SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void)
+{
     return SIMD_NEON;
 }
 
@@ -89,7 +92,7 @@ static inline FORCE_INLINE uint64_t compute_chunk_mask_neon(const char *ptr)
 
 static inline FORCE_INLINE int string_scan_simd_neon(const char **ptr, const char *end, uint64_t *mask)
 {
-    while(*ptr + sizeof(uint8x16_t) <= end) {
+    while (*ptr + sizeof(uint8x16_t) <= end) {
       uint64_t chunk_mask = compute_chunk_mask_neon(*ptr);
       if (chunk_mask) {
           *mask = chunk_mask;
@@ -161,7 +164,8 @@ static inline TARGET_SSE2 FORCE_INLINE int string_scan_simd_sse2(const char **pt
 #include <cpuid.h>
 #endif /* HAVE_CPUID_H */
 
-static inline SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void)
+{
     // TODO Revisit. I think the SSE version now only uses SSE2 instructions.
     if (__builtin_cpu_supports("sse2")) {
         return SIMD_SSE2;
@@ -176,7 +180,8 @@ static inline SIMD_Implementation find_simd_implementation(void) {
 #endif /* JSON_ENABLE_SIMD */
 
 #ifndef FIND_SIMD_IMPLEMENTATION_DEFINED
-static inline SIMD_Implementation find_simd_implementation(void) {
+static inline SIMD_Implementation find_simd_implementation(void)
+{
     return SIMD_NONE;
 }
 #endif

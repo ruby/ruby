@@ -540,7 +540,7 @@ static void
 json_eat_comments(JSON_ParserState *state)
 {
     if (state->cursor + 1 < state->end) {
-        switch(state->cursor[1]) {
+        switch (state->cursor[1]) {
             case '/': {
                 state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
                 if (!state->cursor) {

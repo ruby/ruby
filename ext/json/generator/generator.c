@@ -586,7 +586,8 @@ static inline unsigned char search_ascii_only_escape(search_state *search, const
     return 0;
 }
 
-static inline void full_escape_UTF8_char(search_state *search, unsigned char ch_len) {
+static inline void full_escape_UTF8_char(search_state *search, unsigned char ch_len)
+{
     const unsigned char ch = (unsigned char)*search->ptr;
     switch (ch_len) {
         case 1: {
@@ -616,7 +617,7 @@ static inline void full_escape_UTF8_char(search_state *search, unsigned char ch_
 
             uint32_t wchar = 0;
 
-            switch(ch_len) {
+            switch (ch_len) {
                 case 2:
                     wchar = ch & 0x1F;
                     break;
@@ -776,7 +777,8 @@ static VALUE mHash_to_json(int argc, VALUE *argv, VALUE self)
  * _state_ is a JSON::State object, that can also be used to configure the
  * produced JSON string output further.
  */
-static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self) {
+static VALUE mArray_to_json(int argc, VALUE *argv, VALUE self)
+{
     rb_check_arity(argc, 0, 1);
     VALUE Vstate = cState_from_state_s(cState, argc == 1 ? argv[0] : Qnil);
     return cState_partial_generate(Vstate, self, generate_json_array, Qfalse);
@@ -838,7 +840,8 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
  *
  * Extends _modul_ with the String::Extend module.
  */
-static VALUE mString_included_s(VALUE self, VALUE modul) {
+static VALUE mString_included_s(VALUE self, VALUE modul)
+{
     VALUE result = rb_funcall(modul, i_extend, 1, mString_Extend);
     rb_call_super(1, &modul);
     return result;
@@ -1083,7 +1086,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     }
 
     VALUE key_to_s;
-    switch(rb_type(key)) {
+    switch (rb_type(key)) {
         case T_STRING:
             if (RB_LIKELY(RBASIC_CLASS(key) == rb_cString)) {
                 key_to_s = key;
@@ -1167,7 +1170,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     fbuffer_append_char(buffer, '[');
     if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
-    for(i = 0; i < RARRAY_LEN(obj); i++) {
+    for (i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
@@ -1252,7 +1255,7 @@ static void generate_json_string(FBuffer *buffer, struct generate_json_data *dat
     search.chunk_base = NULL;
 #endif /* HAVE_SIMD */
 
-    switch(rb_enc_str_coderange(obj)) {
+    switch (rb_enc_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(data->state->ascii_only)) {
@@ -2116,7 +2119,7 @@ void Init_generator(void)
     rb_require("json/ext/generator/state");
 
 
-    switch(find_simd_implementation()) {
+    switch (find_simd_implementation()) {
 #ifdef HAVE_SIMD
 #ifdef HAVE_SIMD_NEON
         case SIMD_NEON:
