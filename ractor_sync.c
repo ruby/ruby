@@ -973,7 +973,16 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
             VM_ASSERT(waiter->wakeup_status == wakeup_none);
 
             waiter->wakeup_status = wakeup_status;
-            rb_ractor_sched_wakeup(r, waiter->th);
+#ifdef RUBY_THREAD_PTHREAD_H
+            // ractor lock of r should NOT be acquired due to how `rb_ractor_sched_wait()` works
+            RACTOR_UNLOCK(r);
+            {
+#endif
+                rb_ractor_sched_wakeup(r, waiter->th);
+#ifdef RUBY_THREAD_PTHREAD_H
+            }
+            RACTOR_LOCK(r);
+#endif
 
             wakeup_p = true;
         }
@@ -1000,6 +1009,7 @@ ubf_ractor_wait(void *ptr)
 
     rb_native_mutex_unlock(&th->interrupt_lock);
     {
+        bool should_wake = false;
         RACTOR_LOCK(r);
         {
             if (waiter->wakeup_status == wakeup_none) {
@@ -1008,10 +1018,18 @@ ubf_ractor_wait(void *ptr)
                 waiter->wakeup_status = wakeup_by_interrupt;
                 ccan_list_del(&waiter->node);
 
+#ifdef RUBY_THREAD_PTHREAD_H
+                should_wake = true;
+#else
                 rb_ractor_sched_wakeup(r, waiter->th);
+#endif
             }
         }
         RACTOR_UNLOCK(r);
+
+        if (should_wake) {
+            rb_ractor_sched_wakeup(r, waiter->th);
+        }
     }
     rb_native_mutex_lock(&th->interrupt_lock);
 }
