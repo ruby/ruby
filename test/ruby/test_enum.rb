@@ -1337,6 +1337,36 @@ class TestEnumerable < Test::Unit::TestCase
     assert_instance_of(Enumerator, @obj.filter_map)
   end
 
+  def test_join_map
+    @obj = [1, 2, 3]
+    assert_equal("2,4,6", @obj.join_map(",") { |n| n * 2 })
+    assert_equal("246", @obj.join_map { |n| n * 2 })
+    assert_equal("1|2|3", @obj.join_map("|") { |n| n })
+    assert_instance_of(Enumerator, @obj.join_map)
+    assert_instance_of(Enumerator, @obj.join_map(","))
+
+    @obj = %w[foo bar baz]
+    assert_equal("FOO-BAR-BAZ", @obj.join_map("-", &:upcase))
+    assert_equal("foo, bar, baz", @obj.join_map(", ") { |s| s })
+
+    @obj = []
+    assert_equal("", @obj.join_map(",") { |x| x })
+    assert_equal("", @obj.join_map { |x| x })
+
+    @obj = (1..5)
+    assert_equal("1-2-3-4-5", @obj.join_map("-") { |n| n })
+    assert_equal("2:4:6:8:10", @obj.join_map(":") { |n| n * 2 })
+
+    @obj = {foo: 0, bar: 1, baz: 2}
+    assert_equal("foo=0|bar=1|baz=2", @obj.join_map("|") { |k, v| "#{k}=#{v}" })
+
+    @obj = [1, nil, 3, nil, 5]
+    assert_equal("1,,3,,5", @obj.join_map(",") { |x| x })
+
+    @obj = [false, true, nil, 0, ""]
+    assert_equal("false true  0 ", @obj.join_map(" ") { |x| x })
+  end
+
   def test_ruby_svar
     klass = Class.new do
       include Enumerable

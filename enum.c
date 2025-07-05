@@ -579,6 +579,68 @@ enum_filter_map(VALUE obj)
     return ary;
 }
 
+static VALUE
+join_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
+{
+    struct MEMO *memo = MEMO_CAST(args);
+    VALUE result = memo->v1;
+    VALUE sep = memo->v2;
+    VALUE val;
+    
+    ENUM_WANT_SVALUE();
+    
+    val = enum_yield(argc, i);
+    
+    if (memo->u3.cnt > 0 && !NIL_P(sep)) {
+        rb_str_buf_append(result, sep);
+    }
+    rb_str_buf_append(result, rb_obj_as_string(val));
+    memo->u3.cnt++;
+    
+    return Qnil;
+}
+
+/*
+ * call-seq:
+ *   join_map(separator = "") {|element| ... } -> string
+ *   join_map(separator = "") -> enumerator
+ *
+ * Returns a string created by converting each element to a string via the block,
+ * then joining the results with the given separator.
+ *
+ * With a block given, calls the block with successive elements;
+ * converts each block return value to a string and joins them:
+ *
+ *   users = [{name: "Alice"}, {name: "Bob"}, {name: "Charlie"}]
+ *   users.join_map(", ") { |user| user[:name] } # => "Alice, Bob, Charlie"
+ *   (1..5).join_map("-") { |n| n * 2 }           # => "2-4-6-8-10"
+ *
+ * When no block given, returns an Enumerator.
+ *
+ */
+static VALUE
+enum_join_map(int argc, VALUE *argv, VALUE obj)
+{
+    VALUE sep, result;
+    struct MEMO *memo;
+    
+    rb_scan_args(argc, argv, "01", &sep);
+    RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
+    
+    if (NIL_P(sep)) {
+        sep = rb_str_new_cstr("");
+    }
+    else {
+        StringValue(sep);
+    }
+    
+    result = rb_str_buf_new(0);
+    memo = MEMO_NEW(result, sep, 0);
+    rb_block_call(obj, id_each, 0, 0, join_map_i, (VALUE)memo);
+    
+    return result;
+}
+
 
 static VALUE
 reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
@@ -5219,6 +5281,7 @@ Init_Enumerable(void)
     rb_define_method(rb_mEnumerable, "select", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "filter", enum_find_all, 0);
     rb_define_method(rb_mEnumerable, "filter_map", enum_filter_map, 0);
+    rb_define_method(rb_mEnumerable, "join_map", enum_join_map, -1);
     rb_define_method(rb_mEnumerable, "reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable, "collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable, "map", enum_collect, 0);
