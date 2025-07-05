@@ -882,8 +882,9 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 if (replace) {
                     (*replace)(&key, &val, arg, TRUE);
 
-                    // TODO: pair should be same as pair before.
-                    pair = RHASH_AR_TABLE_REF(hash, i);
+                    // Pair should not have moved
+                    HASH_ASSERT(pair == RHASH_AR_TABLE_REF(hash, i));
+
                     pair->key = (VALUE)key;
                     pair->val = (VALUE)val;
                 }
