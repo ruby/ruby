@@ -59,12 +59,15 @@ class Gem::Licenses
     Artistic-1.0-Perl
     Artistic-1.0-cl8
     Artistic-2.0
+    Artistic-dist
+    Aspell-RU
     BSD-1-Clause
     BSD-2-Clause
     BSD-2-Clause-Darwin
     BSD-2-Clause-Patent
     BSD-2-Clause-Views
     BSD-2-Clause-first-lines
+    BSD-2-Clause-pkgconf-disclaimer
     BSD-3-Clause
     BSD-3-Clause-Attribution
     BSD-3-Clause-Clear
@@ -205,6 +208,7 @@ class Gem::Licenses
     Cornell-Lossless-JPEG
     Cronyx
     Crossword
+    CryptoSwift
     CrystalStacker
     Cube
     D-FSL-1.0
@@ -215,6 +219,7 @@ class Gem::Licenses
     DRL-1.0
     DRL-1.1
     DSDP
+    DocBook-DTD
     DocBook-Schema
     DocBook-Stylesheet
     DocBook-XML
@@ -240,7 +245,10 @@ class Gem::Licenses
     FSFAP-no-warranty-disclaimer
     FSFUL
     FSFULLR
+    FSFULLRSD
     FSFULLRWD
+    FSL-1.1-ALv2
+    FSL-1.1-MIT
     FTL
     Fair
     Ferguson-Twofish
@@ -276,11 +284,13 @@ class Gem::Licenses
     GPL-2.0-or-later
     GPL-3.0-only
     GPL-3.0-or-later
+    Game-Programming-Gems
     Giftware
     Glide
     Glulxe
     Graphics-Gems
     Gutmann
+    HDF5
     HIDAPI
     HP-1986
     HP-1989
@@ -426,6 +436,7 @@ class Gem::Licenses
     NPL-1.1
     NPOSL-3.0
     NRL
+    NTIA-PD
     NTP
     NTP-0
     Naumen
@@ -528,11 +539,13 @@ class Gem::Licenses
     SMLNJ
     SMPPL
     SNIA
+    SOFA
     SPL-1.0
     SSH-OpenSSH
     SSH-short
     SSLeay-standalone
     SSPL-1.0
+    SUL-1.0
     SWL
     Saxpath
     SchemeReport
@@ -578,6 +591,8 @@ class Gem::Licenses
     Unicode-TOU
     UnixCrypt
     Unlicense
+    Unlicense-libtelnet
+    Unlicense-libwhirlpool
     VOSTROM
     VSL-1.0
     Vim
@@ -631,6 +646,8 @@ class Gem::Licenses
     gtkbook
     hdparm
     iMatix
+    jove
+    libpng-1.6.35
     libpng-2.0
     libselinux-1.0
     libtiff
@@ -638,10 +655,12 @@ class Gem::Licenses
     lsof
     magaz
     mailprio
+    man2html
     metamail
     mpi-permissive
     mpich2
     mplus
+    ngrep
     pkgconf
     pnmstitch
     psfrag
@@ -716,6 +735,7 @@ class Gem::Licenses
     CLISP-exception-2.0
     Classpath-exception-2.0
     DigiRule-FOSS-exception
+    Digia-Qt-LGPL-exception-1.1
     FLTK-exception
     Fawkes-Runtime-exception
     Font-exception-2.0
@@ -772,6 +792,7 @@ class Gem::Licenses
     mif-exception
     mxml-exception
     openvpn-openssl-exception
+    polyparse-exception
     romic-exception
     stunnel-exception
     u-boot-exception-2.0
