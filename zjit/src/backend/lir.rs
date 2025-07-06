@@ -45,7 +45,7 @@ impl fmt::Debug for Mem {
         write!(fmt, "Mem{}[{:?}", self.num_bits, self.base)?;
         if self.disp != 0 {
             let sign = if self.disp > 0 { '+' } else { '-' };
-            write!(fmt, " {sign} {}", self.disp)?;
+            write!(fmt, " {sign} {}", self.disp.abs())?;
         }
 
         write!(fmt, "]")
