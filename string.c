@@ -8288,12 +8288,12 @@ rb_str_capitalize_bang(int argc, VALUE *argv, VALUE str)
  *  each with possibly changed case:
  *
  *  - The first character is upcased.
- *  - Other characters are downcased.
+ *  - All other characters are downcased.
  *
  *  Examples:
  *
- *    'hello'.capitalize # => "Hello"
- *    'HELLO'.capitalize # => "Hello"
+ *    'hello world'.capitalize # => "Hello world"
+ *    'HELLO WORLD'.capitalize # => "Hello world"
  *
  *  Some characters do not have upcase and downcase, and so are not changed;
  *  see {Case Mapping}[rdoc-ref:case_mapping.rdoc]:
