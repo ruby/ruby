@@ -158,7 +158,7 @@ The following bundled gems are updated.
 
 * minitest 5.25.5
 * rake 13.3.0
-* test-unit 3.6.9
+* test-unit 3.7.0
 * rexml 3.4.1
 * net-imap 0.5.9
 * net-smtp 0.5.1
