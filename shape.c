@@ -300,7 +300,7 @@ shape_tree_mark(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
     rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
-    while (cursor < end) {
+    while (cursor <= end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             rb_gc_mark_movable(cursor->edges);
         }
@@ -313,7 +313,7 @@ shape_tree_compact(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
     rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
-    while (cursor < end) {
+    while (cursor <= end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             cursor->edges = rb_gc_location(cursor->edges);
         }
