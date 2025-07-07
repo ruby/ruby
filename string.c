@@ -4317,26 +4317,26 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *  call-seq:
  *    casecmp(other_string) -> -1, 0, 1, or nil
  *
- *  Compares <tt>self.downcase</tt> and <tt>other_string.downcase</tt>; returns:
+ *  Ignoring case, compares +self+ and +other_string+; returns:
  *
- *  - -1 if <tt>other_string.downcase</tt> is larger.
+ *  - -1 if <tt>self.downcase</tt> is smaller than <tt>other_string.downcase</tt>.
  *  - 0 if the two are equal.
- *  - 1 if <tt>other_string.downcase</tt> is smaller.
+ *  - 1 if <tt>self.downcase</tt> is larger than <tt>other_string.downcase</tt>.
  *  - +nil+ if the two are incomparable.
- *
- *  Examples:
- *
- *    'foo'.casecmp('foo') # => 0
- *    'foo'.casecmp('food') # => -1
- *    'food'.casecmp('foo') # => 1
- *    'FOO'.casecmp('foo') # => 0
- *    'foo'.casecmp('FOO') # => 0
- *    'foo'.casecmp(1) # => nil
  *
  *  See {Case Mapping}[rdoc-ref:case_mapping.rdoc].
  *
- *  Related: String#casecmp?.
+ *  Examples:
  *
+ *    'foo'.casecmp('goo')  # => -1
+ *    'goo'.casecmp('foo')  # => 1
+ *    'foo'.casecmp('food') # => -1
+ *    'food'.casecmp('foo') # => 1
+ *    'FOO'.casecmp('foo')  # => 0
+ *    'foo'.casecmp('FOO')  # => 0
+ *    'foo'.casecmp(1)      # => nil
+ *
+ *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
 
 static VALUE
