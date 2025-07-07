@@ -113,7 +113,7 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
             payload.start_ptr = Some(start_ptr);
 
             // Compile an entry point to the JIT code
-            (gen_entry(cb, iseq, &function, start_ptr), branch_iseqs)
+            (gen_entry(cb, iseq, start_ptr), branch_iseqs)
         },
         None => (None, vec![]),
     };
@@ -144,11 +144,10 @@ fn gen_iseq_entry_point(iseq: IseqPtr) -> *const u8 {
 }
 
 /// Compile a JIT entry
-fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function, function_ptr: CodePtr) -> Option<CodePtr> {
+fn gen_entry(cb: &mut CodeBlock, iseq: IseqPtr, function_ptr: CodePtr) -> Option<CodePtr> {
     // Set up registers for CFP, EC, SP, and basic block arguments
     let mut asm = Assembler::new();
     gen_entry_prologue(&mut asm, iseq);
-    gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
 
     // Jump to the first block using a call instruction
     asm.ccall(function_ptr.raw_ptr(cb) as *const u8, vec![]);
@@ -216,6 +215,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, function: &Function) -> Optio
                 let new_sp = asm.sub(NATIVE_STACK_PTR, jit.c_stack_bytes.into());
                 asm.mov(NATIVE_STACK_PTR, new_sp);
             }
+
+            gen_entry_params(&mut asm, iseq, function.block(BlockId(0)));
         }
 
         // Compile all parameters
