@@ -35,7 +35,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
-#include "internal/ractor_safe_set.h"
+#include "internal/concurrent_set.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/string.h"
@@ -440,7 +440,7 @@ rb_fstring(VALUE str)
 static VALUE fstring_table_obj;
 
 static VALUE
-fstring_ractor_safe_set_hash(VALUE str)
+fstring_concurrent_set_hash(VALUE str)
 {
 #ifdef PRECOMPUTED_FAKESTR_HASH
     st_index_t h;
@@ -460,7 +460,7 @@ fstring_ractor_safe_set_hash(VALUE str)
 }
 
 static bool
-fstring_ractor_safe_set_cmp(VALUE a, VALUE b)
+fstring_concurrent_set_cmp(VALUE a, VALUE b)
 {
     long alen, blen;
     const char *aptr, *bptr;
@@ -481,7 +481,7 @@ struct fstr_create_arg {
 };
 
 static VALUE
-fstring_ractor_safe_set_create(VALUE str, void *data)
+fstring_concurrent_set_create(VALUE str, void *data)
 {
     struct fstr_create_arg *arg = data;
 
@@ -548,16 +548,16 @@ fstring_ractor_safe_set_create(VALUE str, void *data)
     return str;
 }
 
-static struct rb_ractor_safe_set_funcs fstring_ractor_safe_set_funcs = {
-    .hash = fstring_ractor_safe_set_hash,
-    .cmp = fstring_ractor_safe_set_cmp,
-    .create = fstring_ractor_safe_set_create,
+static struct rb_concurrent_set_funcs fstring_concurrent_set_funcs = {
+    .hash = fstring_concurrent_set_hash,
+    .cmp = fstring_concurrent_set_cmp,
+    .create = fstring_concurrent_set_create,
 };
 
 void
 Init_fstring_table(void)
 {
-    fstring_table_obj = rb_ractor_safe_set_new(&fstring_ractor_safe_set_funcs, 8192);
+    fstring_table_obj = rb_concurrent_set_new(&fstring_concurrent_set_funcs, 8192);
     rb_gc_register_address(&fstring_table_obj);
 }
 
@@ -577,7 +577,7 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
     }
 #endif
 
-    VALUE result = rb_ractor_safe_set_find_or_insert(&fstring_table_obj, str, &args);
+    VALUE result = rb_concurrent_set_find_or_insert(&fstring_table_obj, str, &args);
 
     RUBY_ASSERT(!rb_objspace_garbage_object_p(result));
     RUBY_ASSERT(RB_TYPE_P(result, T_STRING));
@@ -602,7 +602,7 @@ rb_gc_free_fstring(VALUE obj)
     // Assume locking and barrier (which there is no assert for)
     ASSERT_vm_locking();
 
-    rb_ractor_safe_set_delete_by_identity(fstring_table_obj, obj);
+    rb_concurrent_set_delete_by_identity(fstring_table_obj, obj);
 
     RB_DEBUG_COUNTER_INC(obj_str_fstr);
 
@@ -613,7 +613,7 @@ void
 rb_fstring_foreach_with_replace(int (*callback)(VALUE *str, void *data), void *data)
 {
     if (fstring_table_obj) {
-        rb_ractor_safe_set_foreach_with_replace(fstring_table_obj, callback, data);
+        rb_concurrent_set_foreach_with_replace(fstring_table_obj, callback, data);
     }
 }
 
@@ -12717,7 +12717,7 @@ Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
 
-    rb_ractor_safe_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
+    rb_concurrent_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
 
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
