@@ -2150,6 +2150,7 @@ impl Assembler {
     }
 
     pub fn load_into(&mut self, dest: Opnd, opnd: Opnd) {
+        assert!(matches!(dest, Opnd::Reg(_) | Opnd::VReg{..}), "Destination of load_into must be a register");
         match (dest, opnd) {
             (Opnd::Reg(dest), Opnd::Reg(opnd)) if dest == opnd => {}, // skip if noop
             _ => self.push_insn(Insn::LoadInto { dest, opnd }),
@@ -2311,6 +2312,14 @@ mod tests {
         assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
 
         assert!(matches!(opnd_iter.next(), None));
+    }
+
+    #[test]
+    #[should_panic]
+    fn load_into_memory_is_invalid() {
+        let mut asm = Assembler::new();
+        let mem = Opnd::mem(64, SP, 0);
+        asm.load_into(mem, mem);
     }
 }
 
