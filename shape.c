@@ -412,20 +412,24 @@ rb_shape_depth(shape_id_t shape_id)
 static rb_shape_t *
 shape_alloc(void)
 {
-    shape_id_t shape_id = (shape_id_t)RUBY_ATOMIC_FETCH_ADD(rb_shape_tree.next_shape_id, 1);
+    shape_id_t current, new_id;
 
-    if (shape_id == (MAX_SHAPE_ID + 1)) {
-        // TODO: Make an OutOfShapesError ??
-        rb_bug("Out of shapes");
-    }
+    do {
+        current = RUBY_ATOMIC_LOAD(rb_shape_tree.next_shape_id);
+        if (current > MAX_SHAPE_ID) {
+            return NULL;  // Out of shapes
+        }
+        new_id = current + 1;
+    } while (current != RUBY_ATOMIC_CAS(rb_shape_tree.next_shape_id, current, new_id));
 
-    return &rb_shape_tree.shape_list[shape_id];
+    return &rb_shape_tree.shape_list[current];
 }
 
 static rb_shape_t *
 rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
 {
     rb_shape_t *shape = shape_alloc();
+    if (!shape) return NULL;
 
     shape->edge_name = edge_name;
     shape->next_field_index = 0;
@@ -439,6 +443,8 @@ static rb_shape_t *
 rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 {
     rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, raw_shape_id(parent));
+    if (!shape) return NULL;
+
     shape->type = (uint8_t)type;
     shape->capacity = parent->capacity;
     shape->edges = 0;
@@ -501,6 +507,7 @@ static rb_shape_t *
 rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
 {
     rb_shape_t *new_shape = rb_shape_alloc(id, shape, shape_type);
+    if (!new_shape) return NULL;
 
     switch (shape_type) {
       case SHAPE_OBJ_ID:
@@ -556,18 +563,14 @@ retry:
         }
     }
 
-    // If we didn't find the shape we're looking for we create it.
-    if (!res) {
-        // If we're not allowed to create a new variation, of if we're out of shapes
-        // we return TOO_COMPLEX_SHAPE.
-        if (!new_variations_allowed || rb_shapes_count() > MAX_SHAPE_ID) {
-            res = NULL;
-        }
-        else {
-            VALUE new_edges = 0;
+    // If we didn't find the shape we're looking for and we're allowed more variations we create it.
+    if (!res && new_variations_allowed) {
+        VALUE new_edges = 0;
 
-            rb_shape_t *new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
+        rb_shape_t *new_shape = rb_shape_alloc_new_child(id, shape, shape_type);
 
+        // If we're out of shapes, return NULL
+        if (new_shape) {
             if (!edges_table) {
                 // If the shape had no edge yet, we can directly set the new child
                 new_edges = TAG_SINGLE_CHILD(new_shape);
@@ -841,6 +844,9 @@ rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
 {
     rb_shape_t *shape = RSHAPE(shape_id);
     rb_shape_t *next_shape = shape_get_next_iv_shape(shape, id);
+    if (!next_shape) {
+        return INVALID_SHAPE_ID;
+    }
     return raw_shape_id(next_shape);
 }
 
@@ -1575,6 +1581,7 @@ Init_default_shapes(void)
 
     bool dontcare;
     rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
+    RUBY_ASSERT(root_with_obj_id);
     RUBY_ASSERT(raw_shape_id(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
