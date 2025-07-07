@@ -564,7 +564,7 @@ fn gen_entry_params(asm: &mut Assembler, iseq: IseqPtr, entry_block: &Block) {
         // Assign local variables to the basic block arguments
         for (idx, &param) in params.iter().enumerate() {
             let local = gen_entry_param(asm, iseq, idx);
-            asm.load_into(param, local);
+            asm.mov(param, local);
         }
     }
 }
