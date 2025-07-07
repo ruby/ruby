@@ -77,17 +77,17 @@ base_type "Regexp"
 module_class, _ = base_type "Module"
 module_class.subtype "Class"
 
-(integer, integer_exact) = base_type "Integer"
+_, integer_exact = base_type "Integer"
 # CRuby partitions Integer into immediate and non-immediate variants.
 fixnum = integer_exact.subtype "Fixnum"
 integer_exact.subtype "Bignum"
 
-(float, float_exact) = base_type "Float"
+_, float_exact = base_type "Float"
 # CRuby partitions Float into immediate and non-immediate variants.
 flonum = float_exact.subtype "Flonum"
 float_exact.subtype "HeapFloat"
 
-(symbol, symbol_exact) = base_type "Symbol"
+_, symbol_exact = base_type "Symbol"
 # CRuby partitions Symbol into immediate and non-immediate variants.
 static_sym = symbol_exact.subtype "StaticSymbol"
 symbol_exact.subtype "DynamicSymbol"
