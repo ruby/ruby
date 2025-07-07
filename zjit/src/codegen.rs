@@ -255,13 +255,21 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         };
     }
 
+    macro_rules! opnds {
+        ($insn_ids:ident) => {
+            {
+                Option::from_iter($insn_ids.iter().map(|insn_id| jit.get_opnd(*insn_id)))?
+            }
+        };
+    }
+
     if !matches!(*insn, Insn::Snapshot { .. }) {
         asm_comment!(asm, "Insn: {insn_id} {insn}");
     }
 
     let out_opnd = match insn {
         Insn::Const { val: Const::Value(val) } => gen_const(*val),
-        Insn::NewArray { elements, state } => gen_new_array(jit, asm, elements, &function.frame_state(*state)),
+        Insn::NewArray { elements, state } => gen_new_array(asm, opnds!(elements), &function.frame_state(*state)),
         Insn::NewRange { low, high, flag, state } => gen_new_range(asm, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(asm, opnd!(val), &function.frame_state(*state)),
         Insn::StringCopy { val, chilled } => gen_string_copy(asm, opnd!(val), *chilled),
@@ -270,9 +278,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Jump(branch) => return gen_jump(jit, asm, branch),
         Insn::IfTrue { val, target } => return gen_if_true(jit, asm, opnd!(val), target),
         Insn::IfFalse { val, target } => return gen_if_false(jit, asm, opnd!(val), target),
-        Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), self_val, args)?,
-        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), args, &function.frame_state(*state))?,
-        Insn::InvokeBuiltin { bf, args, state } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, args)?,
+        Insn::SendWithoutBlock { call_info, cd, state, self_val, args, .. } => gen_send_without_block(jit, asm, call_info, *cd, &function.frame_state(*state), opnd!(self_val), opnds!(args))?,
+        Insn::SendWithoutBlockDirect { cme, iseq, self_val, args, state, .. } => gen_send_without_block_direct(cb, jit, asm, *cme, *iseq, opnd!(self_val), opnds!(args), &function.frame_state(*state))?,
+        Insn::InvokeBuiltin { bf, args, state } => gen_invokebuiltin(asm, &function.frame_state(*state), bf, opnds!(args))?,
         Insn::Return { val } => return Some(gen_return(jit, asm, opnd!(val))?),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
         Insn::FixnumSub { left, right, state } => gen_fixnum_sub(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state))?,
@@ -288,7 +296,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state))?,
         Insn::GuardBitEquals { val, expected, state } => gen_guard_bit_equals(jit, asm, opnd!(val), *expected, &function.frame_state(*state))?,
         Insn::PatchPoint(invariant) => return gen_patch_point(asm, invariant),
-        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(jit, asm, *cfun, args)?,
+        Insn::CCall { cfun, args, name: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfun, opnds!(args))?,
         Insn::GetIvar { self_val, id, state: _ } => gen_getivar(asm, opnd!(self_val), *id),
         Insn::SetGlobal { id, val, state: _ } => return Some(gen_setglobal(asm, *id, opnd!(val))),
         Insn::GetGlobal { id, state: _ } => gen_getglobal(asm, *id),
@@ -403,7 +411,7 @@ fn gen_get_constant_path(asm: &mut Assembler, ic: *const iseq_inline_constant_ca
     val
 }
 
-fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: &Vec<InsnId>) -> Option<lir::Opnd> {
+fn gen_invokebuiltin(asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: Vec<Opnd>) -> Option<lir::Opnd> {
     // Ensure we have enough room fit ec, self, and arguments
     // TODO remove this check when we have stack args (we can use Time.new to test it)
     if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) {
@@ -413,10 +421,7 @@ fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState
     gen_save_pc(asm, state);
 
     let mut cargs = vec![EC];
-    for &arg in args.iter() {
-        let opnd = jit.get_opnd(arg)?;
-        cargs.push(opnd);
-    }
+    cargs.extend(args);
 
     let val = asm.ccall(bf.func_ptr as *const u8, cargs);
 
@@ -443,13 +448,8 @@ fn gen_patch_point(asm: &mut Assembler, invariant: &Invariant) -> Option<()> {
 
 /// Lowering for [`Insn::CCall`]. This is a low-level raw call that doesn't know
 /// anything about the callee, so handling for e.g. GC safety is dealt with elsewhere.
-fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[InsnId]) -> Option<lir::Opnd> {
-    let mut lir_args = Vec::with_capacity(args.len());
-    for &arg in args {
-        lir_args.push(jit.get_opnd(arg)?);
-    }
-
-    Some(asm.ccall(cfun, lir_args))
+fn gen_ccall(asm: &mut Assembler, cfun: *const u8, args: Vec<Opnd>) -> Option<lir::Opnd> {
+    Some(asm.ccall(cfun, args))
 }
 
 /// Emit an uncached instance variable lookup
@@ -666,8 +666,8 @@ fn gen_send_without_block(
     call_info: &CallInfo,
     cd: *const rb_call_data,
     state: &FrameState,
-    self_val: &InsnId,
-    args: &Vec<InsnId>,
+    self_val: Opnd,
+    args: Vec<Opnd>,
 ) -> Option<lir::Opnd> {
     // Spill locals onto the stack.
     // TODO: Don't spill locals eagerly; lazily reify frames
@@ -679,10 +679,10 @@ fn gen_send_without_block(
     // They need to be on the interpreter stack to let the interpreter access them.
     // TODO: Avoid spilling operands that have been spilled before.
     asm_comment!(asm, "spill receiver and arguments");
-    for (idx, &insn_id) in [*self_val].iter().chain(args.iter()).enumerate() {
+    for (idx, &val) in [self_val].iter().chain(args.iter()).enumerate() {
         // Currently, we don't move the SP register. So it's equal to the base pointer.
         let stack_opnd = Opnd::mem(64, SP, idx as i32  * SIZEOF_VALUE_I32);
-        asm.mov(stack_opnd, jit.get_opnd(insn_id)?);
+        asm.mov(stack_opnd, val);
     }
 
     // Save PC and SP
@@ -711,7 +711,7 @@ fn gen_send_without_block_direct(
     cme: *const rb_callable_method_entry_t,
     iseq: IseqPtr,
     recv: Opnd,
-    args: &Vec<InsnId>,
+    args: Vec<Opnd>,
     state: &FrameState,
 ) -> Option<lir::Opnd> {
     // Save cfp->pc and cfp->sp for the caller frame
@@ -748,11 +748,8 @@ fn gen_send_without_block_direct(
     asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Set up arguments
-    let mut c_args: Vec<Opnd> = vec![];
-    c_args.push(recv);
-    for &arg in args.iter() {
-        c_args.push(jit.get_opnd(arg)?);
-    }
+    let mut c_args = vec![recv];
+    c_args.extend(args);
 
     // Make a method call. The target address will be rewritten once compiled.
     let branch = Branch::new();
@@ -800,9 +797,8 @@ fn gen_array_dup(
 
 /// Compile a new array instruction
 fn gen_new_array(
-    jit: &mut JITState,
     asm: &mut Assembler,
-    elements: &Vec<InsnId>,
+    elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
     // Save PC
@@ -817,8 +813,7 @@ fn gen_new_array(
     );
 
     for i in 0..elements.len() {
-        let insn_id = elements.get(i as usize).expect("Element should exist at index");
-        let val = jit.get_opnd(*insn_id).unwrap();
+        let val = *elements.get(i as usize).expect("Element should exist at index");
         asm_comment!(asm, "call rb_ary_push");
         asm.ccall(
             rb_ary_push as *const u8,
