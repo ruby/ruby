@@ -7,7 +7,7 @@ use crate::invariants::track_bop_assumption;
 use crate::profile::get_or_create_iseq_payload;
 use crate::state::ZJITState;
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, asm_comment, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
+use crate::backend::lir::{self, asm_comment, ccall, Assembler, Opnd, Target, CFP, C_ARG_OPNDS, C_RET_OPND, EC, NATIVE_STACK_PTR, SP};
 use crate::hir::{iseq_to_hir, Block, BlockId, BranchEdge, CallInfo, Invariant, RangeType, SpecialObjectType, SELF_PARAM_IDX};
 use crate::hir::{Const, FrameState, Function, Insn, InsnId};
 use crate::hir_type::{types::Fixnum, Type};
@@ -396,11 +396,7 @@ fn gen_get_constant_path(asm: &mut Assembler, ic: *const iseq_inline_constant_ca
     // Save PC since the call can allocate an IC
     gen_save_pc(asm, state);
 
-    let val = asm.ccall(
-        rb_vm_opt_getconstant_path as *const u8,
-        vec![EC, CFP, Opnd::const_ptr(ic as *const u8)],
-    );
-    val
+    ccall![rb_vm_opt_getconstant_path(EC, CFP, Opnd::const_ptr(ic)), asm]
 }
 
 fn gen_invokebuiltin(jit: &mut JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, args: &Vec<InsnId>) -> Option<lir::Opnd> {
@@ -454,36 +450,23 @@ fn gen_ccall(jit: &mut JITState, asm: &mut Assembler, cfun: *const u8, args: &[I
 
 /// Emit an uncached instance variable lookup
 fn gen_getivar(asm: &mut Assembler, recv: Opnd, id: ID) -> Opnd {
-    asm_comment!(asm, "call rb_ivar_get");
-    asm.ccall(
-        rb_ivar_get as *const u8,
-        vec![recv, Opnd::UImm(id.0)],
-    )
+    ccall![rb_ivar_get(recv, id.0.into()), asm]
 }
 
 /// Emit an uncached instance variable store
 fn gen_setivar(asm: &mut Assembler, recv: Opnd, id: ID, val: Opnd) -> Option<()> {
-    asm_comment!(asm, "call rb_ivar_set");
-    asm.ccall(
-        rb_ivar_set as *const u8,
-        vec![recv, Opnd::UImm(id.0), val],
-    );
+    ccall![rb_ivar_set(recv, id.0.into(), val), asm];
     Some(())
 }
 
 /// Look up global variables
 fn gen_getglobal(asm: &mut Assembler, id: ID) -> Opnd {
-    asm_comment!(asm, "call rb_gvar_get");
-    asm.ccall(
-        rb_gvar_get as *const u8,
-        vec![Opnd::UImm(id.0)],
-    )
+    ccall![rb_gvar_get(id.0.into()), asm]
 }
 
 /// Set global variables
 fn gen_setglobal(asm: &mut Assembler, id: ID, val: Opnd) {
-    asm_comment!(asm, "call rb_gvar_set");
-    asm.ccall(rb_gvar_set as *const u8, vec![Opnd::UImm(id.0), val]);
+    ccall![rb_gvar_set(id.0.into(), val), asm];
 }
 
 /// Side-exit into the interpreter
@@ -498,11 +481,7 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
     let ep_reg = asm.load(ep_opnd);
 
-    asm_comment!(asm, "call rb_vm_get_special_object");
-    asm.ccall(
-        rb_vm_get_special_object as *const u8,
-        vec![ep_reg, Opnd::UImm(u64::from(value_type))],
-    )
+    ccall![rb_vm_get_special_object(ep_reg, Opnd::UImm(u64::from(value_type))), asm]
 }
 
 /// Compile an interpreter entry block to be inserted into an ISEQ
@@ -773,13 +752,9 @@ fn gen_send_without_block_direct(
 
 /// Compile a string resurrection
 fn gen_string_copy(asm: &mut Assembler, recv: Opnd, chilled: bool) -> Opnd {
-    asm_comment!(asm, "call rb_ec_str_resurrect");
     // TODO: split rb_ec_str_resurrect into separate functions
     let chilled = if chilled { Opnd::Imm(1) } else { Opnd::Imm(0) };
-    asm.ccall(
-        rb_ec_str_resurrect as *const u8,
-        vec![EC, recv, chilled],
-    )
+    ccall![rb_ec_str_resurrect(EC, recv, chilled), asm]
 }
 
 /// Compile an array duplication instruction
@@ -791,11 +766,7 @@ fn gen_array_dup(
     // Save PC
     gen_save_pc(asm, state);
 
-    asm_comment!(asm, "call rb_ary_resurrect");
-    asm.ccall(
-        rb_ary_resurrect as *const u8,
-        vec![val],
-    )
+    ccall![rb_ary_resurrect(val), asm]
 }
 
 /// Compile a new array instruction
@@ -810,20 +781,12 @@ fn gen_new_array(
 
     let length: ::std::os::raw::c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    asm_comment!(asm, "call rb_ary_new");
-    let new_array = asm.ccall(
-        rb_ary_new_capa as *const u8,
-        vec![lir::Opnd::Imm(length)],
-    );
+    let new_array = ccall![rb_ary_new_capa(length.into()), asm];
 
     for i in 0..elements.len() {
         let insn_id = elements.get(i as usize).expect("Element should exist at index");
         let val = jit.get_opnd(*insn_id).unwrap();
-        asm_comment!(asm, "call rb_ary_push");
-        asm.ccall(
-            rb_ary_push as *const u8,
-            vec![new_array, val]
-        );
+        ccall![rb_ary_push(new_array, val), asm];
     }
 
     new_array
@@ -840,14 +803,8 @@ fn gen_new_range(
     // Save PC
     gen_save_pc(asm, state);
 
-    asm_comment!(asm, "call rb_range_new");
     // Call rb_range_new(low, high, flag)
-    let new_range = asm.ccall(
-        rb_range_new as *const u8,
-        vec![low, high, lir::Opnd::Imm(flag as i64)],
-    );
-
-    new_range
+    ccall![rb_range_new(low, high, lir::Opnd::Imm(flag as i64)), asm]
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -955,11 +912,7 @@ fn gen_anytostring(asm: &mut Assembler, val: lir::Opnd, str: lir::Opnd, state: &
     // Save PC
     gen_save_pc(asm, state);
 
-    asm_comment!(asm, "call rb_obj_as_string_result");
-    Some(asm.ccall(
-        rb_obj_as_string_result as *const u8,
-        vec![str, val],
-    ))
+    Some(ccall![rb_obj_as_string_result(str, val), asm])
 }
 
 /// Evaluate if a value is truthy
@@ -999,7 +952,7 @@ fn gen_save_pc(asm: &mut Assembler, state: &FrameState) {
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
     asm_comment!(asm, "save PC to CFP");
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc as *const u8));
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(next_pc));
 }
 
 /// Save the current SP on the CFP
