@@ -74,8 +74,8 @@ base_type "Hash"
 base_type "Range"
 base_type "Set"
 base_type "Regexp"
-base_type "Class"
-base_type "Module"
+module_class, _ = base_type "Module"
+module_class.subtype "Class"
 
 (integer, integer_exact) = base_type "Integer"
 # CRuby partitions Integer into immediate and non-immediate variants.
